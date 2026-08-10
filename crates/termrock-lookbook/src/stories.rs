@@ -64,6 +64,8 @@ use termrock::{
         Select, SelectOption, SelectRecipe, SelectState,
         MultiSelect, MultiSelectState,
         Combobox, ComboboxState, SuggestionStatus,
+        FileEntry, FileEntryKind, FilePicker, FilePickerMode, FilePickerState, FilePreview,
+        FileSortKey,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -5084,6 +5086,42 @@ pub(crate) fn stories() -> Vec<Story> {
             42,
             14,
             multi_select_search_story,
+        ),
+        Story::new(
+            "file-picker/unix",
+            "FilePicker Unix",
+            "FilePicker",
+            "Unix browser with breadcrumbs, list, and preview.",
+            72,
+            18,
+            file_picker_unix_story,
+        ),
+        Story::new(
+            "file-picker/windows",
+            "FilePicker Windows",
+            "FilePicker",
+            "Windows path style listing.",
+            72,
+            16,
+            file_picker_windows_story,
+        ),
+        Story::new(
+            "file-picker/ssh",
+            "FilePicker SSH",
+            "FilePicker",
+            "SSH-like remote path provider projection.",
+            72,
+            16,
+            file_picker_ssh_story,
+        ),
+        Story::new(
+            "file-picker/no-preview",
+            "FilePicker no preview",
+            "FilePicker",
+            "List-only layout without preview pane.",
+            56,
+            14,
+            file_picker_no_preview_story,
         ),
         Story::new(
             "combobox/basic",
@@ -13414,6 +13452,123 @@ fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     MultiSelect::new(&opts, system)
         .ascii(true)
         .paint_stacked(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_picker_unix_entries() -> Vec<FileEntry> {
+    vec![
+        FileEntry::directory("d1", "src", "/home/u/proj/src"),
+        FileEntry::directory("d2", "docs", "/home/u/proj/docs"),
+        FileEntry::file("f1", "README.md", "/home/u/proj/README.md").size(420),
+        FileEntry::file("f2", "Cargo.toml", "/home/u/proj/Cargo.toml").size(180),
+        FileEntry::file("f3", ".gitignore", "/home/u/proj/.gitignore")
+            .hidden(true)
+            .size(40),
+        FileEntry::file("f4", "secret.env", "/home/u/proj/secret.env")
+            .error("permission denied"),
+    ]
+}
+
+fn file_picker_seed(
+    state: &mut FilePickerState,
+    cwd: &str,
+    entries: Vec<FileEntry>,
+) {
+    match state.request_list(cwd) {
+        termrock::widgets::FilePickerOutcome::ListRequested { generation, .. } => {
+            assert!(state.apply_listing(generation, cwd, entries, None));
+        }
+        other => panic!("expected ListRequested, got {other:?}"),
+    }
+}
+
+fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FilePickerState::new("/home/u/proj")
+        .with_mode(FilePickerMode::OpenFile)
+        .with_preview(true)
+        .with_path_style(PathStyle::Unix);
+    state.set_focused(true);
+    file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
+    state.apply_preview(FilePreview::text(
+        "README.md",
+        ["# proj".into(), "".into(), "Hello from Unix FS host.".into()],
+    ));
+    FilePicker::new(system)
+        .title("Open file")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_picker_windows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FilePickerState::new(r"C:\Users\me")
+        .with_mode(FilePickerMode::OpenAny)
+        .with_path_style(PathStyle::Windows)
+        .with_preview(true);
+    state.set_focused(true);
+    let entries = vec![
+        FileEntry::directory("d1", "Projects", r"C:\Users\me\Projects"),
+        FileEntry::directory("d2", "Desktop", r"C:\Users\me\Desktop"),
+        FileEntry::file("f1", "notes.txt", r"C:\Users\me\notes.txt").size(88),
+        FileEntry::file("f2", "photo.jpg", r"C:\Users\me\photo.jpg").size(4096),
+    ];
+    file_picker_seed(&mut state, r"C:\Users\me", entries);
+    state.apply_preview(FilePreview::text("notes.txt", ["todo: ship FilePicker".into()]));
+    FilePicker::new(system)
+        .title("Browse")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_picker_ssh_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    // Host projects remote paths as plain strings; picker stays FS-agnostic.
+    let mut state = FilePickerState::new("ssh://host/home/u")
+        .with_mode(FilePickerMode::OpenDirectory)
+        .with_preview(true)
+        .with_show_hidden(false);
+    state.set_focused(true);
+    let entries = vec![
+        FileEntry::directory("d1", "bin", "ssh://host/home/u/bin"),
+        FileEntry::directory("d2", "etc", "ssh://host/home/u/etc"),
+        FileEntry::file("f1", "authorized_keys", "ssh://host/home/u/authorized_keys")
+            .size(512)
+            .kind(FileEntryKind::File),
+        FileEntry::file("f2", ".ssh", "ssh://host/home/u/.ssh")
+            .hidden(true)
+            .kind(FileEntryKind::Directory),
+    ];
+    file_picker_seed(&mut state, "ssh://host/home/u", entries);
+    state.apply_preview(FilePreview::text(
+        "remote://host",
+        [
+            "provider: ssh".into(),
+            "latency: 42ms".into(),
+            "listing via host cancel token".into(),
+        ],
+    ));
+    FilePicker::new(system)
+        .title("Remote path")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn file_picker_no_preview_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FilePickerState::new("/var/log")
+        .with_mode(FilePickerMode::OpenFile)
+        .with_preview(false)
+        .with_multi(true)
+        .with_sort(FileSortKey::Name);
+    state.set_focused(true);
+    let entries = vec![
+        FileEntry::file("a", "syslog", "/var/log/syslog").size(2048),
+        FileEntry::file("b", "kern.log", "/var/log/kern.log").size(1024),
+        FileEntry::file("c", "auth.log", "/var/log/auth.log").size(512),
+        FileEntry::directory("d", "journal", "/var/log/journal"),
+    ];
+    file_picker_seed(&mut state, "/var/log", entries);
+    FilePicker::new(system)
+        .title("Pick logs")
+        .show_preview(false)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn combobox_candidates() -> Vec<CompletionCandidate<'static, &'static str>> {

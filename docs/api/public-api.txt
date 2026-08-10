@@ -17684,6 +17684,376 @@ pub unsafe fn termrock::widgets::FieldStatus<'a>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::FieldStatus<'a>
 pub fn termrock::widgets::FieldStatus<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FieldStatus<'a>
+#[non_exhaustive] pub enum termrock::widgets::FileEntryKind
+pub termrock::widgets::FileEntryKind::Directory
+pub termrock::widgets::FileEntryKind::File
+pub termrock::widgets::FileEntryKind::Other
+pub termrock::widgets::FileEntryKind::SymlinkDir
+pub termrock::widgets::FileEntryKind::SymlinkFile
+impl termrock::widgets::FileEntryKind
+pub const fn termrock::widgets::FileEntryKind::id(self) -> &'static str
+pub const fn termrock::widgets::FileEntryKind::is_dir(self) -> bool
+impl core::clone::Clone for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::clone(&self) -> termrock::widgets::FileEntryKind
+impl core::cmp::Eq for termrock::widgets::FileEntryKind
+impl core::cmp::PartialEq for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::eq(&self, &termrock::widgets::FileEntryKind) -> bool
+impl core::default::Default for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::default() -> termrock::widgets::FileEntryKind
+impl core::fmt::Debug for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FileEntryKind
+impl core::marker::StructuralPartialEq for termrock::widgets::FileEntryKind
+impl core::marker::Freeze for termrock::widgets::FileEntryKind
+impl core::marker::Send for termrock::widgets::FileEntryKind
+impl core::marker::Sync for termrock::widgets::FileEntryKind
+impl core::marker::Unpin for termrock::widgets::FileEntryKind
+impl core::marker::UnsafeUnpin for termrock::widgets::FileEntryKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileEntryKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileEntryKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileEntryKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileEntryKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileEntryKind where U: core::convert::From<T>
+pub fn termrock::widgets::FileEntryKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileEntryKind where U: core::convert::Into<T>
+pub type termrock::widgets::FileEntryKind::Error = core::convert::Infallible
+pub fn termrock::widgets::FileEntryKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileEntryKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileEntryKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileEntryKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileEntryKind where T: core::clone::Clone
+pub type termrock::widgets::FileEntryKind::Owned = T
+pub fn termrock::widgets::FileEntryKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileEntryKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileEntryKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileEntryKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileEntryKind where T: ?core::marker::Sized
+pub fn termrock::widgets::FileEntryKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileEntryKind where T: ?core::marker::Sized
+pub fn termrock::widgets::FileEntryKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileEntryKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileEntryKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileEntryKind
+pub fn termrock::widgets::FileEntryKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileEntryKind
+#[non_exhaustive] pub enum termrock::widgets::FileListingStatus
+pub termrock::widgets::FileListingStatus::Error
+pub termrock::widgets::FileListingStatus::Idle
+pub termrock::widgets::FileListingStatus::Loading
+pub termrock::widgets::FileListingStatus::Ready
+impl termrock::widgets::FileListingStatus
+pub const fn termrock::widgets::FileListingStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::clone(&self) -> termrock::widgets::FileListingStatus
+impl core::cmp::Eq for termrock::widgets::FileListingStatus
+impl core::cmp::PartialEq for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::eq(&self, &termrock::widgets::FileListingStatus) -> bool
+impl core::default::Default for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::default() -> termrock::widgets::FileListingStatus
+impl core::fmt::Debug for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FileListingStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::FileListingStatus
+impl core::marker::Freeze for termrock::widgets::FileListingStatus
+impl core::marker::Send for termrock::widgets::FileListingStatus
+impl core::marker::Sync for termrock::widgets::FileListingStatus
+impl core::marker::Unpin for termrock::widgets::FileListingStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::FileListingStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileListingStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileListingStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileListingStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileListingStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileListingStatus where U: core::convert::From<T>
+pub fn termrock::widgets::FileListingStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileListingStatus where U: core::convert::Into<T>
+pub type termrock::widgets::FileListingStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::FileListingStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileListingStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileListingStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileListingStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileListingStatus where T: core::clone::Clone
+pub type termrock::widgets::FileListingStatus::Owned = T
+pub fn termrock::widgets::FileListingStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileListingStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileListingStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileListingStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileListingStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::FileListingStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileListingStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::FileListingStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileListingStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileListingStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileListingStatus
+pub fn termrock::widgets::FileListingStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileListingStatus
+#[non_exhaustive] pub enum termrock::widgets::FilePickerMode
+pub termrock::widgets::FilePickerMode::OpenAny
+pub termrock::widgets::FilePickerMode::OpenDirectory
+pub termrock::widgets::FilePickerMode::OpenFile
+pub termrock::widgets::FilePickerMode::SaveFile
+impl termrock::widgets::FilePickerMode
+pub const fn termrock::widgets::FilePickerMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::clone(&self) -> termrock::widgets::FilePickerMode
+impl core::cmp::Eq for termrock::widgets::FilePickerMode
+impl core::cmp::PartialEq for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::eq(&self, &termrock::widgets::FilePickerMode) -> bool
+impl core::default::Default for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::default() -> termrock::widgets::FilePickerMode
+impl core::fmt::Debug for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FilePickerMode
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePickerMode
+impl core::marker::Freeze for termrock::widgets::FilePickerMode
+impl core::marker::Send for termrock::widgets::FilePickerMode
+impl core::marker::Sync for termrock::widgets::FilePickerMode
+impl core::marker::Unpin for termrock::widgets::FilePickerMode
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePickerMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePickerMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePickerMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePickerMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePickerMode where U: core::convert::From<T>
+pub fn termrock::widgets::FilePickerMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePickerMode where U: core::convert::Into<T>
+pub type termrock::widgets::FilePickerMode::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePickerMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePickerMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePickerMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePickerMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePickerMode where T: core::clone::Clone
+pub type termrock::widgets::FilePickerMode::Owned = T
+pub fn termrock::widgets::FilePickerMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePickerMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePickerMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePickerMode where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePickerMode where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePickerMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePickerMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePickerMode
+#[non_exhaustive] pub enum termrock::widgets::FilePickerOutcome
+pub termrock::widgets::FilePickerOutcome::Cancelled
+pub termrock::widgets::FilePickerOutcome::Changed
+pub termrock::widgets::FilePickerOutcome::Confirmed
+pub termrock::widgets::FilePickerOutcome::Confirmed::paths: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::FilePickerOutcome::FilterChanged
+pub termrock::widgets::FilePickerOutcome::HighlightChanged
+pub termrock::widgets::FilePickerOutcome::HighlightChanged::id: core::option::Option<alloc::string::String>
+pub termrock::widgets::FilePickerOutcome::Ignored
+pub termrock::widgets::FilePickerOutcome::ListRequested
+pub termrock::widgets::FilePickerOutcome::ListRequested::generation: u64
+pub termrock::widgets::FilePickerOutcome::ListRequested::path: alloc::string::String
+pub termrock::widgets::FilePickerOutcome::OpenDirectory
+pub termrock::widgets::FilePickerOutcome::OpenDirectory::path: alloc::string::String
+pub termrock::widgets::FilePickerOutcome::PresentationChanged
+pub termrock::widgets::FilePickerOutcome::PresentationChanged::presentation: termrock::widgets::FilePickerPresentation
+pub termrock::widgets::FilePickerOutcome::PreviewRequested
+pub termrock::widgets::FilePickerOutcome::PreviewRequested::generation: u64
+pub termrock::widgets::FilePickerOutcome::PreviewRequested::path: alloc::string::String
+pub termrock::widgets::FilePickerOutcome::SelectionChanged
+impl core::clone::Clone for termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerOutcome::clone(&self) -> termrock::widgets::FilePickerOutcome
+impl core::cmp::Eq for termrock::widgets::FilePickerOutcome
+impl core::cmp::PartialEq for termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerOutcome::eq(&self, &termrock::widgets::FilePickerOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePickerOutcome
+impl core::marker::Freeze for termrock::widgets::FilePickerOutcome
+impl core::marker::Send for termrock::widgets::FilePickerOutcome
+impl core::marker::Sync for termrock::widgets::FilePickerOutcome
+impl core::marker::Unpin for termrock::widgets::FilePickerOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePickerOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePickerOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePickerOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePickerOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePickerOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::FilePickerOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePickerOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::FilePickerOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePickerOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePickerOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePickerOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePickerOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePickerOutcome where T: core::clone::Clone
+pub type termrock::widgets::FilePickerOutcome::Owned = T
+pub fn termrock::widgets::FilePickerOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePickerOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePickerOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePickerOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePickerOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePickerOutcome
+#[non_exhaustive] pub enum termrock::widgets::FilePickerPane
+pub termrock::widgets::FilePickerPane::List
+pub termrock::widgets::FilePickerPane::Path
+pub termrock::widgets::FilePickerPane::Preview
+impl core::clone::Clone for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::clone(&self) -> termrock::widgets::FilePickerPane
+impl core::cmp::Eq for termrock::widgets::FilePickerPane
+impl core::cmp::PartialEq for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::eq(&self, &termrock::widgets::FilePickerPane) -> bool
+impl core::default::Default for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::default() -> termrock::widgets::FilePickerPane
+impl core::fmt::Debug for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FilePickerPane
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePickerPane
+impl core::marker::Freeze for termrock::widgets::FilePickerPane
+impl core::marker::Send for termrock::widgets::FilePickerPane
+impl core::marker::Sync for termrock::widgets::FilePickerPane
+impl core::marker::Unpin for termrock::widgets::FilePickerPane
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePickerPane
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePickerPane
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePickerPane
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePickerPane where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPane::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePickerPane where U: core::convert::From<T>
+pub fn termrock::widgets::FilePickerPane::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePickerPane where U: core::convert::Into<T>
+pub type termrock::widgets::FilePickerPane::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePickerPane::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePickerPane where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePickerPane::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePickerPane::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePickerPane where T: core::clone::Clone
+pub type termrock::widgets::FilePickerPane::Owned = T
+pub fn termrock::widgets::FilePickerPane::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePickerPane::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePickerPane where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPane::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePickerPane where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPane::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePickerPane where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPane::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePickerPane where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePickerPane::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePickerPane
+pub fn termrock::widgets::FilePickerPane::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePickerPane
+#[non_exhaustive] pub enum termrock::widgets::FilePickerPresentation
+pub termrock::widgets::FilePickerPresentation::Embedded
+pub termrock::widgets::FilePickerPresentation::Fullscreen
+pub termrock::widgets::FilePickerPresentation::Modal
+impl termrock::widgets::FilePickerPresentation
+pub const fn termrock::widgets::FilePickerPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::clone(&self) -> termrock::widgets::FilePickerPresentation
+impl core::cmp::Eq for termrock::widgets::FilePickerPresentation
+impl core::cmp::PartialEq for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::eq(&self, &termrock::widgets::FilePickerPresentation) -> bool
+impl core::default::Default for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::default() -> termrock::widgets::FilePickerPresentation
+impl core::fmt::Debug for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FilePickerPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePickerPresentation
+impl core::marker::Freeze for termrock::widgets::FilePickerPresentation
+impl core::marker::Send for termrock::widgets::FilePickerPresentation
+impl core::marker::Sync for termrock::widgets::FilePickerPresentation
+impl core::marker::Unpin for termrock::widgets::FilePickerPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePickerPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePickerPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePickerPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePickerPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePickerPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::FilePickerPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePickerPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::FilePickerPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePickerPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePickerPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePickerPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePickerPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePickerPresentation where T: core::clone::Clone
+pub type termrock::widgets::FilePickerPresentation::Owned = T
+pub fn termrock::widgets::FilePickerPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePickerPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePickerPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePickerPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePickerPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePickerPresentation
+#[non_exhaustive] pub enum termrock::widgets::FileSortKey
+pub termrock::widgets::FileSortKey::Kind
+pub termrock::widgets::FileSortKey::Modified
+pub termrock::widgets::FileSortKey::Name
+pub termrock::widgets::FileSortKey::Size
+impl termrock::widgets::FileSortKey
+pub const fn termrock::widgets::FileSortKey::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::clone(&self) -> termrock::widgets::FileSortKey
+impl core::cmp::Eq for termrock::widgets::FileSortKey
+impl core::cmp::PartialEq for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::eq(&self, &termrock::widgets::FileSortKey) -> bool
+impl core::default::Default for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::default() -> termrock::widgets::FileSortKey
+impl core::fmt::Debug for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FileSortKey
+impl core::marker::StructuralPartialEq for termrock::widgets::FileSortKey
+impl core::marker::Freeze for termrock::widgets::FileSortKey
+impl core::marker::Send for termrock::widgets::FileSortKey
+impl core::marker::Sync for termrock::widgets::FileSortKey
+impl core::marker::Unpin for termrock::widgets::FileSortKey
+impl core::marker::UnsafeUnpin for termrock::widgets::FileSortKey
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileSortKey
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileSortKey
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileSortKey where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileSortKey::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileSortKey where U: core::convert::From<T>
+pub fn termrock::widgets::FileSortKey::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileSortKey where U: core::convert::Into<T>
+pub type termrock::widgets::FileSortKey::Error = core::convert::Infallible
+pub fn termrock::widgets::FileSortKey::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileSortKey where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileSortKey::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileSortKey::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileSortKey where T: core::clone::Clone
+pub type termrock::widgets::FileSortKey::Owned = T
+pub fn termrock::widgets::FileSortKey::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileSortKey::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileSortKey where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileSortKey::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileSortKey where T: ?core::marker::Sized
+pub fn termrock::widgets::FileSortKey::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileSortKey where T: ?core::marker::Sized
+pub fn termrock::widgets::FileSortKey::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileSortKey where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileSortKey::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileSortKey
+pub fn termrock::widgets::FileSortKey::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileSortKey
 #[non_exhaustive] pub enum termrock::widgets::FormLayout
 pub termrock::widgets::FormLayout::Compact
 pub termrock::widgets::FormLayout::Inline
@@ -31185,6 +31555,292 @@ pub unsafe fn termrock::widgets::Fieldset<'a, Id>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::Fieldset<'a, Id>
 pub fn termrock::widgets::Fieldset<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Fieldset<'a, Id>
+pub struct termrock::widgets::FileBreadcrumb
+pub termrock::widgets::FileBreadcrumb::label: alloc::string::String
+pub termrock::widgets::FileBreadcrumb::path: alloc::string::String
+impl termrock::widgets::FileBreadcrumb
+pub fn termrock::widgets::FileBreadcrumb::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::FileBreadcrumb
+pub fn termrock::widgets::FileBreadcrumb::clone(&self) -> termrock::widgets::FileBreadcrumb
+impl core::cmp::Eq for termrock::widgets::FileBreadcrumb
+impl core::cmp::PartialEq for termrock::widgets::FileBreadcrumb
+pub fn termrock::widgets::FileBreadcrumb::eq(&self, &termrock::widgets::FileBreadcrumb) -> bool
+impl core::fmt::Debug for termrock::widgets::FileBreadcrumb
+pub fn termrock::widgets::FileBreadcrumb::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FileBreadcrumb
+impl core::marker::Freeze for termrock::widgets::FileBreadcrumb
+impl core::marker::Send for termrock::widgets::FileBreadcrumb
+impl core::marker::Sync for termrock::widgets::FileBreadcrumb
+impl core::marker::Unpin for termrock::widgets::FileBreadcrumb
+impl core::marker::UnsafeUnpin for termrock::widgets::FileBreadcrumb
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileBreadcrumb
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileBreadcrumb
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileBreadcrumb where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileBreadcrumb::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileBreadcrumb where U: core::convert::From<T>
+pub fn termrock::widgets::FileBreadcrumb::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileBreadcrumb where U: core::convert::Into<T>
+pub type termrock::widgets::FileBreadcrumb::Error = core::convert::Infallible
+pub fn termrock::widgets::FileBreadcrumb::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileBreadcrumb where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileBreadcrumb::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileBreadcrumb::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileBreadcrumb where T: core::clone::Clone
+pub type termrock::widgets::FileBreadcrumb::Owned = T
+pub fn termrock::widgets::FileBreadcrumb::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileBreadcrumb::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileBreadcrumb where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileBreadcrumb::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileBreadcrumb where T: ?core::marker::Sized
+pub fn termrock::widgets::FileBreadcrumb::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileBreadcrumb where T: ?core::marker::Sized
+pub fn termrock::widgets::FileBreadcrumb::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileBreadcrumb where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileBreadcrumb::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileBreadcrumb
+pub fn termrock::widgets::FileBreadcrumb::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileBreadcrumb
+pub struct termrock::widgets::FileEntry
+pub termrock::widgets::FileEntry::error: core::option::Option<alloc::string::String>
+pub termrock::widgets::FileEntry::hidden: bool
+pub termrock::widgets::FileEntry::id: alloc::string::String
+pub termrock::widgets::FileEntry::kind: termrock::widgets::FileEntryKind
+pub termrock::widgets::FileEntry::modified: core::option::Option<alloc::string::String>
+pub termrock::widgets::FileEntry::name: alloc::string::String
+pub termrock::widgets::FileEntry::path: alloc::string::String
+pub termrock::widgets::FileEntry::selectable: bool
+pub termrock::widgets::FileEntry::size: core::option::Option<u64>
+impl termrock::widgets::FileEntry
+pub fn termrock::widgets::FileEntry::directory(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FileEntry::error(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FileEntry::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::FileEntry::hidden(self, bool) -> Self
+pub const fn termrock::widgets::FileEntry::kind(self, termrock::widgets::FileEntryKind) -> Self
+pub fn termrock::widgets::FileEntry::modified(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::FileEntry::selectable(self, bool) -> Self
+pub const fn termrock::widgets::FileEntry::size(self, u64) -> Self
+impl core::clone::Clone for termrock::widgets::FileEntry
+pub fn termrock::widgets::FileEntry::clone(&self) -> termrock::widgets::FileEntry
+impl core::cmp::Eq for termrock::widgets::FileEntry
+impl core::cmp::PartialEq for termrock::widgets::FileEntry
+pub fn termrock::widgets::FileEntry::eq(&self, &termrock::widgets::FileEntry) -> bool
+impl core::fmt::Debug for termrock::widgets::FileEntry
+pub fn termrock::widgets::FileEntry::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FileEntry
+impl core::marker::Freeze for termrock::widgets::FileEntry
+impl core::marker::Send for termrock::widgets::FileEntry
+impl core::marker::Sync for termrock::widgets::FileEntry
+impl core::marker::Unpin for termrock::widgets::FileEntry
+impl core::marker::UnsafeUnpin for termrock::widgets::FileEntry
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileEntry
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileEntry
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileEntry where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileEntry::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileEntry where U: core::convert::From<T>
+pub fn termrock::widgets::FileEntry::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileEntry where U: core::convert::Into<T>
+pub type termrock::widgets::FileEntry::Error = core::convert::Infallible
+pub fn termrock::widgets::FileEntry::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileEntry where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileEntry::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileEntry::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileEntry where T: core::clone::Clone
+pub type termrock::widgets::FileEntry::Owned = T
+pub fn termrock::widgets::FileEntry::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileEntry::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileEntry where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileEntry::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::FileEntry::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::FileEntry::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileEntry where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileEntry::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileEntry
+pub fn termrock::widgets::FileEntry::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileEntry
+pub struct termrock::widgets::FilePicker<'a>
+impl<'a> termrock::widgets::FilePicker<'a>
+pub const fn termrock::widgets::FilePicker<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::FilePicker<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::FilePicker<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FilePickerState)
+pub fn termrock::widgets::FilePicker<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::FilePickerState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::FilePicker<'a>::show_preview(self, bool) -> Self
+pub const fn termrock::widgets::FilePicker<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::FilePicker<'_>
+pub type &termrock::widgets::FilePicker<'_>::State = termrock::widgets::FilePickerState
+pub fn &termrock::widgets::FilePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::FilePicker<'_>
+pub type termrock::widgets::FilePicker<'_>::State = termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::FilePicker<'a>
+pub fn termrock::widgets::FilePicker<'a>::clone(&self) -> termrock::widgets::FilePicker<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::FilePicker<'a>
+pub fn termrock::widgets::FilePicker<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::FilePicker<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::FilePicker<'a>
+impl<'a> core::marker::Send for termrock::widgets::FilePicker<'a>
+impl<'a> core::marker::Sync for termrock::widgets::FilePicker<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::FilePicker<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::FilePicker<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePicker<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePicker<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePicker<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::FilePicker<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePicker<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::FilePicker<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePicker<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePicker<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePicker<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePicker<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePicker<'a> where T: core::clone::Clone
+pub type termrock::widgets::FilePicker<'a>::Owned = T
+pub fn termrock::widgets::FilePicker<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePicker<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePicker<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePicker<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePicker<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePicker<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePicker<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePicker<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePicker<'a>
+pub fn termrock::widgets::FilePicker<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePicker<'a>
+pub struct termrock::widgets::FilePickerState
+impl termrock::widgets::FilePickerState
+pub const fn termrock::widgets::FilePickerState::applied_generation(&self) -> u64
+pub fn termrock::widgets::FilePickerState::apply_listing(&mut self, u64, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::FileEntry>, core::option::Option<alloc::vec::Vec<termrock::widgets::FileBreadcrumb>>) -> bool
+pub fn termrock::widgets::FilePickerState::apply_listing_error(&mut self, u64, impl core::convert::Into<alloc::string::String>) -> bool
+pub fn termrock::widgets::FilePickerState::apply_preview(&mut self, termrock::widgets::FilePreview)
+pub fn termrock::widgets::FilePickerState::confirm(&mut self) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::cwd(&self) -> &str
+pub fn termrock::widgets::FilePickerState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::FilePickerState::entries(&self) -> &[termrock::widgets::FileEntry]
+pub fn termrock::widgets::FilePickerState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::highlight(&self) -> core::option::Option<&termrock::widgets::FileEntry>
+pub const fn termrock::widgets::FilePickerState::is_multi(&self) -> bool
+pub const fn termrock::widgets::FilePickerState::listing_generation(&self) -> u64
+pub const fn termrock::widgets::FilePickerState::listing_status(&self) -> termrock::widgets::FileListingStatus
+pub const fn termrock::widgets::FilePickerState::mode(&self) -> termrock::widgets::FilePickerMode
+pub fn termrock::widgets::FilePickerState::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FilePickerState::open_highlight(&mut self) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub const fn termrock::widgets::FilePickerState::pane(&self) -> termrock::widgets::FilePickerPane
+pub const fn termrock::widgets::FilePickerState::path_state(&self) -> &termrock::widgets::PathInputState
+pub const fn termrock::widgets::FilePickerState::presentation(&self) -> termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerState::presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::FilePickerPresentation
+pub fn termrock::widgets::FilePickerState::request_list(&mut self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FilePickerOutcome
+pub fn termrock::widgets::FilePickerState::selected_paths(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::FilePickerState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::FilePickerState::set_focused(&mut self, bool)
+pub fn termrock::widgets::FilePickerState::set_name_filter(&mut self, impl core::convert::Into<alloc::string::String>)
+pub const fn termrock::widgets::FilePickerState::set_presentation(&mut self, termrock::widgets::FilePickerPresentation)
+pub fn termrock::widgets::FilePickerState::set_show_hidden(&mut self, bool)
+pub const fn termrock::widgets::FilePickerState::set_sort(&mut self, termrock::widgets::FileSortKey)
+pub const fn termrock::widgets::FilePickerState::show_hidden(&self) -> bool
+pub fn termrock::widgets::FilePickerState::with_mode(self, termrock::widgets::FilePickerMode) -> Self
+pub const fn termrock::widgets::FilePickerState::with_multi(self, bool) -> Self
+pub fn termrock::widgets::FilePickerState::with_path_style(self, termrock::widgets::PathStyle) -> Self
+pub const fn termrock::widgets::FilePickerState::with_presentation(self, termrock::widgets::FilePickerPresentation) -> Self
+pub const fn termrock::widgets::FilePickerState::with_preview(self, bool) -> Self
+pub const fn termrock::widgets::FilePickerState::with_show_hidden(self, bool) -> Self
+pub const fn termrock::widgets::FilePickerState::with_sort(self, termrock::widgets::FileSortKey) -> Self
+impl core::clone::Clone for termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePickerState::clone(&self) -> termrock::widgets::FilePickerState
+impl core::cmp::Eq for termrock::widgets::FilePickerState
+impl core::cmp::PartialEq for termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePickerState::eq(&self, &termrock::widgets::FilePickerState) -> bool
+impl core::default::Default for termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePickerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePickerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePickerState
+impl core::marker::Freeze for termrock::widgets::FilePickerState
+impl core::marker::Send for termrock::widgets::FilePickerState
+impl core::marker::Sync for termrock::widgets::FilePickerState
+impl core::marker::Unpin for termrock::widgets::FilePickerState
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePickerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePickerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePickerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePickerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePickerState where U: core::convert::From<T>
+pub fn termrock::widgets::FilePickerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePickerState where U: core::convert::Into<T>
+pub type termrock::widgets::FilePickerState::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePickerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePickerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePickerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePickerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePickerState where T: core::clone::Clone
+pub type termrock::widgets::FilePickerState::Owned = T
+pub fn termrock::widgets::FilePickerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePickerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePickerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePickerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePickerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePickerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePickerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePickerState
+pub fn termrock::widgets::FilePickerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePickerState
+pub struct termrock::widgets::FilePreview
+pub termrock::widgets::FilePreview::error: core::option::Option<alloc::string::String>
+pub termrock::widgets::FilePreview::lines: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::FilePreview::title: alloc::string::String
+impl termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::error(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FilePreview::new() -> Self
+pub fn termrock::widgets::FilePreview::text(impl core::convert::Into<alloc::string::String>, impl core::iter::traits::collect::IntoIterator<Item = alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::clone(&self) -> termrock::widgets::FilePreview
+impl core::cmp::Eq for termrock::widgets::FilePreview
+impl core::cmp::PartialEq for termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::eq(&self, &termrock::widgets::FilePreview) -> bool
+impl core::default::Default for termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::default() -> termrock::widgets::FilePreview
+impl core::fmt::Debug for termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FilePreview
+impl core::marker::Freeze for termrock::widgets::FilePreview
+impl core::marker::Send for termrock::widgets::FilePreview
+impl core::marker::Sync for termrock::widgets::FilePreview
+impl core::marker::Unpin for termrock::widgets::FilePreview
+impl core::marker::UnsafeUnpin for termrock::widgets::FilePreview
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FilePreview
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FilePreview
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FilePreview where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FilePreview::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FilePreview where U: core::convert::From<T>
+pub fn termrock::widgets::FilePreview::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FilePreview where U: core::convert::Into<T>
+pub type termrock::widgets::FilePreview::Error = core::convert::Infallible
+pub fn termrock::widgets::FilePreview::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FilePreview where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FilePreview::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FilePreview::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FilePreview where T: core::clone::Clone
+pub type termrock::widgets::FilePreview::Owned = T
+pub fn termrock::widgets::FilePreview::clone_into(&self, &mut T)
+pub fn termrock::widgets::FilePreview::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FilePreview where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FilePreview::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FilePreview where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePreview::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FilePreview where T: ?core::marker::Sized
+pub fn termrock::widgets::FilePreview::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FilePreview where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FilePreview::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FilePreview
+pub fn termrock::widgets::FilePreview::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FilePreview
 pub struct termrock::widgets::FilterSpec
 pub termrock::widgets::FilterSpec::clauses: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
 pub termrock::widgets::FilterSpec::query: alloc::string::String
@@ -44817,6 +45473,9 @@ pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
 pub const termrock::widgets::DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::DROP_DESCRIPTION_WIDTH: u16
 pub const termrock::widgets::DROP_MARK_WIDTH: u16
+pub const termrock::widgets::FILE_PICKER_FULLSCREEN_MAX_WIDTH: u16
+pub const termrock::widgets::FILE_PICKER_OVERLAY_ID: &str
+pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
 pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize

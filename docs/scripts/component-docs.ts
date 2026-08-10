@@ -459,6 +459,23 @@ let _ = Combobox::new(&system).label("Language");`,
 let mut state: ComboboxState<&str> = ComboboxState::autocomplete();
 state.set_focused(true);`,
   },
+  FilePicker: {
+    description:
+      'A host-driven file/directory browser with breadcrumbs, multi-select, path entry, and optional preview — no filesystem I/O in TermRock.',
+    primaryStory: 'file-picker/unix',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    FileEntry, FilePicker, FilePickerMode, FilePickerState, FilePreview,
+};
+
+let system = DesignSystem::default();
+let mut state = FilePickerState::new("/home/u")
+    .with_mode(FilePickerMode::OpenFile)
+    .with_preview(true);
+state.set_focused(true);
+// ListRequested { path, generation } → host list → apply_listing(generation, …)
+let _ = FilePicker::new(&system).title("Open file");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

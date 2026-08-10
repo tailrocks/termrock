@@ -78,6 +78,7 @@ mod token_field;
 mod select;
 mod multi_select;
 mod combobox;
+mod file_picker;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -338,6 +339,12 @@ pub use multi_select::{MultiSelect, MultiSelectOutcome, MultiSelectState};
 pub use combobox::{
     Autocomplete, AutocompleteState, ComboMode, Combobox, ComboboxOutcome, ComboboxState,
     DEFAULT_COMBO_RECENT_LIMIT, SuggestionStatus,
+};
+pub use file_picker::{
+    FILE_PICKER_FULLSCREEN_MAX_WIDTH, FILE_PICKER_OVERLAY_ID, FILE_PICKER_PREVIEW_MIN_HEIGHT,
+    FileBreadcrumb, FileEntry, FileEntryKind, FileListingStatus, FilePicker, FilePickerMode,
+    FilePickerOutcome, FilePickerPane, FilePickerPresentation, FilePickerState, FilePreview,
+    FileSortKey,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

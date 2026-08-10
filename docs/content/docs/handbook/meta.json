@@ -15,6 +15,7 @@
     "overlay-stack",
     "host-frame",
     "form",
+    "file-picker",
     "menu",
     "object-inspector",
     "log-stream",
