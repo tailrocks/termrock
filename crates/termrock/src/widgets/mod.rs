@@ -126,6 +126,7 @@ mod process_table;
 mod query_editor;
 mod result_grid;
 mod schema_browser;
+mod search_results;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -222,6 +223,13 @@ pub use schema_browser::{
     schema_breadcrumbs_from_path, schema_entries_to_tree_nodes, schema_to_quick_open_items,
 };
 pub use schema_browser::bench as schema_browser_bench;
+pub use search_results::{
+    SearchFlatRow, SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults,
+    SearchResultsOutcome, SearchResultsState, SearchResultsStatus, collect_match_targets,
+    flatten_search_results, keep_first_match_slice, search_results_to_quick_open,
+    truncate_snippet_keep_match,
+};
+pub use search_results::bench as search_results_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

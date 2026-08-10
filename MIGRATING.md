@@ -220,6 +220,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0204 | `v0.13.0` | [QueryEditor query workbench](migrations/0204-v0.13.0-query-editor.md) |
 | 0205 | `v0.13.0` | [ResultGrid query results](migrations/0205-v0.13.0-result-grid.md) |
 | 0206 | `v0.13.0` | [SchemaBrowser catalog navigator](migrations/0206-v0.13.0-schema-browser.md) |
+| 0207 | `v0.13.0` | [SearchResults grouped hits](migrations/0207-v0.13.0-search-results.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

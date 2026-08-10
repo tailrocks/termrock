@@ -1679,6 +1679,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `schema-browser/{basic,lazy,filter,error,drawer,empty,narrow,ascii}`  
 22–24. Expand preserve + filter ancestors; 5k-object filter paint.
 
+## SearchResults
+
+1. **Purpose:** Grouped navigable search hits (files/logs/objects/commands/docs).  
+2. **Anatomy:** status · group bands · item rows (title + snippet).  
+3. **Public properties:** groups, items with MatchRange on title/snippet, source, line.  
+4. **State:** cursor, VirtualWindow, generation, collapsed, match_walk, status.  
+5. **Variants:** Idle/Loading/Partial/Ready/Empty/Error/Stale/Cancelled.  
+6–10. j/k open preview; n/N match walk; group toggle; page.  
+11–14. No search I/O; host begin_search/apply_results generation gate.  
+15–18. Keep-first-match truncate; ASCII marks.  
+19. **Composition:** HighlightedText; SearchInput host; QuickOpen/FullscreenViewer.  
+20. **Outcomes:** Open/Preview/MatchWalk/GroupToggled/Cancel/Page/Fullscreen.  
+21. **Stories:** `search-results/{basic,loading,empty,stale,collapsed,streaming,narrow,ascii}`  
+22–24. Generation stale tests; 2k-hit paint; match keep-visible.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

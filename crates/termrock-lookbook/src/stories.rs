@@ -83,6 +83,8 @@ use termrock::{
         ResultColumnStats, ResultRedaction, DataColumnWidth,
         SchemaBrowser, SchemaBrowserState, SchemaBrowserEntry, SchemaNodeKind, SchemaConnStatus,
         SchemaBrowserPresentation,
+        SearchResults, SearchResultsState, SearchResultGroup, SearchResultItem, SearchResultKind,
+        SearchResultsStatus,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2551,6 +2553,78 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             12,
             schema_browser_ascii,
+        ),
+        Story::new(
+            "search-results/basic",
+            "SearchResults basic",
+            "SearchResults",
+            "Grouped hits with match snippets.",
+            64,
+            14,
+            search_results_basic,
+        ),
+        Story::new(
+            "search-results/loading",
+            "SearchResults loading",
+            "SearchResults",
+            "In-flight search chrome.",
+            48,
+            8,
+            search_results_loading,
+        ),
+        Story::new(
+            "search-results/empty",
+            "SearchResults empty",
+            "SearchResults",
+            "No matches.",
+            40,
+            6,
+            search_results_empty,
+        ),
+        Story::new(
+            "search-results/stale",
+            "SearchResults stale",
+            "SearchResults",
+            "Stale generation banner.",
+            48,
+            8,
+            search_results_stale,
+        ),
+        Story::new(
+            "search-results/collapsed",
+            "SearchResults collapsed group",
+            "SearchResults",
+            "Collapsed group band.",
+            56,
+            12,
+            search_results_collapsed,
+        ),
+        Story::new(
+            "search-results/streaming",
+            "SearchResults streaming",
+            "SearchResults",
+            "Partial streaming status.",
+            56,
+            12,
+            search_results_streaming,
+        ),
+        Story::new(
+            "search-results/narrow",
+            "SearchResults narrow",
+            "SearchResults",
+            "Narrow results (32 cols).",
+            32,
+            12,
+            search_results_basic,
+        ),
+        Story::new(
+            "search-results/ascii",
+            "SearchResults ASCII",
+            "SearchResults",
+            "ASCII selection glyphs.",
+            56,
+            12,
+            search_results_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12512,6 +12586,121 @@ fn schema_browser_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let mut state = SchemaBrowserState::with_selected(Some("users"));
     state.ascii = true;
     SchemaBrowser::new(&entries, system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_sample() -> (Vec<SearchResultGroup>, Vec<SearchResultItem<'static>>) {
+    static T0: &[MatchRange] = &[MatchRange::new(0, 4)];
+    static S0: &[MatchRange] = &[MatchRange::new(10, 14)];
+    static T1: &[MatchRange] = &[MatchRange::new(0, 6)];
+    let groups = vec![
+        SearchResultGroup::new("src", "src/", 2),
+        SearchResultGroup::new("docs", "docs/", 1),
+    ];
+    let items = vec![
+        SearchResultItem::new("f1", "main.rs")
+            .group("src")
+            .source("src/main.rs")
+            .snippet("fn main() { search(); }")
+            .title_matches(T0)
+            .snippet_matches(S0)
+            .line(12)
+            .kind(SearchResultKind::File),
+        SearchResultItem::new("f2", "search.rs")
+            .group("src")
+            .source("src/search.rs")
+            .snippet("pub fn search() {}")
+            .title_matches(T1)
+            .line(1)
+            .kind(SearchResultKind::File),
+        SearchResultItem::new("d1", "SearchResults")
+            .group("docs")
+            .source("docs/handbook/search-results.mdx")
+            .snippet("grouped navigable search results")
+            .kind(SearchResultKind::Doc),
+        SearchResultItem::new("c1", "termrock search")
+            .snippet("run workspace search")
+            .kind(SearchResultKind::Command),
+    ];
+    (groups, items)
+}
+
+fn search_results_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (groups, items) = search_results_sample();
+    let mut state = SearchResultsState::new();
+    state.apply_results(1, SearchResultsStatus::Ready { total: Some(4) }, 4);
+    state.cursor = 1;
+    SearchResults::new(&groups, &items, system)
+        .title("find")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchResultsState::new();
+    let _ = state.begin_search();
+    SearchResults::new(&[], &[], system)
+        .title("loading")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchResultsState::new();
+    state.apply_results(
+        0,
+        SearchResultsStatus::Empty {
+            message: Some("no matches for 'zzzz'".into()),
+        },
+        0,
+    );
+    SearchResults::new(&[], &[], system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_stale(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchResultsState::new();
+    let g1 = state.begin_search();
+    let _ = state.begin_search();
+    state.apply_results(g1, SearchResultsStatus::Ready { total: Some(1) }, 1);
+    SearchResults::new(&[], &[], system)
+        .title("stale")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_collapsed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (groups, items) = search_results_sample();
+    let mut state = SearchResultsState::new();
+    state.apply_results(1, SearchResultsStatus::Ready { total: Some(4) }, 4);
+    state.collapsed.insert("src".into());
+    SearchResults::new(&groups, &items, system)
+        .title("collapsed")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (groups, items) = search_results_sample();
+    let mut state = SearchResultsState::new();
+    state.apply_results(
+        2,
+        SearchResultsStatus::Partial {
+            resident: 128,
+            total: None,
+        },
+        items.len(),
+    );
+    SearchResults::new(&groups, &items, system)
+        .title("stream")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn search_results_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (groups, items) = search_results_sample();
+    let mut state = SearchResultsState::new();
+    state.ascii = true;
+    state.apply_results(1, SearchResultsStatus::Ready { total: Some(4) }, 4);
+    SearchResults::new(&groups, &items, system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
