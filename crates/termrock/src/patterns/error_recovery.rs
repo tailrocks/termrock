@@ -341,63 +341,108 @@ pub fn redact_crash_report_text(raw: &str) -> String {
 
 fn redact_crash_report_line(line: &str) -> String {
     let lower = line.to_ascii_lowercase();
-    // Authorization / Bearer
-    if lower.contains("authorization:") || lower.contains("bearer ") {
-        return redact_kv_line(line, &["authorization", "bearer"]);
-    }
-    // password / secret / token / api_key assignments
-    for key in [
+
+    // 1) Assignment keys only (word-boundary before key, optional WS then =/:).
+    //    Longer / more specific keys first so `api_key` wins before bare `secret`
+    //    and value substrings like `sk-secret-…` never match as keys.
+    const ASSIGN_KEYS: &[&str] = &[
+        "authorization",
+        "client_secret",
+        "access_token",
+        "refresh_token",
+        "private_key",
+        "auth_token",
+        "api_key",
+        "apikey",
         "password",
         "passwd",
         "secret",
-        "api_key",
-        "apikey",
-        "access_token",
-        "refresh_token",
-        "client_secret",
-        "private_key",
-        "auth_token",
-    ] {
-        if lower.contains(key) && (lower.contains('=') || lower.contains(':')) {
-            return redact_kv_line(line, &[key]);
+        "bearer",
+    ];
+    for key in ASSIGN_KEYS {
+        if let Some(pos) = find_assignment_key(&lower, key) {
+            return redact_assignment_at(line, pos, key.len());
         }
     }
-    // sk-… / ghp_… / github_pat_… style tokens anywhere on the line
+
+    // 2) Token-shaped prefixes anywhere (sk-, ghp_, …)
     let mut s = line.to_string();
     s = mask_token_like(&s, "sk-");
     s = mask_token_like(&s, "ghp_");
     s = mask_token_like(&s, "github_pat_");
     s = mask_token_like(&s, "xoxb-");
     s = mask_token_like(&s, "AKIA");
-    // Long base64-ish blobs after "token=" already handled; catch bare long secrets
-    if looks_like_opaque_secret(line) {
-        return redact_history_text(line, history_redaction_secret());
+
+    // 3) Long opaque blobs (no spaces, mostly token alphabet)
+    if looks_like_opaque_secret(&s) {
+        return redact_history_text(&s, history_redaction_secret());
     }
     s
 }
 
-fn redact_kv_line(line: &str, keys: &[&str]) -> String {
-    let lower = line.to_ascii_lowercase();
-    for key in keys {
-        if let Some(pos) = lower.find(key) {
-            // find separator after key
-            let after_key = pos + key.len();
-            let rest = &line[after_key..];
-            let sep = rest
-                .find([':', '='])
-                .map(|i| after_key + i + 1)
-                .unwrap_or(after_key);
-            let prefix = &line[..sep.min(line.len())];
-            let value = line.get(sep..).unwrap_or("").trim_start();
-            let masked = if value.is_empty() {
-                String::new()
-            } else {
-                redact_history_text(value, history_redaction_secret())
-            };
-            return format!("{prefix} {masked}");
+/// True if `c` is not part of an env/header key identifier.
+fn is_key_boundary(c: char) -> bool {
+    !c.is_ascii_alphanumeric() && c != '_'
+}
+
+/// Find `key` only when it is an assignment key: boundary before, then optional
+/// whitespace and `=` or `:`. Does **not** match key text inside values.
+fn find_assignment_key(lower_line: &str, key: &str) -> Option<usize> {
+    let mut search = 0;
+    while search < lower_line.len() {
+        let Some(rel) = lower_line[search..].find(key) else {
+            return None;
+        };
+        let pos = search + rel;
+        let before_ok = pos == 0
+            || lower_line[..pos]
+                .chars()
+                .next_back()
+                .is_some_and(is_key_boundary);
+        let after = pos + key.len();
+        let rest = lower_line.get(after..).unwrap_or("");
+        // no more identifier chars glued to key (e.g. "secret" in "secrets")
+        let after_char = rest.chars().next();
+        let glued = after_char.is_some_and(|c| c.is_ascii_alphanumeric() || c == '_');
+        if before_ok && !glued {
+            let trimmed = rest.trim_start_matches(|c: char| c == ' ' || c == '\t');
+            if trimmed.starts_with('=') || trimmed.starts_with(':') {
+                return Some(pos);
+            }
+        }
+        search = pos.saturating_add(1);
+        if search <= pos {
+            search = pos + 1;
         }
     }
-    redact_history_text(line, history_redaction_secret())
+    None
+}
+
+/// Redact value after assignment at `key_pos` (byte index of key in `line`).
+fn redact_assignment_at(line: &str, key_pos: usize, key_len: usize) -> String {
+    let after_key = key_pos + key_len;
+    let rest = line.get(after_key..).unwrap_or("");
+    let ws_len = rest
+        .chars()
+        .take_while(|c| *c == ' ' || *c == '\t')
+        .count();
+    let after_ws = after_key + rest.chars().take(ws_len).map(|c| c.len_utf8()).sum::<usize>();
+    let sep_and_value = line.get(after_ws..).unwrap_or("");
+    let sep_len = sep_and_value
+        .chars()
+        .next()
+        .map(|c| c.len_utf8())
+        .unwrap_or(0);
+    let value_start = after_ws + sep_len;
+    let prefix = &line[..value_start.min(line.len())];
+    let value = line.get(value_start..).unwrap_or("").trim_start();
+    // Full mask for assignment values — no residual token prefixes (sk-…).
+    let masked = if value.is_empty() {
+        String::new()
+    } else {
+        redact_history_text(value, crate::widgets::HistoryRedaction::MaskAll)
+    };
+    format!("{prefix}{masked}")
 }
 
 fn mask_token_like(s: &str, prefix: &str) -> String {
@@ -1423,7 +1468,7 @@ mod tests {
     fn secret_redaction_on_real_path() {
         let snap = example_crash_snapshot_with_secrets();
         let redacted = build_redacted_crash_report(&snap);
-        // Secrets absent
+        // Secrets absent (full strings)
         for secret in [
             "sk-secret-should-not-leak-1234567890abcdef",
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig",
@@ -1435,6 +1480,28 @@ mod tests {
                 "secret still present: {secret}\n{redacted}"
             );
         }
+        // Residual token bodies must not survive (assignment-key match, not value contains)
+        for residual in ["sk-secret", "sk-", "ghp_", "hunter2", "eyJhbGci"] {
+            assert!(
+                !redacted.contains(residual),
+                "residual token body {residual:?} still present:\n{redacted}"
+            );
+        }
+        // API_KEY line specifically: key retained, value fully masked
+        let api_line = redacted
+            .lines()
+            .find(|l| l.to_ascii_lowercase().contains("api_key"))
+            .expect("API_KEY line must remain in report structure");
+        assert!(
+            !api_line.contains("sk-secret")
+                && !api_line.contains("sk-")
+                && !api_line.contains("should-not-leak"),
+            "API_KEY value must be fully redacted, got {api_line:?}"
+        );
+        assert!(
+            api_line.contains('•') || api_line.contains("****") || api_line.contains('…'),
+            "API_KEY line should show mask glyphs: {api_line:?}"
+        );
         // Non-secret context retained
         assert!(
             redacted.contains("TERM=xterm-256color") || redacted.contains("xterm"),
@@ -1455,9 +1522,32 @@ mod tests {
         match out {
             ErrorRecoveryOutcome::CopyDiagnostics { text } => {
                 assert_eq!(text, redacted);
+                let api = text
+                    .lines()
+                    .find(|l| l.to_ascii_lowercase().contains("api_key"))
+                    .expect("copy path API_KEY line");
+                assert!(!api.contains("sk-secret") && !api.contains("sk-"));
             }
             other => panic!("{other:?}"),
         }
+    }
+
+    #[test]
+    fn assignment_key_not_value_substring() {
+        // Value contains "secret" but key is API_KEY — must not match bare "secret" first.
+        let line = "API_KEY=sk-secret-should-not-leak-1234567890abcdef";
+        let out = redact_crash_report_line(line);
+        assert!(
+            out.to_ascii_lowercase().starts_with("api_key"),
+            "key name retained: {out}"
+        );
+        assert!(
+            !out.contains("sk-secret") && !out.contains("sk-") && !out.contains("should-not-leak"),
+            "value fully redacted: {out}"
+        );
+        // Control: bare secret assignment still redacts
+        let out2 = redact_crash_report_line("SECRET=hunter2supersecret");
+        assert!(!out2.contains("hunter2supersecret"), "{out2}");
     }
 
     #[test]
