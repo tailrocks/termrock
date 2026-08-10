@@ -5319,6 +5319,8 @@ impl core::convert::From<termrock::widgets::DialogSize> for termrock::interactio
 pub fn termrock::interaction::OverlaySize::from(termrock::widgets::DialogSize) -> Self
 impl core::convert::From<termrock::widgets::HistoryPickerSize> for termrock::interaction::OverlaySize
 pub fn termrock::interaction::OverlaySize::from(termrock::widgets::HistoryPickerSize) -> Self
+impl core::convert::From<termrock::widgets::KeyboardHelpSize> for termrock::interaction::OverlaySize
+pub fn termrock::interaction::OverlaySize::from(termrock::widgets::KeyboardHelpSize) -> Self
 impl core::convert::From<termrock::widgets::PickerSize> for termrock::interaction::OverlaySize
 pub fn termrock::interaction::OverlaySize::from(termrock::widgets::PickerSize) -> Self
 impl core::convert::From<termrock::widgets::QuickOpenSize> for termrock::interaction::OverlaySize
@@ -17839,6 +17841,53 @@ pub unsafe fn termrock::widgets::DateTimeValidity::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::DateTimeValidity
 pub fn termrock::widgets::DateTimeValidity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DateTimeValidity
+pub enum termrock::widgets::DemoHelpAction
+pub termrock::widgets::DemoHelpAction::Help
+pub termrock::widgets::DemoHelpAction::Next
+pub termrock::widgets::DemoHelpAction::Prev
+pub termrock::widgets::DemoHelpAction::Quit
+pub termrock::widgets::DemoHelpAction::Save
+impl core::clone::Clone for termrock::widgets::DemoHelpAction
+pub fn termrock::widgets::DemoHelpAction::clone(&self) -> termrock::widgets::DemoHelpAction
+impl core::cmp::Eq for termrock::widgets::DemoHelpAction
+impl core::cmp::PartialEq for termrock::widgets::DemoHelpAction
+pub fn termrock::widgets::DemoHelpAction::eq(&self, &termrock::widgets::DemoHelpAction) -> bool
+impl core::fmt::Debug for termrock::widgets::DemoHelpAction
+pub fn termrock::widgets::DemoHelpAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::DemoHelpAction
+impl core::marker::StructuralPartialEq for termrock::widgets::DemoHelpAction
+impl core::marker::Freeze for termrock::widgets::DemoHelpAction
+impl core::marker::Send for termrock::widgets::DemoHelpAction
+impl core::marker::Sync for termrock::widgets::DemoHelpAction
+impl core::marker::Unpin for termrock::widgets::DemoHelpAction
+impl core::marker::UnsafeUnpin for termrock::widgets::DemoHelpAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DemoHelpAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DemoHelpAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DemoHelpAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DemoHelpAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DemoHelpAction where U: core::convert::From<T>
+pub fn termrock::widgets::DemoHelpAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DemoHelpAction where U: core::convert::Into<T>
+pub type termrock::widgets::DemoHelpAction::Error = core::convert::Infallible
+pub fn termrock::widgets::DemoHelpAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DemoHelpAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DemoHelpAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DemoHelpAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DemoHelpAction where T: core::clone::Clone
+pub type termrock::widgets::DemoHelpAction::Owned = T
+pub fn termrock::widgets::DemoHelpAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::DemoHelpAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DemoHelpAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DemoHelpAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DemoHelpAction where T: ?core::marker::Sized
+pub fn termrock::widgets::DemoHelpAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DemoHelpAction where T: ?core::marker::Sized
+pub fn termrock::widgets::DemoHelpAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DemoHelpAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DemoHelpAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DemoHelpAction
+pub fn termrock::widgets::DemoHelpAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DemoHelpAction
 #[non_exhaustive] pub enum termrock::widgets::DescriptionKind
 pub termrock::widgets::DescriptionKind::Error
 pub termrock::widgets::DescriptionKind::Help
@@ -19234,6 +19283,57 @@ pub unsafe fn termrock::widgets::HeadingRecipe::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HeadingRecipe
 pub fn termrock::widgets::HeadingRecipe::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HeadingRecipe
+#[non_exhaustive] pub enum termrock::widgets::HelpEntrySource
+pub termrock::widgets::HelpEntrySource::Conflict
+pub termrock::widgets::HelpEntrySource::Context
+pub termrock::widgets::HelpEntrySource::Keymap
+pub termrock::widgets::HelpEntrySource::Overlay
+pub termrock::widgets::HelpEntrySource::Semantic
+impl termrock::widgets::HelpEntrySource
+pub const fn termrock::widgets::HelpEntrySource::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::HelpEntrySource
+pub fn termrock::widgets::HelpEntrySource::clone(&self) -> termrock::widgets::HelpEntrySource
+impl core::cmp::Eq for termrock::widgets::HelpEntrySource
+impl core::cmp::PartialEq for termrock::widgets::HelpEntrySource
+pub fn termrock::widgets::HelpEntrySource::eq(&self, &termrock::widgets::HelpEntrySource) -> bool
+impl core::fmt::Debug for termrock::widgets::HelpEntrySource
+pub fn termrock::widgets::HelpEntrySource::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HelpEntrySource
+pub fn termrock::widgets::HelpEntrySource::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HelpEntrySource
+impl core::marker::StructuralPartialEq for termrock::widgets::HelpEntrySource
+impl core::marker::Freeze for termrock::widgets::HelpEntrySource
+impl core::marker::Send for termrock::widgets::HelpEntrySource
+impl core::marker::Sync for termrock::widgets::HelpEntrySource
+impl core::marker::Unpin for termrock::widgets::HelpEntrySource
+impl core::marker::UnsafeUnpin for termrock::widgets::HelpEntrySource
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HelpEntrySource
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HelpEntrySource
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HelpEntrySource where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HelpEntrySource::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HelpEntrySource where U: core::convert::From<T>
+pub fn termrock::widgets::HelpEntrySource::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HelpEntrySource where U: core::convert::Into<T>
+pub type termrock::widgets::HelpEntrySource::Error = core::convert::Infallible
+pub fn termrock::widgets::HelpEntrySource::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HelpEntrySource where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HelpEntrySource::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HelpEntrySource::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HelpEntrySource where T: core::clone::Clone
+pub type termrock::widgets::HelpEntrySource::Owned = T
+pub fn termrock::widgets::HelpEntrySource::clone_into(&self, &mut T)
+pub fn termrock::widgets::HelpEntrySource::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HelpEntrySource where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HelpEntrySource::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HelpEntrySource where T: ?core::marker::Sized
+pub fn termrock::widgets::HelpEntrySource::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HelpEntrySource where T: ?core::marker::Sized
+pub fn termrock::widgets::HelpEntrySource::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HelpEntrySource where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HelpEntrySource::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HelpEntrySource
+pub fn termrock::widgets::HelpEntrySource::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HelpEntrySource
 #[non_exhaustive] pub enum termrock::widgets::HighlightVisual
 pub termrock::widgets::HighlightVisual::Inactive
 pub termrock::widgets::HighlightVisual::Normal
@@ -20077,6 +20177,159 @@ pub unsafe fn termrock::widgets::KeybindingRecorderOutcome::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorderOutcome
 pub fn termrock::widgets::KeybindingRecorderOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorderOutcome
+#[non_exhaustive] pub enum termrock::widgets::KeyboardHelpMode
+pub termrock::widgets::KeyboardHelpMode::Footer
+pub termrock::widgets::KeyboardHelpMode::Modal
+impl termrock::widgets::KeyboardHelpMode
+pub const fn termrock::widgets::KeyboardHelpMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::clone(&self) -> termrock::widgets::KeyboardHelpMode
+impl core::cmp::Eq for termrock::widgets::KeyboardHelpMode
+impl core::cmp::PartialEq for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::eq(&self, &termrock::widgets::KeyboardHelpMode) -> bool
+impl core::default::Default for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::default() -> termrock::widgets::KeyboardHelpMode
+impl core::fmt::Debug for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KeyboardHelpMode
+impl core::marker::StructuralPartialEq for termrock::widgets::KeyboardHelpMode
+impl core::marker::Freeze for termrock::widgets::KeyboardHelpMode
+impl core::marker::Send for termrock::widgets::KeyboardHelpMode
+impl core::marker::Sync for termrock::widgets::KeyboardHelpMode
+impl core::marker::Unpin for termrock::widgets::KeyboardHelpMode
+impl core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelpMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelpMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelpMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyboardHelpMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelpMode where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelpMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelpMode where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelpMode::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelpMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelpMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelpMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelpMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelpMode where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelpMode::Owned = T
+pub fn termrock::widgets::KeyboardHelpMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelpMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelpMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelpMode where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelpMode where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelpMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelpMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpMode
+#[non_exhaustive] pub enum termrock::widgets::KeyboardHelpOutcome
+pub termrock::widgets::KeyboardHelpOutcome::Closed
+pub termrock::widgets::KeyboardHelpOutcome::CursorMoved
+pub termrock::widgets::KeyboardHelpOutcome::CursorMoved::index: usize
+pub termrock::widgets::KeyboardHelpOutcome::Ignored
+pub termrock::widgets::KeyboardHelpOutcome::ModeChanged
+pub termrock::widgets::KeyboardHelpOutcome::ModeChanged::mode: termrock::widgets::KeyboardHelpMode
+pub termrock::widgets::KeyboardHelpOutcome::Opened
+pub termrock::widgets::KeyboardHelpOutcome::PresentationChanged
+pub termrock::widgets::KeyboardHelpOutcome::PresentationChanged::presentation: termrock::widgets::KeyboardHelpPresentation
+pub termrock::widgets::KeyboardHelpOutcome::QueryChanged
+pub termrock::widgets::KeyboardHelpOutcome::QueryChanged::query: alloc::string::String
+impl core::clone::Clone for termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpOutcome::clone(&self) -> termrock::widgets::KeyboardHelpOutcome
+impl core::cmp::Eq for termrock::widgets::KeyboardHelpOutcome
+impl core::cmp::PartialEq for termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpOutcome::eq(&self, &termrock::widgets::KeyboardHelpOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::KeyboardHelpOutcome
+impl core::marker::Freeze for termrock::widgets::KeyboardHelpOutcome
+impl core::marker::Send for termrock::widgets::KeyboardHelpOutcome
+impl core::marker::Sync for termrock::widgets::KeyboardHelpOutcome
+impl core::marker::Unpin for termrock::widgets::KeyboardHelpOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelpOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelpOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelpOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyboardHelpOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelpOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelpOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelpOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelpOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelpOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelpOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelpOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelpOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelpOutcome where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelpOutcome::Owned = T
+pub fn termrock::widgets::KeyboardHelpOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelpOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelpOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelpOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelpOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelpOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelpOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpOutcome
+#[non_exhaustive] pub enum termrock::widgets::KeyboardHelpPresentation
+pub termrock::widgets::KeyboardHelpPresentation::Compact
+pub termrock::widgets::KeyboardHelpPresentation::Full
+pub termrock::widgets::KeyboardHelpPresentation::Tiny
+impl termrock::widgets::KeyboardHelpPresentation
+pub const fn termrock::widgets::KeyboardHelpPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::clone(&self) -> termrock::widgets::KeyboardHelpPresentation
+impl core::cmp::Eq for termrock::widgets::KeyboardHelpPresentation
+impl core::cmp::PartialEq for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::eq(&self, &termrock::widgets::KeyboardHelpPresentation) -> bool
+impl core::default::Default for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::default() -> termrock::widgets::KeyboardHelpPresentation
+impl core::fmt::Debug for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::Freeze for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::Send for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::Sync for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::Unpin for termrock::widgets::KeyboardHelpPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelpPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelpPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelpPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyboardHelpPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelpPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelpPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelpPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelpPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelpPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelpPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelpPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelpPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelpPresentation where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelpPresentation::Owned = T
+pub fn termrock::widgets::KeyboardHelpPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelpPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelpPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelpPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelpPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelpPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelpPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpPresentation
+pub fn termrock::widgets::KeyboardHelpPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpPresentation
 #[non_exhaustive] pub enum termrock::widgets::KvDensity
 pub termrock::widgets::KvDensity::Dense
 pub termrock::widgets::KvDensity::Reading
@@ -36014,6 +36267,65 @@ pub unsafe fn termrock::widgets::HeadingParts::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HeadingParts
 pub fn termrock::widgets::HeadingParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HeadingParts
+pub struct termrock::widgets::HelpEntry
+pub termrock::widgets::HelpEntry::action: alloc::string::String
+pub termrock::widgets::HelpEntry::category: alloc::string::String
+pub termrock::widgets::HelpEntry::chord: alloc::string::String
+pub termrock::widgets::HelpEntry::conflict: bool
+pub termrock::widgets::HelpEntry::id: alloc::string::String
+pub termrock::widgets::HelpEntry::mouse: core::option::Option<alloc::string::String>
+pub termrock::widgets::HelpEntry::priority: u8
+pub termrock::widgets::HelpEntry::remapped: bool
+pub termrock::widgets::HelpEntry::source: termrock::widgets::HelpEntrySource
+pub termrock::widgets::HelpEntry::zone: core::option::Option<alloc::string::String>
+impl termrock::widgets::HelpEntry
+pub const fn termrock::widgets::HelpEntry::conflict(self, bool) -> Self
+pub fn termrock::widgets::HelpEntry::mouse(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::HelpEntry::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::HelpEntry::priority(self, u8) -> Self
+pub const fn termrock::widgets::HelpEntry::remapped(self, bool) -> Self
+pub const fn termrock::widgets::HelpEntry::source(self, termrock::widgets::HelpEntrySource) -> Self
+pub fn termrock::widgets::HelpEntry::zone(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::HelpEntry
+pub fn termrock::widgets::HelpEntry::clone(&self) -> termrock::widgets::HelpEntry
+impl core::cmp::Eq for termrock::widgets::HelpEntry
+impl core::cmp::PartialEq for termrock::widgets::HelpEntry
+pub fn termrock::widgets::HelpEntry::eq(&self, &termrock::widgets::HelpEntry) -> bool
+impl core::fmt::Debug for termrock::widgets::HelpEntry
+pub fn termrock::widgets::HelpEntry::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HelpEntry
+impl core::marker::Freeze for termrock::widgets::HelpEntry
+impl core::marker::Send for termrock::widgets::HelpEntry
+impl core::marker::Sync for termrock::widgets::HelpEntry
+impl core::marker::Unpin for termrock::widgets::HelpEntry
+impl core::marker::UnsafeUnpin for termrock::widgets::HelpEntry
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HelpEntry
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HelpEntry
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HelpEntry where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HelpEntry::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HelpEntry where U: core::convert::From<T>
+pub fn termrock::widgets::HelpEntry::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HelpEntry where U: core::convert::Into<T>
+pub type termrock::widgets::HelpEntry::Error = core::convert::Infallible
+pub fn termrock::widgets::HelpEntry::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HelpEntry where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HelpEntry::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HelpEntry::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HelpEntry where T: core::clone::Clone
+pub type termrock::widgets::HelpEntry::Owned = T
+pub fn termrock::widgets::HelpEntry::clone_into(&self, &mut T)
+pub fn termrock::widgets::HelpEntry::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HelpEntry where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HelpEntry::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HelpEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::HelpEntry::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HelpEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::HelpEntry::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HelpEntry where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HelpEntry::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HelpEntry
+pub fn termrock::widgets::HelpEntry::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HelpEntry
 pub struct termrock::widgets::HighlightedText<'a>
 impl<'a> termrock::widgets::HighlightedText<'a>
 pub const fn termrock::widgets::HighlightedText<'a>::base_role(self, termrock::style::Role) -> Self
@@ -37557,6 +37869,167 @@ pub unsafe fn termrock::widgets::KeybindingRecorderState::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::KeybindingRecorderState
 pub fn termrock::widgets::KeybindingRecorderState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorderState
+pub struct termrock::widgets::KeyboardHelp<'a>
+impl<'a> termrock::widgets::KeyboardHelp<'a>
+pub const fn termrock::widgets::KeyboardHelp<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::KeyboardHelp<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::KeyboardHelp<'a>::new(&'a [termrock::widgets::HelpEntry], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::KeyboardHelp<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeyboardHelpState)
+pub fn termrock::widgets::KeyboardHelp<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::KeyboardHelpState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::KeyboardHelp<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::KeyboardHelp<'_>
+pub type &termrock::widgets::KeyboardHelp<'_>::State = termrock::widgets::KeyboardHelpState
+pub fn &termrock::widgets::KeyboardHelp<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::KeyboardHelp<'_>
+pub type termrock::widgets::KeyboardHelp<'_>::State = termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelp<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::KeyboardHelp<'a>
+pub fn termrock::widgets::KeyboardHelp<'a>::clone(&self) -> termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::KeyboardHelp<'a>
+pub fn termrock::widgets::KeyboardHelp<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::marker::Send for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::marker::Sync for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelp<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelp<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelp<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelp<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelp<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelp<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelp<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelp<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelp<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelp<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelp<'a> where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelp<'a>::Owned = T
+pub fn termrock::widgets::KeyboardHelp<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelp<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelp<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelp<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelp<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelp<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelp<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelp<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelp<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelp<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelp<'a>
+pub fn termrock::widgets::KeyboardHelp<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelp<'a>
+pub struct termrock::widgets::KeyboardHelpSize
+pub termrock::widgets::KeyboardHelpSize::height: u16
+pub termrock::widgets::KeyboardHelpSize::width: u16
+impl core::clone::Clone for termrock::widgets::KeyboardHelpSize
+pub fn termrock::widgets::KeyboardHelpSize::clone(&self) -> termrock::widgets::KeyboardHelpSize
+impl core::cmp::Eq for termrock::widgets::KeyboardHelpSize
+impl core::cmp::PartialEq for termrock::widgets::KeyboardHelpSize
+pub fn termrock::widgets::KeyboardHelpSize::eq(&self, &termrock::widgets::KeyboardHelpSize) -> bool
+impl core::convert::From<termrock::widgets::KeyboardHelpSize> for termrock::interaction::OverlaySize
+pub fn termrock::interaction::OverlaySize::from(termrock::widgets::KeyboardHelpSize) -> Self
+impl core::default::Default for termrock::widgets::KeyboardHelpSize
+pub fn termrock::widgets::KeyboardHelpSize::default() -> Self
+impl core::fmt::Debug for termrock::widgets::KeyboardHelpSize
+pub fn termrock::widgets::KeyboardHelpSize::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::KeyboardHelpSize
+impl core::marker::StructuralPartialEq for termrock::widgets::KeyboardHelpSize
+impl core::marker::Freeze for termrock::widgets::KeyboardHelpSize
+impl core::marker::Send for termrock::widgets::KeyboardHelpSize
+impl core::marker::Sync for termrock::widgets::KeyboardHelpSize
+impl core::marker::Unpin for termrock::widgets::KeyboardHelpSize
+impl core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelpSize
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelpSize
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelpSize
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyboardHelpSize where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpSize::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelpSize where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelpSize::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelpSize where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelpSize::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelpSize::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelpSize where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelpSize::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelpSize::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelpSize where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelpSize::Owned = T
+pub fn termrock::widgets::KeyboardHelpSize::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelpSize::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelpSize where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpSize::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelpSize where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpSize::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelpSize where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpSize::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelpSize where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelpSize::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpSize
+pub fn termrock::widgets::KeyboardHelpSize::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpSize
+pub struct termrock::widgets::KeyboardHelpState
+impl termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::close_modal(&mut self) -> termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpState::cursor_index(&self) -> usize
+pub fn termrock::widgets::KeyboardHelpState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::HelpEntry]) -> termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::HelpEntry]) -> termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::HelpEntry]) -> termrock::widgets::KeyboardHelpOutcome
+pub const fn termrock::widgets::KeyboardHelpState::is_open(&self) -> bool
+pub fn termrock::widgets::KeyboardHelpState::modal() -> Self
+pub const fn termrock::widgets::KeyboardHelpState::mode(&self) -> termrock::widgets::KeyboardHelpMode
+pub fn termrock::widgets::KeyboardHelpState::new() -> Self
+pub fn termrock::widgets::KeyboardHelpState::open_modal(&mut self) -> termrock::widgets::KeyboardHelpOutcome
+pub const fn termrock::widgets::KeyboardHelpState::presentation(&self) -> termrock::widgets::KeyboardHelpPresentation
+pub const fn termrock::widgets::KeyboardHelpState::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
+pub fn termrock::widgets::KeyboardHelpState::query_text(&self) -> &str
+pub fn termrock::widgets::KeyboardHelpState::reconcile(&mut self, &[termrock::widgets::HelpEntry])
+pub fn termrock::widgets::KeyboardHelpState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::KeyboardHelpState::set_focused(&mut self, bool)
+pub fn termrock::widgets::KeyboardHelpState::set_footer_max(&mut self, usize)
+pub fn termrock::widgets::KeyboardHelpState::set_mode(&mut self, termrock::widgets::KeyboardHelpMode) -> termrock::widgets::KeyboardHelpOutcome
+pub fn termrock::widgets::KeyboardHelpState::set_presentation_override(&mut self, core::option::Option<termrock::widgets::KeyboardHelpPresentation>)
+pub fn termrock::widgets::KeyboardHelpState::sync_presentation(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::KeyboardHelpOutcome
+impl core::clone::Clone for termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::clone(&self) -> termrock::widgets::KeyboardHelpState
+impl core::cmp::Eq for termrock::widgets::KeyboardHelpState
+impl core::cmp::PartialEq for termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::eq(&self, &termrock::widgets::KeyboardHelpState) -> bool
+impl core::default::Default for termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::KeyboardHelpState
+impl core::marker::Freeze for termrock::widgets::KeyboardHelpState
+impl core::marker::Send for termrock::widgets::KeyboardHelpState
+impl core::marker::Sync for termrock::widgets::KeyboardHelpState
+impl core::marker::Unpin for termrock::widgets::KeyboardHelpState
+impl core::marker::UnsafeUnpin for termrock::widgets::KeyboardHelpState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KeyboardHelpState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KeyboardHelpState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KeyboardHelpState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::KeyboardHelpState where U: core::convert::From<T>
+pub fn termrock::widgets::KeyboardHelpState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KeyboardHelpState where U: core::convert::Into<T>
+pub type termrock::widgets::KeyboardHelpState::Error = core::convert::Infallible
+pub fn termrock::widgets::KeyboardHelpState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::KeyboardHelpState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::KeyboardHelpState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::KeyboardHelpState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::KeyboardHelpState where T: core::clone::Clone
+pub type termrock::widgets::KeyboardHelpState::Owned = T
+pub fn termrock::widgets::KeyboardHelpState::clone_into(&self, &mut T)
+pub fn termrock::widgets::KeyboardHelpState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::KeyboardHelpState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::KeyboardHelpState where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KeyboardHelpState where T: ?core::marker::Sized
+pub fn termrock::widgets::KeyboardHelpState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::KeyboardHelpState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::KeyboardHelpState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpState
+pub fn termrock::widgets::KeyboardHelpState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpState
 pub struct termrock::widgets::KvEntry<'a, Id>
 pub termrock::widgets::KvEntry::annotation: core::option::Option<&'a str>
 pub termrock::widgets::KvEntry::copyable: bool
@@ -50895,6 +51368,10 @@ pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_LABEL_ALPHABET: &[char]
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str
+pub const termrock::widgets::KEYBOARD_HELP_COMPACT_MAX_WIDTH: u16
+pub const termrock::widgets::KEYBOARD_HELP_OVERLAY_ID: &str
+pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_HEIGHT: u16
+pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_WIDTH: u16
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
 pub const termrock::widgets::MENU_BAR_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_BAR_OVERLAY_ID: &str
@@ -50951,10 +51428,12 @@ pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldse
 pub fn termrock::widgets::collect_jump_candidates<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpCandidate<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::contract_help_entries(&[termrock::widgets::HelpEntry], usize) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
 pub fn termrock::widgets::default_command_palette_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_history_picker_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::default_keyboard_help_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_menu_bar_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_quick_open_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
@@ -50965,6 +51444,7 @@ pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_history_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_keyboard_help_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_menu_bar_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -50974,6 +51454,8 @@ pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widge
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_help_entries(&termrock::style::DesignSystem) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::example_help_keymap() -> termrock::keymap::Keymap<termrock::widgets::DemoHelpAction>
 pub fn termrock::widgets::example_history_entries() -> alloc::vec::Vec<termrock::widgets::HistoryEntry<&'static str>>
 pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
@@ -50986,6 +51468,7 @@ pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::w
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
+pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
@@ -50997,6 +51480,11 @@ pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::wid
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::help_entries_from_conflicts<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A) -> alloc::string::String
+pub fn termrock::widgets::help_entries_from_keymap<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (alloc::string::String, alloc::string::String, alloc::string::String, core::option::Option<alloc::string::String>, core::option::Option<alloc::string::String>, u8)
+pub fn termrock::widgets::help_entries_from_overlays<FocusId>(&termrock::interaction::OverlayStack<FocusId>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::help_entries_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where Id: core::clone::Clone + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
+pub fn termrock::widgets::help_entries_to_hints<'a>(&'a [termrock::widgets::HelpEntry], usize) -> alloc::vec::Vec<(&'a str, &'a str, u8)>
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
 pub fn termrock::widgets::history_picker_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::HistoryPickerPresentation
 pub const fn termrock::widgets::history_redaction_secret() -> termrock::widgets::HistoryRedaction
@@ -51007,12 +51495,15 @@ pub fn termrock::widgets::is_paint_safe(&str) -> bool
 pub fn termrock::widgets::join_path(&str, &str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::jump_status_line(&termrock::widgets::JumpOverlayState, usize, bool) -> alloc::string::String
 pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut alloc::string::String, &'a termrock::style::DesignSystem) -> termrock::widgets::Kbd<'a>
+pub fn termrock::widgets::keyboard_help_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::KeyboardHelpPresentation
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
+pub fn termrock::widgets::mark_remapped_help_entries(&mut [termrock::widgets::HelpEntry], &[&str])
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
 pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -51023,6 +51514,7 @@ pub fn termrock::widgets::open_history_picker_fullscreen<FocusId: core::clone::C
 pub fn termrock::widgets::open_history_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_history_picker_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_keyboard_help_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::KeyboardHelpSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_menu_bar_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_menu_bar_submenu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, usize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -51039,6 +51531,7 @@ pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termroc
 pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_history_picker(ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_history_picker_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_keyboard_help(ratatui_core::layout::rect::Rect, termrock::widgets::KeyboardHelpSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_menu_bar_panel(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_picker(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect

@@ -1,0 +1,60 @@
+---
+title: KeyboardHelp
+description: 'Contextual generated keyboard help from live keymaps, zones, overlays, and semantic actions — footer or searchable modal, never stale hardcoded shortcuts.'
+---
+
+## Previews
+
+### `keyboard-help/footer`
+
+KeyboardHelp footer
+
+![KeyboardHelp — footer](/component-previews/keyboard-help-footer.svg)
+
+### `keyboard-help/modal`
+
+KeyboardHelp modal
+
+![KeyboardHelp — modal](/component-previews/keyboard-help-modal.svg)
+
+### `keyboard-help/search`
+
+KeyboardHelp search
+
+![KeyboardHelp — search](/component-previews/keyboard-help-search.svg)
+
+### `keyboard-help/tiny`
+
+KeyboardHelp tiny
+
+![KeyboardHelp — tiny](/component-previews/keyboard-help-tiny.svg)
+
+### `keyboard-help/ascii`
+
+KeyboardHelp ASCII
+
+![KeyboardHelp — ascii](/component-previews/keyboard-help-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{KeyboardHelp, KeyboardHelpState, example_help_entries};
+
+let system = DesignSystem::default();
+// Rebuild every frame from live Keymap / overlays / semantics
+let entries = example_help_entries(&system);
+let mut state = KeyboardHelpState::new();
+KeyboardHelp::new(&entries, &system).paint(footer_area, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Live keymap generation | covered |
+| Footer / modal modes | covered |
+| Search | covered |
+| Conflicts / remaps | covered |
+| Non-color cues | covered |
+| Tiny terminal | covered |

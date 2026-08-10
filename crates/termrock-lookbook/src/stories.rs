@@ -84,6 +84,8 @@ use termrock::{
         StepperState, example_onboarding_steps,
         HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction,
         example_history_entries, filter_history_entries, history_redaction_secret,
+        KeyboardHelp, KeyboardHelpState, example_help_entries,
+        filter_help_entries,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -1063,6 +1065,51 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             12,
             history_picker_ascii,
+        ),
+        Story::new(
+            "keyboard-help/footer",
+            "KeyboardHelp footer",
+            "KeyboardHelp",
+            "Compact footer generated from live keymap.",
+            72,
+            1,
+            keyboard_help_footer,
+        ),
+        Story::new(
+            "keyboard-help/modal",
+            "KeyboardHelp modal",
+            "KeyboardHelp",
+            "Categorized searchable modal help.",
+            64,
+            16,
+            keyboard_help_modal,
+        ),
+        Story::new(
+            "keyboard-help/search",
+            "KeyboardHelp search",
+            "KeyboardHelp",
+            "Modal filtered to save bindings.",
+            56,
+            12,
+            keyboard_help_search,
+        ),
+        Story::new(
+            "keyboard-help/tiny",
+            "KeyboardHelp tiny",
+            "KeyboardHelp",
+            "Tiny-terminal priority contraction.",
+            22,
+            1,
+            keyboard_help_tiny,
+        ),
+        Story::new(
+            "keyboard-help/ascii",
+            "KeyboardHelp ASCII",
+            "KeyboardHelp",
+            "ASCII footer + colorless roles.",
+            56,
+            1,
+            keyboard_help_ascii,
         ),
         Story::new(
             "menu-bar/basic",
@@ -8083,6 +8130,43 @@ fn history_picker_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let _ = state.open(None);
     state.reconcile(&visible);
     HistoryPicker::new(&visible, system)
+        .ascii(true)
+        .colorless(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keyboard_help_footer(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_help_entries(system);
+    let mut state = KeyboardHelpState::new();
+    KeyboardHelp::new(&entries, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keyboard_help_modal(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_help_entries(system);
+    let mut state = KeyboardHelpState::modal();
+    let visible = filter_help_entries(&entries, "");
+    KeyboardHelp::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keyboard_help_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_help_entries(system);
+    let visible = filter_help_entries(&entries, "save");
+    let mut state = KeyboardHelpState::modal();
+    *state.query_mut() = TextInputState::new("save").with_allow_empty(true);
+    KeyboardHelp::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keyboard_help_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_help_entries(system);
+    let mut state = KeyboardHelpState::new();
+    state.set_presentation_override(Some(termrock::widgets::KeyboardHelpPresentation::Tiny));
+    KeyboardHelp::new(&entries, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn keyboard_help_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_help_entries(system);
+    let mut state = KeyboardHelpState::new();
+    KeyboardHelp::new(&entries, system)
         .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);

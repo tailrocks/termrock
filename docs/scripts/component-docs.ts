@@ -728,6 +728,18 @@ use termrock::style::DesignSystem;
 let system = DesignSystem::default();
 FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
   },
+  KeyboardHelp: {
+    description:
+      'Contextual generated keyboard help from live keymaps, zones, overlays, and semantic actions — footer or searchable modal, never stale hardcoded shortcuts.',
+    primaryStory: 'keyboard-help/footer',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{KeyboardHelp, KeyboardHelpState, example_help_entries};
+
+let system = DesignSystem::default();
+let entries = example_help_entries(&system);
+let mut state = KeyboardHelpState::new();
+KeyboardHelp::new(&entries, &system).paint(area, buf, &mut state);`,
+  },
   HistoryPicker: {
     description:
       'Reusable recent-history selector with pin/delete, search, groups, preview, redaction hooks, draft preservation, and popover/fullscreen placement.',

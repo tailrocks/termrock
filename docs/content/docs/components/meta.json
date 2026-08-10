@@ -112,6 +112,7 @@
     "tree-navigation",
     "viewport",
     "virtual-grid",
-    "history-picker"
+    "history-picker",
+    "keyboard-help"
   ]
 }

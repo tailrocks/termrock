@@ -49,6 +49,7 @@ mod form;
 mod form_wizard;
 mod stepper;
 mod hint_bar;
+mod keyboard_help;
 mod image_surface;
 mod jump_overlay;
 mod list;
@@ -246,6 +247,16 @@ pub use stepper::{
 };
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
+};
+pub use keyboard_help::{
+    KEYBOARD_HELP_COMPACT_MAX_WIDTH, KEYBOARD_HELP_OVERLAY_ID, KEYBOARD_HELP_TINY_MAX_HEIGHT,
+    KEYBOARD_HELP_TINY_MAX_WIDTH, DemoHelpAction, HelpEntry, HelpEntrySource, KeyboardHelp,
+    KeyboardHelpMode, KeyboardHelpOutcome, KeyboardHelpPresentation, KeyboardHelpSize,
+    KeyboardHelpState, contract_help_entries, default_keyboard_help_intent,
+    dismiss_keyboard_help_overlay, example_help_entries, example_help_keymap, filter_help_entries,
+    help_entries_from_conflicts, help_entries_from_keymap, help_entries_from_overlays,
+    help_entries_from_semantics, help_entries_to_hints, keyboard_help_presentation_for_bounds,
+    mark_remapped_help_entries, merge_help_entries, open_keyboard_help_overlay, place_keyboard_help,
 };
 pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
 pub use jump_overlay::{
