@@ -603,6 +603,8 @@ impl GitWorkbenchState {
         let live = self.confirm.is_none();
         self.files.set_accepts_input(f == "files" && live);
         self.diff.set_accepts_input(f == "diff" && live);
+        // CheckpointTimeline paints PanelChrome from state.focused (not painter flag).
+        self.history.set_focused(f == "history");
         self.history.set_accepts_input(f == "history" && live);
         self.output.set_accepts_input(f == "output" && live);
         self.diagnostics
@@ -1284,8 +1286,8 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
     }
 
     if let Some(r) = pane_area(&panes, "history") {
-        let focused = state.focus == "history";
-        let _ = focused;
+        // state.history.focused is the paint authority (PanelChrome); keep in sync.
+        state.history.set_focused(state.focus == "history");
         CheckpointTimeline::new(system)
             .ascii(state.ascii)
             .paint(r, buffer, &mut state.history);
@@ -1729,6 +1731,78 @@ mod tests {
             assert!(matches!(out, GitWorkbenchOutcome::FocusChanged(_)));
         }
         assert_eq!(st.focus, "files");
+    }
+
+    #[test]
+    fn history_focused_chrome_tracks_workbench_focus() {
+        let mut st = open();
+        st.density = Some(GitWorkbenchDensity::Normal);
+        // Default CheckpointTimelineState.focused is true — workbench must clear it.
+        let _ = st.set_focus(GitWorkbenchPane::Files);
+        assert!(
+            !st.history.focused,
+            "history must not paint focused chrome when files own focus"
+        );
+        let _ = st.set_focus(GitWorkbenchPane::History);
+        assert!(
+            st.history.focused,
+            "history must paint focused chrome when history owns focus"
+        );
+        // Paint path re-syncs from state.focus (not a dead local `focused` discard).
+        let system = DesignSystem::default();
+        let files = example_git_files();
+        let lines = example_git_diff_lines();
+        let hunks = example_git_hunks();
+        let dfiles = example_git_diff_files();
+        let commits = example_git_commits();
+        let diags = example_conflict_diagnostics();
+        let meta = example_git_terminal_meta();
+        let tlines = example_git_terminal_lines();
+        let help = example_git_help_entries(&system);
+        let area = Rect::new(0, 0, 120, 36);
+        let mut buf = Buffer::empty(area);
+        st.focus = "files";
+        st.history.set_focused(true); // corrupt; paint must correct via set_focused
+        render_git_workbench(
+            &mut buf,
+            area,
+            GitWorkbenchSurfaces {
+                system: &system,
+                state: &mut st,
+                files: &files,
+                diff_lines: &lines,
+                hunks: &hunks,
+                diff_files: &dfiles,
+                commits: &commits,
+                diagnostics: &diags,
+                terminal_meta: &meta,
+                terminal_lines: &tlines,
+                help_entries: &help,
+            },
+        );
+        assert!(
+            !st.history.focused,
+            "render_git_workbench must set history.focused from workbench focus"
+        );
+        st.focus = "history";
+        render_git_workbench(
+            &mut buf,
+            area,
+            GitWorkbenchSurfaces {
+                system: &system,
+                state: &mut st,
+                files: &files,
+                diff_lines: &lines,
+                hunks: &hunks,
+                diff_files: &dfiles,
+                commits: &commits,
+                diagnostics: &diags,
+                terminal_meta: &meta,
+                terminal_lines: &tlines,
+                help_entries: &help,
+            },
+        );
+        assert!(st.history.focused);
     }
 
     #[test]
