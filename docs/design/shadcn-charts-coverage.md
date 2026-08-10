@@ -28,15 +28,15 @@
 | 8 | chart-area-gradient | N/A | none | Continuous CSS gradient theater |
 | 9 | chart-area-axes | covered | `show_axes` | |
 | 10 | chart-area-interactive | covered | `selected_series` / `selected_index` | Keyboard selection |
-| 11 | chart-bar-default | covered | `BarSeries` / `Histogram` | |
-| 12 | chart-bar-horizontal | covered | horizontal histogram/bars | |
+| 11 | chart-bar-default | covered | `BarSeries` / `Histogram` | Solid bars + labels |
+| 12 | chart-bar-horizontal | covered | `BarSeries` | Horizontal track |
 | 13 | chart-bar-multiple | covered | multi `BarDatum` | |
-| 14 | chart-bar-stacked | covered | `SegmentedMeter` / stacked bars | |
+| 14 | chart-bar-stacked | covered | `BarDatum::stacked` (0253) | Multi-segment bands, not SegmentedMeter alone |
 | 15 | chart-bar-label | covered | bar labels | |
 | 16 | chart-bar-custom-label | partial | host label strings | |
-| 17 | chart-bar-mixed | covered | mixed values | |
+| 17 | chart-bar-mixed | covered | mixed magnitudes | |
 | 18 | chart-bar-active | covered | `.selected` | |
-| 19 | chart-bar-negative | partial | host scale for negatives | |
+| 19 | chart-bar-negative | covered | bipolar domain + zero tick (0253) | |
 | 20 | chart-bar-interactive | covered | selection | |
 | 21 | chart-line-default | covered | `Chart` / `Sparkline` | |
 | 22 | chart-line-linear | covered | `Chart` | |
@@ -91,8 +91,8 @@
 
 | Status | Count |
 |--------|------:|
-| covered | 32 |
-| partial | 22 |
+| covered | 33 |
+| partial | 21 |
 | missing | 0 |
 | N/A | 14 |
 | **Total** | **68** |
@@ -103,7 +103,7 @@
 |-----|----------|
 | Area / stacked area | `ChartFill::Area` / `AreaStacked` + `Chart::area()` / `area_stacked()` |
 | Line / multi-series / selection | Existing `Chart` |
-| Bar / histogram | `BarSeries` / `Histogram` |
+| Bar / histogram | `BarSeries` / `Histogram`; stacked + negative on BarSeries (0253) |
 | Pie proportions | `SegmentedMeter` |
 | Radial | `Gauge` |
 | Radar polar | N/A |

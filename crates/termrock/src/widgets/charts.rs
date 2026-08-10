@@ -1514,33 +1514,59 @@ impl Widget for Histogram<'_> {
 
 // ── BarSeries (migrated onto shared glyphs/scale) ───────────────────────────
 
-/// One named bar in a horizontal bar series.
+/// One named bar in a horizontal bar series (shadcn bar-chart peer).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BarDatum<'a> {
     /// Label shown to the left when width allows.
     pub label: &'a str,
     /// Fraction filled (`0.0..=1.0`) **or** raw value when used with scale on BarSeries.
+    /// Ignored for layout when [`Self::segments`] is non-empty (stack uses segments).
     pub fraction: f64,
+    /// Optional stacked segment values (non-negative). Empty → solid bar of `fraction`.
+    pub segments: &'a [f64],
 }
 
 impl<'a> BarDatum<'a> {
-    /// Normalized bar.
+    /// Normalized solid bar (0..=1).
     #[must_use]
     pub const fn new(label: &'a str, fraction: f64) -> Self {
-        Self { label, fraction }
+        Self {
+            label,
+            fraction,
+            segments: &[],
+        }
     }
 
-    /// Alias for raw value (pair with [`BarSeries::scale`]).
+    /// Raw solid value (pair with [`BarSeries::scale`]).
     #[must_use]
     pub const fn value(label: &'a str, value: f64) -> Self {
         Self {
             label,
             fraction: value,
+            segments: &[],
         }
+    }
+
+    /// Stacked bar: segment weights (shadcn `chart-bar-stacked` peer).
+    ///
+    /// Segments should be non-negative; domain uses sum (and baseline 0).
+    #[must_use]
+    pub const fn stacked(label: &'a str, segments: &'a [f64]) -> Self {
+        Self {
+            label,
+            fraction: 0.0,
+            segments,
+        }
+    }
+
+    /// Whether this bar uses multi-segment stack paint.
+    #[must_use]
+    pub const fn is_stacked(self) -> bool {
+        !self.segments.is_empty()
     }
 }
 
-/// Multi-row horizontal bar chart.
+/// Multi-row horizontal bar chart (solid, stacked, and bipolar/negative).
 #[derive(Debug, Clone, Copy)]
 pub struct BarSeries<'a> {
     bars: &'a [BarDatum<'a>],
@@ -1565,7 +1591,7 @@ impl<'a> BarSeries<'a> {
         }
     }
 
-    /// Treat `fraction` field as raw values with scale.
+    /// Treat `fraction` / segments as raw values with scale.
     #[must_use]
     pub const fn scale(mut self, scale: ScaleMode) -> Self {
         self.scale = scale;
@@ -1603,17 +1629,46 @@ impl Widget for &BarSeries<'_> {
             .unwrap_or(0)
             .min(usize::from(area.width) / 3)
             .min(12);
+
+        // Domain: solid values + stacked sums + baseline 0 (bipolar / stack)
         let domain = if self.pre_normalized {
             ScaleDomain::unit()
         } else {
-            resolve_domain(self.scale, self.bars.iter().map(|b| b.fraction))
+            let mut vals: Vec<f64> = vec![0.0];
+            for b in self.bars.iter().take(rows) {
+                if b.is_stacked() {
+                    let sum: f64 = b
+                        .segments
+                        .iter()
+                        .filter(|v| v.is_finite())
+                        .map(|v| v.max(0.0))
+                        .sum();
+                    vals.push(sum);
+                } else if b.fraction.is_finite() {
+                    vals.push(b.fraction);
+                }
+            }
+            resolve_domain(self.scale, vals.into_iter())
         };
+
         let gset = self.glyphs.resolve(self.system.glyphs);
         let fill_ch = *gset.ladder().last().unwrap_or(&'#');
         let empty_ch = match gset {
             VizGlyphSet::Ascii => '-',
             _ => '░',
         };
+        let neg_ch = if matches!(gset, VizGlyphSet::Ascii) {
+            '='
+        } else {
+            '▒'
+        };
+
+        // Zero column for bipolar (fraction 0 of domain)
+        let zero_frac = domain.normalize(0.0).unwrap_or(0.0);
+        let bipolar = !self.pre_normalized
+            && self.bars.iter().take(rows).any(|b| {
+                !b.is_stacked() && b.fraction.is_finite() && b.fraction < 0.0
+            });
 
         for (row, bar) in self.bars.iter().take(rows).enumerate() {
             let y = area.y.saturating_add(row as u16);
@@ -1636,39 +1691,190 @@ impl Widget for &BarSeries<'_> {
             if track_w == 0 {
                 continue;
             }
-            let fraction = if self.pre_normalized {
-                if bar.fraction.is_finite() {
-                    bar.fraction.clamp(0.0, 1.0)
+
+            // Empty track first
+            buffer.set_stringn(
+                track_x,
+                y,
+                &empty_ch.to_string().repeat(usize::from(track_w)),
+                usize::from(track_w),
+                self.system.style(Role::TextDisabled),
+            );
+
+            let selected = self.selected == Some(row);
+
+            if bar.is_stacked() {
+                // Stacked non-negative segments left→right from domain min (0)
+                let sum: f64 = bar
+                    .segments
+                    .iter()
+                    .filter(|v| v.is_finite())
+                    .map(|v| v.max(0.0))
+                    .sum();
+                if sum <= 0.0 || !sum.is_finite() {
+                    continue;
+                }
+                let mut x = track_x;
+                let mut painted = 0u16;
+                for (si, seg) in bar.segments.iter().enumerate() {
+                    let v = if seg.is_finite() { seg.max(0.0) } else { 0.0 };
+                    if v <= 0.0 {
+                        continue;
+                    }
+                    // Segment share of the full bar width (bar width ∝ sum/domain).
+                    let frac = if self.pre_normalized {
+                        (v / sum).clamp(0.0, 1.0)
+                    } else {
+                        let total_f = domain.normalize(sum).unwrap_or(1.0);
+                        if total_f <= 0.0 {
+                            v / sum
+                        } else {
+                            (v / sum) * total_f
+                        }
+                    };
+                    let mut seg_w =
+                        ((f64::from(track_w) * frac).round() as u16).max(if v > 0.0 { 1 } else { 0 });
+                    if painted + seg_w > track_w {
+                        seg_w = track_w.saturating_sub(painted);
+                    }
+                    if seg_w == 0 {
+                        continue;
+                    }
+                    let style = if selected {
+                        self.system
+                            .style(Role::TextStrong)
+                            .add_modifier(Modifier::BOLD)
+                    } else if matches!(
+                        self.system.capability,
+                        crate::style::ColorCapability::Monochrome
+                    ) {
+                        // Distinct no-color markers per segment
+                        self.system.style(Role::Text)
+                    } else {
+                        self.system.style(series_role(si))
+                    };
+                    let ch = if matches!(
+                        self.system.capability,
+                        crate::style::ColorCapability::Monochrome
+                    ) {
+                        gset.series_marker(si)
+                    } else {
+                        fill_ch
+                    };
+                    buffer.set_stringn(
+                        x,
+                        y,
+                        &ch.to_string().repeat(usize::from(seg_w)),
+                        usize::from(seg_w),
+                        style,
+                    );
+                    x = x.saturating_add(seg_w);
+                    painted = painted.saturating_add(seg_w);
+                    if painted >= track_w {
+                        break;
+                    }
+                }
+                continue;
+            }
+
+            // Solid bar (positive and/or negative)
+            let value = bar.fraction;
+            if !value.is_finite() {
+                continue;
+            }
+
+            if self.pre_normalized || !bipolar {
+                let fraction = if self.pre_normalized {
+                    value.clamp(0.0, 1.0)
                 } else {
-                    0.0
+                    domain.normalize(value).unwrap_or(0.0)
+                };
+                let filled = ((f64::from(track_w) * fraction).round() as u16).min(track_w);
+                let style = if selected {
+                    self.system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD)
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
+                    self.system.style(Role::Text)
+                } else {
+                    self.system.style(Role::Accent)
+                };
+                if filled > 0 {
+                    buffer.set_stringn(
+                        track_x,
+                        y,
+                        &fill_ch.to_string().repeat(usize::from(filled)),
+                        usize::from(filled),
+                        style,
+                    );
                 }
             } else {
-                domain.normalize(bar.fraction).unwrap_or(0.0)
-            };
-            let filled = ((f64::from(track_w) * fraction).round() as u16).min(track_w);
-            let selected = self.selected == Some(row);
-            let style = if selected {
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD)
-            } else if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
-                self.system.style(Role::Text)
-            } else {
-                self.system.style(Role::Accent)
-            };
-            let fill = fill_ch.to_string().repeat(usize::from(filled));
-            let empty = empty_ch
-                .to_string()
-                .repeat(usize::from(track_w.saturating_sub(filled)));
-            buffer.set_stringn(track_x, y, &fill, usize::from(filled), style);
-            if filled < track_w {
-                buffer.set_stringn(
-                    track_x.saturating_add(filled),
-                    y,
-                    &empty,
-                    usize::from(track_w.saturating_sub(filled)),
-                    self.system.style(Role::TextDisabled),
-                );
+                // Bipolar: zero baseline; + to the right, − to the left
+                let z = ((f64::from(track_w) * zero_frac).round() as u16).min(track_w);
+                let vf = domain.normalize(value).unwrap_or(zero_frac);
+                let vcol = ((f64::from(track_w) * vf).round() as u16).min(track_w);
+                let pos_style = if selected {
+                    self.system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD)
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
+                    self.system.style(Role::Text)
+                } else {
+                    self.system.style(Role::Success)
+                };
+                let neg_style = if selected {
+                    self.system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD)
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
+                    self.system.style(Role::TextMuted)
+                } else {
+                    self.system.style(Role::Danger)
+                };
+                // zero tick
+                if z < track_w {
+                    buffer.set_stringn(
+                        track_x.saturating_add(z),
+                        y,
+                        "|",
+                        1,
+                        self.system.style(Role::ChartAxis),
+                    );
+                }
+                if value >= 0.0 {
+                    let start = z.min(vcol);
+                    let end = z.max(vcol);
+                    let w = end.saturating_sub(start).max(if value > 0.0 { 1 } else { 0 });
+                    if w > 0 {
+                        buffer.set_stringn(
+                            track_x.saturating_add(start),
+                            y,
+                            &fill_ch.to_string().repeat(usize::from(w)),
+                            usize::from(w),
+                            pos_style,
+                        );
+                    }
+                } else {
+                    let start = vcol.min(z);
+                    let end = vcol.max(z);
+                    let w = end.saturating_sub(start).max(1);
+                    buffer.set_stringn(
+                        track_x.saturating_add(start),
+                        y,
+                        &neg_ch.to_string().repeat(usize::from(w)),
+                        usize::from(w),
+                        neg_style,
+                    );
+                }
             }
         }
     }
@@ -2188,6 +2394,88 @@ mod tests {
             .glyphs(VizGlyphSet::Ascii)
             .selected(1)
             .render(Rect::new(0, 0, 24, 2), &mut buffer);
+        // Larger bar (b=20) must paint more fill cells than a=10 on row 1 vs 0
+        let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
+        let count_fill = |row: u16| -> usize {
+            (0..24u16)
+                .filter(|&x| buffer[(x, row)].symbol().contains(fill))
+                .count()
+        };
+        assert!(
+            count_fill(1) > count_fill(0),
+            "b should fill more than a: row0={} row1={}",
+            count_fill(0),
+            count_fill(1)
+        );
+    }
+
+    #[test]
+    fn bar_series_stacked_segments_distinct_markers() {
+        let system = system_ascii_nocolor();
+        let segs = [1.0, 2.0, 1.0];
+        let bars = [
+            BarDatum::stacked("q1", &segs),
+            BarDatum::stacked("q2", &[2.0, 2.0]),
+        ];
+        let area = Rect::new(0, 0, 32, 2);
+        let mut buffer = Buffer::empty(area);
+        BarSeries::new(&bars, &system)
+            .scale(ScaleMode::Auto)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut buffer);
+        // No-color stack uses series_marker per segment — must see at least two markers
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        let row0: String = (0..32u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        assert!(
+            row0.contains(m0) && row0.contains(m1),
+            "stacked segments must paint distinct markers: {row0:?}"
+        );
+        // q2 sum=4 > q1 sum=4? equal - q2 has 2 segments both 2. Domain max 4 for both.
+        // Segment 0 of q1 is 1/4 of bar; segment 1 is 2/4 — middle segment wider
+        let c0 = row0.chars().filter(|&c| c == m0).count();
+        let c1 = row0.chars().filter(|&c| c == m1).count();
+        assert!(
+            c1 > c0,
+            "middle segment (2) should be wider than first (1): c0={c0} c1={c1} row={row0:?}"
+        );
+    }
+
+    #[test]
+    fn bar_series_negative_bipolar_domain() {
+        let system = system_ascii_nocolor();
+        let bars = [
+            BarDatum::value("loss", -5.0),
+            BarDatum::value("gain", 10.0),
+            BarDatum::value("zero", 0.0),
+        ];
+        // Domain with 0 baseline
+        let d = resolve_domain(ScaleMode::Auto, [0.0, -5.0, 10.0].into_iter());
+        assert!(d.min < 0.0 && d.max > 0.0, "domain should be bipolar {:?}", d);
+        let z = d.normalize(0.0).unwrap();
+        assert!(z > 0.2 && z < 0.8, "zero should be interior, got {z}");
+
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        BarSeries::new(&bars, &system)
+            .scale(ScaleMode::Auto)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut buffer);
+        let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
+        let neg = '=';
+        let loss: String = (0..40u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let gain: String = (0..40u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        assert!(
+            loss.contains(neg) || loss.contains('|'),
+            "negative bar should paint neg glyph or zero tick: {loss:?}"
+        );
+        assert!(
+            gain.contains(fill),
+            "positive bar should paint fill: {gain:?}"
+        );
+        // gain (10) should extend further right of zero than loss extends left (asym domain)
+        let zero_col = gain.find('|').or_else(|| loss.find('|'));
+        assert!(zero_col.is_some(), "zero tick | expected on bipolar track");
     }
 
     #[test]
