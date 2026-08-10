@@ -345,6 +345,20 @@ let items = [NavItem::new("a", "Inbox"), NavItem::new("b", "Starred")];
 let mut state = NavigationListState::new(Some("a"));
 state.set_focused(true);`,
   },
+  TreeNavigation: {
+    description:
+      'Hierarchical route navigation with expansion, lazy children, typeahead, active ancestors, and route distinct from focus. Distinct from data Tree.',
+    primaryStory: 'tree-navigation/project',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{TreeNavigation, TreeNavigationState, example_project_tree};
+
+let system = DesignSystem::default();
+let nodes = example_project_tree();
+let mut state = TreeNavigationState::new(Some("main"));
+state.set_focused(true);
+state.reconcile_route(&nodes);
+let _ = TreeNavigation::new(&nodes, &system);`,
+  },
   TextArea: {
     description:
       'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.',

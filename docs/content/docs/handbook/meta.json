@@ -21,6 +21,7 @@
     "keybinding-recorder",
     "tabs",
     "sidebar",
+    "tree-navigation",
     "menu",
     "object-inspector",
     "log-stream",

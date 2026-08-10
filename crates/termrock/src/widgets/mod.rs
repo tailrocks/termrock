@@ -87,6 +87,7 @@ mod theme_picker;
 mod toast;
 mod transcript;
 mod tree;
+mod tree_navigation;
 mod view_state;
 mod viewport;
 mod virtual_grid;
@@ -386,6 +387,11 @@ pub use transcript::{
     TranscriptState,
 };
 pub use tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState};
+pub use tree_navigation::{
+    TREE_NAV_INDENT, TREE_NAV_MAX_INDENT_DEPTH, TREE_NAV_NARROW_MAX_WIDTH, TreeNavNode,
+    TreeNavStatus, TreeNavigation, TreeNavigationOutcome, TreeNavigationState,
+    example_docs_tree, example_project_tree, example_schema_tree, example_settings_tree,
+};
 pub use view_state::{Banner, EmptyState, ErrorView, LoadingView, Skeleton};
 pub use viewport::Viewport;
 pub use virtual_grid::{

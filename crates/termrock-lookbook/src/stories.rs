@@ -71,6 +71,8 @@ use termrock::{
         KeybindingRecorder, KeybindingRecorderState,
         NavItem, NavigationList, NavigationListState, Sidebar, SidebarPresentation, SidebarState,
         example_agent_workbench_nav, example_database_nav, example_settings_nav,
+        TreeNavigation, TreeNavigationState, example_docs_tree, example_project_tree,
+        example_schema_tree, example_settings_tree,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -897,6 +899,51 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             12,
             navigation_list_basic_story,
+        ),
+        Story::new(
+            "tree-navigation/project",
+            "TreeNavigation project",
+            "TreeNavigation",
+            "Project explorer with lazy branch and dirty leaf.",
+            36,
+            14,
+            tree_navigation_project_story,
+        ),
+        Story::new(
+            "tree-navigation/schema",
+            "TreeNavigation schema",
+            "TreeNavigation",
+            "Database schema browser with loading branch.",
+            36,
+            12,
+            tree_navigation_schema_story,
+        ),
+        Story::new(
+            "tree-navigation/settings",
+            "TreeNavigation settings",
+            "TreeNavigation",
+            "Settings hierarchy with badges and dirty state.",
+            36,
+            12,
+            tree_navigation_settings_story,
+        ),
+        Story::new(
+            "tree-navigation/docs",
+            "TreeNavigation docs",
+            "TreeNavigation",
+            "Documentation nav with error leaf.",
+            36,
+            12,
+            tree_navigation_docs_story,
+        ),
+        Story::new(
+            "tree-navigation/narrow",
+            "TreeNavigation narrow",
+            "TreeNavigation",
+            "Narrow-terminal compact indent and labels.",
+            14,
+            12,
+            tree_navigation_narrow_story,
         ),
         Story::new(
             "tabs/status",
@@ -7441,6 +7488,60 @@ fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         &items,
     );
     NavigationList::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_navigation_project_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_project_tree();
+    let mut state = TreeNavigationState::new(Some("main"));
+    state.set_focused(true);
+    state.reconcile_route(&nodes);
+    state.focus_route(&nodes);
+    TreeNavigation::new(&nodes, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_navigation_schema_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_schema_tree();
+    let mut state = TreeNavigationState::new(Some("users"));
+    state.set_focused(true);
+    state.reconcile_route(&nodes);
+    state.focus_route(&nodes);
+    TreeNavigation::new(&nodes, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_navigation_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_settings_tree();
+    let mut state = TreeNavigationState::new(Some("tools"));
+    state.set_focused(true);
+    state.reconcile_route(&nodes);
+    state.focus_route(&nodes);
+    TreeNavigation::new(&nodes, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_navigation_docs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_docs_tree();
+    let mut state = TreeNavigationState::new(Some("intro"));
+    state.set_focused(true);
+    state.reconcile_route(&nodes);
+    state.focus_route(&nodes);
+    TreeNavigation::new(&nodes, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tree_navigation_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let nodes = example_project_tree();
+    let mut state = TreeNavigationState::new(Some("lib"));
+    state.set_focused(true);
+    state.reconcile_route(&nodes);
+    TreeNavigation::new(&nodes, system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

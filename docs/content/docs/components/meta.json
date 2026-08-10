@@ -102,6 +102,7 @@
     "tool-card",
     "transcript",
     "tree",
+    "tree-navigation",
     "viewport",
     "virtual-grid"
   ]

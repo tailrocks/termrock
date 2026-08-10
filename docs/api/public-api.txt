@@ -27049,6 +27049,118 @@ pub unsafe fn termrock::widgets::TranscriptOutcome<Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::TranscriptOutcome<Id>
 pub fn termrock::widgets::TranscriptOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::TreeNavStatus
+pub termrock::widgets::TreeNavStatus::Dirty
+pub termrock::widgets::TreeNavStatus::Error
+pub termrock::widgets::TreeNavStatus::Loading
+pub termrock::widgets::TreeNavStatus::Ready
+pub termrock::widgets::TreeNavStatus::Warning
+impl termrock::widgets::TreeNavStatus
+pub const fn termrock::widgets::TreeNavStatus::id(self) -> &'static str
+pub const fn termrock::widgets::TreeNavStatus::mark(self, bool) -> core::option::Option<&'static str>
+impl core::clone::Clone for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::clone(&self) -> termrock::widgets::TreeNavStatus
+impl core::cmp::Eq for termrock::widgets::TreeNavStatus
+impl core::cmp::PartialEq for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::eq(&self, &termrock::widgets::TreeNavStatus) -> bool
+impl core::default::Default for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::default() -> termrock::widgets::TreeNavStatus
+impl core::fmt::Debug for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TreeNavStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::TreeNavStatus
+impl core::marker::Freeze for termrock::widgets::TreeNavStatus
+impl core::marker::Send for termrock::widgets::TreeNavStatus
+impl core::marker::Sync for termrock::widgets::TreeNavStatus
+impl core::marker::Unpin for termrock::widgets::TreeNavStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::TreeNavStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNavStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNavStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeNavStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNavStatus where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNavStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNavStatus where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNavStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNavStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNavStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNavStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNavStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNavStatus where T: core::clone::Clone
+pub type termrock::widgets::TreeNavStatus::Owned = T
+pub fn termrock::widgets::TreeNavStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNavStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNavStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNavStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNavStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNavStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNavStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNavStatus
+pub fn termrock::widgets::TreeNavStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavStatus
+#[non_exhaustive] pub enum termrock::widgets::TreeNavigationOutcome<Id>
+pub termrock::widgets::TreeNavigationOutcome::Cancelled
+pub termrock::widgets::TreeNavigationOutcome::Changed
+pub termrock::widgets::TreeNavigationOutcome::ContextMenuRequested
+pub termrock::widgets::TreeNavigationOutcome::ContextMenuRequested::id: Id
+pub termrock::widgets::TreeNavigationOutcome::ExpandToggled
+pub termrock::widgets::TreeNavigationOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::TreeNavigationOutcome::ExpandToggled::id: Id
+pub termrock::widgets::TreeNavigationOutcome::FocusChanged
+pub termrock::widgets::TreeNavigationOutcome::FocusChanged::id: core::option::Option<Id>
+pub termrock::widgets::TreeNavigationOutcome::Ignored
+pub termrock::widgets::TreeNavigationOutcome::LazyLoadRequested
+pub termrock::widgets::TreeNavigationOutcome::LazyLoadRequested::generation: u64
+pub termrock::widgets::TreeNavigationOutcome::LazyLoadRequested::id: Id
+pub termrock::widgets::TreeNavigationOutcome::RouteChanged
+pub termrock::widgets::TreeNavigationOutcome::RouteChanged::id: Id
+pub termrock::widgets::TreeNavigationOutcome::TypeaheadMatched
+pub termrock::widgets::TreeNavigationOutcome::TypeaheadMatched::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNavigationOutcome<Id>
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::clone(&self) -> termrock::widgets::TreeNavigationOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeNavigationOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TreeNavigationOutcome<Id>
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::eq(&self, &termrock::widgets::TreeNavigationOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TreeNavigationOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNavigationOutcome<Id>
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNavigationOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeNavigationOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNavigationOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNavigationOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNavigationOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNavigationOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNavigationOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNavigationOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeNavigationOutcome<Id>::Owned = T
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNavigationOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNavigationOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNavigationOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNavigationOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNavigationOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNavigationOutcome<Id>
+pub fn termrock::widgets::TreeNavigationOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavigationOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::TreeNodeStatus
 pub termrock::widgets::TreeNodeStatus::Error
 pub termrock::widgets::TreeNodeStatus::Loading
@@ -46903,6 +47015,181 @@ pub unsafe fn termrock::widgets::Tree<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Tree<'a, Id>
 pub fn termrock::widgets::Tree<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Tree<'a, Id>
+pub struct termrock::widgets::TreeNavNode<Id>
+pub termrock::widgets::TreeNavNode::badge: core::option::Option<alloc::string::String>
+pub termrock::widgets::TreeNavNode::branch: bool
+pub termrock::widgets::TreeNavNode::depth: u16
+pub termrock::widgets::TreeNavNode::enabled: bool
+pub termrock::widgets::TreeNavNode::expanded: bool
+pub termrock::widgets::TreeNavNode::icon: core::option::Option<alloc::string::String>
+pub termrock::widgets::TreeNavNode::id: Id
+pub termrock::widgets::TreeNavNode::label: alloc::string::String
+pub termrock::widgets::TreeNavNode::lazy: bool
+pub termrock::widgets::TreeNavNode::parent: core::option::Option<Id>
+pub termrock::widgets::TreeNavNode::routeable: bool
+pub termrock::widgets::TreeNavNode::status: termrock::widgets::TreeNavStatus
+impl<Id> termrock::widgets::TreeNavNode<Id>
+pub fn termrock::widgets::TreeNavNode<Id>::badge(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TreeNavNode<Id>::branch(Id, impl core::convert::Into<alloc::string::String>, u16) -> Self
+pub const fn termrock::widgets::TreeNavNode<Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::TreeNavNode<Id>::expanded(self, bool) -> Self
+pub fn termrock::widgets::TreeNavNode<Id>::icon(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::TreeNavNode<Id>::lazy(self, bool) -> Self
+pub fn termrock::widgets::TreeNavNode<Id>::leaf(Id, impl core::convert::Into<alloc::string::String>, u16) -> Self
+pub fn termrock::widgets::TreeNavNode<Id>::parent(self, Id) -> Self
+pub const fn termrock::widgets::TreeNavNode<Id>::routeable(self, bool) -> Self
+pub const fn termrock::widgets::TreeNavNode<Id>::status(self, termrock::widgets::TreeNavStatus) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNavNode<Id>
+pub fn termrock::widgets::TreeNavNode<Id>::clone(&self) -> termrock::widgets::TreeNavNode<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeNavNode<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TreeNavNode<Id>
+pub fn termrock::widgets::TreeNavNode<Id>::eq(&self, &termrock::widgets::TreeNavNode<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TreeNavNode<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNavNode<Id>
+pub fn termrock::widgets::TreeNavNode<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TreeNavNode<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeNavNode<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeNavNode<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeNavNode<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeNavNode<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNavNode<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNavNode<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeNavNode<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavNode<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNavNode<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNavNode<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNavNode<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNavNode<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNavNode<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNavNode<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNavNode<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNavNode<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNavNode<Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeNavNode<Id>::Owned = T
+pub fn termrock::widgets::TreeNavNode<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNavNode<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNavNode<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavNode<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNavNode<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavNode<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNavNode<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavNode<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNavNode<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNavNode<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNavNode<Id>
+pub fn termrock::widgets::TreeNavNode<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavNode<Id>
+pub struct termrock::widgets::TreeNavigation<'a, Id>
+impl<'a, Id> termrock::widgets::TreeNavigation<'a, Id>
+pub const fn termrock::widgets::TreeNavigation<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::TreeNavigation<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::TreeNavigation<'a, Id>::new(&'a [termrock::widgets::TreeNavNode<Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::TreeNavigation<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TreeNavigationState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigation<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::TreeNavigationState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNavigation<'a, Id>
+pub fn termrock::widgets::TreeNavigation<'a, Id>::clone(&self) -> termrock::widgets::TreeNavigation<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNavigation<'a, Id>
+pub fn termrock::widgets::TreeNavigation<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::TreeNavigation<'a, Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TreeNavigation<'_, Id>
+pub type &termrock::widgets::TreeNavigation<'_, Id>::State = termrock::widgets::TreeNavigationState<Id>
+pub fn &termrock::widgets::TreeNavigation<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::TreeNavigation<'_, Id>
+pub type termrock::widgets::TreeNavigation<'_, Id>::State = termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigation<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::TreeNavigation<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::TreeNavigation<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::TreeNavigation<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::TreeNavigation<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::TreeNavigation<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNavigation<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNavigation<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNavigation<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNavigation<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNavigation<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNavigation<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNavigation<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNavigation<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNavigation<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNavigation<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNavigation<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeNavigation<'a, Id>::Owned = T
+pub fn termrock::widgets::TreeNavigation<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNavigation<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNavigation<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigation<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNavigation<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigation<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNavigation<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigation<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNavigation<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNavigation<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNavigation<'a, Id>
+pub fn termrock::widgets::TreeNavigation<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavigation<'a, Id>
+pub struct termrock::widgets::TreeNavigationState<Id>
+impl<Id> termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::activate_focus(&mut self, &[termrock::widgets::TreeNavNode<Id>]) -> termrock::widgets::TreeNavigationOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::apply_lazy_result(&mut self, u64) -> bool
+pub fn termrock::widgets::TreeNavigationState<Id>::filter(&self) -> &str
+pub fn termrock::widgets::TreeNavigationState<Id>::focus(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::focus_route(&mut self, &[termrock::widgets::TreeNavNode<Id>]) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::TreeNavigationState<Id>::generation(&self) -> u64
+pub fn termrock::widgets::TreeNavigationState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::TreeNavNode<Id>]) -> termrock::widgets::TreeNavigationOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::TreeNavNode<Id>]) -> termrock::widgets::TreeNavigationOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::TreeNavNode<Id>]) -> termrock::widgets::TreeNavigationOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::is_route(&self, &Id) -> bool where Id: core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::is_route_ancestor(&self, &Id) -> bool where Id: core::cmp::PartialEq
+pub fn termrock::widgets::TreeNavigationState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::TreeNavigationState<Id>::reconcile_route(&mut self, &[termrock::widgets::TreeNavNode<Id>]) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::TreeNavigationState<Id>::route(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::route_ancestors(&self) -> &[Id]
+pub fn termrock::widgets::TreeNavigationState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::TreeNavigationState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::TreeNavigationState<Id>::set_route(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::TreeNavigationState<Id>::set_route_in(&mut self, core::option::Option<Id>, &[termrock::widgets::TreeNavNode<Id>]) where Id: core::clone::Clone + core::cmp::PartialEq
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::clone(&self) -> termrock::widgets::TreeNavigationState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TreeNavigationState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::eq(&self, &termrock::widgets::TreeNavigationState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TreeNavigationState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::TreeNavigationState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeNavigationState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeNavigationState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeNavigationState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeNavigationState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeNavigationState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeNavigationState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeNavigationState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TreeNavigationState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TreeNavigationState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TreeNavigationState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TreeNavigationState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TreeNavigationState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TreeNavigationState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TreeNavigationState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TreeNavigationState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TreeNavigationState<Id> where T: core::clone::Clone
+pub type termrock::widgets::TreeNavigationState<Id>::Owned = T
+pub fn termrock::widgets::TreeNavigationState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TreeNavigationState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TreeNavigationState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TreeNavigationState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TreeNavigationState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TreeNavigationState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TreeNavigationState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TreeNavigationState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TreeNavigationState<Id>
+pub fn termrock::widgets::TreeNavigationState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TreeNavigationState<Id>
 pub struct termrock::widgets::TreeNode<'a, Id>
 pub termrock::widgets::TreeNode::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::TreeNode::branch: bool
@@ -47713,6 +48000,9 @@ pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
+pub const termrock::widgets::TREE_NAV_INDENT: u16
+pub const termrock::widgets::TREE_NAV_MAX_INDENT_DEPTH: u16
+pub const termrock::widgets::TREE_NAV_NARROW_MAX_WIDTH: u16
 pub trait termrock::widgets::SyntaxHighlighter
 pub fn termrock::widgets::SyntaxHighlighter::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::AnsiSyntax
@@ -47742,7 +48032,11 @@ pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_schema_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>

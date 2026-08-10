@@ -167,6 +167,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0151 | `v0.13.0` | [FormWizard](migrations/0151-v0.13.0-form-wizard.md) |
 | 0152 | `v0.13.0` | [Tabs](migrations/0152-v0.13.0-tabs.md) |
 | 0153 | `v0.13.0` | [Sidebar & NavigationList](migrations/0153-v0.13.0-sidebar-navigation-list.md) |
+| 0154 | `v0.13.0` | [TreeNavigation](migrations/0154-v0.13.0-tree-navigation.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
