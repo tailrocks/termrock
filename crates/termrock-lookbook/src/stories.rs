@@ -4649,6 +4649,33 @@ pub(crate) fn stories() -> Vec<Story> {
             prompt_composer_busy,
         ),
         Story::new(
+            "prompt-queue/compact",
+            "PromptQueue compact",
+            "PromptQueue",
+            "Composer summary strip while agent busy.",
+            56,
+            2,
+            prompt_queue_compact_story,
+        ),
+        Story::new(
+            "prompt-queue/expanded",
+            "PromptQueue expanded",
+            "PromptQueue",
+            "Management list: reorder, edit, send, interrupt.",
+            64,
+            14,
+            prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "prompt-queue/failed",
+            "PromptQueue failed held",
+            "PromptQueue",
+            "Failed entry held (no auto-drain) with retry.",
+            56,
+            12,
+            prompt_queue_failed_story,
+        ),
+        Story::new(
             "prompt-composer/compact",
             "Prompt composer compact",
             "PromptComposer",
@@ -7934,6 +7961,24 @@ pub(crate) fn stories() -> Vec<Story> {
             32,
             10,
             popover_unicode_story,
+        ),
+        Story::new(
+            "prompt-queue/narrow",
+            "Narrow PromptQueue",
+            "PromptQueue",
+            "Narrow-terminal geometry for PromptQueue (22 cols).",
+            22,
+            12,
+            prompt_queue_expanded_story,
+        ),
+        Story::new(
+            "prompt-queue/unicode",
+            "Unicode PromptQueue",
+            "PromptQueue",
+            "Unicode-safe paint path for PromptQueue.",
+            48,
+            10,
+            prompt_queue_unicode_story,
         ),
         Story::new(
             "prompt-composer/narrow",
@@ -17510,6 +17555,70 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         label: "model".into(),
     }));
     frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
+}
+
+fn prompt_queue_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+        PromptQueueState,
+    };
+    let mut state = PromptQueueState::new();
+    state.set_items(example_prompt_queue());
+    state.set_agent(AgentBusyState::Busy);
+    state.presentation = PromptQueuePresentation::Compact;
+    state.focused = true;
+    frame.render_stateful_widget(&PromptQueue::new(system), area, &mut state);
+}
+
+fn prompt_queue_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+        PromptQueueState,
+    };
+    let mut state = PromptQueueState::new();
+    state.set_items(example_prompt_queue());
+    state.set_agent(AgentBusyState::Busy);
+    state.presentation = PromptQueuePresentation::Expanded;
+    state.cursor = 1;
+    state.focused = true;
+    frame.render_stateful_widget(&PromptQueue::new(system), area, &mut state);
+}
+
+fn prompt_queue_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+        PromptQueueState, PromptQueueStatus,
+    };
+    let mut state = PromptQueueState::new();
+    state.set_items(example_prompt_queue());
+    state.set_agent(AgentBusyState::Idle);
+    state.presentation = PromptQueuePresentation::Expanded;
+    if let Some(i) = state
+        .items
+        .iter()
+        .position(|e| e.status == PromptQueueStatus::Failed)
+    {
+        state.cursor = i;
+    }
+    state.focused = true;
+    frame.render_stateful_widget(&PromptQueue::new(system), area, &mut state);
+}
+
+fn prompt_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        AgentBusyState, PromptQueue, PromptQueueItem, PromptQueuePresentation, PromptQueueRef,
+        PromptQueueState,
+    };
+    let mut state = PromptQueueState::new();
+    state.set_items(vec![
+        PromptQueueItem::new("u1", "検査して 🔍")
+            .attachments(vec![PromptQueueRef::file("f", "日本語.rs")]),
+        PromptQueueItem::new("u2", "次のメッセージ"),
+    ]);
+    state.set_agent(AgentBusyState::Busy);
+    state.presentation = PromptQueuePresentation::Expanded;
+    state.focused = true;
+    frame.render_stateful_widget(&PromptQueue::new(system), area, &mut state);
 }
 
 fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

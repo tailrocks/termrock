@@ -1,0 +1,39 @@
+---
+title: PromptQueue
+description: Editable queue of prompts waiting behind busy agent work — compact + expanded.
+---
+
+# PromptQueue
+
+Queue of user messages behind active agent work. **Host owns** persistence and
+drain policy. Failed/cancelled entries are **held** (KD-29 — no library
+auto-drain).
+
+## When to use / when not
+
+| Use PromptQueue | Prefer |
+|-----------------|--------|
+| Show/manage queued prompts while busy | — |
+| Draft editing | [PromptComposer](/docs/handbook/prompt-composer) |
+| Overlay focus FIFO | OverlayStack (not user prompts) |
+
+## Presentation
+
+| Mode | Role |
+|------|------|
+| Compact | One-line summary for composer status |
+| Expanded | Reorder, edit, delete, send, interrupt |
+
+## States
+
+Queued · Sending · Blocked · Failed · Cancelled · Sent
+
+Attachments and mentions keep **ids + labels** across edit/reorder.
+
+## Keys (expanded)
+
+j/k · J/K reorder · Enter send · i interrupt+send · e edit · d delete · Esc compact
+
+## Related
+
+PromptComposer · migration `0231`

@@ -126,6 +126,7 @@ mod object_inspector;
 mod timeline;
 mod checkpoint_timeline;
 mod session_picker;
+mod prompt_queue;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -744,11 +745,20 @@ pub use prompt_composer::{
     ComposerPresentation, ContextEstimate, LARGE_PASTE_THRESHOLD, ModeIndicator, ModelIndicator,
     PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PROMPT_HISTORY_LIMIT,
     PROMPT_UNDO_LIMIT, PromptComposer, PromptComposerLayout, PromptComposerOutcome,
-    PromptComposerState, QueuedPrompt, SubmitPolicy, attachment_to_composer_chip,
-    composer_chip_to_attachment, composer_chip_to_paste, detect_completion, paste_to_composer_chip,
-    prompt_composer_help_entries, submit_history_to_entries,
+    PromptComposerState, SubmitPolicy, attachment_to_composer_chip, composer_chip_to_attachment,
+    composer_chip_to_paste, detect_completion, paste_to_composer_chip, prompt_composer_help_entries,
+    submit_history_to_entries,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
+pub use prompt_queue::{
+    PROMPT_QUEUE_OVERLAY_ID, PROMPT_QUEUE_SUMMARY_PREVIEW, PROMPT_QUEUE_WINDOW, AgentBusyState,
+    PromptQueue, PromptQueueItem, PromptQueueOutcome, PromptQueuePhase, PromptQueuePresentation,
+    PromptQueueRef, PromptQueueState, PromptQueueStatus, example_prompt_queue,
+    pending_queue_len, queue_item_from_composer,
+};
+/// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
+pub use prompt_queue::PromptQueueItem as QueuedPrompt;
+pub use prompt_queue::bench as prompt_queue_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

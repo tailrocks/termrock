@@ -29,6 +29,7 @@
     "plan-review",
     "checkpoint-timeline",
     "session-picker",
+    "prompt-queue",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

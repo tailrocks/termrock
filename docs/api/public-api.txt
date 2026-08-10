@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.74s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.75s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14818,6 +14818,8 @@ pub const termrock::widgets::prompt_composer_bench::COMPLETION_UPDATES: usize
 pub const termrock::widgets::prompt_composer_bench::LARGE_PROMPT_LINES: usize
 pub const termrock::widgets::prompt_composer_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::prompt_composer_bench::PASTE_ROUNDS: usize
+pub mod termrock::widgets::prompt_queue_bench
+pub const termrock::widgets::prompt_queue_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::query_editor_bench
 pub const termrock::widgets::query_editor_bench::COMPLETION_CANDIDATES: usize
 pub const termrock::widgets::query_editor_bench::DIAGNOSTIC_COUNT: usize
@@ -15513,6 +15515,60 @@ pub unsafe fn termrock::widgets::ActivityShelfPresentation::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::widgets::ActivityShelfPresentation
 pub fn termrock::widgets::ActivityShelfPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivityShelfPresentation
+#[non_exhaustive] pub enum termrock::widgets::AgentBusyState
+pub termrock::widgets::AgentBusyState::Busy
+pub termrock::widgets::AgentBusyState::Idle
+pub termrock::widgets::AgentBusyState::Interrupting
+pub termrock::widgets::AgentBusyState::WaitingUser
+impl termrock::widgets::AgentBusyState
+pub const fn termrock::widgets::AgentBusyState::id(self) -> &'static str
+pub const fn termrock::widgets::AgentBusyState::is_busy(self) -> bool
+pub const fn termrock::widgets::AgentBusyState::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::clone(&self) -> termrock::widgets::AgentBusyState
+impl core::cmp::Eq for termrock::widgets::AgentBusyState
+impl core::cmp::PartialEq for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::eq(&self, &termrock::widgets::AgentBusyState) -> bool
+impl core::default::Default for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::default() -> termrock::widgets::AgentBusyState
+impl core::fmt::Debug for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AgentBusyState
+impl core::marker::StructuralPartialEq for termrock::widgets::AgentBusyState
+impl core::marker::Freeze for termrock::widgets::AgentBusyState
+impl core::marker::Send for termrock::widgets::AgentBusyState
+impl core::marker::Sync for termrock::widgets::AgentBusyState
+impl core::marker::Unpin for termrock::widgets::AgentBusyState
+impl core::marker::UnsafeUnpin for termrock::widgets::AgentBusyState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AgentBusyState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AgentBusyState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AgentBusyState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AgentBusyState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AgentBusyState where U: core::convert::From<T>
+pub fn termrock::widgets::AgentBusyState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AgentBusyState where U: core::convert::Into<T>
+pub type termrock::widgets::AgentBusyState::Error = core::convert::Infallible
+pub fn termrock::widgets::AgentBusyState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AgentBusyState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AgentBusyState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AgentBusyState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AgentBusyState where T: core::clone::Clone
+pub type termrock::widgets::AgentBusyState::Owned = T
+pub fn termrock::widgets::AgentBusyState::clone_into(&self, &mut T)
+pub fn termrock::widgets::AgentBusyState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AgentBusyState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AgentBusyState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AgentBusyState where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentBusyState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AgentBusyState where T: ?core::marker::Sized
+pub fn termrock::widgets::AgentBusyState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AgentBusyState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AgentBusyState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AgentBusyState
+pub fn termrock::widgets::AgentBusyState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AgentBusyState
 #[non_exhaustive] pub enum termrock::widgets::AgentModeKind
 pub termrock::widgets::AgentModeKind::Ask
 pub termrock::widgets::AgentModeKind::Auto
@@ -32501,7 +32557,7 @@ pub termrock::widgets::PromptComposerOutcome::PresentationChanged(termrock::widg
 pub termrock::widgets::PromptComposerOutcome::QueueRemoved
 pub termrock::widgets::PromptComposerOutcome::QueueRemoved::id: alloc::string::String
 pub termrock::widgets::PromptComposerOutcome::Queued
-pub termrock::widgets::PromptComposerOutcome::Queued::entry: termrock::widgets::QueuedPrompt
+pub termrock::widgets::PromptComposerOutcome::Queued::entry: termrock::widgets::PromptQueueItem
 pub termrock::widgets::PromptComposerOutcome::SelectionCopied
 pub termrock::widgets::PromptComposerOutcome::SelectionCopied::text: alloc::string::String
 pub termrock::widgets::PromptComposerOutcome::Submit
@@ -32549,6 +32605,231 @@ pub unsafe fn termrock::widgets::PromptComposerOutcome::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PromptComposerOutcome
+#[non_exhaustive] pub enum termrock::widgets::PromptQueueOutcome
+pub termrock::widgets::PromptQueueOutcome::ClearSent
+pub termrock::widgets::PromptQueueOutcome::ConfirmCancelled
+pub termrock::widgets::PromptQueueOutcome::ConfirmOpened
+pub termrock::widgets::PromptQueueOutcome::ConfirmOpened::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Deleted
+pub termrock::widgets::PromptQueueOutcome::Deleted::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::EditCancelled
+pub termrock::widgets::PromptQueueOutcome::EditCancelled::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Edited
+pub termrock::widgets::PromptQueueOutcome::Edited::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Edited::text: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Ignored
+pub termrock::widgets::PromptQueueOutcome::Interrupt
+pub termrock::widgets::PromptQueueOutcome::InterruptAndSend
+pub termrock::widgets::PromptQueueOutcome::InterruptAndSend::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::PhaseChanged
+pub termrock::widgets::PromptQueueOutcome::PresentationChanged(termrock::widgets::PromptQueuePresentation)
+pub termrock::widgets::PromptQueueOutcome::Reordered
+pub termrock::widgets::PromptQueueOutcome::Reordered::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Reordered::index: usize
+pub termrock::widgets::PromptQueueOutcome::Retry
+pub termrock::widgets::PromptQueueOutcome::Retry::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::Selected
+pub termrock::widgets::PromptQueueOutcome::Selected::id: alloc::string::String
+pub termrock::widgets::PromptQueueOutcome::SendFront
+pub termrock::widgets::PromptQueueOutcome::SendNext
+pub termrock::widgets::PromptQueueOutcome::SendNext::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueOutcome::clone(&self) -> termrock::widgets::PromptQueueOutcome
+impl core::cmp::Eq for termrock::widgets::PromptQueueOutcome
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueOutcome::eq(&self, &termrock::widgets::PromptQueueOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueOutcome
+impl core::marker::Freeze for termrock::widgets::PromptQueueOutcome
+impl core::marker::Send for termrock::widgets::PromptQueueOutcome
+impl core::marker::Sync for termrock::widgets::PromptQueueOutcome
+impl core::marker::Unpin for termrock::widgets::PromptQueueOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueOutcome where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueOutcome::Owned = T
+pub fn termrock::widgets::PromptQueueOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueOutcome
+#[non_exhaustive] pub enum termrock::widgets::PromptQueuePhase
+pub termrock::widgets::PromptQueuePhase::Browse
+pub termrock::widgets::PromptQueuePhase::ConfirmDelete
+pub termrock::widgets::PromptQueuePhase::ConfirmDelete::id: alloc::string::String
+pub termrock::widgets::PromptQueuePhase::Edit
+pub termrock::widgets::PromptQueuePhase::Edit::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::PromptQueuePhase
+pub fn termrock::widgets::PromptQueuePhase::clone(&self) -> termrock::widgets::PromptQueuePhase
+impl core::cmp::Eq for termrock::widgets::PromptQueuePhase
+impl core::cmp::PartialEq for termrock::widgets::PromptQueuePhase
+pub fn termrock::widgets::PromptQueuePhase::eq(&self, &termrock::widgets::PromptQueuePhase) -> bool
+impl core::default::Default for termrock::widgets::PromptQueuePhase
+pub fn termrock::widgets::PromptQueuePhase::default() -> termrock::widgets::PromptQueuePhase
+impl core::fmt::Debug for termrock::widgets::PromptQueuePhase
+pub fn termrock::widgets::PromptQueuePhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueuePhase
+impl core::marker::Freeze for termrock::widgets::PromptQueuePhase
+impl core::marker::Send for termrock::widgets::PromptQueuePhase
+impl core::marker::Sync for termrock::widgets::PromptQueuePhase
+impl core::marker::Unpin for termrock::widgets::PromptQueuePhase
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueuePhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueuePhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueuePhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueuePhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueuePhase where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueuePhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueuePhase where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueuePhase::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueuePhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueuePhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueuePhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueuePhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueuePhase where T: core::clone::Clone
+pub type termrock::widgets::PromptQueuePhase::Owned = T
+pub fn termrock::widgets::PromptQueuePhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueuePhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueuePhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueuePhase where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueuePhase where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueuePhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueuePhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueuePhase
+pub fn termrock::widgets::PromptQueuePhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueuePhase
+#[non_exhaustive] pub enum termrock::widgets::PromptQueuePresentation
+pub termrock::widgets::PromptQueuePresentation::Compact
+pub termrock::widgets::PromptQueuePresentation::Expanded
+impl termrock::widgets::PromptQueuePresentation
+pub const fn termrock::widgets::PromptQueuePresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::clone(&self) -> termrock::widgets::PromptQueuePresentation
+impl core::cmp::Eq for termrock::widgets::PromptQueuePresentation
+impl core::cmp::PartialEq for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::eq(&self, &termrock::widgets::PromptQueuePresentation) -> bool
+impl core::default::Default for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::default() -> termrock::widgets::PromptQueuePresentation
+impl core::fmt::Debug for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PromptQueuePresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueuePresentation
+impl core::marker::Freeze for termrock::widgets::PromptQueuePresentation
+impl core::marker::Send for termrock::widgets::PromptQueuePresentation
+impl core::marker::Sync for termrock::widgets::PromptQueuePresentation
+impl core::marker::Unpin for termrock::widgets::PromptQueuePresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueuePresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueuePresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueuePresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueuePresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueuePresentation where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueuePresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueuePresentation where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueuePresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueuePresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueuePresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueuePresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueuePresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueuePresentation where T: core::clone::Clone
+pub type termrock::widgets::PromptQueuePresentation::Owned = T
+pub fn termrock::widgets::PromptQueuePresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueuePresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueuePresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueuePresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueuePresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueuePresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueuePresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueuePresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueuePresentation
+pub fn termrock::widgets::PromptQueuePresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueuePresentation
+#[non_exhaustive] pub enum termrock::widgets::PromptQueueStatus
+pub termrock::widgets::PromptQueueStatus::Blocked
+pub termrock::widgets::PromptQueueStatus::Cancelled
+pub termrock::widgets::PromptQueueStatus::Failed
+pub termrock::widgets::PromptQueueStatus::Queued
+pub termrock::widgets::PromptQueueStatus::Sending
+pub termrock::widgets::PromptQueueStatus::Sent
+impl termrock::widgets::PromptQueueStatus
+pub const fn termrock::widgets::PromptQueueStatus::can_reorder(self) -> bool
+pub const fn termrock::widgets::PromptQueueStatus::can_send(self) -> bool
+pub const fn termrock::widgets::PromptQueueStatus::counts_as_pending(self) -> bool
+pub const fn termrock::widgets::PromptQueueStatus::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::PromptQueueStatus::id(self) -> &'static str
+pub const fn termrock::widgets::PromptQueueStatus::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::clone(&self) -> termrock::widgets::PromptQueueStatus
+impl core::cmp::Eq for termrock::widgets::PromptQueueStatus
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::eq(&self, &termrock::widgets::PromptQueueStatus) -> bool
+impl core::default::Default for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::default() -> termrock::widgets::PromptQueueStatus
+impl core::fmt::Debug for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PromptQueueStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueStatus
+impl core::marker::Freeze for termrock::widgets::PromptQueueStatus
+impl core::marker::Send for termrock::widgets::PromptQueueStatus
+impl core::marker::Sync for termrock::widgets::PromptQueueStatus
+impl core::marker::Unpin for termrock::widgets::PromptQueueStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueStatus where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueStatus where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueStatus where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueStatus::Owned = T
+pub fn termrock::widgets::PromptQueueStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueStatus
+pub fn termrock::widgets::PromptQueueStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueStatus
 #[non_exhaustive] pub enum termrock::widgets::QueryEditorMode
 pub termrock::widgets::QueryEditorMode::Compact
 pub termrock::widgets::QueryEditorMode::Fullscreen
@@ -65864,11 +66145,12 @@ pub fn termrock::widgets::PromptComposerState::open_completion_overlay<FocusId: 
 pub fn termrock::widgets::PromptComposerState::open_fullscreen_overlay<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PromptComposerState::place_completion(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, u16, u16) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::PromptComposerState::policy(&self) -> termrock::widgets::SubmitPolicy
-pub fn termrock::widgets::PromptComposerState::pop_queue_front(&mut self) -> core::option::Option<termrock::widgets::QueuedPrompt>
+pub fn termrock::widgets::PromptComposerState::pop_queue_front(&mut self) -> core::option::Option<termrock::widgets::PromptQueueItem>
 pub fn termrock::widgets::PromptComposerState::preferred_editor_rows(&self, u16) -> u16
 pub const fn termrock::widgets::PromptComposerState::presentation(&self) -> termrock::widgets::ComposerPresentation
 pub const fn termrock::widgets::PromptComposerState::presentation_for_width(u16) -> termrock::widgets::ComposerPresentation
-pub fn termrock::widgets::PromptComposerState::queue(&self) -> &[termrock::widgets::QueuedPrompt]
+pub fn termrock::widgets::PromptComposerState::project_prompt_queue(&self, bool) -> termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptComposerState::queue(&self) -> &[termrock::widgets::PromptQueueItem]
 pub fn termrock::widgets::PromptComposerState::remove_chip(&mut self, &str) -> bool
 pub fn termrock::widgets::PromptComposerState::remove_queue_entry(&mut self, &str) -> bool
 pub fn termrock::widgets::PromptComposerState::request_fullscreen(&mut self) -> termrock::widgets::PromptComposerOutcome
@@ -65935,6 +66217,233 @@ pub unsafe fn termrock::widgets::PromptComposerState::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::PromptComposerState
 pub fn termrock::widgets::PromptComposerState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PromptComposerState
+pub struct termrock::widgets::PromptQueue<'a>
+impl<'a> termrock::widgets::PromptQueue<'a>
+pub const fn termrock::widgets::PromptQueue<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PromptQueue<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::PromptQueue<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PromptQueue<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PromptQueueState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PromptQueue<'_>
+pub type &termrock::widgets::PromptQueue<'_>::State = termrock::widgets::PromptQueueState
+pub fn &termrock::widgets::PromptQueue<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PromptQueue<'_>
+pub type termrock::widgets::PromptQueue<'_>::State = termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueue<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::PromptQueue<'a>
+pub fn termrock::widgets::PromptQueue<'a>::clone(&self) -> termrock::widgets::PromptQueue<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PromptQueue<'a>
+pub fn termrock::widgets::PromptQueue<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PromptQueue<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PromptQueue<'a>
+impl<'a> core::marker::Send for termrock::widgets::PromptQueue<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PromptQueue<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PromptQueue<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PromptQueue<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueue<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueue<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueue<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueue<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueue<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueue<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueue<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueue<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueue<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueue<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueue<'a> where T: core::clone::Clone
+pub type termrock::widgets::PromptQueue<'a>::Owned = T
+pub fn termrock::widgets::PromptQueue<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueue<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueue<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueue<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueue<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueue<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueue<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueue<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueue<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueue<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueue<'a>
+pub fn termrock::widgets::PromptQueue<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueue<'a>
+pub struct termrock::widgets::PromptQueueItem
+pub termrock::widgets::PromptQueueItem::attachments: alloc::vec::Vec<termrock::widgets::PromptQueueRef>
+pub termrock::widgets::PromptQueueItem::blocked_reason: core::option::Option<alloc::string::String>
+pub termrock::widgets::PromptQueueItem::error: core::option::Option<alloc::string::String>
+pub termrock::widgets::PromptQueueItem::id: alloc::string::String
+pub termrock::widgets::PromptQueueItem::mentions: alloc::vec::Vec<termrock::widgets::PromptQueueRef>
+pub termrock::widgets::PromptQueueItem::status: termrock::widgets::PromptQueueStatus
+pub termrock::widgets::PromptQueueItem::text: alloc::string::String
+pub termrock::widgets::PromptQueueItem::when: core::option::Option<alloc::string::String>
+impl termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::attachments(self, alloc::vec::Vec<termrock::widgets::PromptQueueRef>) -> Self
+pub fn termrock::widgets::PromptQueueItem::blocked(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::chip_ids(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::PromptQueueItem::failed(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::from_text_and_chip_ids(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub fn termrock::widgets::PromptQueueItem::mentions(self, alloc::vec::Vec<termrock::widgets::PromptQueueRef>) -> Self
+pub fn termrock::widgets::PromptQueueItem::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::preview(&self, usize) -> alloc::string::String
+pub const fn termrock::widgets::PromptQueueItem::status(self, termrock::widgets::PromptQueueStatus) -> Self
+pub fn termrock::widgets::PromptQueueItem::when(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::clone(&self) -> termrock::widgets::PromptQueueItem
+impl core::cmp::Eq for termrock::widgets::PromptQueueItem
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::eq(&self, &termrock::widgets::PromptQueueItem) -> bool
+impl core::fmt::Debug for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueItem
+impl core::marker::Freeze for termrock::widgets::PromptQueueItem
+impl core::marker::Send for termrock::widgets::PromptQueueItem
+impl core::marker::Sync for termrock::widgets::PromptQueueItem
+impl core::marker::Unpin for termrock::widgets::PromptQueueItem
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueItem where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueItem where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueItem::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueItem where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueItem::Owned = T
+pub fn termrock::widgets::PromptQueueItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueItem
+pub struct termrock::widgets::PromptQueueRef
+pub termrock::widgets::PromptQueueRef::id: alloc::string::String
+pub termrock::widgets::PromptQueueRef::kind: alloc::string::String
+pub termrock::widgets::PromptQueueRef::label: alloc::string::String
+impl termrock::widgets::PromptQueueRef
+pub fn termrock::widgets::PromptQueueRef::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueRef::mention(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueRef::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueRef::paste(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PromptQueueRef
+pub fn termrock::widgets::PromptQueueRef::clone(&self) -> termrock::widgets::PromptQueueRef
+impl core::cmp::Eq for termrock::widgets::PromptQueueRef
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueRef
+pub fn termrock::widgets::PromptQueueRef::eq(&self, &termrock::widgets::PromptQueueRef) -> bool
+impl core::fmt::Debug for termrock::widgets::PromptQueueRef
+pub fn termrock::widgets::PromptQueueRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueRef
+impl core::marker::Freeze for termrock::widgets::PromptQueueRef
+impl core::marker::Send for termrock::widgets::PromptQueueRef
+impl core::marker::Sync for termrock::widgets::PromptQueueRef
+impl core::marker::Unpin for termrock::widgets::PromptQueueRef
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueRef where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueRef where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueRef::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueRef where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueRef where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueRef::Owned = T
+pub fn termrock::widgets::PromptQueueRef::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueRef where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueRef where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueRef where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueRef where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueRef
+pub fn termrock::widgets::PromptQueueRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueRef
+pub struct termrock::widgets::PromptQueueState
+pub termrock::widgets::PromptQueueState::agent: termrock::widgets::AgentBusyState
+pub termrock::widgets::PromptQueueState::compact_hit: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PromptQueueState::confirm_hits: alloc::vec::Vec<(bool, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::PromptQueueState::confirm_proceed_focused: bool
+pub termrock::widgets::PromptQueueState::cursor: usize
+pub termrock::widgets::PromptQueueState::edit_draft: alloc::string::String
+pub termrock::widgets::PromptQueueState::focused: bool
+pub termrock::widgets::PromptQueueState::items: alloc::vec::Vec<termrock::widgets::PromptQueueItem>
+pub termrock::widgets::PromptQueueState::phase: termrock::widgets::PromptQueuePhase
+pub termrock::widgets::PromptQueueState::presentation: termrock::widgets::PromptQueuePresentation
+pub termrock::widgets::PromptQueueState::row_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::PromptQueueState::scroll: usize
+impl termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::compact_summary(&self) -> alloc::string::String
+pub fn termrock::widgets::PromptQueueState::current(&self) -> core::option::Option<&termrock::widgets::PromptQueueItem>
+pub fn termrock::widgets::PromptQueueState::current_id(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::PromptQueueState::enqueue(&mut self, termrock::widgets::PromptQueueItem)
+pub fn termrock::widgets::PromptQueueState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PromptQueueOutcome
+pub fn termrock::widgets::PromptQueueState::new() -> Self
+pub fn termrock::widgets::PromptQueueState::pending_len(&self) -> usize
+pub fn termrock::widgets::PromptQueueState::pop_front_sendable(&mut self) -> core::option::Option<termrock::widgets::PromptQueueItem>
+pub fn termrock::widgets::PromptQueueState::remove(&mut self, &str) -> core::option::Option<termrock::widgets::PromptQueueItem>
+pub fn termrock::widgets::PromptQueueState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::PromptQueueState::set_agent(&mut self, termrock::widgets::AgentBusyState)
+pub const fn termrock::widgets::PromptQueueState::set_focused(&mut self, bool)
+pub fn termrock::widgets::PromptQueueState::set_items(&mut self, alloc::vec::Vec<termrock::widgets::PromptQueueItem>)
+pub fn termrock::widgets::PromptQueueState::set_status(&mut self, &str, termrock::widgets::PromptQueueStatus)
+impl core::clone::Clone for termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::clone(&self) -> termrock::widgets::PromptQueueState
+impl core::cmp::Eq for termrock::widgets::PromptQueueState
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::eq(&self, &termrock::widgets::PromptQueueState) -> bool
+impl core::default::Default for termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueState
+impl core::marker::Freeze for termrock::widgets::PromptQueueState
+impl core::marker::Send for termrock::widgets::PromptQueueState
+impl core::marker::Sync for termrock::widgets::PromptQueueState
+impl core::marker::Unpin for termrock::widgets::PromptQueueState
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueState where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueState where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueState::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueState where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueState::Owned = T
+pub fn termrock::widgets::PromptQueueState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueState where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueState where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueState
+pub fn termrock::widgets::PromptQueueState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueState
 pub struct termrock::widgets::ProvenanceHop
 pub termrock::widgets::ProvenanceHop::id: alloc::string::String
 pub termrock::widgets::ProvenanceHop::kind: termrock::widgets::InitiatorKind
@@ -66773,49 +67282,65 @@ impl<T> core::convert::From<T> for termrock::widgets::QueuedConnectivityAction
 pub fn termrock::widgets::QueuedConnectivityAction::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::QueuedConnectivityAction
 pub struct termrock::widgets::QueuedPrompt
-pub termrock::widgets::QueuedPrompt::chip_ids: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::QueuedPrompt::attachments: alloc::vec::Vec<termrock::widgets::PromptQueueRef>
+pub termrock::widgets::QueuedPrompt::blocked_reason: core::option::Option<alloc::string::String>
+pub termrock::widgets::QueuedPrompt::error: core::option::Option<alloc::string::String>
 pub termrock::widgets::QueuedPrompt::id: alloc::string::String
+pub termrock::widgets::QueuedPrompt::mentions: alloc::vec::Vec<termrock::widgets::PromptQueueRef>
+pub termrock::widgets::QueuedPrompt::status: termrock::widgets::PromptQueueStatus
 pub termrock::widgets::QueuedPrompt::text: alloc::string::String
-impl core::clone::Clone for termrock::widgets::QueuedPrompt
-pub fn termrock::widgets::QueuedPrompt::clone(&self) -> termrock::widgets::QueuedPrompt
-impl core::cmp::Eq for termrock::widgets::QueuedPrompt
-impl core::cmp::PartialEq for termrock::widgets::QueuedPrompt
-pub fn termrock::widgets::QueuedPrompt::eq(&self, &termrock::widgets::QueuedPrompt) -> bool
-impl core::fmt::Debug for termrock::widgets::QueuedPrompt
-pub fn termrock::widgets::QueuedPrompt::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::widgets::QueuedPrompt
-impl core::marker::Freeze for termrock::widgets::QueuedPrompt
-impl core::marker::Send for termrock::widgets::QueuedPrompt
-impl core::marker::Sync for termrock::widgets::QueuedPrompt
-impl core::marker::Unpin for termrock::widgets::QueuedPrompt
-impl core::marker::UnsafeUnpin for termrock::widgets::QueuedPrompt
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::QueuedPrompt
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::QueuedPrompt
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::QueuedPrompt where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::QueuedPrompt::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::QueuedPrompt where U: core::convert::From<T>
-pub fn termrock::widgets::QueuedPrompt::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::QueuedPrompt where U: core::convert::Into<T>
-pub type termrock::widgets::QueuedPrompt::Error = core::convert::Infallible
-pub fn termrock::widgets::QueuedPrompt::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::QueuedPrompt where U: core::convert::TryFrom<T>
-pub type termrock::widgets::QueuedPrompt::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::QueuedPrompt::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::QueuedPrompt where T: core::clone::Clone
-pub type termrock::widgets::QueuedPrompt::Owned = T
-pub fn termrock::widgets::QueuedPrompt::clone_into(&self, &mut T)
-pub fn termrock::widgets::QueuedPrompt::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::QueuedPrompt where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::QueuedPrompt::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::QueuedPrompt where T: ?core::marker::Sized
-pub fn termrock::widgets::QueuedPrompt::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::QueuedPrompt where T: ?core::marker::Sized
-pub fn termrock::widgets::QueuedPrompt::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::QueuedPrompt where T: core::clone::Clone
-pub unsafe fn termrock::widgets::QueuedPrompt::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::QueuedPrompt
-pub fn termrock::widgets::QueuedPrompt::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::QueuedPrompt
+pub termrock::widgets::QueuedPrompt::when: core::option::Option<alloc::string::String>
+impl termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::attachments(self, alloc::vec::Vec<termrock::widgets::PromptQueueRef>) -> Self
+pub fn termrock::widgets::PromptQueueItem::blocked(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::chip_ids(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::PromptQueueItem::failed(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::from_text_and_chip_ids(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub fn termrock::widgets::PromptQueueItem::mentions(self, alloc::vec::Vec<termrock::widgets::PromptQueueRef>) -> Self
+pub fn termrock::widgets::PromptQueueItem::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PromptQueueItem::preview(&self, usize) -> alloc::string::String
+pub const fn termrock::widgets::PromptQueueItem::status(self, termrock::widgets::PromptQueueStatus) -> Self
+pub fn termrock::widgets::PromptQueueItem::when(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::clone(&self) -> termrock::widgets::PromptQueueItem
+impl core::cmp::Eq for termrock::widgets::PromptQueueItem
+impl core::cmp::PartialEq for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::eq(&self, &termrock::widgets::PromptQueueItem) -> bool
+impl core::fmt::Debug for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PromptQueueItem
+impl core::marker::Freeze for termrock::widgets::PromptQueueItem
+impl core::marker::Send for termrock::widgets::PromptQueueItem
+impl core::marker::Sync for termrock::widgets::PromptQueueItem
+impl core::marker::Unpin for termrock::widgets::PromptQueueItem
+impl core::marker::UnsafeUnpin for termrock::widgets::PromptQueueItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PromptQueueItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PromptQueueItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PromptQueueItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PromptQueueItem where U: core::convert::From<T>
+pub fn termrock::widgets::PromptQueueItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PromptQueueItem where U: core::convert::Into<T>
+pub type termrock::widgets::PromptQueueItem::Error = core::convert::Infallible
+pub fn termrock::widgets::PromptQueueItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PromptQueueItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PromptQueueItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PromptQueueItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PromptQueueItem where T: core::clone::Clone
+pub type termrock::widgets::PromptQueueItem::Owned = T
+pub fn termrock::widgets::PromptQueueItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::PromptQueueItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PromptQueueItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PromptQueueItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PromptQueueItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PromptQueueItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PromptQueueItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PromptQueueItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PromptQueueItem
+pub fn termrock::widgets::PromptQueueItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PromptQueueItem
 pub struct termrock::widgets::QuickOpen<'a, Id>
 impl<'a, Id> termrock::widgets::QuickOpen<'a, Id>
 pub const fn termrock::widgets::QuickOpen<'a, Id>::ascii(self, bool) -> Self
@@ -79685,6 +80210,9 @@ pub const termrock::widgets::PROGRESS_UNKNOWN: u8
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_HISTORY_LIMIT: usize
+pub const termrock::widgets::PROMPT_QUEUE_OVERLAY_ID: &str
+pub const termrock::widgets::PROMPT_QUEUE_SUMMARY_PREVIEW: usize
+pub const termrock::widgets::PROMPT_QUEUE_WINDOW: usize
 pub const termrock::widgets::PROMPT_UNDO_LIMIT: usize
 pub const termrock::widgets::QUESTION_FLOW_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::QUESTION_FLOW_OPTION_WINDOW: usize
@@ -79920,6 +80448,7 @@ pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock
 pub fn termrock::widgets::example_plan_document() -> termrock::widgets::PlanDocument
 pub fn termrock::widgets::example_project_million(&termrock::widgets::VirtualListState<&'static str>, &mut alloc::vec::Vec<u64>)
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
+pub fn termrock::widgets::example_prompt_queue() -> alloc::vec::Vec<termrock::widgets::PromptQueueItem>
 pub fn termrock::widgets::example_question_set() -> termrock::widgets::QuestionSet
 pub fn termrock::widgets::example_quick_open_files() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
 pub fn termrock::widgets::example_quick_open_providers() -> alloc::vec::Vec<termrock::widgets::QuickOpenProvider>
@@ -80106,6 +80635,7 @@ pub fn termrock::widgets::paste_preview_from(&str) -> alloc::string::String
 pub fn termrock::widgets::paste_semantic_summary(&termrock::widgets::PastePayload) -> alloc::string::String
 pub fn termrock::widgets::paste_to_composer_chip(&termrock::widgets::PastePayload) -> termrock::widgets::ComposerChip
 pub fn termrock::widgets::path_segments(&str) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::pending_queue_len(&[termrock::widgets::PromptQueueItem]) -> usize
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_with_presentation(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, termrock::widgets::CompletionPresentation) -> ratatui_core::layout::rect::Rect
@@ -80149,6 +80679,7 @@ pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<term
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::query_editor_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::queue_item_from_composer(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, &[(alloc::string::String, alloc::string::String, alloc::string::String)]) -> termrock::widgets::PromptQueueItem
 pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &[(usize, ratatui_core::layout::rect::Rect)], &[char]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)

@@ -1488,6 +1488,21 @@ let _ = state.open_on_stack(&mut stack, bounds, anchor, size, Some("trigger"));
 // Paint: Popover::new("Settings", &system).paint(entry.rect, buf, &mut state);
 // Host fills state.slots().body. Dismiss via stack → opener focus restored.`,
   },
+  PromptQueue: {
+    description:
+      'Editable queue of user prompts behind busy agent work — compact summary + expanded manager; no auto-drain on fail.',
+    primaryStory: 'prompt-queue/expanded',
+    usage: `use termrock::widgets::{
+    example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+    PromptQueueState,
+};
+
+let mut state = PromptQueueState::new();
+state.set_items(example_prompt_queue());
+state.set_agent(AgentBusyState::Busy);
+state.presentation = PromptQueuePresentation::Expanded;
+PromptQueue::new(&system).paint(area, buf, &mut state);`,
+  },
   PromptComposer: {
     description: 'Flagship agent prompt composer with chips, policy, and completion overlays.',
     primaryStory: 'prompt-composer/basic',

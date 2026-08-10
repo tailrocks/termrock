@@ -2173,6 +2173,33 @@ Every component below uses sections **1–24**:
 21. **Stories:** `prompt-composer/{basic,busy-queue,compact,paste-chip,disconnected,fullscreen,narrow,unicode}`  
 22–24. Draft gate tests; large-prompt + repeated-paste + streaming completion bench; no provider I/O.
 
+## PromptQueue
+
+1. **Purpose:** Visible editable queue of user prompts behind agent work.  
+2. **Anatomy:** compact summary · expanded list · status · attachments · confirm  
+3. **Public properties:** `PromptQueueItem[]`, agent busy, presentation  
+4. **State:** cursor, phase Browse|Edit|ConfirmDelete, edit_draft  
+5. **Variants:** Compact · Expanded  
+6. **Sizes/density:** compact 1 row; expanded list window  
+7. **Visual states:** Queued/Sending/Blocked/Failed/Cancelled/Sent  
+8. **Interaction:** reorder · edit · delete · send next · interrupt+send  
+9. **Keyboard:** j/k · J/K · Enter · i · e · d · r · Esc · Cancel-default delete  
+10. **Mouse:** compact expand; row select; confirm hits  
+11. **Focus:** list / confirm  
+12. **Disabled:** accepts_input gate  
+13. **Loading:** Sending status  
+14. **Error:** Failed held + Retry outcome  
+15. **Narrow:** expanded list-only  
+16. **Tiny:** compact summary  
+17. **Unicode/ASCII:** status glyphs  
+18. **Colorless:** letters  
+19. **Composition:** PromptComposer enqueue + `project_prompt_queue`; no auto-drain  
+20. **Outcomes:** Send* · Interrupt* · Edited · Deleted · Reordered · Retry · ClearSent  
+21. **Stories:** `prompt-queue/{compact,expanded,failed,narrow,unicode}`  
+22. **Snapshots:** busy + failed held  
+23. **Tests:** KD-29 no auto-drain; attachment preserve on edit  
+24. **Perf:** O(visible rows)
+
 ## PermissionPrompt
 
 1. **Purpose:** Signature trust surface (not generic Allow); **no side effects**.  

@@ -329,17 +329,10 @@ pub struct ContextEstimate {
 }
 
 // ── Queue ───────────────────────────────────────────────────────────────────
+// Elevated management UI: [`super::PromptQueue`]. Composer keeps a thin FIFO of
+// [`super::PromptQueueItem`] (re-exported as `QueuedPrompt`) for enqueue chrome.
 
-/// Prompt waiting while the agent is active.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QueuedPrompt {
-    /// Queue entry id.
-    pub id: String,
-    /// Draft text at enqueue time.
-    pub text: String,
-    /// Attachment ids copied at enqueue.
-    pub chip_ids: Vec<String>,
-}
+use super::prompt_queue::{PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
 // ── Policy / connection ─────────────────────────────────────────────────────
 
@@ -405,8 +398,8 @@ pub enum PromptComposerOutcome {
     },
     /// Enqueued while busy.
     Queued {
-        /// Queue entry.
-        entry: QueuedPrompt,
+        /// Queue entry (rich item; identities preserved).
+        entry: PromptQueueItem,
     },
     /// User removed a queued entry.
     QueueRemoved {
@@ -516,7 +509,7 @@ pub struct PromptComposerState {
     connection: ComposerConnection,
     /// Agent currently running (enables queue / stop).
     busy: bool,
-    queue: Vec<QueuedPrompt>,
+    queue: Vec<PromptQueueItem>,
     next_queue_id: u64,
     next_chip_id: u64,
     validation_error: Option<String>,
@@ -687,9 +680,9 @@ impl PromptComposerState {
         &self.chips
     }
 
-    /// Queue.
+    /// Queue ([`PromptQueueItem`] entries).
     #[must_use]
-    pub fn queue(&self) -> &[QueuedPrompt] {
+    pub fn queue(&self) -> &[PromptQueueItem] {
         &self.queue
     }
 
@@ -788,12 +781,24 @@ impl PromptComposerState {
     }
 
     /// Pops the front queued prompt (FIFO drain by host).
-    pub fn pop_queue_front(&mut self) -> Option<QueuedPrompt> {
+    pub fn pop_queue_front(&mut self) -> Option<PromptQueueItem> {
         if self.queue.is_empty() {
             None
         } else {
             Some(self.queue.remove(0))
         }
+    }
+
+    /// Project queue into a [`super::PromptQueueState`] for the management surface.
+    pub fn project_prompt_queue(&self, agent_busy: bool) -> super::PromptQueueState {
+        let mut st = super::PromptQueueState::new();
+        st.set_items(self.queue.clone());
+        st.set_agent(if agent_busy || self.busy {
+            super::AgentBusyState::Busy
+        } else {
+            super::AgentBusyState::Idle
+        });
+        st
     }
 
     /// Clears the submit queue (does not touch draft).
@@ -1388,11 +1393,33 @@ impl PromptComposerState {
         if self.busy && self.policy.queue_when_busy {
             let id = format!("q-{}", self.next_queue_id);
             self.next_queue_id = self.next_queue_id.saturating_add(1);
-            let entry = QueuedPrompt {
-                id: id.clone(),
-                text: text.clone(),
-                chip_ids: chip_ids.clone(),
-            };
+            let mut attachments = Vec::new();
+            let mut mentions = Vec::new();
+            for c in &self.chips {
+                let kind = match c.kind {
+                    ChipKind::File => "file",
+                    ChipKind::Paste => "paste",
+                    ChipKind::Mention => "mention",
+                    ChipKind::Media => "media",
+                    ChipKind::Other => "chip",
+                };
+                let r = PromptQueueRef::new(c.id.clone(), kind, c.label.clone());
+                if matches!(c.kind, ChipKind::Mention) {
+                    mentions.push(r);
+                } else {
+                    attachments.push(r);
+                }
+            }
+            // also honor chip_ids-only path if chips empty but ids tracked
+            if attachments.is_empty() && mentions.is_empty() {
+                for cid in &chip_ids {
+                    attachments.push(PromptQueueRef::new(cid.clone(), "chip", cid.clone()));
+                }
+            }
+            let entry = PromptQueueItem::new(id, text.clone())
+                .attachments(attachments)
+                .mentions(mentions)
+                .status(PromptQueueStatus::Queued);
             self.queue.push(entry.clone());
             if self.policy.clear_on_submit {
                 self.editor.set_text("");
