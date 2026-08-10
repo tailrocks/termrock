@@ -82,6 +82,8 @@ use termrock::{
         PageTotal, Pagination, PaginationState,
         StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperPresentation,
         StepperState, example_onboarding_steps,
+        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction,
+        example_history_entries, filter_history_entries, history_redaction_secret,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -1007,6 +1009,60 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             2,
             stepper_ascii_story,
+        ),
+        Story::new(
+            "history-picker/basic",
+            "HistoryPicker basic",
+            "HistoryPicker",
+            "Recent history with pins, groups, and preview.",
+            64,
+            16,
+            history_picker_basic,
+        ),
+        Story::new(
+            "history-picker/search",
+            "HistoryPicker search",
+            "HistoryPicker",
+            "Filter history entries.",
+            56,
+            12,
+            history_picker_search,
+        ),
+        Story::new(
+            "history-picker/redacted",
+            "HistoryPicker redacted",
+            "HistoryPicker",
+            "Sensitive values masked in list.",
+            56,
+            12,
+            history_picker_redacted,
+        ),
+        Story::new(
+            "history-picker/draft",
+            "HistoryPicker draft preserved",
+            "HistoryPicker",
+            "Draft stash banner while browsing.",
+            56,
+            12,
+            history_picker_draft,
+        ),
+        Story::new(
+            "history-picker/empty",
+            "HistoryPicker empty",
+            "HistoryPicker",
+            "Empty history state.",
+            40,
+            8,
+            history_picker_empty,
+        ),
+        Story::new(
+            "history-picker/ascii",
+            "HistoryPicker ASCII",
+            "HistoryPicker",
+            "ASCII chrome and colorless paint.",
+            48,
+            12,
+            history_picker_ascii,
         ),
         Story::new(
             "menu-bar/basic",
@@ -7969,6 +8025,64 @@ fn stepper_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     state.set_status(1, StepStatus::Skipped);
     state.set_current(2, items.len(), true);
     Stepper::new(&items, system)
+        .ascii(true)
+        .colorless(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_history_entries();
+    let visible = filter_history_entries(&entries, "");
+    let mut state = HistoryPickerState::new();
+    let _ = state.open(None);
+    state.reconcile(&visible);
+    HistoryPicker::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_history_entries();
+    let visible = filter_history_entries(&entries, "git");
+    let mut state = HistoryPickerState::new();
+    let _ = state.open(None);
+    *state.query_mut() = TextInputState::new("git").with_allow_empty(true);
+    state.reconcile(&visible);
+    HistoryPicker::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_redacted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_history_entries();
+    let visible = filter_history_entries(&entries, "");
+    let mut state = HistoryPickerState::new();
+    let _ = state.open(None);
+    state.set_redaction(history_redaction_secret());
+    state.reconcile(&visible);
+    HistoryPicker::new(&visible, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_draft(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_history_entries();
+    let visible = filter_history_entries(&entries, "");
+    let mut state = HistoryPickerState::new();
+    let _ = state.open(Some("in-progress draft…".into()));
+    state.reconcile(&visible);
+    HistoryPicker::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = HistoryPickerState::<&str>::new();
+    let _ = state.open(None);
+    HistoryPicker::new(&[], system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn history_picker_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = example_history_entries();
+    let visible = filter_history_entries(&entries, "");
+    let mut state = HistoryPickerState::new();
+    let _ = state.open(None);
+    state.reconcile(&visible);
+    HistoryPicker::new(&visible, system)
         .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);

@@ -918,5 +918,13 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "HistoryPicker": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }

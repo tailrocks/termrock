@@ -63,6 +63,7 @@ mod card;
 mod panel;
 mod permission;
 mod picker;
+mod history_picker;
 mod primitives;
 mod progress;
 mod prompt_composer;
@@ -304,6 +305,16 @@ pub use permission::{
 pub use picker::{
     PICKER_OVERLAY_ID, Picker, PickerOutcome, PickerSize, PickerState, dismiss_picker_overlay,
     open_picker_overlay, place_picker,
+};
+pub use history_picker::{
+    HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
+    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
+    HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
+    default_history_picker_intent, dismiss_history_picker_overlay, example_history_entries,
+    filter_history_entries, history_picker_presentation_for_bounds, history_redaction_secret,
+    open_history_picker_fullscreen, open_history_picker_overlay,
+    open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
+    redact_history_text,
 };
 pub use primitives::{
     ActivationOutcome, ActivationState, Button, ButtonParts, ButtonSize, ButtonState, ButtonVariant,

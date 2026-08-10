@@ -728,6 +728,20 @@ use termrock::style::DesignSystem;
 let system = DesignSystem::default();
 FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
   },
+  HistoryPicker: {
+    description:
+      'Reusable recent-history selector with pin/delete, search, groups, preview, redaction hooks, draft preservation, and popover/fullscreen placement.',
+    primaryStory: 'history-picker/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{HistoryPicker, HistoryPickerState, example_history_entries, filter_history_entries};
+
+let system = DesignSystem::default();
+let entries = example_history_entries();
+let visible = filter_history_entries(&entries, "");
+let mut state = HistoryPickerState::new();
+let _ = state.open(None);
+HistoryPicker::new(&visible, &system).paint(area, buf, &mut state);`,
+  },
   Stepper: {
     description:
       'Progress/navigation chrome for multi-step flows with status marks, horizontal/vertical layout, policy-gated jumps, and narrow numeric/menu contraction.',

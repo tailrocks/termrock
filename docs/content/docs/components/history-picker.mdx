@@ -1,0 +1,68 @@
+---
+title: HistoryPicker
+description: 'Reusable recent-history selector with pin/delete, search, groups, preview, redaction hooks, draft preservation, and popover/fullscreen placement.'
+---
+
+## Previews
+
+### `history-picker/basic`
+
+HistoryPicker basic
+
+![HistoryPicker — basic](/component-previews/history-picker-basic.svg)
+
+### `history-picker/search`
+
+HistoryPicker search
+
+![HistoryPicker — search](/component-previews/history-picker-search.svg)
+
+### `history-picker/redacted`
+
+HistoryPicker redacted
+
+![HistoryPicker — redacted](/component-previews/history-picker-redacted.svg)
+
+### `history-picker/draft`
+
+HistoryPicker draft preserved
+
+![HistoryPicker — draft](/component-previews/history-picker-draft.svg)
+
+### `history-picker/empty`
+
+HistoryPicker empty
+
+![HistoryPicker — empty](/component-previews/history-picker-empty.svg)
+
+### `history-picker/ascii`
+
+HistoryPicker ASCII
+
+![HistoryPicker — ascii](/component-previews/history-picker-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{HistoryPicker, HistoryPickerState, example_history_entries, filter_history_entries};
+
+let system = DesignSystem::default();
+let entries = example_history_entries();
+let visible = filter_history_entries(&entries, "");
+let mut state = HistoryPickerState::new();
+let _ = state.open(Some(draft.clone()));
+HistoryPicker::new(&visible, &system).paint(area, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Draft preserve/restore | covered |
+| Redaction | covered |
+| Pin / delete | covered |
+| Non-color cues | covered |
+| Narrow / fullscreen | covered |
