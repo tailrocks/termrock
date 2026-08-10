@@ -231,9 +231,12 @@ pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
 };
 pub use dialog::{
-    Backdrop, ChoiceDialog, ChoiceDialogState, DIALOG_OVERLAY_ID, Dialog, DialogSize,
-    DialogVariant, MessageDialog, dismiss_dialog_overlay, open_alert_dialog_overlay,
-    open_dialog_overlay, place_dialog,
+    Backdrop, ChoiceDialog, ChoiceDialogState, DIALOG_FULLSCREEN_MAX_HEIGHT,
+    DIALOG_FULLSCREEN_MAX_WIDTH, DIALOG_NESTED_OVERLAY_PREFIX, DIALOG_OVERLAY_ID, Dialog,
+    DialogClosePolicy, DialogFocusZone, DialogOutcome, DialogRecipe, DialogSize, DialogSlots,
+    DialogState, DialogVariant, MessageDialog, default_dialog_intent, dialog_recipe_for_bounds,
+    dismiss_dialog_overlay, open_alert_dialog_overlay, open_dialog_child_overlay,
+    open_dialog_configured, open_dialog_overlay, place_dialog, place_dialog_recipe,
 };
 pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{

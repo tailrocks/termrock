@@ -28,14 +28,17 @@ let area = Rect::new(0, 0, 80, 24);
 backdrop.render(area, &mut Buffer::empty(area));`,
   },
   ChoiceDialog: {
-    description: 'A modal choice prompt with stable action identities and canonical traversal.',
+    description:
+      'Modal choice prompt on the canonical Dialog engine — stable actions, loading gate, Esc dismiss / confirm-only policy via dialog_mut().',
     primaryStory: 'choice-dialog/basic',
     usage: `use ratatui_core::text::Text;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Action, ChoiceDialog, ChoiceDialogState, Dialog}};
+use termrock::input::{KeyCode, KeyEvent, KeyModifiers};
+use termrock::style::DesignSystem;
+use termrock::widgets::{Action, ChoiceDialog, ChoiceDialogState, Dialog};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let actions = [Action { id: "accept", label: "Accept", enabled: true, style: None }];
-let dialog = ChoiceDialog::new(Dialog::new("Confirm", Text::from("Continue?"), &theme), &actions);
+let dialog = ChoiceDialog::new(Dialog::new("Confirm", Text::from("Continue?"), &system), &actions);
 let mut state = ChoiceDialogState::new(Some("accept"));
 let outcome = state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
@@ -111,16 +114,26 @@ state.set_focused(true);
 let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
   Dialog: {
-    description: 'A framed modal surface with semantic chrome and caller-owned content.',
+    description:
+      'Canonical modal surface: title, description, body, actions, close policy, focus trap via OverlayStack, initial focus, opener restoration, scrolling, loading, validation; recipes normal/compact/wide/fullscreen/destructive; safe Enter (no accidental submit from body).',
     primaryStory: 'dialog/message',
-    usage: `use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget};
-use termrock::{Theme, widgets::{Dialog, PanelEmphasis}};
+    usage: `use ratatui_core::text::Text;
+use termrock::interaction::OverlayStack;
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    Dialog, DialogRecipe, DialogSize, DialogState, open_dialog_overlay,
+};
 
-let theme = Theme::default();
-let dialog = Dialog::new("Notice", Text::from("Saved"), &theme)
-    .emphasis(PanelEmphasis::Focused);
-let area = Rect::new(0, 0, 40, 8);
-dialog.render(area, &mut Buffer::empty(area));`,
+let system = DesignSystem::default();
+let mut state = DialogState::<&str>::new();
+state.set_recipe(DialogRecipe::Normal);
+let mut stack = OverlayStack::<&str>::new();
+let _ = state.open_on_stack(&mut stack, bounds, DialogSize::default(), Some("trigger"));
+Dialog::new("Notice", Text::from("Saved"), &system)
+    .description("Write completed.")
+    .recipe(DialogRecipe::Normal)
+    .footer_hint("esc dismiss")
+    .paint(entry.rect, buf, &mut state, 0);`,
   },
   DiffView: {
     description: 'A vertically scrollable, syntax-neutral presentation of projected diff lines.',

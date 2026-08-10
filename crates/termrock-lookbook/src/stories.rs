@@ -37,7 +37,8 @@ use termrock::{
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
-        DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
+        DetailTableState, Dialog, DialogRecipe, DiffHunk, DiffKind, DiffLine, DiffReview,
+        DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
         FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
@@ -2244,10 +2245,28 @@ pub(crate) fn stories() -> Vec<Story> {
             "dialog/message",
             "Message dialog",
             "Dialog",
-            "Responsive neutral dialog shell.",
+            "Canonical modal shell with description and footer hint.",
             48,
-            7,
+            9,
             dialog,
+        ),
+        Story::new(
+            "dialog/destructive",
+            "Destructive dialog",
+            "Dialog",
+            "Destructive recipe with choice actions; Enter only on action zone.",
+            48,
+            10,
+            dialog_destructive_story,
+        ),
+        Story::new(
+            "dialog/compact",
+            "Compact dialog",
+            "Dialog",
+            "Compact recipe for tight confirmations.",
+            36,
+            6,
+            dialog_compact_story,
         ),
         Story::new(
             "choice-dialog/basic",
@@ -10918,9 +10937,59 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             Line::from("The operation completed.").into(),
             &tokens,
         )
+        .description("All changes were written successfully.")
         .style(Style::new())
         .emphasis(termrock::widgets::PanelChrome::Focused)
+        .recipe(DialogRecipe::Normal)
         .footer_hint("esc dismiss"),
+        area,
+    );
+}
+
+fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
+    let actions = [
+        Action {
+            id: "delete",
+            label: "Delete",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let mut state = ChoiceDialogState::new(Some("cancel"));
+    state
+        .dialog_mut()
+        .set_recipe(DialogRecipe::Destructive);
+    frame.render_stateful_widget(
+        &ChoiceDialog::new(
+            Dialog::new(
+                "Delete project",
+                Line::from("This cannot be undone.").into(),
+                &tokens,
+            )
+            .description("All files and history will be removed.")
+            .recipe(DialogRecipe::Destructive)
+            .footer_hint("esc cancel · enter confirms focused"),
+            &actions,
+        ),
+        area,
+        &mut state,
+    );
+}
+
+fn dialog_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
+    frame.render_widget(
+        Dialog::new("Saved", Line::from("OK").into(), &tokens)
+            .recipe(DialogRecipe::Compact)
+            .emphasis(termrock::widgets::PanelChrome::Focused)
+            .footer_hint("esc"),
         area,
     );
 }

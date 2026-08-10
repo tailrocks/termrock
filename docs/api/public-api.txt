@@ -18196,6 +18196,213 @@ pub unsafe fn termrock::widgets::DetailTableOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::DetailTableOutcome<Id>
 pub fn termrock::widgets::DetailTableOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::DialogClosePolicy
+pub termrock::widgets::DialogClosePolicy::ConfirmOnly
+pub termrock::widgets::DialogClosePolicy::Dismissible
+pub termrock::widgets::DialogClosePolicy::Locked
+impl termrock::widgets::DialogClosePolicy
+pub const fn termrock::widgets::DialogClosePolicy::id(self) -> &'static str
+pub const fn termrock::widgets::DialogClosePolicy::overlay_kind(self) -> termrock::interaction::OverlayKind
+impl core::clone::Clone for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::clone(&self) -> termrock::widgets::DialogClosePolicy
+impl core::cmp::Eq for termrock::widgets::DialogClosePolicy
+impl core::cmp::PartialEq for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::eq(&self, &termrock::widgets::DialogClosePolicy) -> bool
+impl core::default::Default for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::default() -> termrock::widgets::DialogClosePolicy
+impl core::fmt::Debug for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DialogClosePolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::DialogClosePolicy
+impl core::marker::Freeze for termrock::widgets::DialogClosePolicy
+impl core::marker::Send for termrock::widgets::DialogClosePolicy
+impl core::marker::Sync for termrock::widgets::DialogClosePolicy
+impl core::marker::Unpin for termrock::widgets::DialogClosePolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::DialogClosePolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogClosePolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogClosePolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogClosePolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogClosePolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogClosePolicy where U: core::convert::From<T>
+pub fn termrock::widgets::DialogClosePolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogClosePolicy where U: core::convert::Into<T>
+pub type termrock::widgets::DialogClosePolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogClosePolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogClosePolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogClosePolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogClosePolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogClosePolicy where T: core::clone::Clone
+pub type termrock::widgets::DialogClosePolicy::Owned = T
+pub fn termrock::widgets::DialogClosePolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogClosePolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogClosePolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogClosePolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogClosePolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogClosePolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogClosePolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogClosePolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogClosePolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogClosePolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogClosePolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogClosePolicy
+#[non_exhaustive] pub enum termrock::widgets::DialogFocusZone
+pub termrock::widgets::DialogFocusZone::Actions
+pub termrock::widgets::DialogFocusZone::Body
+impl termrock::widgets::DialogFocusZone
+pub const fn termrock::widgets::DialogFocusZone::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::clone(&self) -> termrock::widgets::DialogFocusZone
+impl core::cmp::Eq for termrock::widgets::DialogFocusZone
+impl core::cmp::PartialEq for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::eq(&self, &termrock::widgets::DialogFocusZone) -> bool
+impl core::default::Default for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::default() -> termrock::widgets::DialogFocusZone
+impl core::fmt::Debug for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DialogFocusZone
+impl core::marker::StructuralPartialEq for termrock::widgets::DialogFocusZone
+impl core::marker::Freeze for termrock::widgets::DialogFocusZone
+impl core::marker::Send for termrock::widgets::DialogFocusZone
+impl core::marker::Sync for termrock::widgets::DialogFocusZone
+impl core::marker::Unpin for termrock::widgets::DialogFocusZone
+impl core::marker::UnsafeUnpin for termrock::widgets::DialogFocusZone
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogFocusZone
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogFocusZone
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogFocusZone where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogFocusZone::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogFocusZone where U: core::convert::From<T>
+pub fn termrock::widgets::DialogFocusZone::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogFocusZone where U: core::convert::Into<T>
+pub type termrock::widgets::DialogFocusZone::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogFocusZone::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogFocusZone where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogFocusZone::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogFocusZone::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogFocusZone where T: core::clone::Clone
+pub type termrock::widgets::DialogFocusZone::Owned = T
+pub fn termrock::widgets::DialogFocusZone::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogFocusZone::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogFocusZone where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogFocusZone::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogFocusZone where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogFocusZone::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogFocusZone where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogFocusZone::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogFocusZone where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogFocusZone::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogFocusZone
+pub fn termrock::widgets::DialogFocusZone::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogFocusZone
+#[non_exhaustive] pub enum termrock::widgets::DialogOutcome<Id>
+pub termrock::widgets::DialogOutcome::Activated(Id)
+pub termrock::widgets::DialogOutcome::Cancelled
+pub termrock::widgets::DialogOutcome::DefaultActivated(Id)
+pub termrock::widgets::DialogOutcome::FocusMoved
+pub termrock::widgets::DialogOutcome::Ignored
+pub termrock::widgets::DialogOutcome::LoadingBlocked
+pub termrock::widgets::DialogOutcome::Scrolled
+pub termrock::widgets::DialogOutcome::ValidationFailed
+impl<Id> termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogOutcome<Id>::into_outcome(self) -> termrock::interaction::Outcome<Id>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogOutcome<Id>::clone(&self) -> termrock::widgets::DialogOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DialogOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogOutcome<Id>::eq(&self, &termrock::widgets::DialogOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DialogOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::DialogOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::DialogOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::DialogOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::DialogOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::DialogOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::DialogOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::DialogOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::DialogOutcome<Id>::Owned = T
+pub fn termrock::widgets::DialogOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::DialogRecipe
+pub termrock::widgets::DialogRecipe::Compact
+pub termrock::widgets::DialogRecipe::Destructive
+pub termrock::widgets::DialogRecipe::Fullscreen
+pub termrock::widgets::DialogRecipe::Normal
+pub termrock::widgets::DialogRecipe::Wide
+impl termrock::widgets::DialogRecipe
+pub const fn termrock::widgets::DialogRecipe::id(self) -> &'static str
+pub const fn termrock::widgets::DialogRecipe::is_destructive(self) -> bool
+impl core::clone::Clone for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::clone(&self) -> termrock::widgets::DialogRecipe
+impl core::cmp::Eq for termrock::widgets::DialogRecipe
+impl core::cmp::PartialEq for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::eq(&self, &termrock::widgets::DialogRecipe) -> bool
+impl core::default::Default for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::default() -> termrock::widgets::DialogRecipe
+impl core::fmt::Debug for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DialogRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::DialogRecipe
+impl core::marker::Freeze for termrock::widgets::DialogRecipe
+impl core::marker::Send for termrock::widgets::DialogRecipe
+impl core::marker::Sync for termrock::widgets::DialogRecipe
+impl core::marker::Unpin for termrock::widgets::DialogRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::DialogRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::DialogRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::DialogRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogRecipe where T: core::clone::Clone
+pub type termrock::widgets::DialogRecipe::Owned = T
+pub fn termrock::widgets::DialogRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogRecipe
 #[non_exhaustive] pub enum termrock::widgets::DialogVariant
 pub termrock::widgets::DialogVariant::Danger
 pub termrock::widgets::DialogVariant::Default
@@ -32455,15 +32662,17 @@ pub const fn termrock::widgets::ChoiceDialogState<Id>::accepts_input(&self) -> b
 pub fn termrock::widgets::ChoiceDialogState<Id>::activate_selected(&self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::click(&mut self, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::dialog(&self) -> &termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::ChoiceDialogState<Id>::dialog_mut(&mut self) -> &mut termrock::widgets::DialogState<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::focused(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::handle_intent(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::context::ContextUiIntent) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::handle_key(&mut self, &[termrock::widgets::Action<'_, Id>], termrock::input::KeyEvent) -> termrock::interaction::Outcome<Id>
 pub const fn termrock::widgets::ChoiceDialogState<Id>::is_loading(&self) -> bool
-pub const fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::ChoiceDialogState<Id>::new(core::option::Option<Id>) -> Self
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_next(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::select_previous(&mut self, &[termrock::widgets::Action<'_, Id>]) -> termrock::interaction::Outcome<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::set_accepts_input(&mut self, bool)
-pub const fn termrock::widgets::ChoiceDialogState<Id>::set_loading(&mut self, bool)
+pub fn termrock::widgets::ChoiceDialogState<Id>::set_loading(&mut self, bool)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ChoiceDialogState<Id>
 pub fn termrock::widgets::ChoiceDialogState<Id>::clone(&self) -> termrock::widgets::ChoiceDialogState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ChoiceDialogState<Id>
@@ -35082,11 +35291,17 @@ pub fn termrock::widgets::DetailTableState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DetailTableState<Id>
 pub struct termrock::widgets::Dialog<'a>
 impl<'a> termrock::widgets::Dialog<'a>
+pub const fn termrock::widgets::Dialog<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Dialog<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::Dialog<'a>::description(self, &'a str) -> Self
 pub const fn termrock::widgets::Dialog<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Dialog<'a>::footer_hint(self, &'a str) -> Self
 pub const fn termrock::widgets::Dialog<'a>::from_system(&'a str, ratatui_core::text::text::Text<'a>, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Dialog<'a>::loading(self, bool) -> Self
 pub const fn termrock::widgets::Dialog<'a>::new(&'a str, ratatui_core::text::text::Text<'a>, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Dialog<'a>::paint<Id>(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DialogState<Id>, u16)
+pub const fn termrock::widgets::Dialog<'a>::recipe(self, termrock::widgets::DialogRecipe) -> Self
+pub fn termrock::widgets::Dialog<'a>::register_semantic<Id, Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::DialogState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Dialog<'a>::style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Dialog<'a>::theme(&self) -> &termrock::style::RolePalette
 pub const fn termrock::widgets::Dialog<'a>::tokens(&self) -> &termrock::style::DesignSystem
@@ -35134,6 +35349,7 @@ pub termrock::widgets::DialogSize::height: u16
 pub termrock::widgets::DialogSize::width: u16
 impl termrock::widgets::DialogSize
 pub const fn termrock::widgets::DialogSize::for_density(termrock::style::Density) -> Self
+pub const fn termrock::widgets::DialogSize::for_recipe(termrock::widgets::DialogRecipe) -> Self
 pub const fn termrock::widgets::DialogSize::min_width(termrock::style::Density) -> u16
 impl core::clone::Clone for termrock::widgets::DialogSize
 pub fn termrock::widgets::DialogSize::clone(&self) -> termrock::widgets::DialogSize
@@ -35180,6 +35396,135 @@ pub unsafe fn termrock::widgets::DialogSize::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DialogSize
 pub fn termrock::widgets::DialogSize::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DialogSize
+pub struct termrock::widgets::DialogSlots
+pub termrock::widgets::DialogSlots::actions: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::body: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::description: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::title: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DialogSlots::validation: ratatui_core::layout::rect::Rect
+impl termrock::widgets::DialogSlots
+pub const fn termrock::widgets::DialogSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogSlots::clone(&self) -> termrock::widgets::DialogSlots
+impl core::cmp::Eq for termrock::widgets::DialogSlots
+impl core::cmp::PartialEq for termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogSlots::eq(&self, &termrock::widgets::DialogSlots) -> bool
+impl core::default::Default for termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogSlots::default() -> termrock::widgets::DialogSlots
+impl core::fmt::Debug for termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::DialogSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::DialogSlots
+impl core::marker::Freeze for termrock::widgets::DialogSlots
+impl core::marker::Send for termrock::widgets::DialogSlots
+impl core::marker::Sync for termrock::widgets::DialogSlots
+impl core::marker::Unpin for termrock::widgets::DialogSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::DialogSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogSlots where U: core::convert::From<T>
+pub fn termrock::widgets::DialogSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogSlots where U: core::convert::Into<T>
+pub type termrock::widgets::DialogSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogSlots where T: core::clone::Clone
+pub type termrock::widgets::DialogSlots::Owned = T
+pub fn termrock::widgets::DialogSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogSlots
+pub struct termrock::widgets::DialogState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::action_cursor(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::DialogState<Id>::handle_click(&mut self, ratatui_core::layout::position::Position, &[termrock::widgets::Action<'_, Id>]) -> termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::Action<'_, Id>]) -> termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Action<'_, Id>]) -> termrock::widgets::DialogOutcome<Id>
+pub fn termrock::widgets::DialogState<Id>::set_action_cursor(&mut self, core::option::Option<Id>)
+impl<Id> termrock::widgets::DialogState<Id>
+pub const fn termrock::widgets::DialogState<Id>::accepts_input(&self) -> bool
+pub fn termrock::widgets::DialogState<Id>::alert() -> Self
+pub fn termrock::widgets::DialogState<Id>::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> termrock::interaction::OverlayOutcome<F>
+pub const fn termrock::widgets::DialogState<Id>::close_policy(&self) -> termrock::widgets::DialogClosePolicy
+pub fn termrock::widgets::DialogState<Id>::ensure_initial_focus(&mut self)
+pub const fn termrock::widgets::DialogState<Id>::focus_zone(&self) -> termrock::widgets::DialogFocusZone
+pub const fn termrock::widgets::DialogState<Id>::is_loading(&self) -> bool
+pub const fn termrock::widgets::DialogState<Id>::is_open(&self) -> bool
+pub fn termrock::widgets::DialogState<Id>::new() -> Self
+pub fn termrock::widgets::DialogState<Id>::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
+pub const fn termrock::widgets::DialogState<Id>::recipe(&self) -> termrock::widgets::DialogRecipe
+pub fn termrock::widgets::DialogState<Id>::scroll(&self) -> &termrock::scroll::DialogScroll
+pub fn termrock::widgets::DialogState<Id>::scroll_mut(&mut self) -> &mut termrock::scroll::DialogScroll
+pub fn termrock::widgets::DialogState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::DialogState<Id>::set_cancel_action(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::DialogState<Id>::set_close_policy(&mut self, termrock::widgets::DialogClosePolicy)
+pub fn termrock::widgets::DialogState<Id>::set_default_action(&mut self, core::option::Option<Id>)
+pub fn termrock::widgets::DialogState<Id>::set_focus_zone(&mut self, termrock::widgets::DialogFocusZone)
+pub fn termrock::widgets::DialogState<Id>::set_initial_focus(&mut self, termrock::widgets::DialogFocusZone)
+pub const fn termrock::widgets::DialogState<Id>::set_loading(&mut self, bool)
+pub fn termrock::widgets::DialogState<Id>::set_open(&mut self, bool)
+pub fn termrock::widgets::DialogState<Id>::set_recipe(&mut self, termrock::widgets::DialogRecipe)
+pub fn termrock::widgets::DialogState<Id>::set_require_action_focus_for_enter(&mut self, bool)
+pub fn termrock::widgets::DialogState<Id>::set_validation_message(&mut self, core::option::Option<alloc::string::String>)
+pub const fn termrock::widgets::DialogState<Id>::slots(&self) -> termrock::widgets::DialogSlots
+pub fn termrock::widgets::DialogState<Id>::validation_message(&self) -> core::option::Option<&str>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::clone(&self) -> termrock::widgets::DialogState<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DialogState<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::eq(&self, &termrock::widgets::DialogState<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DialogState<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::default() -> Self
+impl<Id> core::marker::Freeze for termrock::widgets::DialogState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::DialogState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::DialogState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::DialogState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::DialogState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DialogState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DialogState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DialogState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DialogState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DialogState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::DialogState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DialogState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::DialogState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::DialogState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DialogState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DialogState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DialogState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DialogState<Id> where T: core::clone::Clone
+pub type termrock::widgets::DialogState<Id>::Owned = T
+pub fn termrock::widgets::DialogState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DialogState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DialogState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DialogState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DialogState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::DialogState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DialogState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DialogState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DialogState<Id>
+pub fn termrock::widgets::DialogState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DialogState<Id>
 pub struct termrock::widgets::DiffHunk
 pub termrock::widgets::DiffHunk::header: alloc::string::String
 pub termrock::widgets::DiffHunk::len: usize
@@ -52412,6 +52757,9 @@ pub const termrock::widgets::DEFAULT_COMBO_RECENT_LIMIT: usize
 pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
 pub const termrock::widgets::DEFAULT_PATH_HISTORY_LIMIT: usize
+pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_HEIGHT: u16
+pub const termrock::widgets::DIALOG_FULLSCREEN_MAX_WIDTH: u16
+pub const termrock::widgets::DIALOG_NESTED_OVERLAY_PREFIX: &str
 pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
 pub const termrock::widgets::DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::DROPDOWN_MENU_OVERLAY_ID: &str
@@ -52504,12 +52852,14 @@ pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termroc
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
 pub fn termrock::widgets::default_command_palette_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_completion_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::default_dialog_intent(termrock::input::KeyEvent, termrock::widgets::DialogFocusZone) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_history_picker_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_keyboard_help_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_menu_bar_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_quick_open_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::default_stepper_intent(termrock::input::KeyEvent, termrock::widgets::StepperOrientation) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::dialog_recipe_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::DialogRecipe) -> termrock::widgets::DialogRecipe
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_context_menu_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -52590,6 +52940,8 @@ pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clo
 pub fn termrock::widgets::open_completion_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>, core::option::Option<termrock::widgets::CompletionPresentation>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_context_menu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_dialog_child_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, &str, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_dialog_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>, termrock::widgets::DialogClosePolicy, core::option::Option<termrock::widgets::DialogRecipe>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, impl core::convert::Into<termrock::interaction::OverlayId>, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dropdown_menu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -52618,6 +52970,7 @@ pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_with_presentation(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, termrock::widgets::CompletionPresentation) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_context_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_dialog_recipe(ratatui_core::layout::rect::Rect, termrock::widgets::DialogRecipe) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dropdown_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_history_picker(ratatui_core::layout::rect::Rect, termrock::widgets::HistoryPickerSize) -> ratatui_core::layout::rect::Rect
