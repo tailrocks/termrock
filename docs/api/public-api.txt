@@ -14712,6 +14712,11 @@ pub const termrock::widgets::process_table_bench::PROCESS_COUNT: usize
 pub const termrock::widgets::process_table_bench::REFRESH_MS: u32
 pub const termrock::widgets::process_table_bench::STREAM_FRAMES: u32
 pub const termrock::widgets::process_table_bench::VIEWPORT: u16
+pub mod termrock::widgets::prompt_composer_bench
+pub const termrock::widgets::prompt_composer_bench::COMPLETION_UPDATES: usize
+pub const termrock::widgets::prompt_composer_bench::LARGE_PROMPT_LINES: usize
+pub const termrock::widgets::prompt_composer_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::prompt_composer_bench::PASTE_ROUNDS: usize
 pub mod termrock::widgets::query_editor_bench
 pub const termrock::widgets::query_editor_bench::COMPLETION_CANDIDATES: usize
 pub const termrock::widgets::query_editor_bench::DIAGNOSTIC_COUNT: usize
@@ -16802,6 +16807,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::CheckboxValue
 #[non_exhaustive] pub enum termrock::widgets::ChipKind
 pub termrock::widgets::ChipKind::File
 pub termrock::widgets::ChipKind::Media
+pub termrock::widgets::ChipKind::Mention
 pub termrock::widgets::ChipKind::Other
 pub termrock::widgets::ChipKind::Paste
 impl core::clone::Clone for termrock::widgets::ChipKind
@@ -43476,6 +43482,7 @@ pub termrock::widgets::ComposerChip::meta: core::option::Option<alloc::string::S
 pub termrock::widgets::ComposerChip::payload: core::option::Option<alloc::string::String>
 impl termrock::widgets::ComposerChip
 pub fn termrock::widgets::ComposerChip::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ComposerChip::mention(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::ComposerChip::paste(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, usize) -> Self
 pub fn termrock::widgets::ComposerChip::paste_with_body(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::widgets::ComposerChip
@@ -57590,6 +57597,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ProgressStepsStat
 pub struct termrock::widgets::PromptComposer<'a>
 impl<'a> termrock::widgets::PromptComposer<'a>
 pub const fn termrock::widgets::PromptComposer<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PromptComposer<'a>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PromptComposerState)
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PromptComposer<'_>
 pub type &termrock::widgets::PromptComposer<'_>::State = termrock::widgets::PromptComposerState
 pub fn &termrock::widgets::PromptComposer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -57713,7 +57721,6 @@ pub fn termrock::widgets::PromptComposerState::has_selection(&self) -> bool
 pub fn termrock::widgets::PromptComposerState::insert_text(&mut self, &str) -> termrock::widgets::PromptComposerOutcome
 pub const fn termrock::widgets::PromptComposerState::is_busy(&self) -> bool
 pub const fn termrock::widgets::PromptComposerState::is_colorless(&self) -> bool
-pub const fn termrock::widgets::PromptComposerState::is_focused(&self) -> bool
 pub fn termrock::widgets::PromptComposerState::new() -> Self
 pub fn termrock::widgets::PromptComposerState::open_completion_overlay<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::PromptComposerState::open_fullscreen_overlay<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -57733,16 +57740,17 @@ pub fn termrock::widgets::PromptComposerState::set_accepts_input(&mut self, bool
 pub fn termrock::widgets::PromptComposerState::set_ascii_fallback(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_busy(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_colorless(&mut self, bool)
+pub fn termrock::widgets::PromptComposerState::set_completion(&mut self, termrock::widgets::CompletionQuery)
 pub fn termrock::widgets::PromptComposerState::set_connection(&mut self, termrock::widgets::ComposerConnection)
 pub fn termrock::widgets::PromptComposerState::set_context(&mut self, termrock::widgets::ContextEstimate)
 pub fn termrock::widgets::PromptComposerState::set_density(&mut self, termrock::style::Density)
-pub fn termrock::widgets::PromptComposerState::set_focused(&mut self, bool)
 pub fn termrock::widgets::PromptComposerState::set_mode(&mut self, core::option::Option<termrock::widgets::ModeIndicator>)
 pub fn termrock::widgets::PromptComposerState::set_model(&mut self, core::option::Option<termrock::widgets::ModelIndicator>)
 pub fn termrock::widgets::PromptComposerState::set_placeholder(&mut self, impl core::convert::Into<alloc::string::String>)
 pub fn termrock::widgets::PromptComposerState::set_policy(&mut self, termrock::widgets::SubmitPolicy)
 pub fn termrock::widgets::PromptComposerState::set_presentation(&mut self, termrock::widgets::ComposerPresentation)
 pub fn termrock::widgets::PromptComposerState::set_text(&mut self, &str)
+pub fn termrock::widgets::PromptComposerState::submit_history(&self) -> &[alloc::string::String]
 pub fn termrock::widgets::PromptComposerState::text(&self) -> alloc::string::String
 pub fn termrock::widgets::PromptComposerState::validation_error(&self) -> core::option::Option<&str>
 impl termrock::widgets::PromptComposerState
@@ -69871,6 +69879,8 @@ pub const termrock::widgets::PROGRESS_STEPS_HINT: &str
 pub const termrock::widgets::PROGRESS_STEPS_SUMMARY_MAX_WIDTH: u16
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::PROMPT_HISTORY_LIMIT: usize
+pub const termrock::widgets::PROMPT_UNDO_LIMIT: usize
 pub const termrock::widgets::QUICK_OPEN_DEFAULT_LIMIT: usize
 pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::QUICK_OPEN_FULLSCREEN_MAX_WIDTH: u16
@@ -69969,6 +69979,7 @@ pub fn termrock::widgets::default_stepper_intent(termrock::input::KeyEvent, term
 pub fn termrock::widgets::default_tree_table_intent(termrock::input::KeyEvent, termrock::widgets::TreeTableNavMode) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::dep_node_to_inspector_fields<'a>(&'a termrock::widgets::DepNode<'a>) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::dependency_tree_column_model() -> termrock::widgets::ColumnModel<&'static str>
+pub fn termrock::widgets::detect_completion(&str, termrock::widgets::TextCursor) -> core::option::Option<termrock::widgets::CompletionQuery>
 pub fn termrock::widgets::diagnostic_summary(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::diagnostics_to_gutter_marks(&[termrock::widgets::Diagnostic<'_>], bool) -> alloc::vec::Vec<termrock::widgets::CodeGutterMark>
 pub fn termrock::widgets::diagnostics_to_highlights(&[termrock::widgets::Diagnostic<'_>]) -> alloc::vec::Vec<termrock::widgets::CodeHighlight>
@@ -70215,6 +70226,7 @@ pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::ve
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
+pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::query_editor_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -70250,6 +70262,7 @@ pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::widgets::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::submit_history_to_entries(&[alloc::string::String]) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<alloc::string::String>>
 pub fn termrock::widgets::substring_ranges(&str, &str) -> termrock::widgets::MatchRanges
 pub fn termrock::widgets::substring_ranges_ignore_ascii_case(&str, &str) -> termrock::widgets::MatchRanges
 pub fn termrock::widgets::syntax_role_style(&termrock::style::DesignSystem, termrock::style::Role) -> ratatui_core::style::Style

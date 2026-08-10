@@ -1968,30 +1968,18 @@ Every component below uses sections **1–24**:
 
 ## PromptComposer
 
-1. **Purpose:** Multi-line prompt + attachments chrome + send (PromptBox evolution).  
-2. **Anatomy:** `root` · `editor` · `attach_chip[]` · `mode_badge` · `send` · status  
-3. **Public properties:** presentation, density, ascii/colorless, placeholders  
-4. **State:** editor + chips + queue + `accepts_input` + `chip_cursor`.  
-5. **Variants:** compact / normal / expanded / fullscreen.  
-6. **Sizes/density:** min height 3 comfortable; contract_for_width.  
-7. **Visual states:** empty/nonempty; busy; disconnected; validation.  
-8. **Interaction states:** editing · submit · chip cursor · completion peel.  
-9. **Keyboard:** Enter submit (policy); Alt/Ctrl/Shift+Enter newline; Esc peel; Ctrl chords.  
-10. **Mouse:** click editor/chips/mode/model.  
-11. **Focus:** host `accepts_input`; not scene field focus.  
-12. **Disabled:** connection Disabled or accepts_input false.  
-13. **Loading:** busy + queue_when_busy.  
-14. **Error:** ValidationFailed + status line.  
-15. **Narrow:** contract_for_width drops chrome.  
-16. **Tiny:** compact presentation.  
-17. **Unicode/ASCII:** grapheme editor; chip `×`/`x`.  
-18. **Colorless:** forces ASCII marks.  
-19. **Composition:** AgentWorkbench south; OverlayStack completion.  
-20. **Outcomes:** `Submit` · `Queued` · `Changed` · `DismissRequest` · chips/completion…  
-21. **Stories:** prompt-composer/* lookbook.  
-22. **Snapshots:** mode badge; busy queue.  
-23. **Interaction tests:** Enter submit; accepts_input gate; draft preserved.  
-24. **Perf:** O(visible editor lines).
+1. **Purpose:** Flagship terminal AI agent input surface.  
+2. **Anatomy:** chips · TextArea editor · status (mode/model/busy/queue/ctx) · validation.  
+3. **Public properties:** chips, presentation, density, ascii/colorless, placeholder, policy.  
+4. **State:** five buckets — editor/undo/history/selection · chips · CompletionQuery · presentation/indicators · policy/busy/queue/connection + `accepts_input`.  
+5. **Variants:** compact / normal / expanded / fullscreen; paste/file/mention chips.  
+6–10. Enter submit/queue; Alt|Ctrl|Shift+Enter newline; Ctrl Z/Y/A/C/U/E; Ctrl+Shift O/F; Up/Down history; Esc peel; mouse editor/chips/mode/model.  
+11–14. Host `accepts_input` gate; draft never cleared by overlay takeover; busy queue; ValidationFailed.  
+15–18. `contract_for_width`; grapheme editor; ASCII marks; colorless reverse selection.  
+19. **Composition:** AgentWorkbench south; CompletionMenu + OverlayStack; HistoryPicker + KeyboardHelp bridges; TokenMeter.  
+20. **Outcomes:** Submit · Queued · Interrupt · Cancel · Completion* · ExternalEditor · chips · fullscreen · SelectionCopied.  
+21. **Stories:** `prompt-composer/{basic,busy-queue,compact,paste-chip,disconnected,fullscreen,narrow,unicode}`  
+22–24. Draft gate tests; large-prompt + repeated-paste + streaming completion bench; no provider I/O.
 
 ## PermissionPrompt
 

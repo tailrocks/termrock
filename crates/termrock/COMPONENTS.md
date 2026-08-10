@@ -116,6 +116,15 @@ navigation, Graph/Tree/List views, and auto TreeTable-shaped fallback when the
 canvas is too narrow or large. Host owns resolution; ObjectInspector bridge for
 details.
 
+`PromptComposer` is the **flagship agent input surface**: grapheme-safe
+multiline `TextArea`, selection, undo/redo, submit history, attachments and
+paste chips, slash/@/# completion triggers, mode/model/context chrome,
+queue-while-busy, submit/interrupt/cancel, and external-editor outcomes. Draft
+survives permission/plan/session/palette takeover via `accepts_input` only.
+Buckets stay separated (edit · tokens · completion · presentation · policy).
+Bridges: `CompletionMenu` / OverlayStack, `KeyboardHelp`, `HistoryPicker`,
+`TokenMeter`. Host owns providers and candidate search.
+
 `Sparkline`, `Chart`, `Gauge`, `Histogram`, `BarSeries`, and `SegmentedMeter`
 form one **visualization family** with shared `ScaleMode` (auto/fixed/log),
 `VizGlyphSet` (block/braille/ASCII), missing-data marks, thresholds, selection

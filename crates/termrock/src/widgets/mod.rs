@@ -582,9 +582,12 @@ pub use slider::{
 pub use prompt_composer::{
     ChipKind, CompletionKind, CompletionQuery, ComposerChip, ComposerConnection,
     ComposerPresentation, ContextEstimate, LARGE_PASTE_THRESHOLD, ModeIndicator, ModelIndicator,
-    PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PromptComposer,
-    PromptComposerLayout, PromptComposerOutcome, PromptComposerState, QueuedPrompt, SubmitPolicy,
+    PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PROMPT_HISTORY_LIMIT,
+    PROMPT_UNDO_LIMIT, PromptComposer, PromptComposerLayout, PromptComposerOutcome,
+    PromptComposerState, QueuedPrompt, SubmitPolicy, detect_completion, prompt_composer_help_entries,
+    submit_history_to_entries,
 };
+pub use prompt_composer::bench as prompt_composer_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

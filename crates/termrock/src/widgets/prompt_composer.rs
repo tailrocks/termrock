@@ -1,18 +1,25 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Flagship agent prompt composer: editing, chips, completion, queue, chrome.
+//! **PromptComposer** — flagship input surface for terminal AI agents.
 //!
-//! **Separation of concerns**
-//! - **Text editing** — [`TextAreaState`] + local undo/redo/history/draft.
-//! - **Tokens & attachments** — chips (files, pastes, mentions as display tokens).
-//! - **Completion** — slash / file / symbol overlay request state (consumer supplies rows).
-//! - **Presentation** — compact / normal / expanded / fullscreen geometry.
-//! - **Submission policy** — consumer flags (`busy`, `submit_on_enter`, …); no provider I/O.
+//! **Mission.** Multiline grapheme-safe editing, selection, undo/redo, history,
+//! attachments, paste chips, slash commands, file/symbol mentions, completion,
+//! model/mode indicators, queueing, submit, interrupt, cancel, external editor.
+//! Draft survives permission / question / plan / session / palette takeover.
 //!
-//! Draft text is never cleared when focus moves to permission, plan, session,
-//! or palette overlays — only [`PromptComposerState::clear_draft`] or a
-//! successful submit policy does that.
+//! **Separation (do not merge buckets)**
+//! - **Text editing** — [`TextAreaState`] + undo/redo/history/selection.
+//! - **Token model** — [`ComposerChip`] attachments / paste payloads / mentions.
+//! - **Completion** — [`CompletionQuery`] only; host owns candidate rows + menu.
+//! - **Presentation** — compact / normal / expanded / fullscreen + density/ascii.
+//! - **Submission policy** — [`SubmitPolicy`], busy, connection; outcomes only.
+//!
+//! Draft is never cleared when host gates input — only
+//! [`PromptComposerState::clear_draft`] or successful submit policy.
+//!
+//! Research: Grok Build prompt widget, Amp, OpenCode, Claude Code,
+//! prompt-toolkit, terminal editors.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -29,9 +36,11 @@ use crate::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{Density, DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
+        history_picker::{HistoryEntry, HistoryKind},
+        keyboard_help::HelpEntry,
         Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TokenMeter,
     },
 };
@@ -46,10 +55,10 @@ pub const PROMPT_FULLSCREEN_OVERLAY_ID: &str = "termrock.prompt_fullscreen";
 pub const LARGE_PASTE_THRESHOLD: usize = 400;
 
 /// Max undo snapshots retained.
-const UNDO_LIMIT: usize = 64;
+pub const PROMPT_UNDO_LIMIT: usize = 64;
 
 /// Max submit history entries.
-const HISTORY_LIMIT: usize = 100;
+pub const PROMPT_HISTORY_LIMIT: usize = 100;
 
 // ── Tokens / attachments ────────────────────────────────────────────────────
 
@@ -63,6 +72,8 @@ pub enum ChipKind {
     Paste,
     /// Image or binary blob label.
     Media,
+    /// File or symbol mention token (committed from completion).
+    Mention,
     /// Generic attachment.
     Other,
 }
@@ -127,6 +138,19 @@ impl ComposerChip {
             meta: Some(format!("{bytes} B")),
             bytes: Some(bytes),
             payload: Some(body),
+        }
+    }
+
+    /// Mention chip (file path or symbol label after completion commit).
+    #[must_use]
+    pub fn mention(id: impl Into<String>, label: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            kind: ChipKind::Mention,
+            label: label.into(),
+            meta: None,
+            bytes: None,
+            payload: None,
         }
     }
 }
@@ -467,19 +491,6 @@ impl PromptComposerState {
         self.editor.set_accepts_input(accepts);
     }
 
-    /// Deprecated name for [`Self::accepts_input`].
-    #[deprecated(note = "use accepts_input")]
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.accepts_input
-    }
-
-    /// Deprecated name for [`Self::set_accepts_input`].
-    #[deprecated(note = "use set_accepts_input")]
-    pub fn set_focused(&mut self, focused: bool) {
-        self.accepts_input = focused;
-    }
-
     /// Agent busy flag.
     #[must_use]
     pub const fn is_busy(&self) -> bool {
@@ -550,7 +561,7 @@ impl PromptComposerState {
     }
 
     /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
-    /// pass a monochrome-quantized [`Theme`]).
+    /// pass a monochrome-quantized [`DesignSystem`]).
     pub fn set_colorless(&mut self, colorless: bool) {
         self.colorless = colorless;
         if colorless {
@@ -585,6 +596,19 @@ impl PromptComposerState {
     #[must_use]
     pub fn completion(&self) -> &CompletionQuery {
         &self.completion
+    }
+
+    /// Host sets / refreshes completion query (streaming candidate updates).
+    ///
+    /// Does not mutate draft text. Prefer after async file/symbol search returns.
+    pub fn set_completion(&mut self, query: CompletionQuery) {
+        self.completion = query;
+    }
+
+    /// Submitted prompt history (newest last). Host may project into HistoryPicker.
+    #[must_use]
+    pub fn submit_history(&self) -> &[String] {
+        &self.history
     }
 
     /// Validation error string.
@@ -1040,7 +1064,7 @@ impl PromptComposerState {
             TextAreaOutcome::Changed => {
                 if self.undo.last().is_none_or(|s| s != &before) {
                     self.undo.push(before);
-                    if self.undo.len() > UNDO_LIMIT {
+                    if self.undo.len() > PROMPT_UNDO_LIMIT {
                         self.undo.remove(0);
                     }
                 }
@@ -1282,7 +1306,7 @@ impl PromptComposerState {
         }
         if !text.trim().is_empty() {
             self.history.push(text.clone());
-            if self.history.len() > HISTORY_LIMIT {
+            if self.history.len() > PROMPT_HISTORY_LIMIT {
                 self.history.remove(0);
             }
         }
@@ -1303,7 +1327,7 @@ impl PromptComposerState {
             return;
         }
         self.undo.push(snap);
-        if self.undo.len() > UNDO_LIMIT {
+        if self.undo.len() > PROMPT_UNDO_LIMIT {
             self.undo.remove(0);
         }
         self.redo.clear();
@@ -1457,8 +1481,9 @@ impl PromptComposerState {
     }
 }
 
-/// Detect `/` or `@` completion trigger before the cursor.
-fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> {
+/// Detect `/` `@` `#` completion trigger before the cursor (pure; no I/O).
+#[must_use]
+pub fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> {
     // Map cursor to absolute byte in LF-joined text.
     let mut abs = 0usize;
     let mut line_idx = 0usize;
@@ -1525,6 +1550,90 @@ impl<'a> PromptComposer<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self { system }
     }
+
+    /// Paint (same as [`StatefulWidget::render`]).
+    pub fn render(self, area: Rect, buffer: &mut Buffer, state: &mut PromptComposerState) {
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    }
+}
+
+/// Keyboard help seed for live keymap merge (host owns remaps).
+#[must_use]
+pub fn prompt_composer_help_entries() -> Vec<HelpEntry> {
+    vec![
+        HelpEntry::new("submit", "Prompt", "Enter", "Submit draft (policy)"),
+        HelpEntry::new(
+            "newline",
+            "Prompt",
+            "Alt/Ctrl/Shift+Enter",
+            "Insert newline when submit-on-enter",
+        ),
+        HelpEntry::new("undo", "Edit", "Ctrl+Z", "Undo draft snapshot"),
+        HelpEntry::new("redo", "Edit", "Ctrl+Y", "Redo draft snapshot"),
+        HelpEntry::new("select-all", "Edit", "Ctrl+A", "Select entire draft"),
+        HelpEntry::new(
+            "interrupt",
+            "Agent",
+            "Ctrl+C",
+            "Soft interrupt when busy (draft kept)",
+        ),
+        HelpEntry::new(
+            "cancel",
+            "Agent",
+            "Ctrl+U",
+            "Hard cancel / stop when busy",
+        ),
+        HelpEntry::new("external", "Edit", "Ctrl+E", "Open external editor"),
+        HelpEntry::new("attach", "Prompt", "Ctrl+Shift+O", "Request file attach"),
+        HelpEntry::new(
+            "fullscreen",
+            "View",
+            "Ctrl+Shift+F",
+            "Request fullscreen overlay",
+        ),
+        HelpEntry::new(
+            "history",
+            "Prompt",
+            "Up/Down",
+            "Browse submit history at line edges",
+        ),
+        HelpEntry::new(
+            "chips",
+            "Prompt",
+            "BackTab · ←/→ · Del",
+            "Chip strip focus and remove",
+        ),
+        HelpEntry::new(
+            "completion",
+            "Prompt",
+            "/ · @ · #",
+            "Slash / file / symbol completion trigger",
+        ),
+        HelpEntry::new("esc", "Nav", "Esc", "Close completion → fullscreen → dismiss"),
+    ]
+}
+
+/// Project submit history into HistoryPicker rows (newest first for picker).
+#[must_use]
+pub fn submit_history_to_entries(history: &[String]) -> Vec<HistoryEntry<String>> {
+    history
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(rank, text)| {
+            let preview: String = text.chars().take(80).collect();
+            let mut e = HistoryEntry::new(format!("h-{rank}"), text.clone())
+                .kind(HistoryKind::Prompt);
+            e.display = if text.chars().count() > 80 {
+                format!("{preview}…")
+            } else {
+                preview
+            };
+            e.preview = Some(text.clone());
+            e.recency = rank as u64;
+            e
+        })
+        .collect()
 }
 
 /// Layout rectangles produced while rendering (for hit testing).
@@ -1741,6 +1850,13 @@ impl StatefulWidget for &PromptComposer<'_> {
                         }
                     }
                     ChipKind::Media => "M",
+                    ChipKind::Mention => {
+                        if state.ascii_fallback {
+                            "@"
+                        } else {
+                            "◉"
+                        }
+                    }
                     ChipKind::Other => "·",
                 };
                 let label = format!("{mark} {}", chip.label);
@@ -2265,19 +2381,111 @@ mod tests {
 
     #[test]
     fn selection_paint_does_not_panic() {
-        use ratatui_core::widgets::StatefulWidget;
-        let system = crate::style::DesignSystem::new(RolePalette::default(), Density::Comfortable);
+        let system = crate::style::DesignSystem::default();
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
         state.set_text("hello world");
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
-        StatefulWidget::render(
-            &PromptComposer::new(&system),
-            Rect::new(0, 0, 40, 8),
-            &mut buf,
-            &mut state,
-        );
+        PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
     }
+
+    #[test]
+    fn help_and_history_bridges() {
+        assert!(!prompt_composer_help_entries().is_empty());
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        state.set_text("one");
+        let _ = state.handle_key(press(KeyCode::Enter));
+        state.set_text("two");
+        let _ = state.handle_key(press(KeyCode::Enter));
+        assert_eq!(state.submit_history().len(), 2);
+        let rows = submit_history_to_entries(state.submit_history());
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].kind, HistoryKind::Prompt);
+    }
+
+    #[test]
+    fn streaming_completion_set_query() {
+        let mut state = PromptComposerState::new();
+        state.set_text("/he");
+        let q = detect_completion(&state.text(), state.editor.cursor()).expect("slash");
+        state.set_completion(q.clone());
+        assert_eq!(state.completion().kind, CompletionKind::Slash);
+        // host refreshes query prefix without re-edit
+        let mut q2 = q;
+        q2.query = "help".into();
+        state.set_completion(q2);
+        assert_eq!(state.completion().query, "help");
+        assert_eq!(state.text(), "/he");
+    }
+
+    #[test]
+    fn mention_chip_kind() {
+        let mut state = PromptComposerState::new();
+        state.add_chip(ComposerChip::mention("m1", "src/lib.rs"));
+        assert_eq!(state.chips()[0].kind, ChipKind::Mention);
+    }
+
+    #[test]
+    fn large_prompt_and_repeated_paste_bench() {
+        let system = crate::style::DesignSystem::default();
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        let line = "word ".repeat(40);
+        let mut body = String::new();
+        for _ in 0..bench::LARGE_PROMPT_LINES {
+            body.push_str(&line);
+            body.push('\n');
+        }
+        state.set_text(&body);
+        assert!(state.text().len() > 1_000);
+        let area = Rect::new(0, 0, 80, 16);
+        let mut buf = Buffer::empty(area);
+        for _ in 0..bench::PAINT_FRAMES {
+            PromptComposer::new(&system).render(area, &mut buf, &mut state);
+        }
+        // repeated large pastes → chips
+        let paste = "p".repeat(LARGE_PASTE_THRESHOLD);
+        for _ in 0..bench::PASTE_ROUNDS {
+            let _ = state.handle_paste(&paste);
+        }
+        assert_eq!(state.chips().len(), bench::PASTE_ROUNDS);
+        // streaming completion updates
+        state.set_text("/stream");
+        for i in 0..bench::COMPLETION_UPDATES {
+            let mut q = detect_completion(&state.text(), state.editor.cursor()).unwrap();
+            q.query = format!("stream{i}");
+            state.set_completion(q);
+        }
+        assert_eq!(state.completion().kind, CompletionKind::Slash);
+    }
+
+    #[test]
+    fn never_owns_provider_io() {
+        let src = include_str!("prompt_composer.rs");
+        let body = src.split("#[cfg(test)]").next().unwrap_or(src);
+        for forbidden in [
+            "reqwest::",
+            "std::process::Command",
+            "tokio::",
+            "async_openai",
+            "anthropic",
+        ] {
+            assert!(!body.contains(forbidden), "must not contain {forbidden}");
+        }
+    }
+}
+
+/// Performance benchmark sizes (moderate real-world prompts).
+pub mod bench {
+    /// Lines in a large draft for paint stress.
+    pub const LARGE_PROMPT_LINES: usize = 200;
+    /// Repeated large-paste rounds.
+    pub const PASTE_ROUNDS: usize = 12;
+    /// Streaming completion query refresh rounds.
+    pub const COMPLETION_UPDATES: usize = 64;
+    /// Paint frames per bench.
+    pub const PAINT_FRAMES: u32 = 24;
 }

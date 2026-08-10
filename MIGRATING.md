@@ -224,6 +224,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0208 | `v0.13.0` | [MetricsDashboard observability block](migrations/0208-v0.13.0-metrics-dashboard.md) |
 | 0209 | `v0.13.0` | [TraceWaterfall span latency](migrations/0209-v0.13.0-trace-waterfall.md) |
 | 0210 | `v0.13.0` | [DependencyGraph constrained deps](migrations/0210-v0.13.0-dependency-graph.md) |
+| 0211 | `v0.13.0` | [PromptComposer flagship agent input](migrations/0211-v0.13.0-prompt-composer.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

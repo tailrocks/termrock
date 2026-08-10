@@ -5,19 +5,29 @@ description: Flagship agent input — draft-preserving multiline composer with q
 
 # PromptComposer
 
-**Purpose.** Primary human → agent input: grapheme-safe multiline editing,
-attachments, slash/@ completion, mode/model chrome, and **queue while busy** —
-without embedding provider SDKs or clearing the draft when permission/plan
-overlays take input.
+Primary human → agent input: grapheme-safe multiline editing, attachments,
+slash/@/# completion, mode/model chrome, queue while busy — without embedding
+provider SDKs or clearing the draft when permission/plan overlays take input.
 
 ## When to use / when not
 
 | Use PromptComposer | Prefer |
 |--------------------|--------|
 | Agent / chat / studio prompts | — |
+| SQL / log queries | [QueryEditor](/docs/handbook/query-editor) |
 | Simple one-line fields | TextInput |
-| Modal confirm | Dialog |
+| Plain notes | [TextArea](/docs/handbook/text-area) |
 | Trust gates | [PermissionPrompt](/docs/handbook/permission-prompt) |
+
+## Separation (five buckets)
+
+| Bucket | Owns |
+|--------|------|
+| Text editing | `TextAreaState`, undo/redo, history, selection |
+| Tokens | `ComposerChip` (file / paste / mention / media) |
+| Completion | `CompletionQuery` only — host supplies candidates |
+| Presentation | compact / normal / expanded / fullscreen |
+| Policy | `SubmitPolicy`, busy, connection |
 
 ## Focus law
 
@@ -32,10 +42,21 @@ overlays take input.
 ## Outcomes (selected)
 
 - `Submit` / `Queued` / `Cancel` / `Interrupt`
-- `Changed` / `DismissRequest` / `Blur`
+- `Changed` / `DismissRequest`
 - `Completion` / `CompletionClosed` / `CompletionCommitted`
 - `ChipRemoved` / `ChipActivated` / `AttachRequest`
+- `ExternalEditor` / `SelectionCopied`
 - `ValidationFailed` / `PresentationChanged` / fullscreen
+
+## Integrate
+
+| Piece | How |
+|-------|-----|
+| CompletionMenu | On `Completion` open menu; commit → `commit_completion` |
+| HistoryPicker | `submit_history_to_entries(state.submit_history())` |
+| KeyboardHelp | `prompt_composer_help_entries()` + live keymap |
+| TokenMeter | Status strip when `ContextEstimate.limit > 0` |
+| OverlayStack | `open_completion_overlay` / `open_fullscreen_overlay` |
 
 ## Intents
 
@@ -47,6 +68,7 @@ Product chords (Ctrl+Z/Y, history, attach) stay on `handle_key`.
 - ASCII badges via `set_ascii_fallback` / `set_colorless`
 - Chip remove `×` / `x`
 - Panel Focused only when `accepts_input`
+- Status always worded (`BUSY`, `offline`, `queue:N`)
 
 ## Basic example
 
@@ -57,7 +79,7 @@ use termrock::{
 };
 
 let theme = RolePalette::default();
-let tokens = DesignSystem::new(theme, Density::Comfortable);
+let system = DesignSystem::new(theme, Density::Comfortable);
 let mut state = PromptComposerState::new();
 state.set_placeholder("Ask anything…");
 state.set_mode(Some(ModeIndicator {
@@ -67,7 +89,7 @@ state.set_mode(Some(ModeIndicator {
 state.set_model(Some(ModelIndicator {
     label: "model".into(),
 }));
-let _composer = PromptComposer::new(&tokens);
+let _composer = PromptComposer::new(&system);
 ```
 
 ## Interactive example
@@ -102,10 +124,13 @@ assert!(matches!(
 | `set_accepts_input(false)` | Permission/plan takeover **without** clearing draft |
 | `set_busy` + queue policy | Enter enqueues while agent runs |
 | `handle_paste` | Large paste → chip |
+| `detect_completion` / `set_completion` | Pure trigger detect + streaming host refresh |
 | `commit_completion` | Slash/@ insert without owning candidates |
+| `submit_history` / `submit_history_to_entries` | HistoryPicker bridge |
+| `prompt_composer_help_entries` | KeyboardHelp seed |
 | Overlay helpers | Completion + fullscreen |
 
 ## Related
 
-PermissionPrompt · OverlayStack · AgentWorkbench · migration `0075` ·
-design `prompt-composer-accepts-input.md`
+PermissionPrompt · OverlayStack · AgentWorkbench · TextArea · migration `0211` ·
+design `prompt-composer.md`
