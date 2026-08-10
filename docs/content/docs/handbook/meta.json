@@ -28,6 +28,7 @@
     "object-inspector",
     "log-stream",
     "diff-view",
-    "diff-review"
+    "diff-review",
+    "diagnostic"
   ]
 }

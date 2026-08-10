@@ -1604,6 +1604,24 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## Diagnostic and CodeFrame
+
+1. **Purpose:** Structured diagnostics + source code frames (rustc/miette-class).  
+2. **Anatomy:** list row · severity letter · code · message · code_frame · notes · fixes · summary empty.  
+3. **Public properties:** `Diagnostic` projection, recipes List/Inline/Full, optional `CodeFrameLine` window.  
+4. **State:** cursor, expand-by-id, fix cursor, scroll, regions.  
+5. **Variants:** Error/Warning/Info/Hint/Note/Help (letter+glyph always).  
+6–8. List dense; full expands frame; inline one line.  
+9. **Keyboard:** j/k · Space expand · c copy · a apply fix · d docs · Enter activate.  
+10. **Mouse:** click select · wheel.  
+11–14. Scene focus; host apply/copy/open.  
+15–16. Narrow list clips path; tiny inline.  
+17–18. ASCII E/W/I; underlines `^`/`-`.  
+19. **Composition:** CodeBlock highlights; ErrorState plain copy.  
+20. **Outcomes:** CopyDetails · ApplyFixRequested · OpenDocsRequested · Activated …  
+21. **Stories:** `diagnostic/{list,full,inline,code-frame,empty,narrow,ascii}`  
+22–24. Spans/tabs/Unicode tests; O(visible) list paint.
+
 ## DiffView
 
 1. **Purpose:** High-quality read-only unified/side-by-side diff (delta/GitUI-class).  

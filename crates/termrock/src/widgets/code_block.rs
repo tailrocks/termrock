@@ -205,7 +205,8 @@ pub enum CodeHighlightKind {
     Selection,
     /// Search / find match.
     Search,
-    /// Diagnostic underline band (compose with Diagnostic hosts).
+    /// Diagnostic underline band (compose with [`super::Diagnostic`] /
+    /// [`super::diagnostics_to_highlights`]).
     Diagnostic,
     /// Emphasis / plan step / review pin.
     Emphasis,

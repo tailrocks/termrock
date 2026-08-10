@@ -118,6 +118,7 @@ mod object_inspector;
 mod timeline;
 mod event_stream;
 mod log_stream;
+mod diagnostic;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -155,6 +156,14 @@ pub use log_stream::{
     LogWrap, escape_log_text, filter_log_lines, log_lines_from_plain,
 };
 pub use log_stream::bench as log_stream_bench;
+pub use diagnostic::{
+    CodeFrame, CodeFrameLine, Diagnostic, DiagnosticNote, DiagnosticOutcome, DiagnosticRecipe,
+    DiagnosticRegion, DiagnosticSeverity, DiagnosticState, DiagnosticView, FixApplicability,
+    RelatedLocation, SourceLabel, SourceRange, SpanStyle, SuggestedFix, CODE_FRAME_TAB_STOP,
+    code_frame_window, diagnostics_to_gutter_marks, diagnostics_to_highlights, expand_tabs,
+    format_diagnostic_plain, format_diagnostics_plain,
+};
+pub use diagnostic::bench as diagnostic_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

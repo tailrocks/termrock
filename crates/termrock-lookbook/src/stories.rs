@@ -68,6 +68,8 @@ use termrock::{
         LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, EventStream, EventStreamState, StreamEvent, EventSeverity,
+        Diagnostic, DiagnosticSeverity, DiagnosticView, DiagnosticState, DiagnosticRecipe,
+        DiagnosticNote, SourceLabel, SourceRange, SuggestedFix, CodeFrame, CodeFrameLine,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -1996,6 +1998,69 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             12,
             diff_review_ascii,
+        ),
+        Story::new(
+            "diagnostic/list",
+            "Diagnostic list",
+            "DiagnosticView",
+            "Problems panel with severity letters (not color alone).",
+            72,
+            10,
+            diagnostic_list,
+        ),
+        Story::new(
+            "diagnostic/full",
+            "Diagnostic code frame",
+            "DiagnosticView",
+            "Full recipe: source, carets, notes, fixes.",
+            72,
+            16,
+            diagnostic_full,
+        ),
+        Story::new(
+            "diagnostic/inline",
+            "Diagnostic inline",
+            "DiagnosticView",
+            "Inline form/editor recipe.",
+            48,
+            1,
+            diagnostic_inline,
+        ),
+        Story::new(
+            "diagnostic/code-frame",
+            "CodeFrame",
+            "CodeFrame",
+            "Standalone code frame with overlapping spans.",
+            56,
+            10,
+            code_frame_story,
+        ),
+        Story::new(
+            "diagnostic/empty",
+            "Diagnostic empty",
+            "DiagnosticView",
+            "Empty problems panel mark.",
+            32,
+            3,
+            diagnostic_empty,
+        ),
+        Story::new(
+            "diagnostic/narrow",
+            "Diagnostic narrow",
+            "DiagnosticView",
+            "Narrow list geometry (22 cols).",
+            22,
+            8,
+            diagnostic_list,
+        ),
+        Story::new(
+            "diagnostic/ascii",
+            "Diagnostic ASCII",
+            "DiagnosticView",
+            "ASCII severity letters and underlines.",
+            64,
+            12,
+            diagnostic_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11029,6 +11094,113 @@ fn diff_review_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     DiffReview::new(&lines, system)
         .hunks(&hunks)
         .files(&files)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diagnostic_list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let labels = [
+        SourceLabel::primary(SourceRange::line_span(2, 5, 12)).label("expected `i32`"),
+    ];
+    let items = [
+        Diagnostic::new("d1", DiagnosticSeverity::Error, "mismatched types")
+            .code("E0308")
+            .source("rustc")
+            .file("src/main.rs")
+            .labels(&labels),
+        Diagnostic::new("d2", DiagnosticSeverity::Warning, "unused variable: `y`")
+            .code("unused_variables")
+            .source("rustc")
+            .file("src/main.rs"),
+        Diagnostic::new("d3", DiagnosticSeverity::Info, "build finished with warnings")
+            .source("cargo"),
+    ];
+    let mut state = DiagnosticState::new();
+    DiagnosticView::new(&items, system)
+        .recipe(DiagnosticRecipe::List)
+        .title("Problems")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diagnostic_full(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let labels = [
+        SourceLabel::primary(SourceRange::line_span(2, 5, 12)).label("expected `i32`"),
+        SourceLabel::secondary(SourceRange::line_span(2, 14, 18)).label("found here"),
+    ];
+    let notes = [DiagnosticNote::note("type annotations needed")];
+    let fixes = [SuggestedFix::new("f1", "add type ascription").replacement("let x: i32 = foo()")];
+    let lines = [
+        CodeFrameLine::new(1, "fn main() {"),
+        CodeFrameLine::new(2, "    let x = foo();"),
+        CodeFrameLine::new(3, "    println!(\"{x} 東京\");"),
+        CodeFrameLine::new(4, "}"),
+    ];
+    let items = [Diagnostic::new("d1", DiagnosticSeverity::Error, "mismatched types")
+        .code("E0308")
+        .source("rustc")
+        .file("src/main.rs")
+        .labels(&labels)
+        .notes(&notes)
+        .help("consider specifying the type explicitly")
+        .docs_url("https://doc.rust-lang.org/error_codes/E0308.html")
+        .fixes(&fixes)];
+    let mut state = DiagnosticState::new();
+    state.set_expanded("d1", true);
+    DiagnosticView::new(&items, system)
+        .recipe(DiagnosticRecipe::Full)
+        .source_lines(&lines)
+        .title("error[E0308]")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diagnostic_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [Diagnostic::new(
+        "f1",
+        DiagnosticSeverity::Error,
+        "email is required",
+    )
+    .source("form")];
+    let mut state = DiagnosticState::new();
+    DiagnosticView::new(&items, system)
+        .recipe(DiagnosticRecipe::Inline)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn code_frame_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let labels = [
+        SourceLabel::primary(SourceRange::line_span(2, 5, 12)).label("expected `i32`"),
+        SourceLabel::secondary(SourceRange::line_span(2, 14, 18)).label("found"),
+    ];
+    let lines = [
+        CodeFrameLine::new(1, "fn main() {"),
+        CodeFrameLine::new(2, "    let x = foo();"),
+        CodeFrameLine::new(3, "}"),
+    ];
+    let _ = CodeFrame::new(&lines, system)
+        .labels(&labels)
+        .file("src/main.rs")
+        .truncated_above(true)
+        .truncated_below(true)
+        .render(area, frame.buffer_mut());
+}
+
+fn diagnostic_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = DiagnosticState::new();
+    DiagnosticView::new(&[], system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn diagnostic_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let labels = [SourceLabel::primary(SourceRange::line_span(1, 1, 4))];
+    let lines = [CodeFrameLine::new(1, "\tlet x = 1;")];
+    let items = [Diagnostic::new("d1", DiagnosticSeverity::Error, "bad indent")
+        .code("E0001")
+        .labels(&labels)];
+    let mut state = DiagnosticState::new();
+    state.set_expanded("d1", true);
+    DiagnosticView::new(&items, system)
+        .recipe(DiagnosticRecipe::Full)
+        .source_lines(&lines)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);

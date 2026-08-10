@@ -1,6 +1,6 @@
 # TermRock component inventory
 
-The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
+The public widget set is derived from the reviewed API report and currently contains `Accordion`, `ActionBar`, `ActionLink`, `AvatarGlyph`, `AnsiText`, `Backdrop`, `Badge`, `Banner`, `BarSeries`, `Button`, `ButtonGroup`, `Callout`, `Card`, `Checkbox`, `Chip`, `ChoiceDialog`, `CodeBlock`, `CodeFrame`, `Collapsible`, `CommandPalette`, `Combobox`, `Autocomplete`, `CompletionMenu`, `DataTable`, `DesignInspector`, `Description`, `DetailTable`, `Dialog`, `DiagnosticView`, `DiffView`, `Drawer`, `EmptyState`, `ErrorView`, `Field`, `Fieldset`, `FieldCaption`, `Form`, `FormWizard`, `Heading`, `HighlightedText`, `HistoryPicker`, `HintBar`, `Icon`, `IconButton`, `Identity`, `ImageSurface`, `JumpOverlay`, `JumpMode`, `FocusLens`, `KeyboardHelp`, `Kbd`, `KeyValueList`, `Label`, `Link`, `List`, `LoadingView`, `LogPane`, `MarkdownView`, `Menu`, `MenuBar`, `MessageDialog`, `ModeRibbon`, `Panel`, `Paragraph`, `PasswordInput`, `NumberInput`, `SearchInput`, `PathInput`, `TokenField`, `Select`, `MultiSelect`, `PermissionPrompt`, `Picker`, `PlanReview`, `Popover`, `Progress`, `PromptComposer`, `QuickOpen`, `ResizablePanelGroup`, `QuestionFlow`, `RangeSlider`, `ScrollArea`, `Section`, `SegmentedControl`, `SegmentedMeter`, `Separator`, `SessionPicker`, `ShortcutHint`, `Slider`, `Skeleton`, `Sparkline`, `SplitPane`, `Stepper`, `StatusBar`, `Surface`, `Table`, `Tabs`, `Tag`, `TaskRail`, `Text`, `TextArea`, `TextInput`, `ThemePicker`, `ThinkingBlock`, `Timeline`, `Toast`, `Toggle`, `ToggleGroup`, `TokenStrip`, `Toolbar`, `TokenMeter`, `ToolCard`, `Transcript`, `Tree`, `Viewport`, and `VirtualGrid`.
 
 `ScrollArea` / `ScrollAreaState` is the canonical scrolling primitive: dual-axis
 offsets, wheel/page/intents, scrollbar chrome, follow-tail with paused unseen
@@ -55,6 +55,15 @@ reserved proportional-scrollbar gutter. Stable-ID rows use the general
 navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
+
+`Diagnostic` / `CodeFrame` present structured diagnostics (rustc/miette-class)
+with severity letters (never color alone), codes, messages, sources, ranges,
+related locations, notes, help, docs links, and suggested fixes. Recipes: list
+(problems panel), inline (forms), full (code frame + notes + fixes).
+`CodeFrame` paints source windows with tab expansion, multi-line/overlapping
+underlines, and truncation markers. Bridges to `CodeBlock` via
+`diagnostics_to_highlights` / `diagnostics_to_gutter_marks` and to `ErrorState`
+via `format_diagnostics_plain`. Host owns apply/open/copy side effects.
 
 `DiffView` is the high-quality **read-only** unified/side-by-side diff renderer
 (delta/GitUI-class). Host projects `DiffLine` rows (kind, text, optional line
