@@ -12,6 +12,7 @@
     "paste-chip",
     "file-mention",
     "entity-mention",
+    "slash-command-menu",
     "permission-prompt",
     "agent-workbench",
     "text-area",

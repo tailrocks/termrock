@@ -37,6 +37,7 @@ mod link;
 mod tag_chip;
 mod attachment_chips;
 mod mention;
+mod slash_command_menu;
 mod text;
 mod separator;
 mod toolbar;
@@ -576,6 +577,16 @@ pub use mention::{
     mention_to_token_item, parse_draft_with_mentions, parse_mention_markup,
 };
 pub use mention::bench as mention_bench;
+pub use slash_command_menu::{
+    SLASH_ARG_SEPARATOR, SLASH_COMMAND_OVERLAY_ID, SLASH_TRIGGER, SlashArgument, SlashCommand,
+    SlashCommandMenu, SlashCommandMenuOutcome, SlashCommandMenuState, SlashCommandSource,
+    SlashMenuPhase, SlashQuery, apply_slash_insert, argument_values_to_candidates,
+    detect_slash_query, dismiss_slash_command_overlay, example_slash_catalog,
+    filter_argument_values, filter_slash_commands, open_slash_command_overlay,
+    place_slash_command_menu, slash_commands_from_command_entries, slash_commands_to_candidates,
+    slash_presentation_for,
+};
+pub use slash_command_menu::bench as slash_command_menu_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

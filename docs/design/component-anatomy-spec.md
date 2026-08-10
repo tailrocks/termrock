@@ -1966,6 +1966,21 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## SlashCommandMenu
+
+1. **Purpose:** Caret-anchored `/` command completion for prompt composers.  
+2. **Anatomy:** filtered list · optional docs · loading/empty/stale chrome.  
+3. **Public properties:** `SlashCommand` (name, aliases, args, shortcut, source, disabled, recent).  
+4. **State:** `SlashCommandMenuState` + nested `CompletionMenuState`; query phase Command/Argument.  
+5. **Variants:** composer / global / plugin sources; nested arg completion.  
+6–10. j/k select; Enter commit; Esc dismiss (draft kept); space commit-char into args.  
+11–14. Host catalogs + execute; `apply_slash_insert` range-only; async generation gates.  
+15–18. Compact list vs fullscreen presentation from bounds.  
+19. **Composition:** CompletionMenu paint; CommandEntry bridge; PromptComposer slash.  
+20. **Outcomes:** QueryChanged · CommandCommitted · ArgumentCommitted · Execute · Dismissed.  
+21. **Stories:** `slash-command-menu/{filter,loading,arguments,narrow,disabled}`.  
+22–24. Draft preserve tests; filter bench; no process I/O.
+
 ## FileMention
 
 1. **Purpose:** Inline file/path/symbol mention tokens with completion + disambiguation.  

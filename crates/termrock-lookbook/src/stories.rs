@@ -5297,6 +5297,51 @@ pub(crate) fn stories() -> Vec<Story> {
             mention_draft_atomic_story,
         ),
         Story::new(
+            "slash-command-menu/filter",
+            "SlashCommandMenu filter",
+            "SlashCommandMenu",
+            "Filtered slash commands with docs pane.",
+            48,
+            12,
+            slash_command_menu_filter_story,
+        ),
+        Story::new(
+            "slash-command-menu/loading",
+            "SlashCommandMenu loading",
+            "SlashCommandMenu",
+            "Async plugin loading chrome.",
+            40,
+            10,
+            slash_command_menu_loading_story,
+        ),
+        Story::new(
+            "slash-command-menu/arguments",
+            "SlashCommandMenu arguments",
+            "SlashCommandMenu",
+            "Nested argument completion for /model.",
+            40,
+            10,
+            slash_command_menu_arguments_story,
+        ),
+        Story::new(
+            "slash-command-menu/narrow",
+            "SlashCommandMenu narrow",
+            "SlashCommandMenu",
+            "Compact slash menu on narrow width.",
+            28,
+            10,
+            slash_command_menu_narrow_story,
+        ),
+        Story::new(
+            "slash-command-menu/disabled",
+            "SlashCommandMenu disabled",
+            "SlashCommandMenu",
+            "Disabled command with reason detail.",
+            40,
+            10,
+            slash_command_menu_disabled_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18228,6 +18273,73 @@ fn mention_draft_atomic_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         let chip = Rect::new(area.x, area.y.saturating_add(1), area.width, 1);
         InlineMention::new(m, system).paint(chip, frame.buffer_mut(), &mut st);
     }
+}
+
+fn slash_command_menu_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+    };
+    let cat = example_slash_catalog();
+    let mut st = SlashCommandMenuState::new();
+    st.sync_from_draft("/p", 2);
+    let anchor = Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 1, 1);
+    SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn slash_command_menu_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_slash_catalog, CompletionStatus, SlashCommandMenu, SlashCommandMenuState,
+    };
+    let cat = example_slash_catalog();
+    let mut st = SlashCommandMenuState::new();
+    st.sync_from_draft("/", 1);
+    st.set_status(CompletionStatus::Loading);
+    let _ = st.begin_async();
+    let anchor = Rect::new(area.x, area.y, 1, 1);
+    SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn slash_command_menu_arguments_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState, SlashMenuPhase, SlashQuery,
+    };
+    let cat = example_slash_catalog();
+    let mut st = SlashCommandMenuState::new();
+    st.open_with_query(SlashQuery {
+        phase: SlashMenuPhase::Argument {
+            command_id: "model".into(),
+            command_name: "model".into(),
+            arg_index: 0,
+            arg_prefix: String::new(),
+            prior_args: Vec::new(),
+        },
+        trigger_byte: 0,
+        cursor_byte: 7,
+    });
+    let anchor = Rect::new(area.x, area.y, 1, 1);
+    SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn slash_command_menu_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+    };
+    let cat = example_slash_catalog();
+    let mut st = SlashCommandMenuState::new();
+    st.sync_from_draft("/he", 3);
+    let anchor = Rect::new(area.x, area.y, 1, 1);
+    SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn slash_command_menu_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+    };
+    let cat = example_slash_catalog();
+    let mut st = SlashCommandMenuState::new();
+    st.sync_from_draft("/dep", 4);
+    let anchor = Rect::new(area.x, area.y, 1, 1);
+    SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
