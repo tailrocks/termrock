@@ -22,7 +22,7 @@
 | 3 | chart-bar-multiple | covered | multi `BarDatum` rows | One series of categories |
 | 4 | chart-bar-stacked | covered | `BarDatum::stacked` + multi-segment paint | Distinct segment glyphs |
 | 5 | chart-bar-label | covered | bar labels left of track | |
-| 6 | chart-bar-custom-label | partial | host label strings | React custom label N/A |
+| 6 | chart-bar-label-custom | partial | host label strings | React custom label N/A (registry id label-custom) |
 | 7 | chart-bar-mixed | covered | mixed positive magnitudes | Scale Auto |
 | 8 | chart-bar-active | covered | `.selected(i)` bold fill | |
 | 9 | chart-bar-negative | covered | bipolar domain + zero tick + neg glyph | **0253** |

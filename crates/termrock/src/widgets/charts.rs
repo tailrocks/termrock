@@ -2463,19 +2463,51 @@ mod tests {
             .render(area, &mut buffer);
         let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
         let neg = '=';
+        // Skip label columns: "loss"/"gain"/"zero" + pad ≤12; track starts after labels
         let loss: String = (0..40u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
         let gain: String = (0..40u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        // Must paint actual negative fill glyph — zero tick alone is not enough
         assert!(
-            loss.contains(neg) || loss.contains('|'),
-            "negative bar should paint neg glyph or zero tick: {loss:?}"
+            loss.contains(neg),
+            "negative bar must paint neg glyph '=': {loss:?}"
         );
         assert!(
             gain.contains(fill),
             "positive bar should paint fill: {gain:?}"
         );
-        // gain (10) should extend further right of zero than loss extends left (asym domain)
-        let zero_col = gain.find('|').or_else(|| loss.find('|'));
-        assert!(zero_col.is_some(), "zero tick | expected on bipolar track");
+        let zero_col = loss
+            .find('|')
+            .or_else(|| gain.find('|'))
+            .expect("zero tick | expected on bipolar track");
+        // Sign occupancy: '=' only left of zero; no positive fill on the negative side
+        let mut neg_left = 0usize;
+        let mut fill_left_of_zero_on_loss = 0usize;
+        let mut fill_right_of_zero_on_gain = 0usize;
+        for (i, ch) in loss.chars().enumerate() {
+            if i < zero_col && ch == neg {
+                neg_left += 1;
+            }
+            if i < zero_col && ch == fill {
+                fill_left_of_zero_on_loss += 1;
+            }
+        }
+        for (i, ch) in gain.chars().enumerate() {
+            if i > zero_col && ch == fill {
+                fill_right_of_zero_on_gain += 1;
+            }
+        }
+        assert!(
+            neg_left > 0,
+            "neg glyph must appear left of zero col {zero_col}: {loss:?}"
+        );
+        assert_eq!(
+            fill_left_of_zero_on_loss, 0,
+            "positive fill must not paint left of zero on loss row: {loss:?}"
+        );
+        assert!(
+            fill_right_of_zero_on_gain > 0,
+            "positive fill must appear right of zero on gain: {gain:?}"
+        );
     }
 
     #[test]

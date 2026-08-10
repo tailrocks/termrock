@@ -33,7 +33,7 @@
 | 13 | chart-bar-multiple | covered | multi `BarDatum` | |
 | 14 | chart-bar-stacked | covered | `BarDatum::stacked` (0253) | Multi-segment bands, not SegmentedMeter alone |
 | 15 | chart-bar-label | covered | bar labels | |
-| 16 | chart-bar-custom-label | partial | host label strings | |
+| 16 | chart-bar-label-custom | partial | host label strings | registry id label-custom |
 | 17 | chart-bar-mixed | covered | mixed magnitudes | |
 | 18 | chart-bar-active | covered | `.selected` | |
 | 19 | chart-bar-negative | covered | bipolar domain + zero tick (0253) | |
