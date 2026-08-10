@@ -756,35 +756,25 @@ pub(crate) struct TabsInteractor {
 
 impl TabsInteractor {
     pub(crate) fn new() -> Self {
+        let mut state = TabsState::new().with_selected("overview");
+        state.set_focused(true);
         Self {
-            state: TabsState {
-                selected: Some("overview"),
-                focused: true,
-                ..TabsState::default()
-            },
+            state,
             theme: RolePalette::default(),
         }
+    }
+
+    fn tabs() -> [Tab<'static, &'static str>; 2] {
+        [
+            Tab::new("overview", "Overview"),
+            Tab::new("details", "Details"),
+        ]
     }
 }
 
 impl StoryInteraction for TabsInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let tabs = [
-            Tab {
-                id: "overview",
-                label: "Overview",
-                glyph: None,
-                active: self.state.selected == Some("overview"),
-                enabled: true,
-            },
-            Tab {
-                id: "details",
-                label: "Details",
-                glyph: None,
-                active: self.state.selected == Some("details"),
-                enabled: true,
-            },
-        ];
+        let tabs = Self::tabs();
         frame.render_stateful_widget(
             &Tabs::new(&tabs, &DesignSystem::from_palette(self.theme.clone())).gap(1),
             area,
@@ -793,21 +783,19 @@ impl StoryInteraction for TabsInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        match key.code {
-            KeyCode::Left | KeyCode::Char('h') => {
-                self.state.selected = Some("overview");
-                true
-            }
-            KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => {
-                self.state.selected = Some("details");
-                true
-            }
-            _ => false,
-        }
+        let tabs = Self::tabs();
+        !matches!(
+            self.state.handle_key(key, &tabs),
+            termrock::widgets::TabsOutcome::Ignored
+        )
     }
 
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
+    fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
+        let tabs = Self::tabs();
+        !matches!(
+            self.state.handle_mouse(mouse, &tabs),
+            termrock::widgets::TabsOutcome::Ignored
+        )
     }
 
     fn set_theme(&mut self, theme: RolePalette) {

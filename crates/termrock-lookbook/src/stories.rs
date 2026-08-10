@@ -53,9 +53,9 @@ use termrock::{
         RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
         SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
         SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Surface, SurfaceFill,
-        SurfaceRecipe, Switch, SwitchState, Tab,
-        Table,
-        TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
+        SurfaceRecipe, Switch, SwitchState, Tab, TabStatus, Tabs, TabsActivation, TabsOrientation,
+        TabsPresentation, TabsState, Table, TableRow, TableState, TaskRail, TextArea, TextAreaState,
+        TextCursor,
         TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
         RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
         SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
@@ -861,6 +861,42 @@ pub(crate) fn stories() -> Vec<Story> {
             tabs,
         )
         .with_interactor(tabs_interactor),
+        Story::new(
+            "tabs/overflow",
+            "Tabs overflow",
+            "Tabs",
+            "Overflow presentation under width pressure.",
+            28,
+            2,
+            tabs_overflow_story,
+        ),
+        Story::new(
+            "tabs/vertical",
+            "Tabs vertical",
+            "Tabs",
+            "Vertical orientation stack.",
+            16,
+            6,
+            tabs_vertical_story,
+        ),
+        Story::new(
+            "tabs/manual",
+            "Tabs manual",
+            "Tabs",
+            "Manual activation: focus ≠ selection until Enter.",
+            48,
+            2,
+            tabs_manual_story,
+        ),
+        Story::new(
+            "tabs/closable",
+            "Tabs closable",
+            "Tabs",
+            "Closable tabs with close affordance.",
+            48,
+            2,
+            tabs_closable_story,
+        ),
         Story::new(
             "hint-bar/wrapped",
             "Hint bar",
@@ -7305,23 +7341,106 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             id: "overview",
             label: "Overview",
             glyph: Some(Span::styled("●", system.style(Role::Success))),
+            badge: None,
+            status: TabStatus::Success,
             active: true,
             enabled: true,
+            closable: false,
         },
         Tab {
             id: "details",
             label: "Details",
             glyph: None,
+            badge: Some("2"),
+            status: TabStatus::None,
             active: false,
             enabled: true,
+            closable: false,
+        },
+        Tab {
+            id: "logs",
+            label: "Logs",
+            glyph: None,
+            badge: None,
+            status: TabStatus::Running,
+            active: false,
+            enabled: true,
+            closable: false,
         },
     ];
-    let mut state = TabsState {
-        selected: Some("overview"),
-        focused: true,
-        ..TabsState::default()
-    };
+    let mut state = TabsState::new().with_selected("overview");
+    state.set_focused(true);
     frame.render_stateful_widget(&Tabs::new(&items, system).gap(1), area, &mut state);
+}
+
+fn tabs_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("a", "Overview"),
+        Tab::new("b", "Metrics"),
+        Tab::new("c", "Logs"),
+        Tab::new("d", "Traces"),
+        Tab::new("e", "Settings"),
+        Tab::new("f", "History"),
+    ];
+    let mut state = TabsState::new().with_selected("a");
+    state.set_focused(true);
+    Tabs::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = state.presentation(); // exercise presentation for story
+}
+
+fn tabs_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview").status(TabStatus::Success),
+        Tab::new("details", "Details"),
+        Tab::new("logs", "Logs").status(TabStatus::Running),
+    ];
+    let mut state = TabsState::new()
+        .with_selected("overview")
+        .with_orientation(TabsOrientation::Vertical);
+    state.set_focused(true);
+    Tabs::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_manual_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("a", "First"),
+        Tab::new("b", "Second"),
+        Tab::new("c", "Third"),
+    ];
+    let mut state = TabsState::new()
+        .with_selected("a")
+        .with_activation(TabsActivation::Manual);
+    state.set_focused(true);
+    // focus moved to second without selecting
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    Tabs::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_closable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("main", "main.rs").closable(true).status(TabStatus::Dirty),
+        Tab::new("lib", "lib.rs").closable(true),
+        Tab::new("mod", "mod.rs").closable(true).status(TabStatus::Error),
+    ];
+    let mut state = TabsState::new().with_selected("main");
+    state.set_focused(true);
+    Tabs::new(&items, system)
+        .ascii(true)
+        .show_close(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = TabsPresentation::Expanded;
 }
 
 fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -12598,22 +12717,25 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             id: "one",
             label: "概要 ✨",
             glyph: Some(Span::styled("●", system.style(Role::Success))),
+            badge: None,
+            status: TabStatus::Success,
             active: true,
             enabled: true,
+            closable: false,
         },
         Tab {
             id: "two",
             label: "詳細 📋",
             glyph: None,
+            badge: None,
+            status: TabStatus::None,
             active: false,
             enabled: true,
+            closable: false,
         },
     ];
-    let mut state = TabsState {
-        selected: Some("one"),
-        focused: true,
-        ..TabsState::default()
-    };
+    let mut state = TabsState::new().with_selected("one");
+    state.set_focused(true);
     frame.render_stateful_widget(&Tabs::new(&items, system).gap(1), area, &mut state);
 }
 

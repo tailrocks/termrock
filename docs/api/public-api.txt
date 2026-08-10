@@ -24825,6 +24825,61 @@ pub unsafe fn termrock::widgets::SwitchRecipe::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SwitchRecipe
 pub fn termrock::widgets::SwitchRecipe::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SwitchRecipe
+#[non_exhaustive] pub enum termrock::widgets::TabStatus
+pub termrock::widgets::TabStatus::Dirty
+pub termrock::widgets::TabStatus::Error
+pub termrock::widgets::TabStatus::None
+pub termrock::widgets::TabStatus::Running
+pub termrock::widgets::TabStatus::Success
+pub termrock::widgets::TabStatus::Warning
+impl termrock::widgets::TabStatus
+pub const fn termrock::widgets::TabStatus::id(self) -> &'static str
+pub const fn termrock::widgets::TabStatus::mark(self, bool) -> core::option::Option<&'static str>
+impl core::clone::Clone for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::clone(&self) -> termrock::widgets::TabStatus
+impl core::cmp::Eq for termrock::widgets::TabStatus
+impl core::cmp::PartialEq for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::eq(&self, &termrock::widgets::TabStatus) -> bool
+impl core::default::Default for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::default() -> termrock::widgets::TabStatus
+impl core::fmt::Debug for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TabStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::TabStatus
+impl core::marker::Freeze for termrock::widgets::TabStatus
+impl core::marker::Send for termrock::widgets::TabStatus
+impl core::marker::Sync for termrock::widgets::TabStatus
+impl core::marker::Unpin for termrock::widgets::TabStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::TabStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TabStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TabStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabStatus where U: core::convert::From<T>
+pub fn termrock::widgets::TabStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabStatus where U: core::convert::Into<T>
+pub type termrock::widgets::TabStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::TabStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabStatus where T: core::clone::Clone
+pub type termrock::widgets::TabStatus::Owned = T
+pub fn termrock::widgets::TabStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TabStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TabStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabStatus
+pub fn termrock::widgets::TabStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabStatus
 #[non_exhaustive] pub enum termrock::widgets::TableOutcome<RowId, ColumnId>
 pub termrock::widgets::TableOutcome::Activated(RowId)
 pub termrock::widgets::TableOutcome::Cancelled
@@ -24871,6 +24926,215 @@ pub unsafe fn termrock::widgets::TableOutcome<RowId, ColumnId>::clone_to_uninit(
 impl<T> core::convert::From<T> for termrock::widgets::TableOutcome<RowId, ColumnId>
 pub fn termrock::widgets::TableOutcome<RowId, ColumnId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TableOutcome<RowId, ColumnId>
+#[non_exhaustive] pub enum termrock::widgets::TabsActivation
+pub termrock::widgets::TabsActivation::Automatic
+pub termrock::widgets::TabsActivation::Manual
+impl termrock::widgets::TabsActivation
+pub const fn termrock::widgets::TabsActivation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::clone(&self) -> termrock::widgets::TabsActivation
+impl core::cmp::Eq for termrock::widgets::TabsActivation
+impl core::cmp::PartialEq for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::eq(&self, &termrock::widgets::TabsActivation) -> bool
+impl core::default::Default for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::default() -> termrock::widgets::TabsActivation
+impl core::fmt::Debug for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TabsActivation
+impl core::marker::StructuralPartialEq for termrock::widgets::TabsActivation
+impl core::marker::Freeze for termrock::widgets::TabsActivation
+impl core::marker::Send for termrock::widgets::TabsActivation
+impl core::marker::Sync for termrock::widgets::TabsActivation
+impl core::marker::Unpin for termrock::widgets::TabsActivation
+impl core::marker::UnsafeUnpin for termrock::widgets::TabsActivation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabsActivation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabsActivation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TabsActivation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TabsActivation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabsActivation where U: core::convert::From<T>
+pub fn termrock::widgets::TabsActivation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabsActivation where U: core::convert::Into<T>
+pub type termrock::widgets::TabsActivation::Error = core::convert::Infallible
+pub fn termrock::widgets::TabsActivation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabsActivation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabsActivation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabsActivation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabsActivation where T: core::clone::Clone
+pub type termrock::widgets::TabsActivation::Owned = T
+pub fn termrock::widgets::TabsActivation::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabsActivation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabsActivation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabsActivation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabsActivation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsActivation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabsActivation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsActivation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabsActivation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabsActivation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsActivation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabsActivation
+#[non_exhaustive] pub enum termrock::widgets::TabsOrientation
+pub termrock::widgets::TabsOrientation::Horizontal
+pub termrock::widgets::TabsOrientation::Vertical
+impl termrock::widgets::TabsOrientation
+pub const fn termrock::widgets::TabsOrientation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::clone(&self) -> termrock::widgets::TabsOrientation
+impl core::cmp::Eq for termrock::widgets::TabsOrientation
+impl core::cmp::PartialEq for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::eq(&self, &termrock::widgets::TabsOrientation) -> bool
+impl core::default::Default for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::default() -> termrock::widgets::TabsOrientation
+impl core::fmt::Debug for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TabsOrientation
+impl core::marker::StructuralPartialEq for termrock::widgets::TabsOrientation
+impl core::marker::Freeze for termrock::widgets::TabsOrientation
+impl core::marker::Send for termrock::widgets::TabsOrientation
+impl core::marker::Sync for termrock::widgets::TabsOrientation
+impl core::marker::Unpin for termrock::widgets::TabsOrientation
+impl core::marker::UnsafeUnpin for termrock::widgets::TabsOrientation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabsOrientation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabsOrientation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TabsOrientation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TabsOrientation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabsOrientation where U: core::convert::From<T>
+pub fn termrock::widgets::TabsOrientation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabsOrientation where U: core::convert::Into<T>
+pub type termrock::widgets::TabsOrientation::Error = core::convert::Infallible
+pub fn termrock::widgets::TabsOrientation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabsOrientation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabsOrientation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabsOrientation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabsOrientation where T: core::clone::Clone
+pub type termrock::widgets::TabsOrientation::Owned = T
+pub fn termrock::widgets::TabsOrientation::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabsOrientation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabsOrientation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabsOrientation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabsOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsOrientation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabsOrientation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsOrientation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabsOrientation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabsOrientation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabsOrientation
+pub fn termrock::widgets::TabsOrientation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabsOrientation
+#[non_exhaustive] pub enum termrock::widgets::TabsOutcome<Id>
+pub termrock::widgets::TabsOutcome::Changed
+pub termrock::widgets::TabsOutcome::CloseRequested
+pub termrock::widgets::TabsOutcome::CloseRequested::id: Id
+pub termrock::widgets::TabsOutcome::FocusChanged
+pub termrock::widgets::TabsOutcome::FocusChanged::id: core::option::Option<Id>
+pub termrock::widgets::TabsOutcome::Ignored
+pub termrock::widgets::TabsOutcome::OverflowClosed
+pub termrock::widgets::TabsOutcome::OverflowOpened
+pub termrock::widgets::TabsOutcome::OverflowOpened::overflow_ids: alloc::vec::Vec<Id>
+pub termrock::widgets::TabsOutcome::PresentationChanged
+pub termrock::widgets::TabsOutcome::PresentationChanged::presentation: termrock::widgets::TabsPresentation
+pub termrock::widgets::TabsOutcome::ReorderRequested
+pub termrock::widgets::TabsOutcome::ReorderRequested::from: usize
+pub termrock::widgets::TabsOutcome::ReorderRequested::to: usize
+pub termrock::widgets::TabsOutcome::SelectionChanged
+pub termrock::widgets::TabsOutcome::SelectionChanged::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TabsOutcome<Id>
+pub fn termrock::widgets::TabsOutcome<Id>::clone(&self) -> termrock::widgets::TabsOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TabsOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::TabsOutcome<Id>
+pub fn termrock::widgets::TabsOutcome<Id>::eq(&self, &termrock::widgets::TabsOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::TabsOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TabsOutcome<Id>
+pub fn termrock::widgets::TabsOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::TabsOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TabsOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TabsOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TabsOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TabsOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabsOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabsOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TabsOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TabsOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabsOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::TabsOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabsOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::TabsOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::TabsOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabsOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabsOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabsOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabsOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::TabsOutcome<Id>::Owned = T
+pub fn termrock::widgets::TabsOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabsOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabsOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabsOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabsOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabsOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabsOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabsOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabsOutcome<Id>
+pub fn termrock::widgets::TabsOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabsOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::TabsPresentation
+pub termrock::widgets::TabsPresentation::Expanded
+pub termrock::widgets::TabsPresentation::Overflow
+pub termrock::widgets::TabsPresentation::Scrolling
+pub termrock::widgets::TabsPresentation::Select
+impl termrock::widgets::TabsPresentation
+pub const fn termrock::widgets::TabsPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::clone(&self) -> termrock::widgets::TabsPresentation
+impl core::cmp::Eq for termrock::widgets::TabsPresentation
+impl core::cmp::PartialEq for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::eq(&self, &termrock::widgets::TabsPresentation) -> bool
+impl core::default::Default for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::default() -> termrock::widgets::TabsPresentation
+impl core::fmt::Debug for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TabsPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::TabsPresentation
+impl core::marker::Freeze for termrock::widgets::TabsPresentation
+impl core::marker::Send for termrock::widgets::TabsPresentation
+impl core::marker::Sync for termrock::widgets::TabsPresentation
+impl core::marker::Unpin for termrock::widgets::TabsPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::TabsPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TabsPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TabsPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TabsPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TabsPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TabsPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::TabsPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TabsPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::TabsPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::TabsPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TabsPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TabsPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TabsPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TabsPresentation where T: core::clone::Clone
+pub type termrock::widgets::TabsPresentation::Owned = T
+pub fn termrock::widgets::TabsPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::TabsPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TabsPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TabsPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TabsPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TabsPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::TabsPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TabsPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TabsPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TabsPresentation
 #[non_exhaustive] pub enum termrock::widgets::TagOutcome<Id>
 pub termrock::widgets::TagOutcome::Activated(Id)
 pub termrock::widgets::TagOutcome::Ignored
@@ -43119,10 +43383,21 @@ pub fn termrock::widgets::SwitchState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SwitchState
 pub struct termrock::widgets::Tab<'a, Id>
 pub termrock::widgets::Tab::active: bool
+pub termrock::widgets::Tab::badge: core::option::Option<&'a str>
+pub termrock::widgets::Tab::closable: bool
 pub termrock::widgets::Tab::enabled: bool
 pub termrock::widgets::Tab::glyph: core::option::Option<ratatui_core::text::span::Span<'a>>
 pub termrock::widgets::Tab::id: Id
 pub termrock::widgets::Tab::label: &'a str
+pub termrock::widgets::Tab::status: termrock::widgets::TabStatus
+impl<'a, Id> termrock::widgets::Tab<'a, Id>
+pub const fn termrock::widgets::Tab<'a, Id>::active(self, bool) -> Self
+pub const fn termrock::widgets::Tab<'a, Id>::badge(self, &'a str) -> Self
+pub const fn termrock::widgets::Tab<'a, Id>::closable(self, bool) -> Self
+pub const fn termrock::widgets::Tab<'a, Id>::enabled(self, bool) -> Self
+pub fn termrock::widgets::Tab<'a, Id>::glyph(self, ratatui_core::text::span::Span<'a>) -> Self
+pub const fn termrock::widgets::Tab<'a, Id>::new(Id, &'a str) -> Self
+pub const fn termrock::widgets::Tab<'a, Id>::status(self, termrock::widgets::TabStatus) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tab<'a, Id>
 pub fn termrock::widgets::Tab<'a, Id>::clone(&self) -> termrock::widgets::Tab<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tab<'a, Id>
@@ -43445,8 +43720,12 @@ pub fn termrock::widgets::TableState<RowId, ColumnId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TableState<RowId, ColumnId>
 pub struct termrock::widgets::Tabs<'a, Id>
 impl<'a, Id> termrock::widgets::Tabs<'a, Id>
+pub const fn termrock::widgets::Tabs<'a, Id>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::Tabs<'a, Id>::gap(self, u16) -> Self
 pub const fn termrock::widgets::Tabs<'a, Id>::new(&'a [termrock::widgets::Tab<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Tabs<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TabsState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::Tabs<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::TabsState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, Id: core::fmt::Debug
+pub const fn termrock::widgets::Tabs<'a, Id>::show_close(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tabs<'a, Id>
 pub fn termrock::widgets::Tabs<'a, Id>::clone(&self) -> termrock::widgets::Tabs<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tabs<'a, Id>
@@ -43489,10 +43768,32 @@ impl<T> core::convert::From<T> for termrock::widgets::Tabs<'a, Id>
 pub fn termrock::widgets::Tabs<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Tabs<'a, Id>
 pub struct termrock::widgets::TabsState<Id>
+pub termrock::widgets::TabsState::close_regions: alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>
 pub termrock::widgets::TabsState::focused: bool
 pub termrock::widgets::TabsState::hovered: core::option::Option<Id>
+pub termrock::widgets::TabsState::overflow_ids: alloc::vec::Vec<Id>
+pub termrock::widgets::TabsState::overflow_trigger: core::option::Option<ratatui_core::layout::rect::Rect>
 pub termrock::widgets::TabsState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::TabsState::selected: core::option::Option<Id>
+impl<Id> termrock::widgets::TabsState<Id>
+pub const fn termrock::widgets::TabsState<Id>::activation(&self) -> termrock::widgets::TabsActivation
+pub fn termrock::widgets::TabsState<Id>::focused_tab(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::TabsState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::Tab<'_, Id>]) -> termrock::widgets::TabsOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TabsState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Tab<'_, Id>]) -> termrock::widgets::TabsOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::TabsState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::Tab<'_, Id>]) -> termrock::widgets::TabsOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::TabsState<Id>::is_overflow_open(&self) -> bool
+pub fn termrock::widgets::TabsState<Id>::new() -> Self
+pub const fn termrock::widgets::TabsState<Id>::orientation(&self) -> termrock::widgets::TabsOrientation
+pub const fn termrock::widgets::TabsState<Id>::presentation(&self) -> termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsState<Id>::presentation_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::TabsOrientation) -> termrock::widgets::TabsPresentation
+pub fn termrock::widgets::TabsState<Id>::select_overflow_id(&mut self, Id) -> termrock::widgets::TabsOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::TabsState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::TabsState<Id>::set_enabled(&mut self, bool)
+pub fn termrock::widgets::TabsState<Id>::set_focused(&mut self, bool)
+pub fn termrock::widgets::TabsState<Id>::set_selected(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
+pub const fn termrock::widgets::TabsState<Id>::with_activation(self, termrock::widgets::TabsActivation) -> Self
+pub fn termrock::widgets::TabsState<Id>::with_orientation(self, termrock::widgets::TabsOrientation) -> Self where Id: core::clone::Clone
+pub fn termrock::widgets::TabsState<Id>::with_selected(self, Id) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TabsState<Id>
 pub fn termrock::widgets::TabsState<Id>::clone(&self) -> termrock::widgets::TabsState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::TabsState<Id>
@@ -47010,6 +47311,8 @@ pub const termrock::widgets::SELECT_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::SLIDER_MIN_TRACK: u16
 pub const termrock::widgets::SLIDER_NUMERIC_FALLBACK_WIDTH: u16
+pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
+pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
 pub trait termrock::widgets::SyntaxHighlighter

@@ -332,8 +332,11 @@ fn theme_override_reaches_active_tab_cells() {
         id: "active",
         label: "Active",
         glyph: None,
+        badge: None,
+        status: TabStatus::None,
         active: true,
         enabled: true,
+        closable: false,
     }];
     let widget = Tabs::new(&tabs, &system).gap(1);
     let area = Rect::new(0, 0, 12, 2);

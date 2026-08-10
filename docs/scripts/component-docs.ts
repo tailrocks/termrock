@@ -308,15 +308,19 @@ let mut state = StatusBarState::<&str>::default();
 state.hovered = Some("mode");`,
   },
   Tabs: {
-    description: 'A keyboard- and pointer-navigable tab strip with stable identities.',
+    description:
+      'A composable tab strip with roving focus, manual/automatic activation, badges/status, close/reorder hooks, and narrow overflow/Select contraction. Panel state stays host-owned by id.',
     primaryStory: 'tabs/status',
-    usage: `use termrock::{Theme, widgets::{Tab, Tabs, TabsState}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Tab, TabStatus, Tabs, TabsState};
 
-let theme = Theme::default();
-let tabs = [Tab { id: "logs", label: "Logs", glyph: None, active: true, enabled: true }];
-let strip = Tabs::new(&tabs, &theme);
-let mut state = TabsState::default();
-state.selected = Some("logs");`,
+let system = DesignSystem::default();
+let tabs = [
+    Tab::new("logs", "Logs").status(TabStatus::Running).closable(true),
+];
+let mut state = TabsState::new().with_selected("logs");
+state.set_focused(true);
+let _ = Tabs::new(&tabs, &system).gap(1);`,
   },
   TextArea: {
     description:

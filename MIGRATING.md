@@ -165,6 +165,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0149 | `v0.13.0` | [DateTimePicker](migrations/0149-v0.13.0-date-time-picker.md) |
 | 0150 | `v0.13.0` | [KeybindingRecorder](migrations/0150-v0.13.0-keybinding-recorder.md) |
 | 0151 | `v0.13.0` | [FormWizard](migrations/0151-v0.13.0-form-wizard.md) |
+| 0152 | `v0.13.0` | [Tabs](migrations/0152-v0.13.0-tabs.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

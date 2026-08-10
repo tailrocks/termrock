@@ -19,6 +19,7 @@
     "file-picker",
     "date-time-picker",
     "keybinding-recorder",
+    "tabs",
     "menu",
     "object-inspector",
     "log-stream",

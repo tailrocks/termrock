@@ -1,0 +1,32 @@
+---
+title: Tabs
+description: Multi-panel tab strip with roving focus, overflow, and host-owned panel state.
+---
+
+# Tabs
+
+**Purpose.** Switch views, documents, or question groups. Each **panel’s state**
+is host-owned (map id → panel). Tabs only own strip selection/focus/chrome.
+
+## vs SegmentedControl
+
+SegmentedControl changes mode on **one** surface. Tabs imply **separate
+panels**, close actions, dirty/status, and richer overflow.
+
+## Activation
+
+- **Automatic** (default): arrows select  
+- **Manual**: arrows focus; Enter/click select  
+
+## Narrow contraction
+
+Expanded → scrolling window → overflow `…` → Select trigger (multi-tab only).
+
+## Outcomes
+
+`SelectionChanged` · `CloseRequested` · `OverflowOpened` · `ReorderRequested`
+· `FocusChanged`
+
+## Related
+
+SegmentedControl · CollectionState · migration `0152`

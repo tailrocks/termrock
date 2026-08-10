@@ -309,7 +309,11 @@ pub use table::{
     CellAlignment, Column, ColumnWidth, SortDirection, Table, TableHeaderRegion, TableOutcome,
     TableRow, TableRowRegion, TableState, resolve_widths,
 };
-pub use tabs::{TAB_GAP, Tab, TabCell, Tabs, TabsState, lay_out_tabs, tab_at_column};
+pub use tabs::{
+    TAB_GAP, TABS_OVERFLOW_MAX_WIDTH, TABS_SELECT_MAX_WIDTH, Tab, TabCell, TabStatus, Tabs,
+    TabsActivation, TabsOrientation, TabsOutcome, TabsPresentation, TabsState, lay_out_tabs,
+    tab_at_column,
+};
 pub use text_area::{
     TextArea, TextAreaOutcome, TextAreaState, TextAreaVariant, TextCursor, TextWrap,
 };

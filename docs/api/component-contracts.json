@@ -312,7 +312,7 @@
     "narrowTerminal": "covered"
   },
   "Tabs": {
-    "keyboard": "caller-owned",
+    "keyboard": "covered",
     "mouse": "covered",
     "focus": "covered",
     "nonColor": "covered",
