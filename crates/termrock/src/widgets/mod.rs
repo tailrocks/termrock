@@ -53,6 +53,7 @@ mod list;
 mod log_pane;
 mod markdown;
 mod menu_nav;
+mod menu_bar;
 mod sidebar;
 mod breadcrumbs;
 mod pagination;
@@ -242,6 +243,13 @@ pub use menu_nav::{
     MenuState, POPOVER_OVERLAY_ID, Popover, TOOLTIP_OVERLAY_ID, Tooltip, TooltipState,
     dismiss_drawer_overlay, open_drawer_overlay, open_popover_overlay, open_tooltip_overlay,
     place_drawer, place_popover, place_tooltip,
+};
+pub use menu_bar::{
+    MENU_BAR_NARROW_MAX_WIDTH, MENU_BAR_OVERLAY_ID, MENU_BAR_SUBMENU_OVERLAY_PREFIX, MenuBar,
+    MenuBarMenu, MenuBarOutcome, MenuBarPresentation, MenuBarState, MenuCommandRef, MenuNode,
+    MenuRowKind, default_menu_bar_intent, dismiss_menu_bar_overlays, example_app_menus,
+    flatten_menu_commands, menu_bar_presentation_for_width, open_menu_bar_overlay,
+    open_menu_bar_submenu_overlay, place_menu_bar_panel,
 };
 pub use breadcrumbs::{
     BREADCRUMBS_COLLAPSE_MAX_WIDTH, BREADCRUMBS_ELLIPSIS, BREADCRUMBS_ELLIPSIS_ASCII, BreadcrumbHit,

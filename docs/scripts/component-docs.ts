@@ -898,6 +898,20 @@ let items = [MenuItem::new("a", "Open")];
 let state = MenuState::new();
 let menu = Menu::new(&items, &tokens);`,
   },
+  MenuBar: {
+    description:
+      'Desktop-style top-level menus with nested cascade, mnemonics, checked/radio rows, OverlayStack helpers, and narrow CommandPalette replacement.',
+    primaryStory: 'menu-bar/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{MenuBar, MenuBarState, example_app_menus};
+
+let system = DesignSystem::default();
+let menus = example_app_menus();
+let mut state = MenuBarState::new();
+state.set_focused(true);
+let _ = state.open_menu_at(&menus, 0);
+MenuBar::new(&menus, &system).paint_all(bar_area, bounds, buf, &mut state);`,
+  },
 
   Badge: {
     description: 'Non-interactive status badge with semantic role paint.',

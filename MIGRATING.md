@@ -170,6 +170,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0154 | `v0.13.0` | [TreeNavigation](migrations/0154-v0.13.0-tree-navigation.md) |
 | 0155 | `v0.13.0` | [Breadcrumbs](migrations/0155-v0.13.0-breadcrumbs.md) |
 | 0156 | `v0.13.0` | [Pagination](migrations/0156-v0.13.0-pagination.md) |
+| 0157 | `v0.13.0` | [MenuBar](migrations/0157-v0.13.0-menu-bar.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

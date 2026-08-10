@@ -44,8 +44,8 @@ use termrock::{
         ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
-        Menu, MenuItem,
-        MenuState, MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
+        Menu, MenuBar, MenuBarState, MenuItem, MenuState, example_app_menus,
+        MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
         PlanReviewState, PlanStep, Popover, Progress, ProgressKind, PromptComposer,
@@ -946,6 +946,69 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             1,
             pagination_jump_story,
+        ),
+        Story::new(
+            "menu-bar/basic",
+            "MenuBar basic",
+            "MenuBar",
+            "Top-level menus closed; single Tab-stop bar.",
+            64,
+            3,
+            menu_bar_basic_story,
+        ),
+        Story::new(
+            "menu-bar/open",
+            "MenuBar open cascade",
+            "MenuBar",
+            "File menu open with nested Export path ready.",
+            72,
+            14,
+            menu_bar_open_story,
+        ),
+        Story::new(
+            "menu-bar/nested",
+            "MenuBar nested dismiss",
+            "MenuBar",
+            "Submenu open; Esc peels one layer.",
+            72,
+            14,
+            menu_bar_nested_story,
+        ),
+        Story::new(
+            "menu-bar/mnemonic",
+            "MenuBar mnemonic mode",
+            "MenuBar",
+            "Sticky mnemonic arm (host F10 maps here).",
+            64,
+            3,
+            menu_bar_mnemonic_story,
+        ),
+        Story::new(
+            "menu-bar/narrow",
+            "MenuBar narrow palette",
+            "MenuBar",
+            "Narrow chip prefers CommandPalette.",
+            28,
+            2,
+            menu_bar_narrow_story,
+        ),
+        Story::new(
+            "menu-bar/unicode",
+            "MenuBar Unicode",
+            "MenuBar",
+            "CJK labels and mnemonics.",
+            48,
+            10,
+            menu_bar_unicode_story,
+        ),
+        Story::new(
+            "menu-bar/ascii",
+            "MenuBar ASCII",
+            "MenuBar",
+            "ASCII check/radio/mnemonic glyphs.",
+            64,
+            12,
+            menu_bar_ascii_story,
         ),
         Story::new(
             "breadcrumbs/path",
@@ -7635,6 +7698,101 @@ fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     Pagination::new(system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).paint(bar, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let _ = state.open_menu_at(&menus, 0);
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).paint_all(bar, area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let _ = state.open_menu_at(&menus, 0);
+    if let Some(export_idx) = menus[0].items.iter().position(|n| n.id == "export") {
+        for _ in 0..12 {
+            if state.panel_cursor(0) == Some(export_idx) {
+                break;
+            }
+            let _ = state.handle_key(
+                termrock::input::KeyEvent::new(
+                    termrock::input::KeyCode::Down,
+                    termrock::input::KeyModifiers::NONE,
+                ),
+                &menus,
+            );
+        }
+        let _ = state.handle_key(
+            termrock::input::KeyEvent::new(
+                termrock::input::KeyCode::Right,
+                termrock::input::KeyModifiers::NONE,
+            ),
+            &menus,
+        );
+    }
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).paint_all(bar, area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_mnemonic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let _ = state.set_mnemonic_mode(true);
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).paint(bar, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    state.set_presentation_override(Some(termrock::widgets::MenuBarPresentation::CommandPalette));
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).ascii(true).paint(bar, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{MenuBarMenu, MenuNode};
+    let menus = vec![MenuBarMenu::new(
+        "file",
+        "ファイル",
+        vec![
+            MenuNode::command("open", "開く 📂").mnemonic('開'),
+            MenuNode::command("save", "保存 ✨").mnemonic('保'),
+            MenuNode::checkbox("wrap", "折り返し", true),
+        ],
+    )
+    .mnemonic('フ')];
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let _ = state.open_menu_at(&menus, 0);
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system).paint_all(bar, area, frame.buffer_mut(), &mut state);
+}
+
+fn menu_bar_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let menus = example_app_menus();
+    let mut state = MenuBarState::new();
+    state.set_focused(true);
+    let _ = state.open_menu_at(&menus, 2); // View: radio + checkbox
+    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+    MenuBar::new(&menus, system)
+        .ascii(true)
+        .paint_all(bar, area, frame.buffer_mut(), &mut state);
 }
 
 fn breadcrumbs_path_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

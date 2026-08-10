@@ -20574,6 +20574,119 @@ pub unsafe fn termrock::widgets::MatchTruncate::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MatchTruncate
 pub fn termrock::widgets::MatchTruncate::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MatchTruncate
+#[non_exhaustive] pub enum termrock::widgets::MenuBarOutcome<Id>
+pub termrock::widgets::MenuBarOutcome::Activated
+pub termrock::widgets::MenuBarOutcome::Activated::command: core::option::Option<alloc::string::String>
+pub termrock::widgets::MenuBarOutcome::Activated::id: Id
+pub termrock::widgets::MenuBarOutcome::BarMoved
+pub termrock::widgets::MenuBarOutcome::CheckToggled
+pub termrock::widgets::MenuBarOutcome::CheckToggled::checked: bool
+pub termrock::widgets::MenuBarOutcome::CheckToggled::id: Id
+pub termrock::widgets::MenuBarOutcome::Closed
+pub termrock::widgets::MenuBarOutcome::Ignored
+pub termrock::widgets::MenuBarOutcome::LayerClosed
+pub termrock::widgets::MenuBarOutcome::MenuMoved
+pub termrock::widgets::MenuBarOutcome::MnemonicMode
+pub termrock::widgets::MenuBarOutcome::MnemonicMode::armed: bool
+pub termrock::widgets::MenuBarOutcome::Opened
+pub termrock::widgets::MenuBarOutcome::Opened::menu_id: Id
+pub termrock::widgets::MenuBarOutcome::PreferCommandPalette
+pub termrock::widgets::MenuBarOutcome::RadioSelected
+pub termrock::widgets::MenuBarOutcome::RadioSelected::group: alloc::string::String
+pub termrock::widgets::MenuBarOutcome::RadioSelected::id: Id
+pub termrock::widgets::MenuBarOutcome::SubmenuOpened
+pub termrock::widgets::MenuBarOutcome::SubmenuOpened::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarOutcome<Id>::clone(&self) -> termrock::widgets::MenuBarOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MenuBarOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarOutcome<Id>::eq(&self, &termrock::widgets::MenuBarOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MenuBarOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::MenuBarOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::MenuBarOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::MenuBarOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::MenuBarOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MenuBarOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuBarOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuBarOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuBarOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuBarOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::MenuBarOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuBarOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::MenuBarOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuBarOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuBarOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuBarOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuBarOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuBarOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::MenuBarOutcome<Id>::Owned = T
+pub fn termrock::widgets::MenuBarOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuBarOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuBarOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuBarOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuBarOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuBarOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuBarOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuBarOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::MenuBarPresentation
+pub termrock::widgets::MenuBarPresentation::CommandPalette
+pub termrock::widgets::MenuBarPresentation::Compact
+pub termrock::widgets::MenuBarPresentation::Full
+impl termrock::widgets::MenuBarPresentation
+pub const fn termrock::widgets::MenuBarPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::clone(&self) -> termrock::widgets::MenuBarPresentation
+impl core::cmp::Eq for termrock::widgets::MenuBarPresentation
+impl core::cmp::PartialEq for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::eq(&self, &termrock::widgets::MenuBarPresentation) -> bool
+impl core::default::Default for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::default() -> termrock::widgets::MenuBarPresentation
+impl core::fmt::Debug for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MenuBarPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::MenuBarPresentation
+impl core::marker::Freeze for termrock::widgets::MenuBarPresentation
+impl core::marker::Send for termrock::widgets::MenuBarPresentation
+impl core::marker::Sync for termrock::widgets::MenuBarPresentation
+impl core::marker::Unpin for termrock::widgets::MenuBarPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::MenuBarPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuBarPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuBarPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuBarPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuBarPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::MenuBarPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuBarPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::MenuBarPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuBarPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuBarPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuBarPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuBarPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuBarPresentation where T: core::clone::Clone
+pub type termrock::widgets::MenuBarPresentation::Owned = T
+pub fn termrock::widgets::MenuBarPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuBarPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuBarPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuBarPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuBarPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuBarPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuBarPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuBarPresentation
 #[non_exhaustive] pub enum termrock::widgets::MenuOutcome<Id>
 pub termrock::widgets::MenuOutcome::Activated(Id)
 pub termrock::widgets::MenuOutcome::Closed
@@ -20619,6 +20732,63 @@ pub unsafe fn termrock::widgets::MenuOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::MenuOutcome<Id>
 pub fn termrock::widgets::MenuOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::MenuRowKind
+pub termrock::widgets::MenuRowKind::Checkbox
+pub termrock::widgets::MenuRowKind::Checkbox::checked: bool
+pub termrock::widgets::MenuRowKind::Command
+pub termrock::widgets::MenuRowKind::Radio
+pub termrock::widgets::MenuRowKind::Radio::group: alloc::string::String
+pub termrock::widgets::MenuRowKind::Radio::selected: bool
+pub termrock::widgets::MenuRowKind::Section
+pub termrock::widgets::MenuRowKind::Separator
+pub termrock::widgets::MenuRowKind::Submenu
+impl termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::id(&self) -> &'static str
+pub const fn termrock::widgets::MenuRowKind::is_interactive(&self) -> bool
+impl core::clone::Clone for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::clone(&self) -> termrock::widgets::MenuRowKind
+impl core::cmp::Eq for termrock::widgets::MenuRowKind
+impl core::cmp::PartialEq for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::eq(&self, &termrock::widgets::MenuRowKind) -> bool
+impl core::default::Default for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::default() -> termrock::widgets::MenuRowKind
+impl core::fmt::Debug for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::MenuRowKind
+impl core::marker::Freeze for termrock::widgets::MenuRowKind
+impl core::marker::Send for termrock::widgets::MenuRowKind
+impl core::marker::Sync for termrock::widgets::MenuRowKind
+impl core::marker::Unpin for termrock::widgets::MenuRowKind
+impl core::marker::UnsafeUnpin for termrock::widgets::MenuRowKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuRowKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuRowKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuRowKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuRowKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuRowKind where U: core::convert::From<T>
+pub fn termrock::widgets::MenuRowKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuRowKind where U: core::convert::Into<T>
+pub type termrock::widgets::MenuRowKind::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuRowKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuRowKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuRowKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuRowKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuRowKind where T: core::clone::Clone
+pub type termrock::widgets::MenuRowKind::Owned = T
+pub fn termrock::widgets::MenuRowKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuRowKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuRowKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuRowKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuRowKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuRowKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuRowKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuRowKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuRowKind
+pub fn termrock::widgets::MenuRowKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuRowKind
 #[non_exhaustive] pub enum termrock::widgets::ModeRibbonOutcome<Id>
 pub termrock::widgets::ModeRibbonOutcome::Ignored
 pub termrock::widgets::ModeRibbonOutcome::ModeRequested(Id)
@@ -37466,6 +37636,220 @@ pub unsafe fn termrock::widgets::Menu<'a, Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Menu<'a, Id>
 pub fn termrock::widgets::Menu<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Menu<'a, Id>
+pub struct termrock::widgets::MenuBar<'a, Id>
+impl<'a, Id> termrock::widgets::MenuBar<'a, Id>
+pub const fn termrock::widgets::MenuBar<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::MenuBar<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::MenuBar<'a, Id>::new(&'a [termrock::widgets::MenuBarMenu<Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::MenuBar<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MenuBarState) where Id: core::clone::Clone
+pub fn termrock::widgets::MenuBar<'a, Id>::paint_all(&self, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MenuBarState) where Id: core::clone::Clone
+pub fn termrock::widgets::MenuBar<'a, Id>::paint_panels(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MenuBarState) where Id: core::clone::Clone
+pub fn termrock::widgets::MenuBar<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::MenuBarState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuBar<'a, Id>
+pub fn termrock::widgets::MenuBar<'a, Id>::clone(&self) -> termrock::widgets::MenuBar<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MenuBar<'a, Id>
+pub fn termrock::widgets::MenuBar<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::MenuBar<'a, Id>
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::MenuBar<'_, Id>
+pub type &termrock::widgets::MenuBar<'_, Id>::State = termrock::widgets::MenuBarState
+pub fn &termrock::widgets::MenuBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<Id: core::clone::Clone> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::MenuBar<'_, Id>
+pub type termrock::widgets::MenuBar<'_, Id>::State = termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBar<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id> core::marker::Freeze for termrock::widgets::MenuBar<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::MenuBar<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::MenuBar<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::MenuBar<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::MenuBar<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuBar<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuBar<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuBar<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::MenuBar<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuBar<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::MenuBar<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuBar<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuBar<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuBar<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuBar<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuBar<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::MenuBar<'a, Id>::Owned = T
+pub fn termrock::widgets::MenuBar<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuBar<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuBar<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuBar<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuBar<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBar<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuBar<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBar<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuBar<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuBar<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuBar<'a, Id>
+pub fn termrock::widgets::MenuBar<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuBar<'a, Id>
+pub struct termrock::widgets::MenuBarMenu<Id>
+pub termrock::widgets::MenuBarMenu::enabled: bool
+pub termrock::widgets::MenuBarMenu::id: Id
+pub termrock::widgets::MenuBarMenu::items: alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
+pub termrock::widgets::MenuBarMenu::label: alloc::string::String
+pub termrock::widgets::MenuBarMenu::mnemonic: core::option::Option<char>
+impl<Id> termrock::widgets::MenuBarMenu<Id>
+pub fn termrock::widgets::MenuBarMenu<Id>::enabled(self, bool) -> Self
+pub fn termrock::widgets::MenuBarMenu<Id>::mnemonic(self, char) -> Self
+pub fn termrock::widgets::MenuBarMenu<Id>::new(Id, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::MenuNode<Id>>) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuBarMenu<Id>
+pub fn termrock::widgets::MenuBarMenu<Id>::clone(&self) -> termrock::widgets::MenuBarMenu<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MenuBarMenu<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::MenuBarMenu<Id>
+pub fn termrock::widgets::MenuBarMenu<Id>::eq(&self, &termrock::widgets::MenuBarMenu<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MenuBarMenu<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MenuBarMenu<Id>
+pub fn termrock::widgets::MenuBarMenu<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::MenuBarMenu<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::MenuBarMenu<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::MenuBarMenu<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::MenuBarMenu<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MenuBarMenu<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuBarMenu<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuBarMenu<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuBarMenu<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarMenu<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuBarMenu<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::MenuBarMenu<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuBarMenu<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::MenuBarMenu<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuBarMenu<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuBarMenu<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuBarMenu<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuBarMenu<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuBarMenu<Id> where T: core::clone::Clone
+pub type termrock::widgets::MenuBarMenu<Id>::Owned = T
+pub fn termrock::widgets::MenuBarMenu<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuBarMenu<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuBarMenu<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarMenu<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuBarMenu<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarMenu<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuBarMenu<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarMenu<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuBarMenu<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuBarMenu<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuBarMenu<Id>
+pub fn termrock::widgets::MenuBarMenu<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuBarMenu<Id>
+pub struct termrock::widgets::MenuBarState
+impl termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::bar_cursor(&self) -> usize
+pub fn termrock::widgets::MenuBarState::close_all(&mut self)
+pub fn termrock::widgets::MenuBarState::depth(&self) -> usize
+pub fn termrock::widgets::MenuBarState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::MenuBarMenu<Id>]) -> termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MenuBarMenu<Id>]) -> termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::MenuBarMenu<Id>]) -> termrock::widgets::MenuBarOutcome<Id>
+pub const fn termrock::widgets::MenuBarState::is_focused(&self) -> bool
+pub fn termrock::widgets::MenuBarState::is_open(&self) -> bool
+pub const fn termrock::widgets::MenuBarState::mnemonic_armed(&self) -> bool
+pub fn termrock::widgets::MenuBarState::new() -> Self
+pub fn termrock::widgets::MenuBarState::open_active_menu<Id: core::clone::Clone>(&mut self, &[termrock::widgets::MenuBarMenu<Id>]) -> termrock::widgets::MenuBarOutcome<Id>
+pub fn termrock::widgets::MenuBarState::open_menu_at<Id: core::clone::Clone>(&mut self, &[termrock::widgets::MenuBarMenu<Id>], usize) -> termrock::widgets::MenuBarOutcome<Id>
+pub const fn termrock::widgets::MenuBarState::open_top_index(&self) -> core::option::Option<usize>
+pub fn termrock::widgets::MenuBarState::opener_focus_hint(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::MenuBarState::panel_cursor(&self, usize) -> core::option::Option<usize>
+pub const fn termrock::widgets::MenuBarState::presentation(&self) -> termrock::widgets::MenuBarPresentation
+pub fn termrock::widgets::MenuBarState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::MenuBarState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::MenuBarState::set_focused(&mut self, bool)
+pub fn termrock::widgets::MenuBarState::set_mnemonic_mode(&mut self, bool) -> termrock::widgets::MenuBarOutcome<()>
+pub fn termrock::widgets::MenuBarState::set_opener_focus_hint(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::MenuBarState::set_presentation_override(&mut self, core::option::Option<termrock::widgets::MenuBarPresentation>)
+impl core::clone::Clone for termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::clone(&self) -> termrock::widgets::MenuBarState
+impl core::cmp::Eq for termrock::widgets::MenuBarState
+impl core::cmp::PartialEq for termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::eq(&self, &termrock::widgets::MenuBarState) -> bool
+impl core::default::Default for termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MenuBarState
+impl core::marker::Freeze for termrock::widgets::MenuBarState
+impl core::marker::Send for termrock::widgets::MenuBarState
+impl core::marker::Sync for termrock::widgets::MenuBarState
+impl core::marker::Unpin for termrock::widgets::MenuBarState
+impl core::marker::UnsafeUnpin for termrock::widgets::MenuBarState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuBarState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuBarState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuBarState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuBarState where U: core::convert::From<T>
+pub fn termrock::widgets::MenuBarState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuBarState where U: core::convert::Into<T>
+pub type termrock::widgets::MenuBarState::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuBarState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuBarState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuBarState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuBarState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuBarState where T: core::clone::Clone
+pub type termrock::widgets::MenuBarState::Owned = T
+pub fn termrock::widgets::MenuBarState::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuBarState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuBarState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuBarState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuBarState where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuBarState where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuBarState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuBarState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuBarState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuBarState
+pub fn termrock::widgets::MenuBarState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuBarState
+pub struct termrock::widgets::MenuCommandRef<Id>
+pub termrock::widgets::MenuCommandRef::command: core::option::Option<alloc::string::String>
+pub termrock::widgets::MenuCommandRef::disabled_reason: core::option::Option<alloc::string::String>
+pub termrock::widgets::MenuCommandRef::enabled: bool
+pub termrock::widgets::MenuCommandRef::id: Id
+pub termrock::widgets::MenuCommandRef::label: alloc::string::String
+pub termrock::widgets::MenuCommandRef::path_label: alloc::string::String
+pub termrock::widgets::MenuCommandRef::shortcut: core::option::Option<alloc::string::String>
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuCommandRef<Id>
+pub fn termrock::widgets::MenuCommandRef<Id>::clone(&self) -> termrock::widgets::MenuCommandRef<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MenuCommandRef<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::MenuCommandRef<Id>
+pub fn termrock::widgets::MenuCommandRef<Id>::eq(&self, &termrock::widgets::MenuCommandRef<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MenuCommandRef<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MenuCommandRef<Id>
+pub fn termrock::widgets::MenuCommandRef<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::MenuCommandRef<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::MenuCommandRef<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::MenuCommandRef<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::MenuCommandRef<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MenuCommandRef<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuCommandRef<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuCommandRef<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuCommandRef<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuCommandRef<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuCommandRef<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::MenuCommandRef<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuCommandRef<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::MenuCommandRef<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuCommandRef<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuCommandRef<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuCommandRef<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuCommandRef<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuCommandRef<Id> where T: core::clone::Clone
+pub type termrock::widgets::MenuCommandRef<Id>::Owned = T
+pub fn termrock::widgets::MenuCommandRef<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuCommandRef<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuCommandRef<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuCommandRef<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuCommandRef<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuCommandRef<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuCommandRef<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuCommandRef<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuCommandRef<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuCommandRef<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuCommandRef<Id>
+pub fn termrock::widgets::MenuCommandRef<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuCommandRef<Id>
 pub struct termrock::widgets::MenuItem<Id>
 pub termrock::widgets::MenuItem::checked: core::option::Option<bool>
 pub termrock::widgets::MenuItem::enabled: bool
@@ -37519,6 +37903,71 @@ pub unsafe fn termrock::widgets::MenuItem<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MenuItem<Id>
 pub fn termrock::widgets::MenuItem<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuItem<Id>
+pub struct termrock::widgets::MenuNode<Id>
+pub termrock::widgets::MenuNode::children: alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
+pub termrock::widgets::MenuNode::command: core::option::Option<alloc::string::String>
+pub termrock::widgets::MenuNode::disabled_reason: core::option::Option<alloc::string::String>
+pub termrock::widgets::MenuNode::enabled: bool
+pub termrock::widgets::MenuNode::id: Id
+pub termrock::widgets::MenuNode::kind: termrock::widgets::MenuRowKind
+pub termrock::widgets::MenuNode::label: alloc::string::String
+pub termrock::widgets::MenuNode::mnemonic: core::option::Option<char>
+pub termrock::widgets::MenuNode::recent: bool
+pub termrock::widgets::MenuNode::shortcut: core::option::Option<alloc::string::String>
+impl<Id> termrock::widgets::MenuNode<Id>
+pub fn termrock::widgets::MenuNode<Id>::checkbox(Id, impl core::convert::Into<alloc::string::String>, bool) -> Self
+pub fn termrock::widgets::MenuNode<Id>::command(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MenuNode<Id>::command_key(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MenuNode<Id>::disabled_reason(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MenuNode<Id>::enabled(self, bool) -> Self
+pub fn termrock::widgets::MenuNode<Id>::is_activatable(&self) -> bool
+pub fn termrock::widgets::MenuNode<Id>::mnemonic(self, char) -> Self
+pub fn termrock::widgets::MenuNode<Id>::radio(Id, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, bool) -> Self
+pub fn termrock::widgets::MenuNode<Id>::recent(self, bool) -> Self
+pub fn termrock::widgets::MenuNode<Id>::section(Id, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MenuNode<Id>::separator(Id) -> Self
+pub fn termrock::widgets::MenuNode<Id>::shortcut(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MenuNode<Id>::submenu(Id, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::MenuNode<Id>>) -> Self
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::MenuNode<Id>
+pub fn termrock::widgets::MenuNode<Id>::clone(&self) -> termrock::widgets::MenuNode<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::MenuNode<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::MenuNode<Id>
+pub fn termrock::widgets::MenuNode<Id>::eq(&self, &termrock::widgets::MenuNode<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MenuNode<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::MenuNode<Id>
+pub fn termrock::widgets::MenuNode<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::MenuNode<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::MenuNode<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::MenuNode<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::MenuNode<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MenuNode<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MenuNode<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MenuNode<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MenuNode<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MenuNode<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MenuNode<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::MenuNode<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MenuNode<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::MenuNode<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::MenuNode<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MenuNode<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MenuNode<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MenuNode<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MenuNode<Id> where T: core::clone::Clone
+pub type termrock::widgets::MenuNode<Id>::Owned = T
+pub fn termrock::widgets::MenuNode<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MenuNode<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MenuNode<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MenuNode<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MenuNode<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuNode<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MenuNode<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::MenuNode<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MenuNode<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MenuNode<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MenuNode<Id>
+pub fn termrock::widgets::MenuNode<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MenuNode<Id>
 pub struct termrock::widgets::MenuState
 impl termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::cursor_index(&self) -> usize
@@ -48669,6 +49118,9 @@ pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
+pub const termrock::widgets::MENU_BAR_NARROW_MAX_WIDTH: u16
+pub const termrock::widgets::MENU_BAR_OVERLAY_ID: &str
+pub const termrock::widgets::MENU_BAR_SUBMENU_OVERLAY_PREFIX: &str
 pub const termrock::widgets::PAGINATION_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::PAGINATION_MINIMAL_MAX_WIDTH: u16
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
@@ -48711,14 +49163,17 @@ pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldse
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
+pub fn termrock::widgets::default_menu_bar_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_reserved_chords() -> alloc::vec::Vec<(termrock::keymap::KeyChord, alloc::string::String)>
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_menu_bar_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
+pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_docs_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
@@ -48729,6 +49184,7 @@ pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
+pub fn termrock::widgets::flatten_menu_commands<Id: core::clone::Clone>(&[termrock::widgets::MenuBarMenu<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuCommandRef<Id>>
 pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
@@ -48745,6 +49201,7 @@ pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ra
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
+pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -48752,6 +49209,8 @@ pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&
 pub fn termrock::widgets::open_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, impl core::convert::Into<termrock::interaction::OverlayId>, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_menu_bar_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_menu_bar_submenu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, usize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -48761,6 +49220,7 @@ pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_menu_bar_panel(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_picker(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_popover(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect

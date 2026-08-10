@@ -58,6 +58,7 @@
     "log-pane",
     "markdown-view",
     "menu",
+    "menu-bar",
     "message-dialog",
     "mode-ribbon",
     "pagination",
