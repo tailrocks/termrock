@@ -1116,6 +1116,76 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "setup-wizard".into(),
+            title: "Setup Wizard".into(),
+            description:
+                "Premium first-run / onboarding flow over FormWizard + Stepper with safe cancel."
+                    .into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::setup_wizard".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/setup_wizard.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/FormWizard".into(),
+                    "termrock/Stepper".into(),
+                    "termrock/Form".into(),
+                    "termrock/EmptyState".into(),
+                    "termrock/ThemePicker".into(),
+                    "termrock/PermissionPrompt".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("FormWizard".into());
+                c.min_width = Some(32);
+                c.min_height = Some(10);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "stepper".into(),
+                    label: "Stepper".into(),
+                },
+                AnatomyPartRef {
+                    id: "body".into(),
+                    label: "Step body".into(),
+                },
+                AnatomyPartRef {
+                    id: "nav".into(),
+                    label: "Back / next / cancel".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![],
+            outcomes: vec![],
+            stories: vec![
+                "setup-wizard/welcome".into(),
+                "setup-wizard/capability".into(),
+                "setup-wizard/account".into(),
+                "setup-wizard/permission".into(),
+                "setup-wizard/theme".into(),
+                "setup-wizard/summary".into(),
+                "setup-wizard/recovery".into(),
+                "setup-wizard/inline".into(),
+                "setup-wizard/resume".into(),
+                "setup-wizard/cancel-confirm".into(),
+            ],
+            tests: vec!["patterns::setup_wizard".into()],
+            migration: Some("migrations/0238-v0.13.0-setup-wizard.md".into()),
+            provenance: prov("crates/termrock/src/patterns/setup_wizard.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

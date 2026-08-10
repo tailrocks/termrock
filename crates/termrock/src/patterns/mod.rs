@@ -16,6 +16,7 @@ mod app_shell;
 mod ops_dashboard;
 mod resource_browser;
 mod settings_screen;
+mod setup_wizard;
 mod studio_shell;
 
 pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
@@ -41,5 +42,12 @@ pub use settings_screen::{
     settings_query_matches, SettingsBodyMode, SettingsDensity, SettingsRegion,
     SettingsScreenOutcome, SettingsScreenSlots, SettingsScreenState, SettingsScreenSurfaces,
     SettingsShellOutcome, SettingsShellState,
+};
+pub use setup_wizard::{
+    example_capability_lines, example_onboarding_setup_steps, example_setup_account_fields,
+    example_setup_choices_fields, example_setup_connection_fields, example_setup_steps,
+    example_setup_summary_lines, layout_setup_wizard, render_setup_wizard,
+    setup_steps_to_wizard_steps, CapabilityLine, SetupStep, SetupStepKind, SetupWizardMode,
+    SetupWizardOutcome, SetupWizardSlots, SetupWizardState, SetupWizardSurfaces,
 };
 pub use studio_shell::{StudioShellLayout, StudioShellSlots, layout_studio_shell};

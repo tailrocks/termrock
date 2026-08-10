@@ -7295,6 +7295,96 @@ pub(crate) fn stories() -> Vec<Story> {
             22,
             settings_screen_help,
         ),
+        Story::new(
+            "setup-wizard/welcome",
+            "Setup wizard welcome",
+            "SetupWizard",
+            "Dense first-run welcome — no marketing splash.",
+            80,
+            22,
+            setup_wizard_welcome,
+        ),
+        Story::new(
+            "setup-wizard/capability",
+            "Setup wizard capability",
+            "SetupWizard",
+            "Terminal capability doctor projection.",
+            80,
+            22,
+            setup_wizard_capability,
+        ),
+        Story::new(
+            "setup-wizard/account",
+            "Setup wizard account",
+            "SetupWizard",
+            "Account form step with validation gate.",
+            80,
+            22,
+            setup_wizard_account,
+        ),
+        Story::new(
+            "setup-wizard/permission",
+            "Setup wizard trust",
+            "SetupWizard",
+            "Permissions / trust step.",
+            80,
+            20,
+            setup_wizard_permission,
+        ),
+        Story::new(
+            "setup-wizard/theme",
+            "Setup wizard theme",
+            "SetupWizard",
+            "Theme preview step.",
+            80,
+            22,
+            setup_wizard_theme,
+        ),
+        Story::new(
+            "setup-wizard/summary",
+            "Setup wizard summary",
+            "SetupWizard",
+            "Review summary before finish.",
+            80,
+            22,
+            setup_wizard_summary,
+        ),
+        Story::new(
+            "setup-wizard/recovery",
+            "Setup wizard recovery",
+            "SetupWizard",
+            "Failure recovery with retry.",
+            72,
+            16,
+            setup_wizard_recovery,
+        ),
+        Story::new(
+            "setup-wizard/inline",
+            "Setup wizard inline",
+            "SetupWizard",
+            "Inline mode in a tight pane.",
+            48,
+            14,
+            setup_wizard_inline,
+        ),
+        Story::new(
+            "setup-wizard/resume",
+            "Setup wizard resume",
+            "SetupWizard",
+            "Restored WizardProgress mid-flow.",
+            80,
+            22,
+            setup_wizard_resume,
+        ),
+        Story::new(
+            "setup-wizard/cancel-confirm",
+            "Setup wizard cancel confirm",
+            "SetupWizard",
+            "Safe two-step cancel strip.",
+            72,
+            16,
+            setup_wizard_cancel_confirm,
+        ),
         // --- Catalog state-axis stories (narrow/unicode/depth) ---
         Story::new(
             "action-bar/narrow",
@@ -24723,6 +24813,160 @@ fn settings_screen_no_results(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 fn settings_screen_help(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Help);
+}
+
+#[derive(Clone, Copy)]
+enum SetupWizardStoryKind {
+    Welcome,
+    Capability,
+    Account,
+    Permission,
+    Theme,
+    Summary,
+    Recovery,
+    Inline,
+    Resume,
+    CancelConfirm,
+}
+
+fn paint_setup_wizard_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: SetupWizardStoryKind,
+) {
+    use termrock::patterns::{
+        example_capability_lines, example_setup_account_fields, example_setup_steps,
+        example_setup_summary_lines, render_setup_wizard, SetupStepKind, SetupWizardMode,
+        SetupWizardState, SetupWizardSurfaces,
+    };
+    use termrock::widgets::{Fieldset, WizardGate, BUILTIN_THEME_PRESETS};
+
+    let mut state = SetupWizardState::from_steps(example_setup_steps()).with_title("First run");
+    if matches!(kind, SetupWizardStoryKind::Inline) {
+        state = state.with_mode(SetupWizardMode::Inline);
+    }
+
+    let caps = example_capability_lines();
+    let summary = example_setup_summary_lines();
+    let account = example_setup_account_fields();
+    let fieldsets: Vec<Fieldset<'_, &str>> = match kind {
+        SetupWizardStoryKind::Account => vec![Fieldset::new("Account", &account)],
+        _ => vec![],
+    };
+
+    // Position wizard on the desired step kind
+    let target = match kind {
+        SetupWizardStoryKind::Welcome | SetupWizardStoryKind::Inline => SetupStepKind::Welcome,
+        SetupWizardStoryKind::Capability => SetupStepKind::Capability,
+        SetupWizardStoryKind::Account => SetupStepKind::Account,
+        SetupWizardStoryKind::Permission => SetupStepKind::Permission,
+        SetupWizardStoryKind::Theme => SetupStepKind::Theme,
+        SetupWizardStoryKind::Summary | SetupWizardStoryKind::Resume => SetupStepKind::Summary,
+        SetupWizardStoryKind::Recovery => SetupStepKind::Recovery,
+        SetupWizardStoryKind::CancelConfirm => SetupStepKind::Welcome,
+    };
+
+    match kind {
+        SetupWizardStoryKind::Recovery => {
+            let _ = state.wizard.fail("Could not reach API — retry when ready");
+        }
+        SetupWizardStoryKind::Resume => {
+            // Advance then restore
+            while state.current_kind() != SetupStepKind::Theme && state.wizard.step() < 20 {
+                state.set_gate(WizardGate::Valid);
+                let _ = state.wizard.next();
+            }
+            let snap = state.progress();
+            state = SetupWizardState::from_steps(example_setup_steps()).with_title("Resume setup");
+            let _ = state.resume(&snap);
+        }
+        SetupWizardStoryKind::CancelConfirm => {
+            let _ = state.request_cancel();
+        }
+        SetupWizardStoryKind::Summary => {
+            // Open review phase
+            while !matches!(
+                state.wizard.phase(),
+                termrock::widgets::WizardPhase::Review
+            ) && state.wizard.step() < 30
+            {
+                state.set_gate(WizardGate::Valid);
+                let out = state.wizard.next();
+                if matches!(out, termrock::widgets::FormWizardOutcome::ReviewOpened) {
+                    break;
+                }
+                if matches!(out, termrock::widgets::FormWizardOutcome::SubmitRequested) {
+                    break;
+                }
+            }
+        }
+        _ => {
+            while state.current_kind() != target && state.wizard.step() < 20 {
+                state.set_gate(WizardGate::Valid);
+                let _ = state.wizard.next();
+                if matches!(
+                    state.wizard.phase(),
+                    termrock::widgets::WizardPhase::Review | termrock::widgets::WizardPhase::Failed
+                ) {
+                    break;
+                }
+            }
+            if matches!(target, SetupStepKind::Account) {
+                state.set_gate(WizardGate::Invalid);
+            } else {
+                state.set_gate(WizardGate::Valid);
+            }
+        }
+    }
+
+    render_setup_wizard(
+        frame.buffer_mut(),
+        area,
+        SetupWizardSurfaces {
+            system,
+            state: &mut state,
+            fieldsets: &fieldsets,
+            capabilities: &caps,
+            summary_lines: &summary,
+            welcome_title: "TermRock setup",
+            welcome_detail: "Configure once. Keyboard-first.",
+            theme_presets: BUILTIN_THEME_PRESETS,
+            theme_paint: Some(system),
+            permission: None,
+        },
+    );
+}
+
+fn setup_wizard_welcome(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Welcome);
+}
+fn setup_wizard_capability(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Capability);
+}
+fn setup_wizard_account(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Account);
+}
+fn setup_wizard_permission(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Permission);
+}
+fn setup_wizard_theme(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Theme);
+}
+fn setup_wizard_summary(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Summary);
+}
+fn setup_wizard_recovery(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Recovery);
+}
+fn setup_wizard_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Inline);
+}
+fn setup_wizard_resume(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Resume);
+}
+fn setup_wizard_cancel_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::CancelConfirm);
 }
 
 fn transcript_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
