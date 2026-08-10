@@ -383,8 +383,9 @@ pub use blocks::{
 };
 // SettingsShell elevated to `termrock::patterns::{SettingsScreenState, …}` (0237).
 pub use charts::{
-    BarDatum, BarSeries, Chart, ChartFill, ChartSeries, Gauge, HistBucket, Histogram, MeterSegment,
-    ScaleDomain, ScaleMode, SegmentedMeter, Sparkline, VizGlyphSet, glyph_for_fraction,
+    BarDatum, BarSeries, Chart, ChartFill, ChartInterpolation, ChartSeries, Gauge, HistBucket,
+    Histogram, MeterSegment, ScaleDomain, ScaleMode, SegmentedMeter, Sparkline, VizGlyphSet,
+    glyph_for_fraction,
     resolve_domain, window_samples,
 };
 pub use charts::bench as charts_bench;

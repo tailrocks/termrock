@@ -517,6 +517,71 @@ impl ChartFill {
     }
 }
 
+/// How multi-column samples map along X (shadcn line linear/step peer).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ChartInterpolation {
+    /// Nearest sample index `col * n / width` (historical default).
+    #[default]
+    Nearest,
+    /// Linear lerp between adjacent samples (smooth TUI polyline).
+    Linear,
+    /// Hold floor sample until next boundary (step chart).
+    Step,
+}
+
+impl ChartInterpolation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Nearest => "nearest",
+            Self::Linear => "linear",
+            Self::Step => "step",
+        }
+    }
+
+    /// Sample value at column `col` of `width` for `samples` (non-empty).
+    #[must_use]
+    pub fn sample_at(self, samples: &[f64], col: usize, width: usize) -> f64 {
+        let n = samples.len();
+        if n == 0 {
+            return f64::NAN;
+        }
+        if n == 1 || width <= 1 {
+            return samples[0];
+        }
+        let w = width.max(1);
+        match self {
+            Self::Nearest => {
+                let index = col.saturating_mul(n) / w;
+                samples.get(index.min(n - 1)).copied().unwrap_or(f64::NAN)
+            }
+            Self::Step => {
+                // Hold sample i across columns mapping to floor(pos).
+                let pos = col as f64 * (n - 1) as f64 / (w - 1) as f64;
+                let index = pos.floor() as usize;
+                samples.get(index.min(n - 1)).copied().unwrap_or(f64::NAN)
+            }
+            Self::Linear => {
+                let pos = col as f64 * (n - 1) as f64 / (w - 1) as f64;
+                let i0 = (pos.floor() as usize).min(n - 1);
+                let i1 = (i0 + 1).min(n - 1);
+                let t = (pos - i0 as f64).clamp(0.0, 1.0);
+                let a = samples[i0];
+                let b = samples[i1];
+                if !a.is_finite() {
+                    return b;
+                }
+                if !b.is_finite() {
+                    return a;
+                }
+                a * (1.0 - t) + b * t
+            }
+        }
+    }
+}
+
 /// One series in a multi-line / area chart.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChartSeries<'a> {
@@ -549,6 +614,7 @@ pub struct Chart<'a> {
     window: usize,
     title: Option<&'a str>,
     fill: ChartFill,
+    interpolation: ChartInterpolation,
 }
 
 impl<'a> Chart<'a> {
@@ -568,6 +634,7 @@ impl<'a> Chart<'a> {
             window: 0,
             title: None,
             fill: ChartFill::None,
+            interpolation: ChartInterpolation::Nearest,
         }
     }
 
@@ -589,6 +656,27 @@ impl<'a> Chart<'a> {
     #[must_use]
     pub const fn fill(mut self, fill: ChartFill) -> Self {
         self.fill = fill;
+        self
+    }
+
+    /// X-path interpolation (line linear / step peers).
+    #[must_use]
+    pub const fn interpolation(mut self, interp: ChartInterpolation) -> Self {
+        self.interpolation = interp;
+        self
+    }
+
+    /// Linear lerp between samples (shadcn chart-line-linear peer).
+    #[must_use]
+    pub const fn linear(mut self) -> Self {
+        self.interpolation = ChartInterpolation::Linear;
+        self
+    }
+
+    /// Step hold between samples (shadcn chart-line-step peer).
+    #[must_use]
+    pub const fn step(mut self) -> Self {
+        self.interpolation = ChartInterpolation::Step;
         self
     }
 
@@ -870,7 +958,7 @@ impl Widget for &Chart<'_> {
                     let index = col * samples.len() / width.max(1);
                     let (row_top, row_bot) = match self.fill {
                         ChartFill::Area => {
-                            let sample = samples.get(index).copied().unwrap_or(f64::NAN);
+                            let sample = self.interpolation.sample_at(samples, col, width);
                             let Some(frac) = domain.normalize(sample) else {
                                 continue;
                             };
@@ -880,6 +968,8 @@ impl Widget for &Chart<'_> {
                             )
                         }
                         ChartFill::AreaStacked => {
+                            // Stack still uses nearest sample index for segment alignment.
+                            let index = col * samples.len() / width.max(1);
                             let mut prev = 0.0;
                             for sj in 0..si {
                                 if let Some(v) =
@@ -956,7 +1046,7 @@ impl Widget for &Chart<'_> {
                         cum
                     }
                     ChartFill::None | ChartFill::Area => {
-                        samples.get(index).copied().unwrap_or(f64::NAN)
+                        self.interpolation.sample_at(samples, col, width)
                     }
                 };
                 let missing = !sample.is_finite();
@@ -973,6 +1063,7 @@ impl Widget for &Chart<'_> {
                     continue;
                 };
                 let row_top = fraction_to_row(frac, plot.height);
+                // Selection: nearest sample index for interactive peer (not lerp t).
                 let selected =
                     self.selected_series == Some(si) && self.selected_index == Some(index);
                 let ch = if selected {
@@ -2147,22 +2238,144 @@ mod tests {
 
     #[test]
     fn chart_multi_series_legend_axes() {
-        let system = system();
-        let a = [1.0, 2.0, 3.0, 2.0, 1.0];
-        let b = [3.0, 2.0, 1.0, 2.0, 3.0];
+        let system = system_ascii_nocolor();
+        // Distinct paths: a rises then falls; b falls then rises — both markers on plot
+        let a = [1.0, 2.0, 4.0, 2.0, 1.0];
+        let b = [4.0, 2.0, 1.0, 2.0, 4.0];
         let series = [
             ChartSeries::new("cpu", &a),
             ChartSeries::new("mem", &b),
         ];
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 8));
+        let area = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(area);
         Chart::new(&series, &system)
             .title("host")
-            .thresholds(&[2.0])
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(true)
+            .show_axes(true)
             .selected_series(0)
             .selected_index(2)
-            .render(Rect::new(0, 0, 40, 8), &mut buffer);
+            .render(area, &mut buffer);
         let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("cpu") || text.contains("host") || text.contains('●') || text.contains('*'), "{text}");
+        assert!(text.contains("cpu") && text.contains("mem"), "legend labels: {text}");
+        assert!(text.contains("host"), "title: {text}");
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        // Plot occupancy: both series markers (not legend-only — markers also on plot rows)
+        let mut m0_plot = 0usize;
+        let mut m1_plot = 0usize;
+        let mut selected = 0usize;
+        // Skip title+legend rows (~0-1); axes may use left cols
+        for y in 2..8u16 {
+            for x in 6..40u16 {
+                let s = buffer[(x, y)].symbol();
+                if s.contains(m0) {
+                    m0_plot += 1;
+                }
+                if s.contains(m1) {
+                    m1_plot += 1;
+                }
+                if s.contains('X') {
+                    selected += 1;
+                }
+            }
+        }
+        assert!(m0_plot > 0, "series 0 marker on plot: {text}");
+        assert!(m1_plot > 0, "series 1 marker on plot: {text}");
+        assert!(
+            selected > 0,
+            "selected_index must paint highlight X: {text}"
+        );
+    }
+
+    #[test]
+    fn chart_line_step_differs_from_linear() {
+        let system = system_ascii_nocolor();
+        // Two samples: low then high — step holds low then jumps; linear ramps
+        let s = [0.0, 10.0];
+        let series = [ChartSeries::new("s", &s)];
+        let area = Rect::new(0, 0, 20, 6);
+        let mut step_buf = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .step()
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut step_buf);
+        let mut lin_buf = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .linear()
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut lin_buf);
+        // Collect outline rows per column for step vs linear
+        let mark = VizGlyphSet::Ascii.series_marker(0);
+        let row_of = |buf: &Buffer, x: u16| -> Option<u16> {
+            for y in 0..6u16 {
+                if buf[(x, y)].symbol().contains(mark) || buf[(x, y)].symbol().contains('X') {
+                    return Some(y);
+                }
+            }
+            None
+        };
+        let mut step_rows = Vec::new();
+        let mut lin_rows = Vec::new();
+        for x in 0..20u16 {
+            if let Some(r) = row_of(&step_buf, x) {
+                step_rows.push(r);
+            }
+            if let Some(r) = row_of(&lin_buf, x) {
+                lin_rows.push(r);
+            }
+        }
+        assert!(
+            step_rows.len() >= 10 && lin_rows.len() >= 10,
+            "need plot occupancy step={step_rows:?} lin={lin_rows:?}"
+        );
+        // Distinct paths: row sequences must differ for at least one column
+        let differ = step_rows
+            .iter()
+            .zip(lin_rows.iter())
+            .any(|(a, b)| a != b);
+        assert!(
+            differ,
+            "step and linear must differ in row occupancy: step={step_rows:?} lin={lin_rows:?}"
+        );
+        // Step should hold a constant row for a prefix of columns
+        let first = step_rows[0];
+        let hold = step_rows.iter().take_while(|&&r| r == first).count();
+        assert!(
+            hold >= 2,
+            "step should hold first sample across ≥2 cols, hold={hold} rows={step_rows:?}"
+        );
+        assert_eq!(ChartInterpolation::Step.id(), "step");
+        assert_eq!(ChartInterpolation::Linear.id(), "linear");
+    }
+
+    #[test]
+    fn chart_line_missing_nan_does_not_collapse() {
+        let system = system_ascii_nocolor();
+        let s = [1.0, f64::NAN, 3.0, 2.0];
+        let series = [ChartSeries::new("s", &s)];
+        let area = Rect::new(0, 0, 24, 5);
+        let mut buffer = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut buffer);
+        let miss = VizGlyphSet::Ascii.missing_mark();
+        let mark = VizGlyphSet::Ascii.series_marker(0);
+        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
+        assert!(
+            text.contains(mark),
+            "finite samples still paint: {text}"
+        );
+        // Missing may paint miss glyph or skip; finite markers must remain
+        let finite = text.chars().filter(|&c| c == mark).count();
+        assert!(finite >= 2, "need multiple finite outline points: {text}");
+        let _ = miss;
     }
 
     #[test]

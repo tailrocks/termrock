@@ -267,6 +267,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0251 | `v0.13.0` | [AppDashboard + first-party blocks matrix](migrations/0251-v0.13.0-app-dashboard-blocks.md) |
 | 0252 | `v0.13.0` | [Chart area fill for shadcn charts](migrations/0252-v0.13.0-chart-area-fill.md) |
 | 0253 | `v0.13.0` | [BarSeries stacked + bipolar negatives](migrations/0253-v0.13.0-bar-stacked-negative.md) |
+| 0254 | `v0.13.0` | [Chart line linear/step interpolation](migrations/0254-v0.13.0-chart-line-interpolation.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -38,16 +38,16 @@
 | 18 | chart-bar-active | covered | `.selected` | |
 | 19 | chart-bar-negative | covered | bipolar domain + zero tick (0253) | |
 | 20 | chart-bar-interactive | covered | selection | |
-| 21 | chart-line-default | covered | `Chart` / `Sparkline` | |
-| 22 | chart-line-linear | covered | `Chart` | |
-| 23 | chart-line-step | partial | sample columns | Step curve host |
-| 24 | chart-line-multiple | covered | multi `ChartSeries` | |
+| 21 | chart-line-default | covered | `Chart` / `Sparkline` | Nearest columns |
+| 22 | chart-line-linear | covered | `Chart::linear()` (0254) | Lerp between samples |
+| 23 | chart-line-step | covered | `Chart::step()` (0254) | Hold floor sample |
+| 24 | chart-line-multiple | covered | multi `ChartSeries` | Distinct markers on plot |
 | 25 | chart-line-dots | covered | series markers | |
 | 26 | chart-line-custom-dots | partial | glyph ladder | |
-| 27 | chart-line-dots-colors | covered | series roles | No-color uses markers |
+| 27 | chart-line-dots-colors | covered | series roles | No-color markers |
 | 28 | chart-line-label | covered | title/legend | |
-| 29 | chart-line-custom-label | partial | host strings | |
-| 30 | chart-line-interactive | covered | selection | |
+| 29 | chart-line-label-custom | partial | host strings | registry label-custom |
+| 30 | chart-line-interactive | covered | selection highlight | |
 | 31 | chart-pie-simple | covered | `SegmentedMeter` | Proportions in cells |
 | 32 | chart-pie-separator-none | covered | continuous meter | |
 | 33 | chart-pie-label | covered | segment labels | |
@@ -91,8 +91,8 @@
 
 | Status | Count |
 |--------|------:|
-| covered | 33 |
-| partial | 21 |
+| covered | 34 |
+| partial | 20 |
 | missing | 0 |
 | N/A | 14 |
 | **Total** | **68** |
