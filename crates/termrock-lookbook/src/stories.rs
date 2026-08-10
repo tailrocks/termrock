@@ -57,7 +57,8 @@ use termrock::{
         Table,
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
         TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
-        RevealPolicy, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
+        RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
+        ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
@@ -4861,6 +4862,42 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             3,
             password_input_pending_story,
+        ),
+        Story::new(
+            "number-input/basic",
+            "Number input",
+            "NumberInput",
+            "Integer field with steppers and unit.",
+            36,
+            2,
+            number_input_basic_story,
+        ),
+        Story::new(
+            "number-input/decimal",
+            "Number decimal",
+            "NumberInput",
+            "Decimal kind with fraction digits.",
+            36,
+            2,
+            number_input_decimal_story,
+        ),
+        Story::new(
+            "number-input/invalid",
+            "Number invalid",
+            "NumberInput",
+            "Out-of-range draft chrome.",
+            36,
+            3,
+            number_input_invalid_story,
+        ),
+        Story::new(
+            "number-input/narrow",
+            "Number narrow",
+            "NumberInput",
+            "Compact steppers at narrow width.",
+            16,
+            2,
+            number_input_narrow_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -12813,6 +12850,50 @@ fn password_input_pending_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_pending(true);
     let _ = PasswordInput::new("Token", system)
         .strength(PasswordStrengthHint::Pending)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn number_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NumberInputState::new()
+        .with_constraints(NumberConstraints::bounded(0.0, 100.0, 1.0))
+        .with_value(42.0);
+    state.set_focused(true);
+    let _ = NumberInput::new("Opacity", system)
+        .unit("%")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn number_input_decimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NumberInputState::new()
+        .with_kind(NumberKind::decimal2())
+        .with_constraints(NumberConstraints::bounded(0.0, 10.0, 0.25))
+        .with_value(1.5);
+    state.set_focused(true);
+    let _ = NumberInput::new("Scale", system)
+        .unit("x")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn number_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NumberInputState::new()
+        .with_constraints(NumberConstraints::bounded(0.0, 10.0, 1.0))
+        .with_value(3.0);
+    state.set_focused(true);
+    // Draft out of range (committed remains until host commits)
+    let _ = state.insert_str("99");
+    let _ = NumberInput::new("Count", system)
+        .validation(Validation::Invalid("out of range"))
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn number_input_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NumberInputState::new().with_value(7.0);
+    state.set_focused(true);
+    let _ = NumberInput::new("N", system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

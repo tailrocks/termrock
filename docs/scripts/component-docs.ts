@@ -348,6 +348,21 @@ let _ = PasswordInput::new("Password", &system)
     .placeholder("••••")
     .strength(PasswordStrengthHint::Weak);`,
   },
+  NumberInput: {
+    description:
+      'A numeric field with draft text separate from committed value, min/max/step, units, and steppers.',
+    primaryStory: 'number-input/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{NumberConstraints, NumberInput, NumberInputState, NumberKind};
+
+let system = DesignSystem::default();
+let mut state = NumberInputState::new()
+    .with_kind(NumberKind::decimal2())
+    .with_constraints(NumberConstraints::bounded(0.0, 100.0, 0.5))
+    .with_value(12.5);
+state.set_focused(true);
+let _ = NumberInput::new("Opacity", &system).unit("%");`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

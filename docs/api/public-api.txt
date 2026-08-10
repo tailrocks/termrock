@@ -19448,6 +19448,198 @@ pub unsafe fn termrock::widgets::MultiSelectOutcome<Id>::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::MultiSelectOutcome<Id>
 pub fn termrock::widgets::MultiSelectOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::NumberInputOutcome
+pub termrock::widgets::NumberInputOutcome::Cancelled
+pub termrock::widgets::NumberInputOutcome::Changed
+pub termrock::widgets::NumberInputOutcome::ClipboardCopy
+pub termrock::widgets::NumberInputOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::NumberInputOutcome::ClipboardPasteRequest
+pub termrock::widgets::NumberInputOutcome::Ignored
+pub termrock::widgets::NumberInputOutcome::Submitted
+pub termrock::widgets::NumberInputOutcome::Submitted::value: core::option::Option<f64>
+pub termrock::widgets::NumberInputOutcome::ValueChanged
+pub termrock::widgets::NumberInputOutcome::ValueChanged::value: core::option::Option<f64>
+impl core::clone::Clone for termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputOutcome::clone(&self) -> termrock::widgets::NumberInputOutcome
+impl core::cmp::PartialEq for termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputOutcome::eq(&self, &termrock::widgets::NumberInputOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberInputOutcome
+impl core::marker::Freeze for termrock::widgets::NumberInputOutcome
+impl core::marker::Send for termrock::widgets::NumberInputOutcome
+impl core::marker::Sync for termrock::widgets::NumberInputOutcome
+impl core::marker::Unpin for termrock::widgets::NumberInputOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberInputOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberInputOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberInputOutcome
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberInputOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::NumberInputOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberInputOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::NumberInputOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberInputOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberInputOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberInputOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberInputOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberInputOutcome where T: core::clone::Clone
+pub type termrock::widgets::NumberInputOutcome::Owned = T
+pub fn termrock::widgets::NumberInputOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberInputOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberInputOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberInputOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberInputOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberInputOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberInputOutcome
+#[non_exhaustive] pub enum termrock::widgets::NumberKind
+pub termrock::widgets::NumberKind::Decimal
+pub termrock::widgets::NumberKind::Decimal::max_fraction_digits: u8
+pub termrock::widgets::NumberKind::Integer
+impl termrock::widgets::NumberKind
+pub const fn termrock::widgets::NumberKind::decimal2() -> Self
+pub const fn termrock::widgets::NumberKind::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::clone(&self) -> termrock::widgets::NumberKind
+impl core::cmp::Eq for termrock::widgets::NumberKind
+impl core::cmp::PartialEq for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::eq(&self, &termrock::widgets::NumberKind) -> bool
+impl core::default::Default for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::default() -> termrock::widgets::NumberKind
+impl core::fmt::Debug for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::NumberKind
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberKind
+impl core::marker::Freeze for termrock::widgets::NumberKind
+impl core::marker::Send for termrock::widgets::NumberKind
+impl core::marker::Sync for termrock::widgets::NumberKind
+impl core::marker::Unpin for termrock::widgets::NumberKind
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NumberKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NumberKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberKind where U: core::convert::From<T>
+pub fn termrock::widgets::NumberKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberKind where U: core::convert::Into<T>
+pub type termrock::widgets::NumberKind::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberKind where T: core::clone::Clone
+pub type termrock::widgets::NumberKind::Owned = T
+pub fn termrock::widgets::NumberKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberKind where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberKind where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberKind
+#[non_exhaustive] pub enum termrock::widgets::NumberParse
+pub termrock::widgets::NumberParse::Empty
+pub termrock::widgets::NumberParse::Intermediate
+pub termrock::widgets::NumberParse::Invalid
+pub termrock::widgets::NumberParse::Number(f64)
+impl core::clone::Clone for termrock::widgets::NumberParse
+pub fn termrock::widgets::NumberParse::clone(&self) -> termrock::widgets::NumberParse
+impl core::cmp::PartialEq for termrock::widgets::NumberParse
+pub fn termrock::widgets::NumberParse::eq(&self, &termrock::widgets::NumberParse) -> bool
+impl core::fmt::Debug for termrock::widgets::NumberParse
+pub fn termrock::widgets::NumberParse::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::NumberParse
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberParse
+impl core::marker::Freeze for termrock::widgets::NumberParse
+impl core::marker::Send for termrock::widgets::NumberParse
+impl core::marker::Sync for termrock::widgets::NumberParse
+impl core::marker::Unpin for termrock::widgets::NumberParse
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberParse
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberParse
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberParse
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberParse where U: core::convert::From<T>
+pub fn termrock::widgets::NumberParse::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberParse where U: core::convert::Into<T>
+pub type termrock::widgets::NumberParse::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberParse::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberParse where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberParse::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberParse::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberParse where T: core::clone::Clone
+pub type termrock::widgets::NumberParse::Owned = T
+pub fn termrock::widgets::NumberParse::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberParse::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberParse where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberParse::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberParse where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberParse::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberParse where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberParse::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberParse where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberParse::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberParse
+pub fn termrock::widgets::NumberParse::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberParse
+#[non_exhaustive] pub enum termrock::widgets::NumberValidity
+pub termrock::widgets::NumberValidity::Empty
+pub termrock::widgets::NumberValidity::Intermediate
+pub termrock::widgets::NumberValidity::Invalid
+pub termrock::widgets::NumberValidity::OutOfRange
+pub termrock::widgets::NumberValidity::Valid
+impl core::clone::Clone for termrock::widgets::NumberValidity
+pub fn termrock::widgets::NumberValidity::clone(&self) -> termrock::widgets::NumberValidity
+impl core::cmp::Eq for termrock::widgets::NumberValidity
+impl core::cmp::PartialEq for termrock::widgets::NumberValidity
+pub fn termrock::widgets::NumberValidity::eq(&self, &termrock::widgets::NumberValidity) -> bool
+impl core::fmt::Debug for termrock::widgets::NumberValidity
+pub fn termrock::widgets::NumberValidity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::NumberValidity
+pub fn termrock::widgets::NumberValidity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::NumberValidity
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberValidity
+impl core::marker::Freeze for termrock::widgets::NumberValidity
+impl core::marker::Send for termrock::widgets::NumberValidity
+impl core::marker::Sync for termrock::widgets::NumberValidity
+impl core::marker::Unpin for termrock::widgets::NumberValidity
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberValidity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberValidity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberValidity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NumberValidity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NumberValidity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberValidity where U: core::convert::From<T>
+pub fn termrock::widgets::NumberValidity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberValidity where U: core::convert::Into<T>
+pub type termrock::widgets::NumberValidity::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberValidity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberValidity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberValidity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberValidity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberValidity where T: core::clone::Clone
+pub type termrock::widgets::NumberValidity::Owned = T
+pub fn termrock::widgets::NumberValidity::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberValidity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberValidity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberValidity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberValidity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberValidity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberValidity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberValidity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberValidity
+pub fn termrock::widgets::NumberValidity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberValidity
 #[non_exhaustive] pub enum termrock::widgets::ObjectInspectorOutcome
 pub termrock::widgets::ObjectInspectorOutcome::Activate
 pub termrock::widgets::ObjectInspectorOutcome::Activate::index: usize
@@ -33496,6 +33688,232 @@ pub unsafe fn termrock::widgets::MultiSelectState<Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MultiSelectState<Id>
+pub struct termrock::widgets::NumberConstraints
+pub termrock::widgets::NumberConstraints::max: core::option::Option<f64>
+pub termrock::widgets::NumberConstraints::min: core::option::Option<f64>
+pub termrock::widgets::NumberConstraints::step: f64
+impl termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::bounded(f64, f64, f64) -> Self
+pub fn termrock::widgets::NumberConstraints::clamp_snap(self, f64) -> f64
+pub fn termrock::widgets::NumberConstraints::from_slider(termrock::widgets::SliderBounds) -> Self
+pub fn termrock::widgets::NumberConstraints::new() -> Self
+pub fn termrock::widgets::NumberConstraints::stepped(self, f64, i32) -> f64
+pub const fn termrock::widgets::NumberConstraints::with_max(self, f64) -> Self
+pub const fn termrock::widgets::NumberConstraints::with_min(self, f64) -> Self
+pub fn termrock::widgets::NumberConstraints::with_step(self, f64) -> Self
+impl core::clone::Clone for termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::clone(&self) -> termrock::widgets::NumberConstraints
+impl core::cmp::PartialEq for termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::eq(&self, &termrock::widgets::NumberConstraints) -> bool
+impl core::default::Default for termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::default() -> Self
+impl core::fmt::Debug for termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::NumberConstraints
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberConstraints
+impl core::marker::Freeze for termrock::widgets::NumberConstraints
+impl core::marker::Send for termrock::widgets::NumberConstraints
+impl core::marker::Sync for termrock::widgets::NumberConstraints
+impl core::marker::Unpin for termrock::widgets::NumberConstraints
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberConstraints
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberConstraints
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberConstraints
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberConstraints where U: core::convert::From<T>
+pub fn termrock::widgets::NumberConstraints::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberConstraints where U: core::convert::Into<T>
+pub type termrock::widgets::NumberConstraints::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberConstraints::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberConstraints where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberConstraints::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberConstraints::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberConstraints where T: core::clone::Clone
+pub type termrock::widgets::NumberConstraints::Owned = T
+pub fn termrock::widgets::NumberConstraints::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberConstraints::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberConstraints where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberConstraints::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberConstraints where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberConstraints::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberConstraints where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberConstraints::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberConstraints where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberConstraints::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberConstraints::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberConstraints
+pub struct termrock::widgets::NumberInput<'a>
+impl<'a> termrock::widgets::NumberInput<'a>
+pub const fn termrock::widgets::NumberInput<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::NumberInput<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::NumberInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::NumberInputState) -> termrock::widgets::NumberInputParts
+pub const fn termrock::widgets::NumberInput<'a>::placeholder(self, &'a str) -> Self
+pub fn termrock::widgets::NumberInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::NumberInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::NumberInput<'a>::show_steppers(self, bool) -> Self
+pub const fn termrock::widgets::NumberInput<'a>::unit(self, &'a str) -> Self
+pub const fn termrock::widgets::NumberInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::NumberInput<'_>
+pub type &termrock::widgets::NumberInput<'_>::State = termrock::widgets::NumberInputState
+pub fn &termrock::widgets::NumberInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::NumberInput<'_>
+pub type termrock::widgets::NumberInput<'_>::State = termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::NumberInput<'a>
+pub fn termrock::widgets::NumberInput<'a>::clone(&self) -> termrock::widgets::NumberInput<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::NumberInput<'a>
+pub fn termrock::widgets::NumberInput<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::NumberInput<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::NumberInput<'a>
+impl<'a> core::marker::Send for termrock::widgets::NumberInput<'a>
+impl<'a> core::marker::Sync for termrock::widgets::NumberInput<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::NumberInput<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::NumberInput<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberInput<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberInput<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberInput<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::NumberInput<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberInput<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::NumberInput<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberInput<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberInput<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberInput<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberInput<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberInput<'a> where T: core::clone::Clone
+pub type termrock::widgets::NumberInput<'a>::Owned = T
+pub fn termrock::widgets::NumberInput<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberInput<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberInput<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberInput<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInput<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInput<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberInput<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberInput<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberInput<'a>
+pub fn termrock::widgets::NumberInput<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberInput<'a>
+pub struct termrock::widgets::NumberInputParts
+pub termrock::widgets::NumberInputParts::cursor: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::NumberInputParts::decrement: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::NumberInputParts::field: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NumberInputParts::increment: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::NumberInputParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NumberInputParts::unit: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::NumberInputParts
+pub fn termrock::widgets::NumberInputParts::clone(&self) -> termrock::widgets::NumberInputParts
+impl core::cmp::Eq for termrock::widgets::NumberInputParts
+impl core::cmp::PartialEq for termrock::widgets::NumberInputParts
+pub fn termrock::widgets::NumberInputParts::eq(&self, &termrock::widgets::NumberInputParts) -> bool
+impl core::fmt::Debug for termrock::widgets::NumberInputParts
+pub fn termrock::widgets::NumberInputParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberInputParts
+impl core::marker::Freeze for termrock::widgets::NumberInputParts
+impl core::marker::Send for termrock::widgets::NumberInputParts
+impl core::marker::Sync for termrock::widgets::NumberInputParts
+impl core::marker::Unpin for termrock::widgets::NumberInputParts
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberInputParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberInputParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberInputParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NumberInputParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NumberInputParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberInputParts where U: core::convert::From<T>
+pub fn termrock::widgets::NumberInputParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberInputParts where U: core::convert::Into<T>
+pub type termrock::widgets::NumberInputParts::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberInputParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberInputParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberInputParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberInputParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberInputParts where T: core::clone::Clone
+pub type termrock::widgets::NumberInputParts::Owned = T
+pub fn termrock::widgets::NumberInputParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberInputParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberInputParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberInputParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberInputParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberInputParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberInputParts
+pub fn termrock::widgets::NumberInputParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberInputParts
+pub struct termrock::widgets::NumberInputState
+impl termrock::widgets::NumberInputState
+pub const fn termrock::widgets::NumberInputState::allow_empty(&self) -> bool
+pub fn termrock::widgets::NumberInputState::can_commit(&self) -> bool
+pub fn termrock::widgets::NumberInputState::cancel_edit(&mut self)
+pub fn termrock::widgets::NumberInputState::commit_draft(&mut self) -> bool
+pub const fn termrock::widgets::NumberInputState::constraints(&self) -> termrock::widgets::NumberConstraints
+pub fn termrock::widgets::NumberInputState::decrement(&mut self) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::draft_text(&self) -> &str
+pub fn termrock::widgets::NumberInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::increment(&mut self) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::insert_str(&mut self, &str) -> termrock::widgets::NumberInputOutcome
+pub const fn termrock::widgets::NumberInputState::is_editing(&self) -> bool
+pub const fn termrock::widgets::NumberInputState::is_enabled(&self) -> bool
+pub const fn termrock::widgets::NumberInputState::is_focused(&self) -> bool
+pub const fn termrock::widgets::NumberInputState::is_read_only(&self) -> bool
+pub const fn termrock::widgets::NumberInputState::kind(&self) -> termrock::widgets::NumberKind
+pub fn termrock::widgets::NumberInputState::new() -> Self
+pub fn termrock::widgets::NumberInputState::page_by(&mut self, bool) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::parse_draft(&self) -> termrock::widgets::NumberParse
+pub const fn termrock::widgets::NumberInputState::parts(&self) -> core::option::Option<&termrock::widgets::NumberInputParts>
+pub fn termrock::widgets::NumberInputState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::NumberInputState::set_focused(&mut self, bool)
+pub fn termrock::widgets::NumberInputState::set_from_slider(&mut self, termrock::widgets::SliderBounds, f64)
+pub fn termrock::widgets::NumberInputState::set_read_only(&mut self, bool)
+pub fn termrock::widgets::NumberInputState::set_value(&mut self, core::option::Option<f64>)
+pub fn termrock::widgets::NumberInputState::step_by(&mut self, i32) -> termrock::widgets::NumberInputOutcome
+pub fn termrock::widgets::NumberInputState::to_slider_value(&self, termrock::widgets::SliderBounds) -> f64
+pub fn termrock::widgets::NumberInputState::validity(&self) -> termrock::widgets::NumberValidity
+pub const fn termrock::widgets::NumberInputState::value(&self) -> core::option::Option<f64>
+pub const fn termrock::widgets::NumberInputState::with_allow_empty(self, bool) -> Self
+pub fn termrock::widgets::NumberInputState::with_constraints(self, termrock::widgets::NumberConstraints) -> Self
+pub fn termrock::widgets::NumberInputState::with_kind(self, termrock::widgets::NumberKind) -> Self
+pub fn termrock::widgets::NumberInputState::with_value(self, f64) -> Self
+impl core::clone::Clone for termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInputState::clone(&self) -> termrock::widgets::NumberInputState
+impl core::cmp::PartialEq for termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInputState::eq(&self, &termrock::widgets::NumberInputState) -> bool
+impl core::default::Default for termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInputState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NumberInputState
+impl core::marker::Freeze for termrock::widgets::NumberInputState
+impl core::marker::Send for termrock::widgets::NumberInputState
+impl core::marker::Sync for termrock::widgets::NumberInputState
+impl core::marker::Unpin for termrock::widgets::NumberInputState
+impl core::marker::UnsafeUnpin for termrock::widgets::NumberInputState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NumberInputState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NumberInputState
+impl<T, U> core::convert::Into<U> for termrock::widgets::NumberInputState where U: core::convert::From<T>
+pub fn termrock::widgets::NumberInputState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NumberInputState where U: core::convert::Into<T>
+pub type termrock::widgets::NumberInputState::Error = core::convert::Infallible
+pub fn termrock::widgets::NumberInputState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NumberInputState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NumberInputState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NumberInputState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NumberInputState where T: core::clone::Clone
+pub type termrock::widgets::NumberInputState::Owned = T
+pub fn termrock::widgets::NumberInputState::clone_into(&self, &mut T)
+pub fn termrock::widgets::NumberInputState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NumberInputState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NumberInputState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NumberInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NumberInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::NumberInputState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NumberInputState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NumberInputState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NumberInputState
+pub fn termrock::widgets::NumberInputState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NumberInputState
 pub struct termrock::widgets::ObjectInspector<'a>
 impl<'a> termrock::widgets::ObjectInspector<'a>
 pub const fn termrock::widgets::ObjectInspector<'a>::ascii(self, bool) -> Self

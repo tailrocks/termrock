@@ -71,6 +71,7 @@ mod tabs;
 mod text_area;
 mod text_input;
 mod password_input;
+mod number_input;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -307,6 +308,10 @@ pub use text_input::{
 pub use password_input::{
     ClipboardPolicy, PasswordConfirmState, PasswordInput, PasswordInputOutcome, PasswordInputParts,
     PasswordInputState, PasswordStrengthHint, RevealPolicy,
+};
+pub use number_input::{
+    NumberConstraints, NumberInput, NumberInputOutcome, NumberInputParts, NumberInputState,
+    NumberKind, NumberParse, NumberValidity,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
