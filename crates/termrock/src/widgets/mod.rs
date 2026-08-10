@@ -85,6 +85,8 @@ mod resizable_panel_group;
 mod skeleton;
 mod spinner;
 mod status_bar;
+mod semantic_status;
+mod status_indicator;
 mod surface;
 mod table;
 mod tabs;
@@ -463,6 +465,10 @@ pub use spinner::{
     SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES, SPINNER_DEFAULT_PERIOD_MS,
     SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, ActivityIndicator,
     ActivityPhase, Spinner, SpinnerGlyphSet, SpinnerState, SpinnerVariant,
+};
+pub use semantic_status::SemanticStatus;
+pub use status_indicator::{
+    StatusIndicator, StatusIndicatorState, StatusIndicatorVariant, example_status_catalog,
 };
 pub use status_bar::{
 

@@ -27,7 +27,7 @@ use ratatui_core::{
 
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
-use crate::widgets::{Badge, Text, TextSpan};
+use crate::widgets::{Badge, SemanticStatus, Text, TextSpan};
 
 // ── Role / presence / size ──────────────────────────────────────────────────
 
@@ -141,34 +141,34 @@ impl PresenceStatus {
         }
     }
 
-    /// 1-cell paint character (Unicode / Enhanced).
+    /// Shared vocabulary projection (`None` → [`SemanticStatus::Unknown`]).
     #[must_use]
-    pub const fn glyph_char(self, ascii: bool) -> Option<&'static str> {
-        match (self, ascii) {
-            (Self::None, _) => None,
-            (Self::Online, false) => Some("●"),
-            (Self::Online, true) => Some("*"),
-            (Self::Away, false) => Some("◐"),
-            (Self::Away, true) => Some("~"),
-            (Self::Busy, false) => Some("◉"),
-            (Self::Busy, true) => Some("!"),
-            (Self::Offline, false) => Some("○"),
-            (Self::Offline, true) => Some("o"),
-            (Self::Error, false) => Some("✕"),
-            (Self::Error, true) => Some("x"),
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::None => SemanticStatus::Unknown,
+            Self::Online => SemanticStatus::Online,
+            Self::Away => SemanticStatus::Idle,
+            Self::Busy => SemanticStatus::Running,
+            Self::Offline => SemanticStatus::Offline,
+            Self::Error => SemanticStatus::Failed,
         }
     }
 
-    /// Role for presence cell.
+    /// 1-cell paint character from shared [`SemanticStatus`] glyphs.
+    #[must_use]
+    pub const fn glyph_char(self, ascii: bool) -> Option<&'static str> {
+        match self {
+            Self::None => None,
+            other => Some(other.semantic().glyph(ascii)),
+        }
+    }
+
+    /// Role for presence cell (aligned with [`SemanticStatus`]; `None` stays disabled).
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
             Self::None => Role::TextDisabled,
-            Self::Online => Role::Success,
-            Self::Away => Role::Warning,
-            Self::Busy => Role::Danger,
-            Self::Offline => Role::TextDisabled,
-            Self::Error => Role::Danger,
+            other => other.semantic().role(),
         }
     }
 

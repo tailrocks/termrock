@@ -1,0 +1,755 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! **StatusIndicator** — compact semantic status primitive.
+//!
+//! **Mission.** Shared vocabulary for connections, tasks, agents, rows, and
+//! services. Always pairs **glyph + style** (and usually a label); color alone
+//! is never sufficient.
+//!
+//! **Variants.** Dot-like compact, labeled, and elapsed-time. Domain enums map
+//! into [`SemanticStatus`] so components do not invent private status sets.
+//!
+//! Research: btop, process monitors, collaboration presence, agent status.
+
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::Widget,
+};
+
+use crate::{
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    style::{DesignSystem, GlyphSet},
+    text::{display_cols, take_display_cols},
+};
+
+use super::agent::ToolStatus;
+use super::identity::PresenceStatus;
+use super::progress::ProgressStatus;
+use super::progress_steps::ProgressStepStatus;
+use super::semantic_status::SemanticStatus;
+use super::toast::Severity;
+
+// ── Domain → SemanticStatus mappings ────────────────────────────────────────
+
+impl SemanticStatus {
+    /// From toast/banner severity.
+    #[must_use]
+    pub const fn from_severity(s: Severity) -> Self {
+        match s {
+            Severity::Info => Self::Idle,
+            Severity::Success => Self::Success,
+            Severity::Warning => Self::Warning,
+            Severity::Error => Self::Failed,
+        }
+    }
+
+    /// From tool card status.
+    #[must_use]
+    pub const fn from_tool_status(s: ToolStatus) -> Self {
+        match s {
+            ToolStatus::Pending => Self::Queued,
+            ToolStatus::Running => Self::Running,
+            ToolStatus::Done => Self::Success,
+            ToolStatus::Error => Self::Failed,
+            ToolStatus::Cancelled => Self::Paused,
+        }
+    }
+
+    /// From identity presence (`None` → [`Self::Unknown`]).
+    #[must_use]
+    pub const fn from_presence(s: PresenceStatus) -> Self {
+        match s {
+            PresenceStatus::None => Self::Unknown,
+            PresenceStatus::Online => Self::Online,
+            PresenceStatus::Away => Self::Idle,
+            PresenceStatus::Busy => Self::Running,
+            PresenceStatus::Offline => Self::Offline,
+            PresenceStatus::Error => Self::Failed,
+        }
+    }
+
+    /// From progress bar lifecycle.
+    #[must_use]
+    pub const fn from_progress_status(s: ProgressStatus) -> Self {
+        match s {
+            ProgressStatus::Running => Self::Running,
+            ProgressStatus::Paused => Self::Paused,
+            ProgressStatus::Buffering => Self::Waiting,
+            ProgressStatus::Cancelled => Self::Paused,
+            ProgressStatus::Complete => Self::Success,
+            ProgressStatus::Failed => Self::Failed,
+        }
+    }
+
+    /// From pipeline step status.
+    #[must_use]
+    pub const fn from_progress_step_status(s: ProgressStepStatus) -> Self {
+        match s {
+            ProgressStepStatus::Queued => Self::Queued,
+            ProgressStepStatus::Running | ProgressStepStatus::Retrying => Self::Running,
+            ProgressStepStatus::Waiting => Self::Waiting,
+            ProgressStepStatus::Complete => Self::Success,
+            ProgressStepStatus::Skipped => Self::Idle,
+            ProgressStepStatus::Warning => Self::Warning,
+            ProgressStepStatus::Failed => Self::Failed,
+            ProgressStepStatus::Cancelled => Self::Paused,
+        }
+    }
+}
+
+// ── Variant ─────────────────────────────────────────────────────────────────
+
+/// Presentation density.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum StatusIndicatorVariant {
+    /// Single-cell (or short) glyph only — still has accessible label in semantics.
+    Compact,
+    /// Glyph + short label (default).
+    #[default]
+    Labeled,
+    /// Glyph + label + elapsed time suffix.
+    Elapsed,
+}
+
+impl StatusIndicatorVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Labeled => "labeled",
+            Self::Elapsed => "elapsed",
+        }
+    }
+}
+
+// ── State (optional elapsed) ────────────────────────────────────────────────
+
+/// Optional runtime for elapsed display.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct StatusIndicatorState {
+    /// Elapsed seconds (host-owned clock).
+    elapsed_secs: Option<u64>,
+    /// Accessible name override for compact dots.
+    accessible_label: Option<String>,
+}
+
+impl StatusIndicatorState {
+    /// Empty.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            elapsed_secs: None,
+            accessible_label: None,
+        }
+    }
+
+    /// Set elapsed seconds.
+    pub fn set_elapsed_secs(&mut self, secs: Option<u64>) {
+        self.elapsed_secs = secs;
+    }
+
+    /// Elapsed.
+    #[must_use]
+    pub const fn elapsed_secs(&self) -> Option<u64> {
+        self.elapsed_secs
+    }
+
+    /// Accessible label for compact mode.
+    pub fn set_accessible_label(&mut self, label: impl Into<String>) {
+        self.accessible_label = Some(label.into());
+    }
+
+    /// Accessible label borrow.
+    #[must_use]
+    pub fn accessible_label(&self) -> Option<&str> {
+        self.accessible_label.as_deref()
+    }
+}
+
+fn format_elapsed(secs: u64) -> String {
+    if secs < 60 {
+        format!("{secs}s")
+    } else if secs < 3600 {
+        format!("{}m{:02}s", secs / 60, secs % 60)
+    } else {
+        format!("{}h{:02}m", secs / 3600, (secs % 3600) / 60)
+    }
+}
+
+// ── Widget ──────────────────────────────────────────────────────────────────
+
+/// Compact status indicator (glyph + optional label + optional elapsed).
+///
+/// # Examples
+///
+/// ```
+/// use termrock::style::DesignSystem;
+/// use termrock::widgets::{StatusIndicator, SemanticStatus};
+///
+/// let system = DesignSystem::default();
+/// let ind = StatusIndicator::new(SemanticStatus::Running, &system).label("agent");
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct StatusIndicator<'a> {
+    kind: SemanticStatus,
+    system: &'a DesignSystem,
+    label: Option<&'a str>,
+    variant: StatusIndicatorVariant,
+    ascii: bool,
+    /// When true, force ASCII glyphs regardless of system glyph set.
+    force_ascii: bool,
+    elapsed_secs: Option<u64>,
+    strong: bool,
+}
+
+impl<'a> StatusIndicator<'a> {
+    /// Kind + system (labeled variant with default label).
+    #[must_use]
+    pub const fn new(kind: SemanticStatus, system: &'a DesignSystem) -> Self {
+        Self {
+            kind,
+            system,
+            label: None,
+            variant: StatusIndicatorVariant::Labeled,
+            ascii: false,
+            force_ascii: false,
+            elapsed_secs: None,
+            strong: false,
+        }
+    }
+
+    /// Compact dot only.
+    #[must_use]
+    pub const fn compact(kind: SemanticStatus, system: &'a DesignSystem) -> Self {
+        Self {
+            kind,
+            system,
+            label: None,
+            variant: StatusIndicatorVariant::Compact,
+            ascii: false,
+            force_ascii: false,
+            elapsed_secs: None,
+            strong: false,
+        }
+    }
+
+    /// Override label (defaults to [`SemanticStatus::default_label`]).
+    #[must_use]
+    pub const fn label(mut self, label: &'a str) -> Self {
+        self.label = Some(label);
+        self
+    }
+
+    /// Variant.
+    #[must_use]
+    pub const fn variant(mut self, v: StatusIndicatorVariant) -> Self {
+        self.variant = v;
+        self
+    }
+
+    /// Elapsed seconds (switches presentation toward Elapsed if set).
+    #[must_use]
+    pub const fn elapsed_secs(mut self, secs: u64) -> Self {
+        self.elapsed_secs = Some(secs);
+        if matches!(self.variant, StatusIndicatorVariant::Labeled) {
+            self.variant = StatusIndicatorVariant::Elapsed;
+        }
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    pub const fn ascii(mut self, on: bool) -> Self {
+        self.ascii = on;
+        self.force_ascii = on;
+        self
+    }
+
+    /// Emphasize (bold).
+    #[must_use]
+    pub const fn strong(mut self, on: bool) -> Self {
+        self.strong = on;
+        self
+    }
+
+    /// Resolved kind.
+    #[must_use]
+    pub const fn kind(self) -> SemanticStatus {
+        self.kind
+    }
+
+    /// Effective ASCII from flag or system glyphs.
+    #[must_use]
+    pub fn use_ascii(&self) -> bool {
+        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
+    }
+
+    /// Glyph for current capability.
+    #[must_use]
+    pub fn glyph(&self) -> &'static str {
+        if self.use_ascii() {
+            self.kind.glyph_ascii()
+        } else {
+            self.kind.glyph_for_set(self.system.glyphs)
+        }
+    }
+
+    /// Label text used when not compact-only.
+    #[must_use]
+    pub fn resolved_label(&self) -> &'a str {
+        self.label.unwrap_or_else(|| self.kind.default_label())
+    }
+
+    /// Full paint string (for tests / measurement).
+    #[must_use]
+    pub fn text(&self, state: Option<&StatusIndicatorState>) -> String {
+        let g = self.glyph();
+        let elapsed = self
+            .elapsed_secs
+            .or_else(|| state.and_then(|s| s.elapsed_secs()));
+        match self.variant {
+            StatusIndicatorVariant::Compact => g.to_string(),
+            StatusIndicatorVariant::Labeled => {
+                format!("{g} {}", self.resolved_label())
+            }
+            StatusIndicatorVariant::Elapsed => {
+                let mut s = format!("{g} {}", self.resolved_label());
+                if let Some(secs) = elapsed {
+                    s = format!("{s} {}", format_elapsed(secs));
+                }
+                s
+            }
+        }
+    }
+
+    /// Display width in cells.
+    #[must_use]
+    pub fn measure_width(&self, state: Option<&StatusIndicatorState>) -> u16 {
+        display_cols(&self.text(state)) as u16
+    }
+
+    /// Paint.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        self.paint_with_state(area, buffer, None);
+    }
+
+    /// Paint with state (elapsed / a11y).
+    pub fn paint_with_state(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: Option<&StatusIndicatorState>,
+    ) {
+        if area.is_empty() {
+            return;
+        }
+        let text = self.text(state);
+        let mut style = self.system.style(self.kind.role());
+        if self.strong
+            || matches!(
+                self.kind,
+                SemanticStatus::Running | SemanticStatus::Failed | SemanticStatus::Online
+            )
+        {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            &take_display_cols(&text, usize::from(area.width)),
+            usize::from(area.width),
+            style,
+        );
+    }
+
+    /// Semantic registration — always exposes text name even for compact dots.
+    pub fn register_semantic<Sid, Act>(
+        &self,
+        scene: &mut SemanticScene<Sid, Act>,
+        id: Sid,
+        area: Rect,
+        state: Option<&StatusIndicatorState>,
+    ) where
+        Sid: Clone + PartialEq + std::fmt::Display,
+        Act: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let a11y = state
+            .and_then(|s| s.accessible_label())
+            .unwrap_or_else(|| self.resolved_label());
+        let desc = format!(
+            "status-indicator kind={} variant={} label={a11y} glyph={}",
+            self.kind.id(),
+            self.variant.id(),
+            self.glyph(),
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Status)
+                .label("status-indicator")
+                .description(desc)
+                .focusable(false)
+                .state(SemanticState {
+                    busy: matches!(self.kind, SemanticStatus::Running | SemanticStatus::Waiting),
+                    ..Default::default()
+                }),
+        );
+    }
+}
+
+impl Widget for &StatusIndicator<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
+impl Widget for StatusIndicator<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
+// ── Catalog helpers ─────────────────────────────────────────────────────────
+
+/// All status kinds with default labels (for Studio / docs).
+#[must_use]
+pub fn example_status_catalog() -> [(SemanticStatus, &'static str); 11] {
+    [
+        (SemanticStatus::Online, "online"),
+        (SemanticStatus::Offline, "offline"),
+        (SemanticStatus::Idle, "idle"),
+        (SemanticStatus::Queued, "queued"),
+        (SemanticStatus::Running, "running"),
+        (SemanticStatus::Waiting, "waiting"),
+        (SemanticStatus::Success, "ok"),
+        (SemanticStatus::Warning, "warn"),
+        (SemanticStatus::Failed, "failed"),
+        (SemanticStatus::Paused, "paused"),
+        (SemanticStatus::Unknown, "unknown"),
+    ]
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::style::GlyphSet;
+
+    fn system() -> DesignSystem {
+        DesignSystem::default()
+    }
+
+    #[test]
+    fn all_kinds_have_glyph_label_role() {
+        for k in SemanticStatus::ALL {
+            assert!(!k.id().is_empty());
+            assert!(!k.default_label().is_empty());
+            assert!(!k.glyph_unicode().is_empty());
+            assert!(!k.glyph_ascii().is_empty());
+            assert_eq!(SemanticStatus::from_id(k.id()), Some(k));
+        }
+    }
+
+    #[test]
+    fn color_alone_insufficient_compact_has_distinct_glyphs() {
+        let mut glyphs_u = std::collections::BTreeSet::new();
+        let mut glyphs_a = std::collections::BTreeSet::new();
+        for k in SemanticStatus::ALL {
+            glyphs_u.insert(k.glyph_unicode());
+            glyphs_a.insert(k.glyph_ascii());
+        }
+        // Not all collapsed to one glyph
+        assert!(glyphs_u.len() >= 8, "{glyphs_u:?}");
+        assert!(glyphs_a.len() >= 8, "{glyphs_a:?}");
+    }
+
+    #[test]
+    fn mapping_severity() {
+        assert_eq!(
+            SemanticStatus::from_severity(Severity::Success),
+            SemanticStatus::Success
+        );
+        assert_eq!(SemanticStatus::from_severity(Severity::Error), SemanticStatus::Failed);
+        assert_eq!(
+            SemanticStatus::from_severity(Severity::Warning),
+            SemanticStatus::Warning
+        );
+    }
+
+    #[test]
+    fn mapping_tool_status() {
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::Pending),
+            SemanticStatus::Queued
+        );
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::Running),
+            SemanticStatus::Running
+        );
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::Done),
+            SemanticStatus::Success
+        );
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::Error),
+            SemanticStatus::Failed
+        );
+        assert_eq!(
+            SemanticStatus::from_tool_status(ToolStatus::Cancelled),
+            SemanticStatus::Paused
+        );
+    }
+
+    #[test]
+    fn mapping_presence() {
+        assert_eq!(
+            SemanticStatus::from_presence(PresenceStatus::Online),
+            SemanticStatus::Online
+        );
+        assert_eq!(
+            SemanticStatus::from_presence(PresenceStatus::Offline),
+            SemanticStatus::Offline
+        );
+        assert_eq!(
+            SemanticStatus::from_presence(PresenceStatus::Away),
+            SemanticStatus::Idle
+        );
+        assert_eq!(
+            SemanticStatus::from_presence(PresenceStatus::Busy),
+            SemanticStatus::Running
+        );
+        assert_eq!(
+            SemanticStatus::from_presence(PresenceStatus::Error),
+            SemanticStatus::Failed
+        );
+    }
+
+    #[test]
+    fn mapping_progress_status() {
+        assert_eq!(
+            SemanticStatus::from_progress_status(ProgressStatus::Running),
+            SemanticStatus::Running
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_status(ProgressStatus::Buffering),
+            SemanticStatus::Waiting
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_status(ProgressStatus::Complete),
+            SemanticStatus::Success
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_status(ProgressStatus::Failed),
+            SemanticStatus::Failed
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_status(ProgressStatus::Paused),
+            SemanticStatus::Paused
+        );
+    }
+
+    #[test]
+    fn mapping_progress_step_status() {
+        assert_eq!(
+            SemanticStatus::from_progress_step_status(ProgressStepStatus::Queued),
+            SemanticStatus::Queued
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_step_status(ProgressStepStatus::Retrying),
+            SemanticStatus::Running
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_step_status(ProgressStepStatus::Warning),
+            SemanticStatus::Warning
+        );
+        assert_eq!(
+            SemanticStatus::from_progress_step_status(ProgressStepStatus::Skipped),
+            SemanticStatus::Idle
+        );
+    }
+
+    #[test]
+    fn capability_profiles_ascii_vs_unicode() {
+        let mut sys_u = system();
+        // default phosphor uses unicode/enhanced
+        let mut sys_a = DesignSystem::default();
+        // Force via widget ascii flag
+        let u = StatusIndicator::new(SemanticStatus::Online, &sys_u);
+        let a = StatusIndicator::new(SemanticStatus::Online, &sys_a).ascii(true);
+        assert_eq!(u.glyph(), "●");
+        assert_eq!(a.glyph(), "*");
+        assert_ne!(u.glyph(), a.glyph());
+        let _ = sys_u;
+        // GlyphSet path
+        assert_eq!(
+            SemanticStatus::Failed.glyph_for_set(GlyphSet::Ascii),
+            "x"
+        );
+        assert_eq!(
+            SemanticStatus::Failed.glyph_for_set(GlyphSet::Unicode),
+            "✗"
+        );
+    }
+
+    #[test]
+    fn variants_compact_labeled_elapsed() {
+        let system = system();
+        let c = StatusIndicator::compact(SemanticStatus::Running, &system);
+        assert_eq!(c.variant, StatusIndicatorVariant::Compact);
+        assert_eq!(c.text(None), c.glyph());
+
+        let l = StatusIndicator::new(SemanticStatus::Success, &system).label("saved");
+        assert!(l.text(None).contains("saved"));
+        assert!(l.text(None).contains(l.glyph()));
+
+        let e = StatusIndicator::new(SemanticStatus::Running, &system)
+            .label("job")
+            .elapsed_secs(125);
+        let t = e.text(None);
+        assert!(t.contains("job"), "{t}");
+        assert!(t.contains("2m") || t.contains("125"), "{t}");
+    }
+
+    #[test]
+    fn paint_includes_non_color_glyph() {
+        let system = system();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buf = Buffer::empty(area);
+        StatusIndicator::new(SemanticStatus::Failed, &system)
+            .label("err")
+            .paint(area, &mut buf);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(text.contains('✗') || text.contains('x') || text.contains("err"), "{text}");
+    }
+
+    #[test]
+    fn semantic_compact_exposes_label() {
+        let system = system();
+        let mut scene = SemanticScene::<&str, ()>::default();
+        let mut st = StatusIndicatorState::new();
+        st.set_accessible_label("agent online");
+        StatusIndicator::compact(SemanticStatus::Online, &system).register_semantic(
+            &mut scene,
+            "s",
+            Rect::new(0, 0, 2, 1),
+            Some(&st),
+        );
+        let n = scene
+            .nodes()
+            .iter()
+            .find(|n| n.label.as_deref() == Some("status-indicator"))
+            .expect("node");
+        assert!(
+            n.description
+                .as_deref()
+                .is_some_and(|d| d.contains("agent online") || d.contains("online")),
+            "{:?}",
+            n.description
+        );
+    }
+
+    #[test]
+    fn tiny_width_safe() {
+        let system = system();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
+        StatusIndicator::compact(SemanticStatus::Online, &system)
+            .paint(Rect::new(0, 0, 1, 1), &mut buf);
+        StatusIndicator::new(SemanticStatus::Unknown, &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+    }
+
+    #[test]
+    fn fuzz_kinds_variants() {
+        let system = system();
+        let mut seed = 3u64;
+        for _ in 0..50 {
+            seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
+            let k = SemanticStatus::ALL[(seed as usize) % SemanticStatus::ALL.len()];
+            let v = match seed % 3 {
+                0 => StatusIndicatorVariant::Compact,
+                1 => StatusIndicatorVariant::Labeled,
+                _ => StatusIndicatorVariant::Elapsed,
+            };
+            let mut ind = StatusIndicator::new(k, &system).variant(v).ascii(seed % 2 == 0);
+            if matches!(v, StatusIndicatorVariant::Elapsed) {
+                ind = ind.elapsed_secs(seed % 10_000);
+            }
+            let w = (seed % 20) as u16 + 1;
+            let area = Rect::new(0, 0, w, 1);
+            let mut buf = Buffer::empty(area);
+            ind.paint(area, &mut buf);
+            assert!(!ind.glyph().is_empty());
+        }
+    }
+
+    #[test]
+    fn paint_perf_smoke() {
+        use ratatui_core::backend::TestBackend;
+        use ratatui_core::terminal::Terminal;
+        let system = system();
+        let mut terminal = Terminal::new(TestBackend::new(40, 12)).unwrap();
+        let start = std::time::Instant::now();
+        for _ in 0..150 {
+            terminal
+                .draw(|f| {
+                    let mut y = f.area().y;
+                    for k in SemanticStatus::ALL {
+                        if y >= f.area().bottom() {
+                            break;
+                        }
+                        StatusIndicator::new(k, &system).paint(
+                            Rect::new(f.area().x, y, f.area().width, 1),
+                            f.buffer_mut(),
+                        );
+                        y = y.saturating_add(1);
+                    }
+                })
+                .unwrap();
+        }
+        assert!(start.elapsed().as_millis() < 5_000);
+    }
+
+    #[test]
+    fn pty_snapshot_stable() {
+        use ratatui_core::backend::TestBackend;
+        use ratatui_core::terminal::Terminal;
+        let system = system();
+        let paint = || {
+            let mut t = Terminal::new(TestBackend::new(24, 1)).unwrap();
+            t.draw(|f| {
+                StatusIndicator::new(SemanticStatus::Running, &system)
+                    .label("agent")
+                    .elapsed_secs(42)
+                    .paint(f.area(), f.buffer_mut());
+            })
+            .unwrap();
+            t.backend()
+                .buffer()
+                .content()
+                .iter()
+                .map(|c| c.symbol().to_string())
+                .collect::<String>()
+        };
+        assert_eq!(paint(), paint());
+    }
+
+    #[test]
+    fn catalog_len() {
+        assert_eq!(example_status_catalog().len(), 11);
+    }
+}

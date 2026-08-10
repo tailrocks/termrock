@@ -11,7 +11,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::PanelChrome,
+    widgets::{PanelChrome, SemanticStatus},
 };
 
 // ── Token meter ─────────────────────────────────────────────────────────────
@@ -211,28 +211,28 @@ pub enum ToolStatus {
 }
 
 impl ToolStatus {
-    /// Non-color status glyph.
+    /// Shared vocabulary projection.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Pending => "…",
-            Self::Running => "◉",
-            Self::Done => "✓",
-            Self::Error => "✗",
-            Self::Cancelled => "⊘",
+            Self::Pending => SemanticStatus::Queued,
+            Self::Running => SemanticStatus::Running,
+            Self::Done => SemanticStatus::Success,
+            Self::Error => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
         }
     }
 
-    /// Theme role for the status.
+    /// Non-color status glyph (shared [`SemanticStatus`] unicode set).
+    #[must_use]
+    pub const fn glyph(self) -> &'static str {
+        self.semantic().glyph_unicode()
+    }
+
+    /// Theme role for the status (aligned with [`SemanticStatus`]).
     #[must_use]
     pub const fn role(self) -> Role {
-        match self {
-            Self::Pending => Role::TextMuted,
-            Self::Running => Role::Info,
-            Self::Done => Role::Success,
-            Self::Error => Role::Danger,
-            Self::Cancelled => Role::TextDisabled,
-        }
+        self.semantic().role()
     }
 }
 
@@ -295,9 +295,10 @@ impl Widget for &ToolCard<'_> {
             ToolStatus::Cancelled => "cancel",
         };
         // Chrome owns name / status badge / summary; body owns tool output only.
+        let kind = self.status.semantic();
         let card = Card::new(self.system)
             .title(self.name)
-            .leading(self.status.glyph())
+            .leading(kind.glyph_for_set(self.system.glyphs))
             .badge(status_label)
             .subtitle(self.summary)
             .emphasis(match self.status {
@@ -418,9 +419,13 @@ mod tests {
 
     #[test]
     fn tool_status_glyphs_are_non_color() {
-        assert_eq!(ToolStatus::Done.glyph(), "✓");
-        assert_eq!(ToolStatus::Error.glyph(), "✗");
-        assert_eq!(ToolStatus::Cancelled.glyph(), "⊘");
+        assert_eq!(ToolStatus::Done.glyph(), SemanticStatus::Success.glyph_unicode());
+        assert_eq!(ToolStatus::Error.glyph(), SemanticStatus::Failed.glyph_unicode());
+        assert_eq!(
+            ToolStatus::Cancelled.glyph(),
+            SemanticStatus::Paused.glyph_unicode()
+        );
+        assert_eq!(ToolStatus::Pending.semantic(), SemanticStatus::Queued);
     }
 
     #[test]

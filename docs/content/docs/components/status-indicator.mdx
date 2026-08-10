@@ -1,0 +1,77 @@
+---
+title: StatusIndicator
+description: 'Compact semantic status — glyph + label + style for connections, tasks, agents, rows, and services.'
+---
+
+## Previews
+
+### `status-indicator/catalog`
+
+Shared vocabulary catalog
+
+![StatusIndicator — catalog](/component-previews/status-indicator-catalog.svg)
+
+### `status-indicator/compact`
+
+Compact dots
+
+![StatusIndicator — compact](/component-previews/status-indicator-compact.svg)
+
+### `status-indicator/elapsed`
+
+Elapsed-time variant
+
+![StatusIndicator — elapsed](/component-previews/status-indicator-elapsed.svg)
+
+### `status-indicator/ascii`
+
+ASCII capability profile
+
+![StatusIndicator — ascii](/component-previews/status-indicator-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    StatusIndicator, StatusIndicatorState, SemanticStatus,
+};
+
+let system = DesignSystem::default();
+
+// Labeled
+StatusIndicator::new(SemanticStatus::Running, &system)
+    .label("agent")
+    .paint(area, buf);
+
+// Compact + a11y
+let mut st = StatusIndicatorState::new();
+st.set_accessible_label("agent online");
+StatusIndicator::compact(SemanticStatus::Online, &system)
+    .paint_with_state(area, buf, Some(&st));
+
+// Map domain enums
+let kind = SemanticStatus::from_tool_status(tool_status);
+```
+
+## Rules
+
+1. Always pair glyph with style; color alone is insufficient.
+2. Prefer `SemanticStatus` over ad-hoc status glyphs in rows/rails.
+3. Compact dots still expose an accessible label via semantics/state.
+4. Map `ToolStatus` / `PresenceStatus` / `Progress*` / `Severity` into `SemanticStatus`.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | covered (never focusable) |
+| Non-color cues | covered (glyph + label) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `status-indicator/catalog`, `compact`, `elapsed`, `ascii`

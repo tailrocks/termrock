@@ -986,6 +986,20 @@ use termrock::widgets::{Skeleton, SkeletonRecipe};
 let system = DesignSystem::default();
 let skeleton = Skeleton::new(4, &system);`,
   },
+  StatusIndicator: {
+    description:
+      'Compact semantic status primitive (glyph + label + style) with shared SemanticStatus vocabulary for connections, tasks, agents, rows, and services; compact/labeled/elapsed variants; maps domain enums.',
+    primaryStory: 'status-indicator/catalog',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{StatusIndicator, SemanticStatus, StatusIndicatorState};
+
+let system = DesignSystem::default();
+StatusIndicator::new(SemanticStatus::Running, &system)
+    .label("agent")
+    .elapsed_secs(42)
+    .paint(area, buf);
+// Map domain: SemanticStatus::from_tool_status / from_presence / from_progress_status`,
+  },
   Sparkline: {
     description: 'One-row sparkline over normalized samples.',
     primaryStory: 'sparkline/basic',

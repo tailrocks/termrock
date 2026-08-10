@@ -100,6 +100,7 @@ use termrock::{
         example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
         ProgressSteps, ProgressStepsState, ProgressStepsMode, ProgressStepsPresentation,
         ProgressStep, ProgressStepStatus, example_build_pipeline, example_agent_plan_steps,
+        StatusIndicator, SemanticStatus, example_status_catalog,
         TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
@@ -2078,6 +2079,42 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             1,
             status_bar_rich_story,
+        ),
+        Story::new(
+            "status-indicator/catalog",
+            "StatusIndicator catalog",
+            "StatusIndicator",
+            "Shared vocabulary: all kinds with glyph + label.",
+            40,
+            12,
+            status_indicator_catalog_story,
+        ),
+        Story::new(
+            "status-indicator/compact",
+            "StatusIndicator compact",
+            "StatusIndicator",
+            "Dot-like compact glyphs for rows and rails.",
+            24,
+            1,
+            status_indicator_compact_story,
+        ),
+        Story::new(
+            "status-indicator/elapsed",
+            "StatusIndicator elapsed",
+            "StatusIndicator",
+            "Running status with elapsed-time suffix.",
+            28,
+            1,
+            status_indicator_elapsed_story,
+        ),
+        Story::new(
+            "status-indicator/ascii",
+            "StatusIndicator ASCII",
+            "StatusIndicator",
+            "ASCII capability profile glyphs (no Unicode dots).",
+            36,
+            4,
+            status_indicator_ascii_story,
         ),
         Story::new(
             "design-inspector/basic",
@@ -10294,10 +10331,58 @@ fn status_bar_rich_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     );
 }
 
+fn status_indicator_catalog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut y = area.y;
+    for (kind, label) in example_status_catalog() {
+        if y >= area.bottom() {
+            break;
+        }
+        StatusIndicator::new(kind, system)
+            .label(label)
+            .paint(Rect::new(area.x, y, area.width, 1), frame.buffer_mut());
+        y = y.saturating_add(1);
+    }
+}
 
+fn status_indicator_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut x = area.x;
+    for kind in SemanticStatus::ALL {
+        if x >= area.right() {
+            break;
+        }
+        StatusIndicator::compact(kind, system).paint(
+            Rect::new(x, area.y, 2, 1),
+            frame.buffer_mut(),
+        );
+        x = x.saturating_add(2);
+    }
+}
 
+fn status_indicator_elapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    StatusIndicator::new(SemanticStatus::Running, system)
+        .label("agent")
+        .elapsed_secs(125)
+        .paint(area, frame.buffer_mut());
+}
 
-
+fn status_indicator_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut y = area.y;
+    for kind in [
+        SemanticStatus::Online,
+        SemanticStatus::Running,
+        SemanticStatus::Failed,
+        SemanticStatus::Unknown,
+    ] {
+        if y >= area.bottom() {
+            break;
+        }
+        StatusIndicator::new(kind, system)
+            .ascii(true)
+            .label(kind.default_label())
+            .paint(Rect::new(area.x, y, area.width, 1), frame.buffer_mut());
+        y = y.saturating_add(1);
+    }
+}
 
 fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
