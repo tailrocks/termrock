@@ -40,6 +40,7 @@ mod mention;
 mod slash_command_menu;
 mod model_mode_selectors;
 mod message_thread;
+mod streaming_markdown;
 mod text;
 mod separator;
 mod toolbar;
@@ -606,6 +607,13 @@ pub use message_thread::{
     example_message_session, filter_entries, project_message_thread,
 };
 pub use message_thread::bench as message_thread_bench;
+pub use streaming_markdown::{
+    STREAM_COALESCE_CHARS, STREAM_COALESCE_DELTAS, STREAM_HOT_FULL_REPARSE_BUDGET, STREAM_TAIL_MAX,
+    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownOutcome,
+    StreamingMarkdownState, has_open_fence, streaming_stable_prefix_len,
+};
+pub use streaming_markdown::bench as streaming_markdown_bench;
+pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

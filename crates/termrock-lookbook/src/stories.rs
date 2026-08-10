@@ -5459,6 +5459,51 @@ pub(crate) fn stories() -> Vec<Story> {
             message_thread_ascii_story,
         ),
         Story::new(
+            "streaming-markdown/mid-fence",
+            "StreamingMarkdown mid-fence",
+            "StreamingMarkdown",
+            "Incomplete code fence while streaming.",
+            48,
+            14,
+            streaming_markdown_mid_fence_story,
+        ),
+        Story::new(
+            "streaming-markdown/complete",
+            "StreamingMarkdown complete",
+            "StreamingMarkdown",
+            "Finished stream with closed fences.",
+            48,
+            14,
+            streaming_markdown_complete_story,
+        ),
+        Story::new(
+            "streaming-markdown/failed",
+            "StreamingMarkdown failed",
+            "StreamingMarkdown",
+            "Failed phase with raw fallback cue.",
+            40,
+            10,
+            streaming_markdown_failed_story,
+        ),
+        Story::new(
+            "streaming-markdown/citations",
+            "StreamingMarkdown citations",
+            "StreamingMarkdown",
+            "Sources footer + tool insertion.",
+            48,
+            12,
+            streaming_markdown_citations_story,
+        ),
+        Story::new(
+            "streaming-markdown/narrow",
+            "StreamingMarkdown narrow",
+            "StreamingMarkdown",
+            "Narrow width streaming paint.",
+            28,
+            12,
+            streaming_markdown_narrow_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18600,6 +18645,73 @@ fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn streaming_markdown_mid_fence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+    };
+    let mut st = StreamingMarkdownState::new();
+    st.coalesce_deltas = 1;
+    for c in streaming_markdown_fixtures::mid_fence_chunks() {
+        st.push_delta(c);
+        st.apply_pending();
+    }
+    StreamingMarkdown::new(system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn streaming_markdown_complete_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+    };
+    let mut st = StreamingMarkdownState::new();
+    st.coalesce_deltas = 1;
+    for c in streaming_markdown_fixtures::mid_fence_chunks() {
+        st.push_delta(c);
+        st.apply_pending();
+    }
+    st.push_delta(streaming_markdown_fixtures::mid_fence_close());
+    st.apply_pending();
+    st.finish();
+    StreamingMarkdown::new(system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn streaming_markdown_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+    };
+    let mut st = StreamingMarkdownState::new();
+    st.coalesce_deltas = 1;
+    for c in streaming_markdown_fixtures::partial_table_chunks() {
+        st.push_delta(c);
+        st.apply_pending();
+    }
+    st.fail("stream interrupted");
+    StreamingMarkdown::new(system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn streaming_markdown_citations_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        StreamCitation, StreamInsertion, StreamingMarkdown, StreamingMarkdownState,
+    };
+    let mut st = StreamingMarkdownState::new();
+    st.coalesce_deltas = 1;
+    st.push_delta("Claim with support.\n\n");
+    st.apply_pending();
+    st.finish();
+    st.add_citation(StreamCitation::new("1", "[1] RFC").href("https://example.com"));
+    st.add_insertion(StreamInsertion::new("t", "tool", ["grep done"]));
+    StreamingMarkdown::new(system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn streaming_markdown_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StreamingMarkdown, StreamingMarkdownState};
+    let mut st = StreamingMarkdownState::new();
+    st.coalesce_deltas = 1;
+    st.push_delta("## Narrow\n\nA longer paragraph that wraps on small widths.\n\n```\ncode\n```\n");
+    st.apply_pending();
+    st.finish();
+    StreamingMarkdown::new(system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

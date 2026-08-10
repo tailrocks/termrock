@@ -15,6 +15,7 @@
     "slash-command-menu",
     "agent-mode-selector",
     "message-thread",
+    "streaming-markdown",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

@@ -14757,6 +14757,17 @@ pub mod termrock::widgets::slash_command_menu_bench
 pub const termrock::widgets::slash_command_menu_bench::CATALOG_SIZE: usize
 pub const termrock::widgets::slash_command_menu_bench::FILTER_ROUNDS: u32
 pub const termrock::widgets::slash_command_menu_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::streaming_markdown_bench
+pub const termrock::widgets::streaming_markdown_bench::DELTA_CHARS: usize
+pub const termrock::widgets::streaming_markdown_bench::DELTA_COUNT: u32
+pub const termrock::widgets::streaming_markdown_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::streaming_markdown_fixtures
+pub fn termrock::widgets::streaming_markdown_fixtures::fence_thrash() -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::streaming_markdown_fixtures::mid_fence_chunks() -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::streaming_markdown_fixtures::mid_fence_close() -> &'static str
+pub fn termrock::widgets::streaming_markdown_fixtures::partial_inline_chunks() -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::streaming_markdown_fixtures::partial_list_chunks() -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::streaming_markdown_fixtures::partial_table_chunks() -> alloc::vec::Vec<&'static str>
 pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
@@ -35249,6 +35260,58 @@ pub unsafe fn termrock::widgets::StepperPresentation::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::StepperPresentation
 pub fn termrock::widgets::StepperPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StepperPresentation
+#[non_exhaustive] pub enum termrock::widgets::StreamPhase
+pub termrock::widgets::StreamPhase::Done
+pub termrock::widgets::StreamPhase::Failed
+pub termrock::widgets::StreamPhase::Idle
+pub termrock::widgets::StreamPhase::Streaming
+impl termrock::widgets::StreamPhase
+pub const fn termrock::widgets::StreamPhase::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::clone(&self) -> termrock::widgets::StreamPhase
+impl core::cmp::Eq for termrock::widgets::StreamPhase
+impl core::cmp::PartialEq for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::eq(&self, &termrock::widgets::StreamPhase) -> bool
+impl core::default::Default for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::default() -> termrock::widgets::StreamPhase
+impl core::fmt::Debug for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StreamPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamPhase
+impl core::marker::Freeze for termrock::widgets::StreamPhase
+impl core::marker::Send for termrock::widgets::StreamPhase
+impl core::marker::Sync for termrock::widgets::StreamPhase
+impl core::marker::Unpin for termrock::widgets::StreamPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamPhase where U: core::convert::From<T>
+pub fn termrock::widgets::StreamPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamPhase where U: core::convert::Into<T>
+pub type termrock::widgets::StreamPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamPhase where T: core::clone::Clone
+pub type termrock::widgets::StreamPhase::Owned = T
+pub fn termrock::widgets::StreamPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamPhase
+pub fn termrock::widgets::StreamPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamPhase
 #[non_exhaustive] pub enum termrock::widgets::StreamRowKind
 pub termrock::widgets::StreamRowKind::Event
 pub termrock::widgets::StreamRowKind::Group
@@ -35297,6 +35360,53 @@ pub unsafe fn termrock::widgets::StreamRowKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StreamRowKind
 pub fn termrock::widgets::StreamRowKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StreamRowKind
+#[non_exhaustive] pub enum termrock::widgets::StreamingMarkdownOutcome
+pub termrock::widgets::StreamingMarkdownOutcome::Changed
+pub termrock::widgets::StreamingMarkdownOutcome::Changed::revision: u64
+pub termrock::widgets::StreamingMarkdownOutcome::CitationActivated
+pub termrock::widgets::StreamingMarkdownOutcome::CitationActivated::id: alloc::string::String
+pub termrock::widgets::StreamingMarkdownOutcome::Ignored
+pub termrock::widgets::StreamingMarkdownOutcome::View(termrock::widgets::MarkdownOutcome)
+impl core::clone::Clone for termrock::widgets::StreamingMarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownOutcome::clone(&self) -> termrock::widgets::StreamingMarkdownOutcome
+impl core::cmp::Eq for termrock::widgets::StreamingMarkdownOutcome
+impl core::cmp::PartialEq for termrock::widgets::StreamingMarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownOutcome::eq(&self, &termrock::widgets::StreamingMarkdownOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::StreamingMarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamingMarkdownOutcome
+impl core::marker::Freeze for termrock::widgets::StreamingMarkdownOutcome
+impl core::marker::Send for termrock::widgets::StreamingMarkdownOutcome
+impl core::marker::Sync for termrock::widgets::StreamingMarkdownOutcome
+impl core::marker::Unpin for termrock::widgets::StreamingMarkdownOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamingMarkdownOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamingMarkdownOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamingMarkdownOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamingMarkdownOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::StreamingMarkdownOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::StreamingMarkdownOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamingMarkdownOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamingMarkdownOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamingMarkdownOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamingMarkdownOutcome where T: core::clone::Clone
+pub type termrock::widgets::StreamingMarkdownOutcome::Owned = T
+pub fn termrock::widgets::StreamingMarkdownOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamingMarkdownOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamingMarkdownOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamingMarkdownOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamingMarkdownOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamingMarkdownOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamingMarkdownOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdownOutcome
 #[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
 pub termrock::widgets::SuggestionStatus::Empty
 pub termrock::widgets::SuggestionStatus::Error
@@ -67063,6 +67173,55 @@ pub unsafe fn termrock::widgets::StickyRegion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StickyRegion
 pub fn termrock::widgets::StickyRegion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StickyRegion
+pub struct termrock::widgets::StreamCitation
+pub termrock::widgets::StreamCitation::href: core::option::Option<alloc::string::String>
+pub termrock::widgets::StreamCitation::id: alloc::string::String
+pub termrock::widgets::StreamCitation::label: alloc::string::String
+pub termrock::widgets::StreamCitation::source: core::option::Option<termrock::widgets::SourceAnchor>
+impl termrock::widgets::StreamCitation
+pub fn termrock::widgets::StreamCitation::href(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::StreamCitation::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::StreamCitation::source(self, termrock::widgets::SourceAnchor) -> Self
+impl core::clone::Clone for termrock::widgets::StreamCitation
+pub fn termrock::widgets::StreamCitation::clone(&self) -> termrock::widgets::StreamCitation
+impl core::cmp::Eq for termrock::widgets::StreamCitation
+impl core::cmp::PartialEq for termrock::widgets::StreamCitation
+pub fn termrock::widgets::StreamCitation::eq(&self, &termrock::widgets::StreamCitation) -> bool
+impl core::fmt::Debug for termrock::widgets::StreamCitation
+pub fn termrock::widgets::StreamCitation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamCitation
+impl core::marker::Freeze for termrock::widgets::StreamCitation
+impl core::marker::Send for termrock::widgets::StreamCitation
+impl core::marker::Sync for termrock::widgets::StreamCitation
+impl core::marker::Unpin for termrock::widgets::StreamCitation
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamCitation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamCitation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamCitation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamCitation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamCitation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamCitation where U: core::convert::From<T>
+pub fn termrock::widgets::StreamCitation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamCitation where U: core::convert::Into<T>
+pub type termrock::widgets::StreamCitation::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamCitation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamCitation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamCitation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamCitation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamCitation where T: core::clone::Clone
+pub type termrock::widgets::StreamCitation::Owned = T
+pub fn termrock::widgets::StreamCitation::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamCitation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamCitation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamCitation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamCitation where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamCitation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamCitation where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamCitation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamCitation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamCitation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamCitation
+pub fn termrock::widgets::StreamCitation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamCitation
 pub struct termrock::widgets::StreamEvent<'a, Id>
 pub termrock::widgets::StreamEvent::batch_count: u32
 pub termrock::widgets::StreamEvent::correlation: core::option::Option<&'a str>
@@ -67130,6 +67289,165 @@ pub unsafe fn termrock::widgets::StreamEvent<'a, Id>::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::StreamEvent<'a, Id>
 pub fn termrock::widgets::StreamEvent<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StreamEvent<'a, Id>
+pub struct termrock::widgets::StreamInsertion
+pub termrock::widgets::StreamInsertion::at_byte: usize
+pub termrock::widgets::StreamInsertion::id: alloc::string::String
+pub termrock::widgets::StreamInsertion::kind: alloc::string::String
+pub termrock::widgets::StreamInsertion::lines: alloc::vec::Vec<alloc::string::String>
+impl termrock::widgets::StreamInsertion
+pub const fn termrock::widgets::StreamInsertion::at_byte(self, usize) -> Self
+pub fn termrock::widgets::StreamInsertion::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+impl core::clone::Clone for termrock::widgets::StreamInsertion
+pub fn termrock::widgets::StreamInsertion::clone(&self) -> termrock::widgets::StreamInsertion
+impl core::cmp::Eq for termrock::widgets::StreamInsertion
+impl core::cmp::PartialEq for termrock::widgets::StreamInsertion
+pub fn termrock::widgets::StreamInsertion::eq(&self, &termrock::widgets::StreamInsertion) -> bool
+impl core::fmt::Debug for termrock::widgets::StreamInsertion
+pub fn termrock::widgets::StreamInsertion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamInsertion
+impl core::marker::Freeze for termrock::widgets::StreamInsertion
+impl core::marker::Send for termrock::widgets::StreamInsertion
+impl core::marker::Sync for termrock::widgets::StreamInsertion
+impl core::marker::Unpin for termrock::widgets::StreamInsertion
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamInsertion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamInsertion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamInsertion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamInsertion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamInsertion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamInsertion where U: core::convert::From<T>
+pub fn termrock::widgets::StreamInsertion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamInsertion where U: core::convert::Into<T>
+pub type termrock::widgets::StreamInsertion::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamInsertion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamInsertion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamInsertion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamInsertion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamInsertion where T: core::clone::Clone
+pub type termrock::widgets::StreamInsertion::Owned = T
+pub fn termrock::widgets::StreamInsertion::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamInsertion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamInsertion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamInsertion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamInsertion where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamInsertion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamInsertion where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamInsertion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamInsertion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamInsertion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamInsertion
+pub fn termrock::widgets::StreamInsertion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamInsertion
+pub struct termrock::widgets::StreamingMarkdown<'a>
+impl<'a> termrock::widgets::StreamingMarkdown<'a>
+pub const fn termrock::widgets::StreamingMarkdown<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::StreamingMarkdown<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::StreamingMarkdown<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::StreamingMarkdown<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::StreamingMarkdownState)
+pub fn termrock::widgets::StreamingMarkdown<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::StreamingMarkdownState)
+impl<'a> core::clone::Clone for termrock::widgets::StreamingMarkdown<'a>
+pub fn termrock::widgets::StreamingMarkdown<'a>::clone(&self) -> termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::StreamingMarkdown<'a>
+pub fn termrock::widgets::StreamingMarkdown<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::marker::Send for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::marker::Sync for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamingMarkdown<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamingMarkdown<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamingMarkdown<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::StreamingMarkdown<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamingMarkdown<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::StreamingMarkdown<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamingMarkdown<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamingMarkdown<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamingMarkdown<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamingMarkdown<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamingMarkdown<'a> where T: core::clone::Clone
+pub type termrock::widgets::StreamingMarkdown<'a>::Owned = T
+pub fn termrock::widgets::StreamingMarkdown<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamingMarkdown<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamingMarkdown<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdown<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamingMarkdown<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdown<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamingMarkdown<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdown<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamingMarkdown<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamingMarkdown<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdown<'a>
+pub fn termrock::widgets::StreamingMarkdown<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdown<'a>
+pub struct termrock::widgets::StreamingMarkdownState
+pub termrock::widgets::StreamingMarkdownState::citations: alloc::vec::Vec<termrock::widgets::StreamCitation>
+pub termrock::widgets::StreamingMarkdownState::coalesce_chars: usize
+pub termrock::widgets::StreamingMarkdownState::coalesce_deltas: u32
+pub termrock::widgets::StreamingMarkdownState::error: core::option::Option<alloc::string::String>
+pub termrock::widgets::StreamingMarkdownState::follow_stream: bool
+pub termrock::widgets::StreamingMarkdownState::full_reparse_count: u32
+pub termrock::widgets::StreamingMarkdownState::insertions: alloc::vec::Vec<termrock::widgets::StreamInsertion>
+pub termrock::widgets::StreamingMarkdownState::phase: termrock::widgets::StreamPhase
+pub termrock::widgets::StreamingMarkdownState::revision: u64
+pub termrock::widgets::StreamingMarkdownState::show_caret: bool
+pub termrock::widgets::StreamingMarkdownState::tail_reparse_count: u32
+pub termrock::widgets::StreamingMarkdownState::view: termrock::widgets::MarkdownViewState
+impl termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::add_citation(&mut self, termrock::widgets::StreamCitation)
+pub fn termrock::widgets::StreamingMarkdownState::add_insertion(&mut self, termrock::widgets::StreamInsertion)
+pub fn termrock::widgets::StreamingMarkdownState::apply_pending(&mut self)
+pub fn termrock::widgets::StreamingMarkdownState::committed_len(&self) -> usize
+pub fn termrock::widgets::StreamingMarkdownState::fail(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::StreamingMarkdownState::finish(&mut self)
+pub fn termrock::widgets::StreamingMarkdownState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::MarkdownView<'_>) -> termrock::widgets::MarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownState::handle_mouse(&mut self, termrock::input::MouseEvent, &termrock::widgets::MarkdownView<'_>) -> termrock::widgets::MarkdownOutcome
+pub fn termrock::widgets::StreamingMarkdownState::new() -> Self
+pub fn termrock::widgets::StreamingMarkdownState::on_width_change(&mut self, u16)
+pub fn termrock::widgets::StreamingMarkdownState::plain_lines(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::StreamingMarkdownState::push_delta(&mut self, &str)
+pub fn termrock::widgets::StreamingMarkdownState::reset_with(&mut self, &str)
+pub fn termrock::widgets::StreamingMarkdownState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::StreamingMarkdownState::tail_len(&self) -> usize
+pub fn termrock::widgets::StreamingMarkdownState::text(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::clone(&self) -> termrock::widgets::StreamingMarkdownState
+impl core::cmp::PartialEq for termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::eq(&self, &termrock::widgets::StreamingMarkdownState) -> bool
+impl core::default::Default for termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamingMarkdownState
+impl core::marker::Freeze for termrock::widgets::StreamingMarkdownState
+impl core::marker::Send for termrock::widgets::StreamingMarkdownState
+impl core::marker::Sync for termrock::widgets::StreamingMarkdownState
+impl core::marker::Unpin for termrock::widgets::StreamingMarkdownState
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamingMarkdownState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamingMarkdownState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamingMarkdownState
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamingMarkdownState where U: core::convert::From<T>
+pub fn termrock::widgets::StreamingMarkdownState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamingMarkdownState where U: core::convert::Into<T>
+pub type termrock::widgets::StreamingMarkdownState::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamingMarkdownState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamingMarkdownState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamingMarkdownState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamingMarkdownState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamingMarkdownState where T: core::clone::Clone
+pub type termrock::widgets::StreamingMarkdownState::Owned = T
+pub fn termrock::widgets::StreamingMarkdownState::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamingMarkdownState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamingMarkdownState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamingMarkdownState where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamingMarkdownState where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamingMarkdownState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamingMarkdownState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamingMarkdownState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdownState
+pub fn termrock::widgets::StreamingMarkdownState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdownState
 pub struct termrock::widgets::SubmitPolicy
 pub termrock::widgets::SubmitPolicy::allow_empty: bool
 pub termrock::widgets::SubmitPolicy::clear_on_submit: bool
@@ -73238,6 +73556,10 @@ pub const termrock::widgets::SPINNER_WAITING_UNICODE: &[&str]
 pub const termrock::widgets::STEPPER_COMPACT_MAX_HEIGHT: u16
 pub const termrock::widgets::STEPPER_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::STEPPER_NARROW_MAX_WIDTH: u16
+pub const termrock::widgets::STREAM_COALESCE_CHARS: usize
+pub const termrock::widgets::STREAM_COALESCE_DELTAS: u32
+pub const termrock::widgets::STREAM_HOT_FULL_REPARSE_BUDGET: u32
+pub const termrock::widgets::STREAM_TAIL_MAX: usize
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
@@ -73466,6 +73788,7 @@ pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interac
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::glyph_for_fraction(f64, &[char], bool, char) -> char
+pub fn termrock::widgets::has_open_fence(&str) -> bool
 pub fn termrock::widgets::help_entries_from_conflicts<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A) -> alloc::string::String
 pub fn termrock::widgets::help_entries_from_keymap<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (alloc::string::String, alloc::string::String, alloc::string::String, core::option::Option<alloc::string::String>, core::option::Option<alloc::string::String>, u8)
 pub fn termrock::widgets::help_entries_from_overlays<FocusId>(&termrock::interaction::OverlayStack<FocusId>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -73632,6 +73955,7 @@ pub fn termrock::widgets::span_to_inspector_fields<'a>(&'a termrock::widgets::Tr
 pub fn termrock::widgets::span_to_timeline_event<'a>(&'a termrock::widgets::TraceSpan<'a>, &'a str, &'a str) -> termrock::widgets::TimelineEvent<'a, &'a str>
 pub fn termrock::widgets::step_items_from_titles(&[&str]) -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::stepper_presentation_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::StepperOrientation) -> termrock::widgets::StepperPresentation
+pub fn termrock::widgets::streaming_stable_prefix_len(&str, &str) -> usize
 pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>

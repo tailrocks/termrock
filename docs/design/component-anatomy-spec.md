@@ -1966,6 +1966,21 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## StreamingMarkdown
+
+1. **Purpose:** Token-stream Markdown with incomplete-fence tolerance.  
+2. **Anatomy:** committed prefix · tail window · provisional blocks · caret · citations.  
+3. **Public properties:** deltas, coalesce budgets, insertions, citations, phase.  
+4. **State:** StreamingMarkdownState + nested MarkdownViewState.  
+5. **Variants:** Streaming · Done · Failed; mid-fence incomplete.  
+6–10. Scroll/select via MarkdownView; follow_stream while growing.  
+11–14. Host tokens only; no full reparse on hot path; width change O(doc).  
+15–18. Incomplete fence cue; raw fallback on Failed.  
+19. **Composition:** MarkdownView; MessageThread plain_lines.  
+20. **Outcomes:** Changed · View · CitationActivated.  
+21. **Stories:** `streaming-markdown/{mid-fence,complete,failed,citations,narrow}`.  
+22–24. Monotone committed; adversarial fixtures; perf no full reparse.
+
 ## MessageThread
 
 1. **Purpose:** Virtualized agent conversation / activity transcript.  

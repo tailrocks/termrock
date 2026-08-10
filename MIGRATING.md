@@ -230,6 +230,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0214 | `v0.13.0` | [SlashCommandMenu](migrations/0214-v0.13.0-slash-command-menu.md) |
 | 0215 | `v0.13.0` | [ModelSelector and AgentModeSelector](migrations/0215-v0.13.0-model-mode-selectors.md) |
 | 0216 | `v0.13.0` | [MessageThread conversation transcript](migrations/0216-v0.13.0-message-thread.md) |
+| 0217 | `v0.13.0` | [StreamingMarkdown incomplete-fence stream](migrations/0217-v0.13.0-streaming-markdown.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
