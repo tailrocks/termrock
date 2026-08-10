@@ -12,7 +12,8 @@ use crate::{
     widgets::{
         data_table::{DataTableOutcome, DataTableState},
         sidebar::{SidebarOutcome, SidebarState},
-        review::{LogStreamOutcome, LogStreamState, ObjectInspectorState},
+        object_inspector::ObjectInspectorState,
+        review::{LogStreamOutcome, LogStreamState},
         scroll_area::ScrollAreaState,
     },
 };

@@ -1,75 +1,65 @@
 ---
 title: ObjectInspector
-description: Key/value field projection with list-local cursor and scene-owned surface focus.
+description: Expandable typed inspector for JSON, YAML, logs, and application trees.
 ---
 
 # ObjectInspector
 
-Inspect flat or nested object fields. **Cursor** is list-local;
-**scene focus** is host-owned.
+**Purpose.** Inspect structured trees without loading the entire document into
+the paint path. Host projects a **flattened visible** node list; state owns
+cursor, expansion-by-path, search, and secret reveal.
 
-## When to use / when not
+## When to use
 
 | Use ObjectInspector | Prefer |
-|---------------------|--------|
-| Key/value detail for one resource | — |
-| Nested depth via projected indent | Tree (hierarchy nav) |
-| Multi-column grids | [DataTable](/docs/handbook/data-table) |
-| Label/value form edit | [Form](/docs/handbook/form) |
+|--------------------|--------|
+| JSON / YAML / TOML trees | — |
+| Structured log objects | — |
+| Rust debug / tool payloads | — |
+| Flat key/value metadata | [KeyValueTable](/docs/handbook/key-value-table) |
+| Single-column hierarchy only | Tree |
 
-## Outcomes
-
-- `Ignored`
-- `CursorMoved { index }`
-- `Activate { index }` — consumer copies/opens/links
-- `Scrolled` — reserved scroll path
-
-## Focus law
-
-| Concern | Owner |
-|---------|--------|
-| Surface focus | Host / OverlayStack / InteractionScene |
-| Field cursor | `ObjectInspectorState::cursor` |
-| Paint | `ObjectInspector::focused` + cursor gutter |
-
-## Non-color
-
-- Cursor (focused surface): `›` / `>`
-- Cursor (unfocused surface): `·` / `.`
-- Empty: `∅` / `[ ]`
-
-## Intents
-
-`default_inspector_intent` — j/k, arrows, Home/End, Page, Enter, Space.
-Esc is **not** mapped (host owns cancel / dismiss).
-
-## Responsive
-
-| Width | Layout |
-|-------|--------|
-| ≥ 28 | `key: value` with depth pad |
-| 16–27 | `key=value` compact |
-| &lt; 16 | cursor shows value; others key |
-
-## Basic example
+## Projection law
 
 ```rust
-use termrock::{
-    style::DesignSystem,
-    widgets::{InspectorField, ObjectInspector, ObjectInspectorState},
+// Expand set lives on state (stable paths)
+state.set_expanded("spec.containers", true);
+// Host builds only visible expanded nodes for paint
+let fields: Vec<InspectorField> = project(doc, state.expanded_paths());
+state.reconcile(&fields); // sticky cursor path
+```
+
+## Example
+
+```rust
+use termrock::widgets::{
+    InspectKind, InspectorField, ObjectInspector, ObjectInspectorState,
 };
 
-let system = DesignSystem::default();
 let fields = [
-    InspectorField { key: "id", value: "42", depth: 0 },
-    InspectorField { key: "name", value: "alpha", depth: 0 },
+    InspectorField::container("spec", "spec", InspectKind::Object)
+        .child_count(2)
+        .expanded(),
+    InspectorField::new("image", "ghcr.io/app:1.2")
+        .path("spec.image")
+        .depth(1)
+        .kind(InspectKind::String),
+    InspectorField::new("token", "sk-…")
+        .path("spec.token")
+        .depth(1)
+        .secret(),
 ];
 let mut state = ObjectInspectorState::new();
-// paint:
-// ObjectInspector::new(&fields, &system).focused(true).render(area, buf, &mut state);
-let _ = (system, fields, state);
+state.set_expanded("spec", true);
+// c value · y path · e edit · r secret · / find · ←/→ expand
+ObjectInspector::new(&fields, &system).render(area, buf, &mut state);
 ```
+
+## Safety
+
+- Values pass through `escape_inspect_value` (control chars → `\n` / `\u{…}`).
+- Secrets paint redacted until `r` reveal; copy still uses host-provided plaintext.
 
 ## Related
 
-DetailTable · DataTable · migration `0070` · design `object-inspector-cursor.md`
+- Migration `0192-v0.13.0-object-inspector`

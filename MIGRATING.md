@@ -205,6 +205,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0189 | `v0.13.0` | [DataTable interactive](migrations/0189-v0.13.0-data-table-interactive.md) |
 | 0190 | `v0.13.0` | [TreeTable hierarchy columns](migrations/0190-v0.13.0-tree-table.md) |
 | 0191 | `v0.13.0` | [KeyValueTable dense detail](migrations/0191-v0.13.0-key-value-table.md) |
+| 0192 | `v0.13.0` | [ObjectInspector typed expandable](migrations/0192-v0.13.0-object-inspector.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

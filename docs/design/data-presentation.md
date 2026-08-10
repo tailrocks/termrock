@@ -206,12 +206,13 @@ status · copy · edit · secret · validation · nested groups · compare mode.
 
 ### 4.4 ObjectInspector
 
-Nested structure (JSON/YAML-like).
+Typed expandable tree (migration **0192**): objects/arrays/scalars, stable
+paths, lazy expansion, search, copy path/value, edit, compare, depth limits,
+secret redaction, escaped controls, compact/fullscreen.
 
-- Compose tree navigation + KeyValueTable leaves.  
-- Path expand; optional breadcrumb.  
-- Outcomes: `PathActivated`, `Copy`, `ExpandToggled`.  
-- Not a generic table.
+- Host projects flattened **visible expanded** window.  
+- Expansion set on state (path-keyed) for preserve-across-update.  
+- Complementary to KeyValueTable (flat) and Tree (single-column).
 
 ### 4.5 VirtualGrid
 

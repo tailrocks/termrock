@@ -114,6 +114,7 @@ mod transcript;
 mod tree;
 mod tree_table;
 mod key_value_table;
+mod object_inspector;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -455,10 +456,14 @@ pub use prompt_composer::{
     PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PromptComposer,
     PromptComposerLayout, PromptComposerOutcome, PromptComposerState, QueuedPrompt, SubmitPolicy,
 };
+pub use object_inspector::{
+    InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
+    InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,
+    escape_inspect_value, filter_inspect_fields,
+};
 pub use review::{
-    DiffHunk, DiffReview, DiffReviewOutcome, DiffReviewState, InspectorField, LogLevel, LogLine,
-    LogStream, LogStreamOutcome, LogStreamState, ObjectInspector, ObjectInspectorOutcome,
-    ObjectInspectorState,
+    DiffHunk, DiffReview, DiffReviewOutcome, DiffReviewState, LogLevel, LogLine, LogStream,
+    LogStreamOutcome, LogStreamState,
 };
 pub use scroll_area::{
     ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, ScrollOutcome, VisibleRange,

@@ -1788,6 +1788,42 @@ pub(crate) fn stories() -> Vec<Story> {
             object_inspector_ascii,
         ),
         Story::new(
+            "object-inspector/json",
+            "Object inspector JSON",
+            "ObjectInspector",
+            "Typed JSON-like tree with secret redaction.",
+            56,
+            12,
+            object_inspector_json,
+        ),
+        Story::new(
+            "object-inspector/compare",
+            "Object inspector compare",
+            "ObjectInspector",
+            "Compare/diff mode for local vs remote values.",
+            56,
+            8,
+            object_inspector_compare,
+        ),
+        Story::new(
+            "object-inspector/lazy",
+            "Object inspector lazy",
+            "ObjectInspector",
+            "Lazy container expansion for huge trees.",
+            48,
+            6,
+            object_inspector_lazy,
+        ),
+        Story::new(
+            "object-inspector/fullscreen",
+            "Object inspector fullscreen",
+            "ObjectInspector",
+            "Fullscreen presentation chrome for deep inspection.",
+            64,
+            10,
+            object_inspector_fullscreen,
+        ),
+        Story::new(
             "log-stream/follow",
             "Log stream follow",
             "LogStream",
@@ -10306,27 +10342,20 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn object_inspector_flat(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::InspectKind;
     let fields = [
-        InspectorField {
-            key: "id",
-            value: "pod-7f3a",
-            depth: 0,
-        },
-        InspectorField {
-            key: "name",
-            value: "api-gateway",
-            depth: 0,
-        },
-        InspectorField {
-            key: "status",
-            value: "Running",
-            depth: 0,
-        },
-        InspectorField {
-            key: "restarts",
-            value: "0",
-            depth: 0,
-        },
+        InspectorField::new("id", "pod-7f3a")
+            .path("id")
+            .kind(InspectKind::String),
+        InspectorField::new("name", "api-gateway")
+            .path("name")
+            .kind(InspectKind::String),
+        InspectorField::new("status", "Running")
+            .path("status")
+            .kind(InspectKind::String),
+        InspectorField::new("restarts", "0")
+            .path("restarts")
+            .kind(InspectKind::Number),
     ];
     let mut state = ObjectInspectorState::new();
     state.set_cursor(1);
@@ -10334,34 +10363,31 @@ fn object_inspector_flat(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn object_inspector_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::InspectKind;
     let fields = [
-        InspectorField {
-            key: "spec",
-            value: "{…}",
-            depth: 0,
-        },
-        InspectorField {
-            key: "containers",
-            value: "[1]",
-            depth: 1,
-        },
-        InspectorField {
-            key: "image",
-            value: "ghcr.io/app:1.2",
-            depth: 2,
-        },
-        InspectorField {
-            key: "ports",
-            value: "8080/TCP",
-            depth: 2,
-        },
-        InspectorField {
-            key: "地域",
-            value: "東京 🇯🇵",
-            depth: 1,
-        },
+        InspectorField::container("spec", "spec", InspectKind::Object)
+            .child_count(2)
+            .expanded(),
+        InspectorField::container("containers", "spec.containers", InspectKind::Array)
+            .depth(1)
+            .child_count(1)
+            .expanded(),
+        InspectorField::new("image", "ghcr.io/app:1.2")
+            .path("spec.containers[0].image")
+            .depth(2)
+            .kind(InspectKind::String),
+        InspectorField::new("ports", "8080/TCP")
+            .path("spec.containers[0].ports")
+            .depth(2)
+            .kind(InspectKind::String),
+        InspectorField::new("地域", "東京 🇯🇵")
+            .path("spec.region")
+            .depth(1)
+            .kind(InspectKind::String),
     ];
     let mut state = ObjectInspectorState::new();
+    state.set_expanded("spec", true);
+    state.set_expanded("spec.containers", true);
     state.set_cursor(2);
     ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
@@ -10373,21 +10399,115 @@ fn object_inspector_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 
 fn object_inspector_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let fields = [
-        InspectorField {
-            key: "id",
-            value: "42",
-            depth: 0,
-        },
-        InspectorField {
-            key: "kind",
-            value: "blob",
-            depth: 0,
-        },
+        InspectorField::new("id", "42").path("id"),
+        InspectorField::new("kind", "blob").path("kind"),
     ];
     let mut state = ObjectInspectorState::new();
     ObjectInspector::new(&fields, system)
         .ascii(true)
         .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_json(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::InspectKind;
+    let fields = [
+        InspectorField::container("root", "$", InspectKind::Object)
+            .child_count(3)
+            .expanded(),
+        InspectorField::new("ok", "true")
+            .path("$.ok")
+            .depth(1)
+            .kind(InspectKind::Bool),
+        InspectorField::new("count", "3")
+            .path("$.count")
+            .depth(1)
+            .kind(InspectKind::Number),
+        InspectorField::container("items", "$.items", InspectKind::Array)
+            .depth(1)
+            .child_count(2)
+            .expanded(),
+        InspectorField::new("0", "\"alpha\"")
+            .path("$.items[0]")
+            .depth(2)
+            .kind(InspectKind::String),
+        InspectorField::new("1", "\"beta\\nline\"")
+            .path("$.items[1]")
+            .depth(2)
+            .kind(InspectKind::String),
+        InspectorField::new("token", "sk-live-secret")
+            .path("$.token")
+            .depth(1)
+            .kind(InspectKind::String)
+            .secret(),
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.set_expanded("$", true);
+    state.set_expanded("$.items", true);
+    state.set_cursor(6);
+    ObjectInspector::new(&fields, system)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_compare(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{InspectKind, InspectMode};
+    let fields = [
+        InspectorField::new("host", "api.prod.example")
+            .path("host")
+            .kind(InspectKind::String)
+            .compare("api.staging.example"),
+        InspectorField::new("port", "443")
+            .path("port")
+            .kind(InspectKind::Number)
+            .compare("443"),
+        InspectorField::new("tls", "1.3")
+            .path("tls")
+            .kind(InspectKind::String)
+            .compare("1.2"),
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.mode = InspectMode::Compare;
+    state.set_cursor(0);
+    ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_lazy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::InspectKind;
+    let fields = [
+        InspectorField::container("payload", "payload", InspectKind::Object)
+            .child_count(1000)
+            .lazy(),
+        InspectorField::new("meta", "partial")
+            .path("meta")
+            .kind(InspectKind::String),
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.set_cursor(0);
+    ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn object_inspector_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{InspectKind, InspectPresentation};
+    let fields = [
+        InspectorField::container("debug", "debug", InspectKind::Object)
+            .child_count(2)
+            .expanded(),
+        InspectorField::new("thread", "main")
+            .path("debug.thread")
+            .depth(1)
+            .kind(InspectKind::String),
+        InspectorField::new("frames", "48")
+            .path("debug.frames")
+            .depth(1)
+            .kind(InspectKind::Number)
+            .editable(),
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.presentation = InspectPresentation::Fullscreen;
+    state.set_expanded("debug", true);
+    ObjectInspector::new(&fields, system)
+        .presentation(InspectPresentation::Fullscreen)
         .render(area, frame.buffer_mut(), &mut state);
 }
 

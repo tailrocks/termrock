@@ -56,6 +56,16 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`ObjectInspector` is the expandable typed inspector for JSON/YAML/TOML,
+structured logs, and application trees. Host projects a flattened **visible
+expanded** node list; state owns cursor, expansion-by-path (sticky across
+reproject), search, secret reveal, compare mode, edit draft, depth limit, and
+virtual window metadata. Nodes carry stable `path`, `InspectKind`, branch/lazy
+status, and optional compare values. Paint escapes control characters and
+redacts secrets. Chords: expand/collapse, copy value/path, edit, reveal,
+search, fullscreen. Distinct from `KeyValueTable` (flat metadata) and `Tree`
+(single-column hierarchy).
+
 `KeyValueTable` is the dense interactive detail surface for metadata and
 object properties (HTTP headers, DB columns, process facts, permission claims,
 agent/tool panels). Fields carry key · value · optional type/source · status ·

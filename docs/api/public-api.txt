@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.38s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.36s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -21824,6 +21824,216 @@ pub unsafe fn termrock::widgets::InitiatorKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::InitiatorKind
 pub fn termrock::widgets::InitiatorKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::InitiatorKind
+#[non_exhaustive] pub enum termrock::widgets::InspectKind
+pub termrock::widgets::InspectKind::Array
+pub termrock::widgets::InspectKind::Binary
+pub termrock::widgets::InspectKind::Bool
+pub termrock::widgets::InspectKind::Null
+pub termrock::widgets::InspectKind::Number
+pub termrock::widgets::InspectKind::Object
+pub termrock::widgets::InspectKind::String
+pub termrock::widgets::InspectKind::Unknown
+impl termrock::widgets::InspectKind
+pub const fn termrock::widgets::InspectKind::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::InspectKind::id(self) -> &'static str
+pub const fn termrock::widgets::InspectKind::is_container(self) -> bool
+impl core::clone::Clone for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::clone(&self) -> termrock::widgets::InspectKind
+impl core::cmp::Eq for termrock::widgets::InspectKind
+impl core::cmp::PartialEq for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::eq(&self, &termrock::widgets::InspectKind) -> bool
+impl core::default::Default for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::default() -> termrock::widgets::InspectKind
+impl core::fmt::Debug for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::InspectKind
+impl core::marker::StructuralPartialEq for termrock::widgets::InspectKind
+impl core::marker::Freeze for termrock::widgets::InspectKind
+impl core::marker::Send for termrock::widgets::InspectKind
+impl core::marker::Sync for termrock::widgets::InspectKind
+impl core::marker::Unpin for termrock::widgets::InspectKind
+impl core::marker::UnsafeUnpin for termrock::widgets::InspectKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InspectKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InspectKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InspectKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InspectKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InspectKind where U: core::convert::From<T>
+pub fn termrock::widgets::InspectKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InspectKind where U: core::convert::Into<T>
+pub type termrock::widgets::InspectKind::Error = core::convert::Infallible
+pub fn termrock::widgets::InspectKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InspectKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InspectKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InspectKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InspectKind where T: core::clone::Clone
+pub type termrock::widgets::InspectKind::Owned = T
+pub fn termrock::widgets::InspectKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::InspectKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InspectKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InspectKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InspectKind where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InspectKind where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InspectKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InspectKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InspectKind
+pub fn termrock::widgets::InspectKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InspectKind
+#[non_exhaustive] pub enum termrock::widgets::InspectMode
+pub termrock::widgets::InspectMode::Compare
+pub termrock::widgets::InspectMode::View
+impl termrock::widgets::InspectMode
+pub const fn termrock::widgets::InspectMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::clone(&self) -> termrock::widgets::InspectMode
+impl core::cmp::Eq for termrock::widgets::InspectMode
+impl core::cmp::PartialEq for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::eq(&self, &termrock::widgets::InspectMode) -> bool
+impl core::default::Default for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::default() -> termrock::widgets::InspectMode
+impl core::fmt::Debug for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::InspectMode
+impl core::marker::StructuralPartialEq for termrock::widgets::InspectMode
+impl core::marker::Freeze for termrock::widgets::InspectMode
+impl core::marker::Send for termrock::widgets::InspectMode
+impl core::marker::Sync for termrock::widgets::InspectMode
+impl core::marker::Unpin for termrock::widgets::InspectMode
+impl core::marker::UnsafeUnpin for termrock::widgets::InspectMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InspectMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InspectMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InspectMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InspectMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InspectMode where U: core::convert::From<T>
+pub fn termrock::widgets::InspectMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InspectMode where U: core::convert::Into<T>
+pub type termrock::widgets::InspectMode::Error = core::convert::Infallible
+pub fn termrock::widgets::InspectMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InspectMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InspectMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InspectMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InspectMode where T: core::clone::Clone
+pub type termrock::widgets::InspectMode::Owned = T
+pub fn termrock::widgets::InspectMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::InspectMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InspectMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InspectMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InspectMode where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InspectMode where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InspectMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InspectMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InspectMode
+pub fn termrock::widgets::InspectMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InspectMode
+#[non_exhaustive] pub enum termrock::widgets::InspectNodeStatus
+pub termrock::widgets::InspectNodeStatus::Error
+pub termrock::widgets::InspectNodeStatus::Lazy
+pub termrock::widgets::InspectNodeStatus::Loading
+pub termrock::widgets::InspectNodeStatus::Ready
+impl termrock::widgets::InspectNodeStatus
+pub const fn termrock::widgets::InspectNodeStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::clone(&self) -> termrock::widgets::InspectNodeStatus
+impl core::cmp::Eq for termrock::widgets::InspectNodeStatus
+impl core::cmp::PartialEq for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::eq(&self, &termrock::widgets::InspectNodeStatus) -> bool
+impl core::default::Default for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::default() -> termrock::widgets::InspectNodeStatus
+impl core::fmt::Debug for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::InspectNodeStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::InspectNodeStatus
+impl core::marker::Freeze for termrock::widgets::InspectNodeStatus
+impl core::marker::Send for termrock::widgets::InspectNodeStatus
+impl core::marker::Sync for termrock::widgets::InspectNodeStatus
+impl core::marker::Unpin for termrock::widgets::InspectNodeStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::InspectNodeStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InspectNodeStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InspectNodeStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InspectNodeStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InspectNodeStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InspectNodeStatus where U: core::convert::From<T>
+pub fn termrock::widgets::InspectNodeStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InspectNodeStatus where U: core::convert::Into<T>
+pub type termrock::widgets::InspectNodeStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::InspectNodeStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InspectNodeStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InspectNodeStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InspectNodeStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InspectNodeStatus where T: core::clone::Clone
+pub type termrock::widgets::InspectNodeStatus::Owned = T
+pub fn termrock::widgets::InspectNodeStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::InspectNodeStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InspectNodeStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InspectNodeStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InspectNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectNodeStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InspectNodeStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectNodeStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InspectNodeStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InspectNodeStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InspectNodeStatus
+pub fn termrock::widgets::InspectNodeStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InspectNodeStatus
+#[non_exhaustive] pub enum termrock::widgets::InspectPresentation
+pub termrock::widgets::InspectPresentation::Compact
+pub termrock::widgets::InspectPresentation::Fullscreen
+impl termrock::widgets::InspectPresentation
+pub const fn termrock::widgets::InspectPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::clone(&self) -> termrock::widgets::InspectPresentation
+impl core::cmp::Eq for termrock::widgets::InspectPresentation
+impl core::cmp::PartialEq for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::eq(&self, &termrock::widgets::InspectPresentation) -> bool
+impl core::default::Default for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::default() -> termrock::widgets::InspectPresentation
+impl core::fmt::Debug for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::InspectPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::InspectPresentation
+impl core::marker::Freeze for termrock::widgets::InspectPresentation
+impl core::marker::Send for termrock::widgets::InspectPresentation
+impl core::marker::Sync for termrock::widgets::InspectPresentation
+impl core::marker::Unpin for termrock::widgets::InspectPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::InspectPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InspectPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InspectPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InspectPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InspectPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InspectPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::InspectPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InspectPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::InspectPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::InspectPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InspectPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InspectPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InspectPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InspectPresentation where T: core::clone::Clone
+pub type termrock::widgets::InspectPresentation::Owned = T
+pub fn termrock::widgets::InspectPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::InspectPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InspectPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InspectPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InspectPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InspectPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InspectPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InspectPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InspectPresentation
+pub fn termrock::widgets::InspectPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InspectPresentation
 #[non_exhaustive] pub enum termrock::widgets::InspectorPanel
 pub termrock::widgets::InspectorPanel::Focus
 pub termrock::widgets::InspectorPanel::FocusGraph
@@ -24444,10 +24654,35 @@ impl<T> either::into_either::IntoEither for termrock::widgets::NumberValidity
 #[non_exhaustive] pub enum termrock::widgets::ObjectInspectorOutcome
 pub termrock::widgets::ObjectInspectorOutcome::Activate
 pub termrock::widgets::ObjectInspectorOutcome::Activate::index: usize
+pub termrock::widgets::ObjectInspectorOutcome::Cancelled
+pub termrock::widgets::ObjectInspectorOutcome::CopyPath
+pub termrock::widgets::ObjectInspectorOutcome::CopyPath::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::CopyValue
+pub termrock::widgets::ObjectInspectorOutcome::CopyValue::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::CopyValue::text: alloc::string::String
 pub termrock::widgets::ObjectInspectorOutcome::CursorMoved
 pub termrock::widgets::ObjectInspectorOutcome::CursorMoved::index: usize
+pub termrock::widgets::ObjectInspectorOutcome::CursorMoved::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::EditCancelled
+pub termrock::widgets::ObjectInspectorOutcome::EditCommitted
+pub termrock::widgets::ObjectInspectorOutcome::EditCommitted::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::EditCommitted::text: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::EditStarted
+pub termrock::widgets::ObjectInspectorOutcome::EditStarted::index: usize
+pub termrock::widgets::ObjectInspectorOutcome::EditStarted::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::ExpandToggled
+pub termrock::widgets::ObjectInspectorOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::ObjectInspectorOutcome::ExpandToggled::index: usize
+pub termrock::widgets::ObjectInspectorOutcome::ExpandToggled::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::FullscreenRequested
 pub termrock::widgets::ObjectInspectorOutcome::Ignored
+pub termrock::widgets::ObjectInspectorOutcome::ModeChanged(termrock::widgets::InspectMode)
 pub termrock::widgets::ObjectInspectorOutcome::Scrolled
+pub termrock::widgets::ObjectInspectorOutcome::SearchChanged(alloc::string::String)
+pub termrock::widgets::ObjectInspectorOutcome::SecretHidden
+pub termrock::widgets::ObjectInspectorOutcome::SecretHidden::path: alloc::string::String
+pub termrock::widgets::ObjectInspectorOutcome::SecretRevealed
+pub termrock::widgets::ObjectInspectorOutcome::SecretRevealed::path: alloc::string::String
 impl core::clone::Clone for termrock::widgets::ObjectInspectorOutcome
 pub fn termrock::widgets::ObjectInspectorOutcome::clone(&self) -> termrock::widgets::ObjectInspectorOutcome
 impl core::cmp::Eq for termrock::widgets::ObjectInspectorOutcome
@@ -43220,10 +43455,82 @@ pub unsafe fn termrock::widgets::ImageSurface<'a>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::ImageSurface<'a>
 pub fn termrock::widgets::ImageSurface<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ImageSurface<'a>
+pub struct termrock::widgets::InspectRegion
+pub termrock::widgets::InspectRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::InspectRegion::disclosure: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::InspectRegion::index: usize
+pub termrock::widgets::InspectRegion::path: alloc::string::String
+impl core::clone::Clone for termrock::widgets::InspectRegion
+pub fn termrock::widgets::InspectRegion::clone(&self) -> termrock::widgets::InspectRegion
+impl core::cmp::Eq for termrock::widgets::InspectRegion
+impl core::cmp::PartialEq for termrock::widgets::InspectRegion
+pub fn termrock::widgets::InspectRegion::eq(&self, &termrock::widgets::InspectRegion) -> bool
+impl core::fmt::Debug for termrock::widgets::InspectRegion
+pub fn termrock::widgets::InspectRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::InspectRegion
+impl core::marker::Freeze for termrock::widgets::InspectRegion
+impl core::marker::Send for termrock::widgets::InspectRegion
+impl core::marker::Sync for termrock::widgets::InspectRegion
+impl core::marker::Unpin for termrock::widgets::InspectRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::InspectRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InspectRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InspectRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InspectRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InspectRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InspectRegion where U: core::convert::From<T>
+pub fn termrock::widgets::InspectRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InspectRegion where U: core::convert::Into<T>
+pub type termrock::widgets::InspectRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::InspectRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InspectRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InspectRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InspectRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InspectRegion where T: core::clone::Clone
+pub type termrock::widgets::InspectRegion::Owned = T
+pub fn termrock::widgets::InspectRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::InspectRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InspectRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InspectRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InspectRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InspectRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::InspectRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InspectRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InspectRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InspectRegion
+pub fn termrock::widgets::InspectRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InspectRegion
 pub struct termrock::widgets::InspectorField<'a>
+pub termrock::widgets::InspectorField::branch: bool
+pub termrock::widgets::InspectorField::child_count: core::option::Option<u32>
+pub termrock::widgets::InspectorField::compare: core::option::Option<&'a str>
 pub termrock::widgets::InspectorField::depth: u8
+pub termrock::widgets::InspectorField::editable: bool
+pub termrock::widgets::InspectorField::expanded: bool
 pub termrock::widgets::InspectorField::key: &'a str
+pub termrock::widgets::InspectorField::kind: termrock::widgets::InspectKind
+pub termrock::widgets::InspectorField::path: &'a str
+pub termrock::widgets::InspectorField::secret: bool
+pub termrock::widgets::InspectorField::status: termrock::widgets::InspectNodeStatus
+pub termrock::widgets::InspectorField::type_label: core::option::Option<&'a str>
 pub termrock::widgets::InspectorField::value: &'a str
+impl<'a> termrock::widgets::InspectorField<'a>
+pub const fn termrock::widgets::InspectorField<'a>::branch(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::child_count(self, u32) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::compare(self, &'a str) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::container(&'a str, &'a str, termrock::widgets::InspectKind) -> Self
+pub fn termrock::widgets::InspectorField<'a>::container_preview(&self, bool) -> alloc::string::String
+pub const fn termrock::widgets::InspectorField<'a>::depth(self, u8) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::editable(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::error(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::expanded(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::kind(self, termrock::widgets::InspectKind) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::lazy(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::loading(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::new(&'a str, &'a str) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::path(self, &'a str) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::secret(self) -> Self
+pub const fn termrock::widgets::InspectorField<'a>::type_label(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::InspectorField<'a>
 pub fn termrock::widgets::InspectorField<'a>::clone(&self) -> termrock::widgets::InspectorField<'a>
 impl<'a> core::cmp::Eq for termrock::widgets::InspectorField<'a>
@@ -47131,14 +47438,22 @@ pub struct termrock::widgets::ObjectInspector<'a>
 impl<'a> termrock::widgets::ObjectInspector<'a>
 pub const fn termrock::widgets::ObjectInspector<'a>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::ObjectInspector<'a>::colorless(self, bool) -> Self
+pub fn termrock::widgets::ObjectInspector<'a>::display_value(&self, &termrock::widgets::InspectorField<'a>, &termrock::widgets::ObjectInspectorState) -> alloc::string::String
 pub const fn termrock::widgets::ObjectInspector<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ObjectInspector<'a>::new(&'a [termrock::widgets::InspectorField<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::ObjectInspector<'a>::presentation(self, termrock::widgets::InspectPresentation) -> Self
 pub fn termrock::widgets::ObjectInspector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ObjectInspectorState)
+pub const fn termrock::widgets::ObjectInspector<'a>::show_types(self, bool) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ObjectInspector<'_>
+pub type &termrock::widgets::ObjectInspector<'_>::State = termrock::widgets::ObjectInspectorState
+pub fn &termrock::widgets::ObjectInspector<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::ObjectInspector<'_>
+pub type termrock::widgets::ObjectInspector<'_>::State = termrock::widgets::ObjectInspectorState
+pub fn termrock::widgets::ObjectInspector<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::ObjectInspector<'a>
 pub fn termrock::widgets::ObjectInspector<'a>::clone(&self) -> termrock::widgets::ObjectInspector<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ObjectInspector<'a>
 pub fn termrock::widgets::ObjectInspector<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::ObjectInspector<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::ObjectInspector<'a>
 impl<'a> core::marker::Send for termrock::widgets::ObjectInspector<'a>
 impl<'a> core::marker::Sync for termrock::widgets::ObjectInspector<'a>
@@ -47170,24 +47485,50 @@ impl<T> core::convert::From<T> for termrock::widgets::ObjectInspector<'a>
 pub fn termrock::widgets::ObjectInspector<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ObjectInspector<'a>
 pub struct termrock::widgets::ObjectInspectorState
+pub termrock::widgets::ObjectInspectorState::ascii: bool
+pub termrock::widgets::ObjectInspectorState::colorless: bool
+pub termrock::widgets::ObjectInspectorState::edit_draft: alloc::string::String
+pub termrock::widgets::ObjectInspectorState::editing: bool
+pub termrock::widgets::ObjectInspectorState::load: termrock::widgets::LoadState
+pub termrock::widgets::ObjectInspectorState::logical_len: u64
+pub termrock::widgets::ObjectInspectorState::max_depth: u8
+pub termrock::widgets::ObjectInspectorState::mode: termrock::widgets::InspectMode
+pub termrock::widgets::ObjectInspectorState::presentation: termrock::widgets::InspectPresentation
+pub termrock::widgets::ObjectInspectorState::regions: alloc::vec::Vec<termrock::widgets::InspectRegion>
+pub termrock::widgets::ObjectInspectorState::window_start: u64
 impl termrock::widgets::ObjectInspectorState
 pub const fn termrock::widgets::ObjectInspectorState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::ObjectInspectorState::cursor(&self) -> usize
+pub fn termrock::widgets::ObjectInspectorState::cursor_path(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::ObjectInspectorState::expanded_paths(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub const fn termrock::widgets::ObjectInspectorState::focus(&self) -> usize
-pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::context::ContextUiIntent, usize) -> termrock::widgets::ObjectInspectorOutcome
-pub fn termrock::widgets::ObjectInspectorState::handle_key(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
-pub fn termrock::widgets::ObjectInspectorState::handle_mouse(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::InspectorField<'_>]) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_intent_index(&mut self, termrock::context::ContextUiIntent, usize) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::InspectorField<'_>]) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::InspectorField<'_>]) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::handle_mouse_count(&mut self, termrock::input::MouseEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
+pub fn termrock::widgets::ObjectInspectorState::is_expanded(&self, &str) -> bool
+pub fn termrock::widgets::ObjectInspectorState::is_revealed(&self, &str) -> bool
 pub fn termrock::widgets::ObjectInspectorState::new() -> Self
 pub fn termrock::widgets::ObjectInspectorState::offset_y(&self) -> u16
+pub fn termrock::widgets::ObjectInspectorState::reconcile(&mut self, &[termrock::widgets::InspectorField<'_>])
+pub fn termrock::widgets::ObjectInspectorState::search(&self) -> core::option::Option<&str>
 pub fn termrock::widgets::ObjectInspectorState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::ObjectInspectorState::set_cursor(&mut self, usize)
+pub fn termrock::widgets::ObjectInspectorState::set_cursor_path(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::ObjectInspectorState::set_expanded(&mut self, impl core::convert::Into<alloc::string::String>, bool)
+pub fn termrock::widgets::ObjectInspectorState::set_virtual_window(&mut self, u64, u64)
+pub fn termrock::widgets::ObjectInspectorState::toggle_expanded(&mut self, &str) -> bool
+pub fn termrock::widgets::ObjectInspectorState::toggle_reveal(&mut self, impl core::convert::Into<alloc::string::String>) -> bool
+impl termrock::widgets::ObjectInspectorState
+pub fn termrock::widgets::ObjectInspectorState::handle_key_count(&mut self, termrock::input::KeyEvent, usize) -> termrock::widgets::ObjectInspectorOutcome
 impl core::clone::Clone for termrock::widgets::ObjectInspectorState
 pub fn termrock::widgets::ObjectInspectorState::clone(&self) -> termrock::widgets::ObjectInspectorState
 impl core::cmp::Eq for termrock::widgets::ObjectInspectorState
 impl core::cmp::PartialEq for termrock::widgets::ObjectInspectorState
 pub fn termrock::widgets::ObjectInspectorState::eq(&self, &termrock::widgets::ObjectInspectorState) -> bool
 impl core::default::Default for termrock::widgets::ObjectInspectorState
-pub fn termrock::widgets::ObjectInspectorState::default() -> termrock::widgets::ObjectInspectorState
+pub fn termrock::widgets::ObjectInspectorState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::ObjectInspectorState
 pub fn termrock::widgets::ObjectInspectorState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::ObjectInspectorState
@@ -60503,6 +60844,7 @@ pub fn termrock::widgets::dismiss_tooltip_overlay<FocusId: core::clone::Clone>(&
 pub fn termrock::widgets::drawer_presentation_for(ratatui_core::layout::rect::Rect, termrock::widgets::DrawerEdge, u16) -> termrock::widgets::DrawerPresentation
 pub fn termrock::widgets::dropdown_menu_presentation_for(ratatui_core::layout::rect::Rect, &[termrock::widgets::MenuNode<impl core::marker::Sized>]) -> termrock::widgets::DropdownMenuPresentation
 pub fn termrock::widgets::entries_from_keymap<A, Id, F>(&termrock::keymap::Keymap<A>, F) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (Id, alloc::string::String, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::escape_inspect_value(&str) -> alloc::string::String
 pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
@@ -60556,6 +60898,7 @@ pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> allo
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
+pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>

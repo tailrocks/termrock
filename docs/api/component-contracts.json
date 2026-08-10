@@ -1110,5 +1110,13 @@
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
+  },
+  "ObjectInspector": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
   }
 }
