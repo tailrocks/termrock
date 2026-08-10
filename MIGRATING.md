@@ -228,6 +228,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0212 | `v0.13.0` | [AttachmentChip and PasteChip](migrations/0212-v0.13.0-attachment-paste-chips.md) |
 | 0213 | `v0.13.0` | [FileMention and EntityMention](migrations/0213-v0.13.0-file-entity-mention.md) |
 | 0214 | `v0.13.0` | [SlashCommandMenu](migrations/0214-v0.13.0-slash-command-menu.md) |
+| 0215 | `v0.13.0` | [ModelSelector and AgentModeSelector](migrations/0215-v0.13.0-model-mode-selectors.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

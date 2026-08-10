@@ -13,6 +13,8 @@
     "file-mention",
     "entity-mention",
     "slash-command-menu",
+    "agent-mode-selector",
+    "model-selector",
     "permission-prompt",
     "agent-workbench",
     "text-area",

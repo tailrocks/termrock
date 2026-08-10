@@ -1966,6 +1966,36 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## ModelSelector
+
+1. **Purpose:** Compact/expandable model id picker with host metadata.  
+2. **Anatomy:** compact status · search · option rows (caps/cost/ctx) · warnings.  
+3. **Public properties:** `ModelOption` (provider, capabilities, context, cost, latency, availability).  
+4. **State:** selected, highlight, search, reasoning, recent, presentation.  
+5. **Variants:** compact · expanded; deprecated/unavailable.  
+6–10. Enter open/confirm; Esc close; type filter; Ctrl+R reasoning.  
+11–14. Host catalog only; Confirmed carries warning for cost/deprecation.  
+15–18. Drop tags first on narrow; ASCII `!` warnings.  
+19. **Composition:** ComposerSelectors; ModelIndicator; Select bridge.  
+20. **Outcomes:** Opened · Closed · SearchChanged · Confirmed · ReasoningChanged.  
+21. **Stories:** `model-selector/{compact,expanded,empty}`.  
+22–24. Filter bench; unavailable block; no provider I/O.
+
+## AgentModeSelector
+
+1. **Purpose:** Safety/autonomy mode dial + optional execution policy.  
+2. **Anatomy:** compact badge · ribbon · menu with consequence lines.  
+3. **Public properties:** `AgentModeOption` (kind, short, consequence, warning, policy).  
+4. **State:** selected, highlight, presentation, policy.  
+5. **Variants:** Ask/Plan/Edit/Auto/FullAuto; FullAuto = warning role.  
+6–10. ←/→ cycle; Enter menu/confirm; Esc close; Ctrl+P policy.  
+11–14. ModeChanged includes needs_confirm + consequence; host owns dialogs.  
+15–18. Collapse to ASK/PLAN/EDIT/AUTO/FULL.  
+19. **Composition:** ModeRibbon bridge; ModeIndicator; ComposerSelectors.  
+20. **Outcomes:** ModeChanged · PolicyChanged · Opened · Closed.  
+21. **Stories:** `agent-mode-selector/{ribbon,menu,compact}`, `composer-selectors/strip`.  
+22–24. FullAuto warning tests; cycle tests.
+
 ## SlashCommandMenu
 
 1. **Purpose:** Caret-anchored `/` command completion for prompt composers.  

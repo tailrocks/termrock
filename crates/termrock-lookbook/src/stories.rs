@@ -5342,6 +5342,69 @@ pub(crate) fn stories() -> Vec<Story> {
             slash_command_menu_disabled_story,
         ),
         Story::new(
+            "model-selector/compact",
+            "ModelSelector compact",
+            "ModelSelector",
+            "Compact model status for composer chrome.",
+            40,
+            2,
+            model_selector_compact_story,
+        ),
+        Story::new(
+            "model-selector/expanded",
+            "ModelSelector expanded",
+            "ModelSelector",
+            "Searchable model list with cost/context meta.",
+            48,
+            12,
+            model_selector_expanded_story,
+        ),
+        Story::new(
+            "model-selector/empty",
+            "ModelSelector empty",
+            "ModelSelector",
+            "Empty filter result.",
+            36,
+            6,
+            model_selector_empty_story,
+        ),
+        Story::new(
+            "agent-mode-selector/ribbon",
+            "AgentModeSelector ribbon",
+            "AgentModeSelector",
+            "Mode ribbon with FullAuto warning.",
+            48,
+            2,
+            agent_mode_ribbon_story,
+        ),
+        Story::new(
+            "agent-mode-selector/menu",
+            "AgentModeSelector menu",
+            "AgentModeSelector",
+            "Mode menu with consequence text.",
+            40,
+            12,
+            agent_mode_menu_story,
+        ),
+        Story::new(
+            "agent-mode-selector/compact",
+            "AgentModeSelector compact",
+            "AgentModeSelector",
+            "Compact mode badge for composer.",
+            24,
+            2,
+            agent_mode_compact_story,
+        ),
+        Story::new(
+            "composer-selectors/strip",
+            "ComposerSelectors strip",
+            "ModelSelector",
+            "Composed mode · model status line.",
+            48,
+            2,
+            composer_selectors_strip_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18340,6 +18403,87 @@ fn slash_command_menu_disabled_story(frame: &mut Frame<'_>, area: Rect, system: 
     st.sync_from_draft("/dep", 4);
     let anchor = Rect::new(area.x, area.y, 1, 1);
     SlashCommandMenu::new(&cat, system, area, anchor).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn model_selector_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_model_catalog, ModelSelector, ModelSelectorState};
+    let cat = example_model_catalog();
+    let mut st = ModelSelectorState::with_selected("smart");
+    st.reasoning = termrock::widgets::ReasoningEffort::High;
+    ModelSelector::new(&cat, system)
+        .show_reasoning(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn model_selector_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_model_catalog, ModelSelector, ModelSelectorPresentation, ModelSelectorState,
+    };
+    let cat = example_model_catalog();
+    let mut st = ModelSelectorState::with_selected("fast");
+    st.presentation = ModelSelectorPresentation::Expanded;
+    st.highlight = Some("smart".into());
+    ModelSelector::new(&cat, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn model_selector_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_model_catalog, ModelSelector, ModelSelectorPresentation, ModelSelectorState,
+    };
+    let cat = example_model_catalog();
+    let mut st = ModelSelectorState::new();
+    st.presentation = ModelSelectorPresentation::Expanded;
+    st.search = "zzzz-nope".into();
+    ModelSelector::new(&cat, system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn agent_mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        default_agent_modes, AgentModePresentation, AgentModeSelector, AgentModeSelectorState,
+    };
+    let modes = default_agent_modes();
+    let mut st = AgentModeSelectorState::with_selected("full-auto");
+    st.presentation = AgentModePresentation::Ribbon;
+    AgentModeSelector::new(&modes, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn agent_mode_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        default_agent_modes, AgentModePresentation, AgentModeSelector, AgentModeSelectorState,
+    };
+    let modes = default_agent_modes();
+    let mut st = AgentModeSelectorState::with_selected("edit");
+    st.presentation = AgentModePresentation::Menu;
+    st.highlight = Some("full-auto".into());
+    AgentModeSelector::new(&modes, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn agent_mode_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        default_agent_modes, AgentModeSelector, AgentModeSelectorState, ExecutionPolicyKind,
+    };
+    let modes = default_agent_modes();
+    let mut st = AgentModeSelectorState::with_selected("auto");
+    st.policy = Some(ExecutionPolicyKind::Network);
+    AgentModeSelector::new(&modes, system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        default_agent_modes, example_model_catalog, AgentModeSelectorState, ComposerSelectors,
+        ModelSelectorState,
+    };
+    let modes = default_agent_modes();
+    let models = example_model_catalog();
+    let ms = ModelSelectorState::with_selected("smart");
+    let mut as_ = AgentModeSelectorState::with_selected("plan");
+    as_.policy = Some(termrock::widgets::ExecutionPolicyKind::WorkspaceWrite);
+    ComposerSelectors::new(&modes, &models, system).paint_compact(
+        area,
+        frame.buffer_mut(),
+        &as_,
+        &ms,
+    );
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

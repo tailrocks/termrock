@@ -38,6 +38,7 @@ mod tag_chip;
 mod attachment_chips;
 mod mention;
 mod slash_command_menu;
+mod model_mode_selectors;
 mod text;
 mod separator;
 mod toolbar;
@@ -587,6 +588,16 @@ pub use slash_command_menu::{
     slash_presentation_for,
 };
 pub use slash_command_menu::bench as slash_command_menu_bench;
+pub use model_mode_selectors::{
+    MODEL_RECENT_CAP, MODEL_SELECTOR_OVERLAY_ID, MODE_SELECTOR_OVERLAY_ID, AgentModeKind,
+    AgentModeOption, AgentModePresentation, AgentModeSelector, AgentModeSelectorOutcome,
+    AgentModeSelectorState, ComposerSelectors, ExecutionPolicyKind, ModelAvailability,
+    ModelCapability, ModelOption, ModelSelector, ModelSelectorOutcome, ModelSelectorPresentation,
+    ModelSelectorState, ReasoningEffort, default_agent_modes, example_model_catalog,
+    filter_model_options, mode_to_indicator, model_to_indicator, models_to_select_options,
+    modes_to_workbench,
+};
+pub use model_mode_selectors::bench as model_mode_selectors_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

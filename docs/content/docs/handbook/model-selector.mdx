@@ -1,0 +1,31 @@
+---
+title: ModelSelector
+description: Compact model picker with metadata, search, and composer status text.
+---
+
+# ModelSelector
+
+Pick a model id from a **host-supplied** catalog. TermRock paints compact status
+and an expandable searchable list (capabilities, context, cost/latency hints,
+availability, warnings). No provider SDK or network.
+
+## When to use / when not
+
+| Use ModelSelector | Prefer |
+|-------------------|--------|
+| Composer model badge / menu | — |
+| Agent safety mode | [AgentModeSelector](/docs/handbook/agent-mode-selector) |
+| Generic form select | Select |
+
+## Compact vs expanded
+
+- **Compact** — one-line status for PromptComposer (`label/provider ctx $`)
+- **Expanded** — filterable list; Enter confirms; Esc restores prior selection
+
+## Consequences
+
+`Confirmed { warning }` surfaces deprecation/cost strings for host dialogs.
+
+## Related
+
+AgentModeSelector · PromptComposer · migration `0215`
