@@ -1,0 +1,66 @@
+---
+title: Stepper
+description: 'Progress/navigation chrome for multi-step flows with status marks, horizontal/vertical layout, policy-gated jumps, and narrow numeric/menu contraction.'
+---
+
+## Previews
+
+### `stepper/horizontal`
+
+Stepper horizontal
+
+![Stepper — horizontal](/component-previews/stepper-horizontal.svg)
+
+### `stepper/vertical`
+
+Stepper vertical
+
+![Stepper — vertical](/component-previews/stepper-vertical.svg)
+
+### `stepper/error`
+
+Stepper error state
+
+![Stepper — error](/component-previews/stepper-error.svg)
+
+### `stepper/numeric`
+
+Stepper numeric
+
+![Stepper — numeric](/component-previews/stepper-numeric.svg)
+
+### `stepper/menu`
+
+Stepper menu
+
+![Stepper — menu](/component-previews/stepper-menu.svg)
+
+### `stepper/ascii`
+
+Stepper ASCII
+
+![Stepper — ascii](/component-previews/stepper-ascii.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{Stepper, StepperState, StepperNavPolicy, example_onboarding_steps};
+
+let system = DesignSystem::default();
+let items = example_onboarding_steps();
+let mut state = StepperState::with_len(items.len()).policy(StepperNavPolicy::Linear);
+state.set_focused(true);
+Stepper::new(&items, &system).paint(area, buf, &mut state);
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Nav policy | covered |
+| Non-color cues | covered |
+| Narrow terminal | covered |

@@ -10,8 +10,8 @@
 //!
 //! **vs [`Form`](super::Form).** Form is single-surface field chrome. Wizard
 //! sequences multiple host-owned step surfaces with a stepper and nav.
-//! **vs Stepper (future).** Inline stepper paint lives here; extract later if
-//! reused outside wizards.
+//! **vs [`super::Stepper`].** Stepper is the reusable step chrome; FormWizard
+//! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
 
@@ -31,54 +31,20 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::{Panel, PanelChrome};
+use super::{
+    Panel, PanelChrome, StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation,
+    StepperPresentation, StepperState,
+};
 
 /// Width under which stepper collapses to title-only / single-step layout.
 pub const FORM_WIZARD_NARROW_MAX_WIDTH: u16 = 36;
 /// Height under which chrome is minimized.
 pub const FORM_WIZARD_COMPACT_MAX_HEIGHT: u16 = 10;
 
-// ── Step model (host-projected) ─────────────────────────────────────────────
+// ── Step model (shared with Stepper) ─────────────────────────────────────────
 
-/// One wizard step definition (identity + chrome; values stay in host).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WizardStep {
-    /// Stable id (progress snapshots, focus).
-    pub id: String,
-    /// Short title for stepper.
-    pub title: String,
-    /// Optional longer description.
-    pub description: Option<String>,
-    /// Optional step may be skipped.
-    pub optional: bool,
-}
-
-impl WizardStep {
-    /// Required step.
-    #[must_use]
-    pub fn new(id: impl Into<String>, title: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            title: title.into(),
-            description: None,
-            optional: false,
-        }
-    }
-
-    /// Optional step.
-    #[must_use]
-    pub fn optional(mut self, on: bool) -> Self {
-        self.optional = on;
-        self
-    }
-
-    /// Description.
-    #[must_use]
-    pub fn description(mut self, d: impl Into<String>) -> Self {
-        self.description = Some(d.into());
-        self
-    }
-}
+/// Wizard step definition — alias of [`StepItem`].
+pub type WizardStep = StepItem;
 
 /// Host-projected gate for the **current** step (or review).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -111,49 +77,10 @@ impl WizardGate {
     }
 }
 
-/// Visual / progress status of a step in the stepper.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum WizardStepStatus {
-    /// Not yet reached.
-    #[default]
-    Upcoming,
-    /// Active step.
-    Current,
-    /// Completed successfully.
-    Complete,
-    /// Optional step skipped.
-    Skipped,
-    /// Had errors when last visited.
-    Error,
-}
-
-impl WizardStepStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Upcoming => "upcoming",
-            Self::Current => "current",
-            Self::Complete => "complete",
-            Self::Skipped => "skipped",
-            Self::Error => "error",
-        }
-    }
-
-    /// Non-color mark (ASCII).
-    #[must_use]
-    pub const fn mark(self, ascii: bool) -> &'static str {
-        match (self, ascii) {
-            (Self::Complete, true) => "[x]",
-            (Self::Complete, false) => "[✓]",
-            (Self::Current, _) => "[>]",
-            (Self::Skipped, _) => "[-]",
-            (Self::Error, _) => "[!]",
-            (Self::Upcoming, _) => "[ ]",
-        }
-    }
-}
+/// Visual / progress status — alias of [`StepStatus`].
+///
+/// Historical name `Upcoming` maps to [`StepStatus::Future`].
+pub type WizardStepStatus = StepStatus;
 
 /// Wizard high-level phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -394,7 +321,7 @@ impl FormWizardState {
             steps
         };
         let n = steps.len();
-        let mut statuses = vec![WizardStepStatus::Upcoming; n];
+        let mut statuses = vec![WizardStepStatus::Future; n];
         statuses[0] = WizardStepStatus::Current;
         Self {
             steps,
@@ -624,7 +551,7 @@ impl FormWizardState {
 
     fn rebuild_statuses(&mut self) {
         let n = self.steps.len();
-        self.statuses = vec![WizardStepStatus::Upcoming; n];
+        self.statuses = vec![WizardStepStatus::Future; n];
         for (i, step) in self.steps.iter().enumerate() {
             if self.skipped.iter().any(|s| s == &step.id) {
                 self.statuses[i] = WizardStepStatus::Skipped;
@@ -1167,41 +1094,26 @@ impl<'a> FormWizard<'a> {
         buffer: &mut Buffer,
         state: &mut FormWizardState,
     ) -> u16 {
-        let mut x = inner.x;
-        for (i, step) in state.steps.iter().enumerate() {
-            if x >= inner.right() {
-                break;
-            }
-            let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(self.ascii);
-            let label = take_display_cols(&step.title, 12);
-            let cell = if i + 1 < state.steps.len() {
-                format!("{mark}{label} → ")
-            } else {
-                format!("{mark}{label}")
-            };
-            let w = display_cols(&cell) as u16;
-            let rect = Rect::new(x, y, w.min(inner.right().saturating_sub(x)), 1);
-            let style = match status {
-                WizardStepStatus::Current => self
-                    .system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED),
-                WizardStepStatus::Complete => self.system.style(Role::Success),
-                WizardStepStatus::Error => self.system.style(Role::Danger),
-                WizardStepStatus::Skipped => self.system.style(Role::TextMuted),
-                WizardStepStatus::Upcoming => self.system.style(Role::TextMuted),
-            };
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                take_display_cols(&cell, usize::from(rect.width)),
-                usize::from(rect.width),
-                style,
-            );
-            state.stepper_hits.push((i, rect));
-            x = x.saturating_add(w);
-        }
+        // Embed shared Stepper chrome; Host policy — FormWizard handles jumps.
+        let mut st = StepperState::with_len(state.steps.len())
+            .policy(StepperNavPolicy::Host)
+            .orientation(StepperOrientation::Horizontal);
+        st.set_statuses(state.statuses.iter().copied());
+        st.set_current(state.index, state.steps.len(), true);
+        st.set_focused(state.focused);
+        st.set_accepts_input(state.focused);
+        // Map FormWizard presentation → stepper presentation
+        let override_pres = match state.presentation {
+            FormWizardPresentation::Narrow => Some(StepperPresentation::Menu),
+            FormWizardPresentation::Compact => Some(StepperPresentation::Compact),
+            FormWizardPresentation::Full => None,
+        };
+        st.set_presentation_override(override_pres);
+        let area = Rect::new(inner.x, y, inner.width, 1);
+        Stepper::new(&state.steps, self.system)
+            .ascii(self.ascii)
+            .paint(area, buffer, &mut st);
+        state.stepper_hits = st.hits().to_vec();
         y.saturating_add(1)
     }
 

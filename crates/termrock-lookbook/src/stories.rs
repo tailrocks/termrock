@@ -80,6 +80,8 @@ use termrock::{
         example_schema_tree, example_settings_tree,
         BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsState,
         PageTotal, Pagination, PaginationState,
+        StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperPresentation,
+        StepperState, example_onboarding_steps,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -951,6 +953,60 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             1,
             pagination_jump_story,
+        ),
+        Story::new(
+            "stepper/horizontal",
+            "Stepper horizontal",
+            "Stepper",
+            "Expanded horizontal multi-step progress.",
+            72,
+            2,
+            stepper_horizontal_story,
+        ),
+        Story::new(
+            "stepper/vertical",
+            "Stepper vertical",
+            "Stepper",
+            "Vertical steps with descriptions.",
+            28,
+            14,
+            stepper_vertical_story,
+        ),
+        Story::new(
+            "stepper/error",
+            "Stepper error state",
+            "Stepper",
+            "Error + complete marks without relying on color alone.",
+            64,
+            2,
+            stepper_error_story,
+        ),
+        Story::new(
+            "stepper/numeric",
+            "Stepper numeric",
+            "Stepper",
+            "Narrow numeric current/total contraction.",
+            20,
+            1,
+            stepper_numeric_story,
+        ),
+        Story::new(
+            "stepper/menu",
+            "Stepper menu",
+            "Stepper",
+            "Menu presentation open with step list.",
+            24,
+            8,
+            stepper_menu_story,
+        ),
+        Story::new(
+            "stepper/ascii",
+            "Stepper ASCII",
+            "Stepper",
+            "ASCII marks + colorless roles.",
+            56,
+            2,
+            stepper_ascii_story,
         ),
         Story::new(
             "menu-bar/basic",
@@ -7846,6 +7902,75 @@ fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     ));
     Pagination::new(system)
         .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_horizontal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len()).policy(StepperNavPolicy::Linear);
+    state.set_focused(true);
+    state.set_status(0, StepStatus::Complete);
+    state.set_current(1, items.len(), true);
+    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len())
+        .policy(StepperNavPolicy::Linear)
+        .orientation(StepperOrientation::Vertical);
+    state.set_focused(true);
+    state.set_status(0, StepStatus::Complete);
+    state.set_current(1, items.len(), true);
+    state.set_status(2, StepStatus::Optional);
+    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len());
+    state.set_focused(true);
+    state.set_status(0, StepStatus::Complete);
+    state.set_status(1, StepStatus::Error);
+    state.set_current(1, items.len(), true);
+    Stepper::new(&items, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_numeric_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len());
+    state.set_focused(true);
+    state.set_current(2, items.len(), false);
+    state.set_presentation_override(Some(StepperPresentation::Numeric));
+    Stepper::new(&items, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len()).policy(StepperNavPolicy::Host);
+    state.set_focused(true);
+    state.set_current(0, items.len(), false);
+    state.set_presentation_override(Some(StepperPresentation::Menu));
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Enter,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    Stepper::new(&items, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn stepper_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = example_onboarding_steps();
+    let mut state = StepperState::with_len(items.len());
+    state.set_focused(true);
+    state.set_status(0, StepStatus::Complete);
+    state.set_status(1, StepStatus::Skipped);
+    state.set_current(2, items.len(), true);
+    Stepper::new(&items, system)
+        .ascii(true)
+        .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 

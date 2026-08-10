@@ -728,6 +728,19 @@ use termrock::style::DesignSystem;
 let system = DesignSystem::default();
 FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
   },
+  Stepper: {
+    description:
+      'Progress/navigation chrome for multi-step flows with status marks, horizontal/vertical layout, policy-gated jumps, and narrow numeric/menu contraction.',
+    primaryStory: 'stepper/horizontal',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{Stepper, StepperState, StepperNavPolicy, example_onboarding_steps};
+
+let system = DesignSystem::default();
+let items = example_onboarding_steps();
+let mut state = StepperState::with_len(items.len()).policy(StepperNavPolicy::Linear);
+state.set_focused(true);
+Stepper::new(&items, &system).paint(area, buf, &mut state);`,
+  },
   QuickOpen: {
     description:
       'High-performance multi-provider fuzzy resource opener with async streaming, previews, query syntax, JumpMode and fullscreen integration.',

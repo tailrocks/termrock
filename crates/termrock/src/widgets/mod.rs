@@ -47,6 +47,7 @@ mod diff;
 mod edit_core;
 mod form;
 mod form_wizard;
+mod stepper;
 mod hint_bar;
 mod image_surface;
 mod jump_overlay;
@@ -235,6 +236,12 @@ pub use form_wizard::{
     FORM_WIZARD_COMPACT_MAX_HEIGHT, FORM_WIZARD_NARROW_MAX_WIDTH, FormWizard, FormWizardOutcome,
     FormWizardPresentation, FormWizardState, StepChangeReason, WizardGate, WizardPhase,
     WizardProgress, WizardStep, WizardStepStatus,
+};
+pub use stepper::{
+    STEPPER_COMPACT_MAX_HEIGHT, STEPPER_COMPACT_MAX_WIDTH, STEPPER_NARROW_MAX_WIDTH, StepItem,
+    StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperOutcome,
+    StepperPresentation, StepperState, default_stepper_intent, example_onboarding_steps,
+    step_items_from_titles, stepper_presentation_for_bounds,
 };
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
