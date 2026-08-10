@@ -30,7 +30,8 @@ use termrock::{
         CheckboxState, CheckboxValue, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState,
         CodeHighlight,
         CodeHighlightKind, CodeWrap, Column, ColumnWidth,
-        CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
+        CommandEntry, CommandPalette, CommandPaletteState, example_command_catalog,
+        CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
         DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
         InspectorPanel,
@@ -2242,9 +2243,9 @@ pub(crate) fn stories() -> Vec<Story> {
             "command-palette/basic",
             "Command palette",
             "CommandPalette",
-            "Filterable command list in focused chrome.",
-            42,
-            10,
+            "Flagship command surface with groups and shortcuts.",
+            48,
+            14,
             command_palette,
         )
         .with_interactor(command_palette_interactor),
@@ -2252,10 +2253,55 @@ pub(crate) fn stories() -> Vec<Story> {
             "command-palette/empty",
             "Command palette empty",
             "CommandPalette",
-            "Empty projection with non-color mark and footer.",
+            "Empty catalog with non-color mark and footer.",
             42,
             10,
             command_palette_empty,
+        ),
+        Story::new(
+            "command-palette/no-result",
+            "Command palette no result",
+            "CommandPalette",
+            "Query with zero matches — polished empty state.",
+            42,
+            10,
+            command_palette_no_result,
+        ),
+        Story::new(
+            "command-palette/loading",
+            "Command palette loading",
+            "CommandPalette",
+            "Async loading state before results apply.",
+            42,
+            10,
+            command_palette_loading,
+        ),
+        Story::new(
+            "command-palette/fuzzy",
+            "Command palette fuzzy",
+            "CommandPalette",
+            "Fuzzy highlight ranges on matching labels.",
+            48,
+            12,
+            command_palette_fuzzy,
+        ),
+        Story::new(
+            "command-palette/nested",
+            "Command palette nested page",
+            "CommandPalette",
+            "Nested page for keybindings.",
+            48,
+            12,
+            command_palette_nested,
+        ),
+        Story::new(
+            "command-palette/args",
+            "Command palette arguments",
+            "CommandPalette",
+            "Argument phase for Go to line.",
+            48,
+            10,
+            command_palette_args,
         ),
         Story::new(
             "command-palette/ascii",
@@ -10435,15 +10481,17 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let rows = [
-        ListRow::item("system", Line::from("Toggle system")),
-        ListRow::item("quit", Line::from("Quit")),
-        ListRow::item("東京", Line::from("Open 東京 workspace")),
-    ];
-    let mut state = CommandPaletteState::new(Some("system"));
+    let mut state = CommandPaletteState::new(None);
+    state.set_focused(true);
+    let mut entries = example_command_catalog();
+    entries.push(
+        CommandEntry::new("tokyo", "Open 東京 workspace")
+            .group("Navigation")
+            .keywords(["tokyo", "東京"]),
+    );
+    let visible = state.refilter(&entries);
     frame.render_stateful_widget(
-        &CommandPalette::new("Commands", &rows, &tokens),
+        &CommandPalette::new("Commands", &visible, system),
         area,
         &mut state,
     );
@@ -10451,6 +10499,7 @@ fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn command_palette_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = CommandPaletteState::<&str>::new(None);
+    state.set_focused(true);
     frame.render_stateful_widget(
         &CommandPalette::new("Commands", &[], system),
         area,
@@ -10458,8 +10507,115 @@ fn command_palette_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     );
 }
 
+fn command_palette_no_result(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::<&str>::new(None);
+    state.set_focused(true);
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Char('z'),
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &[],
+    );
+    // Force query without matching catalog
+    *state.query_mut() = termrock::widgets::TextInputState::new("zzz").with_allow_empty(true);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &[], system),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::<&str>::new(None);
+    state.set_focused(true);
+    let _ = state.set_loading(true);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &[], system),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_fuzzy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::new(None);
+    state.set_focused(true);
+    let cat = example_command_catalog();
+    *state.query_mut() = termrock::widgets::TextInputState::new("thm").with_allow_empty(true);
+    let visible = state.refilter(&cat);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &visible, system),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::new(None);
+    state.set_focused(true);
+    let cat = example_command_catalog();
+    let _ = state.open_page("keys", "Keyboard shortcuts");
+    let visible = state.refilter(&cat);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &visible, system),
+        area,
+        &mut state,
+    );
+}
+
+fn command_palette_args(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::new(None);
+    state.set_focused(true);
+    let cat = example_command_catalog();
+    let mut visible = state.refilter(&cat);
+    if let Some(idx) = visible.iter().position(|e| e.id == "goto-line") {
+        // Activate via key path after moving cursor — use open by refilter order.
+        let _ = idx;
+        let _ = state.handle_key(
+            termrock::input::KeyEvent::new(
+                termrock::input::KeyCode::Enter,
+                termrock::input::KeyModifiers::NONE,
+            ),
+            &visible,
+        );
+        // Ensure argument phase: if first item isn't goto-line, force NeedArguments path.
+        if !matches!(
+            state.phase(),
+            termrock::widgets::CommandPalettePhase::Argument { .. }
+        ) {
+            visible = state.refilter(&cat);
+            if let Some(i) = visible.iter().position(|e| e.id == "goto-line") {
+                // activate_at is private — use mouse-free public open via open_page no
+                // Simulate by opening argument through handle after setting active via Down
+                for _ in 0..i {
+                    let _ = state.handle_key(
+                        termrock::input::KeyEvent::new(
+                            termrock::input::KeyCode::Down,
+                            termrock::input::KeyModifiers::NONE,
+                        ),
+                        &visible,
+                    );
+                }
+                let _ = state.handle_key(
+                    termrock::input::KeyEvent::new(
+                        termrock::input::KeyCode::Enter,
+                        termrock::input::KeyModifiers::NONE,
+                    ),
+                    &visible,
+                );
+            }
+        }
+    }
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &visible, system),
+        area,
+        &mut state,
+    );
+}
+
 fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = CommandPaletteState::<&str>::new(None);
+    state.set_focused(true);
     frame.render_stateful_widget(
         &CommandPalette::new("Commands", &[], system)
             .ascii(true)

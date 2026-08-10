@@ -129,9 +129,12 @@ pub use code_block::{
     RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display, syntax_role_style,
 };
 pub use command_palette::{
-    COMMAND_PALETTE_OVERLAY_ID, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
-    CommandPaletteState, dismiss_command_palette_overlay, open_command_palette_overlay,
-    place_command_palette,
+    COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT, COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH,
+    COMMAND_PALETTE_HISTORY_CAP, COMMAND_PALETTE_OVERLAY_ID, CommandEntry, CommandPalette,
+    CommandPaletteOutcome, CommandPalettePhase, CommandPalettePresentation, CommandPaletteSize,
+    CommandPaletteState, command_palette_presentation_for_bounds, default_command_palette_intent,
+    dismiss_command_palette_overlay, entries_from_keymap, example_command_catalog,
+    filter_command_entries, fuzzy_match_label, open_command_palette_overlay, place_command_palette,
 };
 pub use completion_menu::{
     COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,

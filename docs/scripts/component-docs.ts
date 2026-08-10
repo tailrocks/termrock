@@ -692,16 +692,18 @@ let lines = ["fn main() {}"];
 let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`,
   },
   CommandPalette: {
-    description: 'Filterable command list chrome over the picker contract.',
+    description:
+      'Flagship universal command surface: fuzzy search, groups, recent/contextual actions, nested pages, arguments, async generation gates, history, and fullscreen promotion.',
     primaryStory: 'command-palette/basic',
-    usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, widgets::{CommandPalette, CommandPaletteState, ListRow, RowRole}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{CommandPalette, CommandPaletteState, example_command_catalog};
 
-let theme = Theme::default();
-let rows = [ListRow { id: "quit", label: Line::from("Quit"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, enabled: true, role: RowRole::Item, loading: false }];
-let tokens = DesignTokens::default();
-let palette = CommandPalette::new("Commands", &rows, &tokens);
-let state = CommandPaletteState::new(Some("quit"));`,
+let system = DesignSystem::default();
+let catalog = example_command_catalog();
+let mut state = CommandPaletteState::new(None);
+state.set_focused(true);
+let visible = state.refilter(&catalog);
+CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);`,
   },
   EmptyState: {
     description: 'Centered empty surface with a non-color glyph.',

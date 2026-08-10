@@ -13,7 +13,8 @@ use termrock::{
     style::{ColorCapability, Density, DesignSystem, RolePalette},
     widgets::{
         Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
-        CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
+        CommandPalette, CommandPaletteState, example_command_catalog, ComposerChip,
+        ContextEstimate, DesignInspector,
         DesignInspectorFrame, Fieldset, Form, FormOutcome, FormState, InspectorPanel, List,
         ListState, LogPane, LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome,
         PickerState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
@@ -900,8 +901,10 @@ pub(crate) struct CommandPaletteInteractor {
 
 impl CommandPaletteInteractor {
     pub(crate) fn new() -> Self {
+        let mut state = CommandPaletteState::new(None);
+        state.set_focused(true);
         Self {
-            state: CommandPaletteState::new(Some("theme")),
+            state,
             theme: RolePalette::default(),
         }
     }
@@ -910,24 +913,20 @@ impl CommandPaletteInteractor {
 impl StoryInteraction for CommandPaletteInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let tokens = DesignSystem::new(self.theme.clone(), Density::default());
-        let rows = [
-            termrock::widgets::ListRow::item("theme", Line::from("Toggle theme")),
-            termrock::widgets::ListRow::item("quit", Line::from("Quit")),
-        ];
+        let catalog = example_command_catalog();
+        let visible = self.state.refilter(&catalog);
         frame.render_stateful_widget(
-            &CommandPalette::new("Commands", &rows, &tokens),
+            &CommandPalette::new("Commands", &visible, &tokens),
             area,
             &mut self.state,
         );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let rows = [
-            termrock::widgets::ListRow::item("theme", Line::from("Toggle theme")),
-            termrock::widgets::ListRow::item("quit", Line::from("Quit")),
-        ];
+        let catalog = example_command_catalog();
+        let visible = self.state.refilter(&catalog);
         !matches!(
-            CommandPalette::handle_key(&mut self.state, key, &rows),
+            CommandPalette::handle_key(&mut self.state, key, &visible),
             termrock::widgets::CommandPaletteOutcome::Ignored
         )
     }
