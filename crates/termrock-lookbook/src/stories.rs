@@ -98,8 +98,8 @@ use termrock::{
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
         PlanReviewState, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
         PromptComposerState, QuestionFlow, QuestionFlowState,
-        RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
-        SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
+        RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionPicker,
+        SessionPickerState, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
         SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Surface, SurfaceFill,
         SurfaceRecipe, Switch, SwitchState, Tab, TabStatus, Tabs, TabsActivation, TabsOrientation,
         TabsPresentation, TabsState, Table, TableRow, TableState, TaskRail, TextArea, TextAreaState,
@@ -6741,10 +6741,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "session-picker/basic",
             "Session picker",
             "SessionPicker",
-            "Session list picker.",
-            40,
-            8,
+            "Create/resume sessions with search, pin, preview.",
+            64,
+            16,
             session_picker_story,
+        ),
+        Story::new(
+            "session-picker/search",
+            "SessionPicker search",
+            "SessionPicker",
+            "Filtered session list by query.",
+            56,
+            14,
+            session_picker_search_story,
+        ),
+        Story::new(
+            "session-picker/confirm",
+            "SessionPicker delete confirm",
+            "SessionPicker",
+            "Safe delete confirm with Cancel default.",
+            56,
+            12,
+            session_picker_confirm_story,
+        ),
+        Story::new(
+            "session-picker/empty",
+            "SessionPicker empty",
+            "SessionPicker",
+            "Empty catalog — create prompt.",
+            48,
+            10,
+            session_picker_empty_story,
         ),
         Story::new(
             "task-rail/basic",
@@ -7986,7 +8013,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "SessionPicker",
             "Narrow-terminal geometry for SessionPicker (20 cols).",
             20,
-            8,
+            14,
             session_picker_story,
         ),
         Story::new(
@@ -7994,8 +8021,8 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode SessionPicker",
             "SessionPicker",
             "Unicode-safe paint path for SessionPicker (CJK/emoji-capable layout).",
-            40,
-            8,
+            48,
+            12,
             session_picker_unicode_story,
         ),
         Story::new(
@@ -21276,21 +21303,41 @@ fn question_flow_text_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let sessions = [
-        SessionItem {
-            id: "s1",
-            title: "Session A",
-            meta: Some("2m ago"),
-        },
-        SessionItem {
-            id: "s2",
-            title: "Session B",
-            meta: None,
-        },
-    ];
-    let mut state = ListState::new(Some("s1"));
-    frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
+    use termrock::widgets::{example_sessions, SessionPicker, SessionPickerState};
+    let mut state = SessionPickerState::new();
+    state.set_sessions(example_sessions());
+    state.focused = true;
+    frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
+}
+
+fn session_picker_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_sessions, SessionPicker, SessionPickerState};
+    let mut state = SessionPickerState::new();
+    state.set_sessions(example_sessions());
+    state.set_query("auth");
+    state.focused = true;
+    frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
+}
+
+fn session_picker_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_sessions, SessionConfirmAction, SessionPicker, SessionPickerPhase,
+        SessionPickerState,
+    };
+    let mut state = SessionPickerState::new();
+    state.set_sessions(example_sessions());
+    state.phase = SessionPickerPhase::ConfirmDelete;
+    state.confirm_action = Some(SessionConfirmAction::Delete);
+    state.confirm_proceed_focused = false;
+    state.focused = true;
+    frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
+}
+
+fn session_picker_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{SessionPicker, SessionPickerState};
+    let mut state = SessionPickerState::new();
+    state.focused = true;
+    frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
 }
 
 fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -22620,21 +22667,20 @@ fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let sessions = [
-        SessionItem {
-            id: "s1",
-            title: "セッション甲 🅰️",
-            meta: Some("2分前"),
-        },
-        SessionItem {
-            id: "s2",
-            title: "セッション乙 🅱️",
-            meta: None,
-        },
-    ];
-    let mut state = ListState::new(Some("s1"));
-    frame.render_stateful_widget(&SessionPicker::new(&sessions, &tokens), area, &mut state);
+    use termrock::widgets::{SessionEntry, SessionPicker, SessionPickerState, SessionStatus};
+    let mut state = SessionPickerState::new();
+    state.set_sessions(vec![
+        SessionEntry::new("s1", "セッション甲 🅰️")
+            .project("プロジェクト")
+            .recency("2分前")
+            .status(SessionStatus::Active)
+            .summary("概要テキスト"),
+        SessionEntry::new("s2", "セッション乙 🅱️")
+            .branch("機能")
+            .pinned(true),
+    ]);
+    state.focused = true;
+    frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
 }
 
 fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -1517,13 +1517,21 @@ let tokens = DesignTokens::default();
 let sep = SeparatorLine::horizontal(&tokens);`,
   },
   SessionPicker: {
-    description: 'Session list picker over borrowed session projections.',
+    description:
+      'Agent session create/resume/search/rename/archive/delete — draft preserved on cancel; safe confirm.',
     primaryStory: 'session-picker/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{SessionItem, SessionPicker}};
+    usage: `use termrock::widgets::{
+    example_sessions, SessionPicker, SessionPickerOutcome, SessionPickerState,
+};
 
-let tokens = DesignTokens::default();
-let sessions = [SessionItem { id: "s1", title: "Main", meta: None }];
-let picker = SessionPicker::new(&sessions, &tokens);`,
+let mut state = SessionPickerState::new();
+state.set_sessions(example_sessions());
+SessionPicker::new(&system).paint(area, buf, &mut state);
+match state.handle_key(key) {
+    SessionPickerOutcome::Opened { id } => { let _ = id; }
+    SessionPickerOutcome::Cancelled => {}
+    _ => {}
+}`,
   },
   Surface: {
     description:

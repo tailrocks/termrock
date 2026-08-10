@@ -1,0 +1,37 @@
+---
+title: SessionPicker
+description: Agent session create/resume/search/rename/archive/delete — draft preserved on cancel.
+---
+
+# SessionPicker
+
+Session lifecycle selector. Outcomes are **requests only**. Cancel never clears
+PromptComposer draft or app context.
+
+## When to use / when not
+
+| Use SessionPicker | Prefer |
+|-------------------|--------|
+| Agent threads / sessions | — |
+| Generic query+list | [Picker](/docs/handbook) if documented |
+| Value/command history | HistoryPicker |
+| Commands | CommandPalette |
+
+## Features
+
+- Project · branch · status · recency · model/mode · summary
+- Unread / action-required · pin · remote/multi-device
+- Search (local + provider flag) · preview pane
+- Create · rename · pin · archive · delete (safe confirm)
+- Popover / fullscreen presentation requests
+- Windowed list + `LoadMore` for large catalogs
+
+## Keys
+
+type search · j/k · Enter open · n new · r rename · p pin · a archive · del delete · f fullscreen · esc cancel
+
+Confirm: ←/→ · Enter · **Cancel default** · y unbound
+
+## Related
+
+HistoryPicker · Picker · migration `0230`

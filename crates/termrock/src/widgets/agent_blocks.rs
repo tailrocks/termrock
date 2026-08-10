@@ -1,23 +1,20 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Product-neutral agent composition blocks: modes, session picker.
-//! QuestionFlow / PlanReview / TaskRail elevated to dedicated modules.
+//! Product-neutral agent composition blocks: mode ribbon.
+//! QuestionFlow / PlanReview / TaskRail / SessionPicker elevated to dedicated modules.
 //! Domain wording and effects stay consumer-owned.
 
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
+    widgets::Widget,
 };
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    interaction::Outcome,
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::{List, ListRow, ListState, Panel, PanelChrome},
 };
 
 // ── Mode ribbon ─────────────────────────────────────────────────────────────
@@ -210,104 +207,7 @@ impl<Id: Clone + PartialEq> Widget for ModeRibbon<'_, Id> {
 
 // QuestionFlow elevated in `question_flow` module (migration 0227).
 // PlanReview elevated in `plan_review` module (migration 0228).
-
-// ── Session picker ──────────────────────────────────────────────────────────
-
-/// One session row projection.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SessionItem<'a, Id> {
-    /// Stable session id.
-    pub id: Id,
-    /// Title.
-    pub title: &'a str,
-    /// Optional preview/time.
-    pub meta: Option<&'a str>,
-}
-
-/// Session picker over a list projection.
-#[derive(Debug, Clone, Copy)]
-pub struct SessionPicker<'a, Id> {
-    sessions: &'a [SessionItem<'a, Id>],
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id> SessionPicker<'a, Id> {
-    /// Creates a session picker.
-    #[must_use]
-    pub const fn new(sessions: &'a [SessionItem<'a, Id>], tokens: &'a DesignSystem) -> Self {
-        Self { sessions, tokens }
-    }
-
-    /// Projects sessions into list rows (caller may filter first).
-    #[must_use]
-    pub fn rows(&self) -> Vec<ListRow<'a, Id>>
-    where
-        Id: Clone,
-    {
-        self.sessions
-            .iter()
-            .map(|s| {
-                let mut row = ListRow::item(s.id.clone(), Line::from(s.title));
-                if let Some(meta) = s.meta {
-                    row.trailing = Some(Line::from(meta));
-                }
-                row
-            })
-            .collect()
-    }
-}
-
-/// Session picker outcomes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum SessionPickerOutcome<Id> {
-    /// Ignored.
-    Ignored,
-    /// Session picked.
-    Picked(Id),
-    /// Cancelled.
-    Cancelled,
-    /// Selection moved.
-    SelectionChanged,
-}
-
-/// Routes keys through list state.
-pub fn session_picker_handle_key<Id: Clone + PartialEq>(
-    state: &mut ListState<Id>,
-    rows: &[ListRow<'_, Id>],
-    key: KeyEvent,
-) -> SessionPickerOutcome<Id> {
-    match state.handle_key(rows, key) {
-        Outcome::Activated(id) => SessionPickerOutcome::Picked(id),
-        Outcome::Cancelled => SessionPickerOutcome::Cancelled,
-        Outcome::Changed => SessionPickerOutcome::SelectionChanged,
-        Outcome::Ignored | Outcome::CheckToggled(_) => SessionPickerOutcome::Ignored,
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for &SessionPicker<'_, Id> {
-    type State = ListState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let rows = self.rows();
-        let panel = Panel::new(self.tokens)
-            .title("Sessions")
-            .emphasis(PanelChrome::Focused);
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        if !inner.is_empty() {
-            StatefulWidget::render(&List::new(&rows, self.tokens), inner, buffer, state);
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for SessionPicker<'_, Id> {
-    type State = ListState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
-    }
-}
+// SessionPicker elevated in `session_picker` module (migration 0230).
 
 // TaskRail elevated in `task_rail` module (ActivityModel + groups). Migration 0222.
 

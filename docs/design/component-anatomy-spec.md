@@ -2445,30 +2445,30 @@ Every component below uses sections **1–24**:
 
 ## SessionPicker
 
-1. **Purpose:** Resume/pick agent sessions.  
-2. **Anatomy:** `root` · `query?` · `session_row[]` · `time` · `title` · `preview`  
-3. **Public properties:** sessions projection, `design`  
-4. **State:** selected, query.  
-5. **Variants:** `list` · `combobox`  
-6. **Sizes/density:** overlay min size.  
-7. **Visual states:** empty, selected.  
-8. **Interaction states:** pick · cancel.  
-9. **Keyboard:** Combobox/List keys.  
-10. **Mouse:** click row.  
-11. **Focus:** trap if modal.  
-12. **Disabled:** skip disabled sessions.  
-13. **Loading:** Skeleton list while sessions fetch.  
-14. **Error:** EmptyState error-lite or ErrorView.  
+1. **Purpose:** Create/resume/search/rename/archive/delete agent sessions.  
+2. **Anatomy:** `draft_banner` · `search` · `session_list` · `preview` · `confirm_bar`  
+3. **Public properties:** `SessionEntry[]`, total_count, presentation, `design`  
+4. **State:** query, filtered window, phase Browse|Create|Rename|Confirm*, load_state.  
+5. **Variants:** Dialog · Popover · Fullscreen.  
+6. **Sizes/density:** list+preview ≥52 cols; popover list-only.  
+7. **Visual states:** pin/unread/action-required/remote/dirty; loading/error.  
+8. **Interaction states:** open · create · rename · pin · archive · delete confirm.  
+9. **Keyboard:** type search · j/k · Enter · n/r/p/a/del · f fullscreen · Esc cancel · confirm Cancel default · y unbound.  
+10. **Mouse:** row select/open; confirm hits.  
+11. **Focus:** list + confirm Cancel-first.  
+12. **Disabled:** enabled=false cannot open.  
+13. **Loading:** load_state Loading/Searching.  
+14. **Error:** load_error + r RetryLoad.  
 15. **Narrow:** drop preview.  
-16. **Tiny:** title only rows.  
-17. **Unicode/ASCII:** timestamps plain; list gutters.  
-18. **Colorless:** selected reverse; empty bold title.  
-19. **Composition:** startup overlay.  
-20. **Outcomes:** `Picked(Id)` · `Cancelled` · `QueryChanged`  
-21. **Stories:** `session-picker/basic`, `session-picker/empty`  
-22. **Snapshots:** list rows.  
-23. **Interaction tests:** pick/cancel.  
-24. **Perf:** O(visible).
+16. **Tiny:** title + status glyph.  
+17. **Unicode/ASCII:** status/location glyphs.  
+18. **Colorless:** letters + text badges.  
+19. **Composition:** never mutates composer draft; HistoryPicker/Picker cousins.  
+20. **Outcomes:** Opened · Create/Rename · PinToggled · Archive/DeleteRequested · QueryChanged · LoadMore · Cancelled · Fullscreen/PopoverRequested  
+21. **Stories:** `session-picker/{basic,search,confirm,empty,narrow,unicode}`  
+22. **Snapshots:** action-required pin; confirm Cancel.  
+23. **Interaction tests:** cancel draft contract; delete Cancel default; provider_search flag.  
+24. **Perf:** O(visible rows); window SESSION_PICKER_WINDOW.
 
 ## ThinkingBlock
 

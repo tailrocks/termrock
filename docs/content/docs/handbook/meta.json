@@ -28,6 +28,7 @@
     "question-flow",
     "plan-review",
     "checkpoint-timeline",
+    "session-picker",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

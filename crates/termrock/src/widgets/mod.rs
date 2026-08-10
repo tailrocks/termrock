@@ -125,6 +125,7 @@ mod key_value_table;
 mod object_inspector;
 mod timeline;
 mod checkpoint_timeline;
+mod session_picker;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
@@ -299,9 +300,15 @@ pub use dependency_graph::{
 };
 pub use dependency_graph::bench as dependency_graph_bench;
 pub use agent_blocks::{
-    ModeRibbon, ModeRibbonOutcome, ModeRibbonState, SessionItem, SessionPicker,
-    SessionPickerOutcome, WorkbenchMode, session_picker_handle_key,
+    ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode,
 };
+pub use session_picker::{
+    SESSION_PICKER_OVERLAY_ID, SESSION_PICKER_POPOVER_OVERLAY_ID, SESSION_PICKER_PROVIDER_SEARCH_MIN,
+    SESSION_PICKER_WINDOW, SessionConfirmAction, SessionEntry, SessionLoadState, SessionLocation,
+    SessionPicker, SessionPickerOutcome, SessionPickerPhase, SessionPickerPresentation,
+    SessionPickerState, SessionStatus, example_sessions, filter_sessions,
+};
+pub use session_picker::bench as session_picker_bench;
 pub use question_flow::{
     QUESTION_FLOW_FULLSCREEN_OVERLAY_ID, QUESTION_FLOW_OPTION_WINDOW, Question, QuestionAnswer,
     QuestionAnswerSet, QuestionFlow, QuestionFlowOutcome, QuestionFlowPhase,

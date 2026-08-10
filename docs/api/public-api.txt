@@ -14840,6 +14840,8 @@ pub const termrock::widgets::search_results_bench::GROUP_COUNT: usize
 pub const termrock::widgets::search_results_bench::HIT_COUNT: usize
 pub const termrock::widgets::search_results_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::search_results_bench::VIEWPORT: u16
+pub mod termrock::widgets::session_picker_bench
+pub const termrock::widgets::session_picker_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::slash_command_menu_bench
 pub const termrock::widgets::slash_command_menu_bench::CATALOG_SIZE: usize
 pub const termrock::widgets::slash_command_menu_bench::FILTER_ROUNDS: u32
@@ -35638,51 +35640,392 @@ pub unsafe fn termrock::widgets::SeparatorVariant::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::SeparatorVariant
 pub fn termrock::widgets::SeparatorVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SeparatorVariant
-#[non_exhaustive] pub enum termrock::widgets::SessionPickerOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SessionConfirmAction
+pub termrock::widgets::SessionConfirmAction::Archive
+pub termrock::widgets::SessionConfirmAction::Delete
+impl termrock::widgets::SessionConfirmAction
+pub const fn termrock::widgets::SessionConfirmAction::consequence(self) -> &'static str
+pub const fn termrock::widgets::SessionConfirmAction::is_destructive(self) -> bool
+pub const fn termrock::widgets::SessionConfirmAction::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SessionConfirmAction
+pub fn termrock::widgets::SessionConfirmAction::clone(&self) -> termrock::widgets::SessionConfirmAction
+impl core::cmp::Eq for termrock::widgets::SessionConfirmAction
+impl core::cmp::PartialEq for termrock::widgets::SessionConfirmAction
+pub fn termrock::widgets::SessionConfirmAction::eq(&self, &termrock::widgets::SessionConfirmAction) -> bool
+impl core::fmt::Debug for termrock::widgets::SessionConfirmAction
+pub fn termrock::widgets::SessionConfirmAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionConfirmAction
+pub fn termrock::widgets::SessionConfirmAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionConfirmAction
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionConfirmAction
+impl core::marker::Freeze for termrock::widgets::SessionConfirmAction
+impl core::marker::Send for termrock::widgets::SessionConfirmAction
+impl core::marker::Sync for termrock::widgets::SessionConfirmAction
+impl core::marker::Unpin for termrock::widgets::SessionConfirmAction
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionConfirmAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionConfirmAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionConfirmAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionConfirmAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionConfirmAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionConfirmAction where U: core::convert::From<T>
+pub fn termrock::widgets::SessionConfirmAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionConfirmAction where U: core::convert::Into<T>
+pub type termrock::widgets::SessionConfirmAction::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionConfirmAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionConfirmAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionConfirmAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionConfirmAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionConfirmAction where T: core::clone::Clone
+pub type termrock::widgets::SessionConfirmAction::Owned = T
+pub fn termrock::widgets::SessionConfirmAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionConfirmAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionConfirmAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionConfirmAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionConfirmAction where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionConfirmAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionConfirmAction where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionConfirmAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionConfirmAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionConfirmAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionConfirmAction
+pub fn termrock::widgets::SessionConfirmAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionConfirmAction
+#[non_exhaustive] pub enum termrock::widgets::SessionLoadState
+pub termrock::widgets::SessionLoadState::Error
+pub termrock::widgets::SessionLoadState::Loading
+pub termrock::widgets::SessionLoadState::Ready
+pub termrock::widgets::SessionLoadState::Searching
+impl termrock::widgets::SessionLoadState
+pub const fn termrock::widgets::SessionLoadState::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::clone(&self) -> termrock::widgets::SessionLoadState
+impl core::cmp::Eq for termrock::widgets::SessionLoadState
+impl core::cmp::PartialEq for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::eq(&self, &termrock::widgets::SessionLoadState) -> bool
+impl core::default::Default for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::default() -> termrock::widgets::SessionLoadState
+impl core::fmt::Debug for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionLoadState
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionLoadState
+impl core::marker::Freeze for termrock::widgets::SessionLoadState
+impl core::marker::Send for termrock::widgets::SessionLoadState
+impl core::marker::Sync for termrock::widgets::SessionLoadState
+impl core::marker::Unpin for termrock::widgets::SessionLoadState
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionLoadState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionLoadState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionLoadState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionLoadState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionLoadState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionLoadState where U: core::convert::From<T>
+pub fn termrock::widgets::SessionLoadState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionLoadState where U: core::convert::Into<T>
+pub type termrock::widgets::SessionLoadState::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionLoadState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionLoadState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionLoadState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionLoadState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionLoadState where T: core::clone::Clone
+pub type termrock::widgets::SessionLoadState::Owned = T
+pub fn termrock::widgets::SessionLoadState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionLoadState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionLoadState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionLoadState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionLoadState where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionLoadState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionLoadState where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionLoadState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionLoadState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionLoadState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionLoadState
+pub fn termrock::widgets::SessionLoadState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionLoadState
+#[non_exhaustive] pub enum termrock::widgets::SessionLocation
+pub termrock::widgets::SessionLocation::Local
+pub termrock::widgets::SessionLocation::MultiDevice
+pub termrock::widgets::SessionLocation::Offline
+pub termrock::widgets::SessionLocation::Remote
+impl termrock::widgets::SessionLocation
+pub const fn termrock::widgets::SessionLocation::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::SessionLocation::id(self) -> &'static str
+pub const fn termrock::widgets::SessionLocation::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::clone(&self) -> termrock::widgets::SessionLocation
+impl core::cmp::Eq for termrock::widgets::SessionLocation
+impl core::cmp::PartialEq for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::eq(&self, &termrock::widgets::SessionLocation) -> bool
+impl core::default::Default for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::default() -> termrock::widgets::SessionLocation
+impl core::fmt::Debug for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionLocation
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionLocation
+impl core::marker::Freeze for termrock::widgets::SessionLocation
+impl core::marker::Send for termrock::widgets::SessionLocation
+impl core::marker::Sync for termrock::widgets::SessionLocation
+impl core::marker::Unpin for termrock::widgets::SessionLocation
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionLocation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionLocation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionLocation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionLocation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionLocation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionLocation where U: core::convert::From<T>
+pub fn termrock::widgets::SessionLocation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionLocation where U: core::convert::Into<T>
+pub type termrock::widgets::SessionLocation::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionLocation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionLocation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionLocation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionLocation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionLocation where T: core::clone::Clone
+pub type termrock::widgets::SessionLocation::Owned = T
+pub fn termrock::widgets::SessionLocation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionLocation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionLocation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionLocation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionLocation where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionLocation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionLocation where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionLocation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionLocation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionLocation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionLocation
+pub fn termrock::widgets::SessionLocation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionLocation
+#[non_exhaustive] pub enum termrock::widgets::SessionPickerOutcome
+pub termrock::widgets::SessionPickerOutcome::ArchiveRequested
+pub termrock::widgets::SessionPickerOutcome::ArchiveRequested::id: alloc::string::String
 pub termrock::widgets::SessionPickerOutcome::Cancelled
+pub termrock::widgets::SessionPickerOutcome::ConfirmCancelled
+pub termrock::widgets::SessionPickerOutcome::ConfirmOpened
+pub termrock::widgets::SessionPickerOutcome::ConfirmOpened::action: termrock::widgets::SessionConfirmAction
+pub termrock::widgets::SessionPickerOutcome::ConfirmOpened::id: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::CreateRequested
+pub termrock::widgets::SessionPickerOutcome::CreateRequested::title: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::DeleteRequested
+pub termrock::widgets::SessionPickerOutcome::DeleteRequested::id: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::FullscreenRequested
 pub termrock::widgets::SessionPickerOutcome::Ignored
-pub termrock::widgets::SessionPickerOutcome::Picked(Id)
-pub termrock::widgets::SessionPickerOutcome::SelectionChanged
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SessionPickerOutcome<Id>
-pub fn termrock::widgets::SessionPickerOutcome<Id>::clone(&self) -> termrock::widgets::SessionPickerOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SessionPickerOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SessionPickerOutcome<Id>
-pub fn termrock::widgets::SessionPickerOutcome<Id>::eq(&self, &termrock::widgets::SessionPickerOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SessionPickerOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SessionPickerOutcome<Id>
-pub fn termrock::widgets::SessionPickerOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::SessionPickerOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::SessionPickerOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::SessionPickerOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::SessionPickerOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SessionPickerOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPickerOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPickerOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionPickerOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::SessionPickerOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPickerOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::SessionPickerOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPickerOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::SessionPickerOutcome<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::SessionPickerOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPickerOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SessionPickerOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SessionPickerOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPickerOutcome<Id> where T: core::clone::Clone
-pub type termrock::widgets::SessionPickerOutcome<Id>::Owned = T
-pub fn termrock::widgets::SessionPickerOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SessionPickerOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SessionPickerOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SessionPickerOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPickerOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionPickerOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPickerOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionPickerOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPickerOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SessionPickerOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SessionPickerOutcome<Id>
-pub fn termrock::widgets::SessionPickerOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerOutcome<Id>
+pub termrock::widgets::SessionPickerOutcome::LoadMore
+pub termrock::widgets::SessionPickerOutcome::LoadMore::offset: usize
+pub termrock::widgets::SessionPickerOutcome::Opened
+pub termrock::widgets::SessionPickerOutcome::Opened::id: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::PhaseChanged(termrock::widgets::SessionPickerPhase)
+pub termrock::widgets::SessionPickerOutcome::PinToggled
+pub termrock::widgets::SessionPickerOutcome::PinToggled::id: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::PinToggled::pinned: bool
+pub termrock::widgets::SessionPickerOutcome::PopoverRequested
+pub termrock::widgets::SessionPickerOutcome::QueryChanged
+pub termrock::widgets::SessionPickerOutcome::QueryChanged::provider_search: bool
+pub termrock::widgets::SessionPickerOutcome::QueryChanged::query: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::RenameRequested
+pub termrock::widgets::SessionPickerOutcome::RenameRequested::id: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::RenameRequested::title: alloc::string::String
+pub termrock::widgets::SessionPickerOutcome::RetryLoad
+pub termrock::widgets::SessionPickerOutcome::Selected
+pub termrock::widgets::SessionPickerOutcome::Selected::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerOutcome::clone(&self) -> termrock::widgets::SessionPickerOutcome
+impl core::cmp::Eq for termrock::widgets::SessionPickerOutcome
+impl core::cmp::PartialEq for termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerOutcome::eq(&self, &termrock::widgets::SessionPickerOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionPickerOutcome
+impl core::marker::Freeze for termrock::widgets::SessionPickerOutcome
+impl core::marker::Send for termrock::widgets::SessionPickerOutcome
+impl core::marker::Sync for termrock::widgets::SessionPickerOutcome
+impl core::marker::Unpin for termrock::widgets::SessionPickerOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionPickerOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPickerOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPickerOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionPickerOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPickerOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SessionPickerOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPickerOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SessionPickerOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionPickerOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPickerOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionPickerOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionPickerOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPickerOutcome where T: core::clone::Clone
+pub type termrock::widgets::SessionPickerOutcome::Owned = T
+pub fn termrock::widgets::SessionPickerOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionPickerOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionPickerOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPickerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPickerOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionPickerOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerOutcome
+#[non_exhaustive] pub enum termrock::widgets::SessionPickerPhase
+pub termrock::widgets::SessionPickerPhase::Browse
+pub termrock::widgets::SessionPickerPhase::ConfirmArchive
+pub termrock::widgets::SessionPickerPhase::ConfirmDelete
+pub termrock::widgets::SessionPickerPhase::Create
+pub termrock::widgets::SessionPickerPhase::Rename
+impl core::clone::Clone for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::clone(&self) -> termrock::widgets::SessionPickerPhase
+impl core::cmp::Eq for termrock::widgets::SessionPickerPhase
+impl core::cmp::PartialEq for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::eq(&self, &termrock::widgets::SessionPickerPhase) -> bool
+impl core::default::Default for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::default() -> termrock::widgets::SessionPickerPhase
+impl core::fmt::Debug for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionPickerPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionPickerPhase
+impl core::marker::Freeze for termrock::widgets::SessionPickerPhase
+impl core::marker::Send for termrock::widgets::SessionPickerPhase
+impl core::marker::Sync for termrock::widgets::SessionPickerPhase
+impl core::marker::Unpin for termrock::widgets::SessionPickerPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionPickerPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPickerPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPickerPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionPickerPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPickerPhase where U: core::convert::From<T>
+pub fn termrock::widgets::SessionPickerPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPickerPhase where U: core::convert::Into<T>
+pub type termrock::widgets::SessionPickerPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionPickerPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPickerPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionPickerPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionPickerPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPickerPhase where T: core::clone::Clone
+pub type termrock::widgets::SessionPickerPhase::Owned = T
+pub fn termrock::widgets::SessionPickerPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionPickerPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionPickerPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPickerPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPickerPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPickerPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionPickerPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionPickerPhase
+pub fn termrock::widgets::SessionPickerPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerPhase
+#[non_exhaustive] pub enum termrock::widgets::SessionPickerPresentation
+pub termrock::widgets::SessionPickerPresentation::Dialog
+pub termrock::widgets::SessionPickerPresentation::Fullscreen
+pub termrock::widgets::SessionPickerPresentation::Popover
+impl termrock::widgets::SessionPickerPresentation
+pub const fn termrock::widgets::SessionPickerPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::clone(&self) -> termrock::widgets::SessionPickerPresentation
+impl core::cmp::Eq for termrock::widgets::SessionPickerPresentation
+impl core::cmp::PartialEq for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::eq(&self, &termrock::widgets::SessionPickerPresentation) -> bool
+impl core::default::Default for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::default() -> termrock::widgets::SessionPickerPresentation
+impl core::fmt::Debug for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionPickerPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionPickerPresentation
+impl core::marker::Freeze for termrock::widgets::SessionPickerPresentation
+impl core::marker::Send for termrock::widgets::SessionPickerPresentation
+impl core::marker::Sync for termrock::widgets::SessionPickerPresentation
+impl core::marker::Unpin for termrock::widgets::SessionPickerPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionPickerPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPickerPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPickerPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionPickerPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPickerPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SessionPickerPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPickerPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SessionPickerPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionPickerPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPickerPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionPickerPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionPickerPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPickerPresentation where T: core::clone::Clone
+pub type termrock::widgets::SessionPickerPresentation::Owned = T
+pub fn termrock::widgets::SessionPickerPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionPickerPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionPickerPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPickerPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPickerPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionPickerPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionPickerPresentation
+pub fn termrock::widgets::SessionPickerPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerPresentation
+#[non_exhaustive] pub enum termrock::widgets::SessionStatus
+pub termrock::widgets::SessionStatus::ActionRequired
+pub termrock::widgets::SessionStatus::Active
+pub termrock::widgets::SessionStatus::Archived
+pub termrock::widgets::SessionStatus::Completed
+pub termrock::widgets::SessionStatus::Failed
+pub termrock::widgets::SessionStatus::Idle
+impl termrock::widgets::SessionStatus
+pub const fn termrock::widgets::SessionStatus::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::SessionStatus::id(self) -> &'static str
+pub const fn termrock::widgets::SessionStatus::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::clone(&self) -> termrock::widgets::SessionStatus
+impl core::cmp::Eq for termrock::widgets::SessionStatus
+impl core::cmp::PartialEq for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::eq(&self, &termrock::widgets::SessionStatus) -> bool
+impl core::default::Default for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::default() -> termrock::widgets::SessionStatus
+impl core::fmt::Debug for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SessionStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionStatus
+impl core::marker::Freeze for termrock::widgets::SessionStatus
+impl core::marker::Send for termrock::widgets::SessionStatus
+impl core::marker::Sync for termrock::widgets::SessionStatus
+impl core::marker::Unpin for termrock::widgets::SessionStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionStatus where U: core::convert::From<T>
+pub fn termrock::widgets::SessionStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionStatus where U: core::convert::Into<T>
+pub type termrock::widgets::SessionStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionStatus where T: core::clone::Clone
+pub type termrock::widgets::SessionStatus::Owned = T
+pub fn termrock::widgets::SessionStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionStatus
+pub fn termrock::widgets::SessionStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionStatus
 #[non_exhaustive] pub enum termrock::widgets::SettingsShellOutcome<SectionId>
 pub termrock::widgets::SettingsShellOutcome::DiscardRequested
 pub termrock::widgets::SettingsShellOutcome::Ignored
@@ -69948,96 +70291,204 @@ pub unsafe fn termrock::widgets::Separator<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Separator<'a>
 pub fn termrock::widgets::Separator<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Separator<'a>
-pub struct termrock::widgets::SessionItem<'a, Id>
-pub termrock::widgets::SessionItem::id: Id
-pub termrock::widgets::SessionItem::meta: core::option::Option<&'a str>
-pub termrock::widgets::SessionItem::title: &'a str
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SessionItem<'a, Id>
-pub fn termrock::widgets::SessionItem<'a, Id>::clone(&self) -> termrock::widgets::SessionItem<'a, Id>
-impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SessionItem<'a, Id>
-impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SessionItem<'a, Id>
-pub fn termrock::widgets::SessionItem<'a, Id>::eq(&self, &termrock::widgets::SessionItem<'a, Id>) -> bool
-impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SessionItem<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SessionItem<'a, Id>
-pub fn termrock::widgets::SessionItem<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::SessionItem<'a, Id>
-impl<'a, Id> core::marker::Freeze for termrock::widgets::SessionItem<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::SessionItem<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::SessionItem<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::SessionItem<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SessionItem<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionItem<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionItem<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionItem<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::SessionItem<'a, Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::SessionItem<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::SessionItem<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionItem<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::SessionItem<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::SessionItem<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionItem<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SessionItem<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SessionItem<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionItem<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::SessionItem<'a, Id>::Owned = T
-pub fn termrock::widgets::SessionItem<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SessionItem<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SessionItem<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SessionItem<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionItem<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionItem<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionItem<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionItem<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SessionItem<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SessionItem<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SessionItem<'a, Id>
-pub fn termrock::widgets::SessionItem<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SessionItem<'a, Id>
-pub struct termrock::widgets::SessionPicker<'a, Id>
-impl<'a, Id> termrock::widgets::SessionPicker<'a, Id>
-pub const fn termrock::widgets::SessionPicker<'a, Id>::new(&'a [termrock::widgets::SessionItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::SessionPicker<'a, Id>::rows(&self) -> alloc::vec::Vec<termrock::widgets::ListRow<'a, Id>> where Id: core::clone::Clone
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SessionPicker<'a, Id>
-pub fn termrock::widgets::SessionPicker<'a, Id>::clone(&self) -> termrock::widgets::SessionPicker<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SessionPicker<'a, Id>
-pub fn termrock::widgets::SessionPicker<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::SessionPicker<'a, Id>
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SessionPicker<'_, Id>
-pub type &termrock::widgets::SessionPicker<'_, Id>::State = termrock::widgets::ListState<Id>
-pub fn &termrock::widgets::SessionPicker<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::SessionPicker<'_, Id>
-pub type termrock::widgets::SessionPicker<'_, Id>::State = termrock::widgets::ListState<Id>
-pub fn termrock::widgets::SessionPicker<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<'a, Id> core::marker::Freeze for termrock::widgets::SessionPicker<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::SessionPicker<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::SessionPicker<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::SessionPicker<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SessionPicker<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPicker<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPicker<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPicker<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::SessionPicker<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPicker<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::SessionPicker<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::SessionPicker<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPicker<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::SessionPicker<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::SessionPicker<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPicker<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::SessionPicker<'a, Id>::Owned = T
-pub fn termrock::widgets::SessionPicker<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::SessionPicker<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::SessionPicker<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::SessionPicker<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPicker<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionPicker<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPicker<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::SessionPicker<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPicker<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::SessionPicker<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::SessionPicker<'a, Id>
-pub fn termrock::widgets::SessionPicker<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::SessionPicker<'a, Id>
+pub struct termrock::widgets::SessionEntry
+pub termrock::widgets::SessionEntry::action_required: bool
+pub termrock::widgets::SessionEntry::branch: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::device: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::dirty: bool
+pub termrock::widgets::SessionEntry::enabled: bool
+pub termrock::widgets::SessionEntry::id: alloc::string::String
+pub termrock::widgets::SessionEntry::location: termrock::widgets::SessionLocation
+pub termrock::widgets::SessionEntry::mode: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::model: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::pinned: bool
+pub termrock::widgets::SessionEntry::project: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::recency: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::status: termrock::widgets::SessionStatus
+pub termrock::widgets::SessionEntry::summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionEntry::title: alloc::string::String
+pub termrock::widgets::SessionEntry::unread: u32
+impl termrock::widgets::SessionEntry
+pub const fn termrock::widgets::SessionEntry::action_required(self, bool) -> Self
+pub fn termrock::widgets::SessionEntry::branch(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SessionEntry::device(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SessionEntry::dirty(self, bool) -> Self
+pub const fn termrock::widgets::SessionEntry::disabled(self) -> Self
+pub const fn termrock::widgets::SessionEntry::location(self, termrock::widgets::SessionLocation) -> Self
+pub fn termrock::widgets::SessionEntry::matches_query(&self, &str) -> bool
+pub fn termrock::widgets::SessionEntry::mode(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SessionEntry::model(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SessionEntry::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SessionEntry::pinned(self, bool) -> Self
+pub fn termrock::widgets::SessionEntry::project(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SessionEntry::recency(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SessionEntry::status(self, termrock::widgets::SessionStatus) -> Self
+pub fn termrock::widgets::SessionEntry::summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SessionEntry::unread(self, u32) -> Self
+impl core::clone::Clone for termrock::widgets::SessionEntry
+pub fn termrock::widgets::SessionEntry::clone(&self) -> termrock::widgets::SessionEntry
+impl core::cmp::Eq for termrock::widgets::SessionEntry
+impl core::cmp::PartialEq for termrock::widgets::SessionEntry
+pub fn termrock::widgets::SessionEntry::eq(&self, &termrock::widgets::SessionEntry) -> bool
+impl core::fmt::Debug for termrock::widgets::SessionEntry
+pub fn termrock::widgets::SessionEntry::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionEntry
+impl core::marker::Freeze for termrock::widgets::SessionEntry
+impl core::marker::Send for termrock::widgets::SessionEntry
+impl core::marker::Sync for termrock::widgets::SessionEntry
+impl core::marker::Unpin for termrock::widgets::SessionEntry
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionEntry
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionEntry
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionEntry
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionEntry where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionEntry::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionEntry where U: core::convert::From<T>
+pub fn termrock::widgets::SessionEntry::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionEntry where U: core::convert::Into<T>
+pub type termrock::widgets::SessionEntry::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionEntry::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionEntry where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionEntry::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionEntry::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionEntry where T: core::clone::Clone
+pub type termrock::widgets::SessionEntry::Owned = T
+pub fn termrock::widgets::SessionEntry::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionEntry::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionEntry where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionEntry::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionEntry::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionEntry::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionEntry where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionEntry::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionEntry
+pub fn termrock::widgets::SessionEntry::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionEntry
+pub struct termrock::widgets::SessionPicker<'a>
+impl<'a> termrock::widgets::SessionPicker<'a>
+pub const fn termrock::widgets::SessionPicker<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::SessionPicker<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::SessionPicker<'a>::list_only(self, bool) -> Self
+pub const fn termrock::widgets::SessionPicker<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::SessionPicker<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SessionPickerState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::SessionPicker<'_>
+pub type &termrock::widgets::SessionPicker<'_>::State = termrock::widgets::SessionPickerState
+pub fn &termrock::widgets::SessionPicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::SessionPicker<'_>
+pub type termrock::widgets::SessionPicker<'_>::State = termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::SessionPicker<'a>
+pub fn termrock::widgets::SessionPicker<'a>::clone(&self) -> termrock::widgets::SessionPicker<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SessionPicker<'a>
+pub fn termrock::widgets::SessionPicker<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SessionPicker<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SessionPicker<'a>
+impl<'a> core::marker::Send for termrock::widgets::SessionPicker<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SessionPicker<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SessionPicker<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SessionPicker<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPicker<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPicker<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPicker<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SessionPicker<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPicker<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SessionPicker<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionPicker<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPicker<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionPicker<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionPicker<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPicker<'a> where T: core::clone::Clone
+pub type termrock::widgets::SessionPicker<'a>::Owned = T
+pub fn termrock::widgets::SessionPicker<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionPicker<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionPicker<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionPicker<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPicker<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPicker<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPicker<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPicker<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionPicker<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionPicker<'a>
+pub fn termrock::widgets::SessionPicker<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionPicker<'a>
+pub struct termrock::widgets::SessionPickerState
+pub termrock::widgets::SessionPickerState::confirm_action: core::option::Option<termrock::widgets::SessionConfirmAction>
+pub termrock::widgets::SessionPickerState::confirm_hits: alloc::vec::Vec<(bool, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::SessionPickerState::confirm_proceed_focused: bool
+pub termrock::widgets::SessionPickerState::cursor: usize
+pub termrock::widgets::SessionPickerState::focused: bool
+pub termrock::widgets::SessionPickerState::load_error: core::option::Option<alloc::string::String>
+pub termrock::widgets::SessionPickerState::load_state: termrock::widgets::SessionLoadState
+pub termrock::widgets::SessionPickerState::phase: termrock::widgets::SessionPickerPhase
+pub termrock::widgets::SessionPickerState::pins_only: bool
+pub termrock::widgets::SessionPickerState::presentation: termrock::widgets::SessionPickerPresentation
+pub termrock::widgets::SessionPickerState::query: alloc::string::String
+pub termrock::widgets::SessionPickerState::row_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::SessionPickerState::scroll: usize
+pub termrock::widgets::SessionPickerState::sessions: alloc::vec::Vec<termrock::widgets::SessionEntry>
+pub termrock::widgets::SessionPickerState::show_archived: bool
+pub termrock::widgets::SessionPickerState::text_draft: alloc::string::String
+pub termrock::widgets::SessionPickerState::total_count: core::option::Option<usize>
+impl termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::append_sessions(&mut self, alloc::vec::Vec<termrock::widgets::SessionEntry>)
+pub fn termrock::widgets::SessionPickerState::current(&self) -> core::option::Option<&termrock::widgets::SessionEntry>
+pub fn termrock::widgets::SessionPickerState::current_id(&self) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::SessionPickerState::filtered_len(&self) -> usize
+pub fn termrock::widgets::SessionPickerState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::SessionPickerOutcome
+pub fn termrock::widgets::SessionPickerState::new() -> Self
+pub fn termrock::widgets::SessionPickerState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::SessionPickerState::set_error(&mut self, impl core::convert::Into<alloc::string::String>)
+pub const fn termrock::widgets::SessionPickerState::set_focused(&mut self, bool)
+pub fn termrock::widgets::SessionPickerState::set_load_state(&mut self, termrock::widgets::SessionLoadState)
+pub const fn termrock::widgets::SessionPickerState::set_presentation(&mut self, termrock::widgets::SessionPickerPresentation)
+pub fn termrock::widgets::SessionPickerState::set_query(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::SessionPickerState::set_sessions(&mut self, alloc::vec::Vec<termrock::widgets::SessionEntry>)
+pub fn termrock::widgets::SessionPickerState::set_total_count(&mut self, core::option::Option<usize>)
+impl core::clone::Clone for termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::clone(&self) -> termrock::widgets::SessionPickerState
+impl core::cmp::Eq for termrock::widgets::SessionPickerState
+impl core::cmp::PartialEq for termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::eq(&self, &termrock::widgets::SessionPickerState) -> bool
+impl core::default::Default for termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SessionPickerState
+impl core::marker::Freeze for termrock::widgets::SessionPickerState
+impl core::marker::Send for termrock::widgets::SessionPickerState
+impl core::marker::Sync for termrock::widgets::SessionPickerState
+impl core::marker::Unpin for termrock::widgets::SessionPickerState
+impl core::marker::UnsafeUnpin for termrock::widgets::SessionPickerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SessionPickerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SessionPickerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SessionPickerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SessionPickerState where U: core::convert::From<T>
+pub fn termrock::widgets::SessionPickerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SessionPickerState where U: core::convert::Into<T>
+pub type termrock::widgets::SessionPickerState::Error = core::convert::Infallible
+pub fn termrock::widgets::SessionPickerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SessionPickerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SessionPickerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SessionPickerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SessionPickerState where T: core::clone::Clone
+pub type termrock::widgets::SessionPickerState::Owned = T
+pub fn termrock::widgets::SessionPickerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SessionPickerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SessionPickerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SessionPickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SessionPickerState where T: ?core::marker::Sized
+pub fn termrock::widgets::SessionPickerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SessionPickerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SessionPickerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SessionPickerState
+pub fn termrock::widgets::SessionPickerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SessionPickerState
 pub struct termrock::widgets::SettingsShellState<SectionId: core::clone::Clone + core::cmp::PartialEq>
 pub termrock::widgets::SettingsShellState::dirty: bool
 pub termrock::widgets::SettingsShellState::search: alloc::string::String
@@ -79249,6 +79700,10 @@ pub const termrock::widgets::RESULT_SECRET_MASK: &str
 pub const termrock::widgets::RESULT_TRUNC_MARK: &str
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::SELECT_FULLSCREEN_MAX_WIDTH: u16
+pub const termrock::widgets::SESSION_PICKER_OVERLAY_ID: &str
+pub const termrock::widgets::SESSION_PICKER_POPOVER_OVERLAY_ID: &str
+pub const termrock::widgets::SESSION_PICKER_PROVIDER_SEARCH_MIN: usize
+pub const termrock::widgets::SESSION_PICKER_WINDOW: usize
 pub const termrock::widgets::SIDEBAR_DRAWER_MAX_WIDTH: u16
 pub const termrock::widgets::SIDEBAR_DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::SIDEBAR_RAIL_MAX_WIDTH: u16
@@ -79473,6 +79928,7 @@ pub fn termrock::widgets::example_reconnecting_agent() -> termrock::widgets::Rec
 pub fn termrock::widgets::example_schema_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_server_unavailable() -> termrock::widgets::ReconnectingState
 pub fn termrock::widgets::example_session_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
+pub fn termrock::widgets::example_sessions() -> alloc::vec::Vec<termrock::widgets::SessionEntry>
 pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_slash_catalog() -> alloc::vec::Vec<termrock::widgets::SlashCommand>
@@ -79509,6 +79965,7 @@ pub fn termrock::widgets::filter_model_options<'a>(&'a [termrock::widgets::Model
 pub fn termrock::widgets::filter_processes<'a>(&'a [termrock::widgets::ProcessRow<'a>], &str, core::option::Option<&str>, core::option::Option<termrock::widgets::ProcessStatus>) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_schema_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::SchemaBrowserEntry<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::SchemaBrowserEntry<'a, Id>>
+pub fn termrock::widgets::filter_sessions<'a>(&'a [termrock::widgets::SessionEntry], &str) -> alloc::vec::Vec<&'a termrock::widgets::SessionEntry>
 pub fn termrock::widgets::filter_slash_commands(&[termrock::widgets::SlashCommand], &str) -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_terminal_lines<'a>(&'a [termrock::widgets::TerminalLine<'a>], bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::TerminalLine<'a>>
@@ -79714,7 +80171,6 @@ pub fn termrock::widgets::schema_breadcrumbs_from_path(&str) -> alloc::vec::Vec<
 pub fn termrock::widgets::schema_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::SchemaBrowserEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::schema_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::SchemaBrowserEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::search_results_to_quick_open(&[termrock::widgets::SearchResultItem<'_>]) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<alloc::string::String>>
-pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::slash_commands_from_command_entries<Id: alloc::string::ToString>(&[termrock::widgets::CommandEntry<Id>]) -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::slash_commands_to_candidates(&[termrock::widgets::SlashCommand]) -> alloc::vec::Vec<termrock::widgets::CompletionCandidate<'_, alloc::string::String>>
