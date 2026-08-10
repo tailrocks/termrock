@@ -2335,6 +2335,33 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** filter, collapse, Tab jump, cancel  
 24. **Perf:** O(visible rows); paint budget many items
 
+## SubagentCard
+
+1. **Purpose:** Delegated agent run card (live vs artifact).  
+2. **Anatomy:** `role` · `task` · `provenance` · `status` · `model/mode` · `preview` · `actions`  
+3. **Public properties:** `SubagentRun`, presentation, design  
+4. **State:** CompactRow / Card / Fullscreen; action hits  
+5. **Variants:** row · card · fullscreen  
+6. **Sizes/density:** row 1 line; card multi-line preview cap  
+7. **Visual states:** SemanticStatus; Live/Artifact phase badge  
+8. **Interaction states:** expand · steer · message · cancel · promote · …  
+9. **Keyboard:** Enter · s/m/i/c/r/d/p/f/u  
+10. **Mouse:** header toggle; action strip  
+11. **Focus:** card focus chrome  
+12. **Disabled:** accepts_input false  
+13. **Loading:** live progress + summary  
+14. **Error:** Failed artifact result  
+15. **Narrow:** collapse preview; keep role+status  
+16. **Tiny:** row glyph + role  
+17. **Unicode/ASCII:** status glyphs; `>` provenance  
+18. **Colorless:** reverse focus; phase text  
+19. **Composition:** TaskRail ActivityModel bridge; MessageThread lines  
+20. **Outcomes:** Steer/Message/Inspect/Cancel/Retry/Detach/PromoteResult/Fullscreen/OpenParent  
+21. **Stories:** `subagent-card/{running,failed,nested-provenance,row,result}`  
+22. **Snapshots:** nested depth; live vs result  
+23. **Interaction tests:** action gates by phase  
+24. **Perf:** O(preview lines)
+
 ## SessionPicker
 
 1. **Purpose:** Resume/pick agent sessions.  

@@ -131,6 +131,7 @@ mod terminal_output;
 mod terminal_run_card;
 mod activity_shelf;
 mod task_rail;
+mod subagent_card;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -300,6 +301,13 @@ pub use task_rail::{
     task_rail_status_summary,
 };
 pub use task_rail::bench as task_rail_bench;
+pub use subagent_card::{
+    SUBAGENT_FULLSCREEN_OVERLAY_ID, SUBAGENT_PREVIEW_LINE_CAP, SUBAGENT_PROVENANCE_CAP,
+    SubagentAction, SubagentCard, SubagentCardOutcome, SubagentCardState, SubagentPhase,
+    SubagentPresentation, SubagentRun, example_subagent_runs, project_subagent_lines,
+    subagent_actions_for, subagent_to_activity_model,
+};
+pub use subagent_card::bench as subagent_card_bench;
 pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
     ResourceBrowserState, SettingsShellOutcome, SettingsShellState,

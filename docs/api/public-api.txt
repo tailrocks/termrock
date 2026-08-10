@@ -14774,6 +14774,9 @@ pub fn termrock::widgets::streaming_markdown_fixtures::mid_fence_close() -> &'st
 pub fn termrock::widgets::streaming_markdown_fixtures::partial_inline_chunks() -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::streaming_markdown_fixtures::partial_list_chunks() -> alloc::vec::Vec<&'static str>
 pub fn termrock::widgets::streaming_markdown_fixtures::partial_table_chunks() -> alloc::vec::Vec<&'static str>
+pub mod termrock::widgets::subagent_card_bench
+pub const termrock::widgets::subagent_card_bench::CARD_COUNT: usize
+pub const termrock::widgets::subagent_card_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::task_rail_bench
 pub const termrock::widgets::task_rail_bench::ITEM_COUNT: usize
 pub const termrock::widgets::task_rail_bench::PAINT_FRAMES: u32
@@ -35965,6 +35968,233 @@ pub unsafe fn termrock::widgets::StreamingMarkdownOutcome::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdownOutcome
 pub fn termrock::widgets::StreamingMarkdownOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdownOutcome
+#[non_exhaustive] pub enum termrock::widgets::SubagentAction
+pub termrock::widgets::SubagentAction::Cancel
+pub termrock::widgets::SubagentAction::Detach
+pub termrock::widgets::SubagentAction::Fullscreen
+pub termrock::widgets::SubagentAction::Inspect
+pub termrock::widgets::SubagentAction::Message
+pub termrock::widgets::SubagentAction::OpenParent
+pub termrock::widgets::SubagentAction::PromoteResult
+pub termrock::widgets::SubagentAction::Retry
+pub termrock::widgets::SubagentAction::Steer
+pub termrock::widgets::SubagentAction::ToggleExpand
+impl termrock::widgets::SubagentAction
+pub const fn termrock::widgets::SubagentAction::chord(self) -> &'static str
+pub const fn termrock::widgets::SubagentAction::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SubagentAction
+pub fn termrock::widgets::SubagentAction::clone(&self) -> termrock::widgets::SubagentAction
+impl core::cmp::Eq for termrock::widgets::SubagentAction
+impl core::cmp::PartialEq for termrock::widgets::SubagentAction
+pub fn termrock::widgets::SubagentAction::eq(&self, &termrock::widgets::SubagentAction) -> bool
+impl core::fmt::Debug for termrock::widgets::SubagentAction
+pub fn termrock::widgets::SubagentAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SubagentAction
+pub fn termrock::widgets::SubagentAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SubagentAction
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentAction
+impl core::marker::Freeze for termrock::widgets::SubagentAction
+impl core::marker::Send for termrock::widgets::SubagentAction
+impl core::marker::Sync for termrock::widgets::SubagentAction
+impl core::marker::Unpin for termrock::widgets::SubagentAction
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentAction where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentAction where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentAction::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentAction where T: core::clone::Clone
+pub type termrock::widgets::SubagentAction::Owned = T
+pub fn termrock::widgets::SubagentAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentAction where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentAction where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentAction
+pub fn termrock::widgets::SubagentAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentAction
+#[non_exhaustive] pub enum termrock::widgets::SubagentCardOutcome
+pub termrock::widgets::SubagentCardOutcome::Activated
+pub termrock::widgets::SubagentCardOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::CancelRequested
+pub termrock::widgets::SubagentCardOutcome::CancelRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::Collapsed
+pub termrock::widgets::SubagentCardOutcome::Collapsed::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::DetachRequested
+pub termrock::widgets::SubagentCardOutcome::DetachRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::Expanded
+pub termrock::widgets::SubagentCardOutcome::Expanded::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::FullscreenRequested
+pub termrock::widgets::SubagentCardOutcome::FullscreenRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::Ignored
+pub termrock::widgets::SubagentCardOutcome::InspectRequested
+pub termrock::widgets::SubagentCardOutcome::InspectRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::MessageRequested
+pub termrock::widgets::SubagentCardOutcome::MessageRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::OpenParent
+pub termrock::widgets::SubagentCardOutcome::OpenParent::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::OpenParent::parent_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentCardOutcome::PromoteResult
+pub termrock::widgets::SubagentCardOutcome::PromoteResult::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::RetryRequested
+pub termrock::widgets::SubagentCardOutcome::RetryRequested::id: alloc::string::String
+pub termrock::widgets::SubagentCardOutcome::SteerRequested
+pub termrock::widgets::SubagentCardOutcome::SteerRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::SubagentCardOutcome
+pub fn termrock::widgets::SubagentCardOutcome::clone(&self) -> termrock::widgets::SubagentCardOutcome
+impl core::cmp::Eq for termrock::widgets::SubagentCardOutcome
+impl core::cmp::PartialEq for termrock::widgets::SubagentCardOutcome
+pub fn termrock::widgets::SubagentCardOutcome::eq(&self, &termrock::widgets::SubagentCardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SubagentCardOutcome
+pub fn termrock::widgets::SubagentCardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentCardOutcome
+impl core::marker::Freeze for termrock::widgets::SubagentCardOutcome
+impl core::marker::Send for termrock::widgets::SubagentCardOutcome
+impl core::marker::Sync for termrock::widgets::SubagentCardOutcome
+impl core::marker::Unpin for termrock::widgets::SubagentCardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentCardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentCardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentCardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentCardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentCardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentCardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentCardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentCardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentCardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentCardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentCardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentCardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentCardOutcome where T: core::clone::Clone
+pub type termrock::widgets::SubagentCardOutcome::Owned = T
+pub fn termrock::widgets::SubagentCardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentCardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentCardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentCardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentCardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentCardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentCardOutcome
+pub fn termrock::widgets::SubagentCardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentCardOutcome
+#[non_exhaustive] pub enum termrock::widgets::SubagentPhase
+pub termrock::widgets::SubagentPhase::Artifact
+pub termrock::widgets::SubagentPhase::Live
+impl termrock::widgets::SubagentPhase
+pub const fn termrock::widgets::SubagentPhase::badge(self) -> &'static str
+pub const fn termrock::widgets::SubagentPhase::from_status(termrock::widgets::SemanticStatus) -> Self
+pub const fn termrock::widgets::SubagentPhase::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::clone(&self) -> termrock::widgets::SubagentPhase
+impl core::cmp::Eq for termrock::widgets::SubagentPhase
+impl core::cmp::PartialEq for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::eq(&self, &termrock::widgets::SubagentPhase) -> bool
+impl core::default::Default for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::default() -> termrock::widgets::SubagentPhase
+impl core::fmt::Debug for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SubagentPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentPhase
+impl core::marker::Freeze for termrock::widgets::SubagentPhase
+impl core::marker::Send for termrock::widgets::SubagentPhase
+impl core::marker::Sync for termrock::widgets::SubagentPhase
+impl core::marker::Unpin for termrock::widgets::SubagentPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentPhase where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentPhase where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentPhase where T: core::clone::Clone
+pub type termrock::widgets::SubagentPhase::Owned = T
+pub fn termrock::widgets::SubagentPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentPhase
+pub fn termrock::widgets::SubagentPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentPhase
+#[non_exhaustive] pub enum termrock::widgets::SubagentPresentation
+pub termrock::widgets::SubagentPresentation::Card
+pub termrock::widgets::SubagentPresentation::CompactRow
+pub termrock::widgets::SubagentPresentation::Fullscreen
+impl termrock::widgets::SubagentPresentation
+pub const fn termrock::widgets::SubagentPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::clone(&self) -> termrock::widgets::SubagentPresentation
+impl core::cmp::Eq for termrock::widgets::SubagentPresentation
+impl core::cmp::PartialEq for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::eq(&self, &termrock::widgets::SubagentPresentation) -> bool
+impl core::default::Default for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::default() -> termrock::widgets::SubagentPresentation
+impl core::fmt::Debug for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SubagentPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentPresentation
+impl core::marker::Freeze for termrock::widgets::SubagentPresentation
+impl core::marker::Send for termrock::widgets::SubagentPresentation
+impl core::marker::Sync for termrock::widgets::SubagentPresentation
+impl core::marker::Unpin for termrock::widgets::SubagentPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentPresentation where T: core::clone::Clone
+pub type termrock::widgets::SubagentPresentation::Owned = T
+pub fn termrock::widgets::SubagentPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentPresentation
+pub fn termrock::widgets::SubagentPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentPresentation
 #[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
 pub termrock::widgets::SuggestionStatus::Empty
 pub termrock::widgets::SuggestionStatus::Error
@@ -69440,6 +69670,185 @@ pub unsafe fn termrock::widgets::StreamingMarkdownState::clone_to_uninit(&self, 
 impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdownState
 pub fn termrock::widgets::StreamingMarkdownState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdownState
+pub struct termrock::widgets::SubagentCard<'a>
+impl<'a> termrock::widgets::SubagentCard<'a>
+pub const fn termrock::widgets::SubagentCard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::SubagentCard<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::SubagentCard<'a>::new(&'a termrock::widgets::SubagentRun, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::SubagentCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SubagentCardState)
+pub fn termrock::widgets::SubagentCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SubagentCardState)
+impl<'a> core::clone::Clone for termrock::widgets::SubagentCard<'a>
+pub fn termrock::widgets::SubagentCard<'a>::clone(&self) -> termrock::widgets::SubagentCard<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SubagentCard<'a>
+pub fn termrock::widgets::SubagentCard<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SubagentCard<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SubagentCard<'a>
+impl<'a> core::marker::Send for termrock::widgets::SubagentCard<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SubagentCard<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SubagentCard<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SubagentCard<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentCard<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentCard<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentCard<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentCard<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentCard<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentCard<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentCard<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentCard<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentCard<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentCard<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentCard<'a> where T: core::clone::Clone
+pub type termrock::widgets::SubagentCard<'a>::Owned = T
+pub fn termrock::widgets::SubagentCard<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentCard<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentCard<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentCard<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCard<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentCard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCard<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentCard<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentCard<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentCard<'a>
+pub fn termrock::widgets::SubagentCard<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentCard<'a>
+pub struct termrock::widgets::SubagentCardState
+pub termrock::widgets::SubagentCardState::action_cursor: usize
+pub termrock::widgets::SubagentCardState::action_hits: alloc::vec::Vec<(termrock::widgets::SubagentAction, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::SubagentCardState::focused: bool
+pub termrock::widgets::SubagentCardState::header_hit: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SubagentCardState::presentation: termrock::widgets::SubagentPresentation
+impl termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::SubagentRun) -> termrock::widgets::SubagentCardOutcome
+pub fn termrock::widgets::SubagentCardState::handle_mouse(&mut self, termrock::input::MouseEvent, &termrock::widgets::SubagentRun) -> termrock::widgets::SubagentCardOutcome
+pub const fn termrock::widgets::SubagentCardState::is_expanded(&self) -> bool
+pub fn termrock::widgets::SubagentCardState::new() -> Self
+pub fn termrock::widgets::SubagentCardState::set_accepts_input(&mut self, bool)
+pub const fn termrock::widgets::SubagentCardState::set_focused(&mut self, bool)
+pub fn termrock::widgets::SubagentCardState::toggle_expand(&mut self, &str) -> termrock::widgets::SubagentCardOutcome
+impl core::clone::Clone for termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::clone(&self) -> termrock::widgets::SubagentCardState
+impl core::cmp::Eq for termrock::widgets::SubagentCardState
+impl core::cmp::PartialEq for termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::eq(&self, &termrock::widgets::SubagentCardState) -> bool
+impl core::default::Default for termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentCardState
+impl core::marker::Freeze for termrock::widgets::SubagentCardState
+impl core::marker::Send for termrock::widgets::SubagentCardState
+impl core::marker::Sync for termrock::widgets::SubagentCardState
+impl core::marker::Unpin for termrock::widgets::SubagentCardState
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentCardState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentCardState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentCardState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentCardState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentCardState where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentCardState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentCardState where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentCardState::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentCardState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentCardState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentCardState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentCardState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentCardState where T: core::clone::Clone
+pub type termrock::widgets::SubagentCardState::Owned = T
+pub fn termrock::widgets::SubagentCardState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentCardState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentCardState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentCardState where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentCardState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentCardState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentCardState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentCardState
+pub fn termrock::widgets::SubagentCardState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentCardState
+pub struct termrock::widgets::SubagentRun
+pub termrock::widgets::SubagentRun::context: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::depth: u8
+pub termrock::widgets::SubagentRun::elapsed: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::id: alloc::string::String
+pub termrock::widgets::SubagentRun::latest_summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::mode: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::model: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::output_preview: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::parent_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::phase: core::option::Option<termrock::widgets::SubagentPhase>
+pub termrock::widgets::SubagentRun::progress: core::option::Option<u8>
+pub termrock::widgets::SubagentRun::provenance: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::SubagentRun::result_summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::SubagentRun::revision: u64
+pub termrock::widgets::SubagentRun::role: alloc::string::String
+pub termrock::widgets::SubagentRun::status: termrock::widgets::SemanticStatus
+pub termrock::widgets::SubagentRun::task: alloc::string::String
+impl termrock::widgets::SubagentRun
+pub fn termrock::widgets::SubagentRun::can_cancel(&self) -> bool
+pub fn termrock::widgets::SubagentRun::can_detach(&self) -> bool
+pub fn termrock::widgets::SubagentRun::can_promote(&self) -> bool
+pub fn termrock::widgets::SubagentRun::can_retry(&self) -> bool
+pub fn termrock::widgets::SubagentRun::context(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SubagentRun::depth(self, u8) -> Self
+pub fn termrock::widgets::SubagentRun::elapsed(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::header_line(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::SubagentRun::hop(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::latest_summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::mode(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::model(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::output_preview(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::parent(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::SubagentRun::phase(&self) -> termrock::widgets::SubagentPhase
+pub const fn termrock::widgets::SubagentRun::phase_set(self, termrock::widgets::SubagentPhase) -> Self
+pub fn termrock::widgets::SubagentRun::progress(self, u8) -> Self
+pub fn termrock::widgets::SubagentRun::provenance_line(&self, bool) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::SubagentRun::result_summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::SubagentRun::revision(self, u64) -> Self
+pub const fn termrock::widgets::SubagentRun::status(self, termrock::widgets::SemanticStatus) -> Self
+impl core::clone::Clone for termrock::widgets::SubagentRun
+pub fn termrock::widgets::SubagentRun::clone(&self) -> termrock::widgets::SubagentRun
+impl core::cmp::Eq for termrock::widgets::SubagentRun
+impl core::cmp::PartialEq for termrock::widgets::SubagentRun
+pub fn termrock::widgets::SubagentRun::eq(&self, &termrock::widgets::SubagentRun) -> bool
+impl core::fmt::Debug for termrock::widgets::SubagentRun
+pub fn termrock::widgets::SubagentRun::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SubagentRun
+impl core::marker::Freeze for termrock::widgets::SubagentRun
+impl core::marker::Send for termrock::widgets::SubagentRun
+impl core::marker::Sync for termrock::widgets::SubagentRun
+impl core::marker::Unpin for termrock::widgets::SubagentRun
+impl core::marker::UnsafeUnpin for termrock::widgets::SubagentRun
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SubagentRun
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SubagentRun
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SubagentRun where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SubagentRun::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SubagentRun where U: core::convert::From<T>
+pub fn termrock::widgets::SubagentRun::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SubagentRun where U: core::convert::Into<T>
+pub type termrock::widgets::SubagentRun::Error = core::convert::Infallible
+pub fn termrock::widgets::SubagentRun::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SubagentRun where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SubagentRun::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SubagentRun::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SubagentRun where T: core::clone::Clone
+pub type termrock::widgets::SubagentRun::Owned = T
+pub fn termrock::widgets::SubagentRun::clone_into(&self, &mut T)
+pub fn termrock::widgets::SubagentRun::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SubagentRun where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SubagentRun::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SubagentRun where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentRun::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SubagentRun where T: ?core::marker::Sized
+pub fn termrock::widgets::SubagentRun::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SubagentRun where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SubagentRun::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SubagentRun
+pub fn termrock::widgets::SubagentRun::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SubagentRun
 pub struct termrock::widgets::SubmitPolicy
 pub termrock::widgets::SubmitPolicy::allow_empty: bool
 pub termrock::widgets::SubmitPolicy::clear_on_submit: bool
@@ -76067,6 +76476,9 @@ pub const termrock::widgets::STREAM_COALESCE_CHARS: usize
 pub const termrock::widgets::STREAM_COALESCE_DELTAS: u32
 pub const termrock::widgets::STREAM_HOT_FULL_REPARSE_BUDGET: u32
 pub const termrock::widgets::STREAM_TAIL_MAX: usize
+pub const termrock::widgets::SUBAGENT_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::SUBAGENT_PREVIEW_LINE_CAP: usize
+pub const termrock::widgets::SUBAGENT_PROVENANCE_CAP: usize
 pub const termrock::widgets::TABS_OVERFLOW_MAX_WIDTH: u16
 pub const termrock::widgets::TABS_SELECT_MAX_WIDTH: u16
 pub const termrock::widgets::TAB_GAP: u16
@@ -76257,6 +76669,7 @@ pub fn termrock::widgets::example_settings_nav() -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::example_settings_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_slash_catalog() -> alloc::vec::Vec<termrock::widgets::SlashCommand>
 pub fn termrock::widgets::example_status_catalog() -> [(termrock::widgets::SemanticStatus, &'static str); 11]
+pub fn termrock::widgets::example_subagent_runs() -> alloc::vec::Vec<termrock::widgets::SubagentRun>
 pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_terminal_run_lines() -> alloc::vec::Vec<termrock::widgets::TerminalLine<'static>>
 pub fn termrock::widgets::example_terminal_runs() -> alloc::vec::Vec<termrock::widgets::TerminalRun>
@@ -76458,6 +76871,7 @@ pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::wi
 pub fn termrock::widgets::project_message_thread(&[termrock::widgets::MessageEntry], termrock::widgets::MessageZoom, core::option::Option<&str>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> (alloc::vec::Vec<termrock::widgets::ProjectedEntryMeta>, alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>)
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
+pub fn termrock::widgets::project_subagent_lines(&termrock::widgets::SubagentRun, bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::project_task_rail_for_status_bar(&[termrock::widgets::ActivityModel], bool) -> termrock::widgets::ActivityStatusProjection
 pub fn termrock::widgets::project_task_rail_list_rows(&[termrock::widgets::ActivityModel], &[termrock::widgets::TaskRailRow], bool, bool) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::widgets::project_terminal_run_lines(&termrock::widgets::TerminalRun, &[termrock::widgets::TerminalLine<'_>], bool, bool) -> alloc::vec::Vec<alloc::string::String>
@@ -76505,6 +76919,8 @@ pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::strip_str(&str) -> alloc::string::String
 pub fn termrock::widgets::styled_hint_spans(&[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem, impl core::ops::function::Fn(ratatui_core::style::color::Color) -> ratatui_core::style::color::Color) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
 pub fn termrock::widgets::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
+pub fn termrock::widgets::subagent_actions_for(&termrock::widgets::SubagentRun) -> alloc::vec::Vec<termrock::widgets::SubagentAction>
+pub fn termrock::widgets::subagent_to_activity_model(&termrock::widgets::SubagentRun) -> termrock::widgets::ActivityModel
 pub fn termrock::widgets::submit_history_to_entries(&[alloc::string::String]) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<alloc::string::String>>
 pub fn termrock::widgets::substring_ranges(&str, &str) -> termrock::widgets::MatchRanges
 pub fn termrock::widgets::substring_ranges_ignore_ascii_case(&str, &str) -> termrock::widgets::MatchRanges

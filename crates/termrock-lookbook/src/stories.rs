@@ -6701,6 +6701,51 @@ pub(crate) fn stories() -> Vec<Story> {
             task_rail_statusbar_story,
         ),
         Story::new(
+            "subagent-card/running",
+            "SubagentCard running",
+            "SubagentCard",
+            "Live nested subagent with provenance.",
+            56,
+            12,
+            subagent_card_running_story,
+        ),
+        Story::new(
+            "subagent-card/failed",
+            "SubagentCard failed",
+            "SubagentCard",
+            "Artifact failed result.",
+            52,
+            10,
+            subagent_card_failed_story,
+        ),
+        Story::new(
+            "subagent-card/nested-provenance",
+            "SubagentCard nested",
+            "SubagentCard",
+            "Deep provenance hops + depth.",
+            56,
+            12,
+            subagent_card_nested_story,
+        ),
+        Story::new(
+            "subagent-card/row",
+            "SubagentCard compact row",
+            "SubagentCard",
+            "Compact row presentation.",
+            56,
+            1,
+            subagent_card_row_story,
+        ),
+        Story::new(
+            "subagent-card/result",
+            "SubagentCard result",
+            "SubagentCard",
+            "Success artifact promote-ready.",
+            52,
+            10,
+            subagent_card_result_story,
+        ),
+        Story::new(
             "blocks/form-wizard",
             "FormWizard",
             "FormWizard",
@@ -20954,6 +20999,67 @@ fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let right = [slot];
     let mut st = StatusBarState::<&str>::new();
     frame.render_stateful_widget(StatusBar::new(&[], &right, system), area, &mut st);
+}
+
+fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    };
+    let runs = example_subagent_runs();
+    let run = runs.iter().find(|r| r.id == "sa1").unwrap_or(&runs[0]);
+    let mut st = SubagentCardState::new();
+    st.focused = true;
+    st.presentation = SubagentPresentation::Card;
+    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    };
+    let runs = example_subagent_runs();
+    let run = runs.iter().find(|r| r.id == "sa4").unwrap_or(&runs[3]);
+    let mut st = SubagentCardState::new();
+    st.focused = true;
+    st.presentation = SubagentPresentation::Card;
+    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn subagent_card_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    };
+    let runs = example_subagent_runs();
+    let run = runs.iter().find(|r| r.id == "sa2").unwrap_or(&runs[1]);
+    let mut st = SubagentCardState::new();
+    st.focused = true;
+    st.presentation = SubagentPresentation::Card;
+    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn subagent_card_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    };
+    let runs = example_subagent_runs();
+    let mut st = SubagentCardState::new();
+    st.focused = true;
+    st.presentation = SubagentPresentation::CompactRow;
+    SubagentCard::new(&runs[0], system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    };
+    let runs = example_subagent_runs();
+    let run = runs.iter().find(|r| r.id == "sa3").unwrap_or(&runs[2]);
+    let mut st = SubagentCardState::new();
+    st.focused = true;
+    st.presentation = SubagentPresentation::Card;
+    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 // ── State-axis story helpers ────────────────────────────────────────────────
