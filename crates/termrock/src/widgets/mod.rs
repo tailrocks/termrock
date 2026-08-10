@@ -41,6 +41,7 @@ mod slash_command_menu;
 mod model_mode_selectors;
 mod message_thread;
 mod streaming_markdown;
+mod citation;
 mod text;
 mod separator;
 mod toolbar;
@@ -614,6 +615,13 @@ pub use streaming_markdown::{
 };
 pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
+pub use citation::{
+    CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
+    CitationListOutcome, CitationListState, CitationProvenance, CitationSource, CitationSourceType,
+    SourceCitation, SourceCitationOutcome, SourceCitationState, citation_from_stream,
+    citation_link, citation_to_stream, example_citations, group_citations,
+};
+pub use citation::bench as citation_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

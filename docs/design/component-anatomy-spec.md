@@ -1966,6 +1966,36 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## SourceCitation
+
+1. **Purpose:** Compact inline citation for agent output.  
+2. **Anatomy:** index label · type glyph · optional dest · availability.  
+3. **Public properties:** CitationSource (title, dest, range, provenance, availability).  
+4. **State:** SourceCitationState focus/hover/visited.  
+5. **Variants:** offline · no-hyperlink · sensitive · unavailable.  
+6–10. Enter open; p preview; c copy; g jump anchor.  
+11–14. Host open; raw dest always in copy; never hide external URL.  
+15–18. ASCII letters; muted when offline.  
+19. **Composition:** CitationList; Link; StreamingMarkdown bridge; SourceAnchor.  
+20. **Outcomes:** Open · Preview · Copy · JumpToAnchor.  
+21. **Stories:** `source-citation/{inline,offline}`.  
+22–24. Dest in copy; offline blocks open; stream bridge.
+
+## CitationList
+
+1. **Purpose:** Expandable source list with duplicate grouping.  
+2. **Anatomy:** summary · rows (index · type · title · dest · meta).  
+3. **Public properties:** CitationSource[]; group_citations.  
+4. **State:** expanded, cursor, group expand map, offline/no_hyperlink.  
+5. **Variants:** collapsed summary · expanded · narrow.  
+6–10. j/k nav; Enter open; d expand duplicates; Esc collapse.  
+11–14. Reading flow: collapsed by default; expand on demand.  
+15–18. Always show dest for external/sensitive/no-hyperlink.  
+19. **Composition:** SourceCitation outcomes nested.  
+20. **Outcomes:** Selection · Expand · Citation · GroupExpanded.  
+21. **Stories:** `citation-list/{expanded,collapsed,narrow}`.  
+22–24. Group duplicates; list nav; paint bench.
+
 ## StreamingMarkdown
 
 1. **Purpose:** Token-stream Markdown with incomplete-fence tolerance.  

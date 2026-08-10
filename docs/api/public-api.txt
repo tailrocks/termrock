@@ -14649,6 +14649,9 @@ pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
 pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
 pub const termrock::widgets::charts_bench::TINY_HEIGHT: u16
 pub const termrock::widgets::charts_bench::TINY_WIDTH: u16
+pub mod termrock::widgets::citation_bench
+pub const termrock::widgets::citation_bench::CITATION_COUNT: usize
+pub const termrock::widgets::citation_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::commands
 pub const termrock::widgets::commands::COMPARE_CYCLE: &str
 pub const termrock::widgets::commands::DRILL: &str
@@ -17314,6 +17317,166 @@ pub unsafe fn termrock::widgets::ChipOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ChipOutcome<Id>
 pub fn termrock::widgets::ChipOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChipOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::CitationAvailability
+pub termrock::widgets::CitationAvailability::Available
+pub termrock::widgets::CitationAvailability::Offline
+pub termrock::widgets::CitationAvailability::Restricted
+pub termrock::widgets::CitationAvailability::Unavailable
+impl termrock::widgets::CitationAvailability
+pub const fn termrock::widgets::CitationAvailability::can_open(self) -> bool
+pub const fn termrock::widgets::CitationAvailability::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::clone(&self) -> termrock::widgets::CitationAvailability
+impl core::cmp::Eq for termrock::widgets::CitationAvailability
+impl core::cmp::PartialEq for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::eq(&self, &termrock::widgets::CitationAvailability) -> bool
+impl core::default::Default for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::default() -> termrock::widgets::CitationAvailability
+impl core::fmt::Debug for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CitationAvailability
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationAvailability
+impl core::marker::Freeze for termrock::widgets::CitationAvailability
+impl core::marker::Send for termrock::widgets::CitationAvailability
+impl core::marker::Sync for termrock::widgets::CitationAvailability
+impl core::marker::Unpin for termrock::widgets::CitationAvailability
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationAvailability
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationAvailability
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationAvailability
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationAvailability where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationAvailability::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationAvailability where U: core::convert::From<T>
+pub fn termrock::widgets::CitationAvailability::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationAvailability where U: core::convert::Into<T>
+pub type termrock::widgets::CitationAvailability::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationAvailability::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationAvailability where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationAvailability::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationAvailability::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationAvailability where T: core::clone::Clone
+pub type termrock::widgets::CitationAvailability::Owned = T
+pub fn termrock::widgets::CitationAvailability::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationAvailability::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationAvailability where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationAvailability::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationAvailability where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationAvailability::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationAvailability where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationAvailability::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationAvailability where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationAvailability::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationAvailability
+pub fn termrock::widgets::CitationAvailability::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationAvailability
+#[non_exhaustive] pub enum termrock::widgets::CitationListOutcome
+pub termrock::widgets::CitationListOutcome::Citation(termrock::widgets::SourceCitationOutcome)
+pub termrock::widgets::CitationListOutcome::ExpandChanged
+pub termrock::widgets::CitationListOutcome::ExpandChanged::expanded: bool
+pub termrock::widgets::CitationListOutcome::GroupExpanded
+pub termrock::widgets::CitationListOutcome::GroupExpanded::key: alloc::string::String
+pub termrock::widgets::CitationListOutcome::Ignored
+pub termrock::widgets::CitationListOutcome::SelectionChanged
+pub termrock::widgets::CitationListOutcome::SelectionChanged::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListOutcome::clone(&self) -> termrock::widgets::CitationListOutcome
+impl core::cmp::Eq for termrock::widgets::CitationListOutcome
+impl core::cmp::PartialEq for termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListOutcome::eq(&self, &termrock::widgets::CitationListOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationListOutcome
+impl core::marker::Freeze for termrock::widgets::CitationListOutcome
+impl core::marker::Send for termrock::widgets::CitationListOutcome
+impl core::marker::Sync for termrock::widgets::CitationListOutcome
+impl core::marker::Unpin for termrock::widgets::CitationListOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationListOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationListOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationListOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationListOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationListOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationListOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::CitationListOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationListOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::CitationListOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationListOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationListOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationListOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationListOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationListOutcome where T: core::clone::Clone
+pub type termrock::widgets::CitationListOutcome::Owned = T
+pub fn termrock::widgets::CitationListOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationListOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationListOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationListOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationListOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationListOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationListOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationListOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationListOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationListOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationListOutcome
+#[non_exhaustive] pub enum termrock::widgets::CitationSourceType
+pub termrock::widgets::CitationSourceType::Docs
+pub termrock::widgets::CitationSourceType::File
+pub termrock::widgets::CitationSourceType::Issue
+pub termrock::widgets::CitationSourceType::Message
+pub termrock::widgets::CitationSourceType::Other
+pub termrock::widgets::CitationSourceType::Paper
+pub termrock::widgets::CitationSourceType::Url
+impl termrock::widgets::CitationSourceType
+pub const fn termrock::widgets::CitationSourceType::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::CitationSourceType::id(self) -> &'static str
+pub fn termrock::widgets::CitationSourceType::infer(&str) -> Self
+pub const fn termrock::widgets::CitationSourceType::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::clone(&self) -> termrock::widgets::CitationSourceType
+impl core::cmp::Eq for termrock::widgets::CitationSourceType
+impl core::cmp::PartialEq for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::eq(&self, &termrock::widgets::CitationSourceType) -> bool
+impl core::default::Default for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::default() -> termrock::widgets::CitationSourceType
+impl core::fmt::Debug for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CitationSourceType
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationSourceType
+impl core::marker::Freeze for termrock::widgets::CitationSourceType
+impl core::marker::Send for termrock::widgets::CitationSourceType
+impl core::marker::Sync for termrock::widgets::CitationSourceType
+impl core::marker::Unpin for termrock::widgets::CitationSourceType
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationSourceType
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationSourceType
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationSourceType
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationSourceType where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationSourceType::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationSourceType where U: core::convert::From<T>
+pub fn termrock::widgets::CitationSourceType::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationSourceType where U: core::convert::Into<T>
+pub type termrock::widgets::CitationSourceType::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationSourceType::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationSourceType where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationSourceType::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationSourceType::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationSourceType where T: core::clone::Clone
+pub type termrock::widgets::CitationSourceType::Owned = T
+pub fn termrock::widgets::CitationSourceType::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationSourceType::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationSourceType where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationSourceType::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationSourceType where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationSourceType::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationSourceType where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationSourceType::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationSourceType where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationSourceType::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationSourceType
+pub fn termrock::widgets::CitationSourceType::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationSourceType
 #[non_exhaustive] pub enum termrock::widgets::ClipboardPolicy
 pub termrock::widgets::ClipboardPolicy::AllowHostCopy
 pub termrock::widgets::ClipboardPolicy::DenyAll
@@ -34406,6 +34569,62 @@ pub unsafe fn termrock::widgets::SortDirection::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SortDirection
 pub fn termrock::widgets::SortDirection::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SortDirection
+#[non_exhaustive] pub enum termrock::widgets::SourceCitationOutcome
+pub termrock::widgets::SourceCitationOutcome::CopyRequested
+pub termrock::widgets::SourceCitationOutcome::CopyRequested::id: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::CopyRequested::text: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::Focused
+pub termrock::widgets::SourceCitationOutcome::Focused::id: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::Ignored
+pub termrock::widgets::SourceCitationOutcome::JumpToAnchor
+pub termrock::widgets::SourceCitationOutcome::JumpToAnchor::anchor: termrock::widgets::SourceAnchor
+pub termrock::widgets::SourceCitationOutcome::JumpToAnchor::id: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::OpenRequested
+pub termrock::widgets::SourceCitationOutcome::OpenRequested::destination: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::OpenRequested::external: bool
+pub termrock::widgets::SourceCitationOutcome::OpenRequested::id: alloc::string::String
+pub termrock::widgets::SourceCitationOutcome::PreviewRequested
+pub termrock::widgets::SourceCitationOutcome::PreviewRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitationOutcome::clone(&self) -> termrock::widgets::SourceCitationOutcome
+impl core::cmp::Eq for termrock::widgets::SourceCitationOutcome
+impl core::cmp::PartialEq for termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitationOutcome::eq(&self, &termrock::widgets::SourceCitationOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitationOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SourceCitationOutcome
+impl core::marker::Freeze for termrock::widgets::SourceCitationOutcome
+impl core::marker::Send for termrock::widgets::SourceCitationOutcome
+impl core::marker::Sync for termrock::widgets::SourceCitationOutcome
+impl core::marker::Unpin for termrock::widgets::SourceCitationOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::SourceCitationOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SourceCitationOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SourceCitationOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SourceCitationOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SourceCitationOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::SourceCitationOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SourceCitationOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::SourceCitationOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::SourceCitationOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SourceCitationOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SourceCitationOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SourceCitationOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SourceCitationOutcome where T: core::clone::Clone
+pub type termrock::widgets::SourceCitationOutcome::Owned = T
+pub fn termrock::widgets::SourceCitationOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::SourceCitationOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SourceCitationOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SourceCitationOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SourceCitationOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SourceCitationOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SourceCitationOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitationOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SourceCitationOutcome
 #[non_exhaustive] pub enum termrock::widgets::SpanStyle
 pub termrock::widgets::SpanStyle::Primary
 pub termrock::widgets::SpanStyle::Secondary
@@ -43512,6 +43731,273 @@ pub unsafe fn termrock::widgets::ChordFormat::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ChordFormat
 pub fn termrock::widgets::ChordFormat::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChordFormat
+pub struct termrock::widgets::CitationGroup
+pub termrock::widgets::CitationGroup::duplicates: alloc::vec::Vec<usize>
+pub termrock::widgets::CitationGroup::key: alloc::string::String
+pub termrock::widgets::CitationGroup::primary: usize
+impl termrock::widgets::CitationGroup
+pub fn termrock::widgets::CitationGroup::count(&self) -> usize
+impl core::clone::Clone for termrock::widgets::CitationGroup
+pub fn termrock::widgets::CitationGroup::clone(&self) -> termrock::widgets::CitationGroup
+impl core::cmp::Eq for termrock::widgets::CitationGroup
+impl core::cmp::PartialEq for termrock::widgets::CitationGroup
+pub fn termrock::widgets::CitationGroup::eq(&self, &termrock::widgets::CitationGroup) -> bool
+impl core::fmt::Debug for termrock::widgets::CitationGroup
+pub fn termrock::widgets::CitationGroup::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationGroup
+impl core::marker::Freeze for termrock::widgets::CitationGroup
+impl core::marker::Send for termrock::widgets::CitationGroup
+impl core::marker::Sync for termrock::widgets::CitationGroup
+impl core::marker::Unpin for termrock::widgets::CitationGroup
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationGroup
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationGroup
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationGroup
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationGroup where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationGroup::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationGroup where U: core::convert::From<T>
+pub fn termrock::widgets::CitationGroup::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationGroup where U: core::convert::Into<T>
+pub type termrock::widgets::CitationGroup::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationGroup::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationGroup where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationGroup::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationGroup::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationGroup where T: core::clone::Clone
+pub type termrock::widgets::CitationGroup::Owned = T
+pub fn termrock::widgets::CitationGroup::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationGroup::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationGroup where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationGroup::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationGroup where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationGroup::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationGroup where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationGroup::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationGroup where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationGroup::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationGroup
+pub fn termrock::widgets::CitationGroup::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationGroup
+pub struct termrock::widgets::CitationList<'a>
+impl<'a> termrock::widgets::CitationList<'a>
+pub const fn termrock::widgets::CitationList<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::CitationList<'a>::new(&'a [termrock::widgets::CitationSource], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::CitationList<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CitationListState)
+pub fn termrock::widgets::CitationList<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CitationListState)
+pub fn termrock::widgets::CitationList<'a>::summary_text(&self, &termrock::widgets::CitationListState) -> alloc::string::String
+pub const fn termrock::widgets::CitationList<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::CitationList<'a>
+pub fn termrock::widgets::CitationList<'a>::clone(&self) -> termrock::widgets::CitationList<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::CitationList<'a>
+pub fn termrock::widgets::CitationList<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::CitationList<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::CitationList<'a>
+impl<'a> core::marker::Send for termrock::widgets::CitationList<'a>
+impl<'a> core::marker::Sync for termrock::widgets::CitationList<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::CitationList<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::CitationList<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationList<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationList<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationList<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::CitationList<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationList<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::CitationList<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationList<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationList<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationList<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationList<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationList<'a> where T: core::clone::Clone
+pub type termrock::widgets::CitationList<'a>::Owned = T
+pub fn termrock::widgets::CitationList<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationList<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationList<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationList<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationList<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationList<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationList<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationList<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationList<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationList<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationList<'a>
+pub fn termrock::widgets::CitationList<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationList<'a>
+pub struct termrock::widgets::CitationListState
+pub termrock::widgets::CitationListState::cursor: usize
+pub termrock::widgets::CitationListState::expanded: bool
+pub termrock::widgets::CitationListState::expanded_groups: alloc::collections::btree::map::BTreeMap<alloc::string::String, bool>
+pub termrock::widgets::CitationListState::focused: bool
+pub termrock::widgets::CitationListState::no_hyperlink: bool
+pub termrock::widgets::CitationListState::offline: bool
+pub termrock::widgets::CitationListState::row_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
+impl termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::collapse(&mut self)
+pub fn termrock::widgets::CitationListState::expand(&mut self)
+pub fn termrock::widgets::CitationListState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CitationSource]) -> termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CitationSource]) -> termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListState::new() -> Self
+pub fn termrock::widgets::CitationListState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::CitationListState::toggle_expanded(&mut self) -> termrock::widgets::CitationListOutcome
+pub fn termrock::widgets::CitationListState::visible_ids<'a>(&self, &'a [termrock::widgets::CitationSource]) -> alloc::vec::Vec<&'a str>
+impl core::clone::Clone for termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::clone(&self) -> termrock::widgets::CitationListState
+impl core::cmp::Eq for termrock::widgets::CitationListState
+impl core::cmp::PartialEq for termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::eq(&self, &termrock::widgets::CitationListState) -> bool
+impl core::default::Default for termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationListState
+impl core::marker::Freeze for termrock::widgets::CitationListState
+impl core::marker::Send for termrock::widgets::CitationListState
+impl core::marker::Sync for termrock::widgets::CitationListState
+impl core::marker::Unpin for termrock::widgets::CitationListState
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationListState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationListState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationListState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationListState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationListState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationListState where U: core::convert::From<T>
+pub fn termrock::widgets::CitationListState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationListState where U: core::convert::Into<T>
+pub type termrock::widgets::CitationListState::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationListState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationListState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationListState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationListState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationListState where T: core::clone::Clone
+pub type termrock::widgets::CitationListState::Owned = T
+pub fn termrock::widgets::CitationListState::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationListState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationListState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationListState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationListState where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationListState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationListState where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationListState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationListState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationListState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationListState
+pub fn termrock::widgets::CitationListState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationListState
+pub struct termrock::widgets::CitationProvenance
+pub termrock::widgets::CitationProvenance::confidence: core::option::Option<u8>
+pub termrock::widgets::CitationProvenance::note: core::option::Option<alloc::string::String>
+pub termrock::widgets::CitationProvenance::provenance: core::option::Option<alloc::string::String>
+impl termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::confidence(self, u8) -> Self
+pub fn termrock::widgets::CitationProvenance::provenance(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::clone(&self) -> termrock::widgets::CitationProvenance
+impl core::cmp::Eq for termrock::widgets::CitationProvenance
+impl core::cmp::PartialEq for termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::eq(&self, &termrock::widgets::CitationProvenance) -> bool
+impl core::default::Default for termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::default() -> Self
+impl core::fmt::Debug for termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationProvenance
+impl core::marker::Freeze for termrock::widgets::CitationProvenance
+impl core::marker::Send for termrock::widgets::CitationProvenance
+impl core::marker::Sync for termrock::widgets::CitationProvenance
+impl core::marker::Unpin for termrock::widgets::CitationProvenance
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationProvenance
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationProvenance
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationProvenance
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationProvenance where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationProvenance::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationProvenance where U: core::convert::From<T>
+pub fn termrock::widgets::CitationProvenance::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationProvenance where U: core::convert::Into<T>
+pub type termrock::widgets::CitationProvenance::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationProvenance::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationProvenance where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationProvenance::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationProvenance::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationProvenance where T: core::clone::Clone
+pub type termrock::widgets::CitationProvenance::Owned = T
+pub fn termrock::widgets::CitationProvenance::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationProvenance::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationProvenance where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationProvenance::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationProvenance where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationProvenance::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationProvenance where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationProvenance::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationProvenance where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationProvenance::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationProvenance
+pub fn termrock::widgets::CitationProvenance::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationProvenance
+pub struct termrock::widgets::CitationSource
+pub termrock::widgets::CitationSource::availability: termrock::widgets::CitationAvailability
+pub termrock::widgets::CitationSource::destination: alloc::string::String
+pub termrock::widgets::CitationSource::external: bool
+pub termrock::widgets::CitationSource::group_key: core::option::Option<alloc::string::String>
+pub termrock::widgets::CitationSource::id: alloc::string::String
+pub termrock::widgets::CitationSource::index_label: alloc::string::String
+pub termrock::widgets::CitationSource::kind: termrock::widgets::CitationSourceType
+pub termrock::widgets::CitationSource::markdown_anchor: core::option::Option<termrock::widgets::SourceAnchor>
+pub termrock::widgets::CitationSource::preview: core::option::Option<alloc::string::String>
+pub termrock::widgets::CitationSource::provenance: termrock::widgets::CitationProvenance
+pub termrock::widgets::CitationSource::range: core::option::Option<termrock::widgets::SourceAnchor>
+pub termrock::widgets::CitationSource::sensitive: bool
+pub termrock::widgets::CitationSource::title: alloc::string::String
+impl termrock::widgets::CitationSource
+pub const fn termrock::widgets::CitationSource::availability(self, termrock::widgets::CitationAvailability) -> Self
+pub fn termrock::widgets::CitationSource::copy_text(&self) -> alloc::string::String
+pub fn termrock::widgets::CitationSource::destination_display(&self) -> &str
+pub fn termrock::widgets::CitationSource::effective_group_key(&self) -> &str
+pub fn termrock::widgets::CitationSource::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::CitationSource::group_key(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::CitationSource::inline_label(&self, bool) -> alloc::string::String
+pub const fn termrock::widgets::CitationSource::kind(self, termrock::widgets::CitationSourceType) -> Self
+pub const fn termrock::widgets::CitationSource::markdown_anchor(self, termrock::widgets::SourceAnchor) -> Self
+pub fn termrock::widgets::CitationSource::meta_line(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::CitationSource::preview(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::CitationSource::provenance(self, termrock::widgets::CitationProvenance) -> Self
+pub const fn termrock::widgets::CitationSource::range(self, termrock::widgets::SourceAnchor) -> Self
+pub const fn termrock::widgets::CitationSource::sensitive(self, bool) -> Self
+pub fn termrock::widgets::CitationSource::url(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::CitationSource
+pub fn termrock::widgets::CitationSource::clone(&self) -> termrock::widgets::CitationSource
+impl core::cmp::Eq for termrock::widgets::CitationSource
+impl core::cmp::PartialEq for termrock::widgets::CitationSource
+pub fn termrock::widgets::CitationSource::eq(&self, &termrock::widgets::CitationSource) -> bool
+impl core::fmt::Debug for termrock::widgets::CitationSource
+pub fn termrock::widgets::CitationSource::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::CitationSource
+impl core::marker::Freeze for termrock::widgets::CitationSource
+impl core::marker::Send for termrock::widgets::CitationSource
+impl core::marker::Sync for termrock::widgets::CitationSource
+impl core::marker::Unpin for termrock::widgets::CitationSource
+impl core::marker::UnsafeUnpin for termrock::widgets::CitationSource
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CitationSource
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CitationSource
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CitationSource where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CitationSource::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CitationSource where U: core::convert::From<T>
+pub fn termrock::widgets::CitationSource::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CitationSource where U: core::convert::Into<T>
+pub type termrock::widgets::CitationSource::Error = core::convert::Infallible
+pub fn termrock::widgets::CitationSource::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CitationSource where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CitationSource::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CitationSource::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CitationSource where T: core::clone::Clone
+pub type termrock::widgets::CitationSource::Owned = T
+pub fn termrock::widgets::CitationSource::clone_into(&self, &mut T)
+pub fn termrock::widgets::CitationSource::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CitationSource where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CitationSource::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CitationSource where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationSource::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CitationSource where T: ?core::marker::Sized
+pub fn termrock::widgets::CitationSource::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CitationSource where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CitationSource::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CitationSource
+pub fn termrock::widgets::CitationSource::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CitationSource
 pub struct termrock::widgets::CivilDate
 pub termrock::widgets::CivilDate::day: u8
 pub termrock::widgets::CivilDate::month: u8
@@ -66109,6 +66595,104 @@ pub unsafe fn termrock::widgets::SourceAnchor::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::SourceAnchor
 pub fn termrock::widgets::SourceAnchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SourceAnchor
+pub struct termrock::widgets::SourceCitation<'a>
+impl<'a> termrock::widgets::SourceCitation<'a>
+pub const fn termrock::widgets::SourceCitation<'a>::ascii(self, bool) -> Self
+pub fn termrock::widgets::SourceCitation<'a>::can_open(&self) -> bool
+pub fn termrock::widgets::SourceCitation<'a>::decorated(&self) -> alloc::string::String
+pub fn termrock::widgets::SourceCitation<'a>::handle_key(&self, &mut termrock::widgets::SourceCitationState, termrock::input::KeyEvent) -> termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitation<'a>::handle_mouse(&self, &mut termrock::widgets::SourceCitationState, termrock::input::MouseEvent) -> termrock::widgets::SourceCitationOutcome
+pub fn termrock::widgets::SourceCitation<'a>::measure_width(&self) -> u16
+pub const fn termrock::widgets::SourceCitation<'a>::new(&'a termrock::widgets::CitationSource, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::SourceCitation<'a>::no_hyperlink(self, bool) -> Self
+pub const fn termrock::widgets::SourceCitation<'a>::offline(self, bool) -> Self
+pub fn termrock::widgets::SourceCitation<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SourceCitationState)
+pub const fn termrock::widgets::SourceCitation<'a>::show_destination(self, termrock::widgets::DestinationDisplay) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::SourceCitation<'a>
+pub fn termrock::widgets::SourceCitation<'a>::clone(&self) -> termrock::widgets::SourceCitation<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::SourceCitation<'a>
+pub fn termrock::widgets::SourceCitation<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::SourceCitation<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::SourceCitation<'a>
+impl<'a> core::marker::Send for termrock::widgets::SourceCitation<'a>
+impl<'a> core::marker::Sync for termrock::widgets::SourceCitation<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::SourceCitation<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::SourceCitation<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SourceCitation<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SourceCitation<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::SourceCitation<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::SourceCitation<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SourceCitation<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::SourceCitation<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::SourceCitation<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SourceCitation<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SourceCitation<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SourceCitation<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SourceCitation<'a> where T: core::clone::Clone
+pub type termrock::widgets::SourceCitation<'a>::Owned = T
+pub fn termrock::widgets::SourceCitation<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SourceCitation<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SourceCitation<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SourceCitation<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SourceCitation<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitation<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SourceCitation<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitation<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SourceCitation<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SourceCitation<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SourceCitation<'a>
+pub fn termrock::widgets::SourceCitation<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SourceCitation<'a>
+pub struct termrock::widgets::SourceCitationState
+pub termrock::widgets::SourceCitationState::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::SourceCitationState::focused: bool
+pub termrock::widgets::SourceCitationState::hovered: bool
+pub termrock::widgets::SourceCitationState::visited: bool
+impl termrock::widgets::SourceCitationState
+pub const fn termrock::widgets::SourceCitationState::new() -> Self
+pub const fn termrock::widgets::SourceCitationState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::SourceCitationState
+pub fn termrock::widgets::SourceCitationState::clone(&self) -> termrock::widgets::SourceCitationState
+impl core::cmp::Eq for termrock::widgets::SourceCitationState
+impl core::cmp::PartialEq for termrock::widgets::SourceCitationState
+pub fn termrock::widgets::SourceCitationState::eq(&self, &termrock::widgets::SourceCitationState) -> bool
+impl core::default::Default for termrock::widgets::SourceCitationState
+pub fn termrock::widgets::SourceCitationState::default() -> termrock::widgets::SourceCitationState
+impl core::fmt::Debug for termrock::widgets::SourceCitationState
+pub fn termrock::widgets::SourceCitationState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::SourceCitationState
+impl core::marker::Freeze for termrock::widgets::SourceCitationState
+impl core::marker::Send for termrock::widgets::SourceCitationState
+impl core::marker::Sync for termrock::widgets::SourceCitationState
+impl core::marker::Unpin for termrock::widgets::SourceCitationState
+impl core::marker::UnsafeUnpin for termrock::widgets::SourceCitationState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SourceCitationState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SourceCitationState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SourceCitationState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SourceCitationState where U: core::convert::From<T>
+pub fn termrock::widgets::SourceCitationState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SourceCitationState where U: core::convert::Into<T>
+pub type termrock::widgets::SourceCitationState::Error = core::convert::Infallible
+pub fn termrock::widgets::SourceCitationState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SourceCitationState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SourceCitationState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SourceCitationState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SourceCitationState where T: core::clone::Clone
+pub type termrock::widgets::SourceCitationState::Owned = T
+pub fn termrock::widgets::SourceCitationState::clone_into(&self, &mut T)
+pub fn termrock::widgets::SourceCitationState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SourceCitationState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SourceCitationState where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SourceCitationState where T: ?core::marker::Sized
+pub fn termrock::widgets::SourceCitationState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SourceCitationState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SourceCitationState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SourceCitationState
+pub fn termrock::widgets::SourceCitationState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SourceCitationState
 pub struct termrock::widgets::SourceContext<Id>
 pub termrock::widgets::SourceContext::focus_token: core::option::Option<alloc::string::String>
 pub termrock::widgets::SourceContext::path_labels: alloc::vec::Vec<alloc::string::String>
@@ -73405,6 +73989,7 @@ pub const termrock::widgets::BREADCRUMBS_ELLIPSIS: &str
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS_ASCII: &str
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
 pub const termrock::widgets::BUSY_BOUNDARY_MAX_NEST: u8
+pub const termrock::widgets::CITATION_PREVIEW_OVERLAY_ID: &str
 pub const termrock::widgets::CODE_FRAME_TAB_STOP: usize
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH: u16
@@ -73611,6 +74196,9 @@ pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termroc
 pub fn termrock::widgets::build_transcript_blocks<'a>(&'a [termrock::widgets::ProjectedEntryMeta], &'a [alloc::vec::Vec<alloc::string::String>], &'a mut alloc::vec::Vec<alloc::vec::Vec<&'a str>>) -> alloc::vec::Vec<termrock::widgets::TranscriptBlock<'a, alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::choose_dependency_view(termrock::widgets::DependencyGraphView, usize, u16, bool) -> (termrock::widgets::DependencyGraphView, core::option::Option<termrock::widgets::GraphUnreadableReason>)
+pub fn termrock::widgets::citation_from_stream(&termrock::widgets::StreamCitation, usize) -> termrock::widgets::CitationSource
+pub fn termrock::widgets::citation_link<'a>(&'a str, &'a str, &'a termrock::style::DesignSystem, bool) -> termrock::widgets::Link<'a>
+pub fn termrock::widgets::citation_to_stream(&termrock::widgets::CitationSource) -> termrock::widgets::StreamCitation
 pub fn termrock::widgets::clamp_cell_display(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::cmp_process(&termrock::widgets::ProcessRow<'_>, &termrock::widgets::ProcessRow<'_>, termrock::widgets::ProcessSortKey, bool) -> core::cmp::Ordering
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
@@ -73686,6 +74274,7 @@ pub fn termrock::widgets::example_busy_cancellable(&termrock::style::DesignSyste
 pub fn termrock::widgets::example_busy_non_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_optimistic(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_busy_stale(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_citations() -> alloc::vec::Vec<termrock::widgets::CitationSource>
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
@@ -73788,6 +74377,7 @@ pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interac
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::glyph_for_fraction(f64, &[char], bool, char) -> char
+pub fn termrock::widgets::group_citations(&[termrock::widgets::CitationSource]) -> alloc::vec::Vec<termrock::widgets::CitationGroup>
 pub fn termrock::widgets::has_open_fence(&str) -> bool
 pub fn termrock::widgets::help_entries_from_conflicts<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A) -> alloc::string::String
 pub fn termrock::widgets::help_entries_from_keymap<A, F>(&termrock::keymap::Keymap<A>, &termrock::style::DesignSystem, F) -> alloc::vec::Vec<termrock::widgets::HelpEntry> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static, F: core::ops::function::FnMut(&A, &termrock::keymap::KeyBinding<A>) -> (alloc::string::String, alloc::string::String, alloc::string::String, core::option::Option<alloc::string::String>, core::option::Option<alloc::string::String>, u8)

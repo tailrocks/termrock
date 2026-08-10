@@ -5504,6 +5504,51 @@ pub(crate) fn stories() -> Vec<Story> {
             streaming_markdown_narrow_story,
         ),
         Story::new(
+            "source-citation/inline",
+            "SourceCitation inline",
+            "SourceCitation",
+            "Inline citation chips with dest fallback.",
+            48,
+            3,
+            source_citation_inline_story,
+        ),
+        Story::new(
+            "source-citation/offline",
+            "SourceCitation offline",
+            "SourceCitation",
+            "Offline/unavailable citation chrome.",
+            40,
+            2,
+            source_citation_offline_story,
+        ),
+        Story::new(
+            "citation-list/expanded",
+            "CitationList expanded",
+            "CitationList",
+            "Expanded source list with duplicates grouped.",
+            56,
+            12,
+            citation_list_expanded_story,
+        ),
+        Story::new(
+            "citation-list/collapsed",
+            "CitationList collapsed",
+            "CitationList",
+            "Collapsed sources summary.",
+            40,
+            2,
+            citation_list_collapsed_story,
+        ),
+        Story::new(
+            "citation-list/narrow",
+            "CitationList narrow",
+            "CitationList",
+            "Narrow citation list.",
+            28,
+            10,
+            citation_list_narrow_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18712,6 +18757,71 @@ fn streaming_markdown_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &D
     st.apply_pending();
     st.finish();
     StreamingMarkdown::new(system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn source_citation_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_citations, DestinationDisplay, SourceCitation, SourceCitationState,
+    };
+    let src = example_citations();
+    let chunks = Layout::horizontal([
+        Constraint::Length(14),
+        Constraint::Length(22),
+        Constraint::Min(12),
+    ])
+    .split(area);
+    let mut a = SourceCitationState::new();
+    a.focused = true;
+    let mut b = SourceCitationState::new();
+    let mut c = SourceCitationState::new();
+    SourceCitation::new(&src[0], system).ascii(true).paint(chunks[0], frame.buffer_mut(), &mut a);
+    SourceCitation::new(&src[1], system)
+        .show_destination(DestinationDisplay::Always)
+        .paint(chunks[1], frame.buffer_mut(), &mut b);
+    SourceCitation::new(&src[3], system).paint(chunks[2], frame.buffer_mut(), &mut c);
+}
+
+fn source_citation_offline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_citations, SourceCitation, SourceCitationState};
+    let src = example_citations();
+    let mut st = SourceCitationState::new();
+    st.focused = true;
+    SourceCitation::new(&src[1], system)
+        .offline(true)
+        .no_hyperlink(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn citation_list_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    let src = example_citations();
+    let mut st = CitationListState::new();
+    st.expand();
+    st.focused = true;
+    st.cursor = 1;
+    CitationList::new(&src, system)
+        .title("Sources")
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn citation_list_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    let src = example_citations();
+    let mut st = CitationListState::new();
+    CitationList::new(&src, system)
+        .title("Sources")
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn citation_list_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    let src = example_citations();
+    let mut st = CitationListState::new();
+    st.expand();
+    st.no_hyperlink = true;
+    CitationList::new(&src, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

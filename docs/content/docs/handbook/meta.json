@@ -16,6 +16,8 @@
     "agent-mode-selector",
     "message-thread",
     "streaming-markdown",
+    "citation-list",
+    "source-citation",
     "model-selector",
     "permission-prompt",
     "agent-workbench",
