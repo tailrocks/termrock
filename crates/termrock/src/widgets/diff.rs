@@ -1091,19 +1091,6 @@ pub fn filter_diff_lines<'a>(
                 continue;
             }
         }
-        // When folding by hunk model without per-line ids: use hunk ranges
-        if line.kind == DiffKind::HunkHeader {
-            if let Some(h) = state
-                .folded_hunks
-                .iter()
-                .find_map(|id| {
-                    // match by scanning — host should set hunk_id
-                    None::<&DiffHunk>
-                })
-            {
-                let _ = h;
-            }
-        }
         if !q.is_empty() {
             let hay = line.text.to_ascii_lowercase();
             if !hay.contains(&q) && !line.kind.is_header() {
