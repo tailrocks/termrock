@@ -634,7 +634,8 @@ pub use sidebar::{
     SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID, SIDEBAR_RAIL_MAX_WIDTH, NavItem,
     NavItemKind, NavItemStatus, NavigationList, NavigationListOutcome, NavigationListState, Sidebar,
     SidebarItem, SidebarOutcome, SidebarPresentation, SidebarState, example_agent_workbench_nav,
-    example_database_nav, example_settings_nav, sidebar_presentation_for_width,
+    example_database_nav, example_sectioned_sidebar_nav, example_settings_nav, filter_nav_collapsed,
+    sidebar_presentation_for_width,
 };
 pub use card::{Card, CardParts};
 pub use panel::{

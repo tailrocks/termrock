@@ -279,6 +279,33 @@ impl<Id> NavItem<Id> {
 /// Compatibility alias used by ResourceBrowser / older call sites.
 pub type SidebarItem<Id> = NavItem<Id>;
 
+/// Drop rows nested under a **collapsed** section/group ancestor (depth stack).
+///
+/// Host may project a full tree with `expanded` flags; this pure filter is the
+/// TUI-honest view for paint + focus (sidebar-02/05 collapsible submenus).
+/// Roots and siblings at or above the collapsed depth remain visible.
+#[must_use]
+pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>> {
+    let mut out = Vec::with_capacity(items.len());
+    let mut hide_deeper_than: Option<u8> = None;
+    for item in items {
+        if let Some(d) = hide_deeper_than {
+            if item.depth > d {
+                continue;
+            }
+            hide_deeper_than = None;
+        }
+        out.push(item.clone());
+        if matches!(item.kind, NavItemKind::Group | NavItemKind::Section)
+            && item.has_children
+            && !item.expanded
+        {
+            hide_deeper_than = Some(item.depth);
+        }
+    }
+    out
+}
+
 // ── Presentation ────────────────────────────────────────────────────────────
 
 /// Sidebar chrome presentation.
@@ -583,14 +610,17 @@ impl<Id> NavigationListState<Id> {
     }
 
     /// Activate focused row as route (if item).
+    ///
+    /// `items` should be the **visible** projection (see [`filter_nav_collapsed`]).
     pub fn activate_focus(&mut self, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
+        let projected = filter_nav_collapsed(items);
         let Some(id) = self.collection.active().cloned() else {
             return NavigationListOutcome::Ignored;
         };
-        let Some(item) = items.iter().find(|i| i.id == id) else {
+        let Some(item) = projected.iter().find(|i| i.id == id) else {
             return NavigationListOutcome::Ignored;
         };
         if !item.enabled {
@@ -613,6 +643,10 @@ impl<Id> NavigationListState<Id> {
     }
 
     /// Key adapter.
+    ///
+    /// Collapsed section/group children are skipped for focus (via
+    /// [`filter_nav_collapsed`]). Host still owns storing `expanded` on the
+    /// full tree after [`NavigationListOutcome::ExpandToggled`].
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
@@ -627,6 +661,8 @@ impl<Id> NavigationListState<Id> {
         if !self.focused {
             return NavigationListOutcome::Ignored;
         }
+
+        let projected = filter_nav_collapsed(items);
 
         // Filter mode
         if self.filter_active {
@@ -659,7 +695,7 @@ impl<Id> NavigationListState<Id> {
             }
         }
 
-        let coll = Self::collection_items(items);
+        let coll = Self::collection_items(&projected);
         let _ = self.collection.reconcile(&coll);
         if self.collection.active().is_none() {
             if let Some(r) = self.route.clone() {
@@ -681,7 +717,7 @@ impl<Id> NavigationListState<Id> {
             return NavigationListOutcome::Changed;
         }
 
-        // Context menu
+        // Context menu (submenu-as-dropdown peer — host paints overlay)
         if key.code == KeyCode::Char(' ')
             && key.modifiers.contains(KeyModifiers::SHIFT)
             || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL))
@@ -694,7 +730,7 @@ impl<Id> NavigationListState<Id> {
         // Expand/collapse Left/Right
         if matches!(key.code, KeyCode::Left | KeyCode::Right) && key.modifiers.is_empty() {
             if let Some(id) = self.collection.active().cloned() {
-                if let Some(item) = items.iter().find(|i| i.id == id) {
+                if let Some(item) = projected.iter().find(|i| i.id == id) {
                     if item.has_children
                         && matches!(item.kind, NavItemKind::Group | NavItemKind::Section)
                     {
@@ -827,6 +863,10 @@ impl<Id> NavigationListState<Id> {
 }
 
 fn focusable_items<Id: Clone>(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>> {
+    // Collapse filtering is host-projected: callers pass already-filtered lists,
+    // or use [`filter_nav_collapsed`]. Do not double-filter raw slices that mix
+    // expanded/collapsed inconsistently — host owns projection. Filter here only
+    // when items already represent the visible tree.
     items
         .iter()
         .filter(|i| i.kind.is_focusable() && i.kind != NavItemKind::Separator)
@@ -1138,8 +1178,8 @@ impl<'a, Id> NavigationList<'a, Id> {
 
         let surface = state.focused && state.accepts_input;
         let filter_q = state.filter.to_ascii_lowercase();
-        let visible: Vec<&NavItem<Id>> = self
-            .items
+        let collapsed = filter_nav_collapsed(self.items);
+        let visible: Vec<&NavItem<Id>> = collapsed
             .iter()
             .filter(|i| {
                 if filter_q.is_empty() {
@@ -1517,6 +1557,29 @@ pub fn example_agent_workbench_nav() -> Vec<NavItem<&'static str>> {
     ]
 }
 
+/// Sectioned app nav (shadcn sidebar-01 peer): groups, nested leaves, one collapsed.
+#[must_use]
+pub fn example_sectioned_sidebar_nav() -> Vec<NavItem<&'static str>> {
+    vec![
+        NavItem::section("getting-started", "Getting Started")
+            .has_children(true)
+            .expanded(true),
+        NavItem::new("intro", "Introduction").depth(1),
+        NavItem::new("install", "Installation").depth(1),
+        NavItem::section("building", "Building Your Application")
+            .has_children(true)
+            .expanded(false),
+        NavItem::new("routing", "Routing").depth(1),
+        NavItem::new("data", "Data Fetching").depth(1),
+        NavItem::group("api", "API Reference")
+            .has_children(true)
+            .expanded(true)
+            .icon("⚙"),
+        NavItem::new("components", "Components").depth(1),
+        NavItem::new("hooks", "Hooks").depth(1),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1612,8 +1675,11 @@ mod tests {
         ];
         let mut state = NavigationListState::new(None);
         state.set_focused(true);
-        // focus group first
-        let coll = NavigationListState::<&str>::collection_items(&items);
+        // focus group first — child hidden while collapsed
+        let projected = filter_nav_collapsed(&items);
+        assert_eq!(projected.len(), 1);
+        assert_eq!(projected[0].id, "g");
+        let coll = NavigationListState::<&str>::collection_items(&projected);
         let _ = state.collection.reconcile(&coll);
         state.collection.set_active(Some("g"));
         assert!(matches!(
@@ -1623,6 +1689,116 @@ mod tests {
                 expanded: true
             }
         ));
+    }
+
+    #[test]
+    fn filter_nav_collapsed_hides_nested() {
+        let items = example_sectioned_sidebar_nav();
+        let visible = filter_nav_collapsed(&items);
+        let ids: Vec<&str> = visible.iter().map(|i| i.id).collect();
+        assert!(ids.contains(&"getting-started"));
+        assert!(ids.contains(&"intro"));
+        assert!(ids.contains(&"building"));
+        // collapsed "building" hides depth-1 routing/data
+        assert!(!ids.contains(&"routing"));
+        assert!(!ids.contains(&"data"));
+        // expanded api group keeps children
+        assert!(ids.contains(&"api"));
+        assert!(ids.contains(&"components"));
+    }
+
+    #[test]
+    fn nested_expand_then_activate_child() {
+        // Host updates expanded after ExpandToggled (full tree projection).
+        let mut items = vec![
+            NavItem::section("sec", "Section")
+                .has_children(true)
+                .expanded(false),
+            NavItem::new("leaf", "Leaf").depth(1),
+        ];
+        let mut state = SidebarState::new(None);
+        state.set_focused(true);
+        // Only section focusable while collapsed
+        let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
+        assert!(
+            matches!(out, SidebarOutcome::FocusChanged { .. }) || matches!(out, SidebarOutcome::Ignored),
+            "{out:?}"
+        );
+        // Ensure on section
+        state.nav.collection.set_active(Some("sec"));
+        let out = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &items);
+        assert!(
+            matches!(
+                out,
+                SidebarOutcome::ExpandToggled {
+                    id: "sec",
+                    expanded: true
+                }
+            ),
+            "{out:?}"
+        );
+        // Host expands
+        items[0].expanded = true;
+        let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
+        assert!(
+            matches!(out, SidebarOutcome::FocusChanged { id: Some("leaf") }),
+            "{out:?}"
+        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
+        assert!(matches!(out, SidebarOutcome::Selected("leaf")), "{out:?}");
+        assert_eq!(state.route(), Some(&"leaf"));
+        // Focus was on leaf; route is leaf — distinct still holds when we move without enter
+        let out = state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE), &items);
+        assert!(
+            matches!(out, SidebarOutcome::FocusChanged { id: Some("sec") }),
+            "{out:?}"
+        );
+        assert_eq!(state.route(), Some(&"leaf"));
+    }
+
+    #[test]
+    fn apply_width_to_rail_and_drawer_chords() {
+        let mut state = SidebarState::<&str>::new(None);
+        assert!(matches!(
+            state.apply_width(8),
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Rail
+            }
+        ));
+        assert_eq!(state.presentation(), SidebarPresentation::Rail);
+        assert!(matches!(
+            state.apply_width(40),
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Expanded
+            }
+        ));
+        let items: [NavItem<&str>; 0] = [];
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
+                &items
+            ),
+            SidebarOutcome::OpenDrawer
+        ));
+        assert_eq!(state.presentation(), SidebarPresentation::Drawer);
+        // width auto does not exit drawer
+        assert!(matches!(state.apply_width(40), SidebarOutcome::Ignored));
+    }
+
+    #[test]
+    fn context_menu_secondary_for_dropdown_peer() {
+        let items = [NavItem::new("a", "Alpha")];
+        let mut state = NavigationListState::new(Some("a"));
+        state.set_focused(true);
+        state.collection.set_active(Some("a"));
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Char('m'), KeyModifiers::CONTROL),
+            &items,
+        );
+        assert!(
+            matches!(out, NavigationListOutcome::ContextMenuRequested { id: "a" }),
+            "{out:?}"
+        );
     }
 
     #[test]
@@ -1721,6 +1897,11 @@ mod tests {
         assert!(!example_database_nav().is_empty());
         assert!(!example_settings_nav().is_empty());
         assert!(!example_agent_workbench_nav().is_empty());
+        assert!(!example_sectioned_sidebar_nav().is_empty());
+        assert!(
+            filter_nav_collapsed(&example_sectioned_sidebar_nav()).len()
+                < example_sectioned_sidebar_nav().len()
+        );
     }
 
     #[test]
