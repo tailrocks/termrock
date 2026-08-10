@@ -5180,6 +5180,69 @@ pub(crate) fn stories() -> Vec<Story> {
             token_strip_overflow_story,
         ),
         Story::new(
+            "attachment-chip/file",
+            "AttachmentChip file",
+            "AttachmentChip",
+            "File attachment with size meta and remove chrome.",
+            48,
+            3,
+            attachment_chip_file_story,
+        ),
+        Story::new(
+            "attachment-chip/broken-path",
+            "AttachmentChip error",
+            "AttachmentChip",
+            "Broken path / validation error still removable.",
+            48,
+            3,
+            attachment_chip_broken_story,
+        ),
+        Story::new(
+            "attachment-chip/upload",
+            "AttachmentChip upload progress",
+            "AttachmentChip",
+            "Upload progress percent on attachment chip.",
+            48,
+            2,
+            attachment_chip_upload_story,
+        ),
+        Story::new(
+            "paste-chip/large",
+            "PasteChip large",
+            "PasteChip",
+            "Collapsed large paste with byte size.",
+            48,
+            4,
+            paste_chip_large_story,
+        ),
+        Story::new(
+            "paste-chip/binary",
+            "PasteChip binary",
+            "PasteChip",
+            "Binary paste badge; no auto-insert.",
+            40,
+            2,
+            paste_chip_binary_story,
+        ),
+        Story::new(
+            "paste-chip/expanded",
+            "PasteChip expanded",
+            "PasteChip",
+            "Expanded paste preview lines under chip.",
+            52,
+            8,
+            paste_chip_expanded_story,
+        ),
+        Story::new(
+            "attachment-strip/wrap",
+            "Attachment strip wrap",
+            "AttachmentChip",
+            "Mixed attachments + pastes with wrap layout.",
+            40,
+            5,
+            attachment_strip_wrap_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -17925,6 +17988,104 @@ fn token_strip_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let strip = TokenStrip::new(&items, system).max_visible(3);
     let mut state = TokenStripState::new();
     strip.paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn attachment_chip_file_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{AttachmentChip, AttachmentChipState, AttachmentItem};
+    let item = AttachmentItem::file("f1", "main.rs")
+        .bytes(4200)
+        .line_count(128);
+    let mut state = AttachmentChipState::new();
+    state.set_focused(true);
+    AttachmentChip::new(&item, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn attachment_chip_broken_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        AttachmentChip, AttachmentChipState, AttachmentItem, AttachmentStatus,
+    };
+    let item = AttachmentItem::file("f2", "missing/path.rs")
+        .status(AttachmentStatus::Error)
+        .validation("path not found");
+    let mut state = AttachmentChipState::new();
+    state.set_focused(true);
+    AttachmentChip::new(&item, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn attachment_chip_upload_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        AttachmentChip, AttachmentChipState, AttachmentItem, AttachmentStatus,
+    };
+    let item = AttachmentItem::image("img1", "shot.png").status(AttachmentStatus::Uploading {
+        progress: 67,
+    });
+    let mut state = AttachmentChipState::new();
+    state.set_focused(true);
+    AttachmentChip::new(&item, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn paste_chip_large_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    let body = "fn main() {\n  println!(\"hello\");\n}\n".repeat(20);
+    let paste = PastePayload::from_body("p1", body);
+    let mut state = PasteChipState::new();
+    state.set_focused(true);
+    PasteChip::new(&paste, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn paste_chip_binary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    let paste = PastePayload::binary("bin1", 12_288);
+    let mut state = PasteChipState::new();
+    state.set_focused(true);
+    PasteChip::new(&paste, system).ascii(true).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn paste_chip_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    let paste = PastePayload::from_body(
+        "p2",
+        "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta\neta\ntheta\niota\n",
+    );
+    let mut state = PasteChipState::new();
+    state.set_focused(true);
+    state.expanded = true;
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(3)]).split(area);
+    PasteChip::new(&paste, system).paint(chunks[0], frame.buffer_mut(), &mut state);
+    PasteChip::new(&paste, system).paint_expanded_preview(chunks[1], frame.buffer_mut());
+}
+
+fn attachment_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        paint_attachment_strip, AttachmentItem, AttachmentStatus, PastePayload, TokenStripLayout,
+        TokenStripState,
+    };
+    let atts = [
+        AttachmentItem::file("a", "lib.rs").bytes(900),
+        AttachmentItem::url("b", "docs.rs/termrock"),
+        AttachmentItem::code("c", "main::run").line_count(40),
+        AttachmentItem::file("d", "secret.env")
+            .sensitive(true)
+            .status(AttachmentStatus::Indexing { progress: 20 }),
+    ];
+    let pastes = [
+        PastePayload::preview_only("p1", "log dump…", 8192, 200),
+        PastePayload::binary("p2", 4096),
+    ];
+    let mut state = TokenStripState::new();
+    state.set_surface_focused(true);
+    paint_attachment_strip(
+        &atts,
+        &pastes,
+        area,
+        frame.buffer_mut(),
+        system,
+        &mut state,
+        TokenStripLayout::Wrap,
+        0,
+        true,
+        &[],
+    );
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

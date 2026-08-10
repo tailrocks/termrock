@@ -14639,6 +14639,11 @@ pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
 pub fn termrock::text::wrap_display_cols(&str, usize) -> alloc::vec::Vec<alloc::string::String>
 pub mod termrock::widgets
+pub mod termrock::widgets::attachment_chips_bench
+pub const termrock::widgets::attachment_chips_bench::ATTACHMENT_COUNT: usize
+pub const termrock::widgets::attachment_chips_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::attachment_chips_bench::PASTE_BODY_BYTES: usize
+pub const termrock::widgets::attachment_chips_bench::PASTE_COUNT: usize
 pub mod termrock::widgets::charts_bench
 pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
 pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
@@ -15371,6 +15376,226 @@ pub unsafe fn termrock::ansi_text::AnsiTextMode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextMode
 pub fn termrock::ansi_text::AnsiTextMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextMode
+#[non_exhaustive] pub enum termrock::widgets::AttachmentChipOutcome
+pub termrock::widgets::AttachmentChipOutcome::Activated
+pub termrock::widgets::AttachmentChipOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::AttachmentChipOutcome::Ignored
+pub termrock::widgets::AttachmentChipOutcome::OpenRequested
+pub termrock::widgets::AttachmentChipOutcome::OpenRequested::id: alloc::string::String
+pub termrock::widgets::AttachmentChipOutcome::PartChanged(termrock::widgets::TokenPart)
+pub termrock::widgets::AttachmentChipOutcome::PreviewRequested
+pub termrock::widgets::AttachmentChipOutcome::PreviewRequested::id: alloc::string::String
+pub termrock::widgets::AttachmentChipOutcome::Removed
+pub termrock::widgets::AttachmentChipOutcome::Removed::id: alloc::string::String
+pub termrock::widgets::AttachmentChipOutcome::RetryRequested
+pub termrock::widgets::AttachmentChipOutcome::RetryRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChipOutcome::clone(&self) -> termrock::widgets::AttachmentChipOutcome
+impl core::cmp::Eq for termrock::widgets::AttachmentChipOutcome
+impl core::cmp::PartialEq for termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChipOutcome::eq(&self, &termrock::widgets::AttachmentChipOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChipOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentChipOutcome
+impl core::marker::Freeze for termrock::widgets::AttachmentChipOutcome
+impl core::marker::Send for termrock::widgets::AttachmentChipOutcome
+impl core::marker::Sync for termrock::widgets::AttachmentChipOutcome
+impl core::marker::Unpin for termrock::widgets::AttachmentChipOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentChipOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentChipOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentChipOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentChipOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentChipOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentChipOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentChipOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentChipOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentChipOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentChipOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentChipOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentChipOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentChipOutcome where T: core::clone::Clone
+pub type termrock::widgets::AttachmentChipOutcome::Owned = T
+pub fn termrock::widgets::AttachmentChipOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentChipOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentChipOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentChipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentChipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentChipOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentChipOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChipOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentChipOutcome
+#[non_exhaustive] pub enum termrock::widgets::AttachmentStatus
+pub termrock::widgets::AttachmentStatus::Error
+pub termrock::widgets::AttachmentStatus::Indexing
+pub termrock::widgets::AttachmentStatus::Indexing::progress: u8
+pub termrock::widgets::AttachmentStatus::Invalid
+pub termrock::widgets::AttachmentStatus::Pending
+pub termrock::widgets::AttachmentStatus::Ready
+pub termrock::widgets::AttachmentStatus::Uploading
+pub termrock::widgets::AttachmentStatus::Uploading::progress: u8
+pub termrock::widgets::AttachmentStatus::Validating
+impl termrock::widgets::AttachmentStatus
+pub const fn termrock::widgets::AttachmentStatus::id(self) -> &'static str
+pub fn termrock::widgets::AttachmentStatus::mark(self, bool) -> &'static str
+pub const fn termrock::widgets::AttachmentStatus::progress(self) -> core::option::Option<u8>
+pub const fn termrock::widgets::AttachmentStatus::token_status(self) -> termrock::widgets::TokenStatus
+impl core::clone::Clone for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::clone(&self) -> termrock::widgets::AttachmentStatus
+impl core::cmp::Eq for termrock::widgets::AttachmentStatus
+impl core::cmp::PartialEq for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::eq(&self, &termrock::widgets::AttachmentStatus) -> bool
+impl core::default::Default for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::default() -> termrock::widgets::AttachmentStatus
+impl core::fmt::Debug for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AttachmentStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentStatus
+impl core::marker::Freeze for termrock::widgets::AttachmentStatus
+impl core::marker::Send for termrock::widgets::AttachmentStatus
+impl core::marker::Sync for termrock::widgets::AttachmentStatus
+impl core::marker::Unpin for termrock::widgets::AttachmentStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentStatus where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentStatus where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentStatus where T: core::clone::Clone
+pub type termrock::widgets::AttachmentStatus::Owned = T
+pub fn termrock::widgets::AttachmentStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentStatus
+pub fn termrock::widgets::AttachmentStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentStatus
+#[non_exhaustive] pub enum termrock::widgets::AttachmentStripEvent
+pub termrock::widgets::AttachmentStripEvent::Activated
+pub termrock::widgets::AttachmentStripEvent::Activated::id: alloc::string::String
+pub termrock::widgets::AttachmentStripEvent::CursorMoved
+pub termrock::widgets::AttachmentStripEvent::CursorMoved::from: core::option::Option<alloc::string::String>
+pub termrock::widgets::AttachmentStripEvent::CursorMoved::to: core::option::Option<alloc::string::String>
+pub termrock::widgets::AttachmentStripEvent::Ignored
+pub termrock::widgets::AttachmentStripEvent::OverflowActivated
+pub termrock::widgets::AttachmentStripEvent::PartChanged(termrock::widgets::TokenPart)
+pub termrock::widgets::AttachmentStripEvent::Removed
+pub termrock::widgets::AttachmentStripEvent::Removed::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::AttachmentStripEvent
+pub fn termrock::widgets::AttachmentStripEvent::clone(&self) -> termrock::widgets::AttachmentStripEvent
+impl core::cmp::Eq for termrock::widgets::AttachmentStripEvent
+impl core::cmp::PartialEq for termrock::widgets::AttachmentStripEvent
+pub fn termrock::widgets::AttachmentStripEvent::eq(&self, &termrock::widgets::AttachmentStripEvent) -> bool
+impl core::fmt::Debug for termrock::widgets::AttachmentStripEvent
+pub fn termrock::widgets::AttachmentStripEvent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentStripEvent
+impl core::marker::Freeze for termrock::widgets::AttachmentStripEvent
+impl core::marker::Send for termrock::widgets::AttachmentStripEvent
+impl core::marker::Sync for termrock::widgets::AttachmentStripEvent
+impl core::marker::Unpin for termrock::widgets::AttachmentStripEvent
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentStripEvent
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentStripEvent
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentStripEvent
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentStripEvent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStripEvent::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentStripEvent where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentStripEvent::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentStripEvent where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentStripEvent::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentStripEvent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentStripEvent where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentStripEvent::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentStripEvent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentStripEvent where T: core::clone::Clone
+pub type termrock::widgets::AttachmentStripEvent::Owned = T
+pub fn termrock::widgets::AttachmentStripEvent::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentStripEvent::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentStripEvent where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStripEvent::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentStripEvent where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStripEvent::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentStripEvent where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentStripEvent::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentStripEvent where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentStripEvent::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentStripEvent
+pub fn termrock::widgets::AttachmentStripEvent::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentStripEvent
+#[non_exhaustive] pub enum termrock::widgets::AttachmentType
+pub termrock::widgets::AttachmentType::Code
+pub termrock::widgets::AttachmentType::Document
+pub termrock::widgets::AttachmentType::File
+pub termrock::widgets::AttachmentType::Image
+pub termrock::widgets::AttachmentType::Other
+pub termrock::widgets::AttachmentType::Url
+impl termrock::widgets::AttachmentType
+pub const fn termrock::widgets::AttachmentType::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::AttachmentType::id(self) -> &'static str
+pub const fn termrock::widgets::AttachmentType::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::clone(&self) -> termrock::widgets::AttachmentType
+impl core::cmp::Eq for termrock::widgets::AttachmentType
+impl core::cmp::PartialEq for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::eq(&self, &termrock::widgets::AttachmentType) -> bool
+impl core::default::Default for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::default() -> termrock::widgets::AttachmentType
+impl core::fmt::Debug for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::AttachmentType
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentType
+impl core::marker::Freeze for termrock::widgets::AttachmentType
+impl core::marker::Send for termrock::widgets::AttachmentType
+impl core::marker::Sync for termrock::widgets::AttachmentType
+impl core::marker::Unpin for termrock::widgets::AttachmentType
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentType
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentType
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentType
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentType where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentType::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentType where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentType::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentType where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentType::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentType::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentType where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentType::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentType::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentType where T: core::clone::Clone
+pub type termrock::widgets::AttachmentType::Owned = T
+pub fn termrock::widgets::AttachmentType::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentType::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentType where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentType::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentType where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentType::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentType where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentType::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentType where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentType::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentType
+pub fn termrock::widgets::AttachmentType::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentType
 #[non_exhaustive] pub enum termrock::widgets::AvatarFace
 pub termrock::widgets::AvatarFace::Glyph(termrock::style::Glyph)
 pub termrock::widgets::AvatarFace::Initials
@@ -27698,6 +27923,64 @@ pub unsafe fn termrock::widgets::PasswordStrengthHint::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::PasswordStrengthHint
 pub fn termrock::widgets::PasswordStrengthHint::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PasswordStrengthHint
+#[non_exhaustive] pub enum termrock::widgets::PasteChipOutcome
+pub termrock::widgets::PasteChipOutcome::Collapsed
+pub termrock::widgets::PasteChipOutcome::Collapsed::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::CopyRequested
+pub termrock::widgets::PasteChipOutcome::CopyRequested::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::Expanded
+pub termrock::widgets::PasteChipOutcome::Expanded::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::Ignored
+pub termrock::widgets::PasteChipOutcome::InsertRequested
+pub termrock::widgets::PasteChipOutcome::InsertRequested::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::InsertRequested::needs_confirm: bool
+pub termrock::widgets::PasteChipOutcome::PartChanged(termrock::widgets::TokenPart)
+pub termrock::widgets::PasteChipOutcome::PreviewRequested
+pub termrock::widgets::PasteChipOutcome::PreviewRequested::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::Removed
+pub termrock::widgets::PasteChipOutcome::Removed::id: alloc::string::String
+pub termrock::widgets::PasteChipOutcome::RetryRequested
+pub termrock::widgets::PasteChipOutcome::RetryRequested::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChipOutcome::clone(&self) -> termrock::widgets::PasteChipOutcome
+impl core::cmp::Eq for termrock::widgets::PasteChipOutcome
+impl core::cmp::PartialEq for termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChipOutcome::eq(&self, &termrock::widgets::PasteChipOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChipOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasteChipOutcome
+impl core::marker::Freeze for termrock::widgets::PasteChipOutcome
+impl core::marker::Send for termrock::widgets::PasteChipOutcome
+impl core::marker::Sync for termrock::widgets::PasteChipOutcome
+impl core::marker::Unpin for termrock::widgets::PasteChipOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PasteChipOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasteChipOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasteChipOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasteChipOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasteChipOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasteChipOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PasteChipOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasteChipOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PasteChipOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PasteChipOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasteChipOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasteChipOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasteChipOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasteChipOutcome where T: core::clone::Clone
+pub type termrock::widgets::PasteChipOutcome::Owned = T
+pub fn termrock::widgets::PasteChipOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasteChipOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasteChipOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasteChipOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasteChipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChipOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasteChipOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChipOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasteChipOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasteChipOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChipOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasteChipOutcome
 #[non_exhaustive] pub enum termrock::widgets::PathExpect
 pub termrock::widgets::PathExpect::Any
 pub termrock::widgets::PathExpect::Directory
@@ -39591,6 +39874,163 @@ pub unsafe fn termrock::ansi_text::AnsiTextState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextState
 pub fn termrock::ansi_text::AnsiTextState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextState
+pub struct termrock::widgets::AttachmentChip<'a>
+impl<'a> termrock::widgets::AttachmentChip<'a>
+pub const fn termrock::widgets::AttachmentChip<'a>::ascii(self, bool) -> Self
+pub fn termrock::widgets::AttachmentChip<'a>::handle_key(&self, &mut termrock::widgets::AttachmentChipState, termrock::input::KeyEvent) -> termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChip<'a>::handle_mouse(&self, &mut termrock::widgets::AttachmentChipState, termrock::input::MouseEvent) -> termrock::widgets::AttachmentChipOutcome
+pub fn termrock::widgets::AttachmentChip<'a>::measure_width(&self) -> u16
+pub const fn termrock::widgets::AttachmentChip<'a>::new(&'a termrock::widgets::AttachmentItem, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::AttachmentChip<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AttachmentChipState) -> termrock::widgets::TokenParts
+pub fn termrock::widgets::AttachmentChip<'a>::remove_action_label(&self) -> alloc::string::String
+impl<'a> core::clone::Clone for termrock::widgets::AttachmentChip<'a>
+pub fn termrock::widgets::AttachmentChip<'a>::clone(&self) -> termrock::widgets::AttachmentChip<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::AttachmentChip<'a>
+pub fn termrock::widgets::AttachmentChip<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::marker::Send for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::marker::Sync for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentChip<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentChip<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentChip<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentChip<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentChip<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentChip<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentChip<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentChip<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentChip<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentChip<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentChip<'a> where T: core::clone::Clone
+pub type termrock::widgets::AttachmentChip<'a>::Owned = T
+pub fn termrock::widgets::AttachmentChip<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentChip<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentChip<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChip<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChip<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChip<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentChip<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentChip<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentChip<'a>
+pub fn termrock::widgets::AttachmentChip<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentChip<'a>
+pub struct termrock::widgets::AttachmentChipState
+pub termrock::widgets::AttachmentChipState::tag: termrock::widgets::TagState
+impl termrock::widgets::AttachmentChipState
+pub const fn termrock::widgets::AttachmentChipState::is_focused(&self) -> bool
+pub const fn termrock::widgets::AttachmentChipState::new() -> Self
+pub const fn termrock::widgets::AttachmentChipState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::AttachmentChipState
+pub fn termrock::widgets::AttachmentChipState::clone(&self) -> termrock::widgets::AttachmentChipState
+impl core::cmp::Eq for termrock::widgets::AttachmentChipState
+impl core::cmp::PartialEq for termrock::widgets::AttachmentChipState
+pub fn termrock::widgets::AttachmentChipState::eq(&self, &termrock::widgets::AttachmentChipState) -> bool
+impl core::default::Default for termrock::widgets::AttachmentChipState
+pub fn termrock::widgets::AttachmentChipState::default() -> termrock::widgets::AttachmentChipState
+impl core::fmt::Debug for termrock::widgets::AttachmentChipState
+pub fn termrock::widgets::AttachmentChipState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentChipState
+impl core::marker::Freeze for termrock::widgets::AttachmentChipState
+impl core::marker::Send for termrock::widgets::AttachmentChipState
+impl core::marker::Sync for termrock::widgets::AttachmentChipState
+impl core::marker::Unpin for termrock::widgets::AttachmentChipState
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentChipState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentChipState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentChipState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentChipState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentChipState where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentChipState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentChipState where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentChipState::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentChipState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentChipState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentChipState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentChipState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentChipState where T: core::clone::Clone
+pub type termrock::widgets::AttachmentChipState::Owned = T
+pub fn termrock::widgets::AttachmentChipState::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentChipState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentChipState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentChipState where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentChipState where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentChipState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentChipState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentChipState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentChipState
+pub fn termrock::widgets::AttachmentChipState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentChipState
+pub struct termrock::widgets::AttachmentItem
+pub termrock::widgets::AttachmentItem::bytes: core::option::Option<u64>
+pub termrock::widgets::AttachmentItem::id: alloc::string::String
+pub termrock::widgets::AttachmentItem::kind: termrock::widgets::AttachmentType
+pub termrock::widgets::AttachmentItem::line_count: core::option::Option<u32>
+pub termrock::widgets::AttachmentItem::meta: core::option::Option<alloc::string::String>
+pub termrock::widgets::AttachmentItem::name: alloc::string::String
+pub termrock::widgets::AttachmentItem::removable: bool
+pub termrock::widgets::AttachmentItem::sensitive: bool
+pub termrock::widgets::AttachmentItem::status: termrock::widgets::AttachmentStatus
+pub termrock::widgets::AttachmentItem::validation: core::option::Option<alloc::string::String>
+impl termrock::widgets::AttachmentItem
+pub const fn termrock::widgets::AttachmentItem::bytes(self, u64) -> Self
+pub fn termrock::widgets::AttachmentItem::code(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AttachmentItem::display_label(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::AttachmentItem::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AttachmentItem::image(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AttachmentItem::kind(self, termrock::widgets::AttachmentType) -> Self
+pub const fn termrock::widgets::AttachmentItem::line_count(self, u32) -> Self
+pub fn termrock::widgets::AttachmentItem::meta(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::AttachmentItem::removable(self, bool) -> Self
+pub const fn termrock::widgets::AttachmentItem::sensitive(self, bool) -> Self
+pub const fn termrock::widgets::AttachmentItem::status(self, termrock::widgets::AttachmentStatus) -> Self
+pub fn termrock::widgets::AttachmentItem::url(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::AttachmentItem::validation(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::AttachmentItem
+pub fn termrock::widgets::AttachmentItem::clone(&self) -> termrock::widgets::AttachmentItem
+impl core::cmp::Eq for termrock::widgets::AttachmentItem
+impl core::cmp::PartialEq for termrock::widgets::AttachmentItem
+pub fn termrock::widgets::AttachmentItem::eq(&self, &termrock::widgets::AttachmentItem) -> bool
+impl core::fmt::Debug for termrock::widgets::AttachmentItem
+pub fn termrock::widgets::AttachmentItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::AttachmentItem
+impl core::marker::Freeze for termrock::widgets::AttachmentItem
+impl core::marker::Send for termrock::widgets::AttachmentItem
+impl core::marker::Sync for termrock::widgets::AttachmentItem
+impl core::marker::Unpin for termrock::widgets::AttachmentItem
+impl core::marker::UnsafeUnpin for termrock::widgets::AttachmentItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AttachmentItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::AttachmentItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::AttachmentItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::AttachmentItem where U: core::convert::From<T>
+pub fn termrock::widgets::AttachmentItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AttachmentItem where U: core::convert::Into<T>
+pub type termrock::widgets::AttachmentItem::Error = core::convert::Infallible
+pub fn termrock::widgets::AttachmentItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AttachmentItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AttachmentItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AttachmentItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AttachmentItem where T: core::clone::Clone
+pub type termrock::widgets::AttachmentItem::Owned = T
+pub fn termrock::widgets::AttachmentItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::AttachmentItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AttachmentItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AttachmentItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AttachmentItem where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AttachmentItem where T: ?core::marker::Sized
+pub fn termrock::widgets::AttachmentItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AttachmentItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AttachmentItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AttachmentItem
+pub fn termrock::widgets::AttachmentItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentItem
 pub struct termrock::widgets::AvatarGlyph<'a>
 impl<'a> termrock::widgets::AvatarGlyph<'a>
 pub const fn termrock::widgets::AvatarGlyph<'a>::body_cols(&self) -> u16
@@ -43482,6 +43922,8 @@ pub termrock::widgets::ComposerChip::meta: core::option::Option<alloc::string::S
 pub termrock::widgets::ComposerChip::payload: core::option::Option<alloc::string::String>
 impl termrock::widgets::ComposerChip
 pub fn termrock::widgets::ComposerChip::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::ComposerChip::from_attachment(&termrock::widgets::AttachmentItem) -> Self
+pub fn termrock::widgets::ComposerChip::from_paste(&termrock::widgets::PastePayload) -> Self
 pub fn termrock::widgets::ComposerChip::mention(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::ComposerChip::paste(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, usize) -> Self
 pub fn termrock::widgets::ComposerChip::paste_with_body(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
@@ -55518,6 +55960,159 @@ pub unsafe fn termrock::widgets::PasswordInputState::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::PasswordInputState
 pub fn termrock::widgets::PasswordInputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInputState
+pub struct termrock::widgets::PasteChip<'a>
+impl<'a> termrock::widgets::PasteChip<'a>
+pub const fn termrock::widgets::PasteChip<'a>::ascii(self, bool) -> Self
+pub fn termrock::widgets::PasteChip<'a>::handle_key(&self, &mut termrock::widgets::PasteChipState, termrock::input::KeyEvent) -> termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChip<'a>::handle_mouse(&self, &mut termrock::widgets::PasteChipState, termrock::input::MouseEvent) -> termrock::widgets::PasteChipOutcome
+pub fn termrock::widgets::PasteChip<'a>::measure_width(&self, bool) -> u16
+pub const fn termrock::widgets::PasteChip<'a>::new(&'a termrock::widgets::PastePayload, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PasteChip<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PasteChipState) -> termrock::widgets::TokenParts
+pub fn termrock::widgets::PasteChip<'a>::paint_expanded_preview(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::PasteChip<'a>
+pub fn termrock::widgets::PasteChip<'a>::clone(&self) -> termrock::widgets::PasteChip<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PasteChip<'a>
+pub fn termrock::widgets::PasteChip<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PasteChip<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PasteChip<'a>
+impl<'a> core::marker::Send for termrock::widgets::PasteChip<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PasteChip<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PasteChip<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PasteChip<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasteChip<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasteChip<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasteChip<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PasteChip<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasteChip<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PasteChip<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PasteChip<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasteChip<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasteChip<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasteChip<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasteChip<'a> where T: core::clone::Clone
+pub type termrock::widgets::PasteChip<'a>::Owned = T
+pub fn termrock::widgets::PasteChip<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasteChip<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasteChip<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasteChip<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasteChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChip<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasteChip<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChip<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasteChip<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasteChip<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasteChip<'a>
+pub fn termrock::widgets::PasteChip<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasteChip<'a>
+pub struct termrock::widgets::PasteChipState
+pub termrock::widgets::PasteChipState::expanded: bool
+pub termrock::widgets::PasteChipState::tag: termrock::widgets::TagState
+impl termrock::widgets::PasteChipState
+pub const fn termrock::widgets::PasteChipState::collapse(&mut self)
+pub const fn termrock::widgets::PasteChipState::new() -> Self
+pub const fn termrock::widgets::PasteChipState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::PasteChipState
+pub fn termrock::widgets::PasteChipState::clone(&self) -> termrock::widgets::PasteChipState
+impl core::cmp::Eq for termrock::widgets::PasteChipState
+impl core::cmp::PartialEq for termrock::widgets::PasteChipState
+pub fn termrock::widgets::PasteChipState::eq(&self, &termrock::widgets::PasteChipState) -> bool
+impl core::default::Default for termrock::widgets::PasteChipState
+pub fn termrock::widgets::PasteChipState::default() -> termrock::widgets::PasteChipState
+impl core::fmt::Debug for termrock::widgets::PasteChipState
+pub fn termrock::widgets::PasteChipState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasteChipState
+impl core::marker::Freeze for termrock::widgets::PasteChipState
+impl core::marker::Send for termrock::widgets::PasteChipState
+impl core::marker::Sync for termrock::widgets::PasteChipState
+impl core::marker::Unpin for termrock::widgets::PasteChipState
+impl core::marker::UnsafeUnpin for termrock::widgets::PasteChipState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasteChipState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasteChipState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasteChipState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasteChipState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasteChipState where U: core::convert::From<T>
+pub fn termrock::widgets::PasteChipState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasteChipState where U: core::convert::Into<T>
+pub type termrock::widgets::PasteChipState::Error = core::convert::Infallible
+pub fn termrock::widgets::PasteChipState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasteChipState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasteChipState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasteChipState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasteChipState where T: core::clone::Clone
+pub type termrock::widgets::PasteChipState::Owned = T
+pub fn termrock::widgets::PasteChipState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasteChipState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasteChipState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasteChipState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasteChipState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChipState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasteChipState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasteChipState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasteChipState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasteChipState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasteChipState
+pub fn termrock::widgets::PasteChipState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasteChipState
+pub struct termrock::widgets::PastePayload
+pub termrock::widgets::PastePayload::binary: bool
+pub termrock::widgets::PastePayload::body: core::option::Option<alloc::string::String>
+pub termrock::widgets::PastePayload::bytes: usize
+pub termrock::widgets::PastePayload::id: alloc::string::String
+pub termrock::widgets::PastePayload::line_count: usize
+pub termrock::widgets::PastePayload::preview: alloc::string::String
+pub termrock::widgets::PastePayload::removable: bool
+pub termrock::widgets::PastePayload::sensitive: bool
+pub termrock::widgets::PastePayload::status: termrock::widgets::AttachmentStatus
+pub termrock::widgets::PastePayload::validation: core::option::Option<alloc::string::String>
+impl termrock::widgets::PastePayload
+pub fn termrock::widgets::PastePayload::binary(impl core::convert::Into<alloc::string::String>, usize) -> Self
+pub fn termrock::widgets::PastePayload::display_label(&self, bool, bool) -> alloc::string::String
+pub fn termrock::widgets::PastePayload::expanded_preview_lines(&self, usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn termrock::widgets::PastePayload::from_body(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PastePayload::preview_only(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, usize, usize) -> Self
+pub const fn termrock::widgets::PastePayload::sensitive(self, bool) -> Self
+pub const fn termrock::widgets::PastePayload::status(self, termrock::widgets::AttachmentStatus) -> Self
+pub fn termrock::widgets::PastePayload::validation(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PastePayload
+pub fn termrock::widgets::PastePayload::clone(&self) -> termrock::widgets::PastePayload
+impl core::cmp::Eq for termrock::widgets::PastePayload
+impl core::cmp::PartialEq for termrock::widgets::PastePayload
+pub fn termrock::widgets::PastePayload::eq(&self, &termrock::widgets::PastePayload) -> bool
+impl core::fmt::Debug for termrock::widgets::PastePayload
+pub fn termrock::widgets::PastePayload::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PastePayload
+impl core::marker::Freeze for termrock::widgets::PastePayload
+impl core::marker::Send for termrock::widgets::PastePayload
+impl core::marker::Sync for termrock::widgets::PastePayload
+impl core::marker::Unpin for termrock::widgets::PastePayload
+impl core::marker::UnsafeUnpin for termrock::widgets::PastePayload
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PastePayload
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PastePayload
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PastePayload where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PastePayload::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PastePayload where U: core::convert::From<T>
+pub fn termrock::widgets::PastePayload::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PastePayload where U: core::convert::Into<T>
+pub type termrock::widgets::PastePayload::Error = core::convert::Infallible
+pub fn termrock::widgets::PastePayload::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PastePayload where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PastePayload::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PastePayload::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PastePayload where T: core::clone::Clone
+pub type termrock::widgets::PastePayload::Owned = T
+pub fn termrock::widgets::PastePayload::clone_into(&self, &mut T)
+pub fn termrock::widgets::PastePayload::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PastePayload where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PastePayload::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PastePayload where T: ?core::marker::Sized
+pub fn termrock::widgets::PastePayload::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PastePayload where T: ?core::marker::Sized
+pub fn termrock::widgets::PastePayload::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PastePayload where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PastePayload::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PastePayload
+pub fn termrock::widgets::PastePayload::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PastePayload
 pub struct termrock::widgets::PathCompletionPrefix
 pub termrock::widgets::PathCompletionPrefix::directory: alloc::string::String
 pub termrock::widgets::PathCompletionPrefix::partial: alloc::string::String
@@ -69860,6 +70455,9 @@ pub const termrock::widgets::NOTIFICATION_CENTER_HINT: &str
 pub const termrock::widgets::NOTIFICATION_CENTER_OVERLAY_ID: &str
 pub const termrock::widgets::PAGINATION_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::PAGINATION_MINIMAL_MAX_WIDTH: u16
+pub const termrock::widgets::PASTE_CHIP_THRESHOLD: usize
+pub const termrock::widgets::PASTE_EXPAND_LINES: usize
+pub const termrock::widgets::PASTE_PREVIEW_CHARS: usize
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
 pub const termrock::widgets::PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_CONTRACT_MAX_HEIGHT: u16
@@ -69877,6 +70475,7 @@ pub const termrock::widgets::PROGRESS_DEFAULT_THROTTLE_MS: u64
 pub const termrock::widgets::PROGRESS_STEPS_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::PROGRESS_STEPS_HINT: &str
 pub const termrock::widgets::PROGRESS_STEPS_SUMMARY_MAX_WIDTH: u16
+pub const termrock::widgets::PROGRESS_UNKNOWN: u8
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_FULLSCREEN_OVERLAY_ID: &str
 pub const termrock::widgets::PROMPT_HISTORY_LIMIT: usize
@@ -69949,6 +70548,9 @@ pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock:
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::assign_jump_labels<Id: core::clone::Clone>(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::JumpCandidate<Id>>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_labels_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
+pub fn termrock::widgets::attachment_semantic_summary(&termrock::widgets::AttachmentItem) -> alloc::string::String
+pub fn termrock::widgets::attachment_to_composer_chip(&termrock::widgets::AttachmentItem) -> termrock::widgets::ComposerChip
+pub fn termrock::widgets::attachment_token_items<'a>(&'a [termrock::widgets::AttachmentItem], &'a [termrock::widgets::PastePayload], &'a [alloc::string::String]) -> alloc::vec::Vec<termrock::widgets::TokenItem<'a, &'a str>>
 pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
@@ -69964,6 +70566,8 @@ pub fn termrock::widgets::collect_match_targets(&[termrock::widgets::SearchResul
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::completion_presentation_for(ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::composer_chip_to_attachment(&termrock::widgets::ComposerChip) -> core::option::Option<termrock::widgets::AttachmentItem>
+pub fn termrock::widgets::composer_chip_to_paste(&termrock::widgets::ComposerChip) -> core::option::Option<termrock::widgets::PastePayload>
 pub fn termrock::widgets::contract_help_entries(&[termrock::widgets::HelpEntry], usize) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
@@ -70065,6 +70669,7 @@ pub fn termrock::widgets::expanded_ids_from_entries<Id: core::clone::Clone + cor
 pub fn termrock::widgets::export_result_window_tsv(&[termrock::widgets::ResultColumn], &[termrock::widgets::ResultRow<'_>], termrock::widgets::ResultRedaction, bool, bool) -> alloc::string::String
 pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::FileTreeEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
+pub fn termrock::widgets::fill_attachment_strip_labels(&[termrock::widgets::AttachmentItem], &[termrock::widgets::PastePayload], bool, &[&str]) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
 pub fn termrock::widgets::filter_critical_path<'a>(&'a [termrock::widgets::TraceSpan<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::TraceSpan<'a>>
 pub fn termrock::widgets::filter_dep_edges<'a>(&'a [termrock::widgets::DepEdge<'a>], &alloc::collections::btree::set::BTreeSet<&str>) -> alloc::vec::Vec<&'a termrock::widgets::DepEdge<'a>>
@@ -70141,6 +70746,7 @@ pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ra
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::widgets::log_lines_from_plain<'a>(&'a [ratatui_core::text::line::Line<'static>], &'a mut alloc::vec::Vec<alloc::string::String>, &'a mut alloc::vec::Vec<alloc::string::String>) -> alloc::vec::Vec<termrock::widgets::LogLine<'a>>
+pub fn termrock::widgets::map_strip_outcome(termrock::widgets::TokenStripOutcome<alloc::string::String>) -> termrock::widgets::AttachmentStripEvent
 pub fn termrock::widgets::mark_remapped_help_entries(&mut [termrock::widgets::HelpEntry], &[&str])
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
 pub fn termrock::widgets::measure_menu_panel<Id>(&[termrock::widgets::MenuNode<Id>], bool) -> termrock::interaction::OverlaySize
@@ -70190,11 +70796,15 @@ pub fn termrock::widgets::open_preview_card_pinned_overlay<FocusId: core::clone:
 pub fn termrock::widgets::open_quick_open_fullscreen<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_quick_open_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::QuickOpenSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::paint_attachment_strip(&[termrock::widgets::AttachmentItem], &[termrock::widgets::PastePayload], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &mut termrock::widgets::TokenStripState<alloc::string::String>, termrock::widgets::TokenStripLayout, usize, bool, &[&str])
 pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem)
 pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::widgets::parse_quick_open_query(&str) -> termrock::widgets::ParsedQuickOpenQuery
 pub fn termrock::widgets::parse_search_query(&str) -> core::option::Option<alloc::vec::Vec<u8>>
 pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
+pub fn termrock::widgets::paste_preview_from(&str) -> alloc::string::String
+pub fn termrock::widgets::paste_semantic_summary(&termrock::widgets::PastePayload) -> alloc::string::String
+pub fn termrock::widgets::paste_to_composer_chip(&termrock::widgets::PastePayload) -> termrock::widgets::ComposerChip
 pub fn termrock::widgets::path_segments(&str) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect

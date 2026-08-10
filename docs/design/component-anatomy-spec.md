@@ -1966,6 +1966,36 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## AttachmentChip
+
+1. **Purpose:** Compact file/image/URL/code attachment token for composers and egress flows.  
+2. **Anatomy:** type glyph · name · meta/size/lines · progress · remove.  
+3. **Public properties:** `AttachmentItem` (kind, name, bytes, lines, status, validation, sensitive).  
+4. **State:** `AttachmentChipState` (Tag Body/Remove focus).  
+5. **Variants:** Ready / Pending / Uploading / Indexing / Error / Invalid.  
+6–10. Enter activate or remove; Ctrl+O open; Ctrl+P preview; Ctrl+R retry; Delete remove.  
+11–14. Host owns path/upload; outcomes only; sensitive semantic summaries redact paths.  
+15–18. ASCII type letters F/I/U/C; TokenStrip wrap/scroll/+N.  
+19. **Composition:** PromptComposer chips; Tag chrome; permission strips.  
+20. **Outcomes:** Activated · Removed · Open · Preview · Retry · PartChanged.  
+21. **Stories:** `attachment-chip/{file,broken-path,upload}`, `attachment-strip/wrap`.  
+22–24. Redaction tests; strip paint bench; no network I/O.
+
+## PasteChip
+
+1. **Purpose:** Collapsed large-paste token; body out of editor path until insert/submit.  
+2. **Anatomy:** PASTE badge · preview · bytes/lines · remove; optional expanded lines.  
+3. **Public properties:** `PastePayload` (preview, bytes, lines, body?, binary, status, sensitive).  
+4. **State:** `PasteChipState` (expanded + Tag focus).  
+5. **Variants:** text paste · binary · error/progress.  
+6–10. Enter expand; Esc collapse; Ctrl+C copy-by-id; Ctrl+I insert (confirm binary); Delete remove.  
+11–14. Semantic summary never includes body; CopyRequested carries id only.  
+15–18. Threshold aligned with PromptComposer; ASCII `P` badge.  
+19. **Composition:** PromptComposer paste chips; TokenStrip; permission egress.  
+20. **Outcomes:** Expanded · Collapsed · Removed · Copy · Insert · Preview · Retry.  
+21. **Stories:** `paste-chip/{large,binary,expanded}`.  
+22–24. Body-not-in-summary; binary confirm; expand/esc tests.
+
 ## PromptComposer
 
 1. **Purpose:** Flagship terminal AI agent input surface.  

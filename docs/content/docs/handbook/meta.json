@@ -8,6 +8,8 @@
     "dialog",
     "command-palette",
     "prompt-composer",
+    "attachment-chip",
+    "paste-chip",
     "permission-prompt",
     "agent-workbench",
     "text-area",

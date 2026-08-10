@@ -1,0 +1,56 @@
+---
+title: AttachmentChip
+description: Compact file/image/URL/code attachment tokens with status and remove.
+---
+
+# AttachmentChip
+
+Structured compact attachment for PromptComposer and permission / data-egress
+flows. Host projects [`AttachmentItem`]; TermRock paints type, name, size/lines,
+status/progress, and remove chrome. Outcomes only — no upload I/O.
+
+## When to use / when not
+
+| Use AttachmentChip | Prefer |
+|--------------------|--------|
+| File / image / URL / code on a prompt | — |
+| Filter toggles | [Chip](/docs/handbook/tag) (selectable Chip) |
+| Large pasted text | [PasteChip](/docs/handbook/paste-chip) |
+| Entity labels without attach lifecycle | [Tag](/docs/handbook/tag) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Path, upload, open, index | Host |
+| Display name, status, progress projection | Host `AttachmentItem` |
+| Paint, remove/open/preview/retry requests | AttachmentChip |
+| Sensitive path redaction in summaries | `sensitive` + `attachment_semantic_summary` |
+
+## Outcomes
+
+- `Activated` · `Removed`
+- `OpenRequested` · `PreviewRequested` · `RetryRequested`
+- `PartChanged` (Body ↔ Remove)
+
+## Compose
+
+```rust
+use termrock::widgets::{
+    AttachmentItem, AttachmentStatus, AttachmentChip, AttachmentChipState,
+    ComposerChip, paint_attachment_strip, TokenStripLayout, TokenStripState,
+};
+
+let item = AttachmentItem::file("f1", "main.rs")
+    .bytes(4200)
+    .status(AttachmentStatus::Uploading { progress: 40 });
+// PromptComposer list model
+let chip = ComposerChip::from_attachment(&item);
+// Or paint directly
+let mut st = AttachmentChipState::new();
+AttachmentChip::new(&item, &system).paint(area, buf, &mut st);
+```
+
+## Related
+
+PasteChip · Tag · TokenStrip · PromptComposer · migration `0212`

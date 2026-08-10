@@ -35,6 +35,7 @@ mod kbd;
 mod key_value_list;
 mod link;
 mod tag_chip;
+mod attachment_chips;
 mod text;
 mod separator;
 mod toolbar;
@@ -555,6 +556,14 @@ pub use tag_chip::{
     Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,
     TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
 };
+pub use attachment_chips::{
+    PASTE_CHIP_THRESHOLD, PASTE_EXPAND_LINES, PASTE_PREVIEW_CHARS, PROGRESS_UNKNOWN,
+    AttachmentChip, AttachmentChipOutcome, AttachmentChipState, AttachmentItem, AttachmentStatus,
+    AttachmentStripEvent, AttachmentType, PasteChip, PasteChipOutcome, PasteChipState, PastePayload,
+    attachment_semantic_summary, attachment_token_items, fill_attachment_strip_labels,
+    map_strip_outcome, paint_attachment_strip, paste_preview_from, paste_semantic_summary,
+};
+pub use attachment_chips::bench as attachment_chips_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };
@@ -584,8 +593,9 @@ pub use prompt_composer::{
     ComposerPresentation, ContextEstimate, LARGE_PASTE_THRESHOLD, ModeIndicator, ModelIndicator,
     PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PROMPT_HISTORY_LIMIT,
     PROMPT_UNDO_LIMIT, PromptComposer, PromptComposerLayout, PromptComposerOutcome,
-    PromptComposerState, QueuedPrompt, SubmitPolicy, detect_completion, prompt_composer_help_entries,
-    submit_history_to_entries,
+    PromptComposerState, QueuedPrompt, SubmitPolicy, attachment_to_composer_chip,
+    composer_chip_to_attachment, composer_chip_to_paste, detect_completion, paste_to_composer_chip,
+    prompt_composer_help_entries, submit_history_to_entries,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
 pub use object_inspector::{

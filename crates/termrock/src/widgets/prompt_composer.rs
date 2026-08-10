@@ -153,6 +153,107 @@ impl ComposerChip {
             payload: None,
         }
     }
+
+    /// From [`AttachmentItem`](crate::widgets::AttachmentItem) (file/image/code/url).
+    #[must_use]
+    pub fn from_attachment(item: &crate::widgets::AttachmentItem) -> Self {
+        attachment_to_composer_chip(item)
+    }
+
+    /// From [`PastePayload`](crate::widgets::PastePayload).
+    #[must_use]
+    pub fn from_paste(paste: &crate::widgets::PastePayload) -> Self {
+        paste_to_composer_chip(paste)
+    }
+}
+
+/// Project attachment into composer chip list model.
+#[must_use]
+pub fn attachment_to_composer_chip(item: &crate::widgets::AttachmentItem) -> ComposerChip {
+    use crate::widgets::AttachmentType;
+    let kind = match item.kind {
+        AttachmentType::File => ChipKind::File,
+        AttachmentType::Image => ChipKind::Media,
+        AttachmentType::Code => ChipKind::Mention,
+        AttachmentType::Url | AttachmentType::Document | AttachmentType::Other => ChipKind::Other,
+    };
+    ComposerChip {
+        id: item.id.clone(),
+        kind,
+        label: item.name.clone(),
+        meta: item.meta.clone().or_else(|| {
+            item.bytes.map(|b| {
+                if b < 1024 {
+                    format!("{b} B")
+                } else {
+                    format!("{} KB", b / 1024)
+                }
+            })
+        }),
+        bytes: item.bytes.map(|b| b as usize),
+        payload: None,
+    }
+}
+
+/// Project paste payload into composer chip (body in payload when present).
+#[must_use]
+pub fn paste_to_composer_chip(paste: &crate::widgets::PastePayload) -> ComposerChip {
+    if let Some(body) = &paste.body {
+        ComposerChip::paste_with_body(paste.id.clone(), paste.preview.clone(), body.clone())
+    } else {
+        ComposerChip::paste(paste.id.clone(), paste.preview.clone(), paste.bytes)
+    }
+}
+
+/// Best-effort upgrade of a composer chip into an attachment (non-paste).
+#[must_use]
+pub fn composer_chip_to_attachment(
+    chip: &ComposerChip,
+) -> Option<crate::widgets::AttachmentItem> {
+    use crate::widgets::{AttachmentItem, AttachmentStatus, AttachmentType};
+    let kind = match chip.kind {
+        ChipKind::File => AttachmentType::File,
+        ChipKind::Media => AttachmentType::Image,
+        ChipKind::Mention => AttachmentType::Code,
+        ChipKind::Other => AttachmentType::Other,
+        ChipKind::Paste => return None,
+    };
+    Some(AttachmentItem {
+        id: chip.id.clone(),
+        kind,
+        name: chip.label.clone(),
+        meta: chip.meta.clone(),
+        bytes: chip.bytes.map(|b| b as u64),
+        line_count: None,
+        status: AttachmentStatus::Ready,
+        validation: None,
+        sensitive: false,
+        removable: true,
+    })
+}
+
+/// Upgrade composer paste chip into [`PastePayload`](crate::widgets::PastePayload).
+#[must_use]
+pub fn composer_chip_to_paste(chip: &ComposerChip) -> Option<crate::widgets::PastePayload> {
+    use crate::widgets::PastePayload;
+    if chip.kind != ChipKind::Paste {
+        return None;
+    }
+    if let Some(body) = &chip.payload {
+        let mut p = PastePayload::from_body(chip.id.clone(), body.clone());
+        p.preview = chip.label.clone();
+        if let Some(b) = chip.bytes {
+            p.bytes = b;
+        }
+        Some(p)
+    } else {
+        Some(PastePayload::preview_only(
+            chip.id.clone(),
+            chip.label.clone(),
+            chip.bytes.unwrap_or(0),
+            0,
+        ))
+    }
 }
 
 // ── Completion ──────────────────────────────────────────────────────────────
@@ -1830,40 +1931,37 @@ impl StatefulWidget for &PromptComposer<'_> {
             Widget::render(&panel, area, buffer);
         }
 
-        // Chips — shared Tag paint (removable paste/file tokens).
+        // Chips — AttachmentChip / PasteChip (Tag chrome underneath).
+        let ascii = state.ascii_fallback || state.colorless;
         for (i, (id, rect)) in layout.chip_hits.iter().enumerate() {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
-                use crate::widgets::{Tag, TagState};
-                let mark = match chip.kind {
-                    ChipKind::File => {
-                        if state.ascii_fallback {
-                            "F"
-                        } else {
-                            "📎"
-                        }
+                let focused = state.chip_cursor == Some(i);
+                if chip.kind == ChipKind::Paste {
+                    if let Some(paste) = composer_chip_to_paste(chip) {
+                        use crate::widgets::{PasteChip, PasteChipState};
+                        let mut ps = PasteChipState::new();
+                        ps.set_focused(focused);
+                        let _ = PasteChip::new(&paste, self.system)
+                            .ascii(ascii)
+                            .paint(*rect, buffer, &mut ps);
+                        continue;
                     }
-                    ChipKind::Paste => {
-                        if state.ascii_fallback {
-                            "P"
-                        } else {
-                            "📋"
-                        }
-                    }
-                    ChipKind::Media => "M",
-                    ChipKind::Mention => {
-                        if state.ascii_fallback {
-                            "@"
-                        } else {
-                            "◉"
-                        }
-                    }
-                    ChipKind::Other => "·",
-                };
-                let label = format!("{mark} {}", chip.label);
-                let tag = Tag::removable_tag(id.as_str(), label.as_str(), self.system);
-                let mut ts = TagState::new();
-                ts.set_focused(state.chip_cursor == Some(i));
-                let _ = tag.paint(*rect, buffer, &mut ts);
+                }
+                if let Some(item) = composer_chip_to_attachment(chip) {
+                    use crate::widgets::{AttachmentChip, AttachmentChipState};
+                    let mut st = AttachmentChipState::new();
+                    st.set_focused(focused);
+                    let _ = AttachmentChip::new(&item, self.system)
+                        .ascii(ascii)
+                        .paint(*rect, buffer, &mut st);
+                } else {
+                    // Fallback Tag for unexpected kinds
+                    use crate::widgets::{Tag, TagState};
+                    let tag = Tag::removable_tag(id.as_str(), chip.label.as_str(), self.system);
+                    let mut ts = TagState::new();
+                    ts.set_focused(focused);
+                    let _ = tag.paint(*rect, buffer, &mut ts);
+                }
             }
         }
 
