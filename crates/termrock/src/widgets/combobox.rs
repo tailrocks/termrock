@@ -602,7 +602,8 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                     CompletionMenuOutcome::SelectionChanged => ComboboxOutcome::HighlightChanged {
                         id: self.menu.selected().cloned(),
                     },
-                    CompletionMenuOutcome::Committed(id) => {
+                    CompletionMenuOutcome::Committed(id)
+                    | CompletionMenuOutcome::CommitWithChar { id, .. } => {
                         let label = candidates
                             .iter()
                             .find(|c| c.id == id)
@@ -617,7 +618,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                         ComboboxOutcome::Committed { id, label }
                     }
                     CompletionMenuOutcome::Dismissed => self.close_menu(),
-                    CompletionMenuOutcome::Ignored => ComboboxOutcome::Ignored,
+                    CompletionMenuOutcome::Ignored
+                    | CompletionMenuOutcome::StatusChanged { .. }
+                    | CompletionMenuOutcome::PresentationChanged { .. }
+                    | CompletionMenuOutcome::GenerationStale { .. } => ComboboxOutcome::Ignored,
                 };
             }
         }
@@ -720,7 +724,8 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                 CompletionMenuOutcome::SelectionChanged => ComboboxOutcome::HighlightChanged {
                     id: self.menu.selected().cloned(),
                 },
-                CompletionMenuOutcome::Committed(id) => {
+                CompletionMenuOutcome::Committed(id)
+                | CompletionMenuOutcome::CommitWithChar { id, .. } => {
                     let label = candidates
                         .iter()
                         .find(|c| c.id == id)
@@ -733,7 +738,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                     ComboboxOutcome::Committed { id, label }
                 }
                 CompletionMenuOutcome::Dismissed => self.close_menu(),
-                CompletionMenuOutcome::Ignored => ComboboxOutcome::Ignored,
+                CompletionMenuOutcome::Ignored
+                | CompletionMenuOutcome::StatusChanged { .. }
+                | CompletionMenuOutcome::PresentationChanged { .. }
+                | CompletionMenuOutcome::GenerationStale { .. } => ComboboxOutcome::Ignored,
             },
         }
     }
@@ -777,7 +785,8 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         // Menu first when open
         if self.menu.is_open() && !menu_area.is_empty() {
             match self.menu.handle_mouse(event, candidates) {
-                CompletionMenuOutcome::Committed(id) => {
+                CompletionMenuOutcome::Committed(id)
+                | CompletionMenuOutcome::CommitWithChar { id, .. } => {
                     let label = candidates
                         .iter()
                         .find(|c| c.id == id)
@@ -797,7 +806,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                     };
                 }
                 CompletionMenuOutcome::Dismissed => return self.close_menu(),
-                CompletionMenuOutcome::Ignored => {}
+                CompletionMenuOutcome::Ignored
+                | CompletionMenuOutcome::StatusChanged { .. }
+                | CompletionMenuOutcome::PresentationChanged { .. }
+                | CompletionMenuOutcome::GenerationStale { .. } => {}
             }
             // click outside menu and field → close menu
             if matches!(event.kind, MouseEventKind::Down(MouseButton::Left))

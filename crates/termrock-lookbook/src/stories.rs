@@ -1754,10 +1754,28 @@ pub(crate) fn stories() -> Vec<Story> {
             "completion-menu/basic",
             "Completion menu",
             "CompletionMenu",
-            "Popup candidates with stable IDs, kind annotations, and anchor clamp.",
-            48,
+            "Groups, glyphs, details, docs panel; active-descendant selection.",
+            56,
             12,
             completion_menu_basic,
+        ),
+        Story::new(
+            "completion-menu/loading",
+            "Completion menu loading",
+            "CompletionMenu",
+            "Async loading chrome with generation-gated empty list.",
+            40,
+            6,
+            completion_menu_loading_story,
+        ),
+        Story::new(
+            "completion-menu/docs",
+            "Completion menu docs",
+            "CompletionMenu",
+            "Documentation side preview for selected candidate.",
+            64,
+            12,
+            completion_menu_docs_story,
         ),
         Story::new(
             "completion-menu/edge",
@@ -1772,7 +1790,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "completion-menu/narrow",
             "Completion menu narrow",
             "CompletionMenu",
-            "Unicode candidates remain bounded in a narrow popup.",
+            "Narrow bounds promote fullscreen presentation.",
             22,
             8,
             completion_menu_basic,
@@ -1782,8 +1800,8 @@ pub(crate) fn stories() -> Vec<Story> {
             "Completion menu Unicode",
             "CompletionMenu",
             "Display-width clipping preserves complete Unicode candidates.",
-            32,
-            8,
+            40,
+            10,
             completion_menu_unicode_story,
         ),
         Story::new(
@@ -9260,19 +9278,79 @@ fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
     let candidates = [
-        CompletionCandidate::new("select", "SELECT").kind("keyword"),
-        CompletionCandidate::new("from", "FROM").kind("keyword"),
-        CompletionCandidate::new("users", "users").kind("table"),
-        CompletionCandidate::new("orders", "orders").kind("table"),
-        CompletionCandidate::new("where", "WHERE").kind("keyword"),
+        CompletionCandidate::new("select", "SELECT")
+            .kind("keyword")
+            .kind_glyph("⌘")
+            .group("Keywords")
+            .documentation("Select rows from a relation."),
+        CompletionCandidate::new("from", "FROM")
+            .kind("keyword")
+            .group("Keywords"),
+        CompletionCandidate::new("users", "users")
+            .kind("table")
+            .detail("public")
+            .group("Tables"),
+        CompletionCandidate::new("orders", "orders")
+            .kind("table")
+            .group("Tables"),
+        CompletionCandidate::new("where", "WHERE")
+            .kind("keyword")
+            .group("Keywords"),
     ];
     let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
     let mut state = CompletionMenuState::new(Some("select"));
+    state.set_show_docs(true);
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
+            CompletionMenuSize {
+                width: 48,
+                height: 8,
+            },
+        ),
+        area,
+        &mut state,
+    );
+}
+
+fn completion_menu_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(Panel::new(system).title("Editor"), area);
+    let candidates: [CompletionCandidate<'_, &str>; 0] = [];
+    let anchor = Rect::new(area.x.saturating_add(2), area.y.saturating_add(1), 1, 1);
+    let mut state = CompletionMenuState::new(None);
+    let _ = state.begin_async();
     frame.render_stateful_widget(
         &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
             CompletionMenuSize {
                 width: 28,
-                height: 6,
+                height: 4,
+            },
+        ),
+        area,
+        &mut state,
+    );
+}
+
+fn completion_menu_docs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(Panel::new(system).title("LSP"), area);
+    let candidates = [
+        CompletionCandidate::new("map", "map")
+            .kind("fn")
+            .kind_glyph("ƒ")
+            .detail("Iterator")
+            .documentation("Transforms each element with a closure.\n\nReturns a new iterator."),
+        CompletionCandidate::new("filter", "filter")
+            .kind("fn")
+            .detail("Iterator")
+            .documentation("Retains elements that match a predicate."),
+    ];
+    let anchor = Rect::new(area.x.saturating_add(3), area.y.saturating_add(2), 1, 1);
+    let mut state = CompletionMenuState::new(Some("map"));
+    state.set_show_docs(true);
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
+            CompletionMenuSize {
+                width: 52,
+                height: 8,
             },
         ),
         area,

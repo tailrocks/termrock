@@ -40,20 +40,30 @@ let mut state = ChoiceDialogState::new(Some("accept"));
 let outcome = state.handle_key(&actions, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
   },
   CompletionMenu: {
-    description: 'An anchored popup of caller-ranked completion candidates with stable selection and typed outcomes.',
+    description:
+      'Anchored suggestion surface for editors: groups, fuzzy ranges, kind glyphs, details, docs preview, async generation gates, loading/empty/stale, commit characters, active-descendant navigation (editor keeps focus), Tab/Enter/Esc intents, clamp/flip/fullscreen promotion.',
     primaryStory: 'completion-menu/basic',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{CompletionCandidate, CompletionMenu, CompletionMenuState}};
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
+    open_completion_overlay,
+};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let candidates = [
-  CompletionCandidate::new("select", "SELECT").kind("keyword"),
-  CompletionCandidate::new("schema", "schema_name"),
+    CompletionCandidate::new("select", "SELECT")
+        .kind("keyword")
+        .group("Keywords")
+        .documentation("Select rows."),
 ];
+let mut state = CompletionMenuState::new(Some("select"));
+state.set_commit_characters("().");
+// async: let gen = state.begin_async(); … state.apply_results(gen, &candidates);
 let bounds = Rect::new(0, 0, 80, 24);
 let anchor = Rect::new(12, 6, 1, 1);
-let menu = CompletionMenu::new(&candidates, &theme, bounds, anchor);
-let state = CompletionMenuState::new(Some("select"));`,
+let _ = open_completion_overlay(&mut stack, bounds, anchor, CompletionMenuSize::default(), Some("editor"));
+CompletionMenu::new(&candidates, &system, bounds, anchor).paint(area, buf, &mut state);`,
   },
   DesignInspector: {
     description: 'Studio debug strip for focus, layer, density, and color capability.',

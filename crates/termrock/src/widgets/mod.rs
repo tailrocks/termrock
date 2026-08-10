@@ -154,9 +154,12 @@ pub use quick_open::{
     quick_open_jump_targets, quick_open_presentation_for_bounds,
 };
 pub use completion_menu::{
+    COMPLETION_DOCS_DEFAULT_WIDTH, COMPLETION_FULLSCREEN_MAX_HEIGHT, COMPLETION_FULLSCREEN_MAX_WIDTH,
     COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,
-    CompletionMenuSize, CompletionMenuState, dismiss_completion_overlay, open_completion_overlay,
-    place_completion_menu,
+    CompletionMenuSize, CompletionMenuState, CompletionPresentation, CompletionSlots,
+    CompletionStatus, completion_presentation_for, default_completion_intent,
+    dismiss_completion_overlay, open_completion_configured, open_completion_overlay,
+    place_completion_menu, place_completion_with_presentation,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
 pub use content::{

@@ -17044,10 +17044,19 @@ impl<T> core::convert::From<T> for termrock::widgets::CompletionKind
 pub fn termrock::widgets::CompletionKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionKind
 #[non_exhaustive] pub enum termrock::widgets::CompletionMenuOutcome<Id>
+pub termrock::widgets::CompletionMenuOutcome::CommitWithChar
+pub termrock::widgets::CompletionMenuOutcome::CommitWithChar::ch: char
+pub termrock::widgets::CompletionMenuOutcome::CommitWithChar::id: Id
 pub termrock::widgets::CompletionMenuOutcome::Committed(Id)
 pub termrock::widgets::CompletionMenuOutcome::Dismissed
+pub termrock::widgets::CompletionMenuOutcome::GenerationStale
+pub termrock::widgets::CompletionMenuOutcome::GenerationStale::generation: u64
 pub termrock::widgets::CompletionMenuOutcome::Ignored
+pub termrock::widgets::CompletionMenuOutcome::PresentationChanged
+pub termrock::widgets::CompletionMenuOutcome::PresentationChanged::presentation: termrock::widgets::CompletionPresentation
 pub termrock::widgets::CompletionMenuOutcome::SelectionChanged
+pub termrock::widgets::CompletionMenuOutcome::StatusChanged
+pub termrock::widgets::CompletionMenuOutcome::StatusChanged::status: termrock::widgets::CompletionStatus
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuOutcome<Id>::clone(&self) -> termrock::widgets::CompletionMenuOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::CompletionMenuOutcome<Id>
@@ -17088,6 +17097,108 @@ pub unsafe fn termrock::widgets::CompletionMenuOutcome<Id>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionMenuOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::CompletionPresentation
+pub termrock::widgets::CompletionPresentation::Anchored
+pub termrock::widgets::CompletionPresentation::Fullscreen
+impl termrock::widgets::CompletionPresentation
+pub const fn termrock::widgets::CompletionPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::clone(&self) -> termrock::widgets::CompletionPresentation
+impl core::cmp::Eq for termrock::widgets::CompletionPresentation
+impl core::cmp::PartialEq for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::eq(&self, &termrock::widgets::CompletionPresentation) -> bool
+impl core::default::Default for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::default() -> termrock::widgets::CompletionPresentation
+impl core::fmt::Debug for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CompletionPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::CompletionPresentation
+impl core::marker::Freeze for termrock::widgets::CompletionPresentation
+impl core::marker::Send for termrock::widgets::CompletionPresentation
+impl core::marker::Sync for termrock::widgets::CompletionPresentation
+impl core::marker::Unpin for termrock::widgets::CompletionPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::CompletionPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CompletionPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CompletionPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CompletionPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CompletionPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CompletionPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::CompletionPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CompletionPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::CompletionPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::CompletionPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CompletionPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CompletionPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CompletionPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CompletionPresentation where T: core::clone::Clone
+pub type termrock::widgets::CompletionPresentation::Owned = T
+pub fn termrock::widgets::CompletionPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::CompletionPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CompletionPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CompletionPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CompletionPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CompletionPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CompletionPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CompletionPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CompletionPresentation
+pub fn termrock::widgets::CompletionPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CompletionPresentation
+#[non_exhaustive] pub enum termrock::widgets::CompletionStatus
+pub termrock::widgets::CompletionStatus::Empty
+pub termrock::widgets::CompletionStatus::Loading
+pub termrock::widgets::CompletionStatus::Ready
+pub termrock::widgets::CompletionStatus::Stale
+impl termrock::widgets::CompletionStatus
+pub const fn termrock::widgets::CompletionStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::clone(&self) -> termrock::widgets::CompletionStatus
+impl core::cmp::Eq for termrock::widgets::CompletionStatus
+impl core::cmp::PartialEq for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::eq(&self, &termrock::widgets::CompletionStatus) -> bool
+impl core::default::Default for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::default() -> termrock::widgets::CompletionStatus
+impl core::fmt::Debug for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::CompletionStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::CompletionStatus
+impl core::marker::Freeze for termrock::widgets::CompletionStatus
+impl core::marker::Send for termrock::widgets::CompletionStatus
+impl core::marker::Sync for termrock::widgets::CompletionStatus
+impl core::marker::Unpin for termrock::widgets::CompletionStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::CompletionStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CompletionStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CompletionStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CompletionStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CompletionStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CompletionStatus where U: core::convert::From<T>
+pub fn termrock::widgets::CompletionStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CompletionStatus where U: core::convert::Into<T>
+pub type termrock::widgets::CompletionStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::CompletionStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CompletionStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CompletionStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CompletionStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CompletionStatus where T: core::clone::Clone
+pub type termrock::widgets::CompletionStatus::Owned = T
+pub fn termrock::widgets::CompletionStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::CompletionStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CompletionStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CompletionStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CompletionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CompletionStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CompletionStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CompletionStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CompletionStatus
 #[non_exhaustive] pub enum termrock::widgets::ComposerConnection
 pub termrock::widgets::ComposerConnection::Disabled
 pub termrock::widgets::ComposerConnection::Disconnected
@@ -33705,14 +33816,22 @@ impl<T> core::convert::From<T> for termrock::widgets::CommitSeparators
 pub fn termrock::widgets::CommitSeparators::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CommitSeparators
 pub struct termrock::widgets::CompletionCandidate<'a, Id>
+pub termrock::widgets::CompletionCandidate::detail: core::option::Option<&'a str>
+pub termrock::widgets::CompletionCandidate::documentation: core::option::Option<&'a str>
 pub termrock::widgets::CompletionCandidate::enabled: bool
+pub termrock::widgets::CompletionCandidate::group: core::option::Option<&'a str>
 pub termrock::widgets::CompletionCandidate::id: Id
 pub termrock::widgets::CompletionCandidate::kind: core::option::Option<&'a str>
+pub termrock::widgets::CompletionCandidate::kind_glyph: core::option::Option<&'a str>
 pub termrock::widgets::CompletionCandidate::label: &'a str
 pub termrock::widgets::CompletionCandidate::match_ranges: core::option::Option<&'a [termrock::widgets::MatchRange]>
 impl<'a, Id> termrock::widgets::CompletionCandidate<'a, Id>
+pub const fn termrock::widgets::CompletionCandidate<'a, Id>::detail(self, &'a str) -> Self
+pub const fn termrock::widgets::CompletionCandidate<'a, Id>::documentation(self, &'a str) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::CompletionCandidate<'a, Id>::group(self, &'a str) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::kind(self, &'a str) -> Self
+pub const fn termrock::widgets::CompletionCandidate<'a, Id>::kind_glyph(self, &'a str) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::matches(self, &'a [termrock::widgets::MatchRange]) -> Self
 pub const fn termrock::widgets::CompletionCandidate<'a, Id>::new(Id, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CompletionCandidate<'a, Id>
@@ -33758,9 +33877,14 @@ pub fn termrock::widgets::CompletionCandidate<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionCandidate<'a, Id>
 pub struct termrock::widgets::CompletionMenu<'a, Id>
 impl<'a, Id> termrock::widgets::CompletionMenu<'a, Id>
+pub const fn termrock::widgets::CompletionMenu<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::CompletionMenu<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::CompletionMenu<'a, Id>::force_area(self, ratatui_core::layout::rect::Rect) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::new(&'a [termrock::widgets::CompletionCandidate<'a, Id>], &'a termrock::style::DesignSystem, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect) -> Self
+pub fn termrock::widgets::CompletionMenu<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CompletionMenuState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::preferred_size(self, termrock::widgets::CompletionMenuSize) -> Self
+pub fn termrock::widgets::CompletionMenu<'a, Id>::register_semantic<Sid, Action>(&self, &mut termrock::interaction::SemanticScene<Sid, Action>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::CompletionMenuState<Id>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone, Id: core::fmt::Display
 impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::CompletionMenu<'_, Id>
 pub type &termrock::widgets::CompletionMenu<'_, Id>::State = termrock::widgets::CompletionMenuState<Id>
 pub fn &termrock::widgets::CompletionMenu<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -33841,20 +33965,37 @@ pub fn termrock::widgets::CompletionMenuSize::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionMenuSize
 pub struct termrock::widgets::CompletionMenuState<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::CompletionMenuState<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::apply_results(&mut self, u64, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> termrock::interaction::OverlayOutcome<F>
 pub fn termrock::widgets::CompletionMenuState<Id>::commit(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_intent(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], termrock::context::ContextUiIntent) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::CompletionMenuOutcome<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::mark_stale(&mut self) -> termrock::widgets::CompletionMenuOutcome<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::move_by(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>], isize) -> termrock::widgets::CompletionMenuOutcome<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
 pub fn termrock::widgets::CompletionMenuState<Id>::reconcile(&mut self, &[termrock::widgets::CompletionCandidate<'_, Id>])
 impl<Id> termrock::widgets::CompletionMenuState<Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::begin_async(&mut self) -> u64
+pub fn termrock::widgets::CompletionMenuState<Id>::commit_characters(&self) -> &str
+pub const fn termrock::widgets::CompletionMenuState<Id>::generation(&self) -> u64
 pub const fn termrock::widgets::CompletionMenuState<Id>::is_open(&self) -> bool
-pub const fn termrock::widgets::CompletionMenuState<Id>::new(core::option::Option<Id>) -> Self
+pub fn termrock::widgets::CompletionMenuState<Id>::new(core::option::Option<Id>) -> Self
 pub const fn termrock::widgets::CompletionMenuState<Id>::offset(&self) -> usize
 pub const fn termrock::widgets::CompletionMenuState<Id>::painted(&self) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::CompletionMenuState<Id>::presentation(&self) -> termrock::widgets::CompletionPresentation
 pub fn termrock::widgets::CompletionMenuState<Id>::select(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::CompletionMenuState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::CompletionMenuState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::CompletionMenuState<Id>::set_commit_characters(&mut self, impl core::convert::Into<alloc::string::String>)
 pub fn termrock::widgets::CompletionMenuState<Id>::set_open(&mut self, bool)
+pub fn termrock::widgets::CompletionMenuState<Id>::set_presentation_override(&mut self, core::option::Option<termrock::widgets::CompletionPresentation>)
+pub fn termrock::widgets::CompletionMenuState<Id>::set_show_docs(&mut self, bool)
+pub fn termrock::widgets::CompletionMenuState<Id>::set_status(&mut self, termrock::widgets::CompletionStatus)
+pub fn termrock::widgets::CompletionMenuState<Id>::set_status_messages(&mut self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>)
+pub const fn termrock::widgets::CompletionMenuState<Id>::slots(&self) -> termrock::widgets::CompletionSlots
+pub const fn termrock::widgets::CompletionMenuState<Id>::status(&self) -> termrock::widgets::CompletionStatus
+pub fn termrock::widgets::CompletionMenuState<Id>::sync_presentation(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionMenuOutcome<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CompletionMenuState<Id>
 pub fn termrock::widgets::CompletionMenuState<Id>::clone(&self) -> termrock::widgets::CompletionMenuState<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::CompletionMenuState<Id>
@@ -33944,6 +34085,56 @@ pub unsafe fn termrock::widgets::CompletionQuery::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::CompletionQuery
 pub fn termrock::widgets::CompletionQuery::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CompletionQuery
+pub struct termrock::widgets::CompletionSlots
+pub termrock::widgets::CompletionSlots::docs: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CompletionSlots::list: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CompletionSlots::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::CompletionSlots::status: ratatui_core::layout::rect::Rect
+impl termrock::widgets::CompletionSlots
+pub const fn termrock::widgets::CompletionSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::CompletionSlots
+pub fn termrock::widgets::CompletionSlots::clone(&self) -> termrock::widgets::CompletionSlots
+impl core::cmp::Eq for termrock::widgets::CompletionSlots
+impl core::cmp::PartialEq for termrock::widgets::CompletionSlots
+pub fn termrock::widgets::CompletionSlots::eq(&self, &termrock::widgets::CompletionSlots) -> bool
+impl core::default::Default for termrock::widgets::CompletionSlots
+pub fn termrock::widgets::CompletionSlots::default() -> termrock::widgets::CompletionSlots
+impl core::fmt::Debug for termrock::widgets::CompletionSlots
+pub fn termrock::widgets::CompletionSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::CompletionSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::CompletionSlots
+impl core::marker::Freeze for termrock::widgets::CompletionSlots
+impl core::marker::Send for termrock::widgets::CompletionSlots
+impl core::marker::Sync for termrock::widgets::CompletionSlots
+impl core::marker::Unpin for termrock::widgets::CompletionSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::CompletionSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CompletionSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CompletionSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CompletionSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CompletionSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CompletionSlots where U: core::convert::From<T>
+pub fn termrock::widgets::CompletionSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CompletionSlots where U: core::convert::Into<T>
+pub type termrock::widgets::CompletionSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::CompletionSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CompletionSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CompletionSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CompletionSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CompletionSlots where T: core::clone::Clone
+pub type termrock::widgets::CompletionSlots::Owned = T
+pub fn termrock::widgets::CompletionSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::CompletionSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CompletionSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CompletionSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CompletionSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CompletionSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::CompletionSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CompletionSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CompletionSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CompletionSlots
+pub fn termrock::widgets::CompletionSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CompletionSlots
 pub struct termrock::widgets::ComposedRow<'a, Id>
 pub termrock::widgets::ComposedRow::badge: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::ComposedRow::enabled: bool
@@ -52208,6 +52399,9 @@ pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::COMMAND_PALETTE_HISTORY_CAP: usize
 pub const termrock::widgets::COMMAND_PALETTE_OVERLAY_ID: &str
+pub const termrock::widgets::COMPLETION_DOCS_DEFAULT_WIDTH: u16
+pub const termrock::widgets::COMPLETION_FULLSCREEN_MAX_HEIGHT: u16
+pub const termrock::widgets::COMPLETION_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::CONTEXT_MENU_OVERLAY_ID: &str
 pub const termrock::widgets::CONTEXT_MENU_SUBMENU_PREFIX: &str
@@ -52304,10 +52498,12 @@ pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldse
 pub fn termrock::widgets::collect_jump_candidates<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpCandidate<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::completion_presentation_for(ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionPresentation
 pub fn termrock::widgets::contract_help_entries(&[termrock::widgets::HelpEntry], usize) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::crumbs_from_labels(&[&str]) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
 pub fn termrock::widgets::default_command_palette_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
+pub fn termrock::widgets::default_completion_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_history_picker_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_keyboard_help_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
 pub fn termrock::widgets::default_menu_bar_intent(termrock::input::KeyEvent) -> core::option::Option<termrock::context::ContextUiIntent>
@@ -52391,6 +52587,7 @@ pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::I
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_completion_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>, core::option::Option<termrock::widgets::CompletionPresentation>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_context_menu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -52418,6 +52615,7 @@ pub fn termrock::widgets::parse_quick_open_query(&str) -> termrock::widgets::Par
 pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::place_completion_with_presentation(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, termrock::widgets::CompletionPresentation) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_context_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_dialog(ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_drawer(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> ratatui_core::layout::rect::Rect
