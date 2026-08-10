@@ -760,54 +760,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for SessionPicker<'_, Id> {
     }
 }
 
-// ── Task rail (thin List façade) ────────────────────────────────────────────
-
-/// Task rail is a titled list with composed rows — use [`List`] + panel chrome.
-#[derive(Debug, Clone, Copy)]
-pub struct TaskRail<'a, Id> {
-    rows: &'a [ListRow<'a, Id>],
-    tokens: &'a DesignSystem,
-    title: &'a str,
-}
-
-impl<'a, Id> TaskRail<'a, Id> {
-    /// Creates a task rail.
-    #[must_use]
-    pub const fn new(
-        rows: &'a [ListRow<'a, Id>],
-        tokens: &'a DesignSystem,
-        title: &'a str,
-    ) -> Self {
-        Self {
-            rows,
-            tokens,
-            title,
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for &TaskRail<'_, Id> {
-    type State = ListState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let panel = Panel::new(self.tokens)
-            .title(self.title)
-            .emphasis(PanelChrome::Focused); // host supplies focus via List::focused; panel chrome follows scene
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        if !inner.is_empty() {
-            StatefulWidget::render(&List::new(self.rows, self.tokens), inner, buffer, state);
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for TaskRail<'_, Id> {
-    type State = ListState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
-    }
-}
+// TaskRail elevated in `task_rail` module (ActivityModel + groups). Migration 0222.
 
 #[cfg(test)]
 mod tests {

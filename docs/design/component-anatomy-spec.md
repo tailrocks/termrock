@@ -2310,30 +2310,30 @@ Every component below uses sections **1–24**:
 
 ## TaskRail
 
-1. **Purpose:** Side list of tasks/subagents.  
-2. **Anatomy:** `root` · `task_row[]` · `status` · `title` · `meta`  
-3. **Public properties:** tasks projection, `design`  
-4. **State:** selected task.  
-5. **Variants:** `compact` · `detailed`  
-6. **Sizes/density:** width like Sidebar.  
-7. **Visual states:** status colors/glyphs; selected.  
-8. **Interaction states:** select · activate.  
-9. **Keyboard:** up/down/enter.  
-10. **Mouse:** click.  
-11. **Focus:** list focus.  
-12. **Disabled:** completed optional skip policy.  
-13. **Loading:** task running spinner.  
-14. **Error:** failed status.  
-15. **Narrow:** title only.  
-16. **Tiny:** status + first grapheme.  
-17. **Unicode/ASCII:** task status glyphs catalog.  
-18. **Colorless:** status letter + selected reverse.  
-19. **Composition:** AgentWorkbench east/west.  
-20. **Outcomes:** `Selected` · `Activated`  
-21. **Stories:** `task-rail/statuses`  
-22. **Snapshots:** mixed statuses.  
-23. **Interaction tests:** select.  
-24. **Perf:** O(visible).
+1. **Purpose:** Unified task/agent activity side panel on ActivityModel.  
+2. **Anatomy:** `header` · `group[]` · `item[]` · `filter` · `footer_counts`  
+3. **Public properties:** `ActivityModel[]` (scope, status, kind, actor, elapsed, progress, deps, needs_input), title, zoom  
+4. **State:** `TaskRailState` — list cursor, filter, collapsed scopes, zoom, hide_completed  
+5. **Variants:** Panel · Drawer hint · StatusSummary; zoom Compact/Detail  
+6. **Sizes/density:** sidebar width; compact < 22 cols  
+7. **Visual states:** SemanticStatus; needs_input badge; group collapse  
+8. **Interaction states:** select · activate · cancel/retry · filter · group toggle · zoom  
+9. **Keyboard:** list intents · Tab needs-input · `/` filter · x/r/t/d/f actions · z zoom  
+10. **Mouse:** list hit activate; group header toggle  
+11. **Focus:** panel + list focused chrome  
+12. **Disabled:** accepts_input false  
+13. **Loading:** Running progress trailing  
+14. **Error:** Failed status + completed group  
+15. **Narrow:** Compact zoom; Drawer recommendation  
+16. **Tiny:** StatusBar summary projection  
+17. **Unicode/ASCII:** status glyphs  
+18. **Colorless:** status letters; reverse select  
+19. **Composition:** List substrate; ActivityShelf bridge; StatusBar/Drawer host  
+20. **Outcomes:** Selected · Activated · Cancel/RetryTask · FocusTranscript · InspectDeps · GroupToggled · FilterChanged · PreferDrawer  
+21. **Stories:** `task-rail/{basic,input,filter,drawer-narrow,statusbar,narrow,unicode}`  
+22. **Snapshots:** groups; needs-input first  
+23. **Interaction tests:** filter, collapse, Tab jump, cancel  
+24. **Perf:** O(visible rows); paint budget many items
 
 ## SessionPicker
 

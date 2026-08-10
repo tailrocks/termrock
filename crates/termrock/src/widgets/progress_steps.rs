@@ -927,7 +927,7 @@ pub fn paint_progress_steps_as_timeline(
     Widget::render(&Timeline::new(&events, system), area, buffer);
 }
 
-/// Project to list rows for [`TaskRail`] / List.
+/// Project to list rows for List / legacy rail hosts (prefer [`ActivityModel`](super::ActivityModel) + TaskRail).
 ///
 /// **Note:** `label`/`trailing` use owned strings via `Line::from`; callers
 /// typically rebuild rows each frame from live steps.

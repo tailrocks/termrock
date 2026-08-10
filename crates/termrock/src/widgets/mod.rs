@@ -130,6 +130,7 @@ mod diagnostic;
 mod terminal_output;
 mod terminal_run_card;
 mod activity_shelf;
+mod task_rail;
 mod hex_viewer;
 mod file_tree;
 mod process_table;
@@ -287,9 +288,18 @@ pub use dependency_graph::bench as dependency_graph_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
-    SessionItem, SessionPicker, SessionPickerOutcome, TaskRail, WorkbenchMode,
-    session_picker_handle_key,
+    SessionItem, SessionPicker, SessionPickerOutcome, WorkbenchMode, session_picker_handle_key,
 };
+pub use task_rail::{
+    TASK_RAIL_COMPACT_WIDTH, TASK_RAIL_DEP_CAP, TASK_RAIL_DRAWER_OVERLAY_ID, TASK_RAIL_DRAWER_WIDTH,
+    ActivityActionKind, ActivityDependency, ActivityModel, ActivityScope, TaskRail,
+    TaskRailCounts, TaskRailOutcome, TaskRailPresentation, TaskRailRow, TaskRailState,
+    TaskRailZoom, activity_model_from_shelf, activity_models_to_shelf, build_task_rail_rows,
+    example_activity_models, filter_activity_models, project_task_rail_for_status_bar,
+    project_task_rail_list_rows, sort_activity_models, task_rail_counts, task_rail_status_slot,
+    task_rail_status_summary,
+};
+pub use task_rail::bench as task_rail_bench;
 pub use blocks::{
     BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
     ResourceBrowserState, SettingsShellOutcome, SettingsShellState,

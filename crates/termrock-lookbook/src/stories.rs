@@ -6659,10 +6659,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "task-rail/basic",
             "Task rail",
             "TaskRail",
-            "Titled task list rail.",
-            28,
-            10,
+            "Grouped ActivityModel rail with needs-input first.",
+            32,
+            16,
             task_rail_story,
+        ),
+        Story::new(
+            "task-rail/input",
+            "TaskRail needs input",
+            "TaskRail",
+            "Permission/input prioritized selection.",
+            32,
+            14,
+            task_rail_input_story,
+        ),
+        Story::new(
+            "task-rail/filter",
+            "TaskRail filter",
+            "TaskRail",
+            "Filter query in title chrome.",
+            32,
+            14,
+            task_rail_filter_story,
+        ),
+        Story::new(
+            "task-rail/drawer-narrow",
+            "TaskRail drawer-narrow",
+            "TaskRail",
+            "Narrow width recommends Drawer presentation.",
+            20,
+            14,
+            task_rail_drawer_narrow_story,
+        ),
+        Story::new(
+            "task-rail/statusbar",
+            "TaskRail StatusBar",
+            "TaskRail",
+            "Collapsed rail summary as StatusBar slot.",
+            64,
+            1,
+            task_rail_statusbar_story,
         ),
         Story::new(
             "blocks/form-wizard",
@@ -20866,24 +20902,58 @@ fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let rows = [ListRow {
-        id: "t1",
-        label: Line::from("Task one"),
-        leading: None,
-        secondary: None,
-                status: None,
-        badge: None,
-        shortcut: None,
-                actions: None,
-        trailing: None,
-                custom: None,
-        role: RowRole::Item,
-        enabled: true,
-        loading: false,
-    }];
-    let mut state = ListState::new(Some("t1"));
-    frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "Tasks"), area, &mut state);
+    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    let items = example_activity_models();
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    st.list.select(Some("p1".into()));
+    TaskRail::new(&items, system)
+        .title("Tasks")
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn task_rail_input_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    let items = example_activity_models();
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    st.list.select(Some("p1".into()));
+    // expand completed for visibility of mixed statuses
+    st.collapsed.remove(&termrock::widgets::ActivityScope::Completed);
+    TaskRail::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn task_rail_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    let items = example_activity_models();
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    st.filter = "cargo".into();
+    st.filter_mode = true;
+    TaskRail::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn task_rail_drawer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    let items = example_activity_models();
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    TaskRail::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_activity_models, project_task_rail_for_status_bar, task_rail_status_slot, StatusBar,
+        StatusBarState,
+    };
+    let items = example_activity_models();
+    let proj = project_task_rail_for_status_bar(&items, true);
+    let slot = task_rail_status_slot("tasks", &proj, false);
+    let right = [slot];
+    let mut st = StatusBarState::<&str>::new();
+    frame.render_stateful_widget(StatusBar::new(&[], &right, system), area, &mut st);
 }
 
 // ── State-axis story helpers ────────────────────────────────────────────────
@@ -21977,24 +22047,26 @@ fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let rows = [ListRow {
-        id: "t1",
-        label: Line::from("タスク一 📌"),
-        leading: None,
-        secondary: None,
-                status: None,
-        badge: None,
-        shortcut: None,
-                actions: None,
-        trailing: None,
-                custom: None,
-        role: RowRole::Item,
-        enabled: true,
-        loading: false,
-    }];
-    let mut state = ListState::new(Some("t1"));
-    frame.render_stateful_widget(&TaskRail::new(&rows, &tokens, "任務"), area, &mut state);
+    use termrock::widgets::{
+        ActivityKind, ActivityModel, ActivityScope, SemanticStatus, TaskRail, TaskRailState,
+    };
+    let items = vec![
+        ActivityModel::new("u1", "タスク一 📌")
+            .scope(ActivityScope::Foreground)
+            .kind(ActivityKind::Tool)
+            .status(SemanticStatus::Running)
+            .elapsed("1s"),
+        ActivityModel::new("u2", "サブエージェント 🔍")
+            .scope(ActivityScope::Subagent)
+            .status(SemanticStatus::Waiting)
+            .needs_input(true)
+            .waiting_reason("確認"),
+    ];
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    TaskRail::new(&items, system)
+        .title("任務")
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -21,6 +21,7 @@
     "tool-call-card",
     "terminal-run-card",
     "activity-shelf",
+    "task-rail",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

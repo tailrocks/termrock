@@ -188,6 +188,12 @@ actor, progress, waiting reason, jump/open, with blocked/action-required first.
 Narrow → summary or badge. Projects into StatusBar slots and NotificationCenter.
 Does not replace TaskRail.
 
+`TaskRail` is the **unified task/agent activity side panel** over application-neutral
+`ActivityModel`: workflows, subagents, foreground/background, watchers, completed
+history; collapse/filter/search/zoom; needs-input priority; Drawer/StatusBar
+collapse; bridges to ActivityShelf and List projection.
+
+
 
 
 `TerminalRunCard` specializes shell/terminal runs over the `TerminalOutput`
