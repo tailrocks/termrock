@@ -1,0 +1,29 @@
+---
+title: Pagination
+description: Discrete page control for remote result sets — not scroll virtualization.
+---
+
+# Pagination
+
+**Purpose.** Navigate pages of remote or expensive datasets. Host **fetches**;
+TermRock emits [`PageRequest`] `{ page, page_size, offset() }`.
+
+## Not scrolling
+
+| | Pagination | Virtualization |
+|--|------------|----------------|
+| Data | Discrete remote pages | Local / stream window |
+| UX | Page 3 of 12 | Continuous scroll |
+| API | `LIMIT/OFFSET`, `?page=` | Paint slice only |
+
+`pagination_guidance::WHEN_VIRTUALIZE` documents the choice.
+
+## Totals
+
+- `PageTotal::Known(n)` — full chrome, last page  
+- `Unknown` — next allowed; no last  
+- `AtLeast(n)` — summary `of n+`  
+
+## Related
+
+Virtualizer · DataTable · migration `0156`

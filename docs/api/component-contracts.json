@@ -351,6 +351,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "Pagination": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Text": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",

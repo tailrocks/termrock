@@ -55,6 +55,7 @@ mod markdown;
 mod menu_nav;
 mod sidebar;
 mod breadcrumbs;
+mod pagination;
 mod card;
 mod panel;
 mod permission;
@@ -246,6 +247,11 @@ pub use breadcrumbs::{
     BREADCRUMBS_COLLAPSE_MAX_WIDTH, BREADCRUMBS_ELLIPSIS, BREADCRUMBS_ELLIPSIS_ASCII, BreadcrumbHit,
     BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode,
     BreadcrumbsOutcome, BreadcrumbsPresentation, BreadcrumbsState, crumbs_from_labels,
+};
+pub use pagination::{
+    PAGINATION_COMPACT_MAX_WIDTH, PAGINATION_MINIMAL_MAX_WIDTH, PageRequest, PageTotal, Pagination,
+    PaginationOutcome, PaginationPart, PaginationPresentation, PaginationState,
+    guidance as pagination_guidance,
 };
 pub use sidebar::{
     SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID, SIDEBAR_RAIL_MAX_WIDTH, NavItem,

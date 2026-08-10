@@ -23,6 +23,7 @@
     "sidebar",
     "tree-navigation",
     "breadcrumbs",
+    "pagination",
     "menu",
     "object-inspector",
     "log-stream",

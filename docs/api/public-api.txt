@@ -14586,6 +14586,8 @@ pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
 pub mod termrock::widgets::date_time_picker_guidance
 pub const termrock::widgets::date_time_picker_guidance::WHEN_TEXT_INPUT: &str
+pub mod termrock::widgets::pagination_guidance
+pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
 #[non_exhaustive] pub enum termrock::widgets::AccordionMode
 pub termrock::widgets::AccordionMode::Multiple
 pub termrock::widgets::AccordionMode::Single
@@ -21326,6 +21328,216 @@ pub unsafe fn termrock::interaction::Outcome<T>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::interaction::Outcome<T>
 pub fn termrock::interaction::Outcome<T>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::Outcome<T>
+#[non_exhaustive] pub enum termrock::widgets::PageTotal
+pub termrock::widgets::PageTotal::AtLeast(u64)
+pub termrock::widgets::PageTotal::Known(u64)
+pub termrock::widgets::PageTotal::Unknown
+impl termrock::widgets::PageTotal
+pub const fn termrock::widgets::PageTotal::exact(self) -> core::option::Option<u64>
+pub const fn termrock::widgets::PageTotal::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::clone(&self) -> termrock::widgets::PageTotal
+impl core::cmp::Eq for termrock::widgets::PageTotal
+impl core::cmp::PartialEq for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::eq(&self, &termrock::widgets::PageTotal) -> bool
+impl core::default::Default for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::default() -> termrock::widgets::PageTotal
+impl core::fmt::Debug for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PageTotal
+impl core::marker::StructuralPartialEq for termrock::widgets::PageTotal
+impl core::marker::Freeze for termrock::widgets::PageTotal
+impl core::marker::Send for termrock::widgets::PageTotal
+impl core::marker::Sync for termrock::widgets::PageTotal
+impl core::marker::Unpin for termrock::widgets::PageTotal
+impl core::marker::UnsafeUnpin for termrock::widgets::PageTotal
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PageTotal
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PageTotal
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PageTotal where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PageTotal::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PageTotal where U: core::convert::From<T>
+pub fn termrock::widgets::PageTotal::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PageTotal where U: core::convert::Into<T>
+pub type termrock::widgets::PageTotal::Error = core::convert::Infallible
+pub fn termrock::widgets::PageTotal::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PageTotal where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PageTotal::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PageTotal::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PageTotal where T: core::clone::Clone
+pub type termrock::widgets::PageTotal::Owned = T
+pub fn termrock::widgets::PageTotal::clone_into(&self, &mut T)
+pub fn termrock::widgets::PageTotal::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PageTotal where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PageTotal::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PageTotal where T: ?core::marker::Sized
+pub fn termrock::widgets::PageTotal::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PageTotal where T: ?core::marker::Sized
+pub fn termrock::widgets::PageTotal::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PageTotal where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PageTotal::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PageTotal
+pub fn termrock::widgets::PageTotal::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PageTotal
+#[non_exhaustive] pub enum termrock::widgets::PaginationOutcome
+pub termrock::widgets::PaginationOutcome::Changed
+pub termrock::widgets::PaginationOutcome::Ignored
+pub termrock::widgets::PaginationOutcome::JumpCancelled
+pub termrock::widgets::PaginationOutcome::JumpStarted
+pub termrock::widgets::PaginationOutcome::PageRequested
+pub termrock::widgets::PaginationOutcome::PageRequested::request: termrock::widgets::PageRequest
+pub termrock::widgets::PaginationOutcome::PageSizeChanged
+pub termrock::widgets::PaginationOutcome::PageSizeChanged::page_size: u32
+pub termrock::widgets::PaginationOutcome::PageSizeChanged::request: termrock::widgets::PageRequest
+pub termrock::widgets::PaginationOutcome::PresentationChanged
+pub termrock::widgets::PaginationOutcome::PresentationChanged::presentation: termrock::widgets::PaginationPresentation
+impl core::clone::Clone for termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationOutcome::clone(&self) -> termrock::widgets::PaginationOutcome
+impl core::cmp::Eq for termrock::widgets::PaginationOutcome
+impl core::cmp::PartialEq for termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationOutcome::eq(&self, &termrock::widgets::PaginationOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PaginationOutcome
+impl core::marker::Freeze for termrock::widgets::PaginationOutcome
+impl core::marker::Send for termrock::widgets::PaginationOutcome
+impl core::marker::Sync for termrock::widgets::PaginationOutcome
+impl core::marker::Unpin for termrock::widgets::PaginationOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PaginationOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PaginationOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PaginationOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PaginationOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PaginationOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PaginationOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PaginationOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PaginationOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PaginationOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PaginationOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PaginationOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PaginationOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PaginationOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PaginationOutcome where T: core::clone::Clone
+pub type termrock::widgets::PaginationOutcome::Owned = T
+pub fn termrock::widgets::PaginationOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PaginationOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PaginationOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PaginationOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PaginationOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PaginationOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PaginationOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PaginationOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PaginationOutcome
+#[non_exhaustive] pub enum termrock::widgets::PaginationPart
+pub termrock::widgets::PaginationPart::First
+pub termrock::widgets::PaginationPart::Jump
+pub termrock::widgets::PaginationPart::Last
+pub termrock::widgets::PaginationPart::Next
+pub termrock::widgets::PaginationPart::PageButton(u8)
+pub termrock::widgets::PaginationPart::PageSize
+pub termrock::widgets::PaginationPart::Prev
+impl termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::id(self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::clone(&self) -> termrock::widgets::PaginationPart
+impl core::cmp::Eq for termrock::widgets::PaginationPart
+impl core::cmp::PartialEq for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::eq(&self, &termrock::widgets::PaginationPart) -> bool
+impl core::default::Default for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::default() -> termrock::widgets::PaginationPart
+impl core::fmt::Debug for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PaginationPart
+impl core::marker::StructuralPartialEq for termrock::widgets::PaginationPart
+impl core::marker::Freeze for termrock::widgets::PaginationPart
+impl core::marker::Send for termrock::widgets::PaginationPart
+impl core::marker::Sync for termrock::widgets::PaginationPart
+impl core::marker::Unpin for termrock::widgets::PaginationPart
+impl core::marker::UnsafeUnpin for termrock::widgets::PaginationPart
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PaginationPart
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PaginationPart
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PaginationPart where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PaginationPart::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PaginationPart where U: core::convert::From<T>
+pub fn termrock::widgets::PaginationPart::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PaginationPart where U: core::convert::Into<T>
+pub type termrock::widgets::PaginationPart::Error = core::convert::Infallible
+pub fn termrock::widgets::PaginationPart::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PaginationPart where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PaginationPart::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PaginationPart::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PaginationPart where T: core::clone::Clone
+pub type termrock::widgets::PaginationPart::Owned = T
+pub fn termrock::widgets::PaginationPart::clone_into(&self, &mut T)
+pub fn termrock::widgets::PaginationPart::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PaginationPart where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PaginationPart::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PaginationPart where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationPart::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PaginationPart where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationPart::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PaginationPart where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PaginationPart::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PaginationPart
+pub fn termrock::widgets::PaginationPart::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PaginationPart
+#[non_exhaustive] pub enum termrock::widgets::PaginationPresentation
+pub termrock::widgets::PaginationPresentation::Compact
+pub termrock::widgets::PaginationPresentation::Full
+pub termrock::widgets::PaginationPresentation::Minimal
+impl termrock::widgets::PaginationPresentation
+pub const fn termrock::widgets::PaginationPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::clone(&self) -> termrock::widgets::PaginationPresentation
+impl core::cmp::Eq for termrock::widgets::PaginationPresentation
+impl core::cmp::PartialEq for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::eq(&self, &termrock::widgets::PaginationPresentation) -> bool
+impl core::default::Default for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::default() -> termrock::widgets::PaginationPresentation
+impl core::fmt::Debug for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PaginationPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::PaginationPresentation
+impl core::marker::Freeze for termrock::widgets::PaginationPresentation
+impl core::marker::Send for termrock::widgets::PaginationPresentation
+impl core::marker::Sync for termrock::widgets::PaginationPresentation
+impl core::marker::Unpin for termrock::widgets::PaginationPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::PaginationPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PaginationPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PaginationPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PaginationPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PaginationPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PaginationPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::PaginationPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PaginationPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::PaginationPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::PaginationPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PaginationPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PaginationPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PaginationPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PaginationPresentation where T: core::clone::Clone
+pub type termrock::widgets::PaginationPresentation::Owned = T
+pub fn termrock::widgets::PaginationPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::PaginationPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PaginationPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PaginationPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PaginationPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PaginationPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PaginationPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PaginationPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PaginationPresentation
 #[non_exhaustive] pub enum termrock::widgets::PanelBody
 pub termrock::widgets::PanelBody::Empty
 pub termrock::widgets::PanelBody::Error
@@ -38303,6 +38515,183 @@ pub unsafe fn termrock::widgets::OpsDashboardState<RowId, ColId>::clone_to_unini
 impl<T> core::convert::From<T> for termrock::widgets::OpsDashboardState<RowId, ColId>
 pub fn termrock::widgets::OpsDashboardState<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::OpsDashboardState<RowId, ColId>
+pub struct termrock::widgets::PageRequest
+pub termrock::widgets::PageRequest::page: u32
+pub termrock::widgets::PageRequest::page_size: u32
+impl termrock::widgets::PageRequest
+pub const fn termrock::widgets::PageRequest::limit(self) -> u32
+pub const fn termrock::widgets::PageRequest::new(u32, u32) -> Self
+pub const fn termrock::widgets::PageRequest::offset(self) -> u64
+impl core::clone::Clone for termrock::widgets::PageRequest
+pub fn termrock::widgets::PageRequest::clone(&self) -> termrock::widgets::PageRequest
+impl core::cmp::Eq for termrock::widgets::PageRequest
+impl core::cmp::PartialEq for termrock::widgets::PageRequest
+pub fn termrock::widgets::PageRequest::eq(&self, &termrock::widgets::PageRequest) -> bool
+impl core::fmt::Debug for termrock::widgets::PageRequest
+pub fn termrock::widgets::PageRequest::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PageRequest
+pub fn termrock::widgets::PageRequest::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PageRequest
+impl core::marker::StructuralPartialEq for termrock::widgets::PageRequest
+impl core::marker::Freeze for termrock::widgets::PageRequest
+impl core::marker::Send for termrock::widgets::PageRequest
+impl core::marker::Sync for termrock::widgets::PageRequest
+impl core::marker::Unpin for termrock::widgets::PageRequest
+impl core::marker::UnsafeUnpin for termrock::widgets::PageRequest
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PageRequest
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PageRequest
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PageRequest where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PageRequest::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PageRequest where U: core::convert::From<T>
+pub fn termrock::widgets::PageRequest::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PageRequest where U: core::convert::Into<T>
+pub type termrock::widgets::PageRequest::Error = core::convert::Infallible
+pub fn termrock::widgets::PageRequest::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PageRequest where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PageRequest::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PageRequest::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PageRequest where T: core::clone::Clone
+pub type termrock::widgets::PageRequest::Owned = T
+pub fn termrock::widgets::PageRequest::clone_into(&self, &mut T)
+pub fn termrock::widgets::PageRequest::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PageRequest where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PageRequest::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PageRequest where T: ?core::marker::Sized
+pub fn termrock::widgets::PageRequest::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PageRequest where T: ?core::marker::Sized
+pub fn termrock::widgets::PageRequest::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PageRequest where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PageRequest::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PageRequest
+pub fn termrock::widgets::PageRequest::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PageRequest
+pub struct termrock::widgets::Pagination<'a>
+impl<'a> termrock::widgets::Pagination<'a>
+pub const fn termrock::widgets::Pagination<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::Pagination<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Pagination<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PaginationState)
+pub fn termrock::widgets::Pagination<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PaginationState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::Pagination<'a>::show_page_size(self, bool) -> Self
+pub const fn termrock::widgets::Pagination<'a>::show_summary(self, bool) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Pagination<'_>
+pub type &termrock::widgets::Pagination<'_>::State = termrock::widgets::PaginationState
+pub fn &termrock::widgets::Pagination<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Pagination<'_>
+pub type termrock::widgets::Pagination<'_>::State = termrock::widgets::PaginationState
+pub fn termrock::widgets::Pagination<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::Pagination<'a>
+pub fn termrock::widgets::Pagination<'a>::clone(&self) -> termrock::widgets::Pagination<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::Pagination<'a>
+pub fn termrock::widgets::Pagination<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::Pagination<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::Pagination<'a>
+impl<'a> core::marker::Send for termrock::widgets::Pagination<'a>
+impl<'a> core::marker::Sync for termrock::widgets::Pagination<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::Pagination<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::Pagination<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Pagination<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Pagination<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::Pagination<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::Pagination<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Pagination<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::Pagination<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::Pagination<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::Pagination<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::Pagination<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::Pagination<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::Pagination<'a> where T: core::clone::Clone
+pub type termrock::widgets::Pagination<'a>::Owned = T
+pub fn termrock::widgets::Pagination<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::Pagination<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::Pagination<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::Pagination<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::Pagination<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Pagination<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Pagination<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::Pagination<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::Pagination<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::Pagination<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::Pagination<'a>
+pub fn termrock::widgets::Pagination<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::Pagination<'a>
+pub struct termrock::widgets::PaginationState
+impl termrock::widgets::PaginationState
+pub const fn termrock::widgets::PaginationState::can_first(&self) -> bool
+pub fn termrock::widgets::PaginationState::can_last(&self) -> bool
+pub fn termrock::widgets::PaginationState::can_next(&self) -> bool
+pub const fn termrock::widgets::PaginationState::can_prev(&self) -> bool
+pub fn termrock::widgets::PaginationState::cycle_page_size(&mut self) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::first(&mut self) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::go_to(&mut self, u32) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PaginationOutcome
+pub const fn termrock::widgets::PaginationState::is_jump_active(&self) -> bool
+pub const fn termrock::widgets::PaginationState::is_loading(&self) -> bool
+pub fn termrock::widgets::PaginationState::jump_draft(&self) -> &str
+pub fn termrock::widgets::PaginationState::last(&mut self) -> termrock::widgets::PaginationOutcome
+pub fn termrock::widgets::PaginationState::new(u32, u32, termrock::widgets::PageTotal) -> Self
+pub fn termrock::widgets::PaginationState::next(&mut self) -> termrock::widgets::PaginationOutcome
+pub const fn termrock::widgets::PaginationState::page(&self) -> u32
+pub fn termrock::widgets::PaginationState::page_count(&self) -> core::option::Option<u32>
+pub fn termrock::widgets::PaginationState::page_label(&self) -> alloc::string::String
+pub const fn termrock::widgets::PaginationState::page_size(&self) -> u32
+pub const fn termrock::widgets::PaginationState::part(&self) -> termrock::widgets::PaginationPart
+pub const fn termrock::widgets::PaginationState::presentation(&self) -> termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationState::presentation_for_width(u16) -> termrock::widgets::PaginationPresentation
+pub fn termrock::widgets::PaginationState::prev(&mut self) -> termrock::widgets::PaginationOutcome
+pub const fn termrock::widgets::PaginationState::request(&self) -> termrock::widgets::PageRequest
+pub fn termrock::widgets::PaginationState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::PaginationState::set_focused(&mut self, bool)
+pub fn termrock::widgets::PaginationState::set_loading(&mut self, bool)
+pub fn termrock::widgets::PaginationState::set_page(&mut self, u32)
+pub fn termrock::widgets::PaginationState::set_page_size(&mut self, u32)
+pub fn termrock::widgets::PaginationState::set_total(&mut self, termrock::widgets::PageTotal)
+pub fn termrock::widgets::PaginationState::summary(&self) -> alloc::string::String
+pub const fn termrock::widgets::PaginationState::total(&self) -> termrock::widgets::PageTotal
+pub fn termrock::widgets::PaginationState::with_page_sizes(self, impl core::iter::traits::collect::IntoIterator<Item = u32>) -> Self
+impl core::clone::Clone for termrock::widgets::PaginationState
+pub fn termrock::widgets::PaginationState::clone(&self) -> termrock::widgets::PaginationState
+impl core::cmp::Eq for termrock::widgets::PaginationState
+impl core::cmp::PartialEq for termrock::widgets::PaginationState
+pub fn termrock::widgets::PaginationState::eq(&self, &termrock::widgets::PaginationState) -> bool
+impl core::default::Default for termrock::widgets::PaginationState
+pub fn termrock::widgets::PaginationState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PaginationState
+pub fn termrock::widgets::PaginationState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PaginationState
+impl core::marker::Freeze for termrock::widgets::PaginationState
+impl core::marker::Send for termrock::widgets::PaginationState
+impl core::marker::Sync for termrock::widgets::PaginationState
+impl core::marker::Unpin for termrock::widgets::PaginationState
+impl core::marker::UnsafeUnpin for termrock::widgets::PaginationState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PaginationState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PaginationState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PaginationState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PaginationState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PaginationState where U: core::convert::From<T>
+pub fn termrock::widgets::PaginationState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PaginationState where U: core::convert::Into<T>
+pub type termrock::widgets::PaginationState::Error = core::convert::Infallible
+pub fn termrock::widgets::PaginationState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PaginationState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PaginationState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PaginationState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PaginationState where T: core::clone::Clone
+pub type termrock::widgets::PaginationState::Owned = T
+pub fn termrock::widgets::PaginationState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PaginationState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PaginationState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PaginationState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PaginationState where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PaginationState where T: ?core::marker::Sized
+pub fn termrock::widgets::PaginationState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PaginationState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PaginationState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PaginationState
+pub fn termrock::widgets::PaginationState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PaginationState
 pub struct termrock::widgets::Panel<'a>
 impl<'a> termrock::widgets::Panel<'a>
 pub const fn termrock::widgets::Panel<'a>::actions_visible(u16) -> bool
@@ -48280,6 +48669,8 @@ pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
+pub const termrock::widgets::PAGINATION_COMPACT_MAX_WIDTH: u16
+pub const termrock::widgets::PAGINATION_MINIMAL_MAX_WIDTH: u16
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
 pub const termrock::widgets::PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_OVERLAY_ID: &str

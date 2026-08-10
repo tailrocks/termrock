@@ -74,6 +74,7 @@ use termrock::{
         TreeNavigation, TreeNavigationState, example_docs_tree, example_project_tree,
         example_schema_tree, example_settings_tree,
         BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsState,
+        PageTotal, Pagination, PaginationState,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -900,6 +901,51 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             12,
             navigation_list_basic_story,
+        ),
+        Story::new(
+            "pagination/full",
+            "Pagination full",
+            "Pagination",
+            "Full control with page numbers and summary.",
+            64,
+            1,
+            pagination_full_story,
+        ),
+        Story::new(
+            "pagination/unknown",
+            "Pagination unknown total",
+            "Pagination",
+            "Unknown total — next allowed without last.",
+            40,
+            1,
+            pagination_unknown_story,
+        ),
+        Story::new(
+            "pagination/loading",
+            "Pagination loading",
+            "Pagination",
+            "Loading disables nav; compact width.",
+            36,
+            1,
+            pagination_loading_story,
+        ),
+        Story::new(
+            "pagination/minimal",
+            "Pagination minimal",
+            "Pagination",
+            "Narrow minimal prev/next + page label.",
+            18,
+            1,
+            pagination_minimal_story,
+        ),
+        Story::new(
+            "pagination/jump",
+            "Pagination jump",
+            "Pagination",
+            "Direct page entry draft active.",
+            48,
+            1,
+            pagination_jump_story,
         ),
         Story::new(
             "breadcrumbs/path",
@@ -7534,6 +7580,59 @@ fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         &items,
     );
     NavigationList::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn pagination_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PaginationState::new(3, 25, PageTotal::Known(240));
+    state.set_focused(true);
+    Pagination::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn pagination_unknown_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PaginationState::new(2, 50, PageTotal::Unknown);
+    state.set_focused(true);
+    Pagination::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn pagination_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PaginationState::new(4, 10, PageTotal::AtLeast(100));
+    state.set_focused(true);
+    state.set_loading(true);
+    Pagination::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn pagination_minimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PaginationState::new(1, 25, PageTotal::Known(500));
+    state.set_focused(true);
+    Pagination::new(system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PaginationState::new(1, 25, PageTotal::Known(1000));
+    state.set_focused(true);
+    let _ = state.handle_key(termrock::input::KeyEvent::new(
+        termrock::input::KeyCode::Char('g'),
+        termrock::input::KeyModifiers::NONE,
+    ));
+    let _ = state.handle_key(termrock::input::KeyEvent::new(
+        termrock::input::KeyCode::Char('1'),
+        termrock::input::KeyModifiers::NONE,
+    ));
+    let _ = state.handle_key(termrock::input::KeyEvent::new(
+        termrock::input::KeyCode::Char('2'),
+        termrock::input::KeyModifiers::NONE,
+    ));
+    Pagination::new(system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

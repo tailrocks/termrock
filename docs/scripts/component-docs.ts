@@ -375,6 +375,19 @@ let mut state = BreadcrumbsState::new();
 state.set_focused(true);
 let _ = Breadcrumbs::new(&items, &system).ascii(true);`,
   },
+  Pagination: {
+    description:
+      'Page navigation for remote datasets with prev/next, page numbers, unknown totals, page size, loading, jump entry, and narrow contraction. Not scroll virtualization.',
+    primaryStory: 'pagination/full',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{PageTotal, Pagination, PaginationState};
+
+let system = DesignSystem::default();
+let mut state = PaginationState::new(1, 25, PageTotal::Known(1000));
+state.set_focused(true);
+// PageRequested { request } → host.fetch(request.offset(), request.limit())
+let _ = Pagination::new(&system);`,
+  },
   TextArea: {
     description:
       'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.',
