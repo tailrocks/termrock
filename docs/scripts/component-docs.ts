@@ -378,6 +378,21 @@ let _ = SearchInput::new(&system)
     .status(SearchStatus::Results { count: 12 })
     .placeholder("Search…");`,
   },
+  PathInput: {
+    description:
+      'A filesystem-aware path field with host-projected status, completion/browse hooks, and no FS coupling.',
+    primaryStory: 'path-input/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{PathFsStatus, PathInput, PathInputState, PathStyle};
+
+let system = DesignSystem::default();
+let mut state = PathInputState::new()
+    .with_style(PathStyle::Unix)
+    .with_path("/usr/local/bin");
+state.set_focused(true);
+state.set_fs_status(PathFsStatus::Directory);
+let _ = PathInput::new(&system).label("Install dir").show_browse(true);`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',

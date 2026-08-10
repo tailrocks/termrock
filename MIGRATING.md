@@ -156,6 +156,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0140 | `v0.13.0` | [PasswordInput](migrations/0140-v0.13.0-password-input.md) |
 | 0141 | `v0.13.0` | [NumberInput](migrations/0141-v0.13.0-number-input.md) |
 | 0142 | `v0.13.0` | [SearchInput](migrations/0142-v0.13.0-search-input.md) |
+| 0143 | `v0.13.0` | [PathInput](migrations/0143-v0.13.0-path-input.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

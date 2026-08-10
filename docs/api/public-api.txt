@@ -20347,6 +20347,273 @@ pub unsafe fn termrock::widgets::PasswordStrengthHint::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::PasswordStrengthHint
 pub fn termrock::widgets::PasswordStrengthHint::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PasswordStrengthHint
+#[non_exhaustive] pub enum termrock::widgets::PathExpect
+pub termrock::widgets::PathExpect::Any
+pub termrock::widgets::PathExpect::Directory
+pub termrock::widgets::PathExpect::File
+impl termrock::widgets::PathExpect
+pub const fn termrock::widgets::PathExpect::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::clone(&self) -> termrock::widgets::PathExpect
+impl core::cmp::Eq for termrock::widgets::PathExpect
+impl core::cmp::PartialEq for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::eq(&self, &termrock::widgets::PathExpect) -> bool
+impl core::default::Default for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::default() -> termrock::widgets::PathExpect
+impl core::fmt::Debug for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PathExpect
+impl core::marker::StructuralPartialEq for termrock::widgets::PathExpect
+impl core::marker::Freeze for termrock::widgets::PathExpect
+impl core::marker::Send for termrock::widgets::PathExpect
+impl core::marker::Sync for termrock::widgets::PathExpect
+impl core::marker::Unpin for termrock::widgets::PathExpect
+impl core::marker::UnsafeUnpin for termrock::widgets::PathExpect
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathExpect
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathExpect
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathExpect where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathExpect::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathExpect where U: core::convert::From<T>
+pub fn termrock::widgets::PathExpect::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathExpect where U: core::convert::Into<T>
+pub type termrock::widgets::PathExpect::Error = core::convert::Infallible
+pub fn termrock::widgets::PathExpect::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathExpect where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathExpect::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathExpect::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathExpect where T: core::clone::Clone
+pub type termrock::widgets::PathExpect::Owned = T
+pub fn termrock::widgets::PathExpect::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathExpect::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathExpect where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathExpect::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathExpect where T: ?core::marker::Sized
+pub fn termrock::widgets::PathExpect::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathExpect where T: ?core::marker::Sized
+pub fn termrock::widgets::PathExpect::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathExpect where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathExpect::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathExpect
+pub fn termrock::widgets::PathExpect::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathExpect
+#[non_exhaustive] pub enum termrock::widgets::PathFsStatus
+pub termrock::widgets::PathFsStatus::Directory
+pub termrock::widgets::PathFsStatus::Error
+pub termrock::widgets::PathFsStatus::File
+pub termrock::widgets::PathFsStatus::Inaccessible
+pub termrock::widgets::PathFsStatus::Missing
+pub termrock::widgets::PathFsStatus::Pending
+pub termrock::widgets::PathFsStatus::Unknown
+impl termrock::widgets::PathFsStatus
+pub const fn termrock::widgets::PathFsStatus::id(self) -> &'static str
+pub const fn termrock::widgets::PathFsStatus::short_label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::clone(&self) -> termrock::widgets::PathFsStatus
+impl core::cmp::Eq for termrock::widgets::PathFsStatus
+impl core::cmp::PartialEq for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::eq(&self, &termrock::widgets::PathFsStatus) -> bool
+impl core::default::Default for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::default() -> termrock::widgets::PathFsStatus
+impl core::fmt::Debug for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PathFsStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::PathFsStatus
+impl core::marker::Freeze for termrock::widgets::PathFsStatus
+impl core::marker::Send for termrock::widgets::PathFsStatus
+impl core::marker::Sync for termrock::widgets::PathFsStatus
+impl core::marker::Unpin for termrock::widgets::PathFsStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::PathFsStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathFsStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathFsStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathFsStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathFsStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathFsStatus where U: core::convert::From<T>
+pub fn termrock::widgets::PathFsStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathFsStatus where U: core::convert::Into<T>
+pub type termrock::widgets::PathFsStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::PathFsStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathFsStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathFsStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathFsStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathFsStatus where T: core::clone::Clone
+pub type termrock::widgets::PathFsStatus::Owned = T
+pub fn termrock::widgets::PathFsStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathFsStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathFsStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathFsStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathFsStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PathFsStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathFsStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PathFsStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathFsStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathFsStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathFsStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathFsStatus
+#[non_exhaustive] pub enum termrock::widgets::PathInputOutcome
+pub termrock::widgets::PathInputOutcome::BrowseRequested
+pub termrock::widgets::PathInputOutcome::Cancelled
+pub termrock::widgets::PathInputOutcome::Changed
+pub termrock::widgets::PathInputOutcome::Cleared
+pub termrock::widgets::PathInputOutcome::ClipboardCopy
+pub termrock::widgets::PathInputOutcome::ClipboardCopy::text: alloc::string::String
+pub termrock::widgets::PathInputOutcome::ClipboardPasteRequest
+pub termrock::widgets::PathInputOutcome::CompletionRequested
+pub termrock::widgets::PathInputOutcome::CompletionRequested::prefix: termrock::widgets::PathCompletionPrefix
+pub termrock::widgets::PathInputOutcome::CompletionRequested::raw: alloc::string::String
+pub termrock::widgets::PathInputOutcome::HistoryRecalled
+pub termrock::widgets::PathInputOutcome::HistoryRecalled::path: alloc::string::String
+pub termrock::widgets::PathInputOutcome::Ignored
+pub termrock::widgets::PathInputOutcome::LookupRequested
+pub termrock::widgets::PathInputOutcome::LookupRequested::path: alloc::string::String
+pub termrock::widgets::PathInputOutcome::Submitted
+pub termrock::widgets::PathInputOutcome::Submitted::path: alloc::string::String
+impl core::clone::Clone for termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputOutcome::clone(&self) -> termrock::widgets::PathInputOutcome
+impl core::cmp::Eq for termrock::widgets::PathInputOutcome
+impl core::cmp::PartialEq for termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputOutcome::eq(&self, &termrock::widgets::PathInputOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PathInputOutcome
+impl core::marker::Freeze for termrock::widgets::PathInputOutcome
+impl core::marker::Send for termrock::widgets::PathInputOutcome
+impl core::marker::Sync for termrock::widgets::PathInputOutcome
+impl core::marker::Unpin for termrock::widgets::PathInputOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PathInputOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathInputOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathInputOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathInputOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathInputOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathInputOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PathInputOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathInputOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PathInputOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PathInputOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathInputOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathInputOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathInputOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathInputOutcome where T: core::clone::Clone
+pub type termrock::widgets::PathInputOutcome::Owned = T
+pub fn termrock::widgets::PathInputOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathInputOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathInputOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathInputOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathInputOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathInputOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathInputOutcome
+#[non_exhaustive] pub enum termrock::widgets::PathRisk
+pub termrock::widgets::PathRisk::Destructive
+pub termrock::widgets::PathRisk::Normal
+impl termrock::widgets::PathRisk
+pub const fn termrock::widgets::PathRisk::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::clone(&self) -> termrock::widgets::PathRisk
+impl core::cmp::Eq for termrock::widgets::PathRisk
+impl core::cmp::PartialEq for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::eq(&self, &termrock::widgets::PathRisk) -> bool
+impl core::default::Default for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::default() -> termrock::widgets::PathRisk
+impl core::fmt::Debug for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PathRisk
+impl core::marker::StructuralPartialEq for termrock::widgets::PathRisk
+impl core::marker::Freeze for termrock::widgets::PathRisk
+impl core::marker::Send for termrock::widgets::PathRisk
+impl core::marker::Sync for termrock::widgets::PathRisk
+impl core::marker::Unpin for termrock::widgets::PathRisk
+impl core::marker::UnsafeUnpin for termrock::widgets::PathRisk
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathRisk
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathRisk
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathRisk where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathRisk::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathRisk where U: core::convert::From<T>
+pub fn termrock::widgets::PathRisk::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathRisk where U: core::convert::Into<T>
+pub type termrock::widgets::PathRisk::Error = core::convert::Infallible
+pub fn termrock::widgets::PathRisk::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathRisk where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathRisk::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathRisk::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathRisk where T: core::clone::Clone
+pub type termrock::widgets::PathRisk::Owned = T
+pub fn termrock::widgets::PathRisk::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathRisk::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathRisk where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathRisk::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathRisk where T: ?core::marker::Sized
+pub fn termrock::widgets::PathRisk::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathRisk where T: ?core::marker::Sized
+pub fn termrock::widgets::PathRisk::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathRisk where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathRisk::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathRisk
+pub fn termrock::widgets::PathRisk::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathRisk
+#[non_exhaustive] pub enum termrock::widgets::PathStyle
+pub termrock::widgets::PathStyle::Unix
+pub termrock::widgets::PathStyle::Windows
+impl termrock::widgets::PathStyle
+pub const fn termrock::widgets::PathStyle::id(self) -> &'static str
+pub fn termrock::widgets::PathStyle::native() -> Self
+pub const fn termrock::widgets::PathStyle::sep(self) -> char
+impl core::clone::Clone for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::clone(&self) -> termrock::widgets::PathStyle
+impl core::cmp::Eq for termrock::widgets::PathStyle
+impl core::cmp::PartialEq for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::eq(&self, &termrock::widgets::PathStyle) -> bool
+impl core::default::Default for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::default() -> termrock::widgets::PathStyle
+impl core::fmt::Debug for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PathStyle
+impl core::marker::StructuralPartialEq for termrock::widgets::PathStyle
+impl core::marker::Freeze for termrock::widgets::PathStyle
+impl core::marker::Send for termrock::widgets::PathStyle
+impl core::marker::Sync for termrock::widgets::PathStyle
+impl core::marker::Unpin for termrock::widgets::PathStyle
+impl core::marker::UnsafeUnpin for termrock::widgets::PathStyle
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathStyle
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathStyle
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathStyle where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathStyle::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathStyle where U: core::convert::From<T>
+pub fn termrock::widgets::PathStyle::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathStyle where U: core::convert::Into<T>
+pub type termrock::widgets::PathStyle::Error = core::convert::Infallible
+pub fn termrock::widgets::PathStyle::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathStyle where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathStyle::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathStyle::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathStyle where T: core::clone::Clone
+pub type termrock::widgets::PathStyle::Owned = T
+pub fn termrock::widgets::PathStyle::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathStyle::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathStyle where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathStyle::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathStyle where T: ?core::marker::Sized
+pub fn termrock::widgets::PathStyle::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathStyle where T: ?core::marker::Sized
+pub fn termrock::widgets::PathStyle::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathStyle where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathStyle::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathStyle
+pub fn termrock::widgets::PathStyle::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathStyle
 #[non_exhaustive] pub enum termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionAction::Allow
 pub termrock::widgets::PermissionAction::AllowEdited
@@ -35003,6 +35270,236 @@ pub unsafe fn termrock::widgets::PasswordInputState::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::PasswordInputState
 pub fn termrock::widgets::PasswordInputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInputState
+pub struct termrock::widgets::PathCompletionPrefix
+pub termrock::widgets::PathCompletionPrefix::directory: alloc::string::String
+pub termrock::widgets::PathCompletionPrefix::partial: alloc::string::String
+impl core::clone::Clone for termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathCompletionPrefix::clone(&self) -> termrock::widgets::PathCompletionPrefix
+impl core::cmp::Eq for termrock::widgets::PathCompletionPrefix
+impl core::cmp::PartialEq for termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathCompletionPrefix::eq(&self, &termrock::widgets::PathCompletionPrefix) -> bool
+impl core::fmt::Debug for termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathCompletionPrefix::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathCompletionPrefix::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for termrock::widgets::PathCompletionPrefix
+impl core::marker::Freeze for termrock::widgets::PathCompletionPrefix
+impl core::marker::Send for termrock::widgets::PathCompletionPrefix
+impl core::marker::Sync for termrock::widgets::PathCompletionPrefix
+impl core::marker::Unpin for termrock::widgets::PathCompletionPrefix
+impl core::marker::UnsafeUnpin for termrock::widgets::PathCompletionPrefix
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathCompletionPrefix
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathCompletionPrefix
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathCompletionPrefix where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathCompletionPrefix::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathCompletionPrefix where U: core::convert::From<T>
+pub fn termrock::widgets::PathCompletionPrefix::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathCompletionPrefix where U: core::convert::Into<T>
+pub type termrock::widgets::PathCompletionPrefix::Error = core::convert::Infallible
+pub fn termrock::widgets::PathCompletionPrefix::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathCompletionPrefix where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathCompletionPrefix::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathCompletionPrefix::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathCompletionPrefix where T: core::clone::Clone
+pub type termrock::widgets::PathCompletionPrefix::Owned = T
+pub fn termrock::widgets::PathCompletionPrefix::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathCompletionPrefix::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathCompletionPrefix where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathCompletionPrefix::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathCompletionPrefix where T: ?core::marker::Sized
+pub fn termrock::widgets::PathCompletionPrefix::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathCompletionPrefix where T: ?core::marker::Sized
+pub fn termrock::widgets::PathCompletionPrefix::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathCompletionPrefix where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathCompletionPrefix::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathCompletionPrefix::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathCompletionPrefix
+pub struct termrock::widgets::PathInput<'a>
+impl<'a> termrock::widgets::PathInput<'a>
+pub const fn termrock::widgets::PathInput<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PathInput<'a>::label(self, &'a str) -> Self
+pub const fn termrock::widgets::PathInput<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PathInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PathInputState) -> termrock::widgets::PathInputParts
+pub const fn termrock::widgets::PathInput<'a>::placeholder(self, &'a str) -> Self
+pub fn termrock::widgets::PathInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PathInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::PathInput<'a>::show_base(self, bool) -> Self
+pub const fn termrock::widgets::PathInput<'a>::show_browse(self, bool) -> Self
+pub const fn termrock::widgets::PathInput<'a>::show_clear(self, bool) -> Self
+pub const fn termrock::widgets::PathInput<'a>::status_message(self, &'a str) -> Self
+pub const fn termrock::widgets::PathInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PathInput<'_>
+pub type &termrock::widgets::PathInput<'_>::State = termrock::widgets::PathInputState
+pub fn &termrock::widgets::PathInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PathInput<'_>
+pub type termrock::widgets::PathInput<'_>::State = termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::PathInput<'a>
+pub fn termrock::widgets::PathInput<'a>::clone(&self) -> termrock::widgets::PathInput<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PathInput<'a>
+pub fn termrock::widgets::PathInput<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PathInput<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PathInput<'a>
+impl<'a> core::marker::Send for termrock::widgets::PathInput<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PathInput<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PathInput<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PathInput<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathInput<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathInput<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathInput<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PathInput<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathInput<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PathInput<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PathInput<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathInput<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathInput<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathInput<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathInput<'a> where T: core::clone::Clone
+pub type termrock::widgets::PathInput<'a>::Owned = T
+pub fn termrock::widgets::PathInput<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathInput<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathInput<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathInput<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInput<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInput<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathInput<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathInput<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathInput<'a>
+pub fn termrock::widgets::PathInput<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathInput<'a>
+pub struct termrock::widgets::PathInputParts
+pub termrock::widgets::PathInputParts::base: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PathInputParts::browse: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PathInputParts::clear: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PathInputParts::cursor: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PathInputParts::field: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PathInputParts::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PathInputParts::status: core::option::Option<ratatui_core::layout::rect::Rect>
+impl core::clone::Clone for termrock::widgets::PathInputParts
+pub fn termrock::widgets::PathInputParts::clone(&self) -> termrock::widgets::PathInputParts
+impl core::cmp::Eq for termrock::widgets::PathInputParts
+impl core::cmp::PartialEq for termrock::widgets::PathInputParts
+pub fn termrock::widgets::PathInputParts::eq(&self, &termrock::widgets::PathInputParts) -> bool
+impl core::fmt::Debug for termrock::widgets::PathInputParts
+pub fn termrock::widgets::PathInputParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PathInputParts
+impl core::marker::Freeze for termrock::widgets::PathInputParts
+impl core::marker::Send for termrock::widgets::PathInputParts
+impl core::marker::Sync for termrock::widgets::PathInputParts
+impl core::marker::Unpin for termrock::widgets::PathInputParts
+impl core::marker::UnsafeUnpin for termrock::widgets::PathInputParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathInputParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathInputParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathInputParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathInputParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathInputParts where U: core::convert::From<T>
+pub fn termrock::widgets::PathInputParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathInputParts where U: core::convert::Into<T>
+pub type termrock::widgets::PathInputParts::Error = core::convert::Infallible
+pub fn termrock::widgets::PathInputParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathInputParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathInputParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathInputParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathInputParts where T: core::clone::Clone
+pub type termrock::widgets::PathInputParts::Owned = T
+pub fn termrock::widgets::PathInputParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathInputParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathInputParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathInputParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathInputParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathInputParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathInputParts
+pub fn termrock::widgets::PathInputParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathInputParts
+pub struct termrock::widgets::PathInputState
+impl termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::apply_completion(&mut self, &str) -> termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputState::base(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::PathInputState::clear(&mut self) -> bool
+pub fn termrock::widgets::PathInputState::completion_prefix(&self) -> termrock::widgets::PathCompletionPrefix
+pub fn termrock::widgets::PathInputState::expanded_tilde(&self) -> alloc::string::String
+pub const fn termrock::widgets::PathInputState::expect(&self) -> termrock::widgets::PathExpect
+pub const fn termrock::widgets::PathInputState::fs_status(&self) -> termrock::widgets::PathFsStatus
+pub fn termrock::widgets::PathInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputState::history(&self) -> impl core::iter::traits::iterator::Iterator<Item = &str>
+pub fn termrock::widgets::PathInputState::insert_str(&mut self, &str) -> termrock::widgets::PathInputOutcome
+pub const fn termrock::widgets::PathInputState::is_enabled(&self) -> bool
+pub const fn termrock::widgets::PathInputState::is_focused(&self) -> bool
+pub const fn termrock::widgets::PathInputState::is_read_only(&self) -> bool
+pub fn termrock::widgets::PathInputState::kind_mismatch(&self) -> bool
+pub fn termrock::widgets::PathInputState::lookup_request(&self) -> termrock::widgets::PathInputOutcome
+pub fn termrock::widgets::PathInputState::new() -> Self
+pub const fn termrock::widgets::PathInputState::parts(&self) -> core::option::Option<&termrock::widgets::PathInputParts>
+pub fn termrock::widgets::PathInputState::path(&self) -> &str
+pub fn termrock::widgets::PathInputState::path_editor_mut(&mut self) -> &mut termrock::widgets::TextInputState
+pub fn termrock::widgets::PathInputState::push_history(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::PathInputState::resolved_against_base(&self) -> alloc::string::String
+pub const fn termrock::widgets::PathInputState::risk(&self) -> termrock::widgets::PathRisk
+pub fn termrock::widgets::PathInputState::set_base(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::PathInputState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::PathInputState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::PathInputState::set_fs_status(&mut self, termrock::widgets::PathFsStatus)
+pub fn termrock::widgets::PathInputState::set_home(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::PathInputState::set_path(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn termrock::widgets::PathInputState::set_read_only(&mut self, bool)
+pub const fn termrock::widgets::PathInputState::set_risk(&mut self, termrock::widgets::PathRisk)
+pub const fn termrock::widgets::PathInputState::style(&self) -> termrock::widgets::PathStyle
+pub fn termrock::widgets::PathInputState::with_base(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::PathInputState::with_expect(self, termrock::widgets::PathExpect) -> Self
+pub fn termrock::widgets::PathInputState::with_history_limit(self, usize) -> Self
+pub fn termrock::widgets::PathInputState::with_home(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PathInputState::with_path(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::PathInputState::with_style(self, termrock::widgets::PathStyle) -> Self
+impl core::clone::Clone for termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::clone(&self) -> termrock::widgets::PathInputState
+impl core::cmp::Eq for termrock::widgets::PathInputState
+impl core::cmp::PartialEq for termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::eq(&self, &termrock::widgets::PathInputState) -> bool
+impl core::default::Default for termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PathInputState
+impl core::marker::Freeze for termrock::widgets::PathInputState
+impl core::marker::Send for termrock::widgets::PathInputState
+impl core::marker::Sync for termrock::widgets::PathInputState
+impl core::marker::Unpin for termrock::widgets::PathInputState
+impl core::marker::UnsafeUnpin for termrock::widgets::PathInputState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PathInputState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PathInputState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PathInputState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PathInputState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PathInputState where U: core::convert::From<T>
+pub fn termrock::widgets::PathInputState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PathInputState where U: core::convert::Into<T>
+pub type termrock::widgets::PathInputState::Error = core::convert::Infallible
+pub fn termrock::widgets::PathInputState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PathInputState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PathInputState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PathInputState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PathInputState where T: core::clone::Clone
+pub type termrock::widgets::PathInputState::Owned = T
+pub fn termrock::widgets::PathInputState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PathInputState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PathInputState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PathInputState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PathInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PathInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::PathInputState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PathInputState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PathInputState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PathInputState
+pub fn termrock::widgets::PathInputState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PathInputState
 pub struct termrock::widgets::PermissionActionRegion
 pub termrock::widgets::PermissionActionRegion::action: termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionActionRegion::area: ratatui_core::layout::rect::Rect
@@ -43393,6 +43890,7 @@ pub const termrock::widgets::COMMAND_PALETTE_OVERLAY_ID: &str
 pub const termrock::widgets::COMPLETION_OVERLAY_ID: &str
 pub const termrock::widgets::DEFAULT_DEBOUNCE: core::time::Duration
 pub const termrock::widgets::DEFAULT_HISTORY_LIMIT: usize
+pub const termrock::widgets::DEFAULT_PATH_HISTORY_LIMIT: usize
 pub const termrock::widgets::DIALOG_OVERLAY_ID: &str
 pub const termrock::widgets::DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::DROP_DESCRIPTION_WIDTH: u16
@@ -43426,6 +43924,7 @@ pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock:
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
+pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::dashboard_panels() -> [termrock::widgets::ResizablePanelSpec; 2]
 pub fn termrock::widgets::dismiss_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -43433,6 +43932,8 @@ pub fn termrock::widgets::dismiss_dialog_overlay<FocusId: core::clone::Clone>(&m
 pub fn termrock::widgets::dismiss_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
+pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
 pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat) -> alloc::string::String
@@ -43442,13 +43943,16 @@ pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termroc
 pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> usize
 pub fn termrock::widgets::identity_seed(&str) -> u64
 pub fn termrock::widgets::initials_from_name(&str) -> alloc::string::String
+pub fn termrock::widgets::is_absolute_path(&str) -> bool
 pub fn termrock::widgets::is_paint_safe(&str) -> bool
+pub fn termrock::widgets::join_path(&str, &str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut alloc::string::String, &'a termrock::style::DesignSystem) -> termrock::widgets::Kbd<'a>
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
+pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_completion_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

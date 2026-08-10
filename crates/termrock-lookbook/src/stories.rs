@@ -59,6 +59,7 @@ use termrock::{
         TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
         RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
         SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
+        PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk, PathStyle,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
@@ -4935,6 +4936,42 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             2,
             search_input_empty_story,
+        ),
+        Story::new(
+            "path-input/basic",
+            "Path input",
+            "PathInput",
+            "Path field with directory status and browse.",
+            52,
+            2,
+            path_input_basic_story,
+        ),
+        Story::new(
+            "path-input/missing",
+            "Path missing",
+            "PathInput",
+            "Missing path status for new targets.",
+            52,
+            2,
+            path_input_missing_story,
+        ),
+        Story::new(
+            "path-input/destructive",
+            "Path destructive",
+            "PathInput",
+            "Destructive target warning chrome.",
+            52,
+            3,
+            path_input_destructive_story,
+        ),
+        Story::new(
+            "path-input/relative",
+            "Path relative",
+            "PathInput",
+            "Relative path with base context.",
+            52,
+            3,
+            path_input_relative_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -12973,6 +13010,58 @@ fn search_input_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     state.set_focused(true);
     let _ = SearchInput::new(system)
         .status(SearchStatus::NoResults)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn path_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PathInputState::new()
+        .with_style(PathStyle::Unix)
+        .with_path("/usr/local/bin");
+    state.set_focused(true);
+    state.set_fs_status(PathFsStatus::Directory);
+    let _ = PathInput::new(system)
+        .label("Install dir")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn path_input_missing_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PathInputState::new()
+        .with_style(PathStyle::Unix)
+        .with_expect(PathExpect::File)
+        .with_path("/tmp/new-file.txt");
+    state.set_focused(true);
+    state.set_fs_status(PathFsStatus::Missing);
+    let _ = PathInput::new(system)
+        .label("Output")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn path_input_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PathInputState::new()
+        .with_style(PathStyle::Unix)
+        .with_path("/etc/hosts");
+    state.set_focused(true);
+    state.set_fs_status(PathFsStatus::File);
+    state.set_risk(PathRisk::Destructive);
+    let _ = PathInput::new(system)
+        .label("Overwrite")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn path_input_relative_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PathInputState::new()
+        .with_style(PathStyle::Unix)
+        .with_base("/Users/dev/proj")
+        .with_path("src/main.rs");
+    state.set_focused(true);
+    state.set_fs_status(PathFsStatus::File);
+    let _ = PathInput::new(system)
+        .label("Source")
+        .show_base(true)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }

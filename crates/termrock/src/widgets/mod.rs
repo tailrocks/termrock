@@ -73,6 +73,7 @@ mod text_input;
 mod password_input;
 mod number_input;
 mod search_input;
+mod path_input;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -317,6 +318,11 @@ pub use number_input::{
 pub use search_input::{
     DEFAULT_DEBOUNCE, DEFAULT_HISTORY_LIMIT, SearchFilterChip, SearchInput, SearchInputOutcome,
     SearchInputParts, SearchInputState, SearchStatus, SearchSyntax,
+};
+pub use path_input::{
+    DEFAULT_PATH_HISTORY_LIMIT, PathCompletionPrefix, PathExpect, PathFsStatus, PathInput,
+    PathInputOutcome, PathInputParts, PathInputState, PathRisk, PathStyle, completion_prefix,
+    expand_env_vars, expand_tilde, is_absolute_path, join_path, normalize_separators,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

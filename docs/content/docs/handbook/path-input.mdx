@@ -1,0 +1,55 @@
+---
+title: PathInput
+description: Filesystem-aware path field with host-projected status and no FS coupling.
+---
+
+# PathInput
+
+**Purpose.** Path entry for installers, connection setup, and FilePicker shells.
+TermRock owns typing, history, completion/browse *signals*, and pure path
+helpers. Hosts own all filesystem I/O and sandbox policy.
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Field text, history, browse/complete outcomes | PathInput |
+| `std::fs` / remote / sandbox lookups | Host |
+| Existence, type, destructive risk | Host projection |
+
+## Host loop sketch
+
+```rust
+match state.handle_key(key) {
+    PathInputOutcome::Changed => {
+        state.set_fs_status(PathFsStatus::Pending);
+        host.lookup(state.path()); // async; later set_fs_status
+    }
+    PathInputOutcome::CompletionRequested { prefix, .. } => {
+        let names = host.list_dir(&prefix.directory);
+        // show CompletionMenu; on pick:
+        state.apply_completion(&names[0]);
+    }
+    PathInputOutcome::BrowseRequested => host.open_file_picker(),
+    PathInputOutcome::Submitted { path } => {
+        let resolved = state.resolved_against_base();
+        host.use_path(resolved);
+        let _ = path;
+    }
+    _ => {}
+}
+```
+
+## Destructive targets
+
+Host sets `PathRisk::Destructive` for overwrites or sensitive system paths.
+PathInput paints danger chrome and optional “destructive target” caption.
+
+## Pure helpers
+
+`normalize_separators`, `is_absolute_path`, `join_path`, `expand_tilde`,
+`expand_env_vars`, `completion_prefix` — no process env or disk access.
+
+## Related
+
+TextInput · SearchInput · FilePicker (planned) · migration `0143`
