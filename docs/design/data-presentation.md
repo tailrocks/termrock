@@ -224,7 +224,7 @@ secret redaction, escaped controls, compact/fullscreen.
 
 ### 4.6 LogStream
 
-Follow-tail log surface.
+Follow-tail **plain text** log surface.
 
 - Virtualize by line index; append O(1).  
 - Follow until wheel/scroll breaks.  
@@ -232,13 +232,20 @@ Follow-tail log surface.
 - Colorless: `E`/`W`/`I`/`D` prefixes.  
 - Streaming: `LoadState::Partial`.
 
+### 4.6b EventStream
+
+Structured high-volume events (migration **0194**): type · severity · source ·
+fields · correlation · filter · group · follow/unread · backpressure · anchors ·
+pluggable summary/detail. Not plain logs (LogStream) and not recipe timelines
+(Timeline).
+
 ### 4.7 Timeline
 
-Ordered events (deploy, incidents, agent steps).
+Ordered events (deploy, incidents, agent steps) — migration **0193**.
 
 - Vertical list; density; optional multi-select.  
-- `LoadState` for page-back history.  
-- Activate → jump outcome.
+- Live follow with read-position preservation.  
+- Activate → jump outcome; CheckpointTimeline restore.
 
 ### 4.8 DiffReview
 

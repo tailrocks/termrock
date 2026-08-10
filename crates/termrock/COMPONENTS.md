@@ -56,6 +56,13 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`EventStream` is the high-volume **structured** event viewer (k8s events, agent
+activity, observability). Rows carry type, timestamp, severity, source, pluggable
+summary, optional fields/detail/correlation, and batch counts. Follow/pause and
+unread use `ScrollAreaState`; host reports backpressure (`dropped`/`batched`).
+Stable anchors preserve selection across reproject. Distinct from `LogStream`
+(plain lines) and `Timeline` (chronological recipes).
+
 `Timeline` presents chronological events (sessions, deploys, traces, agent
 turns) with status markers, actor/relative/duration metadata, grouping,
 expansion, correlation, filters, and live-stream follow that pauses when the

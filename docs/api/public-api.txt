@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.36s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.39s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14717,6 +14717,11 @@ pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
 pub mod termrock::widgets::date_time_picker_guidance
 pub const termrock::widgets::date_time_picker_guidance::WHEN_TEXT_INPUT: &str
+pub mod termrock::widgets::event_stream_bench
+pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
+pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
+pub const termrock::widgets::event_stream_bench::MAX_PAINT_CELLS: u32
+pub const termrock::widgets::event_stream_bench::VIEWPORT: u16
 pub mod termrock::widgets::pagination_guidance
 pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
 #[non_exhaustive] pub enum termrock::widgets::AccordionMode
@@ -20335,6 +20340,124 @@ pub unsafe fn termrock::widgets::ErrorStateOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ErrorStateOutcome
 pub fn termrock::widgets::ErrorStateOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ErrorStateOutcome
+#[non_exhaustive] pub enum termrock::widgets::EventSeverity
+pub termrock::widgets::EventSeverity::Critical
+pub termrock::widgets::EventSeverity::Debug
+pub termrock::widgets::EventSeverity::Error
+pub termrock::widgets::EventSeverity::Info
+pub termrock::widgets::EventSeverity::Trace
+pub termrock::widgets::EventSeverity::Warn
+impl termrock::widgets::EventSeverity
+pub const fn termrock::widgets::EventSeverity::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::EventSeverity::id(self) -> &'static str
+pub const fn termrock::widgets::EventSeverity::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::clone(&self) -> termrock::widgets::EventSeverity
+impl core::cmp::Eq for termrock::widgets::EventSeverity
+impl core::cmp::Ord for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::cmp(&self, &termrock::widgets::EventSeverity) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::eq(&self, &termrock::widgets::EventSeverity) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::partial_cmp(&self, &termrock::widgets::EventSeverity) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::default() -> termrock::widgets::EventSeverity
+impl core::fmt::Debug for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::EventSeverity
+impl core::marker::StructuralPartialEq for termrock::widgets::EventSeverity
+impl core::marker::Freeze for termrock::widgets::EventSeverity
+impl core::marker::Send for termrock::widgets::EventSeverity
+impl core::marker::Sync for termrock::widgets::EventSeverity
+impl core::marker::Unpin for termrock::widgets::EventSeverity
+impl core::marker::UnsafeUnpin for termrock::widgets::EventSeverity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EventSeverity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::EventSeverity
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::EventSeverity where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EventSeverity::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EventSeverity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EventSeverity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EventSeverity where U: core::convert::From<T>
+pub fn termrock::widgets::EventSeverity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EventSeverity where U: core::convert::Into<T>
+pub type termrock::widgets::EventSeverity::Error = core::convert::Infallible
+pub fn termrock::widgets::EventSeverity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EventSeverity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EventSeverity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EventSeverity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EventSeverity where T: core::clone::Clone
+pub type termrock::widgets::EventSeverity::Owned = T
+pub fn termrock::widgets::EventSeverity::clone_into(&self, &mut T)
+pub fn termrock::widgets::EventSeverity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EventSeverity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EventSeverity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EventSeverity where T: ?core::marker::Sized
+pub fn termrock::widgets::EventSeverity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EventSeverity where T: ?core::marker::Sized
+pub fn termrock::widgets::EventSeverity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EventSeverity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EventSeverity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventSeverity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EventSeverity
+#[non_exhaustive] pub enum termrock::widgets::EventStreamOutcome<Id>
+pub termrock::widgets::EventStreamOutcome::Activated(Id)
+pub termrock::widgets::EventStreamOutcome::BackpressureAck
+pub termrock::widgets::EventStreamOutcome::Cancelled
+pub termrock::widgets::EventStreamOutcome::Detach
+pub termrock::widgets::EventStreamOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::EventStreamOutcome::Follow
+pub termrock::widgets::EventStreamOutcome::Ignored
+pub termrock::widgets::EventStreamOutcome::Scrolled
+pub termrock::widgets::EventStreamOutcome::Scrolled::following: bool
+pub termrock::widgets::EventStreamOutcome::Scrolled::offset: u16
+pub termrock::widgets::EventStreamOutcome::Selected(Id)
+pub termrock::widgets::EventStreamOutcome::SeverityFilter(termrock::widgets::EventSeverity)
+pub termrock::widgets::EventStreamOutcome::TypeFilterChanged
+pub termrock::widgets::EventStreamOutcome::TypeFilterChanged::event_type: alloc::string::String
+pub termrock::widgets::EventStreamOutcome::TypeFilterChanged::included: bool
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamOutcome<Id>::clone(&self) -> termrock::widgets::EventStreamOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::EventStreamOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamOutcome<Id>::eq(&self, &termrock::widgets::EventStreamOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::EventStreamOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::EventStreamOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::EventStreamOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::EventStreamOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::EventStreamOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::EventStreamOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EventStreamOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::EventStreamOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EventStreamOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EventStreamOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::EventStreamOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EventStreamOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::EventStreamOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::EventStreamOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EventStreamOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EventStreamOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EventStreamOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EventStreamOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::EventStreamOutcome<Id>::Owned = T
+pub fn termrock::widgets::EventStreamOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::EventStreamOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EventStreamOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EventStreamOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EventStreamOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EventStreamOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EventStreamOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EventStreamOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::ExtentPolicy
 pub termrock::widgets::ExtentPolicy::Fixed(u16)
 pub termrock::widgets::ExtentPolicy::Variable
@@ -30342,6 +30465,54 @@ pub unsafe fn termrock::widgets::StepperPresentation::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::widgets::StepperPresentation
 pub fn termrock::widgets::StepperPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StepperPresentation
+#[non_exhaustive] pub enum termrock::widgets::StreamRowKind
+pub termrock::widgets::StreamRowKind::Event
+pub termrock::widgets::StreamRowKind::Group
+impl core::clone::Clone for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::clone(&self) -> termrock::widgets::StreamRowKind
+impl core::cmp::Eq for termrock::widgets::StreamRowKind
+impl core::cmp::PartialEq for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::eq(&self, &termrock::widgets::StreamRowKind) -> bool
+impl core::default::Default for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::default() -> termrock::widgets::StreamRowKind
+impl core::fmt::Debug for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StreamRowKind
+impl core::marker::StructuralPartialEq for termrock::widgets::StreamRowKind
+impl core::marker::Freeze for termrock::widgets::StreamRowKind
+impl core::marker::Send for termrock::widgets::StreamRowKind
+impl core::marker::Sync for termrock::widgets::StreamRowKind
+impl core::marker::Unpin for termrock::widgets::StreamRowKind
+impl core::marker::UnsafeUnpin for termrock::widgets::StreamRowKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamRowKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamRowKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamRowKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamRowKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamRowKind where U: core::convert::From<T>
+pub fn termrock::widgets::StreamRowKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamRowKind where U: core::convert::Into<T>
+pub type termrock::widgets::StreamRowKind::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamRowKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamRowKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamRowKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamRowKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamRowKind where T: core::clone::Clone
+pub type termrock::widgets::StreamRowKind::Owned = T
+pub fn termrock::widgets::StreamRowKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamRowKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamRowKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamRowKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamRowKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamRowKind where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamRowKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamRowKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamRowKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamRowKind
+pub fn termrock::widgets::StreamRowKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamRowKind
 #[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
 pub termrock::widgets::SuggestionStatus::Empty
 pub termrock::widgets::SuggestionStatus::Error
@@ -41250,6 +41421,173 @@ pub unsafe fn termrock::widgets::ErrorStateState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ErrorStateState
 pub fn termrock::widgets::ErrorStateState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ErrorStateState
+pub struct termrock::widgets::EventStream<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::EventStream<'a, Id>
+pub const fn termrock::widgets::EventStream<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::EventStream<'a, Id>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::EventStream<'a, Id>::focused(self, bool) -> Self
+pub fn termrock::widgets::EventStream<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::EventStreamState<Id>)
+pub const fn termrock::widgets::EventStream<'a, Id>::with_events(&'a [termrock::widgets::StreamEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+impl<'a> termrock::widgets::EventStream<'a, ()>
+pub const fn termrock::widgets::EventStream<'a, ()>::new(&'a [termrock::widgets::StreamEvent<'a, ()>], &'a termrock::style::DesignSystem) -> Self
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::EventStream<'a, Id>
+pub type &termrock::widgets::EventStream<'a, Id>::State = termrock::widgets::EventStreamState<Id>
+pub fn &termrock::widgets::EventStream<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::EventStream<'a, Id>
+pub type termrock::widgets::EventStream<'a, Id>::State = termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStream<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::EventStream<'a, Id>
+pub fn termrock::widgets::EventStream<'a, Id>::clone(&self) -> termrock::widgets::EventStream<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::EventStream<'a, Id>
+pub fn termrock::widgets::EventStream<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::EventStream<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::EventStream<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::EventStream<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::EventStream<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::EventStream<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EventStream<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::EventStream<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::EventStream<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::EventStream<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EventStream<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::EventStream<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::EventStream<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EventStream<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EventStream<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EventStream<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EventStream<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::EventStream<'a, Id>::Owned = T
+pub fn termrock::widgets::EventStream<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::EventStream<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EventStream<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EventStream<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EventStream<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStream<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EventStream<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStream<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EventStream<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EventStream<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EventStream<'a, Id>
+pub fn termrock::widgets::EventStream<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EventStream<'a, Id>
+pub struct termrock::widgets::EventStreamRegion<Id>
+pub termrock::widgets::EventStreamRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::EventStreamRegion::id: Id
+pub termrock::widgets::EventStreamRegion::index: usize
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::EventStreamRegion<Id>
+pub fn termrock::widgets::EventStreamRegion<Id>::clone(&self) -> termrock::widgets::EventStreamRegion<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::EventStreamRegion<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::EventStreamRegion<Id>
+pub fn termrock::widgets::EventStreamRegion<Id>::eq(&self, &termrock::widgets::EventStreamRegion<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::EventStreamRegion<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::EventStreamRegion<Id>
+pub fn termrock::widgets::EventStreamRegion<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::EventStreamRegion<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::EventStreamRegion<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::EventStreamRegion<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::EventStreamRegion<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::EventStreamRegion<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EventStreamRegion<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::EventStreamRegion<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EventStreamRegion<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamRegion<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EventStreamRegion<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::EventStreamRegion<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EventStreamRegion<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::EventStreamRegion<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::EventStreamRegion<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EventStreamRegion<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EventStreamRegion<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EventStreamRegion<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EventStreamRegion<Id> where T: core::clone::Clone
+pub type termrock::widgets::EventStreamRegion<Id>::Owned = T
+pub fn termrock::widgets::EventStreamRegion<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::EventStreamRegion<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EventStreamRegion<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamRegion<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EventStreamRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamRegion<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EventStreamRegion<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamRegion<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EventStreamRegion<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EventStreamRegion<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EventStreamRegion<Id>
+pub fn termrock::widgets::EventStreamRegion<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EventStreamRegion<Id>
+pub struct termrock::widgets::EventStreamState<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord>
+pub termrock::widgets::EventStreamState::ascii: bool
+pub termrock::widgets::EventStreamState::colorless: bool
+pub termrock::widgets::EventStreamState::cursor: usize
+pub termrock::widgets::EventStreamState::detail_open: bool
+pub termrock::widgets::EventStreamState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::EventStreamState::regions: alloc::vec::Vec<termrock::widgets::EventStreamRegion<Id>>
+pub termrock::widgets::EventStreamState::selected: core::option::Option<Id>
+pub termrock::widgets::EventStreamState::show_inline_detail: bool
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::ack_backpressure(&mut self)
+pub const fn termrock::widgets::EventStreamState<Id>::batched(&self) -> u64
+pub fn termrock::widgets::EventStreamState<Id>::capture_anchor(&mut self, &[termrock::widgets::StreamEvent<'_, Id>])
+pub const fn termrock::widgets::EventStreamState<Id>::cursor(&self) -> usize
+pub const fn termrock::widgets::EventStreamState<Id>::dropped(&self) -> u64
+pub fn termrock::widgets::EventStreamState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::StreamEvent<'_, Id>]) -> termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::StreamEvent<'_, Id>]) -> termrock::widgets::EventStreamOutcome<Id>
+pub fn termrock::widgets::EventStreamState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::StreamEvent<'_, Id>]) -> termrock::widgets::EventStreamOutcome<Id>
+pub const fn termrock::widgets::EventStreamState<Id>::is_following(&self) -> bool
+pub fn termrock::widgets::EventStreamState<Id>::new() -> Self
+pub const fn termrock::widgets::EventStreamState<Id>::offset(&self) -> u16
+pub fn termrock::widgets::EventStreamState<Id>::on_append(&mut self, u16, u16)
+pub fn termrock::widgets::EventStreamState<Id>::report_backpressure(&mut self, u64, u64)
+pub fn termrock::widgets::EventStreamState<Id>::restore_anchor(&mut self, &[termrock::widgets::StreamEvent<'_, Id>])
+pub const fn termrock::widgets::EventStreamState<Id>::scroll(&self) -> &termrock::widgets::ScrollAreaState
+pub const fn termrock::widgets::EventStreamState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::EventStreamState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::EventStreamState<Id>::set_following(&mut self, bool)
+pub fn termrock::widgets::EventStreamState<Id>::set_severity_floor(&mut self, termrock::widgets::EventSeverity)
+pub const fn termrock::widgets::EventStreamState<Id>::severity_floor(&self) -> termrock::widgets::EventSeverity
+pub fn termrock::widgets::EventStreamState<Id>::toggle_type_filter(&mut self, &str) -> bool
+pub fn termrock::widgets::EventStreamState<Id>::unread(&self) -> u64
+impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::clone::Clone for termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::clone(&self) -> termrock::widgets::EventStreamState<Id>
+impl<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::default::Default for termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::default() -> Self
+impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::cmp::Eq for termrock::widgets::EventStreamState<Id>
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::cmp::PartialEq for termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::eq(&self, &termrock::widgets::EventStreamState<Id>) -> bool
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::marker::StructuralPartialEq for termrock::widgets::EventStreamState<Id>
+impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::fmt::Debug for termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::EventStreamState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::EventStreamState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::EventStreamState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::EventStreamState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::EventStreamState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EventStreamState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::EventStreamState<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EventStreamState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EventStreamState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::EventStreamState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EventStreamState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::EventStreamState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::EventStreamState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EventStreamState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EventStreamState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EventStreamState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EventStreamState<Id> where T: core::clone::Clone
+pub type termrock::widgets::EventStreamState<Id>::Owned = T
+pub fn termrock::widgets::EventStreamState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::EventStreamState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EventStreamState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EventStreamState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EventStreamState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EventStreamState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::EventStreamState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EventStreamState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EventStreamState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EventStreamState<Id>
+pub fn termrock::widgets::EventStreamState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EventStreamState<Id>
 pub struct termrock::widgets::ExecutionLocation
 pub termrock::widgets::ExecutionLocation::detail: core::option::Option<alloc::string::String>
 pub termrock::widgets::ExecutionLocation::label: alloc::string::String
@@ -55677,6 +56015,73 @@ pub unsafe fn termrock::widgets::StickyRegion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StickyRegion
 pub fn termrock::widgets::StickyRegion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StickyRegion
+pub struct termrock::widgets::StreamEvent<'a, Id>
+pub termrock::widgets::StreamEvent::batch_count: u32
+pub termrock::widgets::StreamEvent::correlation: core::option::Option<&'a str>
+pub termrock::widgets::StreamEvent::detail: core::option::Option<&'a str>
+pub termrock::widgets::StreamEvent::enabled: bool
+pub termrock::widgets::StreamEvent::event_type: &'a str
+pub termrock::widgets::StreamEvent::fields: core::option::Option<&'a str>
+pub termrock::widgets::StreamEvent::group_key: core::option::Option<&'a str>
+pub termrock::widgets::StreamEvent::id: Id
+pub termrock::widgets::StreamEvent::kind: termrock::widgets::StreamRowKind
+pub termrock::widgets::StreamEvent::severity: termrock::widgets::EventSeverity
+pub termrock::widgets::StreamEvent::source: core::option::Option<&'a str>
+pub termrock::widgets::StreamEvent::summary: &'a str
+pub termrock::widgets::StreamEvent::timestamp: &'a str
+impl<'a, Id> termrock::widgets::StreamEvent<'a, Id>
+pub const fn termrock::widgets::StreamEvent<'a, Id>::batch_count(self, u32) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::correlation(self, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::detail(self, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::fields(self, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::focusable(&self) -> bool
+pub const fn termrock::widgets::StreamEvent<'a, Id>::group(Id, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::group_key(self, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::severity(self, termrock::widgets::EventSeverity) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::source(self, &'a str) -> Self
+pub const fn termrock::widgets::StreamEvent<'a, Id>::with_id(Id, &'a str, &'a str, &'a str) -> Self
+impl<'a> termrock::widgets::StreamEvent<'a, ()>
+pub const fn termrock::widgets::StreamEvent<'a, ()>::new(&'a str, &'a str, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::StreamEvent<'a, Id>
+pub fn termrock::widgets::StreamEvent<'a, Id>::clone(&self) -> termrock::widgets::StreamEvent<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::StreamEvent<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::StreamEvent<'a, Id>
+pub fn termrock::widgets::StreamEvent<'a, Id>::eq(&self, &termrock::widgets::StreamEvent<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::StreamEvent<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::StreamEvent<'a, Id>
+pub fn termrock::widgets::StreamEvent<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::StreamEvent<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::StreamEvent<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::StreamEvent<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::StreamEvent<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::StreamEvent<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamEvent<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamEvent<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamEvent<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StreamEvent<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StreamEvent<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::StreamEvent<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamEvent<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::StreamEvent<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::StreamEvent<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamEvent<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StreamEvent<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StreamEvent<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamEvent<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::StreamEvent<'a, Id>::Owned = T
+pub fn termrock::widgets::StreamEvent<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::StreamEvent<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StreamEvent<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StreamEvent<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamEvent<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamEvent<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamEvent<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::StreamEvent<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StreamEvent<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StreamEvent<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StreamEvent<'a, Id>
+pub fn termrock::widgets::StreamEvent<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StreamEvent<'a, Id>
 pub struct termrock::widgets::SubmitPolicy
 pub termrock::widgets::SubmitPolicy::allow_empty: bool
 pub termrock::widgets::SubmitPolicy::clear_on_submit: bool
@@ -61304,6 +61709,7 @@ pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termr
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
+pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>
 pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>

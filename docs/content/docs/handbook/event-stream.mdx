@@ -1,0 +1,57 @@
+---
+title: EventStream
+description: High-volume structured events — type, severity, fields, follow, backpressure.
+---
+
+# EventStream
+
+**Purpose.** Structured event consoles (k8s events, agent activity, observability)
+where rows are **typed**, not freeform log lines. Distinct from
+[LogStream](/docs/handbook/log-stream) (text+level) and
+[Timeline](/docs/handbook/timeline) (presentation recipes).
+
+## When to use
+
+| Use EventStream | Prefer |
+|-----------------|--------|
+| Kubernetes / cloud events | — |
+| Agent tool/activity stream | — |
+| Burst-prone high-rate feeds | — |
+| Plain application logs | LogStream |
+| Deploy/history narrative | Timeline |
+
+## Live + unread
+
+- Follow tail by default (`ScrollAreaState` authority).
+- Scroll/move up **detaches**; chip shows `↓ N new`.
+- Host calls `on_append(total, viewport)` after each project.
+- `report_backpressure(dropped, batched)` for drop/batch chrome.
+
+## Example
+
+```rust
+use termrock::widgets::{EventStream, EventStreamState, StreamEvent, EventSeverity};
+
+let events = [
+    StreamEvent::with_id("e1", "Warning", "12:01", "FailedMount")
+        .severity(EventSeverity::Warn)
+        .source("kubelet")
+        .fields("vol=cfg")
+        .detail("MountVolume.SetUp failed…")
+        .batch_count(3),
+];
+let mut state = EventStreamState::new();
+state.on_append(1, 20);
+// EventStream::with_events(&events, &system).render(area, buf, &mut state);
+```
+
+## Pluggable summary / detail
+
+- `summary` — one-line host-formatted row body.
+- `fields` — optional `k=v` chrome (dropped when narrow).
+- `detail` — inspector body when selected (`i` / Enter).
+
+## Related
+
+- Migration `0194-v0.13.0-event-stream`
+- Bench: `event_stream_bench`

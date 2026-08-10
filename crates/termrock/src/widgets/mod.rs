@@ -116,6 +116,7 @@ mod tree_table;
 mod key_value_table;
 mod object_inspector;
 mod timeline;
+mod event_stream;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -143,6 +144,11 @@ pub use timeline::{
     CheckpointTimeline, Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRegion,
     TimelineRowKind, TimelineState, TimelineStatus, filter_timeline_events,
 };
+pub use event_stream::{
+    EventSeverity, EventStream, EventStreamOutcome, EventStreamRegion, EventStreamState,
+    StreamEvent, StreamRowKind, filter_stream_events,
+};
+pub use event_stream::bench as event_stream_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

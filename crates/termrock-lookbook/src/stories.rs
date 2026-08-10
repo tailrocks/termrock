@@ -66,7 +66,8 @@ use termrock::{
         example_disconnected,
         LogLevel, LogLine, LogPane,
         LogPaneState,
-        LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
+        LogStream, LogStreamState, EventStream, EventStreamState, StreamEvent, EventSeverity,
+        MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
         MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
@@ -1832,6 +1833,51 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             8,
             log_stream_follow,
+        ),
+        Story::new(
+            "event-stream/basic",
+            "EventStream",
+            "EventStream",
+            "Structured k8s/agent events with severity and source.",
+            80,
+            12,
+            event_stream_basic,
+        ),
+        Story::new(
+            "event-stream/burst",
+            "EventStream burst",
+            "EventStream",
+            "Batch markers and backpressure drop chip.",
+            72,
+            10,
+            event_stream_burst,
+        ),
+        Story::new(
+            "event-stream/filter",
+            "EventStream filter",
+            "EventStream",
+            "Severity floor + text filter chrome.",
+            72,
+            10,
+            event_stream_filter,
+        ),
+        Story::new(
+            "event-stream/detail",
+            "EventStream detail",
+            "EventStream",
+            "Selected event with inline inspector detail.",
+            72,
+            10,
+            event_stream_detail,
+        ),
+        Story::new(
+            "event-stream/narrow",
+            "EventStream narrow",
+            "EventStream",
+            "Narrow-terminal contraction for structured events.",
+            28,
+            10,
+            event_stream_narrow,
         ),
         Story::new(
             "log-stream/structured",
@@ -10623,6 +10669,108 @@ fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     LogStream::new(&lines, system)
         .ascii(true)
         .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn event_stream_sample() -> Vec<StreamEvent<'static, &'static str>> {
+    vec![
+        StreamEvent::group("ns", "kube-system"),
+        StreamEvent::with_id("e1", "Normal", "12:01:00", "Scheduled pod api-7")
+            .severity(EventSeverity::Info)
+            .source("scheduler")
+            .fields("node=n1")
+            .correlation("deploy-9")
+            .group_key("kube-system"),
+        StreamEvent::with_id("e2", "Warning", "12:01:01", "FailedMount")
+            .severity(EventSeverity::Warn)
+            .source("kubelet")
+            .fields("vol=cfg")
+            .detail("MountVolume.SetUp failed for volume \"cfg\"")
+            .batch_count(3)
+            .group_key("kube-system"),
+        StreamEvent::with_id("e3", "tool.call", "12:01:02", "run_terminal_command")
+            .severity(EventSeverity::Info)
+            .source("agent")
+            .correlation("turn-4")
+            .detail("cargo test -p termrock --lib"),
+        StreamEvent::with_id("e4", "Error", "12:01:03", "CrashLoopBackOff")
+            .severity(EventSeverity::Error)
+            .source("kubelet")
+            .group_key("kube-system"),
+        StreamEvent::with_id("e5", "Normal", "12:01:04", "Pulled image")
+            .severity(EventSeverity::Info)
+            .source("kubelet")
+            .group_key("kube-system"),
+    ]
+}
+
+fn event_stream_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = event_stream_sample();
+    let mut state = EventStreamState::new();
+    state.set_following(false);
+    state.cursor = 2;
+    state.on_append(events.len() as u16, area.height.saturating_sub(1));
+    EventStream::with_events(&events, system)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn event_stream_burst(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = [
+        StreamEvent::with_id("b1", "Warning", "12:02:00", "Probe failed")
+            .severity(EventSeverity::Warn)
+            .source("kubelet")
+            .batch_count(64),
+        StreamEvent::with_id("b2", "Warning", "12:02:01", "Probe failed")
+            .severity(EventSeverity::Warn)
+            .source("kubelet")
+            .batch_count(64),
+        StreamEvent::with_id("b3", "Error", "12:02:02", "Unhealthy")
+            .severity(EventSeverity::Error)
+            .source("kubelet")
+            .batch_count(12),
+    ];
+    let mut state = EventStreamState::new();
+    state.report_backpressure(120, 64);
+    state.set_following(true);
+    state.on_append(events.len() as u16, area.height.saturating_sub(1));
+    EventStream::with_events(&events, system)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn event_stream_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = event_stream_sample();
+    let mut state = EventStreamState::new();
+    state.set_following(false);
+    state.set_severity_floor(EventSeverity::Warn);
+    state.filter = Some("Mount".into());
+    state.on_append(events.len() as u16, area.height.saturating_sub(1));
+    EventStream::with_events(&events, system)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn event_stream_detail(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = event_stream_sample();
+    let mut state = EventStreamState::new();
+    state.set_following(false);
+    state.cursor = 2;
+    state.selected = Some("e2");
+    state.detail_open = true;
+    state.on_append(events.len() as u16, area.height.saturating_sub(1));
+    EventStream::with_events(&events, system)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn event_stream_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let events = event_stream_sample();
+    let mut state = EventStreamState::new();
+    state.set_following(false);
+    state.on_append(events.len() as u16, area.height.saturating_sub(1));
+    EventStream::with_events(&events, system)
+        .focused(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
