@@ -39,6 +39,7 @@
     "result-grid",
     "schema-browser",
     "search-results",
-    "metrics-dashboard"
+    "metrics-dashboard",
+    "trace-waterfall"
   ]
 }

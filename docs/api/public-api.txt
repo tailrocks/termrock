@@ -14732,6 +14732,10 @@ pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::terminal_output_bench::VIEWPORT: u16
+pub mod termrock::widgets::trace_waterfall_bench
+pub const termrock::widgets::trace_waterfall_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::trace_waterfall_bench::SPAN_COUNT: usize
+pub const termrock::widgets::trace_waterfall_bench::VIEWPORT: u16
 #[non_exhaustive] pub enum termrock::widgets::AccordionMode
 pub termrock::widgets::AccordionMode::Multiple
 pub termrock::widgets::AccordionMode::Single
@@ -36775,6 +36779,178 @@ pub unsafe fn termrock::widgets::TooltipVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TooltipVariant
 pub fn termrock::widgets::TooltipVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TooltipVariant
+#[non_exhaustive] pub enum termrock::widgets::TraceNavMode
+pub termrock::widgets::TraceNavMode::Hierarchy
+pub termrock::widgets::TraceNavMode::Timeline
+impl termrock::widgets::TraceNavMode
+pub const fn termrock::widgets::TraceNavMode::id(self) -> &'static str
+pub const fn termrock::widgets::TraceNavMode::toggle(self) -> Self
+impl core::clone::Clone for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::clone(&self) -> termrock::widgets::TraceNavMode
+impl core::cmp::Eq for termrock::widgets::TraceNavMode
+impl core::cmp::PartialEq for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::eq(&self, &termrock::widgets::TraceNavMode) -> bool
+impl core::default::Default for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::default() -> termrock::widgets::TraceNavMode
+impl core::fmt::Debug for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TraceNavMode
+impl core::marker::StructuralPartialEq for termrock::widgets::TraceNavMode
+impl core::marker::Freeze for termrock::widgets::TraceNavMode
+impl core::marker::Send for termrock::widgets::TraceNavMode
+impl core::marker::Sync for termrock::widgets::TraceNavMode
+impl core::marker::Unpin for termrock::widgets::TraceNavMode
+impl core::marker::UnsafeUnpin for termrock::widgets::TraceNavMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceNavMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceNavMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TraceNavMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TraceNavMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceNavMode where U: core::convert::From<T>
+pub fn termrock::widgets::TraceNavMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceNavMode where U: core::convert::Into<T>
+pub type termrock::widgets::TraceNavMode::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceNavMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceNavMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceNavMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceNavMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceNavMode where T: core::clone::Clone
+pub type termrock::widgets::TraceNavMode::Owned = T
+pub fn termrock::widgets::TraceNavMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceNavMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceNavMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceNavMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceNavMode where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceNavMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceNavMode where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceNavMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceNavMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceNavMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceNavMode
+pub fn termrock::widgets::TraceNavMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceNavMode
+#[non_exhaustive] pub enum termrock::widgets::TraceSpanStatus
+pub termrock::widgets::TraceSpanStatus::Cancelled
+pub termrock::widgets::TraceSpanStatus::Error
+pub termrock::widgets::TraceSpanStatus::Ok
+pub termrock::widgets::TraceSpanStatus::Unset
+impl termrock::widgets::TraceSpanStatus
+pub const fn termrock::widgets::TraceSpanStatus::id(self) -> &'static str
+pub const fn termrock::widgets::TraceSpanStatus::letter(self) -> char
+pub const fn termrock::widgets::TraceSpanStatus::letter_ascii(self) -> char
+pub const fn termrock::widgets::TraceSpanStatus::role(self) -> termrock::style::Role
+pub const fn termrock::widgets::TraceSpanStatus::to_timeline(self) -> termrock::widgets::TimelineStatus
+impl core::clone::Clone for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::clone(&self) -> termrock::widgets::TraceSpanStatus
+impl core::cmp::Eq for termrock::widgets::TraceSpanStatus
+impl core::cmp::Ord for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::cmp(&self, &termrock::widgets::TraceSpanStatus) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::eq(&self, &termrock::widgets::TraceSpanStatus) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::partial_cmp(&self, &termrock::widgets::TraceSpanStatus) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::default() -> termrock::widgets::TraceSpanStatus
+impl core::fmt::Debug for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::TraceSpanStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::TraceSpanStatus
+impl core::marker::Freeze for termrock::widgets::TraceSpanStatus
+impl core::marker::Send for termrock::widgets::TraceSpanStatus
+impl core::marker::Sync for termrock::widgets::TraceSpanStatus
+impl core::marker::Unpin for termrock::widgets::TraceSpanStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::TraceSpanStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceSpanStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceSpanStatus
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::TraceSpanStatus where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TraceSpanStatus::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TraceSpanStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TraceSpanStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceSpanStatus where U: core::convert::From<T>
+pub fn termrock::widgets::TraceSpanStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceSpanStatus where U: core::convert::Into<T>
+pub type termrock::widgets::TraceSpanStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceSpanStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceSpanStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceSpanStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceSpanStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceSpanStatus where T: core::clone::Clone
+pub type termrock::widgets::TraceSpanStatus::Owned = T
+pub fn termrock::widgets::TraceSpanStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceSpanStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceSpanStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceSpanStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceSpanStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceSpanStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceSpanStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceSpanStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceSpanStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceSpanStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceSpanStatus
+pub fn termrock::widgets::TraceSpanStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceSpanStatus
+#[non_exhaustive] pub enum termrock::widgets::TraceWaterfallOutcome
+pub termrock::widgets::TraceWaterfallOutcome::Cancelled
+pub termrock::widgets::TraceWaterfallOutcome::CriticalPathToggled
+pub termrock::widgets::TraceWaterfallOutcome::CriticalPathToggled::only: bool
+pub termrock::widgets::TraceWaterfallOutcome::DetailsRequested
+pub termrock::widgets::TraceWaterfallOutcome::DetailsRequested::id: alloc::string::String
+pub termrock::widgets::TraceWaterfallOutcome::ExpandToggled
+pub termrock::widgets::TraceWaterfallOutcome::ExpandToggled::expanded: bool
+pub termrock::widgets::TraceWaterfallOutcome::ExpandToggled::id: alloc::string::String
+pub termrock::widgets::TraceWaterfallOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::TraceWaterfallOutcome::Ignored
+pub termrock::widgets::TraceWaterfallOutcome::NavModeChanged(termrock::widgets::TraceNavMode)
+pub termrock::widgets::TraceWaterfallOutcome::Scrolled
+pub termrock::widgets::TraceWaterfallOutcome::SelectionChanged
+pub termrock::widgets::TraceWaterfallOutcome::SelectionChanged::id: alloc::string::String
+pub termrock::widgets::TraceWaterfallOutcome::TimeWindowChanged
+pub termrock::widgets::TraceWaterfallOutcome::TimeWindowChanged::duration_ms: u64
+pub termrock::widgets::TraceWaterfallOutcome::TimeWindowChanged::start_ms: u64
+pub termrock::widgets::TraceWaterfallOutcome::TimelineExportRequested
+impl core::clone::Clone for termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallOutcome::clone(&self) -> termrock::widgets::TraceWaterfallOutcome
+impl core::cmp::Eq for termrock::widgets::TraceWaterfallOutcome
+impl core::cmp::PartialEq for termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallOutcome::eq(&self, &termrock::widgets::TraceWaterfallOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TraceWaterfallOutcome
+impl core::marker::Freeze for termrock::widgets::TraceWaterfallOutcome
+impl core::marker::Send for termrock::widgets::TraceWaterfallOutcome
+impl core::marker::Sync for termrock::widgets::TraceWaterfallOutcome
+impl core::marker::Unpin for termrock::widgets::TraceWaterfallOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::TraceWaterfallOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceWaterfallOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceWaterfallOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TraceWaterfallOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceWaterfallOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::TraceWaterfallOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceWaterfallOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::TraceWaterfallOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceWaterfallOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceWaterfallOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceWaterfallOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceWaterfallOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceWaterfallOutcome where T: core::clone::Clone
+pub type termrock::widgets::TraceWaterfallOutcome::Owned = T
+pub fn termrock::widgets::TraceWaterfallOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceWaterfallOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceWaterfallOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceWaterfallOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceWaterfallOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceWaterfallOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceWaterfallOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceWaterfallOutcome
 #[non_exhaustive] pub enum termrock::widgets::TranscriptKind
 pub termrock::widgets::TranscriptKind::Approval
 pub termrock::widgets::TranscriptKind::Assistant
@@ -67126,6 +67302,181 @@ pub unsafe fn termrock::widgets::TooltipState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TooltipState
 pub fn termrock::widgets::TooltipState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TooltipState
+pub struct termrock::widgets::TraceSpan<'a>
+pub termrock::widgets::TraceSpan::branch: bool
+pub termrock::widgets::TraceSpan::critical: bool
+pub termrock::widgets::TraceSpan::depth: u16
+pub termrock::widgets::TraceSpan::duration_ms: u64
+pub termrock::widgets::TraceSpan::enabled: bool
+pub termrock::widgets::TraceSpan::error: core::option::Option<&'a str>
+pub termrock::widgets::TraceSpan::expanded: bool
+pub termrock::widgets::TraceSpan::id: &'a str
+pub termrock::widgets::TraceSpan::kind: core::option::Option<&'a str>
+pub termrock::widgets::TraceSpan::name: &'a str
+pub termrock::widgets::TraceSpan::parent: core::option::Option<&'a str>
+pub termrock::widgets::TraceSpan::service: &'a str
+pub termrock::widgets::TraceSpan::start_ms: u64
+pub termrock::widgets::TraceSpan::status: termrock::widgets::TraceSpanStatus
+impl<'a> termrock::widgets::TraceSpan<'a>
+pub const fn termrock::widgets::TraceSpan<'a>::branch(self) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::critical(self) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::depth(self, u16) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::end_ms(&self) -> u64
+pub const fn termrock::widgets::TraceSpan<'a>::error(self, &'a str) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::expanded(self) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::kind(self, &'a str) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::new(&'a str, &'a str, u64, u64) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::parent(self, &'a str) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::service(self, &'a str) -> Self
+pub const fn termrock::widgets::TraceSpan<'a>::status(self, termrock::widgets::TraceSpanStatus) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::TraceSpan<'a>
+pub fn termrock::widgets::TraceSpan<'a>::clone(&self) -> termrock::widgets::TraceSpan<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::TraceSpan<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::TraceSpan<'a>
+pub fn termrock::widgets::TraceSpan<'a>::eq(&self, &termrock::widgets::TraceSpan<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::TraceSpan<'a>
+pub fn termrock::widgets::TraceSpan<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::TraceSpan<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TraceSpan<'a>
+impl<'a> core::marker::Send for termrock::widgets::TraceSpan<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TraceSpan<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TraceSpan<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TraceSpan<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceSpan<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceSpan<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TraceSpan<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::TraceSpan<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceSpan<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TraceSpan<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceSpan<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TraceSpan<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceSpan<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceSpan<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceSpan<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceSpan<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceSpan<'a> where T: core::clone::Clone
+pub type termrock::widgets::TraceSpan<'a>::Owned = T
+pub fn termrock::widgets::TraceSpan<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceSpan<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceSpan<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceSpan<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceSpan<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceSpan<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceSpan<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceSpan<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceSpan<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceSpan<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceSpan<'a>
+pub fn termrock::widgets::TraceSpan<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceSpan<'a>
+pub struct termrock::widgets::TraceWaterfall<'a>
+impl<'a> termrock::widgets::TraceWaterfall<'a>
+pub const fn termrock::widgets::TraceWaterfall<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::TraceWaterfall<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::TraceWaterfall<'a>::new(&'a [termrock::widgets::TraceSpan<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::TraceWaterfall<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TraceWaterfallState)
+pub const fn termrock::widgets::TraceWaterfall<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::TraceWaterfall<'a>
+pub fn termrock::widgets::TraceWaterfall<'a>::clone(&self) -> termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TraceWaterfall<'a>
+pub fn termrock::widgets::TraceWaterfall<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::marker::Send for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceWaterfall<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceWaterfall<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceWaterfall<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TraceWaterfall<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceWaterfall<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TraceWaterfall<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceWaterfall<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceWaterfall<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceWaterfall<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceWaterfall<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceWaterfall<'a> where T: core::clone::Clone
+pub type termrock::widgets::TraceWaterfall<'a>::Owned = T
+pub fn termrock::widgets::TraceWaterfall<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceWaterfall<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceWaterfall<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfall<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceWaterfall<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfall<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceWaterfall<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfall<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceWaterfall<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceWaterfall<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceWaterfall<'a>
+pub fn termrock::widgets::TraceWaterfall<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceWaterfall<'a>
+pub struct termrock::widgets::TraceWaterfallState
+pub termrock::widgets::TraceWaterfallState::ascii: bool
+pub termrock::widgets::TraceWaterfallState::critical_only: bool
+pub termrock::widgets::TraceWaterfallState::cursor: usize
+pub termrock::widgets::TraceWaterfallState::empty_message: core::option::Option<alloc::string::String>
+pub termrock::widgets::TraceWaterfallState::expanded: alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub termrock::widgets::TraceWaterfallState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::TraceWaterfallState::name_col: u16
+pub termrock::widgets::TraceWaterfallState::nav_mode: termrock::widgets::TraceNavMode
+pub termrock::widgets::TraceWaterfallState::time_duration_ms: u64
+pub termrock::widgets::TraceWaterfallState::time_start_ms: u64
+pub termrock::widgets::TraceWaterfallState::total_ms: u64
+pub termrock::widgets::TraceWaterfallState::window: termrock::widgets::VirtualWindow
+impl termrock::widgets::TraceWaterfallState
+pub const fn termrock::widgets::TraceWaterfallState::accepts_input(&self) -> bool
+pub fn termrock::widgets::TraceWaterfallState::handle_key(&mut self, &[termrock::widgets::TraceSpan<'_>], termrock::input::KeyEvent) -> termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallState::handle_mouse(&mut self, &[termrock::widgets::TraceSpan<'_>], termrock::input::MouseEvent) -> termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallState::new() -> Self
+pub fn termrock::widgets::TraceWaterfallState::pan_time(&mut self, f64) -> termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallState::select(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::TraceWaterfallState::selected(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::TraceWaterfallState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::TraceWaterfallState::sync_total(&mut self, &[termrock::widgets::TraceSpan<'_>])
+pub fn termrock::widgets::TraceWaterfallState::visible_spans<'a>(&self, &'a [termrock::widgets::TraceSpan<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::TraceSpan<'a>>
+pub fn termrock::widgets::TraceWaterfallState::with_selected(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::TraceWaterfallState::zoom_in(&mut self, core::option::Option<u64>) -> termrock::widgets::TraceWaterfallOutcome
+pub fn termrock::widgets::TraceWaterfallState::zoom_out(&mut self) -> termrock::widgets::TraceWaterfallOutcome
+impl core::clone::Clone for termrock::widgets::TraceWaterfallState
+pub fn termrock::widgets::TraceWaterfallState::clone(&self) -> termrock::widgets::TraceWaterfallState
+impl core::cmp::PartialEq for termrock::widgets::TraceWaterfallState
+pub fn termrock::widgets::TraceWaterfallState::eq(&self, &termrock::widgets::TraceWaterfallState) -> bool
+impl core::default::Default for termrock::widgets::TraceWaterfallState
+pub fn termrock::widgets::TraceWaterfallState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::TraceWaterfallState
+pub fn termrock::widgets::TraceWaterfallState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::TraceWaterfallState
+impl core::marker::Freeze for termrock::widgets::TraceWaterfallState
+impl core::marker::Send for termrock::widgets::TraceWaterfallState
+impl core::marker::Sync for termrock::widgets::TraceWaterfallState
+impl core::marker::Unpin for termrock::widgets::TraceWaterfallState
+impl core::marker::UnsafeUnpin for termrock::widgets::TraceWaterfallState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TraceWaterfallState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::TraceWaterfallState
+impl<T, U> core::convert::Into<U> for termrock::widgets::TraceWaterfallState where U: core::convert::From<T>
+pub fn termrock::widgets::TraceWaterfallState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TraceWaterfallState where U: core::convert::Into<T>
+pub type termrock::widgets::TraceWaterfallState::Error = core::convert::Infallible
+pub fn termrock::widgets::TraceWaterfallState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TraceWaterfallState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TraceWaterfallState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TraceWaterfallState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TraceWaterfallState where T: core::clone::Clone
+pub type termrock::widgets::TraceWaterfallState::Owned = T
+pub fn termrock::widgets::TraceWaterfallState::clone_into(&self, &mut T)
+pub fn termrock::widgets::TraceWaterfallState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TraceWaterfallState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TraceWaterfallState where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TraceWaterfallState where T: ?core::marker::Sized
+pub fn termrock::widgets::TraceWaterfallState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TraceWaterfallState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TraceWaterfallState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TraceWaterfallState
+pub fn termrock::widgets::TraceWaterfallState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TraceWaterfallState
 pub struct termrock::widgets::Transcript<'a, Id>
 impl<'a, Id> termrock::widgets::Transcript<'a, Id>
 pub const fn termrock::widgets::Transcript<'a, Id>::ascii(self, bool) -> Self
@@ -68973,6 +69324,9 @@ pub const termrock::widgets::TOAST_STACK_GAP: u16
 pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
 pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
+pub const termrock::widgets::TRACE_NAME_COL_DEFAULT: u16
+pub const termrock::widgets::TRACE_NAME_COL_MAX: u16
+pub const termrock::widgets::TRACE_NAME_COL_MIN: u16
 pub const termrock::widgets::TREE_DEFAULT_OVERSCAN: u16
 pub const termrock::widgets::TREE_NAV_INDENT: u16
 pub const termrock::widgets::TREE_NAV_MAX_INDENT_DEPTH: u16
@@ -69111,6 +69465,7 @@ pub fn termrock::widgets::export_result_window_tsv(&[termrock::widgets::ResultCo
 pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::FileTreeEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_command_entries<Id: core::clone::Clone>(&[termrock::widgets::CommandEntry<Id>], &str, core::option::Option<&str>) -> alloc::vec::Vec<termrock::widgets::CommandEntry<Id>>
+pub fn termrock::widgets::filter_critical_path<'a>(&'a [termrock::widgets::TraceSpan<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::TraceSpan<'a>>
 pub fn termrock::widgets::filter_diff_lines<'a>(&'a [termrock::widgets::DiffLine<'a>], &str, &termrock::widgets::DiffViewState) -> alloc::vec::Vec<&'a termrock::widgets::DiffLine<'a>>
 pub fn termrock::widgets::filter_file_tree_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &str, bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::FileTreeEntry<'a, Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -69124,6 +69479,7 @@ pub fn termrock::widgets::filter_schema_entries<'a, Id: core::clone::Clone + cor
 pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_terminal_lines<'a>(&'a [termrock::widgets::TerminalLine<'a>], bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::TerminalLine<'a>>
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
+pub fn termrock::widgets::filter_trace_spans<'a>(&'a [termrock::widgets::TraceSpan<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TraceSpan<'a>>
 pub fn termrock::widgets::filter_tree_preserve<'a>(&'a [termrock::widgets::ProcessRow<'a>], &[&'a termrock::widgets::ProcessRow<'a>]) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>
 pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>
@@ -69148,6 +69504,8 @@ pub fn termrock::widgets::format_mem_bytes(u64) -> alloc::string::String
 pub fn termrock::widgets::format_offset(u64, u8) -> alloc::string::String
 pub fn termrock::widgets::format_result_cell(&termrock::widgets::ResultCell<'_>, termrock::widgets::ResultRedaction, bool) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
+pub fn termrock::widgets::format_trace_duration_ms(u64) -> alloc::string::String
+pub fn termrock::widgets::format_trace_offset_ms(u64) -> alloc::string::String
 pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
 pub fn termrock::widgets::generate_jump_labels(usize) -> alloc::vec::Vec<alloc::string::String>
@@ -69288,6 +69646,9 @@ pub fn termrock::widgets::search_results_to_quick_open(&[termrock::widgets::Sear
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::sort_processes_flat<'a>(alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>, termrock::widgets::ProcessSortKey, bool) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
+pub fn termrock::widgets::span_bar_cols(u64, u64, u64, u64, u16) -> core::option::Option<(u16, u16)>
+pub fn termrock::widgets::span_to_inspector_fields<'a>(&'a termrock::widgets::TraceSpan<'a>) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
+pub fn termrock::widgets::span_to_timeline_event<'a>(&'a termrock::widgets::TraceSpan<'a>, &'a str, &'a str) -> termrock::widgets::TimelineEvent<'a, &'a str>
 pub fn termrock::widgets::step_items_from_titles(&[&str]) -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::stepper_presentation_for_bounds(ratatui_core::layout::rect::Rect, termrock::widgets::StepperOrientation) -> termrock::widgets::StepperPresentation
 pub fn termrock::widgets::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
@@ -69303,6 +69664,7 @@ pub fn termrock::widgets::theme_from_preset_id(&str) -> core::option::Option<ter
 pub fn termrock::widgets::token_at_cursor(&termrock::widgets::TextAreaState) -> (alloc::string::String, termrock::widgets::TextCursor)
 pub fn termrock::widgets::toolbar_icon_action<'a, Id>(Id, &'a str, &'a str) -> termrock::widgets::ToolbarItem<'a, Id>
 pub fn termrock::widgets::tooltip_overlay_size(u16, u16, u16) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::trace_total_ms(&[termrock::widgets::TraceSpan<'_>]) -> u64
 pub fn termrock::widgets::truncate_snippet_keep_match(&str, core::option::Option<&[termrock::widgets::MatchRange]>, usize) -> alloc::string::String
 pub fn termrock::widgets::window_samples(&[f64], usize) -> &[f64]
 pub fn termrock::widgets::workbench_panels() -> [termrock::widgets::ResizablePanelSpec; 3]

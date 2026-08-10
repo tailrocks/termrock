@@ -128,6 +128,7 @@ mod result_grid;
 mod schema_browser;
 mod search_results;
 mod metrics_dashboard;
+mod trace_waterfall;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -239,6 +240,13 @@ pub use metrics_dashboard::{
     layout_metrics_dashboard, metrics_dashboard_commands,
 };
 pub use metrics_dashboard::bench as metrics_dashboard_bench;
+pub use trace_waterfall::{
+    TRACE_NAME_COL_DEFAULT, TRACE_NAME_COL_MAX, TRACE_NAME_COL_MIN, TraceNavMode, TraceSpan,
+    TraceSpanStatus, TraceWaterfall, TraceWaterfallOutcome, TraceWaterfallState,
+    filter_critical_path, filter_trace_spans, format_trace_duration_ms, format_trace_offset_ms,
+    span_bar_cols, span_to_inspector_fields, span_to_timeline_event, trace_total_ms,
+};
+pub use trace_waterfall::bench as trace_waterfall_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

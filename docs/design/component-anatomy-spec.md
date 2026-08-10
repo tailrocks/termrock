@@ -1709,6 +1709,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `metrics-dashboard/{basic,narrow,partial-fail,paused,empty,ascii}`  
 22–24. Layout grid/summary; 24-tile paint; public-API-only guard.
 
+## TraceWaterfall
+
+1. **Purpose:** Hierarchical span latency waterfall (traces / agent tools).  
+2. **Anatomy:** chrome · filter? · time ruler · name col · bar axis.  
+3. **Public properties:** TraceSpan[] (start/duration/depth/status/critical/service).  
+4. **State:** selection, VirtualWindow, time window, nav mode, filter, expanded.  
+5. **Variants:** Hierarchy vs Timeline nav; critical-only filter; ASCII bars.  
+6–10. j/k select; h/l expand or pan; zoom Ctrl+=−0; Shift+wheel time.  
+11–14. No OTLP/fetch; host projects flattened expanded spans.  
+15–18. Exact duration labels; status letters; critical marks.  
+19. **Composition:** ObjectInspector fields; Timeline export bridge.  
+20. **Outcomes:** Selection · Expand · Details · Filter · TimeWindow · CriticalPath.  
+21. **Stories:** `trace-waterfall/{basic,error,critical,zoomed,empty,narrow,ascii}`  
+22–24. Bar clamp math; 2k-span paint; expand/zoom tests.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

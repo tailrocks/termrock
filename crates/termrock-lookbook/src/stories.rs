@@ -87,6 +87,7 @@ use termrock::{
         SearchResultsStatus,
         MetricsDashboard, MetricsDashboardState, MetricTile, MetricTileHealth, MetricAlert,
         MetricAlertSeverity, MetricViz,
+        TraceWaterfall, TraceWaterfallState, TraceSpan, TraceSpanStatus,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2681,6 +2682,69 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             16,
             metrics_dashboard_ascii,
+        ),
+        Story::new(
+            "trace-waterfall/basic",
+            "TraceWaterfall basic",
+            "TraceWaterfall",
+            "Nested spans with duration bars and critical path.",
+            80,
+            14,
+            trace_waterfall_basic,
+        ),
+        Story::new(
+            "trace-waterfall/error",
+            "TraceWaterfall error span",
+            "TraceWaterfall",
+            "Failed tool span in hierarchy.",
+            72,
+            12,
+            trace_waterfall_error,
+        ),
+        Story::new(
+            "trace-waterfall/critical",
+            "TraceWaterfall critical only",
+            "TraceWaterfall",
+            "Critical-path filter.",
+            72,
+            12,
+            trace_waterfall_critical,
+        ),
+        Story::new(
+            "trace-waterfall/zoomed",
+            "TraceWaterfall zoomed",
+            "TraceWaterfall",
+            "Time window zoomed into mid-trace.",
+            72,
+            12,
+            trace_waterfall_zoomed,
+        ),
+        Story::new(
+            "trace-waterfall/empty",
+            "TraceWaterfall empty",
+            "TraceWaterfall",
+            "Empty span set.",
+            40,
+            6,
+            trace_waterfall_empty,
+        ),
+        Story::new(
+            "trace-waterfall/narrow",
+            "TraceWaterfall narrow",
+            "TraceWaterfall",
+            "Narrow waterfall (36 cols).",
+            36,
+            12,
+            trace_waterfall_basic,
+        ),
+        Story::new(
+            "trace-waterfall/ascii",
+            "TraceWaterfall ASCII",
+            "TraceWaterfall",
+            "ASCII bars and markers.",
+            72,
+            12,
+            trace_waterfall_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12837,6 +12901,99 @@ fn metrics_dashboard_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let mut state = MetricsDashboardState::new();
     state.ascii = true;
     MetricsDashboard::new(&tiles, &alerts, system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_sample() -> Vec<TraceSpan<'static>> {
+    vec![
+        TraceSpan::new("root", "HTTP GET /api", 0, 420)
+            .service("gateway")
+            .branch()
+            .expanded()
+            .critical()
+            .kind("http"),
+        TraceSpan::new("auth", "authenticate", 5, 40)
+            .parent("root")
+            .service("auth")
+            .depth(1)
+            .kind("internal"),
+        TraceSpan::new("db", "SELECT users", 50, 180)
+            .parent("root")
+            .service("postgres")
+            .depth(1)
+            .branch()
+            .expanded()
+            .critical()
+            .kind("db"),
+        TraceSpan::new("db.row", "row map", 60, 20)
+            .parent("db")
+            .service("postgres")
+            .depth(2),
+        TraceSpan::new("tool", "tool:fetch", 240, 150)
+            .parent("root")
+            .service("agent")
+            .depth(1)
+            .error("timeout")
+            .kind("tool"),
+        TraceSpan::new("render", "serialize", 390, 30)
+            .parent("root")
+            .service("gateway")
+            .depth(1)
+            .critical(),
+    ]
+}
+
+fn trace_waterfall_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let spans = trace_waterfall_sample();
+    let mut state = TraceWaterfallState::with_selected("db");
+    TraceWaterfall::new(&spans, system)
+        .title("req")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let spans = trace_waterfall_sample();
+    let mut state = TraceWaterfallState::with_selected("tool");
+    TraceWaterfall::new(&spans, system)
+        .title("error")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_critical(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let spans = trace_waterfall_sample();
+    let mut state = TraceWaterfallState::new();
+    state.critical_only = true;
+    TraceWaterfall::new(&spans, system)
+        .title("crit")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_zoomed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let spans = trace_waterfall_sample();
+    let mut state = TraceWaterfallState::with_selected("db");
+    state.sync_total(&spans);
+    state.time_start_ms = 40;
+    state.time_duration_ms = 200;
+    TraceWaterfall::new(&spans, system)
+        .title("zoom")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TraceWaterfallState::new();
+    state.empty_message = Some("no spans".into());
+    TraceWaterfall::new(&[], system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn trace_waterfall_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let spans = trace_waterfall_sample();
+    let mut state = TraceWaterfallState::with_selected("root");
+    state.ascii = true;
+    TraceWaterfall::new(&spans, system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);

@@ -222,6 +222,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0206 | `v0.13.0` | [SchemaBrowser catalog navigator](migrations/0206-v0.13.0-schema-browser.md) |
 | 0207 | `v0.13.0` | [SearchResults grouped hits](migrations/0207-v0.13.0-search-results.md) |
 | 0208 | `v0.13.0` | [MetricsDashboard observability block](migrations/0208-v0.13.0-metrics-dashboard.md) |
+| 0209 | `v0.13.0` | [TraceWaterfall span latency](migrations/0209-v0.13.0-trace-waterfall.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
