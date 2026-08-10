@@ -1966,6 +1966,36 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## FileMention
+
+1. **Purpose:** Inline file/path/symbol mention tokens with completion + disambiguation.  
+2. **Anatomy:** type glyph · label · validity mark · optional remove; disambiguation list.  
+3. **Public properties:** `FileMention` / `MentionRef` (label, canonical, validity, disambiguators).  
+4. **State:** `FileMentionState` (query open) · `InlineMentionState` · `MentionDraft` cursor.  
+5. **Variants:** Valid / Stale / Missing / Ambiguous; file · directory · symbol.  
+6–10. Atomic ←/→ · Backspace removes token; `@`/`#` detect; CompletionMenu commit insert.  
+11–14. Host ranks paths; no fs/LSP in TermRock; semantic redaction when sensitive.  
+15–18. ASCII type letters; markup `@[kind:id|label]`.  
+19. **Composition:** CompletionMenu, PromptComposer triggers, Tag chrome.  
+20. **Outcomes:** Activated · Removed · Copy · Preview · Disambiguate · DisambiguationSelected.  
+21. **Stories:** `file-mention/{basic,missing,ambiguous}`, `mention-draft/atomic`.  
+22–24. Atomic cursor tests; filter bench; no lookup I/O.
+
+## EntityMention
+
+1. **Purpose:** Inline agent/tool/session/resource/user mention tokens.  
+2. **Anatomy:** same as FileMention with entity glyphs.  
+3. **Public properties:** `EntityMention` wrapping `MentionRef`.  
+4. **State:** `EntityMentionState` + shared draft/inline state.  
+5. **Variants:** Agent · Tool · Session · Resource · User; validity marks.  
+6–10. Same keyboard/completion model; family filter Entity.  
+11–14. Host owns registry of agents/tools; outcomes only.  
+15–18. ASCII A/T/H/R/U letters.  
+19. **Composition:** CompletionMenu; permission/session hosts.  
+20. **Outcomes:** shared `InlineMentionOutcome`.  
+21. **Stories:** `entity-mention/{agent-tool,stale}`.  
+22–24. Stale paint; family filter tests.
+
 ## AttachmentChip
 
 1. **Purpose:** Compact file/image/URL/code attachment token for composers and egress flows.  

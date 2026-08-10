@@ -36,6 +36,7 @@ mod key_value_list;
 mod link;
 mod tag_chip;
 mod attachment_chips;
+mod mention;
 mod text;
 mod separator;
 mod toolbar;
@@ -564,6 +565,17 @@ pub use attachment_chips::{
     map_strip_outcome, paint_attachment_strip, paste_preview_from, paste_semantic_summary,
 };
 pub use attachment_chips::bench as attachment_chips_bench;
+pub use mention::{
+    ENTITY_MENTION_OVERLAY_ID, FILE_MENTION_OVERLAY_ID, MENTION_DISAMBIG_MAX, MENTION_TRIGGER_AT,
+    MENTION_TRIGGER_HASH, EntityMention, EntityMentionState, FileMention, FileMentionState,
+    InlineMention, InlineMentionOutcome, InlineMentionState, MentionCandidate, MentionCursor,
+    MentionDisambiguator, MentionDraft, MentionFamily, MentionQuery, MentionRef, MentionSegment,
+    MentionType, MentionValidity, apply_mention_insert, detect_entity_mention_query,
+    detect_file_mention_query, detect_mention_query, filter_mention_candidates,
+    mention_candidates_as_completion, mention_semantic_description, mention_to_completion_candidate,
+    mention_to_token_item, parse_draft_with_mentions, parse_mention_markup,
+};
+pub use mention::bench as mention_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

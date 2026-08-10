@@ -14706,6 +14706,10 @@ pub const termrock::widgets::log_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::log_stream_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::log_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::log_stream_bench::VIEWPORT: u16
+pub mod termrock::widgets::mention_bench
+pub const termrock::widgets::mention_bench::CANDIDATE_COUNT: usize
+pub const termrock::widgets::mention_bench::MENTION_COUNT: usize
+pub const termrock::widgets::mention_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::metrics_dashboard_bench
 pub const termrock::widgets::metrics_dashboard_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::metrics_dashboard_bench::SAMPLE_LEN: usize
@@ -23599,6 +23603,62 @@ pub unsafe fn termrock::widgets::InitiatorKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::InitiatorKind
 pub fn termrock::widgets::InitiatorKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::InitiatorKind
+#[non_exhaustive] pub enum termrock::widgets::InlineMentionOutcome
+pub termrock::widgets::InlineMentionOutcome::Activated
+pub termrock::widgets::InlineMentionOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::InlineMentionOutcome::CopyRequested
+pub termrock::widgets::InlineMentionOutcome::CopyRequested::id: alloc::string::String
+pub termrock::widgets::InlineMentionOutcome::DisambiguateRequested
+pub termrock::widgets::InlineMentionOutcome::DisambiguateRequested::id: alloc::string::String
+pub termrock::widgets::InlineMentionOutcome::DisambiguationSelected
+pub termrock::widgets::InlineMentionOutcome::DisambiguationSelected::id: alloc::string::String
+pub termrock::widgets::InlineMentionOutcome::DisambiguationSelected::index: usize
+pub termrock::widgets::InlineMentionOutcome::Ignored
+pub termrock::widgets::InlineMentionOutcome::PartChanged(termrock::widgets::TokenPart)
+pub termrock::widgets::InlineMentionOutcome::PreviewRequested
+pub termrock::widgets::InlineMentionOutcome::PreviewRequested::id: alloc::string::String
+pub termrock::widgets::InlineMentionOutcome::Removed
+pub termrock::widgets::InlineMentionOutcome::Removed::id: alloc::string::String
+impl core::clone::Clone for termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMentionOutcome::clone(&self) -> termrock::widgets::InlineMentionOutcome
+impl core::cmp::Eq for termrock::widgets::InlineMentionOutcome
+impl core::cmp::PartialEq for termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMentionOutcome::eq(&self, &termrock::widgets::InlineMentionOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMentionOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::InlineMentionOutcome
+impl core::marker::Freeze for termrock::widgets::InlineMentionOutcome
+impl core::marker::Send for termrock::widgets::InlineMentionOutcome
+impl core::marker::Sync for termrock::widgets::InlineMentionOutcome
+impl core::marker::Unpin for termrock::widgets::InlineMentionOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::InlineMentionOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InlineMentionOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InlineMentionOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InlineMentionOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InlineMentionOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::InlineMentionOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InlineMentionOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::InlineMentionOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::InlineMentionOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InlineMentionOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InlineMentionOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InlineMentionOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InlineMentionOutcome where T: core::clone::Clone
+pub type termrock::widgets::InlineMentionOutcome::Owned = T
+pub fn termrock::widgets::InlineMentionOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::InlineMentionOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InlineMentionOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InlineMentionOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InlineMentionOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InlineMentionOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InlineMentionOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMentionOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InlineMentionOutcome
 #[non_exhaustive] pub enum termrock::widgets::InspectKind
 pub termrock::widgets::InspectKind::Array
 pub termrock::widgets::InspectKind::Binary
@@ -25593,6 +25653,263 @@ pub unsafe fn termrock::widgets::MatchTruncate::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MatchTruncate
 pub fn termrock::widgets::MatchTruncate::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MatchTruncate
+pub enum termrock::widgets::MentionCursor
+pub termrock::widgets::MentionCursor::End
+pub termrock::widgets::MentionCursor::InText
+pub termrock::widgets::MentionCursor::InText::byte: usize
+pub termrock::widgets::MentionCursor::InText::part: usize
+pub termrock::widgets::MentionCursor::OnMention
+pub termrock::widgets::MentionCursor::OnMention::part: usize
+impl core::clone::Clone for termrock::widgets::MentionCursor
+pub fn termrock::widgets::MentionCursor::clone(&self) -> termrock::widgets::MentionCursor
+impl core::cmp::Eq for termrock::widgets::MentionCursor
+impl core::cmp::PartialEq for termrock::widgets::MentionCursor
+pub fn termrock::widgets::MentionCursor::eq(&self, &termrock::widgets::MentionCursor) -> bool
+impl core::default::Default for termrock::widgets::MentionCursor
+pub fn termrock::widgets::MentionCursor::default() -> Self
+impl core::fmt::Debug for termrock::widgets::MentionCursor
+pub fn termrock::widgets::MentionCursor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::MentionCursor
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionCursor
+impl core::marker::Freeze for termrock::widgets::MentionCursor
+impl core::marker::Send for termrock::widgets::MentionCursor
+impl core::marker::Sync for termrock::widgets::MentionCursor
+impl core::marker::Unpin for termrock::widgets::MentionCursor
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionCursor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionCursor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionCursor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionCursor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionCursor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionCursor where U: core::convert::From<T>
+pub fn termrock::widgets::MentionCursor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionCursor where U: core::convert::Into<T>
+pub type termrock::widgets::MentionCursor::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionCursor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionCursor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionCursor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionCursor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionCursor where T: core::clone::Clone
+pub type termrock::widgets::MentionCursor::Owned = T
+pub fn termrock::widgets::MentionCursor::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionCursor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionCursor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionCursor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionCursor where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionCursor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionCursor where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionCursor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionCursor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionCursor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionCursor
+pub fn termrock::widgets::MentionCursor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionCursor
+#[non_exhaustive] pub enum termrock::widgets::MentionFamily
+pub termrock::widgets::MentionFamily::Entity
+pub termrock::widgets::MentionFamily::File
+impl termrock::widgets::MentionFamily
+pub const fn termrock::widgets::MentionFamily::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionFamily::clone(&self) -> termrock::widgets::MentionFamily
+impl core::cmp::Eq for termrock::widgets::MentionFamily
+impl core::cmp::PartialEq for termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionFamily::eq(&self, &termrock::widgets::MentionFamily) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionFamily::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionFamily::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MentionFamily
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionFamily
+impl core::marker::Freeze for termrock::widgets::MentionFamily
+impl core::marker::Send for termrock::widgets::MentionFamily
+impl core::marker::Sync for termrock::widgets::MentionFamily
+impl core::marker::Unpin for termrock::widgets::MentionFamily
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionFamily
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionFamily
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionFamily
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionFamily where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionFamily::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionFamily where U: core::convert::From<T>
+pub fn termrock::widgets::MentionFamily::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionFamily where U: core::convert::Into<T>
+pub type termrock::widgets::MentionFamily::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionFamily::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionFamily where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionFamily::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionFamily::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionFamily where T: core::clone::Clone
+pub type termrock::widgets::MentionFamily::Owned = T
+pub fn termrock::widgets::MentionFamily::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionFamily::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionFamily where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionFamily::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionFamily where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionFamily::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionFamily where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionFamily::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionFamily where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionFamily::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionFamily::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionFamily
+pub enum termrock::widgets::MentionSegment
+pub termrock::widgets::MentionSegment::Mention(termrock::widgets::MentionRef)
+pub termrock::widgets::MentionSegment::Text(alloc::string::String)
+impl core::clone::Clone for termrock::widgets::MentionSegment
+pub fn termrock::widgets::MentionSegment::clone(&self) -> termrock::widgets::MentionSegment
+impl core::cmp::Eq for termrock::widgets::MentionSegment
+impl core::cmp::PartialEq for termrock::widgets::MentionSegment
+pub fn termrock::widgets::MentionSegment::eq(&self, &termrock::widgets::MentionSegment) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionSegment
+pub fn termrock::widgets::MentionSegment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionSegment
+impl core::marker::Freeze for termrock::widgets::MentionSegment
+impl core::marker::Send for termrock::widgets::MentionSegment
+impl core::marker::Sync for termrock::widgets::MentionSegment
+impl core::marker::Unpin for termrock::widgets::MentionSegment
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionSegment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionSegment
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionSegment
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionSegment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionSegment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionSegment where U: core::convert::From<T>
+pub fn termrock::widgets::MentionSegment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionSegment where U: core::convert::Into<T>
+pub type termrock::widgets::MentionSegment::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionSegment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionSegment where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionSegment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionSegment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionSegment where T: core::clone::Clone
+pub type termrock::widgets::MentionSegment::Owned = T
+pub fn termrock::widgets::MentionSegment::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionSegment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionSegment where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionSegment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionSegment where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionSegment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionSegment where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionSegment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionSegment where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionSegment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionSegment
+pub fn termrock::widgets::MentionSegment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionSegment
+#[non_exhaustive] pub enum termrock::widgets::MentionType
+pub termrock::widgets::MentionType::Agent
+pub termrock::widgets::MentionType::Directory
+pub termrock::widgets::MentionType::File
+pub termrock::widgets::MentionType::Other
+pub termrock::widgets::MentionType::Resource
+pub termrock::widgets::MentionType::Session
+pub termrock::widgets::MentionType::Symbol
+pub termrock::widgets::MentionType::Tool
+pub termrock::widgets::MentionType::User
+impl termrock::widgets::MentionType
+pub const fn termrock::widgets::MentionType::default_trigger(self) -> char
+pub const fn termrock::widgets::MentionType::family(self) -> termrock::widgets::MentionFamily
+pub const fn termrock::widgets::MentionType::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::MentionType::id(self) -> &'static str
+pub const fn termrock::widgets::MentionType::letter(self) -> char
+impl core::clone::Clone for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::clone(&self) -> termrock::widgets::MentionType
+impl core::cmp::Eq for termrock::widgets::MentionType
+impl core::cmp::PartialEq for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::eq(&self, &termrock::widgets::MentionType) -> bool
+impl core::default::Default for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::default() -> termrock::widgets::MentionType
+impl core::fmt::Debug for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MentionType
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionType
+impl core::marker::Freeze for termrock::widgets::MentionType
+impl core::marker::Send for termrock::widgets::MentionType
+impl core::marker::Sync for termrock::widgets::MentionType
+impl core::marker::Unpin for termrock::widgets::MentionType
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionType
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionType
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionType
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionType where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionType::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionType where U: core::convert::From<T>
+pub fn termrock::widgets::MentionType::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionType where U: core::convert::Into<T>
+pub type termrock::widgets::MentionType::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionType::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionType where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionType::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionType::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionType where T: core::clone::Clone
+pub type termrock::widgets::MentionType::Owned = T
+pub fn termrock::widgets::MentionType::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionType::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionType where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionType::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionType where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionType::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionType where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionType::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionType where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionType::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionType
+pub fn termrock::widgets::MentionType::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionType
+#[non_exhaustive] pub enum termrock::widgets::MentionValidity
+pub termrock::widgets::MentionValidity::Ambiguous
+pub termrock::widgets::MentionValidity::Missing
+pub termrock::widgets::MentionValidity::Stale
+pub termrock::widgets::MentionValidity::Unknown
+pub termrock::widgets::MentionValidity::Valid
+impl termrock::widgets::MentionValidity
+pub const fn termrock::widgets::MentionValidity::id(self) -> &'static str
+pub fn termrock::widgets::MentionValidity::mark(self, bool) -> &'static str
+pub const fn termrock::widgets::MentionValidity::token_status(self) -> termrock::widgets::TokenStatus
+impl core::clone::Clone for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::clone(&self) -> termrock::widgets::MentionValidity
+impl core::cmp::Eq for termrock::widgets::MentionValidity
+impl core::cmp::PartialEq for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::eq(&self, &termrock::widgets::MentionValidity) -> bool
+impl core::default::Default for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::default() -> termrock::widgets::MentionValidity
+impl core::fmt::Debug for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MentionValidity
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionValidity
+impl core::marker::Freeze for termrock::widgets::MentionValidity
+impl core::marker::Send for termrock::widgets::MentionValidity
+impl core::marker::Sync for termrock::widgets::MentionValidity
+impl core::marker::Unpin for termrock::widgets::MentionValidity
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionValidity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionValidity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionValidity
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionValidity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionValidity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionValidity where U: core::convert::From<T>
+pub fn termrock::widgets::MentionValidity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionValidity where U: core::convert::Into<T>
+pub type termrock::widgets::MentionValidity::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionValidity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionValidity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionValidity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionValidity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionValidity where T: core::clone::Clone
+pub type termrock::widgets::MentionValidity::Owned = T
+pub fn termrock::widgets::MentionValidity::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionValidity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionValidity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionValidity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionValidity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionValidity where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionValidity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionValidity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionValidity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionValidity
+pub fn termrock::widgets::MentionValidity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionValidity
 #[non_exhaustive] pub enum termrock::widgets::MenuBarOutcome<Id>
 pub termrock::widgets::MenuBarOutcome::Activated
 pub termrock::widgets::MenuBarOutcome::Activated::command: core::option::Option<alloc::string::String>
@@ -46894,6 +47211,106 @@ pub unsafe fn termrock::widgets::EmptyStateState::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::EmptyStateState
 pub fn termrock::widgets::EmptyStateState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EmptyStateState
+pub struct termrock::widgets::EntityMention
+pub termrock::widgets::EntityMention::mention: termrock::widgets::MentionRef
+impl termrock::widgets::EntityMention
+pub fn termrock::widgets::EntityMention::agent(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::EntityMention::as_mut(&mut self) -> &mut termrock::widgets::MentionRef
+pub const fn termrock::widgets::EntityMention::as_ref(&self) -> &termrock::widgets::MentionRef
+pub fn termrock::widgets::EntityMention::resource(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::EntityMention::session(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::EntityMention::tool(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::EntityMention
+pub fn termrock::widgets::EntityMention::clone(&self) -> termrock::widgets::EntityMention
+impl core::cmp::Eq for termrock::widgets::EntityMention
+impl core::cmp::PartialEq for termrock::widgets::EntityMention
+pub fn termrock::widgets::EntityMention::eq(&self, &termrock::widgets::EntityMention) -> bool
+impl core::fmt::Debug for termrock::widgets::EntityMention
+pub fn termrock::widgets::EntityMention::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::EntityMention
+impl core::marker::Freeze for termrock::widgets::EntityMention
+impl core::marker::Send for termrock::widgets::EntityMention
+impl core::marker::Sync for termrock::widgets::EntityMention
+impl core::marker::Unpin for termrock::widgets::EntityMention
+impl core::marker::UnsafeUnpin for termrock::widgets::EntityMention
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EntityMention
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::EntityMention
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EntityMention where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EntityMention::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EntityMention where U: core::convert::From<T>
+pub fn termrock::widgets::EntityMention::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EntityMention where U: core::convert::Into<T>
+pub type termrock::widgets::EntityMention::Error = core::convert::Infallible
+pub fn termrock::widgets::EntityMention::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EntityMention where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EntityMention::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EntityMention::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EntityMention where T: core::clone::Clone
+pub type termrock::widgets::EntityMention::Owned = T
+pub fn termrock::widgets::EntityMention::clone_into(&self, &mut T)
+pub fn termrock::widgets::EntityMention::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EntityMention where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EntityMention::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EntityMention where T: ?core::marker::Sized
+pub fn termrock::widgets::EntityMention::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EntityMention where T: ?core::marker::Sized
+pub fn termrock::widgets::EntityMention::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EntityMention where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EntityMention::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EntityMention
+pub fn termrock::widgets::EntityMention::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EntityMention
+pub struct termrock::widgets::EntityMentionState
+pub termrock::widgets::EntityMentionState::accepts_input: bool
+pub termrock::widgets::EntityMentionState::open: bool
+pub termrock::widgets::EntityMentionState::query: core::option::Option<termrock::widgets::MentionQuery>
+impl termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::close(&mut self)
+pub fn termrock::widgets::EntityMentionState::new() -> Self
+pub const fn termrock::widgets::EntityMentionState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::EntityMentionState::sync_from_draft(&mut self, &str, usize) -> bool
+impl core::clone::Clone for termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::clone(&self) -> termrock::widgets::EntityMentionState
+impl core::cmp::Eq for termrock::widgets::EntityMentionState
+impl core::cmp::PartialEq for termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::eq(&self, &termrock::widgets::EntityMentionState) -> bool
+impl core::default::Default for termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::default() -> termrock::widgets::EntityMentionState
+impl core::fmt::Debug for termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::EntityMentionState
+impl core::marker::Freeze for termrock::widgets::EntityMentionState
+impl core::marker::Send for termrock::widgets::EntityMentionState
+impl core::marker::Sync for termrock::widgets::EntityMentionState
+impl core::marker::Unpin for termrock::widgets::EntityMentionState
+impl core::marker::UnsafeUnpin for termrock::widgets::EntityMentionState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EntityMentionState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::EntityMentionState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EntityMentionState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::EntityMentionState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::EntityMentionState where U: core::convert::From<T>
+pub fn termrock::widgets::EntityMentionState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EntityMentionState where U: core::convert::Into<T>
+pub type termrock::widgets::EntityMentionState::Error = core::convert::Infallible
+pub fn termrock::widgets::EntityMentionState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::EntityMentionState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::EntityMentionState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::EntityMentionState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::EntityMentionState where T: core::clone::Clone
+pub type termrock::widgets::EntityMentionState::Owned = T
+pub fn termrock::widgets::EntityMentionState::clone_into(&self, &mut T)
+pub fn termrock::widgets::EntityMentionState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::EntityMentionState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::EntityMentionState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::EntityMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::EntityMentionState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EntityMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::EntityMentionState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::EntityMentionState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::EntityMentionState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::EntityMentionState
+pub fn termrock::widgets::EntityMentionState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::EntityMentionState
 pub struct termrock::widgets::ErrorState<'a>
 impl<'a> termrock::widgets::ErrorState<'a>
 pub const fn termrock::widgets::ErrorState<'a>::ascii(self, bool) -> Self
@@ -47603,6 +48020,107 @@ pub unsafe fn termrock::widgets::FileEntry::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::FileEntry
 pub fn termrock::widgets::FileEntry::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FileEntry
+pub struct termrock::widgets::FileMention
+pub termrock::widgets::FileMention::mention: termrock::widgets::MentionRef
+impl termrock::widgets::FileMention
+pub fn termrock::widgets::FileMention::ambiguous(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::MentionDisambiguator>) -> Self
+pub const fn termrock::widgets::FileMention::as_mut(&mut self) -> &mut termrock::widgets::MentionRef
+pub const fn termrock::widgets::FileMention::as_ref(&self) -> &termrock::widgets::MentionRef
+pub fn termrock::widgets::FileMention::directory(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FileMention::missing(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FileMention::path(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::FileMention::symbol(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::FileMention
+pub fn termrock::widgets::FileMention::clone(&self) -> termrock::widgets::FileMention
+impl core::cmp::Eq for termrock::widgets::FileMention
+impl core::cmp::PartialEq for termrock::widgets::FileMention
+pub fn termrock::widgets::FileMention::eq(&self, &termrock::widgets::FileMention) -> bool
+impl core::fmt::Debug for termrock::widgets::FileMention
+pub fn termrock::widgets::FileMention::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FileMention
+impl core::marker::Freeze for termrock::widgets::FileMention
+impl core::marker::Send for termrock::widgets::FileMention
+impl core::marker::Sync for termrock::widgets::FileMention
+impl core::marker::Unpin for termrock::widgets::FileMention
+impl core::marker::UnsafeUnpin for termrock::widgets::FileMention
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileMention
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileMention
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileMention where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileMention::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileMention where U: core::convert::From<T>
+pub fn termrock::widgets::FileMention::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileMention where U: core::convert::Into<T>
+pub type termrock::widgets::FileMention::Error = core::convert::Infallible
+pub fn termrock::widgets::FileMention::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileMention where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileMention::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileMention::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileMention where T: core::clone::Clone
+pub type termrock::widgets::FileMention::Owned = T
+pub fn termrock::widgets::FileMention::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileMention::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileMention where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileMention::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileMention where T: ?core::marker::Sized
+pub fn termrock::widgets::FileMention::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileMention where T: ?core::marker::Sized
+pub fn termrock::widgets::FileMention::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileMention where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileMention::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileMention
+pub fn termrock::widgets::FileMention::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileMention
+pub struct termrock::widgets::FileMentionState
+pub termrock::widgets::FileMentionState::accepts_input: bool
+pub termrock::widgets::FileMentionState::open: bool
+pub termrock::widgets::FileMentionState::query: core::option::Option<termrock::widgets::MentionQuery>
+impl termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::close(&mut self)
+pub fn termrock::widgets::FileMentionState::new() -> Self
+pub const fn termrock::widgets::FileMentionState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::FileMentionState::sync_from_draft(&mut self, &str, usize) -> bool
+impl core::clone::Clone for termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::clone(&self) -> termrock::widgets::FileMentionState
+impl core::cmp::Eq for termrock::widgets::FileMentionState
+impl core::cmp::PartialEq for termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::eq(&self, &termrock::widgets::FileMentionState) -> bool
+impl core::default::Default for termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::default() -> termrock::widgets::FileMentionState
+impl core::fmt::Debug for termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::FileMentionState
+impl core::marker::Freeze for termrock::widgets::FileMentionState
+impl core::marker::Send for termrock::widgets::FileMentionState
+impl core::marker::Sync for termrock::widgets::FileMentionState
+impl core::marker::Unpin for termrock::widgets::FileMentionState
+impl core::marker::UnsafeUnpin for termrock::widgets::FileMentionState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FileMentionState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FileMentionState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FileMentionState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FileMentionState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FileMentionState where U: core::convert::From<T>
+pub fn termrock::widgets::FileMentionState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FileMentionState where U: core::convert::Into<T>
+pub type termrock::widgets::FileMentionState::Error = core::convert::Infallible
+pub fn termrock::widgets::FileMentionState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FileMentionState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FileMentionState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FileMentionState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FileMentionState where T: core::clone::Clone
+pub type termrock::widgets::FileMentionState::Owned = T
+pub fn termrock::widgets::FileMentionState::clone_into(&self, &mut T)
+pub fn termrock::widgets::FileMentionState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FileMentionState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FileMentionState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FileMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::FileMentionState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FileMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::FileMentionState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FileMentionState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FileMentionState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FileMentionState
+pub fn termrock::widgets::FileMentionState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FileMentionState
 pub struct termrock::widgets::FilePicker<'a>
 impl<'a> termrock::widgets::FilePicker<'a>
 pub const fn termrock::widgets::FilePicker<'a>::ascii(self, bool) -> Self
@@ -50297,6 +50815,101 @@ pub unsafe fn termrock::widgets::ImageSurface<'a>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::ImageSurface<'a>
 pub fn termrock::widgets::ImageSurface<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ImageSurface<'a>
+pub struct termrock::widgets::InlineMention<'a>
+impl<'a> termrock::widgets::InlineMention<'a>
+pub const fn termrock::widgets::InlineMention<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::InlineMention<'a>::entity(&'a termrock::widgets::EntityMention, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::InlineMention<'a>::file(&'a termrock::widgets::FileMention, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::InlineMention<'a>::handle_key(&self, &mut termrock::widgets::InlineMentionState, termrock::input::KeyEvent) -> termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMention<'a>::handle_mouse(&self, &mut termrock::widgets::InlineMentionState, termrock::input::MouseEvent) -> termrock::widgets::InlineMentionOutcome
+pub fn termrock::widgets::InlineMention<'a>::measure_width(&self) -> u16
+pub const fn termrock::widgets::InlineMention<'a>::new(&'a termrock::widgets::MentionRef, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::InlineMention<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::InlineMentionState) -> termrock::widgets::TokenParts
+pub fn termrock::widgets::InlineMention<'a>::paint_disambiguation(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::InlineMentionState)
+impl<'a> core::clone::Clone for termrock::widgets::InlineMention<'a>
+pub fn termrock::widgets::InlineMention<'a>::clone(&self) -> termrock::widgets::InlineMention<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::InlineMention<'a>
+pub fn termrock::widgets::InlineMention<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::InlineMention<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::InlineMention<'a>
+impl<'a> core::marker::Send for termrock::widgets::InlineMention<'a>
+impl<'a> core::marker::Sync for termrock::widgets::InlineMention<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::InlineMention<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::InlineMention<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InlineMention<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::InlineMention<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::InlineMention<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::InlineMention<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InlineMention<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::InlineMention<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::InlineMention<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InlineMention<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InlineMention<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InlineMention<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InlineMention<'a> where T: core::clone::Clone
+pub type termrock::widgets::InlineMention<'a>::Owned = T
+pub fn termrock::widgets::InlineMention<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::InlineMention<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InlineMention<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InlineMention<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InlineMention<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMention<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InlineMention<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMention<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InlineMention<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InlineMention<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InlineMention<'a>
+pub fn termrock::widgets::InlineMention<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InlineMention<'a>
+pub struct termrock::widgets::InlineMentionState
+pub termrock::widgets::InlineMentionState::disambiguation_cursor: usize
+pub termrock::widgets::InlineMentionState::disambiguation_open: bool
+pub termrock::widgets::InlineMentionState::tag: termrock::widgets::TagState
+impl termrock::widgets::InlineMentionState
+pub const fn termrock::widgets::InlineMentionState::new() -> Self
+pub const fn termrock::widgets::InlineMentionState::set_focused(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::InlineMentionState
+pub fn termrock::widgets::InlineMentionState::clone(&self) -> termrock::widgets::InlineMentionState
+impl core::cmp::Eq for termrock::widgets::InlineMentionState
+impl core::cmp::PartialEq for termrock::widgets::InlineMentionState
+pub fn termrock::widgets::InlineMentionState::eq(&self, &termrock::widgets::InlineMentionState) -> bool
+impl core::default::Default for termrock::widgets::InlineMentionState
+pub fn termrock::widgets::InlineMentionState::default() -> termrock::widgets::InlineMentionState
+impl core::fmt::Debug for termrock::widgets::InlineMentionState
+pub fn termrock::widgets::InlineMentionState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::InlineMentionState
+impl core::marker::Freeze for termrock::widgets::InlineMentionState
+impl core::marker::Send for termrock::widgets::InlineMentionState
+impl core::marker::Sync for termrock::widgets::InlineMentionState
+impl core::marker::Unpin for termrock::widgets::InlineMentionState
+impl core::marker::UnsafeUnpin for termrock::widgets::InlineMentionState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::InlineMentionState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::InlineMentionState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::InlineMentionState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::InlineMentionState where U: core::convert::From<T>
+pub fn termrock::widgets::InlineMentionState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::InlineMentionState where U: core::convert::Into<T>
+pub type termrock::widgets::InlineMentionState::Error = core::convert::Infallible
+pub fn termrock::widgets::InlineMentionState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::InlineMentionState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::InlineMentionState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::InlineMentionState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::InlineMentionState where T: core::clone::Clone
+pub type termrock::widgets::InlineMentionState::Owned = T
+pub fn termrock::widgets::InlineMentionState::clone_into(&self, &mut T)
+pub fn termrock::widgets::InlineMentionState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::InlineMentionState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::InlineMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::InlineMentionState where T: ?core::marker::Sized
+pub fn termrock::widgets::InlineMentionState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::InlineMentionState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::InlineMentionState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::InlineMentionState
+pub fn termrock::widgets::InlineMentionState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::InlineMentionState
 pub struct termrock::widgets::InspectRegion
 pub termrock::widgets::InspectRegion::area: ratatui_core::layout::rect::Rect
 pub termrock::widgets::InspectRegion::disclosure: core::option::Option<ratatui_core::layout::rect::Rect>
@@ -52871,6 +53484,276 @@ pub unsafe fn termrock::widgets::MatchRanges::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MatchRanges
 pub fn termrock::widgets::MatchRanges::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MatchRanges
+pub struct termrock::widgets::MentionCandidate
+pub termrock::widgets::MentionCandidate::canonical: alloc::string::String
+pub termrock::widgets::MentionCandidate::detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::MentionCandidate::documentation: core::option::Option<alloc::string::String>
+pub termrock::widgets::MentionCandidate::enabled: bool
+pub termrock::widgets::MentionCandidate::group: core::option::Option<alloc::string::String>
+pub termrock::widgets::MentionCandidate::id: alloc::string::String
+pub termrock::widgets::MentionCandidate::kind: termrock::widgets::MentionType
+pub termrock::widgets::MentionCandidate::label: alloc::string::String
+impl termrock::widgets::MentionCandidate
+pub fn termrock::widgets::MentionCandidate::detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionCandidate::group(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionCandidate::insert_markup(&self) -> alloc::string::String
+pub fn termrock::widgets::MentionCandidate::insert_short(&self) -> alloc::string::String
+pub fn termrock::widgets::MentionCandidate::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::widgets::MentionType, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionCandidate::to_mention_ref(&self) -> termrock::widgets::MentionRef
+impl core::clone::Clone for termrock::widgets::MentionCandidate
+pub fn termrock::widgets::MentionCandidate::clone(&self) -> termrock::widgets::MentionCandidate
+impl core::cmp::Eq for termrock::widgets::MentionCandidate
+impl core::cmp::PartialEq for termrock::widgets::MentionCandidate
+pub fn termrock::widgets::MentionCandidate::eq(&self, &termrock::widgets::MentionCandidate) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionCandidate
+pub fn termrock::widgets::MentionCandidate::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionCandidate
+impl core::marker::Freeze for termrock::widgets::MentionCandidate
+impl core::marker::Send for termrock::widgets::MentionCandidate
+impl core::marker::Sync for termrock::widgets::MentionCandidate
+impl core::marker::Unpin for termrock::widgets::MentionCandidate
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionCandidate
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionCandidate
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionCandidate
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionCandidate where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionCandidate::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionCandidate where U: core::convert::From<T>
+pub fn termrock::widgets::MentionCandidate::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionCandidate where U: core::convert::Into<T>
+pub type termrock::widgets::MentionCandidate::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionCandidate::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionCandidate where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionCandidate::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionCandidate::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionCandidate where T: core::clone::Clone
+pub type termrock::widgets::MentionCandidate::Owned = T
+pub fn termrock::widgets::MentionCandidate::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionCandidate::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionCandidate where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionCandidate::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionCandidate where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionCandidate::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionCandidate where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionCandidate::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionCandidate where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionCandidate::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionCandidate
+pub fn termrock::widgets::MentionCandidate::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionCandidate
+pub struct termrock::widgets::MentionDisambiguator
+pub termrock::widgets::MentionDisambiguator::detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::MentionDisambiguator::id: alloc::string::String
+pub termrock::widgets::MentionDisambiguator::label: alloc::string::String
+impl termrock::widgets::MentionDisambiguator
+pub fn termrock::widgets::MentionDisambiguator::detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionDisambiguator::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::MentionDisambiguator
+pub fn termrock::widgets::MentionDisambiguator::clone(&self) -> termrock::widgets::MentionDisambiguator
+impl core::cmp::Eq for termrock::widgets::MentionDisambiguator
+impl core::cmp::PartialEq for termrock::widgets::MentionDisambiguator
+pub fn termrock::widgets::MentionDisambiguator::eq(&self, &termrock::widgets::MentionDisambiguator) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionDisambiguator
+pub fn termrock::widgets::MentionDisambiguator::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionDisambiguator
+impl core::marker::Freeze for termrock::widgets::MentionDisambiguator
+impl core::marker::Send for termrock::widgets::MentionDisambiguator
+impl core::marker::Sync for termrock::widgets::MentionDisambiguator
+impl core::marker::Unpin for termrock::widgets::MentionDisambiguator
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionDisambiguator
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionDisambiguator
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionDisambiguator
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionDisambiguator where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionDisambiguator::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionDisambiguator where U: core::convert::From<T>
+pub fn termrock::widgets::MentionDisambiguator::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionDisambiguator where U: core::convert::Into<T>
+pub type termrock::widgets::MentionDisambiguator::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionDisambiguator::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionDisambiguator where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionDisambiguator::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionDisambiguator::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionDisambiguator where T: core::clone::Clone
+pub type termrock::widgets::MentionDisambiguator::Owned = T
+pub fn termrock::widgets::MentionDisambiguator::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionDisambiguator::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionDisambiguator where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionDisambiguator::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionDisambiguator where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionDisambiguator::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionDisambiguator where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionDisambiguator::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionDisambiguator where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionDisambiguator::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionDisambiguator
+pub fn termrock::widgets::MentionDisambiguator::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionDisambiguator
+pub struct termrock::widgets::MentionDraft
+pub termrock::widgets::MentionDraft::cursor: termrock::widgets::MentionCursor
+pub termrock::widgets::MentionDraft::parts: alloc::vec::Vec<termrock::widgets::MentionSegment>
+impl termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::delete_backward(&mut self) -> bool
+pub fn termrock::widgets::MentionDraft::from_text(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionDraft::insert_mention(&mut self, termrock::widgets::MentionRef)
+pub fn termrock::widgets::MentionDraft::insert_text(&mut self, &str)
+pub fn termrock::widgets::MentionDraft::mention_count(&self) -> usize
+pub fn termrock::widgets::MentionDraft::move_left(&mut self) -> bool
+pub fn termrock::widgets::MentionDraft::move_right(&mut self) -> bool
+pub fn termrock::widgets::MentionDraft::new() -> Self
+pub fn termrock::widgets::MentionDraft::to_display_string(&self) -> alloc::string::String
+pub fn termrock::widgets::MentionDraft::to_plain_markup(&self) -> alloc::string::String
+impl core::clone::Clone for termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::clone(&self) -> termrock::widgets::MentionDraft
+impl core::cmp::Eq for termrock::widgets::MentionDraft
+impl core::cmp::PartialEq for termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::eq(&self, &termrock::widgets::MentionDraft) -> bool
+impl core::default::Default for termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::default() -> termrock::widgets::MentionDraft
+impl core::fmt::Debug for termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionDraft
+impl core::marker::Freeze for termrock::widgets::MentionDraft
+impl core::marker::Send for termrock::widgets::MentionDraft
+impl core::marker::Sync for termrock::widgets::MentionDraft
+impl core::marker::Unpin for termrock::widgets::MentionDraft
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionDraft
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionDraft
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionDraft
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionDraft where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionDraft::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionDraft where U: core::convert::From<T>
+pub fn termrock::widgets::MentionDraft::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionDraft where U: core::convert::Into<T>
+pub type termrock::widgets::MentionDraft::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionDraft::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionDraft where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionDraft::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionDraft::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionDraft where T: core::clone::Clone
+pub type termrock::widgets::MentionDraft::Owned = T
+pub fn termrock::widgets::MentionDraft::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionDraft::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionDraft where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionDraft::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionDraft where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionDraft::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionDraft where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionDraft::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionDraft where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionDraft::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionDraft
+pub fn termrock::widgets::MentionDraft::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionDraft
+pub struct termrock::widgets::MentionQuery
+pub termrock::widgets::MentionQuery::cursor_byte: usize
+pub termrock::widgets::MentionQuery::family: termrock::widgets::MentionFamily
+pub termrock::widgets::MentionQuery::query: alloc::string::String
+pub termrock::widgets::MentionQuery::trigger: char
+pub termrock::widgets::MentionQuery::trigger_byte: usize
+impl core::clone::Clone for termrock::widgets::MentionQuery
+pub fn termrock::widgets::MentionQuery::clone(&self) -> termrock::widgets::MentionQuery
+impl core::cmp::Eq for termrock::widgets::MentionQuery
+impl core::cmp::PartialEq for termrock::widgets::MentionQuery
+pub fn termrock::widgets::MentionQuery::eq(&self, &termrock::widgets::MentionQuery) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionQuery
+pub fn termrock::widgets::MentionQuery::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionQuery
+impl core::marker::Freeze for termrock::widgets::MentionQuery
+impl core::marker::Send for termrock::widgets::MentionQuery
+impl core::marker::Sync for termrock::widgets::MentionQuery
+impl core::marker::Unpin for termrock::widgets::MentionQuery
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionQuery
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionQuery
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionQuery
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionQuery where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionQuery::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionQuery where U: core::convert::From<T>
+pub fn termrock::widgets::MentionQuery::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionQuery where U: core::convert::Into<T>
+pub type termrock::widgets::MentionQuery::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionQuery::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionQuery where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionQuery::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionQuery::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionQuery where T: core::clone::Clone
+pub type termrock::widgets::MentionQuery::Owned = T
+pub fn termrock::widgets::MentionQuery::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionQuery::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionQuery where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionQuery::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionQuery where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionQuery::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionQuery where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionQuery::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionQuery where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionQuery::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionQuery
+pub fn termrock::widgets::MentionQuery::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionQuery
+pub struct termrock::widgets::MentionRef
+pub termrock::widgets::MentionRef::canonical: alloc::string::String
+pub termrock::widgets::MentionRef::disambiguation_index: core::option::Option<usize>
+pub termrock::widgets::MentionRef::disambiguators: alloc::vec::Vec<termrock::widgets::MentionDisambiguator>
+pub termrock::widgets::MentionRef::id: alloc::string::String
+pub termrock::widgets::MentionRef::kind: termrock::widgets::MentionType
+pub termrock::widgets::MentionRef::label: alloc::string::String
+pub termrock::widgets::MentionRef::preview: core::option::Option<alloc::string::String>
+pub termrock::widgets::MentionRef::removable: bool
+pub termrock::widgets::MentionRef::sensitive: bool
+pub termrock::widgets::MentionRef::validity: termrock::widgets::MentionValidity
+impl termrock::widgets::MentionRef
+pub fn termrock::widgets::MentionRef::apply_disambiguation(&mut self, usize) -> bool
+pub fn termrock::widgets::MentionRef::display_label(&self, bool) -> alloc::string::String
+pub fn termrock::widgets::MentionRef::entity(impl core::convert::Into<alloc::string::String>, termrock::widgets::MentionType, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::MentionRef::family(&self) -> termrock::widgets::MentionFamily
+pub fn termrock::widgets::MentionRef::file(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionRef::preview(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::MentionRef::removable(self, bool) -> Self
+pub const fn termrock::widgets::MentionRef::sensitive(self, bool) -> Self
+pub fn termrock::widgets::MentionRef::symbol(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MentionRef::to_composer_label(&self) -> alloc::string::String
+pub fn termrock::widgets::MentionRef::to_markup(&self) -> alloc::string::String
+pub const fn termrock::widgets::MentionRef::validity(self, termrock::widgets::MentionValidity) -> Self
+pub fn termrock::widgets::MentionRef::with_disambiguators(self, alloc::vec::Vec<termrock::widgets::MentionDisambiguator>) -> Self
+impl core::clone::Clone for termrock::widgets::MentionRef
+pub fn termrock::widgets::MentionRef::clone(&self) -> termrock::widgets::MentionRef
+impl core::cmp::Eq for termrock::widgets::MentionRef
+impl core::cmp::PartialEq for termrock::widgets::MentionRef
+pub fn termrock::widgets::MentionRef::eq(&self, &termrock::widgets::MentionRef) -> bool
+impl core::fmt::Debug for termrock::widgets::MentionRef
+pub fn termrock::widgets::MentionRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MentionRef
+impl core::marker::Freeze for termrock::widgets::MentionRef
+impl core::marker::Send for termrock::widgets::MentionRef
+impl core::marker::Sync for termrock::widgets::MentionRef
+impl core::marker::Unpin for termrock::widgets::MentionRef
+impl core::marker::UnsafeUnpin for termrock::widgets::MentionRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MentionRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MentionRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MentionRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MentionRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MentionRef where U: core::convert::From<T>
+pub fn termrock::widgets::MentionRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MentionRef where U: core::convert::Into<T>
+pub type termrock::widgets::MentionRef::Error = core::convert::Infallible
+pub fn termrock::widgets::MentionRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MentionRef where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MentionRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MentionRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MentionRef where T: core::clone::Clone
+pub type termrock::widgets::MentionRef::Owned = T
+pub fn termrock::widgets::MentionRef::clone_into(&self, &mut T)
+pub fn termrock::widgets::MentionRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MentionRef where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MentionRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MentionRef where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MentionRef where T: ?core::marker::Sized
+pub fn termrock::widgets::MentionRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MentionRef where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MentionRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MentionRef
+pub fn termrock::widgets::MentionRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MentionRef
 pub struct termrock::widgets::Menu<'a, Id>
 impl<'a, Id> termrock::widgets::Menu<'a, Id>
 pub const fn termrock::widgets::Menu<'a, Id>::ascii(self, bool) -> Self
@@ -70412,8 +71295,10 @@ pub const termrock::widgets::DROP_DESCRIPTION_WIDTH: u16
 pub const termrock::widgets::DROP_MARK_WIDTH: u16
 pub const termrock::widgets::EMPTY_STATE_INLINE_MAX_HEIGHT: u16
 pub const termrock::widgets::EMPTY_STATE_INLINE_MAX_WIDTH: u16
+pub const termrock::widgets::ENTITY_MENTION_OVERLAY_ID: &str
 pub const termrock::widgets::ERROR_STATE_COMPACT_MAX_HEIGHT: u16
 pub const termrock::widgets::ERROR_STATE_INLINE_MAX_WIDTH: u16
+pub const termrock::widgets::FILE_MENTION_OVERLAY_ID: &str
 pub const termrock::widgets::FILE_PICKER_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::FILE_PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
@@ -70440,6 +71325,9 @@ pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
 pub const termrock::widgets::LIST_NARROW_DROP_ORDER: &[&str]
 pub const termrock::widgets::LOADING_OVERLAY_MIN_SHOW_MS: u64
 pub const termrock::widgets::LOADING_OVERLAY_SHORT_OP_HINT_MS: u64
+pub const termrock::widgets::MENTION_DISAMBIG_MAX: usize
+pub const termrock::widgets::MENTION_TRIGGER_AT: char
+pub const termrock::widgets::MENTION_TRIGGER_HASH: char
 pub const termrock::widgets::MENU_BAR_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_BAR_OVERLAY_ID: &str
 pub const termrock::widgets::MENU_BAR_SUBMENU_OVERLAY_PREFIX: &str
@@ -70542,6 +71430,7 @@ pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line s
 pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::apply_expanded_set<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord>(&mut [termrock::widgets::SchemaBrowserEntry<'_, Id>], &alloc::collections::btree::set::BTreeSet<Id>)
+pub fn termrock::widgets::apply_mention_insert(&str, &termrock::widgets::MentionQuery, &str) -> alloc::string::String
 pub fn termrock::widgets::apply_metrics_command(&mut termrock::widgets::MetricsDashboardState, &str, &[termrock::widgets::MetricTile<'_>]) -> termrock::widgets::MetricsDashboardOutcome
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
@@ -70584,6 +71473,9 @@ pub fn termrock::widgets::default_tree_table_intent(termrock::input::KeyEvent, t
 pub fn termrock::widgets::dep_node_to_inspector_fields<'a>(&'a termrock::widgets::DepNode<'a>) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::dependency_tree_column_model() -> termrock::widgets::ColumnModel<&'static str>
 pub fn termrock::widgets::detect_completion(&str, termrock::widgets::TextCursor) -> core::option::Option<termrock::widgets::CompletionQuery>
+pub fn termrock::widgets::detect_entity_mention_query(&str, usize) -> core::option::Option<termrock::widgets::MentionQuery>
+pub fn termrock::widgets::detect_file_mention_query(&str, usize) -> core::option::Option<termrock::widgets::MentionQuery>
+pub fn termrock::widgets::detect_mention_query(&str, usize, termrock::widgets::MentionFamily) -> core::option::Option<termrock::widgets::MentionQuery>
 pub fn termrock::widgets::diagnostic_summary(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::diagnostics_to_gutter_marks(&[termrock::widgets::Diagnostic<'_>], bool) -> alloc::vec::Vec<termrock::widgets::CodeGutterMark>
 pub fn termrock::widgets::diagnostics_to_highlights(&[termrock::widgets::Diagnostic<'_>]) -> alloc::vec::Vec<termrock::widgets::CodeHighlight>
@@ -70681,6 +71573,7 @@ pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termr
 pub fn termrock::widgets::filter_inspect_fields<'a>(&'a [termrock::widgets::InspectorField<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::InspectorField<'a>>
 pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [termrock::widgets::ListRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::ListRow<'a, Id>>
 pub fn termrock::widgets::filter_log_lines<'a>(&'a [termrock::widgets::LogLine<'a>], &str, termrock::widgets::LogLevel) -> alloc::vec::Vec<&'a termrock::widgets::LogLine<'a>>
+pub fn termrock::widgets::filter_mention_candidates<'a>(&'a [termrock::widgets::MentionCandidate], &str, core::option::Option<termrock::widgets::MentionFamily>) -> alloc::vec::Vec<&'a termrock::widgets::MentionCandidate>
 pub fn termrock::widgets::filter_processes<'a>(&'a [termrock::widgets::ProcessRow<'a>], &str, core::option::Option<&str>, core::option::Option<termrock::widgets::ProcessStatus>) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::filter_schema_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::SchemaBrowserEntry<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::SchemaBrowserEntry<'a, Id>>
@@ -70750,6 +71643,10 @@ pub fn termrock::widgets::map_strip_outcome(termrock::widgets::TokenStripOutcome
 pub fn termrock::widgets::mark_remapped_help_entries(&mut [termrock::widgets::HelpEntry], &[&str])
 pub fn termrock::widgets::match_range_from_display_cols(&str, usize, usize, termrock::widgets::MatchKind) -> termrock::widgets::MatchRange
 pub fn termrock::widgets::measure_menu_panel<Id>(&[termrock::widgets::MenuNode<Id>], bool) -> termrock::interaction::OverlaySize
+pub fn termrock::widgets::mention_candidates_as_completion(&[termrock::widgets::MentionCandidate]) -> alloc::vec::Vec<termrock::widgets::CompletionCandidate<'_, alloc::string::String>>
+pub fn termrock::widgets::mention_semantic_description(&termrock::widgets::MentionRef) -> alloc::string::String
+pub fn termrock::widgets::mention_to_completion_candidate(&termrock::widgets::MentionCandidate) -> termrock::widgets::CompletionCandidate<'_, alloc::string::String>
+pub fn termrock::widgets::mention_to_token_item<'a>(&'a termrock::widgets::MentionRef, &'a str) -> termrock::widgets::TokenItem<'a, &'a str>
 pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
 pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuItem<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
@@ -70798,7 +71695,9 @@ pub fn termrock::widgets::open_quick_open_overlay<FocusId: core::clone::Clone>(&
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::paint_attachment_strip(&[termrock::widgets::AttachmentItem], &[termrock::widgets::PastePayload], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &mut termrock::widgets::TokenStripState<alloc::string::String>, termrock::widgets::TokenStripLayout, usize, bool, &[&str])
 pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem)
+pub fn termrock::widgets::parse_draft_with_mentions(&str) -> termrock::widgets::MentionDraft
 pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
+pub fn termrock::widgets::parse_mention_markup(&str) -> core::option::Option<termrock::widgets::MentionRef>
 pub fn termrock::widgets::parse_quick_open_query(&str) -> termrock::widgets::ParsedQuickOpenQuery
 pub fn termrock::widgets::parse_search_query(&str) -> core::option::Option<alloc::vec::Vec<u8>>
 pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine

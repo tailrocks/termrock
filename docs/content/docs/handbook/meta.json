@@ -10,6 +10,8 @@
     "prompt-composer",
     "attachment-chip",
     "paste-chip",
+    "file-mention",
+    "entity-mention",
     "permission-prompt",
     "agent-workbench",
     "text-area",

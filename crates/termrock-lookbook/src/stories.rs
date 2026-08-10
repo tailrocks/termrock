@@ -5243,6 +5243,60 @@ pub(crate) fn stories() -> Vec<Story> {
             attachment_strip_wrap_story,
         ),
         Story::new(
+            "file-mention/basic",
+            "FileMention basic",
+            "FileMention",
+            "Inline file mention tokens with type glyphs.",
+            48,
+            3,
+            file_mention_basic_story,
+        ),
+        Story::new(
+            "file-mention/missing",
+            "FileMention missing",
+            "FileMention",
+            "Missing path validity on file mention.",
+            40,
+            2,
+            file_mention_missing_story,
+        ),
+        Story::new(
+            "file-mention/ambiguous",
+            "FileMention ambiguous",
+            "FileMention",
+            "Ambiguous basename with disambiguation list.",
+            48,
+            8,
+            file_mention_ambiguous_story,
+        ),
+        Story::new(
+            "entity-mention/agent-tool",
+            "EntityMention agent tool",
+            "EntityMention",
+            "Agent and tool entity mention tokens.",
+            48,
+            3,
+            entity_mention_agent_tool_story,
+        ),
+        Story::new(
+            "entity-mention/stale",
+            "EntityMention stale",
+            "EntityMention",
+            "Stale session entity mention.",
+            40,
+            2,
+            entity_mention_stale_story,
+        ),
+        Story::new(
+            "mention-draft/atomic",
+            "Mention draft atomic",
+            "FileMention",
+            "Text plus atomic mention segments (display form).",
+            52,
+            3,
+            mention_draft_atomic_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18086,6 +18140,94 @@ fn attachment_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         true,
         &[],
     );
+}
+
+fn file_mention_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FileMention, InlineMention, InlineMentionState};
+    let a = FileMention::path("f1", "main.rs", "src/main.rs");
+    let b = FileMention::symbol("s1", "run", "mod::run");
+    let chunks = Layout::horizontal([Constraint::Length(20), Constraint::Min(16)]).split(area);
+    let mut sa = InlineMentionState::new();
+    sa.set_focused(true);
+    let mut sb = InlineMentionState::new();
+    InlineMention::file(&a, system).paint(chunks[0], frame.buffer_mut(), &mut sa);
+    InlineMention::file(&b, system).ascii(true).paint(chunks[1], frame.buffer_mut(), &mut sb);
+}
+
+fn file_mention_missing_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FileMention, InlineMention, InlineMentionState};
+    let m = FileMention::missing("m1", "gone.rs", "old/gone.rs");
+    let mut st = InlineMentionState::new();
+    st.set_focused(true);
+    InlineMention::file(&m, system).ascii(true).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn file_mention_ambiguous_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        FileMention, InlineMention, InlineMentionState, MentionDisambiguator,
+    };
+    let m = FileMention::ambiguous(
+        "u1",
+        "util.rs",
+        vec![
+            MentionDisambiguator::new("a/util.rs", "util.rs").detail("crate a"),
+            MentionDisambiguator::new("b/util.rs", "util.rs").detail("crate b"),
+            MentionDisambiguator::new("c/util.rs", "util.rs").detail("crate c"),
+        ],
+    );
+    let mut st = InlineMentionState::new();
+    st.set_focused(true);
+    st.disambiguation_open = true;
+    st.disambiguation_cursor = 1;
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(4)]).split(area);
+    InlineMention::file(&m, system).paint(chunks[0], frame.buffer_mut(), &mut st);
+    InlineMention::file(&m, system).paint_disambiguation(chunks[1], frame.buffer_mut(), &st);
+}
+
+fn entity_mention_agent_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{EntityMention, InlineMention, InlineMentionState};
+    let agent = EntityMention::agent("a1", "planner", "agent:planner");
+    let tool = EntityMention::tool("t1", "bash", "tool:bash");
+    let chunks = Layout::horizontal([Constraint::Length(22), Constraint::Min(16)]).split(area);
+    let mut sa = InlineMentionState::new();
+    sa.set_focused(true);
+    let mut st = InlineMentionState::new();
+    InlineMention::entity(&agent, system).paint(chunks[0], frame.buffer_mut(), &mut sa);
+    InlineMention::entity(&tool, system).ascii(true).paint(chunks[1], frame.buffer_mut(), &mut st);
+}
+
+fn entity_mention_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{EntityMention, InlineMention, InlineMentionState, MentionValidity};
+    let mut s = EntityMention::session("s1", "chat-42", "session:42");
+    s.as_mut().validity = MentionValidity::Stale;
+    let mut st = InlineMentionState::new();
+    st.set_focused(true);
+    InlineMention::entity(&s, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn mention_draft_atomic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        FileMention, InlineMention, InlineMentionState, MentionDraft, MentionSegment,
+    };
+    let mut d = MentionDraft::from_text("Review ");
+    d.insert_mention(FileMention::path("f", "lib.rs", "src/lib.rs").mention);
+    d.insert_text(" with ");
+    d.insert_mention(FileMention::symbol("sy", "parse", "ast::parse").mention);
+    // paint display string + first mention token
+    let display = d.to_display_string();
+    frame.buffer_mut().set_stringn(
+        area.x,
+        area.y,
+        display.chars().take(usize::from(area.width)).collect::<String>(),
+        usize::from(area.width),
+        system.style(termrock::style::Role::Text),
+    );
+    if let Some(MentionSegment::Mention(m)) = d.parts.iter().find(|p| matches!(p, MentionSegment::Mention(_))) {
+        let mut st = InlineMentionState::new();
+        st.set_focused(true);
+        let chip = Rect::new(area.x, area.y.saturating_add(1), area.width, 1);
+        InlineMention::new(m, system).paint(chip, frame.buffer_mut(), &mut st);
+    }
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
