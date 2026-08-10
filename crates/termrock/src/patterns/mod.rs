@@ -13,6 +13,7 @@
 mod agent_shell;
 mod agent_workbench;
 mod app_shell;
+mod auth_entry;
 mod database_workbench;
 mod file_manager;
 mod git_workbench;
@@ -106,6 +107,10 @@ pub use error_recovery::bench as error_recovery_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,
+};
+pub use auth_entry::{
+    auth_entry_form_width, example_auth_aside_lines, render_auth_entry, AuthEntryField,
+    AuthEntryMode, AuthEntryOutcome, AuthEntryState, AuthEntrySurfaces, AuthFieldError,
 };
 pub use ops_dashboard::{OpsDashboardLayout, OpsDashboardSlots, layout_ops_dashboard};
 pub use resource_browser::{

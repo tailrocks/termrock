@@ -7143,6 +7143,15 @@ pub(crate) fn stories() -> Vec<Story> {
             error_recovery_unicode,
         ),
         Story::new(
+            "auth-entry/basic",
+            "Auth entry sign-up",
+            "AuthEntry",
+            "Sign-up gate: identity, password, confirm, terms.",
+            64,
+            20,
+            auth_entry_basic,
+        ),
+        Story::new(
             "input-otp/basic",
             "Input OTP",
             "InputOtp",
@@ -25786,6 +25795,16 @@ fn error_recovery_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn error_recovery_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Unicode);
+}
+
+fn auth_entry_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{
+        example_auth_aside_lines, render_auth_entry, AuthEntryState, AuthEntrySurfaces,
+    };
+    let mut st = AuthEntryState::sign_up();
+    let mut surfaces = AuthEntrySurfaces::english(system, &mut st);
+    surfaces.aside_lines = example_auth_aside_lines();
+    render_auth_entry(frame.buffer_mut(), area, surfaces);
 }
 
 fn input_otp_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

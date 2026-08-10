@@ -1935,6 +1935,76 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
+            id: "auth-entry".into(),
+            title: "Auth Entry".into(),
+            description: "Keyboard-first sign-up/sign-in gate: identity + password (+ confirm/terms), validation, submit/cancel, mode switch; host owns auth I/O and secrets.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::auth_entry".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/auth_entry.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "identity".into(),
+                    label: "Identity field".into(),
+                },
+                AnatomyPartRef {
+                    id: "password".into(),
+                    label: "Password field".into(),
+                },
+                AnatomyPartRef {
+                    id: "confirm".into(),
+                    label: "Confirm password".into(),
+                },
+                AnatomyPartRef {
+                    id: "terms".into(),
+                    label: "Terms checkbox".into(),
+                },
+                AnatomyPartRef {
+                    id: "aside".into(),
+                    label: "Optional aside text".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "sign-up".into(),
+                    description: "Create account with confirm/terms".into(),
+                },
+                VariantRef {
+                    id: "sign-in".into(),
+                    description: "Existing account".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "Submitted".into(),
+                },
+                OutcomeRef {
+                    id: "ValidationFailed".into(),
+                },
+                OutcomeRef {
+                    id: "ModeSwitched".into(),
+                },
+                OutcomeRef {
+                    id: "Cancelled".into(),
+                },
+            ],
+            stories: vec!["auth-entry/basic".into()],
+            tests: vec!["patterns::auth_entry".into()],
+            migration: Some("migrations/0248-v0.13.0-auth-entry-signup-blocks.md".into()),
+            provenance: prov("crates/termrock/src/patterns/auth_entry.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
             id: "input-otp".into(),
             title: "Input OTP".into(),
             description: "Fixed-slot OTP/PIN entry with auto-advance, paste fill, mask option; host owns verification.".into(),
