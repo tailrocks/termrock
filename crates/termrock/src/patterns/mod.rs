@@ -40,13 +40,13 @@ pub use database_workbench::{
 };
 pub use database_workbench::bench as database_workbench_bench;
 pub use git_workbench::{
-    example_conflict_diagnostics, example_conflict_files, example_git_branches,
-    example_git_commits, example_git_diff_files, example_git_diff_lines, example_git_files,
-    example_git_help_entries, example_git_hunks, example_git_terminal_lines,
-    example_git_terminal_meta, git_workbench_layout, git_workbench_layout_density,
-    large_git_diff, render_git_workbench, GitBranch, GitDestructiveKind, GitRepoStatus,
-    GitWorkbenchDensity, GitWorkbenchOutcome, GitWorkbenchPane, GitWorkbenchState,
-    GitWorkbenchSurfaces,
+    example_clean_files, example_conflict_diagnostics, example_conflict_files,
+    example_empty_files, example_git_branches, example_git_commits, example_git_diff_files,
+    example_git_diff_lines, example_git_files, example_git_help_entries, example_git_hunks,
+    example_git_terminal_lines, example_git_terminal_meta, git_workbench_layout,
+    git_workbench_layout_density, large_git_diff, render_git_workbench, GitBranch,
+    GitDestructiveKind, GitRepoStatus, GitWorkbenchDensity, GitWorkbenchOutcome,
+    GitWorkbenchPane, GitWorkbenchState, GitWorkbenchSurfaces,
 };
 pub use git_workbench::bench as git_workbench_bench;
 pub use app_shell::{

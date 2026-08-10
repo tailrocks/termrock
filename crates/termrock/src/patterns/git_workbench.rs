@@ -640,11 +640,23 @@ impl GitWorkbenchState {
         GitWorkbenchOutcome::FocusChanged(self.focus)
     }
 
+    /// Whether conflict diagnostics pane should be allocated.
+    #[must_use]
+    pub const fn include_diagnostics(&self) -> bool {
+        matches!(self.repo_status, GitRepoStatus::Conflict)
+    }
+
     /// Layout.
     pub fn layout(&mut self, area: Rect) -> Vec<PaneGeom> {
         self.last_area_width = Some(area.width);
         let density = self.effective_density();
-        let panes = git_workbench_layout_density(area, &self.workspace, density, self.fullscreen_diff);
+        let panes = git_workbench_layout_density(
+            area,
+            &self.workspace,
+            density,
+            self.fullscreen_diff,
+            self.include_diagnostics(),
+        );
         self.last_panes = panes.clone();
         self.clamp_focus_to_density(density);
         panes
@@ -720,11 +732,17 @@ impl GitWorkbenchState {
     }
 
     /// Keyboard routing.
+    ///
+    /// Diff path uses [`DiffReviewState::handle_key_lines`] with the same
+    /// lines/hunks/files projection as paint so line/file/hunk selection and
+    /// stage (`t`) / unstage (`T`) resolve real unit ids.
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
         files: &[FileTreeEntry<'_, &'static str>],
         hunks: &[DiffHunk],
+        diff_lines: &[DiffLine<'_>],
+        diff_files: &[DiffReviewFileRow<'_>],
         help_entries: &[HelpEntry],
         diagnostics: &[Diagnostic<'_>],
         terminal_lines: &[TerminalLine<'_>],
@@ -852,7 +870,9 @@ impl GitWorkbenchState {
                 }
             }
             "diff" => {
-                let out = self.diff.handle_key(key, hunks);
+                let out = self
+                    .diff
+                    .handle_key_lines(key, diff_lines, hunks, diff_files);
                 self.map_diff_outcome(out)
             }
             "history" => {
@@ -983,7 +1003,7 @@ impl GitWorkbenchState {
             StatusSlot::connection("repo", status).priority(10),
             StatusSlot::mode("branch", "branch").priority(20),
             StatusSlot::focus_zone("focus", self.focus).priority(40),
-            StatusSlot::shortcut("keys", "? help · s stage · x discard · C-f full · tab")
+            StatusSlot::shortcut("keys", "? help · t stage · T unstage · x discard · C-f full · tab")
                 .priority(90),
         ];
         if matches!(self.repo_status, GitRepoStatus::Conflict) {
@@ -1009,31 +1029,75 @@ pub fn git_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom>
         state,
         GitWorkbenchDensity::for_width(area.width),
         false,
+        false,
     )
 }
 
-/// Layout with density + fullscreen flag.
+fn south_stack(include_diagnostics: bool, include_output: bool) -> WorkspaceNode {
+    let status = WorkspaceNode::Leaf {
+        id: PaneId::from_static(GitWorkbenchPane::Status.id()),
+        constraint: PaneConstraint::Fixed(1),
+        collapse_priority: 3,
+    };
+    let output = WorkspaceNode::Leaf {
+        id: PaneId::from_static(GitWorkbenchPane::Output.id()),
+        constraint: PaneConstraint::Min(3),
+        collapse_priority: 2,
+    };
+    let diagnostics = WorkspaceNode::Leaf {
+        id: PaneId::from_static(GitWorkbenchPane::Diagnostics.id()),
+        constraint: PaneConstraint::Min(3),
+        collapse_priority: 1,
+    };
+
+    match (include_diagnostics, include_output) {
+        (true, true) => WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 55,
+            first: Box::new(diagnostics),
+            second: Box::new(WorkspaceNode::Split {
+                axis: WorkspaceAxis::Vertical,
+                ratio_percent: 70,
+                first: Box::new(output),
+                second: Box::new(status),
+            }),
+        },
+        (true, false) => WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 75,
+            first: Box::new(diagnostics),
+            second: Box::new(status),
+        },
+        (false, true) => WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 75,
+            first: Box::new(output),
+            second: Box::new(status),
+        },
+        (false, false) => status,
+    }
+}
+
+/// Layout with density, fullscreen, and optional conflict diagnostics pane.
 #[must_use]
 pub fn git_workbench_layout_density(
     area: Rect,
     state: &WorkspaceState,
     density: GitWorkbenchDensity,
     fullscreen_diff: bool,
+    include_diagnostics: bool,
 ) -> Vec<PaneGeom> {
     if fullscreen_diff {
+        // Fullscreen keeps status; surface conflicts as diagnostics strip when needed.
         return Workspace::new(WorkspaceNode::Split {
             axis: WorkspaceAxis::Vertical,
-            ratio_percent: 96,
+            ratio_percent: if include_diagnostics { 88 } else { 96 },
             first: Box::new(WorkspaceNode::Leaf {
                 id: PaneId::from_static(GitWorkbenchPane::Diff.id()),
                 constraint: PaneConstraint::Weight(1),
                 collapse_priority: 1,
             }),
-            second: Box::new(WorkspaceNode::Leaf {
-                id: PaneId::from_static(GitWorkbenchPane::Status.id()),
-                constraint: PaneConstraint::Fixed(1),
-                collapse_priority: 3,
-            }),
+            second: Box::new(south_stack(include_diagnostics, false)),
         })
         .layout(area, state);
     }
@@ -1041,7 +1105,7 @@ pub fn git_workbench_layout_density(
     let root = match density {
         GitWorkbenchDensity::Tiny => WorkspaceNode::Split {
             axis: WorkspaceAxis::Vertical,
-            ratio_percent: 94,
+            ratio_percent: 90,
             first: Box::new(WorkspaceNode::Split {
                 axis: WorkspaceAxis::Horizontal,
                 ratio_percent: 30,
@@ -1056,15 +1120,11 @@ pub fn git_workbench_layout_density(
                     collapse_priority: 1,
                 }),
             }),
-            second: Box::new(WorkspaceNode::Leaf {
-                id: PaneId::from_static(GitWorkbenchPane::Status.id()),
-                constraint: PaneConstraint::Fixed(1),
-                collapse_priority: 3,
-            }),
+            second: Box::new(south_stack(include_diagnostics, false)),
         },
         GitWorkbenchDensity::Narrow => WorkspaceNode::Split {
             axis: WorkspaceAxis::Vertical,
-            ratio_percent: 88,
+            ratio_percent: 85,
             first: Box::new(WorkspaceNode::Split {
                 axis: WorkspaceAxis::Horizontal,
                 ratio_percent: 28,
@@ -1079,26 +1139,13 @@ pub fn git_workbench_layout_density(
                     collapse_priority: 1,
                 }),
             }),
-            second: Box::new(WorkspaceNode::Split {
-                axis: WorkspaceAxis::Vertical,
-                ratio_percent: 70,
-                first: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(GitWorkbenchPane::Output.id()),
-                    constraint: PaneConstraint::Min(3),
-                    collapse_priority: 2,
-                }),
-                second: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(GitWorkbenchPane::Status.id()),
-                    constraint: PaneConstraint::Fixed(1),
-                    collapse_priority: 3,
-                }),
-            }),
+            second: Box::new(south_stack(include_diagnostics, true)),
         },
         GitWorkbenchDensity::Normal => {
-            // west files | center diff | east history+branches | south output | status
+            // west files | center diff | east history+branches | south diagnostics?/output | status
             WorkspaceNode::Split {
                 axis: WorkspaceAxis::Vertical,
-                ratio_percent: 82,
+                ratio_percent: 80,
                 first: Box::new(WorkspaceNode::Split {
                     axis: WorkspaceAxis::Horizontal,
                     ratio_percent: 22,
@@ -1131,20 +1178,7 @@ pub fn git_workbench_layout_density(
                         }),
                     }),
                 }),
-                second: Box::new(WorkspaceNode::Split {
-                    axis: WorkspaceAxis::Vertical,
-                    ratio_percent: 75,
-                    first: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(GitWorkbenchPane::Output.id()),
-                        constraint: PaneConstraint::Min(3),
-                        collapse_priority: 2,
-                    }),
-                    second: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(GitWorkbenchPane::Status.id()),
-                        constraint: PaneConstraint::Fixed(1),
-                        collapse_priority: 3,
-                    }),
-                }),
+                second: Box::new(south_stack(include_diagnostics, true)),
             }
         }
     };
@@ -1198,8 +1232,13 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let panes =
-        git_workbench_layout_density(area, &state.workspace, density, state.fullscreen_diff);
+    let panes = git_workbench_layout_density(
+        area,
+        &state.workspace,
+        density,
+        state.fullscreen_diff,
+        state.include_diagnostics(),
+    );
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
@@ -1274,27 +1313,6 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
             .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.diagnostics);
-    }
-
-    // Conflict strip when conflict and diagnostics pane missing (narrow)
-    if matches!(state.repo_status, GitRepoStatus::Conflict)
-        && pane_area(&panes, "diagnostics").is_none()
-    {
-        if let Some(diff_r) = pane_area(&panes, "diff") {
-            if diff_r.height > 1 && !diagnostics.is_empty() {
-                let y = diff_r.y;
-                buffer.set_stringn(
-                    diff_r.x,
-                    y,
-                    take_display_cols(
-                        &format!("! {} conflict(s) — host resolves", diagnostics.len()),
-                        usize::from(diff_r.width),
-                    ),
-                    usize::from(diff_r.width),
-                    system.style(Role::Danger),
-                );
-            }
-        }
     }
 
     if let Some(r) = pane_area(&panes, "status") {
@@ -1598,7 +1616,10 @@ pub fn example_git_terminal_lines() -> Vec<TerminalLine<'static>> {
 pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
     let mut e = example_help_entries(system);
     e.push(
-        HelpEntry::new("stage", "Git", "s", "Stage selection").priority(15),
+        HelpEntry::new("stage", "Git", "t", "Stage selection (DiffReview)").priority(15),
+    );
+    e.push(
+        HelpEntry::new("unstage", "Git", "T", "Unstage selection").priority(15),
     );
     e.push(
         HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16),
@@ -1607,6 +1628,29 @@ pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
         HelpEntry::new("full", "Git", "C-f", "Fullscreen diff").priority(17),
     );
     e
+}
+
+/// Clean worktree file list (all tracked clean).
+#[must_use]
+pub fn example_clean_files() -> Vec<FileTreeEntry<'static, &'static str>> {
+    vec![
+        FileTreeEntry::dir("src", "src", "src", 0).expanded(),
+        FileTreeEntry::file("src/main.rs", "main.rs", "src/main.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Clean),
+        FileTreeEntry::file("src/lib.rs", "lib.rs", "src/lib.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Clean),
+        FileTreeEntry::file("README.md", "README.md", "README.md", 0).git(FileGitStatus::Clean),
+    ]
+}
+
+/// Empty repo / no paths projected.
+#[must_use]
+pub fn example_empty_files() -> Vec<FileTreeEntry<'static, &'static str>> {
+    Vec::new()
 }
 
 // ── Bench ───────────────────────────────────────────────────────────────────
@@ -1638,15 +1682,31 @@ mod tests {
     }
 
     fn hk(st: &mut GitWorkbenchState, key: KeyEvent) -> GitWorkbenchOutcome {
-        st.handle_key(key, &[], &[], &[], &[], &[], &meta_empty())
+        st.handle_key(key, &[], &[], &[], &[], &[], &[], &[], &meta_empty())
     }
 
-    fn hk_hunks(st: &mut GitWorkbenchState, key: KeyEvent, hunks: &[DiffHunk]) -> GitWorkbenchOutcome {
-        st.handle_key(key, &[], hunks, &[], &[], &[], &meta_empty())
+    fn hk_diff(
+        st: &mut GitWorkbenchState,
+        key: KeyEvent,
+        lines: &[DiffLine<'_>],
+        hunks: &[DiffHunk],
+        files: &[DiffReviewFileRow<'_>],
+    ) -> GitWorkbenchOutcome {
+        st.handle_key(
+            key,
+            &[],
+            hunks,
+            lines,
+            files,
+            &[],
+            &[],
+            &[],
+            &meta_empty(),
+        )
     }
 
     fn hk_help(st: &mut GitWorkbenchState, key: KeyEvent, help: &[HelpEntry]) -> GitWorkbenchOutcome {
-        st.handle_key(key, &[], &[], help, &[], &[], &meta_empty())
+        st.handle_key(key, &[], &[], &[], &[], help, &[], &[], &meta_empty())
     }
 
     fn open() -> GitWorkbenchState {
@@ -1679,17 +1739,20 @@ mod tests {
             &ws,
             GitWorkbenchDensity::Normal,
             false,
+            false,
         );
         let narrow = git_workbench_layout_density(
             Rect::new(0, 0, 70, 24),
             &ws,
             GitWorkbenchDensity::Narrow,
             false,
+            false,
         );
         let tiny = git_workbench_layout_density(
             Rect::new(0, 0, 40, 16),
             &ws,
             GitWorkbenchDensity::Tiny,
+            false,
             false,
         );
         let ids = |p: &[PaneGeom]| {
@@ -1751,28 +1814,131 @@ mod tests {
         let mut st = open();
         st.focus = "diff";
         st.diff.set_accepts_input(true);
+        let lines = example_git_diff_lines();
         let hunks = example_git_hunks();
-        // DiffReview: 's' stages
-        let out = hk_hunks(&mut st, press(KeyCode::Char('s')), &hunks);
+        let dfiles = example_git_diff_files();
+        // DiffReview stage chord is `t` (not `s`) — workbench forwards lines/files.
+        let out = hk_diff(&mut st, press(KeyCode::Char('t')), &lines, &hunks, &dfiles);
+        match out {
+            GitWorkbenchOutcome::StageRequested { units } => {
+                assert!(!units.is_empty(), "stage must target units");
+                assert!(
+                    units.iter().any(|u| u.key().contains("h0") || u.key().contains("hunk")),
+                    "expected hunk unit ids, got {:?}",
+                    units.iter().map(|u| u.key()).collect::<Vec<_>>()
+                );
+            }
+            other => panic!("expected StageRequested via t chord, got {other:?}"),
+        }
+        // Unstage chord T
+        let out = hk_diff(&mut st, press(KeyCode::Char('T')), &lines, &hunks, &dfiles);
         assert!(
-            matches!(out, GitWorkbenchOutcome::StageRequested { ref units } if !units.is_empty())
-                || matches!(out, GitWorkbenchOutcome::Diff(_))
-                || matches!(out, GitWorkbenchOutcome::Ignored),
+            matches!(out, GitWorkbenchOutcome::UnstageRequested { ref units } if !units.is_empty()),
             "{out:?}"
         );
-        // Direct map path
-        let unit = DiffReviewUnit::hunk("h0");
-        let mapped = st.map_diff_outcome(DiffReviewOutcome::StageRequested {
-            units: vec![unit.clone()],
-        });
-        assert!(matches!(
-            mapped,
-            GitWorkbenchOutcome::StageRequested { ref units } if units[0].key() == unit.key()
-        ));
-        let mapped = st.map_diff_outcome(DiffReviewOutcome::UnstageRequested {
-            units: vec![DiffReviewUnit::file("src/main.rs")],
-        });
-        assert!(matches!(mapped, GitWorkbenchOutcome::UnstageRequested { .. }));
+        // `s` is not stage through workbench (DiffReview uses s for mode cycle)
+        let out = hk_diff(&mut st, press(KeyCode::Char('s')), &lines, &hunks, &dfiles);
+        assert!(
+            !matches!(out, GitWorkbenchOutcome::StageRequested { .. }),
+            "s must not stage: {out:?}"
+        );
+    }
+
+    #[test]
+    fn conflict_layout_emits_diagnostics_pane() {
+        let ws = WorkspaceState::new();
+        let panes = git_workbench_layout_density(
+            Rect::new(0, 0, 120, 40),
+            &ws,
+            GitWorkbenchDensity::Normal,
+            false,
+            true,
+        );
+        assert!(
+            panes.iter().any(|p| p.id.0 == "diagnostics" && !p.collapsed && p.area.height > 0),
+            "conflict layout must allocate diagnostics: {:?}",
+            panes.iter().map(|p| p.id.0.as_str()).collect::<Vec<_>>()
+        );
+        let mut st = open();
+        st.repo_status = GitRepoStatus::Conflict;
+        let _ = st.layout(Rect::new(0, 0, 120, 36));
+        assert!(st.include_diagnostics());
+        assert!(
+            st.last_panes()
+                .iter()
+                .any(|p| p.id.0 == "diagnostics" && p.area.height > 0),
+            "state.layout must emit diagnostics when conflict"
+        );
+        // Tab can land on diagnostics only when pane exists
+        st.focus = "output";
+        let order = st.focus_order_for(GitWorkbenchDensity::Normal);
+        assert!(order.contains(&"diagnostics"));
+        let _ = st.focus_next(GitWorkbenchDensity::Normal);
+        // From output, next may be diagnostics
+        st.focus = "diagnostics";
+        st.clamp_focus_to_density(GitWorkbenchDensity::Normal);
+        assert_eq!(st.focus, "diagnostics");
+    }
+
+    #[test]
+    fn clean_and_empty_fixtures() {
+        let clean = example_clean_files();
+        assert!(!clean.is_empty());
+        assert!(clean.iter().all(|e| e.git == FileGitStatus::Clean));
+        let empty = example_empty_files();
+        assert!(empty.is_empty());
+
+        let system = DesignSystem::default();
+        let mut st = open();
+        st.repo_status = GitRepoStatus::Clean;
+        let lines = example_git_diff_lines();
+        let hunks = example_git_hunks();
+        let dfiles = example_git_diff_files();
+        let commits = example_git_commits();
+        let diags: Vec<Diagnostic<'static>> = Vec::new();
+        let meta = example_git_terminal_meta();
+        let tlines = example_git_terminal_lines();
+        let help = example_git_help_entries(&system);
+        let area = Rect::new(0, 0, 100, 28);
+        let mut buf = Buffer::empty(area);
+        // Clean paint
+        render_git_workbench(
+            &mut buf,
+            area,
+            GitWorkbenchSurfaces {
+                system: &system,
+                state: &mut st,
+                files: &clean,
+                diff_lines: &lines,
+                hunks: &hunks,
+                diff_files: &dfiles,
+                commits: &commits,
+                diagnostics: &diags,
+                terminal_meta: &meta,
+                terminal_lines: &tlines,
+                help_entries: &help,
+            },
+        );
+        assert!(!st.last_panes().is_empty());
+        // Empty repo paint
+        st.repo_status = GitRepoStatus::Clean;
+        render_git_workbench(
+            &mut buf,
+            area,
+            GitWorkbenchSurfaces {
+                system: &system,
+                state: &mut st,
+                files: &empty,
+                diff_lines: &[],
+                hunks: &[],
+                diff_files: &[],
+                commits: &[],
+                diagnostics: &diags,
+                terminal_meta: &meta,
+                terminal_lines: &[],
+                help_entries: &help,
+            },
+        );
     }
 
     #[test]

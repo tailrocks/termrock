@@ -1465,6 +1465,8 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 "git-workbench/narrow".into(),
                 "git-workbench/fullscreen-diff".into(),
                 "git-workbench/unicode".into(),
+                "git-workbench/clean".into(),
+                "git-workbench/empty".into(),
             ],
             tests: vec!["patterns::git_workbench".into()],
             migration: Some("migrations/0241-v0.13.0-git-workbench.md".into()),

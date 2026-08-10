@@ -6927,6 +6927,24 @@ pub(crate) fn stories() -> Vec<Story> {
             git_workbench_unicode,
         ),
         Story::new(
+            "git-workbench/clean",
+            "Git workbench clean",
+            "GitWorkbench",
+            "Clean worktree fixture paint path.",
+            100,
+            28,
+            git_workbench_clean,
+        ),
+        Story::new(
+            "git-workbench/empty",
+            "Git workbench empty",
+            "GitWorkbench",
+            "Empty repo / no files projected.",
+            80,
+            20,
+            git_workbench_empty,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25043,6 +25061,8 @@ enum GitWorkbenchStoryKind {
     Narrow,
     Fullscreen,
     Unicode,
+    Clean,
+    Empty,
 }
 
 fn paint_git_workbench_story(
@@ -25052,9 +25072,9 @@ fn paint_git_workbench_story(
     kind: GitWorkbenchStoryKind,
 ) {
     use termrock::patterns::{
-        example_conflict_diagnostics, example_conflict_files, example_git_commits,
-        example_git_diff_files, example_git_diff_lines, example_git_files,
-        example_git_help_entries, example_git_hunks, example_git_terminal_lines,
+        example_clean_files, example_conflict_diagnostics, example_conflict_files,
+        example_empty_files, example_git_commits, example_git_diff_files, example_git_diff_lines,
+        example_git_files, example_git_help_entries, example_git_hunks, example_git_terminal_lines,
         example_git_terminal_meta, render_git_workbench, GitRepoStatus, GitWorkbenchDensity,
         GitWorkbenchState, GitWorkbenchSurfaces,
     };
@@ -25063,29 +25083,51 @@ fn paint_git_workbench_story(
     match kind {
         GitWorkbenchStoryKind::Narrow => {
             state.density = Some(GitWorkbenchDensity::Narrow);
+            state.repo_status = GitRepoStatus::Dirty;
         }
         GitWorkbenchStoryKind::Conflict => {
             state.repo_status = GitRepoStatus::Conflict;
             state.focus = "diagnostics";
         }
         GitWorkbenchStoryKind::Fullscreen => {
+            state.repo_status = GitRepoStatus::Dirty;
             let _ = state.set_fullscreen_diff(true);
+        }
+        GitWorkbenchStoryKind::Clean | GitWorkbenchStoryKind::Empty => {
+            state.repo_status = GitRepoStatus::Clean;
         }
         GitWorkbenchStoryKind::Unicode | GitWorkbenchStoryKind::Basic => {
             state.repo_status = GitRepoStatus::Dirty;
         }
     }
 
-    let files = if matches!(kind, GitWorkbenchStoryKind::Conflict) {
-        example_conflict_files()
-    } else {
-        example_git_files()
+    let files = match kind {
+        GitWorkbenchStoryKind::Conflict => example_conflict_files(),
+        GitWorkbenchStoryKind::Clean => example_clean_files(),
+        GitWorkbenchStoryKind::Empty => example_empty_files(),
+        _ => example_git_files(),
     };
-    let lines = example_git_diff_lines();
-    let hunks = example_git_hunks();
-    let dfiles = example_git_diff_files();
+    let lines = if matches!(kind, GitWorkbenchStoryKind::Empty | GitWorkbenchStoryKind::Clean) {
+        vec![]
+    } else {
+        example_git_diff_lines()
+    };
+    let hunks = if matches!(kind, GitWorkbenchStoryKind::Empty | GitWorkbenchStoryKind::Clean) {
+        vec![]
+    } else {
+        example_git_hunks()
+    };
+    let dfiles = if matches!(kind, GitWorkbenchStoryKind::Empty | GitWorkbenchStoryKind::Clean) {
+        vec![]
+    } else {
+        example_git_diff_files()
+    };
     let commits = example_git_commits();
-    let diags = example_conflict_diagnostics();
+    let diags = if matches!(kind, GitWorkbenchStoryKind::Conflict) {
+        example_conflict_diagnostics()
+    } else {
+        vec![]
+    };
     let meta = example_git_terminal_meta();
     let tlines = example_git_terminal_lines();
     let help = example_git_help_entries(system);
@@ -25127,6 +25169,14 @@ fn git_workbench_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn git_workbench_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Unicode);
+}
+
+fn git_workbench_clean(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Clean);
+}
+
+fn git_workbench_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Empty);
 }
 
 #[derive(Clone, Copy)]
