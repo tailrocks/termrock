@@ -1,0 +1,40 @@
+---
+title: PlanReview
+description: Agent plan document review — Markdown, comments, safe action focus, version diff.
+---
+
+# PlanReview
+
+Interactive review for agent-generated plans. Host owns execution policy;
+outcomes are **requests only**. Approve is never the initial focus.
+
+## When to use / when not
+
+| Use PlanReview | Prefer |
+|----------------|--------|
+| Approve/revise agent plan before work | — |
+| Single tool/shell trust gate | [PermissionPrompt](/docs/handbook/permission-prompt) |
+| Patch/hunk accept | [DiffReview](/docs/handbook/diff-review) |
+| Multi-question interview | [QuestionFlow](/docs/handbook/question-flow) |
+| Live pipeline progress | [ProgressSteps](/docs/handbook/progress-steps) (if present) |
+
+## Domain
+
+- `PlanDocument` — body, sections, tasks, risks, assumptions, files, refs, risk, previous
+- `PlanComment` + `PlanCommentAnchor` — line/range/section/task/file/orphan
+- `remap_plan_comments` / `update_plan` — preserve stable anchors across revisions
+
+## Actions (safe focus)
+
+Abandon · Revise · Feedback · Approve… · Approve
+
+Default: `RequestRevision` (low/medium) or `Abandon` (high/critical). Enter
+confirms focus only. Bare `a` moves focus — does not grant.
+
+## Keys
+
+j/k · Tab panes · ←/→ actions · Enter · m comment · d diff · [] section · Esc cancel
+
+## Related
+
+PermissionPrompt · DiffReview · QuestionFlow · migration `0228`

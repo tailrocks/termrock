@@ -1433,13 +1433,21 @@ let mut state = PermissionPromptState::new();
 state.enqueue(PermissionRequest::new("r1", "bash", "workspace"));`,
   },
   PlanReview: {
-    description: 'Plan step review list with accept markers.',
+    description:
+      'Agent plan document review — Markdown, comments, version diff, safe action focus (Approve never default).',
     primaryStory: 'plan-review/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{PlanReview, PlanStep}};
+    usage: `use termrock::widgets::{
+    example_plan_document, PlanReview, PlanReviewOutcome, PlanReviewState,
+};
 
-let tokens = DesignTokens::default();
-let steps = [PlanStep { id: "s1", title: "Inspect", detail: None, accepted: false }];
-let review = PlanReview::new(&steps, &tokens);`,
+let mut state = PlanReviewState::new();
+state.open(example_plan_document());
+PlanReview::new(&system).paint(area, buf, &mut state);
+match state.handle_key(key) {
+    PlanReviewOutcome::Approved => {}
+    PlanReviewOutcome::Cancelled => {}
+    _ => {}
+}`,
   },
   Popover: {
     description:

@@ -1,3 +1,72 @@
+ Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
+warning: unresolved link to `DataTableState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:281:7
+    |
+281 | /// [`DataTableState::handle_key`].
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `DataTableState` in scope
+    |
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `LogStreamState::handle_key`
+   --> crates/termrock/src/interaction/intent.rs:358:35
+    |
+358 | /// - `f` is a product chord on [`LogStreamState::handle_key`] (Toggle follow)
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ no item named `LogStreamState` in scope
+
+warning: unresolved link to `Self::reconcile_retain`
+   --> crates/termrock/src/interaction/selection_model.rs:462:11
+    |
+462 |     /// [`Self::reconcile_retain`] when off-window selection must survive.
+    |           ^^^^^^^^^^^^^^^^^^^^^^ the struct `SelectionModel` has no field or associated item named `reconcile_retain`
+
+warning: unresolved link to `semantic_summary`
+   --> crates/termrock/src/widgets/attachment_chips.rs:225:38
+    |
+225 | /// recordings — use basenames and [`semantic_summary`].
+    |                                      ^^^^^^^^^^^^^^^^ no item named `semantic_summary` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `paint_expanded_preview`
+    --> crates/termrock/src/widgets/attachment_chips.rs:1003:63
+     |
+1003 |     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).
+     |                                                               ^^^^^^^^^^^^^^^^^^^^^^ no item named `paint_expanded_preview` in scope
+     |
+     = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Hint`
+   --> crates/termrock/src/widgets/keyboard_help.rs:539:31
+    |
+539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
+    |                               ^^^^ no item named `Hint` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `HintBar`
+   --> crates/termrock/src/widgets/keyboard_help.rs:539:44
+    |
+539 | /// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
+    |                                            ^^^^^^^ no item named `HintBar` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Stack`
+   --> crates/termrock/src/widgets/card.rs:257:69
+    |
+257 |     /// Layout with optional description row carved from body via [`Stack`].
+    |                                                                     ^^^^^ no item named `Stack` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: unresolved link to `Self::from_slots`
+   --> crates/termrock/src/widgets/status_bar.rs:423:17
+    |
+423 |     /// using [`Self::from_slots`].
+    |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
+
+warning: `termrock` (lib doc) generated 9 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.72s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -14735,6 +14804,8 @@ pub const termrock::widgets::model_mode_selectors_bench::MODEL_COUNT: usize
 pub const termrock::widgets::model_mode_selectors_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::pagination_guidance
 pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
+pub mod termrock::widgets::plan_review_bench
+pub const termrock::widgets::plan_review_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::process_table_bench
 pub const termrock::widgets::process_table_bench::PROCESS_COUNT: usize
 pub const termrock::widgets::process_table_bench::REFRESH_MS: u32
@@ -30477,52 +30548,407 @@ pub unsafe fn termrock::widgets::PickerOutcome<Id>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PickerOutcome<Id>
-#[non_exhaustive] pub enum termrock::widgets::PlanReviewOutcome<Id>
-pub termrock::widgets::PlanReviewOutcome::Accepted
-pub termrock::widgets::PlanReviewOutcome::EditRequested(Id)
+#[non_exhaustive] pub enum termrock::widgets::PlanAction
+pub termrock::widgets::PlanAction::Abandon
+pub termrock::widgets::PlanAction::Approve
+pub termrock::widgets::PlanAction::ApproveWithConditions
+pub termrock::widgets::PlanAction::EditFeedback
+pub termrock::widgets::PlanAction::RequestRevision
+impl termrock::widgets::PlanAction
+pub const fn termrock::widgets::PlanAction::consequence(self) -> &'static str
+pub const fn termrock::widgets::PlanAction::default_for_risk(termrock::widgets::PermissionRisk) -> Self
+pub const fn termrock::widgets::PlanAction::grants(self) -> bool
+pub const fn termrock::widgets::PlanAction::id(self) -> &'static str
+pub const fn termrock::widgets::PlanAction::label(self) -> &'static str
+pub fn termrock::widgets::PlanAction::strip() -> &'static [termrock::widgets::PlanAction]
+impl core::clone::Clone for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::clone(&self) -> termrock::widgets::PlanAction
+impl core::cmp::Eq for termrock::widgets::PlanAction
+impl core::cmp::PartialEq for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::eq(&self, &termrock::widgets::PlanAction) -> bool
+impl core::default::Default for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::default() -> termrock::widgets::PlanAction
+impl core::fmt::Debug for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PlanAction
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanAction
+impl core::marker::Freeze for termrock::widgets::PlanAction
+impl core::marker::Send for termrock::widgets::PlanAction
+impl core::marker::Sync for termrock::widgets::PlanAction
+impl core::marker::Unpin for termrock::widgets::PlanAction
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanAction where U: core::convert::From<T>
+pub fn termrock::widgets::PlanAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanAction where U: core::convert::Into<T>
+pub type termrock::widgets::PlanAction::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanAction where T: core::clone::Clone
+pub type termrock::widgets::PlanAction::Owned = T
+pub fn termrock::widgets::PlanAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanAction where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanAction where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanAction
+#[non_exhaustive] pub enum termrock::widgets::PlanCommentAnchor
+pub termrock::widgets::PlanCommentAnchor::File
+pub termrock::widgets::PlanCommentAnchor::File::path: alloc::string::String
+pub termrock::widgets::PlanCommentAnchor::Line
+pub termrock::widgets::PlanCommentAnchor::Line::line: usize
+pub termrock::widgets::PlanCommentAnchor::Orphan
+pub termrock::widgets::PlanCommentAnchor::Orphan::reason: alloc::string::String
+pub termrock::widgets::PlanCommentAnchor::Range
+pub termrock::widgets::PlanCommentAnchor::Range::end: usize
+pub termrock::widgets::PlanCommentAnchor::Range::start: usize
+pub termrock::widgets::PlanCommentAnchor::Section
+pub termrock::widgets::PlanCommentAnchor::Section::section_id: alloc::string::String
+pub termrock::widgets::PlanCommentAnchor::Task
+pub termrock::widgets::PlanCommentAnchor::Task::task_id: alloc::string::String
+impl termrock::widgets::PlanCommentAnchor
+pub const fn termrock::widgets::PlanCommentAnchor::is_orphan(&self) -> bool
+impl core::clone::Clone for termrock::widgets::PlanCommentAnchor
+pub fn termrock::widgets::PlanCommentAnchor::clone(&self) -> termrock::widgets::PlanCommentAnchor
+impl core::cmp::Eq for termrock::widgets::PlanCommentAnchor
+impl core::cmp::PartialEq for termrock::widgets::PlanCommentAnchor
+pub fn termrock::widgets::PlanCommentAnchor::eq(&self, &termrock::widgets::PlanCommentAnchor) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanCommentAnchor
+pub fn termrock::widgets::PlanCommentAnchor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanCommentAnchor
+impl core::marker::Freeze for termrock::widgets::PlanCommentAnchor
+impl core::marker::Send for termrock::widgets::PlanCommentAnchor
+impl core::marker::Sync for termrock::widgets::PlanCommentAnchor
+impl core::marker::Unpin for termrock::widgets::PlanCommentAnchor
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanCommentAnchor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanCommentAnchor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanCommentAnchor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanCommentAnchor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanCommentAnchor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanCommentAnchor where U: core::convert::From<T>
+pub fn termrock::widgets::PlanCommentAnchor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanCommentAnchor where U: core::convert::Into<T>
+pub type termrock::widgets::PlanCommentAnchor::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanCommentAnchor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanCommentAnchor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanCommentAnchor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanCommentAnchor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanCommentAnchor where T: core::clone::Clone
+pub type termrock::widgets::PlanCommentAnchor::Owned = T
+pub fn termrock::widgets::PlanCommentAnchor::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanCommentAnchor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanCommentAnchor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanCommentAnchor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanCommentAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanCommentAnchor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanCommentAnchor where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanCommentAnchor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanCommentAnchor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanCommentAnchor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanCommentAnchor
+pub fn termrock::widgets::PlanCommentAnchor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanCommentAnchor
+#[non_exhaustive] pub enum termrock::widgets::PlanFileChange
+pub termrock::widgets::PlanFileChange::Create
+pub termrock::widgets::PlanFileChange::Delete
+pub termrock::widgets::PlanFileChange::Modify
+pub termrock::widgets::PlanFileChange::Rename
+impl termrock::widgets::PlanFileChange
+pub const fn termrock::widgets::PlanFileChange::glyph(self) -> &'static str
+pub const fn termrock::widgets::PlanFileChange::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::clone(&self) -> termrock::widgets::PlanFileChange
+impl core::cmp::Eq for termrock::widgets::PlanFileChange
+impl core::cmp::PartialEq for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::eq(&self, &termrock::widgets::PlanFileChange) -> bool
+impl core::default::Default for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::default() -> termrock::widgets::PlanFileChange
+impl core::fmt::Debug for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PlanFileChange
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanFileChange
+impl core::marker::Freeze for termrock::widgets::PlanFileChange
+impl core::marker::Send for termrock::widgets::PlanFileChange
+impl core::marker::Sync for termrock::widgets::PlanFileChange
+impl core::marker::Unpin for termrock::widgets::PlanFileChange
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanFileChange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanFileChange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanFileChange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanFileChange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanFileChange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanFileChange where U: core::convert::From<T>
+pub fn termrock::widgets::PlanFileChange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanFileChange where U: core::convert::Into<T>
+pub type termrock::widgets::PlanFileChange::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanFileChange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanFileChange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanFileChange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanFileChange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanFileChange where T: core::clone::Clone
+pub type termrock::widgets::PlanFileChange::Owned = T
+pub fn termrock::widgets::PlanFileChange::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanFileChange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanFileChange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanFileChange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanFileChange where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanFileChange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanFileChange where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanFileChange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanFileChange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanFileChange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanFileChange
+pub fn termrock::widgets::PlanFileChange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanFileChange
+#[non_exhaustive] pub enum termrock::widgets::PlanReviewOutcome
+pub termrock::widgets::PlanReviewOutcome::Abandoned
+pub termrock::widgets::PlanReviewOutcome::ActionFocused(termrock::widgets::PlanAction)
+pub termrock::widgets::PlanReviewOutcome::Approved
+pub termrock::widgets::PlanReviewOutcome::ApprovedWithConditions
+pub termrock::widgets::PlanReviewOutcome::ApprovedWithConditions::conditions: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::Cancelled
+pub termrock::widgets::PlanReviewOutcome::CommentAdded(termrock::widgets::PlanComment)
+pub termrock::widgets::PlanReviewOutcome::CommentRemoved
+pub termrock::widgets::PlanReviewOutcome::CommentRemoved::id: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::FeedbackEdited
+pub termrock::widgets::PlanReviewOutcome::FeedbackEdited::text: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::FileSelected
+pub termrock::widgets::PlanReviewOutcome::FileSelected::path: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::FullscreenRequested
 pub termrock::widgets::PlanReviewOutcome::Ignored
-pub termrock::widgets::PlanReviewOutcome::Rejected
-pub termrock::widgets::PlanReviewOutcome::StepSelected(Id)
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PlanReviewOutcome<Id>
-pub fn termrock::widgets::PlanReviewOutcome<Id>::clone(&self) -> termrock::widgets::PlanReviewOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PlanReviewOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::PlanReviewOutcome<Id>
-pub fn termrock::widgets::PlanReviewOutcome<Id>::eq(&self, &termrock::widgets::PlanReviewOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PlanReviewOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PlanReviewOutcome<Id>
-pub fn termrock::widgets::PlanReviewOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::PlanReviewOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::PlanReviewOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::PlanReviewOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::PlanReviewOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PlanReviewOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::PlanReviewOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::PlanReviewOutcome<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::PlanReviewOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::PlanReviewOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::PlanReviewOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewOutcome<Id> where T: core::clone::Clone
-pub type termrock::widgets::PlanReviewOutcome<Id>::Owned = T
-pub fn termrock::widgets::PlanReviewOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::PlanReviewOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::PlanReviewOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::PlanReviewOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::PlanReviewOutcome<Id>
-pub fn termrock::widgets::PlanReviewOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewOutcome<Id>
+pub termrock::widgets::PlanReviewOutcome::LineSelected
+pub termrock::widgets::PlanReviewOutcome::LineSelected::line: usize
+pub termrock::widgets::PlanReviewOutcome::PaneChanged(termrock::widgets::PlanReviewPane)
+pub termrock::widgets::PlanReviewOutcome::PhaseChanged(termrock::widgets::PlanReviewPhase)
+pub termrock::widgets::PlanReviewOutcome::PlanUpdated
+pub termrock::widgets::PlanReviewOutcome::PlanUpdated::orphaned_comments: usize
+pub termrock::widgets::PlanReviewOutcome::PlanUpdated::preserved_comments: usize
+pub termrock::widgets::PlanReviewOutcome::PlanUpdated::version: u32
+pub termrock::widgets::PlanReviewOutcome::RevisionRequested
+pub termrock::widgets::PlanReviewOutcome::RevisionRequested::feedback: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::SectionSelected
+pub termrock::widgets::PlanReviewOutcome::SectionSelected::id: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::SelectionChanged
+pub termrock::widgets::PlanReviewOutcome::SelectionChanged::end: usize
+pub termrock::widgets::PlanReviewOutcome::SelectionChanged::start: usize
+pub termrock::widgets::PlanReviewOutcome::TaskSelected
+pub termrock::widgets::PlanReviewOutcome::TaskSelected::id: alloc::string::String
+pub termrock::widgets::PlanReviewOutcome::VersionDiffToggled
+pub termrock::widgets::PlanReviewOutcome::VersionDiffToggled::show: bool
+impl core::clone::Clone for termrock::widgets::PlanReviewOutcome
+pub fn termrock::widgets::PlanReviewOutcome::clone(&self) -> termrock::widgets::PlanReviewOutcome
+impl core::cmp::Eq for termrock::widgets::PlanReviewOutcome
+impl core::cmp::PartialEq for termrock::widgets::PlanReviewOutcome
+pub fn termrock::widgets::PlanReviewOutcome::eq(&self, &termrock::widgets::PlanReviewOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanReviewOutcome
+pub fn termrock::widgets::PlanReviewOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanReviewOutcome
+impl core::marker::Freeze for termrock::widgets::PlanReviewOutcome
+impl core::marker::Send for termrock::widgets::PlanReviewOutcome
+impl core::marker::Sync for termrock::widgets::PlanReviewOutcome
+impl core::marker::Unpin for termrock::widgets::PlanReviewOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanReviewOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PlanReviewOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PlanReviewOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanReviewOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanReviewOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanReviewOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewOutcome where T: core::clone::Clone
+pub type termrock::widgets::PlanReviewOutcome::Owned = T
+pub fn termrock::widgets::PlanReviewOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanReviewOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanReviewOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanReviewOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanReviewOutcome
+pub fn termrock::widgets::PlanReviewOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewOutcome
+#[non_exhaustive] pub enum termrock::widgets::PlanReviewPane
+pub termrock::widgets::PlanReviewPane::Comments
+pub termrock::widgets::PlanReviewPane::Diff
+pub termrock::widgets::PlanReviewPane::Document
+pub termrock::widgets::PlanReviewPane::Files
+pub termrock::widgets::PlanReviewPane::Risks
+pub termrock::widgets::PlanReviewPane::Tasks
+impl termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::cycle() -> &'static [termrock::widgets::PlanReviewPane]
+pub const fn termrock::widgets::PlanReviewPane::id(self) -> &'static str
+pub const fn termrock::widgets::PlanReviewPane::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::clone(&self) -> termrock::widgets::PlanReviewPane
+impl core::cmp::Eq for termrock::widgets::PlanReviewPane
+impl core::cmp::PartialEq for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::eq(&self, &termrock::widgets::PlanReviewPane) -> bool
+impl core::default::Default for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::default() -> termrock::widgets::PlanReviewPane
+impl core::fmt::Debug for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PlanReviewPane
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanReviewPane
+impl core::marker::Freeze for termrock::widgets::PlanReviewPane
+impl core::marker::Send for termrock::widgets::PlanReviewPane
+impl core::marker::Sync for termrock::widgets::PlanReviewPane
+impl core::marker::Unpin for termrock::widgets::PlanReviewPane
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanReviewPane
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewPane
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewPane
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewPane where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPane::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewPane where U: core::convert::From<T>
+pub fn termrock::widgets::PlanReviewPane::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewPane where U: core::convert::Into<T>
+pub type termrock::widgets::PlanReviewPane::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanReviewPane::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewPane where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanReviewPane::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanReviewPane::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewPane where T: core::clone::Clone
+pub type termrock::widgets::PlanReviewPane::Owned = T
+pub fn termrock::widgets::PlanReviewPane::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanReviewPane::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanReviewPane where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPane::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewPane where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPane::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewPane where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPane::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewPane where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanReviewPane::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanReviewPane
+pub fn termrock::widgets::PlanReviewPane::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewPane
+#[non_exhaustive] pub enum termrock::widgets::PlanReviewPhase
+pub termrock::widgets::PlanReviewPhase::Comment
+pub termrock::widgets::PlanReviewPhase::Conditions
+pub termrock::widgets::PlanReviewPhase::Feedback
+pub termrock::widgets::PlanReviewPhase::Review
+impl core::clone::Clone for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::clone(&self) -> termrock::widgets::PlanReviewPhase
+impl core::cmp::Eq for termrock::widgets::PlanReviewPhase
+impl core::cmp::PartialEq for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::eq(&self, &termrock::widgets::PlanReviewPhase) -> bool
+impl core::default::Default for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::default() -> termrock::widgets::PlanReviewPhase
+impl core::fmt::Debug for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PlanReviewPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanReviewPhase
+impl core::marker::Freeze for termrock::widgets::PlanReviewPhase
+impl core::marker::Send for termrock::widgets::PlanReviewPhase
+impl core::marker::Sync for termrock::widgets::PlanReviewPhase
+impl core::marker::Unpin for termrock::widgets::PlanReviewPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanReviewPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewPhase where U: core::convert::From<T>
+pub fn termrock::widgets::PlanReviewPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewPhase where U: core::convert::Into<T>
+pub type termrock::widgets::PlanReviewPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanReviewPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanReviewPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanReviewPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewPhase where T: core::clone::Clone
+pub type termrock::widgets::PlanReviewPhase::Owned = T
+pub fn termrock::widgets::PlanReviewPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanReviewPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanReviewPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanReviewPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanReviewPhase
+pub fn termrock::widgets::PlanReviewPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewPhase
+#[non_exhaustive] pub enum termrock::widgets::PlanTaskStatus
+pub termrock::widgets::PlanTaskStatus::Blocked
+pub termrock::widgets::PlanTaskStatus::Done
+pub termrock::widgets::PlanTaskStatus::InProgress
+pub termrock::widgets::PlanTaskStatus::Pending
+impl termrock::widgets::PlanTaskStatus
+pub const fn termrock::widgets::PlanTaskStatus::glyph(self) -> &'static str
+pub const fn termrock::widgets::PlanTaskStatus::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::clone(&self) -> termrock::widgets::PlanTaskStatus
+impl core::cmp::Eq for termrock::widgets::PlanTaskStatus
+impl core::cmp::PartialEq for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::eq(&self, &termrock::widgets::PlanTaskStatus) -> bool
+impl core::default::Default for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::default() -> termrock::widgets::PlanTaskStatus
+impl core::fmt::Debug for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PlanTaskStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanTaskStatus
+impl core::marker::Freeze for termrock::widgets::PlanTaskStatus
+impl core::marker::Send for termrock::widgets::PlanTaskStatus
+impl core::marker::Sync for termrock::widgets::PlanTaskStatus
+impl core::marker::Unpin for termrock::widgets::PlanTaskStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanTaskStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanTaskStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanTaskStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanTaskStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanTaskStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanTaskStatus where U: core::convert::From<T>
+pub fn termrock::widgets::PlanTaskStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanTaskStatus where U: core::convert::Into<T>
+pub type termrock::widgets::PlanTaskStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanTaskStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanTaskStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanTaskStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanTaskStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanTaskStatus where T: core::clone::Clone
+pub type termrock::widgets::PlanTaskStatus::Owned = T
+pub fn termrock::widgets::PlanTaskStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanTaskStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanTaskStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanTaskStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanTaskStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanTaskStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanTaskStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanTaskStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanTaskStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanTaskStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanTaskStatus
+pub fn termrock::widgets::PlanTaskStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanTaskStatus
 #[non_exhaustive] pub enum termrock::widgets::Platform
 pub termrock::widgets::Platform::Auto
 pub termrock::widgets::Platform::Mac
@@ -62826,144 +63252,529 @@ pub unsafe fn termrock::widgets::PlainSyntax::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::PlainSyntax
 pub fn termrock::widgets::PlainSyntax::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PlainSyntax
-pub struct termrock::widgets::PlanReview<'a, Id>
-impl<'a, Id> termrock::widgets::PlanReview<'a, Id>
-pub const fn termrock::widgets::PlanReview<'a, Id>::new(&'a [termrock::widgets::PlanStep<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PlanReview<'a, Id>
-pub fn termrock::widgets::PlanReview<'a, Id>::clone(&self) -> termrock::widgets::PlanReview<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PlanReview<'a, Id>
-pub fn termrock::widgets::PlanReview<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::PlanReview<'a, Id>
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PlanReview<'_, Id>
-pub type &termrock::widgets::PlanReview<'_, Id>::State = termrock::widgets::PlanReviewState<Id>
-pub fn &termrock::widgets::PlanReview<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PlanReview<'_, Id>
-pub type termrock::widgets::PlanReview<'_, Id>::State = termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReview<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
-impl<'a, Id> core::marker::Freeze for termrock::widgets::PlanReview<'a, Id>
-impl<'a, Id> core::marker::Send for termrock::widgets::PlanReview<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Sync for termrock::widgets::PlanReview<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::PlanReview<'a, Id>
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::PlanReview<'a, Id>
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReview<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReview<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReview<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::PlanReview<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReview<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::PlanReview<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::PlanReview<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReview<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::PlanReview<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::PlanReview<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReview<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::PlanReview<'a, Id>::Owned = T
-pub fn termrock::widgets::PlanReview<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::PlanReview<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::PlanReview<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::PlanReview<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReview<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReview<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReview<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReview<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReview<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::PlanReview<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::PlanReview<'a, Id>
-pub fn termrock::widgets::PlanReview<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::PlanReview<'a, Id>
-pub struct termrock::widgets::PlanReviewState<Id>
-impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::handle_key(&mut self, &[termrock::widgets::PlanStep<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::PlanReviewOutcome<Id>
-pub const fn termrock::widgets::PlanReviewState<Id>::new(core::option::Option<Id>) -> Self
-pub const fn termrock::widgets::PlanReviewState<Id>::selected(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::PlanReviewState<Id>::set_focused(&mut self, bool)
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::clone(&self) -> termrock::widgets::PlanReviewState<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PlanReviewState<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::eq(&self, &termrock::widgets::PlanReviewState<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PlanReviewState<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::default::Default for termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::PlanReviewState<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::PlanReviewState<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::PlanReviewState<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::PlanReviewState<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PlanReviewState<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewState<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewState<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewState<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::PlanReviewState<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewState<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::PlanReviewState<Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::PlanReviewState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewState<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::PlanReviewState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::PlanReviewState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewState<Id> where T: core::clone::Clone
-pub type termrock::widgets::PlanReviewState<Id>::Owned = T
-pub fn termrock::widgets::PlanReviewState<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::PlanReviewState<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::PlanReviewState<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewState<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewState<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewState<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewState<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanReviewState<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewState<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::PlanReviewState<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::PlanReviewState<Id>
-pub fn termrock::widgets::PlanReviewState<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewState<Id>
-pub struct termrock::widgets::PlanStep<'a, Id>
-pub termrock::widgets::PlanStep::accepted: bool
-pub termrock::widgets::PlanStep::detail: core::option::Option<&'a str>
-pub termrock::widgets::PlanStep::id: Id
-pub termrock::widgets::PlanStep::title: &'a str
-impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PlanStep<'a, Id>
-pub fn termrock::widgets::PlanStep<'a, Id>::clone(&self) -> termrock::widgets::PlanStep<'a, Id>
-impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PlanStep<'a, Id>
-impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::PlanStep<'a, Id>
-pub fn termrock::widgets::PlanStep<'a, Id>::eq(&self, &termrock::widgets::PlanStep<'a, Id>) -> bool
-impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PlanStep<'a, Id>
-impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PlanStep<'a, Id>
-pub fn termrock::widgets::PlanStep<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::PlanStep<'a, Id>
-impl<'a, Id> core::marker::Freeze for termrock::widgets::PlanStep<'a, Id> where Id: core::marker::Freeze
-impl<'a, Id> core::marker::Send for termrock::widgets::PlanStep<'a, Id> where Id: core::marker::Send
-impl<'a, Id> core::marker::Sync for termrock::widgets::PlanStep<'a, Id> where Id: core::marker::Sync
-impl<'a, Id> core::marker::Unpin for termrock::widgets::PlanStep<'a, Id> where Id: core::marker::Unpin
-impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::PlanStep<'a, Id> where Id: core::marker::UnsafeUnpin
-impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanStep<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanStep<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanStep<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::PlanStep<'a, Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::PlanStep<'a, Id> where U: core::convert::From<T>
-pub fn termrock::widgets::PlanStep<'a, Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanStep<'a, Id> where U: core::convert::Into<T>
-pub type termrock::widgets::PlanStep<'a, Id>::Error = core::convert::Infallible
-pub fn termrock::widgets::PlanStep<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanStep<'a, Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::PlanStep<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::PlanStep<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanStep<'a, Id> where T: core::clone::Clone
-pub type termrock::widgets::PlanStep<'a, Id>::Owned = T
-pub fn termrock::widgets::PlanStep<'a, Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::PlanStep<'a, Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::PlanStep<'a, Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::PlanStep<'a, Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanStep<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanStep<'a, Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanStep<'a, Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::PlanStep<'a, Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::PlanStep<'a, Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::PlanStep<'a, Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::PlanStep<'a, Id>
-pub fn termrock::widgets::PlanStep<'a, Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::PlanStep<'a, Id>
+pub struct termrock::widgets::PlanAffectedFile
+pub termrock::widgets::PlanAffectedFile::change: termrock::widgets::PlanFileChange
+pub termrock::widgets::PlanAffectedFile::path: alloc::string::String
+pub termrock::widgets::PlanAffectedFile::rename_to: core::option::Option<alloc::string::String>
+impl termrock::widgets::PlanAffectedFile
+pub fn termrock::widgets::PlanAffectedFile::new(impl core::convert::Into<alloc::string::String>, termrock::widgets::PlanFileChange) -> Self
+pub fn termrock::widgets::PlanAffectedFile::rename_to(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PlanAffectedFile
+pub fn termrock::widgets::PlanAffectedFile::clone(&self) -> termrock::widgets::PlanAffectedFile
+impl core::cmp::Eq for termrock::widgets::PlanAffectedFile
+impl core::cmp::PartialEq for termrock::widgets::PlanAffectedFile
+pub fn termrock::widgets::PlanAffectedFile::eq(&self, &termrock::widgets::PlanAffectedFile) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanAffectedFile
+pub fn termrock::widgets::PlanAffectedFile::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanAffectedFile
+impl core::marker::Freeze for termrock::widgets::PlanAffectedFile
+impl core::marker::Send for termrock::widgets::PlanAffectedFile
+impl core::marker::Sync for termrock::widgets::PlanAffectedFile
+impl core::marker::Unpin for termrock::widgets::PlanAffectedFile
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanAffectedFile
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanAffectedFile
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanAffectedFile
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanAffectedFile where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanAffectedFile::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanAffectedFile where U: core::convert::From<T>
+pub fn termrock::widgets::PlanAffectedFile::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanAffectedFile where U: core::convert::Into<T>
+pub type termrock::widgets::PlanAffectedFile::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanAffectedFile::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanAffectedFile where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanAffectedFile::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanAffectedFile::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanAffectedFile where T: core::clone::Clone
+pub type termrock::widgets::PlanAffectedFile::Owned = T
+pub fn termrock::widgets::PlanAffectedFile::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanAffectedFile::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanAffectedFile where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanAffectedFile::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanAffectedFile where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAffectedFile::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanAffectedFile where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAffectedFile::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanAffectedFile where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanAffectedFile::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanAffectedFile
+pub fn termrock::widgets::PlanAffectedFile::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanAffectedFile
+pub struct termrock::widgets::PlanAssumption
+pub termrock::widgets::PlanAssumption::id: alloc::string::String
+pub termrock::widgets::PlanAssumption::text: alloc::string::String
+impl termrock::widgets::PlanAssumption
+pub fn termrock::widgets::PlanAssumption::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PlanAssumption
+pub fn termrock::widgets::PlanAssumption::clone(&self) -> termrock::widgets::PlanAssumption
+impl core::cmp::Eq for termrock::widgets::PlanAssumption
+impl core::cmp::PartialEq for termrock::widgets::PlanAssumption
+pub fn termrock::widgets::PlanAssumption::eq(&self, &termrock::widgets::PlanAssumption) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanAssumption
+pub fn termrock::widgets::PlanAssumption::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanAssumption
+impl core::marker::Freeze for termrock::widgets::PlanAssumption
+impl core::marker::Send for termrock::widgets::PlanAssumption
+impl core::marker::Sync for termrock::widgets::PlanAssumption
+impl core::marker::Unpin for termrock::widgets::PlanAssumption
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanAssumption
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanAssumption
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanAssumption
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanAssumption where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanAssumption::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanAssumption where U: core::convert::From<T>
+pub fn termrock::widgets::PlanAssumption::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanAssumption where U: core::convert::Into<T>
+pub type termrock::widgets::PlanAssumption::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanAssumption::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanAssumption where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanAssumption::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanAssumption::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanAssumption where T: core::clone::Clone
+pub type termrock::widgets::PlanAssumption::Owned = T
+pub fn termrock::widgets::PlanAssumption::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanAssumption::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanAssumption where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanAssumption::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanAssumption where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAssumption::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanAssumption where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanAssumption::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanAssumption where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanAssumption::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanAssumption
+pub fn termrock::widgets::PlanAssumption::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanAssumption
+pub struct termrock::widgets::PlanComment
+pub termrock::widgets::PlanComment::anchor: termrock::widgets::PlanCommentAnchor
+pub termrock::widgets::PlanComment::author: core::option::Option<alloc::string::String>
+pub termrock::widgets::PlanComment::body: alloc::string::String
+pub termrock::widgets::PlanComment::created_at_version: u32
+pub termrock::widgets::PlanComment::id: alloc::string::String
+pub termrock::widgets::PlanComment::preserved: bool
+impl termrock::widgets::PlanComment
+pub fn termrock::widgets::PlanComment::author(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PlanComment::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::widgets::PlanCommentAnchor, u32) -> Self
+impl core::clone::Clone for termrock::widgets::PlanComment
+pub fn termrock::widgets::PlanComment::clone(&self) -> termrock::widgets::PlanComment
+impl core::cmp::Eq for termrock::widgets::PlanComment
+impl core::cmp::PartialEq for termrock::widgets::PlanComment
+pub fn termrock::widgets::PlanComment::eq(&self, &termrock::widgets::PlanComment) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanComment
+pub fn termrock::widgets::PlanComment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanComment
+impl core::marker::Freeze for termrock::widgets::PlanComment
+impl core::marker::Send for termrock::widgets::PlanComment
+impl core::marker::Sync for termrock::widgets::PlanComment
+impl core::marker::Unpin for termrock::widgets::PlanComment
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanComment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanComment
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanComment
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanComment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanComment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanComment where U: core::convert::From<T>
+pub fn termrock::widgets::PlanComment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanComment where U: core::convert::Into<T>
+pub type termrock::widgets::PlanComment::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanComment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanComment where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanComment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanComment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanComment where T: core::clone::Clone
+pub type termrock::widgets::PlanComment::Owned = T
+pub fn termrock::widgets::PlanComment::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanComment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanComment where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanComment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanComment where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanComment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanComment where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanComment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanComment where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanComment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanComment
+pub fn termrock::widgets::PlanComment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanComment
+pub struct termrock::widgets::PlanDocument
+pub termrock::widgets::PlanDocument::affected_files: alloc::vec::Vec<termrock::widgets::PlanAffectedFile>
+pub termrock::widgets::PlanDocument::assumptions: alloc::vec::Vec<termrock::widgets::PlanAssumption>
+pub termrock::widgets::PlanDocument::id: alloc::string::String
+pub termrock::widgets::PlanDocument::markdown_body: alloc::string::String
+pub termrock::widgets::PlanDocument::previous: core::option::Option<alloc::boxed::Box<termrock::widgets::PlanDocument>>
+pub termrock::widgets::PlanDocument::risk: termrock::widgets::PermissionRisk
+pub termrock::widgets::PlanDocument::risks: alloc::vec::Vec<termrock::widgets::PlanRiskItem>
+pub termrock::widgets::PlanDocument::sections: alloc::vec::Vec<termrock::widgets::PlanSection>
+pub termrock::widgets::PlanDocument::source_refs: alloc::vec::Vec<termrock::widgets::PlanSourceRef>
+pub termrock::widgets::PlanDocument::summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::PlanDocument::tasks: alloc::vec::Vec<termrock::widgets::PlanTask>
+pub termrock::widgets::PlanDocument::title: alloc::string::String
+pub termrock::widgets::PlanDocument::version: u32
+impl termrock::widgets::PlanDocument
+pub fn termrock::widgets::PlanDocument::affected_files(self, alloc::vec::Vec<termrock::widgets::PlanAffectedFile>) -> Self
+pub fn termrock::widgets::PlanDocument::assumptions(self, alloc::vec::Vec<termrock::widgets::PlanAssumption>) -> Self
+pub fn termrock::widgets::PlanDocument::body_lines(&self) -> alloc::vec::Vec<&str>
+pub fn termrock::widgets::PlanDocument::can_approve(&self) -> bool
+pub fn termrock::widgets::PlanDocument::line_count(&self) -> usize
+pub fn termrock::widgets::PlanDocument::new(impl core::convert::Into<alloc::string::String>, u32, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::widgets::PermissionRisk) -> Self
+pub fn termrock::widgets::PlanDocument::previous(self, termrock::widgets::PlanDocument) -> Self
+pub fn termrock::widgets::PlanDocument::risks(self, alloc::vec::Vec<termrock::widgets::PlanRiskItem>) -> Self
+pub fn termrock::widgets::PlanDocument::sections(self, alloc::vec::Vec<termrock::widgets::PlanSection>) -> Self
+pub fn termrock::widgets::PlanDocument::source_refs(self, alloc::vec::Vec<termrock::widgets::PlanSourceRef>) -> Self
+pub fn termrock::widgets::PlanDocument::summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PlanDocument::tasks(self, alloc::vec::Vec<termrock::widgets::PlanTask>) -> Self
+impl core::clone::Clone for termrock::widgets::PlanDocument
+pub fn termrock::widgets::PlanDocument::clone(&self) -> termrock::widgets::PlanDocument
+impl core::cmp::Eq for termrock::widgets::PlanDocument
+impl core::cmp::PartialEq for termrock::widgets::PlanDocument
+pub fn termrock::widgets::PlanDocument::eq(&self, &termrock::widgets::PlanDocument) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanDocument
+pub fn termrock::widgets::PlanDocument::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanDocument
+impl core::marker::Freeze for termrock::widgets::PlanDocument
+impl core::marker::Send for termrock::widgets::PlanDocument
+impl core::marker::Sync for termrock::widgets::PlanDocument
+impl core::marker::Unpin for termrock::widgets::PlanDocument
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanDocument
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanDocument
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanDocument
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanDocument where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanDocument::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanDocument where U: core::convert::From<T>
+pub fn termrock::widgets::PlanDocument::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanDocument where U: core::convert::Into<T>
+pub type termrock::widgets::PlanDocument::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanDocument::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanDocument where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanDocument::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanDocument::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanDocument where T: core::clone::Clone
+pub type termrock::widgets::PlanDocument::Owned = T
+pub fn termrock::widgets::PlanDocument::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanDocument::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanDocument where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanDocument::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanDocument where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanDocument::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanDocument where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanDocument::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanDocument where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanDocument::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanDocument
+pub fn termrock::widgets::PlanDocument::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanDocument
+pub struct termrock::widgets::PlanReview<'a>
+impl<'a> termrock::widgets::PlanReview<'a>
+pub const fn termrock::widgets::PlanReview<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PlanReview<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::PlanReview<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PlanReview<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PlanReviewState)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PlanReview<'_>
+pub type &termrock::widgets::PlanReview<'_>::State = termrock::widgets::PlanReviewState
+pub fn &termrock::widgets::PlanReview<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PlanReview<'_>
+pub type termrock::widgets::PlanReview<'_>::State = termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReview<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::PlanReview<'a>
+pub fn termrock::widgets::PlanReview<'a>::clone(&self) -> termrock::widgets::PlanReview<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PlanReview<'a>
+pub fn termrock::widgets::PlanReview<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PlanReview<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PlanReview<'a>
+impl<'a> core::marker::Send for termrock::widgets::PlanReview<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PlanReview<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PlanReview<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PlanReview<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReview<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReview<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReview<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PlanReview<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReview<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PlanReview<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanReview<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReview<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanReview<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanReview<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReview<'a> where T: core::clone::Clone
+pub type termrock::widgets::PlanReview<'a>::Owned = T
+pub fn termrock::widgets::PlanReview<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanReview<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanReview<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanReview<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReview<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReview<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReview<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReview<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReview<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanReview<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanReview<'a>
+pub fn termrock::widgets::PlanReview<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanReview<'a>
+pub struct termrock::widgets::PlanReviewState
+pub termrock::widgets::PlanReviewState::action_cursor: termrock::widgets::PlanAction
+pub termrock::widgets::PlanReviewState::action_regions: alloc::vec::Vec<(termrock::widgets::PlanAction, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::PlanReviewState::comments: alloc::vec::Vec<termrock::widgets::PlanComment>
+pub termrock::widgets::PlanReviewState::draft_comment: alloc::string::String
+pub termrock::widgets::PlanReviewState::draft_conditions: alloc::string::String
+pub termrock::widgets::PlanReviewState::draft_feedback: alloc::string::String
+pub termrock::widgets::PlanReviewState::focused: bool
+pub termrock::widgets::PlanReviewState::pane: termrock::widgets::PlanReviewPane
+pub termrock::widgets::PlanReviewState::pane_hits: alloc::vec::Vec<(termrock::widgets::PlanReviewPane, ratatui_core::layout::rect::Rect)>
+pub termrock::widgets::PlanReviewState::phase: termrock::widgets::PlanReviewPhase
+pub termrock::widgets::PlanReviewState::plan: core::option::Option<termrock::widgets::PlanDocument>
+pub termrock::widgets::PlanReviewState::scroll: usize
+pub termrock::widgets::PlanReviewState::selected_comment: usize
+pub termrock::widgets::PlanReviewState::selected_file: usize
+pub termrock::widgets::PlanReviewState::selected_line: usize
+pub termrock::widgets::PlanReviewState::selected_risk: usize
+pub termrock::widgets::PlanReviewState::selected_section: usize
+pub termrock::widgets::PlanReviewState::selected_task: usize
+pub termrock::widgets::PlanReviewState::selection_end: core::option::Option<usize>
+pub termrock::widgets::PlanReviewState::show_version_diff: bool
+impl termrock::widgets::PlanReviewState
+pub const fn termrock::widgets::PlanReviewState::action_cursor(&self) -> termrock::widgets::PlanAction
+pub fn termrock::widgets::PlanReviewState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PlanReviewOutcome
+pub fn termrock::widgets::PlanReviewState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PlanReviewOutcome
+pub const fn termrock::widgets::PlanReviewState::is_open(&self) -> bool
+pub fn termrock::widgets::PlanReviewState::new() -> Self
+pub fn termrock::widgets::PlanReviewState::open(&mut self, termrock::widgets::PlanDocument)
+pub fn termrock::widgets::PlanReviewState::risk(&self) -> termrock::widgets::PermissionRisk
+pub fn termrock::widgets::PlanReviewState::selection_range(&self) -> (usize, usize)
+pub fn termrock::widgets::PlanReviewState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::PlanReviewState::set_comments(&mut self, alloc::vec::Vec<termrock::widgets::PlanComment>)
+pub const fn termrock::widgets::PlanReviewState::set_focused(&mut self, bool)
+pub fn termrock::widgets::PlanReviewState::update_plan(&mut self, termrock::widgets::PlanDocument) -> termrock::widgets::PlanReviewOutcome
+impl core::clone::Clone for termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReviewState::clone(&self) -> termrock::widgets::PlanReviewState
+impl core::cmp::Eq for termrock::widgets::PlanReviewState
+impl core::cmp::PartialEq for termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReviewState::eq(&self, &termrock::widgets::PlanReviewState) -> bool
+impl core::default::Default for termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReviewState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReviewState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanReviewState
+impl core::marker::Freeze for termrock::widgets::PlanReviewState
+impl core::marker::Send for termrock::widgets::PlanReviewState
+impl core::marker::Sync for termrock::widgets::PlanReviewState
+impl core::marker::Unpin for termrock::widgets::PlanReviewState
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanReviewState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanReviewState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanReviewState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanReviewState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanReviewState where U: core::convert::From<T>
+pub fn termrock::widgets::PlanReviewState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanReviewState where U: core::convert::Into<T>
+pub type termrock::widgets::PlanReviewState::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanReviewState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanReviewState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanReviewState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanReviewState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanReviewState where T: core::clone::Clone
+pub type termrock::widgets::PlanReviewState::Owned = T
+pub fn termrock::widgets::PlanReviewState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanReviewState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanReviewState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanReviewState where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanReviewState where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanReviewState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanReviewState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanReviewState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanReviewState
+pub fn termrock::widgets::PlanReviewState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanReviewState
+pub struct termrock::widgets::PlanRiskItem
+pub termrock::widgets::PlanRiskItem::id: alloc::string::String
+pub termrock::widgets::PlanRiskItem::severity: termrock::widgets::PermissionRisk
+pub termrock::widgets::PlanRiskItem::text: alloc::string::String
+impl termrock::widgets::PlanRiskItem
+pub fn termrock::widgets::PlanRiskItem::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::widgets::PermissionRisk) -> Self
+impl core::clone::Clone for termrock::widgets::PlanRiskItem
+pub fn termrock::widgets::PlanRiskItem::clone(&self) -> termrock::widgets::PlanRiskItem
+impl core::cmp::Eq for termrock::widgets::PlanRiskItem
+impl core::cmp::PartialEq for termrock::widgets::PlanRiskItem
+pub fn termrock::widgets::PlanRiskItem::eq(&self, &termrock::widgets::PlanRiskItem) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanRiskItem
+pub fn termrock::widgets::PlanRiskItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanRiskItem
+impl core::marker::Freeze for termrock::widgets::PlanRiskItem
+impl core::marker::Send for termrock::widgets::PlanRiskItem
+impl core::marker::Sync for termrock::widgets::PlanRiskItem
+impl core::marker::Unpin for termrock::widgets::PlanRiskItem
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanRiskItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanRiskItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanRiskItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanRiskItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanRiskItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanRiskItem where U: core::convert::From<T>
+pub fn termrock::widgets::PlanRiskItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanRiskItem where U: core::convert::Into<T>
+pub type termrock::widgets::PlanRiskItem::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanRiskItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanRiskItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanRiskItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanRiskItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanRiskItem where T: core::clone::Clone
+pub type termrock::widgets::PlanRiskItem::Owned = T
+pub fn termrock::widgets::PlanRiskItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanRiskItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanRiskItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanRiskItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanRiskItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanRiskItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanRiskItem where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanRiskItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanRiskItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanRiskItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanRiskItem
+pub fn termrock::widgets::PlanRiskItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanRiskItem
+pub struct termrock::widgets::PlanSection
+pub termrock::widgets::PlanSection::body: alloc::string::String
+pub termrock::widgets::PlanSection::id: alloc::string::String
+pub termrock::widgets::PlanSection::line_end: core::option::Option<usize>
+pub termrock::widgets::PlanSection::line_start: core::option::Option<usize>
+pub termrock::widgets::PlanSection::title: alloc::string::String
+impl termrock::widgets::PlanSection
+pub const fn termrock::widgets::PlanSection::lines(self, usize, usize) -> Self
+pub fn termrock::widgets::PlanSection::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PlanSection
+pub fn termrock::widgets::PlanSection::clone(&self) -> termrock::widgets::PlanSection
+impl core::cmp::Eq for termrock::widgets::PlanSection
+impl core::cmp::PartialEq for termrock::widgets::PlanSection
+pub fn termrock::widgets::PlanSection::eq(&self, &termrock::widgets::PlanSection) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanSection
+pub fn termrock::widgets::PlanSection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanSection
+impl core::marker::Freeze for termrock::widgets::PlanSection
+impl core::marker::Send for termrock::widgets::PlanSection
+impl core::marker::Sync for termrock::widgets::PlanSection
+impl core::marker::Unpin for termrock::widgets::PlanSection
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanSection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanSection
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanSection
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanSection where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanSection::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanSection where U: core::convert::From<T>
+pub fn termrock::widgets::PlanSection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanSection where U: core::convert::Into<T>
+pub type termrock::widgets::PlanSection::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanSection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanSection where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanSection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanSection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanSection where T: core::clone::Clone
+pub type termrock::widgets::PlanSection::Owned = T
+pub fn termrock::widgets::PlanSection::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanSection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanSection where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanSection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanSection where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanSection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanSection where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanSection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanSection where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanSection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanSection
+pub fn termrock::widgets::PlanSection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanSection
+pub struct termrock::widgets::PlanSourceRef
+pub termrock::widgets::PlanSourceRef::id: alloc::string::String
+pub termrock::widgets::PlanSourceRef::label: alloc::string::String
+pub termrock::widgets::PlanSourceRef::location: core::option::Option<alloc::string::String>
+impl termrock::widgets::PlanSourceRef
+pub fn termrock::widgets::PlanSourceRef::location(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PlanSourceRef::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PlanSourceRef
+pub fn termrock::widgets::PlanSourceRef::clone(&self) -> termrock::widgets::PlanSourceRef
+impl core::cmp::Eq for termrock::widgets::PlanSourceRef
+impl core::cmp::PartialEq for termrock::widgets::PlanSourceRef
+pub fn termrock::widgets::PlanSourceRef::eq(&self, &termrock::widgets::PlanSourceRef) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanSourceRef
+pub fn termrock::widgets::PlanSourceRef::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanSourceRef
+impl core::marker::Freeze for termrock::widgets::PlanSourceRef
+impl core::marker::Send for termrock::widgets::PlanSourceRef
+impl core::marker::Sync for termrock::widgets::PlanSourceRef
+impl core::marker::Unpin for termrock::widgets::PlanSourceRef
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanSourceRef
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanSourceRef
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanSourceRef
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanSourceRef where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanSourceRef::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanSourceRef where U: core::convert::From<T>
+pub fn termrock::widgets::PlanSourceRef::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanSourceRef where U: core::convert::Into<T>
+pub type termrock::widgets::PlanSourceRef::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanSourceRef::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanSourceRef where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanSourceRef::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanSourceRef::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanSourceRef where T: core::clone::Clone
+pub type termrock::widgets::PlanSourceRef::Owned = T
+pub fn termrock::widgets::PlanSourceRef::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanSourceRef::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanSourceRef where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanSourceRef::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanSourceRef where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanSourceRef::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanSourceRef where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanSourceRef::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanSourceRef where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanSourceRef::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanSourceRef
+pub fn termrock::widgets::PlanSourceRef::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanSourceRef
+pub struct termrock::widgets::PlanTask
+pub termrock::widgets::PlanTask::detail: core::option::Option<alloc::string::String>
+pub termrock::widgets::PlanTask::id: alloc::string::String
+pub termrock::widgets::PlanTask::status: termrock::widgets::PlanTaskStatus
+pub termrock::widgets::PlanTask::title: alloc::string::String
+impl termrock::widgets::PlanTask
+pub fn termrock::widgets::PlanTask::detail(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::PlanTask::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::PlanTask::status(self, termrock::widgets::PlanTaskStatus) -> Self
+impl core::clone::Clone for termrock::widgets::PlanTask
+pub fn termrock::widgets::PlanTask::clone(&self) -> termrock::widgets::PlanTask
+impl core::cmp::Eq for termrock::widgets::PlanTask
+impl core::cmp::PartialEq for termrock::widgets::PlanTask
+pub fn termrock::widgets::PlanTask::eq(&self, &termrock::widgets::PlanTask) -> bool
+impl core::fmt::Debug for termrock::widgets::PlanTask
+pub fn termrock::widgets::PlanTask::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PlanTask
+impl core::marker::Freeze for termrock::widgets::PlanTask
+impl core::marker::Send for termrock::widgets::PlanTask
+impl core::marker::Sync for termrock::widgets::PlanTask
+impl core::marker::Unpin for termrock::widgets::PlanTask
+impl core::marker::UnsafeUnpin for termrock::widgets::PlanTask
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PlanTask
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PlanTask
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PlanTask where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PlanTask::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PlanTask where U: core::convert::From<T>
+pub fn termrock::widgets::PlanTask::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PlanTask where U: core::convert::Into<T>
+pub type termrock::widgets::PlanTask::Error = core::convert::Infallible
+pub fn termrock::widgets::PlanTask::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PlanTask where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PlanTask::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PlanTask::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PlanTask where T: core::clone::Clone
+pub type termrock::widgets::PlanTask::Owned = T
+pub fn termrock::widgets::PlanTask::clone_into(&self, &mut T)
+pub fn termrock::widgets::PlanTask::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PlanTask where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PlanTask::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PlanTask where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanTask::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PlanTask where T: ?core::marker::Sized
+pub fn termrock::widgets::PlanTask::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PlanTask where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PlanTask::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PlanTask
+pub fn termrock::widgets::PlanTask::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PlanTask
 pub struct termrock::widgets::Popover<'a>
 impl<'a> termrock::widgets::Popover<'a>
 pub const fn termrock::widgets::Popover<'a>::ascii(self, bool) -> Self
@@ -77916,6 +78727,9 @@ pub const termrock::widgets::PASTE_EXPAND_LINES: usize
 pub const termrock::widgets::PASTE_PREVIEW_CHARS: usize
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
 pub const termrock::widgets::PICKER_OVERLAY_ID: &str
+pub const termrock::widgets::PLAN_REVIEW_BODY_WINDOW: usize
+pub const termrock::widgets::PLAN_REVIEW_FULLSCREEN_OVERLAY_ID: &str
+pub const termrock::widgets::PLAN_REVIEW_OVERLAY_ID: &str
 pub const termrock::widgets::POPOVER_CONTRACT_MAX_HEIGHT: u16
 pub const termrock::widgets::POPOVER_CONTRACT_MAX_WIDTH: u16
 pub const termrock::widgets::POPOVER_OVERLAY_ID: &str
@@ -78154,11 +78968,13 @@ pub fn termrock::widgets::example_error_validation(&termrock::style::DesignSyste
 pub fn termrock::widgets::example_file_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_help_entries(&termrock::style::DesignSystem) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::example_help_keymap() -> termrock::keymap::Keymap<termrock::widgets::DemoHelpAction>
+pub fn termrock::widgets::example_high_risk_plan() -> termrock::widgets::PlanDocument
 pub fn termrock::widgets::example_history_entries() -> alloc::vec::Vec<termrock::widgets::HistoryEntry<&'static str>>
 pub fn termrock::widgets::example_message_session() -> alloc::vec::Vec<termrock::widgets::MessageEntry>
 pub fn termrock::widgets::example_model_catalog() -> alloc::vec::Vec<termrock::widgets::ModelOption>
 pub fn termrock::widgets::example_notifications(u64) -> alloc::vec::Vec<termrock::widgets::NotificationItem>
 pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock::widgets::StepItem>
+pub fn termrock::widgets::example_plan_document() -> termrock::widgets::PlanDocument
 pub fn termrock::widgets::example_project_million(&termrock::widgets::VirtualListState<&'static str>, &mut alloc::vec::Vec<u64>)
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_question_set() -> termrock::widgets::QuestionSet
@@ -78393,6 +79209,7 @@ pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layou
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)
 pub fn termrock::widgets::redact_history_text(&str, termrock::widgets::HistoryRedaction) -> alloc::string::String
 pub fn termrock::widgets::redact_tool_secrets(&str) -> alloc::string::String
+pub fn termrock::widgets::remap_plan_comments(&[termrock::widgets::PlanComment], &termrock::widgets::PlanDocument) -> alloc::vec::Vec<termrock::widgets::PlanComment>
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
 pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock::widgets::JumpOverlayState, &[termrock::widgets::JumpTarget<Id>], &str) -> termrock::widgets::JumpOutcome<Id>

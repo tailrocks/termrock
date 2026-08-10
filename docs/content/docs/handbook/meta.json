@@ -26,6 +26,7 @@
     "background-task-panel",
     "context-meter",
     "question-flow",
+    "plan-review",
     "model-selector",
     "permission-prompt",
     "agent-workbench",

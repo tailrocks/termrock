@@ -14,8 +14,8 @@
 //!
 //! **vs [`super::DiffView`].** DiffView is read-only paint + nav. DiffReview
 //! adds decision/selection/comment chrome and request outcomes (never runs git).
-//! **vs [`super::PlanReview`].** PlanReview is step-list accept/reject; DiffReview
-//! is patch-oriented.
+//! **vs [`super::PlanReview`].** PlanReview is plan-document approval with comments;
+//! DiffReview is patch-oriented.
 //!
 //! Research: GitHub reviews, lazygit staging, Grok Build plan review, agent
 //! diff approval.

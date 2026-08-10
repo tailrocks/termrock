@@ -213,7 +213,7 @@ form one **visualization family** with shared `ScaleMode` (auto/fixed/log),
 `VizGlyphSet` (block/braille/ASCII), missing-data marks, thresholds, selection
 marks, and streaming `window` helpers. No-color mode uses ordered series
 markers and density glyphs rather than hue alone. `TokenMeter` remains the
-token-usage specialist. `ContextMeter` elevates budgets with approximate precision, breakdown, compaction actions, and non-token units. `QuestionFlow` is multi-question HITL with structured answers, review, queue/provenance; never clears composer draft.
+token-usage specialist. `ContextMeter` elevates budgets with approximate precision, breakdown, compaction actions, and non-token units. `QuestionFlow` is multi-question HITL with structured answers, review, queue/provenance; never clears composer draft. `PlanReview` is interactive plan-document review (Markdown, comments, version diff) with safe action focus; Approve never default.
 
 `HexViewer` is a **virtualized binary inspector**. Host projects a paged
 `HexWindow` (`base_offset` + `data` + `total_len`). State owns absolute cursor

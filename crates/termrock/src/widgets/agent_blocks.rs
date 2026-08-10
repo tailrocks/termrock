@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Product-neutral agent composition blocks: modes, questions, plan review,
-//! task rail, session picker. Domain wording and effects stay consumer-owned.
+//! Product-neutral agent composition blocks: modes, session picker.
+//! QuestionFlow / PlanReview / TaskRail elevated to dedicated modules.
+//! Domain wording and effects stay consumer-owned.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -208,178 +209,7 @@ impl<Id: Clone + PartialEq> Widget for ModeRibbon<'_, Id> {
 }
 
 // QuestionFlow elevated in `question_flow` module (migration 0227).
-
-// ── Plan review ─────────────────────────────────────────────────────────────
-
-/// One plan step projection.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PlanStep<'a, Id> {
-    /// Stable id.
-    pub id: Id,
-    /// Title.
-    pub title: &'a str,
-    /// Optional detail.
-    pub detail: Option<&'a str>,
-    /// Accepted mark.
-    pub accepted: bool,
-}
-
-/// Plan review surface.
-#[derive(Debug, Clone, Copy)]
-pub struct PlanReview<'a, Id> {
-    steps: &'a [PlanStep<'a, Id>],
-    tokens: &'a DesignSystem,
-}
-
-impl<'a, Id> PlanReview<'a, Id> {
-    /// Creates plan review from steps.
-    #[must_use]
-    pub const fn new(steps: &'a [PlanStep<'a, Id>], tokens: &'a DesignSystem) -> Self {
-        Self { steps, tokens }
-    }
-}
-
-/// Plan review outcomes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum PlanReviewOutcome<Id> {
-    /// Ignored.
-    Ignored,
-    /// Step selected.
-    StepSelected(Id),
-    /// Accept whole plan.
-    Accepted,
-    /// Reject whole plan.
-    Rejected,
-    /// Edit requested for step.
-    EditRequested(Id),
-}
-
-/// Plan review state.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlanReviewState<Id> {
-    selected: Option<Id>,
-    focused: bool,
-}
-
-impl<Id> Default for PlanReviewState<Id> {
-    fn default() -> Self {
-        Self {
-            selected: None,
-            focused: true,
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> PlanReviewState<Id> {
-    /// New state.
-    #[must_use]
-    pub const fn new(selected: Option<Id>) -> Self {
-        Self {
-            selected,
-            focused: true,
-        }
-    }
-
-    /// Selected step.
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.selected.as_ref()
-    }
-
-    /// Focus.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
-
-    /// Keys: up/down, a accept, r reject, e edit.
-    pub fn handle_key(
-        &mut self,
-        steps: &[PlanStep<'_, Id>],
-        key: KeyEvent,
-    ) -> PlanReviewOutcome<Id> {
-        if !self.focused || key.kind != KeyEventKind::Press || steps.is_empty() {
-            return PlanReviewOutcome::Ignored;
-        }
-        let idx = self
-            .selected
-            .as_ref()
-            .and_then(|id| steps.iter().position(|s| &s.id == id))
-            .unwrap_or(0);
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k') => {
-                let next = idx.saturating_sub(1);
-                self.selected = Some(steps[next].id.clone());
-                PlanReviewOutcome::StepSelected(steps[next].id.clone())
-            }
-            KeyCode::Down | KeyCode::Char('j') => {
-                let next = (idx + 1).min(steps.len() - 1);
-                self.selected = Some(steps[next].id.clone());
-                PlanReviewOutcome::StepSelected(steps[next].id.clone())
-            }
-            KeyCode::Char('a') => PlanReviewOutcome::Accepted,
-            KeyCode::Char('r') => PlanReviewOutcome::Rejected,
-            KeyCode::Char('e') => {
-                if let Some(id) = self.selected.clone() {
-                    PlanReviewOutcome::EditRequested(id)
-                } else {
-                    PlanReviewOutcome::EditRequested(steps[idx].id.clone())
-                }
-            }
-            _ => PlanReviewOutcome::Ignored,
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for &PlanReview<'_, Id> {
-    type State = PlanReviewState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        if area.is_empty() {
-            return;
-        }
-        let panel = Panel::new(self.tokens)
-            .title("Plan")
-            .emphasis(if state.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        let mut y = inner.y;
-        for step in self.steps {
-            if y >= inner.bottom() {
-                break;
-            }
-            let selected = state.selected.as_ref() == Some(&step.id);
-            let mark = if step.accepted {
-                "✓"
-            } else if selected {
-                "›"
-            } else {
-                " "
-            };
-            let line = format!("{mark} {}", step.title);
-            let style = if selected {
-                self.tokens.style(Role::Accent)
-            } else {
-                self.tokens.style(Role::Text)
-            };
-            let clipped = take_display_cols(&line, usize::from(inner.width));
-            buffer.set_stringn(inner.x, y, &clipped, usize::from(inner.width), style);
-            y = y.saturating_add(1);
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq> StatefulWidget for PlanReview<'_, Id> {
-    type State = PlanReviewState<Id>;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        StatefulWidget::render(&self, area, buffer, state);
-    }
-}
+// PlanReview elevated in `plan_review` module (migration 0228).
 
 // ── Session picker ──────────────────────────────────────────────────────────
 
@@ -517,27 +347,5 @@ mod tests {
     }
 
     // QuestionFlow tests live in widgets::question_flow (migration 0227).
-
-    #[test]
-    fn plan_review_accept_reject() {
-        let steps = [
-            PlanStep {
-                id: "1",
-                title: "Read files",
-                detail: None,
-                accepted: false,
-            },
-            PlanStep {
-                id: "2",
-                title: "Edit",
-                detail: Some("src/main.rs"),
-                accepted: false,
-            },
-        ];
-        let mut state = PlanReviewState::new(Some("1"));
-        let a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
-        assert_eq!(state.handle_key(&steps, a), PlanReviewOutcome::Accepted);
-        let r = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE);
-        assert_eq!(state.handle_key(&steps, r), PlanReviewOutcome::Rejected);
-    }
+    // PlanReview tests live in widgets::plan_review (migration 0228).
 }

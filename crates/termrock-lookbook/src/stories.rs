@@ -96,7 +96,7 @@ use termrock::{
         MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
         Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
-        PlanReviewState, PlanStep, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
+        PlanReviewState, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
         PromptComposerState, QuestionFlow, QuestionFlowState,
         RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionItem,
         SessionPicker, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
@@ -6632,10 +6632,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "plan-review/basic",
             "Plan review",
             "PlanReview",
-            "Plan steps review list.",
-            48,
-            8,
+            "Markdown plan with tasks, risks, safe action focus.",
+            56,
+            16,
             plan_review_story,
+        ),
+        Story::new(
+            "plan-review/high-risk",
+            "PlanReview high risk",
+            "PlanReview",
+            "Critical plan defaults action focus to Abandon.",
+            56,
+            14,
+            plan_review_high_risk_story,
+        ),
+        Story::new(
+            "plan-review/diff",
+            "PlanReview version diff",
+            "PlanReview",
+            "Structural changes between plan revisions.",
+            56,
+            14,
+            plan_review_diff_story,
+        ),
+        Story::new(
+            "plan-review/comments",
+            "PlanReview comments",
+            "PlanReview",
+            "Line comments and notes pane.",
+            56,
+            14,
+            plan_review_comments_story,
         ),
         Story::new(
             "question-flow/basic",
@@ -7814,7 +7841,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "PlanReview",
             "Narrow-terminal geometry for PlanReview (22 cols).",
             22,
-            8,
+            14,
             plan_review_story,
         ),
         Story::new(
@@ -7823,7 +7850,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "PlanReview",
             "Unicode-safe paint path for PlanReview (CJK/emoji-capable layout).",
             48,
-            8,
+            14,
             plan_review_unicode_story,
         ),
         Story::new(
@@ -21013,23 +21040,59 @@ fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn plan_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let steps = [
-        PlanStep {
-            id: "s1",
-            title: "Inspect",
-            detail: Some("Read files"),
-            accepted: true,
-        },
-        PlanStep {
-            id: "s2",
-            title: "Edit",
-            detail: None,
-            accepted: false,
-        },
-    ];
-    let mut state = PlanReviewState::new(Some("s1"));
-    frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
+    use termrock::widgets::{example_plan_document, PlanReview, PlanReviewState};
+    let mut state = PlanReviewState::new();
+    state.open(example_plan_document());
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn plan_review_high_risk_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_high_risk_plan, PlanReview, PlanReviewState};
+    let mut state = PlanReviewState::new();
+    state.open(example_high_risk_plan());
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn plan_review_diff_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_plan_document, PlanReview, PlanReviewPane, PlanReviewState,
+    };
+    let mut state = PlanReviewState::new();
+    state.open(example_plan_document());
+    state.pane = PlanReviewPane::Diff;
+    state.show_version_diff = true;
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn plan_review_comments_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_plan_document, PlanComment, PlanCommentAnchor, PlanReview, PlanReviewPane,
+        PlanReviewState,
+    };
+    let mut state = PlanReviewState::new();
+    state.open(example_plan_document());
+    state.set_comments(vec![
+        PlanComment::new(
+            "c1",
+            "Verify session TTL",
+            PlanCommentAnchor::Line { line: 2 },
+            2,
+        ),
+        PlanComment::new(
+            "c2",
+            "Section note",
+            PlanCommentAnchor::Section {
+                section_id: "steps".into(),
+            },
+            2,
+        ),
+    ]);
+    state.pane = PlanReviewPane::Comments;
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
 }
 
 fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -22388,23 +22451,26 @@ fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let steps = [
-        PlanStep {
-            id: "s1",
-            title: "検査 🔍",
-            detail: Some("ファイルを読む"),
-            accepted: true,
-        },
-        PlanStep {
-            id: "s2",
-            title: "編集 ✏️",
-            detail: None,
-            accepted: false,
-        },
-    ];
-    let mut state = PlanReviewState::new(Some("s1"));
-    frame.render_stateful_widget(&PlanReview::new(&steps, &tokens), area, &mut state);
+    use termrock::widgets::{
+        PlanDocument, PlanReview, PlanReviewState, PlanTask, PermissionRisk,
+    };
+    let mut state = PlanReviewState::new();
+    state.open(
+        PlanDocument::new(
+            "u1",
+            1,
+            "計画 🚀",
+            "# 検査\n\n- ファイルを読む\n- 編集 ✏️\n",
+            PermissionRisk::Medium,
+        )
+        .summary("Unicode plan body")
+        .tasks(vec![
+            PlanTask::new("s1", "検査 🔍"),
+            PlanTask::new("s2", "編集 ✏️"),
+        ]),
+    );
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
 }
 
 fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

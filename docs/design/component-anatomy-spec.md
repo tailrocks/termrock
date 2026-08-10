@@ -2202,30 +2202,30 @@ Every component below uses sections **1–24**:
 
 ## PlanReview
 
-1. **Purpose:** Present plan steps for accept/edit/reject.  
-2. **Anatomy:** `root` · `step_list` · `detail` · `actions` (accept/reject/edit)  
-3. **Public properties:** steps, selected step, `design`  
-4. **State:** selection.  
-5. **Variants:** `default`  
-6. **Sizes/density:** split list/detail when wide.  
-7. **Visual states:** selected step; accepted checkmarks.  
-8. **Interaction states:** select · accept · reject.  
-9. **Keyboard:** list nav; `a` accept / `r` reject optional outcomes.  
-10. **Mouse:** click step/actions.  
-11. **Focus:** list or actions.  
-12. **Disabled:** accept/reject disabled while consumer marks pending.  
-13. **Loading:** step detail Skeleton when plan streams.  
-14. **Error:** rejected step tone; invalid plan Callout.  
-15. **Narrow:** stack detail under list.  
-16. **Tiny:** selected step title + Accept/Reject.  
-17. **Unicode/ASCII:** step status glyphs; markdown body rules.  
-18. **Colorless:** accepted check prefix; selected reverse.  
-19. **Composition:** agent plan mode.  
-20. **Outcomes:** `Accepted` · `Rejected` · `StepSelected` · `EditRequested`  
-21. **Stories:** `plan-review/basic`, `plan-review/narrow`  
-22. **Snapshots:** multi-step.  
-23. **Interaction tests:** accept/reject.  
-24. **Perf:** O(visible steps).
+1. **Purpose:** Interactive review of agent-generated plans before execution.  
+2. **Anatomy:** `title+risk` · `pane_tabs` · `document|tasks|risks|files|comments|diff` · `action_strip` · `consequence`  
+3. **Public properties:** `PlanDocument` (body, sections, tasks, risks, assumptions, files, refs, risk, previous), comments, presentation, `design`  
+4. **State:** `PlanReviewState` — pane, phase, action_cursor, selection, drafts, scroll, accepts_input.  
+5. **Variants:** panes Document/Tasks/Risks/Files/Comments/Diff; phases Review/Feedback/Conditions/Comment.  
+6. **Sizes/density:** body window `PLAN_REVIEW_BODY_WINDOW`; narrow stacks tabs + body.  
+7. **Visual states:** risk role chrome; selected line; grant actions Warning/Danger; orphan comments.  
+8. **Interaction states:** nav · select range · comment · approve/conditions/revise/feedback/abandon.  
+9. **Keyboard:** j/k · Tab panes · ←/→ actions · Enter confirm focused · m comment · d diff · [] section · a/r/x/c focus-only · y unbound · Esc cancel.  
+10. **Mouse:** pane tabs; action strip confirms.  
+11. **Focus:** content + action strip; default never grants.  
+12. **Disabled:** `accepts_input=false` → Ignored.  
+13. **Loading:** host streams via `update_plan` + comment remap.  
+14. **Error:** empty plan disables grant actions.  
+15. **Narrow:** clip tabs/actions; keep consequence line.  
+16. **Tiny:** title + focused action + consequence.  
+17. **Unicode/ASCII:** status/file glyphs; `ascii(true)` letter marks.  
+18. **Colorless:** risk label text; selected reverse; no hue-only grant.  
+19. **Composition:** PermissionRisk; DiffReview for patches; QuestionFlow for interviews.  
+20. **Outcomes:** Approved · ApprovedWithConditions · RevisionRequested · FeedbackEdited · Abandoned · Cancelled · Comment* · Pane/Line/Task/File · ActionFocused · PlanUpdated · FullscreenRequested  
+21. **Stories:** `plan-review/{basic,high-risk,diff,comments,narrow,unicode}`  
+22. **Snapshots:** medium default Revise; high default Abandon; version diff.  
+23. **Interaction tests:** no bare `a` grant; Esc≠approve; comment remap; risk snap.  
+24. **Perf:** O(visible body lines + list rows).
 
 ## ToolCallCard
 

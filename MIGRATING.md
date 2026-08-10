@@ -241,6 +241,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0225 | `v0.13.0` | [ContextMeter budget display](migrations/0225-v0.13.0-context-meter.md) |
 | 0226 | `v0.13.0` | [PermissionPrompt Global trust surface](migrations/0226-v0.13.0-permission-prompt.md) |
 | 0227 | `v0.13.0` | [QuestionFlow multi-question HITL](migrations/0227-v0.13.0-question-flow.md) |
+| 0228 | `v0.13.0` | [PlanReview interactive plan document](migrations/0228-v0.13.0-plan-review.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

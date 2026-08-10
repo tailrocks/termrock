@@ -16,7 +16,7 @@
 //! pipelines (Queued/Running/Failed/Retrying…).
 //! **vs [`super::ProgressBar`].** ProgressBar is one bar; ProgressSteps is many
 //! ordered phases.
-//! **vs [`super::PlanReview`].** PlanReview is accept/reject plan UI; this is
+//! **vs [`super::PlanReview`].** PlanReview is pre-execution plan approval; this is
 //! live run progress.
 //!
 //! Research: CI pipelines, installers, agent task plans.
