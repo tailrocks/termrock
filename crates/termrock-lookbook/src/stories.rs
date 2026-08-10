@@ -7143,6 +7143,33 @@ pub(crate) fn stories() -> Vec<Story> {
             error_recovery_unicode,
         ),
         Story::new(
+            "input-otp/basic",
+            "Input OTP",
+            "InputOtp",
+            "Six-digit OTP slots with label.",
+            32,
+            4,
+            input_otp_basic,
+        ),
+        Story::new(
+            "carousel/basic",
+            "Carousel",
+            "Carousel",
+            "Three-slide keyboard carousel.",
+            48,
+            10,
+            carousel_basic,
+        ),
+        Story::new(
+            "input-group/basic",
+            "Input group",
+            "InputGroup",
+            "URL prefix + field + suffix action.",
+            48,
+            3,
+            input_group_basic,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -25759,6 +25786,33 @@ fn error_recovery_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn error_recovery_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Unicode);
+}
+
+fn input_otp_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{InputOtp, InputOtpState};
+    let mut st = InputOtpState::new(6);
+    let _ = st.set_value("42");
+    InputOtp::new(system)
+        .label("One-time code")
+        .paint(area, frame.buffer_mut(), &st);
+}
+
+fn carousel_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_carousel_slides, Carousel, CarouselState};
+    let slides = example_carousel_slides();
+    let st = CarouselState::new();
+    Carousel::new(&slides, system).paint(area, frame.buffer_mut(), &st);
+}
+
+fn input_group_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_url_input_addons, InputGroup, InputGroupState};
+    let addons = example_url_input_addons();
+    let mut st = InputGroupState::new();
+    st.set_focused(true);
+    st.set_value("example.com");
+    InputGroup::new(&addons, system)
+        .placeholder("host")
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 #[derive(Clone, Copy)]

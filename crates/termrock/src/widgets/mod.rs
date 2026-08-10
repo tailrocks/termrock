@@ -106,6 +106,9 @@ mod text_area;
 mod text_input;
 mod password_input;
 mod number_input;
+mod input_otp;
+mod input_group;
+mod carousel;
 mod search_input;
 mod path_input;
 mod token_field;
@@ -873,6 +876,14 @@ pub use password_input::{
 pub use number_input::{
     NumberConstraints, NumberInput, NumberInputOutcome, NumberInputParts, NumberInputState,
     NumberKind, NumberParse, NumberValidity,
+};
+pub use input_otp::{InputOtp, InputOtpOutcome, InputOtpState, OtpCharset};
+pub use input_group::{
+    example_url_input_addons, InputAddon, InputAddonSide, InputGroup, InputGroupOutcome,
+    InputGroupState,
+};
+pub use carousel::{
+    example_carousel_slides, Carousel, CarouselOutcome, CarouselSlide, CarouselState,
 };
 pub use search_input::{
     DEFAULT_DEBOUNCE, DEFAULT_HISTORY_LIMIT, SearchFilterChip, SearchInput, SearchInputOutcome,

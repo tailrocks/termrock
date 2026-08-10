@@ -1933,6 +1933,133 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "input-otp".into(),
+            title: "Input OTP".into(),
+            description: "Fixed-slot OTP/PIN entry with auto-advance, paste fill, mask option; host owns verification.".into(),
+            kind: RegistryItemKind::Component,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::input_otp".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/widgets/input_otp.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![AnatomyPartRef {
+                id: "slots".into(),
+                label: "Digit slots".into(),
+            }],
+            semantic_roles: vec![],
+            variants: vec![VariantRef {
+                id: "digits".into(),
+                description: "Numeric OTP".into(),
+            }],
+            outcomes: vec![OutcomeRef {
+                id: "Completed".into(),
+            }],
+            stories: vec!["input-otp/basic".into()],
+            tests: vec!["widgets::input_otp".into()],
+            migration: Some(
+                "migrations/0247-v0.13.0-shadcn-gap-input-otp-carousel-input-group.md".into(),
+            ),
+            provenance: prov("crates/termrock/src/widgets/input_otp.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "carousel".into(),
+            title: "Carousel".into(),
+            description: "Multi-slide panel with keyboard prev/next, wrap, indicators, host-driven auto tick.".into(),
+            kind: RegistryItemKind::Component,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::carousel".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/widgets/carousel.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "slide".into(),
+                    label: "Active slide".into(),
+                },
+                AnatomyPartRef {
+                    id: "indicators".into(),
+                    label: "Page dots".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![VariantRef {
+                id: "wrap".into(),
+                description: "Wrap ends".into(),
+            }],
+            outcomes: vec![OutcomeRef {
+                id: "Changed".into(),
+            }],
+            stories: vec!["carousel/basic".into()],
+            tests: vec!["widgets::carousel".into()],
+            migration: Some(
+                "migrations/0247-v0.13.0-shadcn-gap-input-otp-carousel-input-group.md".into(),
+            ),
+            provenance: prov("crates/termrock/src/widgets/carousel.rs"),
+            source_hash: None,
+            complete: true,
+        },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "input-group".into(),
+            title: "Input Group".into(),
+            description: "Prefix/suffix addons around TextInput; Alt+Enter activates suffix action.".into(),
+            kind: RegistryItemKind::Component,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::input_group".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/widgets/input_group.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: kernel_dep(),
+            capabilities: caps_basic(),
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "prefix".into(),
+                    label: "Prefix addon".into(),
+                },
+                AnatomyPartRef {
+                    id: "field".into(),
+                    label: "Text field".into(),
+                },
+                AnatomyPartRef {
+                    id: "suffix".into(),
+                    label: "Suffix addon".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![VariantRef {
+                id: "url".into(),
+                description: "URL scheme + submit".into(),
+            }],
+            outcomes: vec![OutcomeRef {
+                id: "AddonActivated".into(),
+            }],
+            stories: vec!["input-group/basic".into()],
+            tests: vec!["widgets::input_group".into()],
+            migration: Some(
+                "migrations/0247-v0.13.0-shadcn-gap-input-otp-carousel-input-group.md".into(),
+            ),
+            provenance: prov("crates/termrock/src/widgets/input_group.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

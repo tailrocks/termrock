@@ -260,6 +260,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0244 | `v0.13.0` | [ProjectLauncher composition block](migrations/0244-v0.13.0-project-launcher.md) |
 | 0245 | `v0.13.0` | [HelpCenter / CommandReference composition block](migrations/0245-v0.13.0-help-center-command-reference.md) |
 | 0246 | `v0.13.0` | [ErrorRecovery / CrashReport composition block](migrations/0246-v0.13.0-error-recovery-crash-report.md) |
+| 0247 | `v0.13.0` | [shadcn gap: InputOtp, Carousel, InputGroup](migrations/0247-v0.13.0-shadcn-gap-input-otp-carousel-input-group.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
