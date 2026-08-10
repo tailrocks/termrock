@@ -12,6 +12,7 @@
 
 mod agent_shell;
 mod agent_workbench;
+mod app_dashboard;
 mod app_shell;
 mod auth_entry;
 mod database_workbench;
@@ -104,6 +105,11 @@ pub use error_recovery::{
     FailureClass, RecoveryActionId,
 };
 pub use error_recovery::bench as error_recovery_bench;
+pub use app_dashboard::{
+    example_dashboard_nav, layout_app_dashboard, render_app_dashboard, AppDashboardLayout,
+    AppDashboardOutcome, AppDashboardPane, AppDashboardSlots, AppDashboardState,
+    AppDashboardSurfaces,
+};
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

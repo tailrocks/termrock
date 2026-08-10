@@ -29,16 +29,26 @@ rail slots). Collapse filter: [`filter_nav_collapsed`] (migration **0250**).
 | 5 | sidebar-05 — collapsible submenus | covered | Group collapse + filter | Host updates `expanded` |
 | 6 | sidebar-06 — submenus as dropdowns | partial | `ContextMenuRequested` (Ctrl+M / Shift+Space) | Host paints menu overlay |
 | 7 | sidebar-07 — collapse to icons | covered | `SidebarPresentation::Rail` / `[` toggle / `apply_width` | Icon rail |
+| 8 | sidebar-08 — inset + secondary nav | covered | Sectioned `NavItem` | Same section model |
+| 9 | sidebar-09 — collapsible nested | covered | Nested collapse + filter | |
+| 10 | sidebar-10 — sidebar in popover | partial | Drawer / palette | Host overlay |
+| 11 | sidebar-11 — collapsible file tree | partial | `Tree` / deep `NavItem` | Host projects tree |
+| 12 | sidebar-12 — calendar in sidebar | partial | `DateTimePicker` host pane | |
+| 13 | sidebar-13 — sidebar in dialog | partial | `Dialog` / drawer | Host chrome |
+| 14 | sidebar-14 — right sidebar | covered | Host places AppShell zone | |
+| 15 | sidebar-15 — left + right | partial | Sidebar + inspector slots | |
 
 ## Counts
 
 | Status | Count |
 |--------|------:|
-| covered | 5 |
-| partial | 2 |
+| covered | 8 |
+| partial | 7 |
 | missing | 0 |
 | N/A | 0 |
-| **Total** | **7** |
+| **Total** | **15** |
+
+**Consolidated SoT:** `docs/design/shadcn-blocks-coverage.md`
 
 ## Port decisions
 
