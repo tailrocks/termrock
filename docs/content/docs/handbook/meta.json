@@ -15,6 +15,7 @@
     "overlay-stack",
     "host-frame",
     "form",
+    "form-wizard",
     "file-picker",
     "date-time-picker",
     "keybinding-recorder",

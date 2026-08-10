@@ -125,13 +125,19 @@ state.offset = 1;
 let _visible_offset = state.offset;`,
   },
   FormWizard: {
-    description: 'Multi-step form wizard chrome; domain fields and validation stay consumer-owned.',
+    description:
+      'Multi-step form wizard chrome with stepper, validation gates, review, failure/retry, and resume. Domain fields stay consumer-owned.',
     primaryStory: 'blocks/form-wizard',
-    usage: `use termrock::{style::DesignTokens, widgets::{FormWizard, FormWizardState}};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{FormWizard, FormWizardState, WizardStep};
 
-let tokens = DesignTokens::default();
-let mut state = FormWizardState::new(3);
-let wizard = FormWizard::new(&tokens, "Setup");`,
+let system = DesignSystem::default();
+let mut state = FormWizardState::with_steps([
+    WizardStep::new("account", "Account"),
+    WizardStep::new("confirm", "Confirm"),
+]);
+state.set_focused(true);
+let _ = FormWizard::new(&system).title("Setup");`,
   },
   Form: {
     description: 'A responsive form layout with stable focus, validation, and hit geometry.',

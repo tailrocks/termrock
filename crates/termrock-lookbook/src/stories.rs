@@ -36,7 +36,7 @@ use termrock::{
         InspectorPanel,
         DetailTableState, Dialog, DiffHunk, DiffKind, DiffLine, DiffReview, DiffReviewState,
         DiffState, DiffView, Drawer, EmptyState, ErrorView, Field, Fieldset, Form, FormState,
-        FormWizardState, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
+        FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpOverlay, JumpTarget, Kbd, KeyValueList, KeyValueListState, KvEntry,
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
@@ -3518,10 +3518,37 @@ pub(crate) fn stories() -> Vec<Story> {
             "blocks/form-wizard",
             "FormWizard",
             "FormWizard",
-            "Wizard step projection (navigation state only).",
-            40,
-            4,
+            "Multi-step wizard with stepper and nav.",
+            56,
+            12,
             form_wizard_story,
+        ),
+        Story::new(
+            "form-wizard/review",
+            "FormWizard review",
+            "FormWizard",
+            "Review phase before submit.",
+            56,
+            12,
+            form_wizard_review_story,
+        ),
+        Story::new(
+            "form-wizard/failure",
+            "FormWizard failure",
+            "FormWizard",
+            "Failure/retry surface.",
+            56,
+            10,
+            form_wizard_failure_story,
+        ),
+        Story::new(
+            "form-wizard/resume",
+            "FormWizard resume",
+            "FormWizard",
+            "Restored progress mid-flow.",
+            56,
+            12,
+            form_wizard_resume_story,
         ),
         // --- Catalog state-axis stories (narrow/unicode/depth) ---
         Story::new(
@@ -4014,9 +4041,9 @@ pub(crate) fn stories() -> Vec<Story> {
             "blocks/narrow",
             "Narrow FormWizard",
             "FormWizard",
-            "Narrow-terminal geometry for FormWizard (20 cols).",
+            "Narrow-terminal single-step layout (20 cols).",
             20,
-            4,
+            10,
             form_wizard_story,
         ),
         Story::new(
@@ -4024,8 +4051,8 @@ pub(crate) fn stories() -> Vec<Story> {
             "Unicode FormWizard",
             "FormWizard",
             "Unicode-safe paint path for FormWizard (CJK/emoji-capable layout).",
-            40,
-            4,
+            56,
+            12,
             form_wizard_unicode_story,
         ),
         Story::new(
@@ -10919,13 +10946,67 @@ fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let mut state = FormWizardState::new(3);
-    frame.render_stateful_widget(
-        &termrock::widgets::FormWizard::new(&tokens, "Wizard"),
-        area,
-        &mut state,
-    );
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region").optional(true),
+        WizardStep::new("confirm", "Confirm"),
+    ]);
+    state.set_focused(true);
+    FormWizard::new(system)
+        .title("Connect")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn form_wizard_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region"),
+        WizardStep::new("confirm", "Confirm"),
+    ]);
+    state.set_focused(true);
+    let _ = state.next();
+    let _ = state.next();
+    let _ = state.next(); // ReviewOpened
+    FormWizard::new(system)
+        .title("Connect")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn form_wizard_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region"),
+    ]);
+    state.set_focused(true);
+    let _ = state.fail("Could not reach API — retry when ready");
+    FormWizard::new(system)
+        .title("Connect")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn form_wizard_resume_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region").optional(true),
+        WizardStep::new("confirm", "Confirm"),
+    ]);
+    state.set_focused(true);
+    let _ = state.next();
+    let snap = state.progress();
+    let mut resumed = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region").optional(true),
+        WizardStep::new("confirm", "Confirm"),
+    ]);
+    resumed.set_focused(true);
+    let _ = resumed.restore_progress(&snap);
+    FormWizard::new(system)
+        .title("Resume setup")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut resumed);
 }
 
 fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13092,13 +13173,16 @@ fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let mut state = FormWizardState::new(3);
-    frame.render_stateful_widget(
-        &termrock::widgets::FormWizard::new(&tokens, "ウィザード 🪄"),
-        area,
-        &mut state,
-    );
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("a", "設定"),
+        WizardStep::new("b", "接続 🪄"),
+        WizardStep::new("c", "確認"),
+    ]);
+    state.set_focused(true);
+    FormWizard::new(system)
+        .title("ウィザード 🪄")
+        .ascii(false)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

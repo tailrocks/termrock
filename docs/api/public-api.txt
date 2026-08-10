@@ -18533,11 +18533,35 @@ impl<T> core::convert::From<T> for termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::FormWizardOutcome
+pub termrock::widgets::FormWizardOutcome::AsyncCheckRequested
+pub termrock::widgets::FormWizardOutcome::AsyncCheckRequested::generation: u64
+pub termrock::widgets::FormWizardOutcome::AsyncCheckRequested::step: usize
 pub termrock::widgets::FormWizardOutcome::BlockedInvalid
+pub termrock::widgets::FormWizardOutcome::BlockedInvalid::message: core::option::Option<alloc::string::String>
+pub termrock::widgets::FormWizardOutcome::BlockedInvalid::step: usize
+pub termrock::widgets::FormWizardOutcome::BlockedPending
+pub termrock::widgets::FormWizardOutcome::BlockedPending::step: usize
 pub termrock::widgets::FormWizardOutcome::Cancelled
+pub termrock::widgets::FormWizardOutcome::Changed
+pub termrock::widgets::FormWizardOutcome::Failed
+pub termrock::widgets::FormWizardOutcome::Failed::message: alloc::string::String
+pub termrock::widgets::FormWizardOutcome::FocusFieldRequested
+pub termrock::widgets::FormWizardOutcome::FocusFieldRequested::field_hint: core::option::Option<alloc::string::String>
+pub termrock::widgets::FormWizardOutcome::FocusFieldRequested::step: usize
 pub termrock::widgets::FormWizardOutcome::Ignored
+pub termrock::widgets::FormWizardOutcome::PresentationChanged
+pub termrock::widgets::FormWizardOutcome::PresentationChanged::presentation: termrock::widgets::FormWizardPresentation
+pub termrock::widgets::FormWizardOutcome::ProgressSaved
+pub termrock::widgets::FormWizardOutcome::ProgressSaved::progress: termrock::widgets::WizardProgress
+pub termrock::widgets::FormWizardOutcome::RetryRequested
+pub termrock::widgets::FormWizardOutcome::RetryRequested::step: usize
+pub termrock::widgets::FormWizardOutcome::ReviewClosed
+pub termrock::widgets::FormWizardOutcome::ReviewClosed::index: usize
+pub termrock::widgets::FormWizardOutcome::ReviewOpened
 pub termrock::widgets::FormWizardOutcome::StepChanged
-pub termrock::widgets::FormWizardOutcome::StepChanged::index: usize
+pub termrock::widgets::FormWizardOutcome::StepChanged::from: usize
+pub termrock::widgets::FormWizardOutcome::StepChanged::reason: termrock::widgets::StepChangeReason
+pub termrock::widgets::FormWizardOutcome::StepChanged::to: usize
 pub termrock::widgets::FormWizardOutcome::SubmitRequested
 impl core::clone::Clone for termrock::widgets::FormWizardOutcome
 pub fn termrock::widgets::FormWizardOutcome::clone(&self) -> termrock::widgets::FormWizardOutcome
@@ -18579,6 +18603,57 @@ pub unsafe fn termrock::widgets::FormWizardOutcome::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::FormWizardOutcome
 pub fn termrock::widgets::FormWizardOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormWizardOutcome
+#[non_exhaustive] pub enum termrock::widgets::FormWizardPresentation
+pub termrock::widgets::FormWizardPresentation::Compact
+pub termrock::widgets::FormWizardPresentation::Full
+pub termrock::widgets::FormWizardPresentation::Narrow
+impl termrock::widgets::FormWizardPresentation
+pub const fn termrock::widgets::FormWizardPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::clone(&self) -> termrock::widgets::FormWizardPresentation
+impl core::cmp::Eq for termrock::widgets::FormWizardPresentation
+impl core::cmp::PartialEq for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::eq(&self, &termrock::widgets::FormWizardPresentation) -> bool
+impl core::default::Default for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::default() -> termrock::widgets::FormWizardPresentation
+impl core::fmt::Debug for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::FormWizardPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::FormWizardPresentation
+impl core::marker::Freeze for termrock::widgets::FormWizardPresentation
+impl core::marker::Send for termrock::widgets::FormWizardPresentation
+impl core::marker::Sync for termrock::widgets::FormWizardPresentation
+impl core::marker::Unpin for termrock::widgets::FormWizardPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::FormWizardPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FormWizardPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::FormWizardPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FormWizardPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FormWizardPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::FormWizardPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::FormWizardPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FormWizardPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::FormWizardPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::FormWizardPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FormWizardPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FormWizardPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FormWizardPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FormWizardPresentation where T: core::clone::Clone
+pub type termrock::widgets::FormWizardPresentation::Owned = T
+pub fn termrock::widgets::FormWizardPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::FormWizardPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FormWizardPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FormWizardPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FormWizardPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::FormWizardPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FormWizardPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::FormWizardPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FormWizardPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FormWizardPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FormWizardPresentation
 pub enum termrock::widgets::GridColumnWidth
 pub termrock::widgets::GridColumnWidth::Fixed(u16)
 pub termrock::widgets::GridColumnWidth::Min(u16)
@@ -24390,6 +24465,55 @@ pub unsafe fn termrock::widgets::StatusRegion::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StatusRegion
 pub fn termrock::widgets::StatusRegion::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StatusRegion
+#[non_exhaustive] pub enum termrock::widgets::StepChangeReason
+pub termrock::widgets::StepChangeReason::Back
+pub termrock::widgets::StepChangeReason::Jump
+pub termrock::widgets::StepChangeReason::Next
+pub termrock::widgets::StepChangeReason::Resume
+pub termrock::widgets::StepChangeReason::Skip
+impl core::clone::Clone for termrock::widgets::StepChangeReason
+pub fn termrock::widgets::StepChangeReason::clone(&self) -> termrock::widgets::StepChangeReason
+impl core::cmp::Eq for termrock::widgets::StepChangeReason
+impl core::cmp::PartialEq for termrock::widgets::StepChangeReason
+pub fn termrock::widgets::StepChangeReason::eq(&self, &termrock::widgets::StepChangeReason) -> bool
+impl core::fmt::Debug for termrock::widgets::StepChangeReason
+pub fn termrock::widgets::StepChangeReason::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::StepChangeReason
+pub fn termrock::widgets::StepChangeReason::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::StepChangeReason
+impl core::marker::StructuralPartialEq for termrock::widgets::StepChangeReason
+impl core::marker::Freeze for termrock::widgets::StepChangeReason
+impl core::marker::Send for termrock::widgets::StepChangeReason
+impl core::marker::Sync for termrock::widgets::StepChangeReason
+impl core::marker::Unpin for termrock::widgets::StepChangeReason
+impl core::marker::UnsafeUnpin for termrock::widgets::StepChangeReason
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StepChangeReason
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StepChangeReason
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StepChangeReason where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::StepChangeReason::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::StepChangeReason where U: core::convert::From<T>
+pub fn termrock::widgets::StepChangeReason::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StepChangeReason where U: core::convert::Into<T>
+pub type termrock::widgets::StepChangeReason::Error = core::convert::Infallible
+pub fn termrock::widgets::StepChangeReason::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::StepChangeReason where U: core::convert::TryFrom<T>
+pub type termrock::widgets::StepChangeReason::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::StepChangeReason::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::StepChangeReason where T: core::clone::Clone
+pub type termrock::widgets::StepChangeReason::Owned = T
+pub fn termrock::widgets::StepChangeReason::clone_into(&self, &mut T)
+pub fn termrock::widgets::StepChangeReason::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::StepChangeReason where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::StepChangeReason::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::StepChangeReason where T: ?core::marker::Sized
+pub fn termrock::widgets::StepChangeReason::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StepChangeReason where T: ?core::marker::Sized
+pub fn termrock::widgets::StepChangeReason::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::StepChangeReason where T: core::clone::Clone
+pub unsafe fn termrock::widgets::StepChangeReason::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::StepChangeReason
+pub fn termrock::widgets::StepChangeReason::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::StepChangeReason
 #[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
 pub termrock::widgets::SuggestionStatus::Empty
 pub termrock::widgets::SuggestionStatus::Error
@@ -26668,6 +26792,163 @@ pub unsafe fn termrock::widgets::WeekStart::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::WeekStart
 pub fn termrock::widgets::WeekStart::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::WeekStart
+#[non_exhaustive] pub enum termrock::widgets::WizardGate
+pub termrock::widgets::WizardGate::Invalid
+pub termrock::widgets::WizardGate::Pending
+pub termrock::widgets::WizardGate::Valid
+impl termrock::widgets::WizardGate
+pub const fn termrock::widgets::WizardGate::allows_advance(self) -> bool
+pub const fn termrock::widgets::WizardGate::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::clone(&self) -> termrock::widgets::WizardGate
+impl core::cmp::Eq for termrock::widgets::WizardGate
+impl core::cmp::PartialEq for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::eq(&self, &termrock::widgets::WizardGate) -> bool
+impl core::default::Default for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::default() -> termrock::widgets::WizardGate
+impl core::fmt::Debug for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::WizardGate
+impl core::marker::StructuralPartialEq for termrock::widgets::WizardGate
+impl core::marker::Freeze for termrock::widgets::WizardGate
+impl core::marker::Send for termrock::widgets::WizardGate
+impl core::marker::Sync for termrock::widgets::WizardGate
+impl core::marker::Unpin for termrock::widgets::WizardGate
+impl core::marker::UnsafeUnpin for termrock::widgets::WizardGate
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WizardGate
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WizardGate
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WizardGate where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WizardGate::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WizardGate where U: core::convert::From<T>
+pub fn termrock::widgets::WizardGate::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WizardGate where U: core::convert::Into<T>
+pub type termrock::widgets::WizardGate::Error = core::convert::Infallible
+pub fn termrock::widgets::WizardGate::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WizardGate where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WizardGate::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WizardGate::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WizardGate where T: core::clone::Clone
+pub type termrock::widgets::WizardGate::Owned = T
+pub fn termrock::widgets::WizardGate::clone_into(&self, &mut T)
+pub fn termrock::widgets::WizardGate::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WizardGate where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WizardGate::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WizardGate where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardGate::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WizardGate where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardGate::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WizardGate where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WizardGate::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WizardGate
+pub fn termrock::widgets::WizardGate::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WizardGate
+#[non_exhaustive] pub enum termrock::widgets::WizardPhase
+pub termrock::widgets::WizardPhase::Failed
+pub termrock::widgets::WizardPhase::Review
+pub termrock::widgets::WizardPhase::Step
+impl termrock::widgets::WizardPhase
+pub const fn termrock::widgets::WizardPhase::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::clone(&self) -> termrock::widgets::WizardPhase
+impl core::cmp::Eq for termrock::widgets::WizardPhase
+impl core::cmp::PartialEq for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::eq(&self, &termrock::widgets::WizardPhase) -> bool
+impl core::default::Default for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::default() -> termrock::widgets::WizardPhase
+impl core::fmt::Debug for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::WizardPhase
+impl core::marker::StructuralPartialEq for termrock::widgets::WizardPhase
+impl core::marker::Freeze for termrock::widgets::WizardPhase
+impl core::marker::Send for termrock::widgets::WizardPhase
+impl core::marker::Sync for termrock::widgets::WizardPhase
+impl core::marker::Unpin for termrock::widgets::WizardPhase
+impl core::marker::UnsafeUnpin for termrock::widgets::WizardPhase
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WizardPhase
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WizardPhase
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WizardPhase where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WizardPhase::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WizardPhase where U: core::convert::From<T>
+pub fn termrock::widgets::WizardPhase::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WizardPhase where U: core::convert::Into<T>
+pub type termrock::widgets::WizardPhase::Error = core::convert::Infallible
+pub fn termrock::widgets::WizardPhase::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WizardPhase where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WizardPhase::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WizardPhase::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WizardPhase where T: core::clone::Clone
+pub type termrock::widgets::WizardPhase::Owned = T
+pub fn termrock::widgets::WizardPhase::clone_into(&self, &mut T)
+pub fn termrock::widgets::WizardPhase::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WizardPhase where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WizardPhase::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WizardPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardPhase::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WizardPhase where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardPhase::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WizardPhase where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WizardPhase::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WizardPhase
+pub fn termrock::widgets::WizardPhase::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WizardPhase
+#[non_exhaustive] pub enum termrock::widgets::WizardStepStatus
+pub termrock::widgets::WizardStepStatus::Complete
+pub termrock::widgets::WizardStepStatus::Current
+pub termrock::widgets::WizardStepStatus::Error
+pub termrock::widgets::WizardStepStatus::Skipped
+pub termrock::widgets::WizardStepStatus::Upcoming
+impl termrock::widgets::WizardStepStatus
+pub const fn termrock::widgets::WizardStepStatus::id(self) -> &'static str
+pub const fn termrock::widgets::WizardStepStatus::mark(self, bool) -> &'static str
+impl core::clone::Clone for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::clone(&self) -> termrock::widgets::WizardStepStatus
+impl core::cmp::Eq for termrock::widgets::WizardStepStatus
+impl core::cmp::PartialEq for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::eq(&self, &termrock::widgets::WizardStepStatus) -> bool
+impl core::default::Default for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::default() -> termrock::widgets::WizardStepStatus
+impl core::fmt::Debug for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::WizardStepStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::WizardStepStatus
+impl core::marker::Freeze for termrock::widgets::WizardStepStatus
+impl core::marker::Send for termrock::widgets::WizardStepStatus
+impl core::marker::Sync for termrock::widgets::WizardStepStatus
+impl core::marker::Unpin for termrock::widgets::WizardStepStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::WizardStepStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WizardStepStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WizardStepStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WizardStepStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WizardStepStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WizardStepStatus where U: core::convert::From<T>
+pub fn termrock::widgets::WizardStepStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WizardStepStatus where U: core::convert::Into<T>
+pub type termrock::widgets::WizardStepStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::WizardStepStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WizardStepStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WizardStepStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WizardStepStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WizardStepStatus where T: core::clone::Clone
+pub type termrock::widgets::WizardStepStatus::Owned = T
+pub fn termrock::widgets::WizardStepStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::WizardStepStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WizardStepStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WizardStepStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WizardStepStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardStepStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WizardStepStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardStepStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WizardStepStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WizardStepStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WizardStepStatus
+pub fn termrock::widgets::WizardStepStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WizardStepStatus
 pub struct termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>
@@ -33008,8 +33289,16 @@ pub fn termrock::widgets::FormState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormState<Id>
 pub struct termrock::widgets::FormWizard<'a>
 impl<'a> termrock::widgets::FormWizard<'a>
-pub const fn termrock::widgets::FormWizard<'a>::new(&'a termrock::style::DesignSystem, &'a str) -> Self
-pub fn termrock::widgets::FormWizard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::FormWizardState)
+pub const fn termrock::widgets::FormWizard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::FormWizard<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::FormWizard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FormWizardState)
+pub fn termrock::widgets::FormWizard<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::FormWizardState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::FormWizard<'a>::show_nav(self, bool) -> Self
+pub const fn termrock::widgets::FormWizard<'a>::show_stepper(self, bool) -> Self
+pub const fn termrock::widgets::FormWizard<'a>::title(self, &'a str) -> Self
+pub const fn termrock::widgets::FormWizard<'a>::with_label(&'a termrock::style::DesignSystem, &'a str) -> Self
+impl<'a> termrock::widgets::FormWizard<'a>
+pub const fn termrock::widgets::FormWizard<'a>::labeled(&'a termrock::style::DesignSystem, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::FormWizard<'_>
 pub type &termrock::widgets::FormWizard<'_>::State = termrock::widgets::FormWizardState
 pub fn &termrock::widgets::FormWizard<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -33053,15 +33342,53 @@ pub fn termrock::widgets::FormWizard<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FormWizard<'a>
 pub struct termrock::widgets::FormWizardState
 impl termrock::widgets::FormWizardState
+pub fn termrock::widgets::FormWizardState::apply_async_result(&mut self, u64, termrock::widgets::WizardGate) -> bool
+pub fn termrock::widgets::FormWizardState::back(&mut self) -> termrock::widgets::FormWizardOutcome
+pub const fn termrock::widgets::FormWizardState::body_area(&self) -> ratatui_core::layout::rect::Rect
+pub fn termrock::widgets::FormWizardState::cancel(&mut self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::current_gate(&self) -> termrock::widgets::WizardGate
+pub fn termrock::widgets::FormWizardState::current_step(&self) -> core::option::Option<&termrock::widgets::WizardStep>
+pub fn termrock::widgets::FormWizardState::fail(&mut self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::from_count(usize) -> Self
+pub const fn termrock::widgets::FormWizardState::generation(&self) -> u64
+pub fn termrock::widgets::FormWizardState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::FormWizardOutcome
 pub fn termrock::widgets::FormWizardState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::FormWizardOutcome
-pub const fn termrock::widgets::FormWizardState::new(usize) -> Self
-pub const fn termrock::widgets::FormWizardState::set_step_valid(&mut self, bool)
+pub fn termrock::widgets::FormWizardState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::jump_to(&mut self, usize) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::new(usize) -> Self
+pub fn termrock::widgets::FormWizardState::next(&mut self) -> termrock::widgets::FormWizardOutcome
+pub const fn termrock::widgets::FormWizardState::phase(&self) -> termrock::widgets::WizardPhase
+pub const fn termrock::widgets::FormWizardState::presentation(&self) -> termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardState::presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::FormWizardPresentation
+pub fn termrock::widgets::FormWizardState::progress(&self) -> termrock::widgets::WizardProgress
+pub fn termrock::widgets::FormWizardState::request_async_check(&mut self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::request_focus_field(&self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::restore_progress(&mut self, &termrock::widgets::WizardProgress) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::retry(&mut self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::save_progress(&self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::FormWizardState::set_field_hint(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::FormWizardState::set_focused(&mut self, bool)
+pub fn termrock::widgets::FormWizardState::set_gate(&mut self, termrock::widgets::WizardGate)
+pub fn termrock::widgets::FormWizardState::set_gate_message(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::FormWizardState::set_gates(&mut self, impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::WizardGate>)
+pub fn termrock::widgets::FormWizardState::set_step_valid(&mut self, bool)
+pub fn termrock::widgets::FormWizardState::skip(&mut self) -> termrock::widgets::FormWizardOutcome
+pub fn termrock::widgets::FormWizardState::statuses(&self) -> &[termrock::widgets::WizardStepStatus]
 pub const fn termrock::widgets::FormWizardState::step(&self) -> usize
+pub fn termrock::widgets::FormWizardState::step_count(&self) -> usize
+pub fn termrock::widgets::FormWizardState::steps(&self) -> &[termrock::widgets::WizardStep]
+pub const fn termrock::widgets::FormWizardState::with_allow_skip(self, bool) -> Self
+pub const fn termrock::widgets::FormWizardState::with_linear(self, bool) -> Self
+pub const fn termrock::widgets::FormWizardState::with_review(self, bool) -> Self
+pub fn termrock::widgets::FormWizardState::with_steps(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::WizardStep>) -> Self
 impl core::clone::Clone for termrock::widgets::FormWizardState
 pub fn termrock::widgets::FormWizardState::clone(&self) -> termrock::widgets::FormWizardState
 impl core::cmp::Eq for termrock::widgets::FormWizardState
 impl core::cmp::PartialEq for termrock::widgets::FormWizardState
 pub fn termrock::widgets::FormWizardState::eq(&self, &termrock::widgets::FormWizardState) -> bool
+impl core::default::Default for termrock::widgets::FormWizardState
+pub fn termrock::widgets::FormWizardState::default() -> Self
 impl core::fmt::Debug for termrock::widgets::FormWizardState
 pub fn termrock::widgets::FormWizardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::StructuralPartialEq for termrock::widgets::FormWizardState
@@ -46508,6 +46835,103 @@ pub unsafe fn termrock::widgets::VisibleRange::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::VisibleRange
 pub fn termrock::widgets::VisibleRange::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VisibleRange
+pub struct termrock::widgets::WizardProgress
+pub termrock::widgets::WizardProgress::completed: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::WizardProgress::failure_message: core::option::Option<alloc::string::String>
+pub termrock::widgets::WizardProgress::phase: termrock::widgets::WizardPhase
+pub termrock::widgets::WizardProgress::skipped: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::WizardProgress::step_index: usize
+impl termrock::widgets::WizardProgress
+pub fn termrock::widgets::WizardProgress::start() -> Self
+impl core::clone::Clone for termrock::widgets::WizardProgress
+pub fn termrock::widgets::WizardProgress::clone(&self) -> termrock::widgets::WizardProgress
+impl core::cmp::Eq for termrock::widgets::WizardProgress
+impl core::cmp::PartialEq for termrock::widgets::WizardProgress
+pub fn termrock::widgets::WizardProgress::eq(&self, &termrock::widgets::WizardProgress) -> bool
+impl core::fmt::Debug for termrock::widgets::WizardProgress
+pub fn termrock::widgets::WizardProgress::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::WizardProgress
+impl core::marker::Freeze for termrock::widgets::WizardProgress
+impl core::marker::Send for termrock::widgets::WizardProgress
+impl core::marker::Sync for termrock::widgets::WizardProgress
+impl core::marker::Unpin for termrock::widgets::WizardProgress
+impl core::marker::UnsafeUnpin for termrock::widgets::WizardProgress
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WizardProgress
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WizardProgress
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WizardProgress where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WizardProgress::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WizardProgress where U: core::convert::From<T>
+pub fn termrock::widgets::WizardProgress::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WizardProgress where U: core::convert::Into<T>
+pub type termrock::widgets::WizardProgress::Error = core::convert::Infallible
+pub fn termrock::widgets::WizardProgress::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WizardProgress where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WizardProgress::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WizardProgress::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WizardProgress where T: core::clone::Clone
+pub type termrock::widgets::WizardProgress::Owned = T
+pub fn termrock::widgets::WizardProgress::clone_into(&self, &mut T)
+pub fn termrock::widgets::WizardProgress::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WizardProgress where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WizardProgress::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WizardProgress where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardProgress::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WizardProgress where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardProgress::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WizardProgress where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WizardProgress::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WizardProgress
+pub fn termrock::widgets::WizardProgress::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WizardProgress
+pub struct termrock::widgets::WizardStep
+pub termrock::widgets::WizardStep::description: core::option::Option<alloc::string::String>
+pub termrock::widgets::WizardStep::id: alloc::string::String
+pub termrock::widgets::WizardStep::optional: bool
+pub termrock::widgets::WizardStep::title: alloc::string::String
+impl termrock::widgets::WizardStep
+pub fn termrock::widgets::WizardStep::description(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::WizardStep::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::WizardStep::optional(self, bool) -> Self
+impl core::clone::Clone for termrock::widgets::WizardStep
+pub fn termrock::widgets::WizardStep::clone(&self) -> termrock::widgets::WizardStep
+impl core::cmp::Eq for termrock::widgets::WizardStep
+impl core::cmp::PartialEq for termrock::widgets::WizardStep
+pub fn termrock::widgets::WizardStep::eq(&self, &termrock::widgets::WizardStep) -> bool
+impl core::fmt::Debug for termrock::widgets::WizardStep
+pub fn termrock::widgets::WizardStep::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::WizardStep
+impl core::marker::Freeze for termrock::widgets::WizardStep
+impl core::marker::Send for termrock::widgets::WizardStep
+impl core::marker::Sync for termrock::widgets::WizardStep
+impl core::marker::Unpin for termrock::widgets::WizardStep
+impl core::marker::UnsafeUnpin for termrock::widgets::WizardStep
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::WizardStep
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::WizardStep
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::WizardStep where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::WizardStep::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::WizardStep where U: core::convert::From<T>
+pub fn termrock::widgets::WizardStep::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::WizardStep where U: core::convert::Into<T>
+pub type termrock::widgets::WizardStep::Error = core::convert::Infallible
+pub fn termrock::widgets::WizardStep::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::WizardStep where U: core::convert::TryFrom<T>
+pub type termrock::widgets::WizardStep::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::WizardStep::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::WizardStep where T: core::clone::Clone
+pub type termrock::widgets::WizardStep::Owned = T
+pub fn termrock::widgets::WizardStep::clone_into(&self, &mut T)
+pub fn termrock::widgets::WizardStep::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::WizardStep where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::WizardStep::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::WizardStep where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardStep::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::WizardStep where T: ?core::marker::Sized
+pub fn termrock::widgets::WizardStep::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::WizardStep where T: core::clone::Clone
+pub unsafe fn termrock::widgets::WizardStep::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::WizardStep
+pub fn termrock::widgets::WizardStep::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::WizardStep
 pub struct termrock::widgets::WorkbenchMode<'a, Id>
 pub termrock::widgets::WorkbenchMode::active: bool
 pub termrock::widgets::WorkbenchMode::enabled: bool
@@ -46571,6 +46995,8 @@ pub const termrock::widgets::DROP_MARK_WIDTH: u16
 pub const termrock::widgets::FILE_PICKER_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::FILE_PICKER_OVERLAY_ID: &str
 pub const termrock::widgets::FILE_PICKER_PREVIEW_MIN_HEIGHT: u16
+pub const termrock::widgets::FORM_WIZARD_COMPACT_MAX_HEIGHT: u16
+pub const termrock::widgets::FORM_WIZARD_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::ICON_BUTTON_MIN_HIT: u16
 pub const termrock::widgets::JUMP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBINDING_SEQUENCE_SEP: &str

@@ -45,6 +45,7 @@ mod dialog;
 mod diff;
 mod edit_core;
 mod form;
+mod form_wizard;
 mod hint_bar;
 mod image_surface;
 mod jump_overlay;
@@ -113,9 +114,8 @@ pub use agent_blocks::{
     session_picker_handle_key,
 };
 pub use blocks::{
-    BlockChrome, FormWizard, FormWizardOutcome, FormWizardState, OpsDashboardOutcome,
-    OpsDashboardState, OpsRegion, ResourceBrowserOutcome, ResourceBrowserState,
-    SettingsShellOutcome, SettingsShellState,
+    BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
+    ResourceBrowserState, SettingsShellOutcome, SettingsShellState,
 };
 pub use charts::{BarDatum, BarSeries, MeterSegment, SegmentedMeter, Sparkline};
 pub use code_block::{
@@ -211,6 +211,11 @@ pub use diff::{DiffKind, DiffLine, DiffState, DiffView};
 pub use form::{
     any_dirty, any_touched, collect_errors, first_invalid_id, required_filled, Field, FieldStatus,
     Fieldset, Form, FormField, FormFieldRegion, FormLayout, FormOutcome, FormSection, FormState,
+};
+pub use form_wizard::{
+    FORM_WIZARD_COMPACT_MAX_HEIGHT, FORM_WIZARD_NARROW_MAX_WIDTH, FormWizard, FormWizardOutcome,
+    FormWizardPresentation, FormWizardState, StepChangeReason, WizardGate, WizardPhase,
+    WizardProgress, WizardStep, WizardStepStatus,
 };
 pub use hint_bar::{
     Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,

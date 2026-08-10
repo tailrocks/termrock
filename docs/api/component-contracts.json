@@ -657,7 +657,7 @@
   },
   "FormWizard": {
     "keyboard": "covered",
-    "mouse": "not-applicable",
+    "mouse": "covered",
     "focus": "covered",
     "nonColor": "covered",
     "unicode": "covered",
