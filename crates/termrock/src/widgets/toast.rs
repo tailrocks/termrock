@@ -11,8 +11,8 @@
 //!
 //! **Focus law.** Toasts are **never focusable**. Actions are activated via
 //! host hotkeys / pointer hits only; keyboard focus stays on the primary UI.
-//! Missed or expired items can be archived for a future
-//! **NotificationCenter** surface (`ToastArchive` / [`ToastQueue::drain_missed`]).
+//! Missed or expired items archive to [`ToastQueue::drain_missed`] for
+//! [`super::NotificationCenter`] (`ToastArchive`).
 //!
 //! **vs Alert/Callout.** Inline layout feedback. Toast is transient overlay.
 //! **vs AlertDialog.** Modal risk. Toast never traps.

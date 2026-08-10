@@ -96,7 +96,8 @@ use termrock::{
         example_command_preview, example_file_preview, example_session_preview,
         example_symbol_preview,
         ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
-        TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
+        TimelineEvent, Toast, NotificationCenter, NotificationCenterState, NotificationRecipe,
+        example_notifications, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
     },
@@ -2383,6 +2384,42 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             4,
             toast_persistent_story,
+        ),
+        Story::new(
+            "notification-center/drawer",
+            "NotificationCenter drawer",
+            "NotificationCenter",
+            "Right-edge drawer recipe with unread, kinds, progress, undo.",
+            56,
+            18,
+            notification_center_drawer_story,
+        ),
+        Story::new(
+            "notification-center/full-page",
+            "NotificationCenter full page",
+            "NotificationCenter",
+            "Full-page recipe for dense history browsing.",
+            64,
+            18,
+            notification_center_full_story,
+        ),
+        Story::new(
+            "notification-center/filtered",
+            "NotificationCenter unread filter",
+            "NotificationCenter",
+            "Unread filter applied to history list.",
+            48,
+            14,
+            notification_center_filter_story,
+        ),
+        Story::new(
+            "notification-center/empty",
+            "NotificationCenter empty",
+            "NotificationCenter",
+            "Empty state after clear-all.",
+            40,
+            12,
+            notification_center_empty_story,
         ),
         Story::new(
             "backdrop/basic",
@@ -11519,6 +11556,44 @@ fn toast_persistent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         area,
     );
 }
+
+fn notification_center_drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NotificationCenterState::new();
+    state.replace_items(example_notifications(1_700_000_000));
+    state.set_recipe(NotificationRecipe::Drawer);
+    let _ = state.open();
+    state.set_focused(true);
+    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn notification_center_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NotificationCenterState::new();
+    state.replace_items(example_notifications(1_700_000_000));
+    state.set_recipe(NotificationRecipe::FullPage);
+    let _ = state.open();
+    state.set_focused(true);
+    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn notification_center_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::NotificationFilter;
+    let mut state = NotificationCenterState::new();
+    state.replace_items(example_notifications(1_700_000_000));
+    state.set_recipe(NotificationRecipe::FullPage);
+    let _ = state.open();
+    let _ = state.set_filter(NotificationFilter::Unread);
+    state.set_focused(true);
+    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn notification_center_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = NotificationCenterState::new();
+    let _ = state.open();
+    state.set_recipe(NotificationRecipe::Drawer);
+    state.set_focused(true);
+    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
         Style::new().dim()

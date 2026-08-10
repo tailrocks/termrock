@@ -58,7 +58,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.91s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.42s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -22800,6 +22800,171 @@ pub unsafe fn termrock::widgets::NavigationListOutcome<Id>::clone_to_uninit(&sel
 impl<T> core::convert::From<T> for termrock::widgets::NavigationListOutcome<Id>
 pub fn termrock::widgets::NavigationListOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::NavigationListOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::NotificationCenterOutcome
+pub termrock::widgets::NotificationCenterOutcome::ActionActivated
+pub termrock::widgets::NotificationCenterOutcome::ActionActivated::action: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::ActionActivated::id: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::ClearAll
+pub termrock::widgets::NotificationCenterOutcome::ClearAll::count: usize
+pub termrock::widgets::NotificationCenterOutcome::Closed
+pub termrock::widgets::NotificationCenterOutcome::Deduplicated
+pub termrock::widgets::NotificationCenterOutcome::Deduplicated::id: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::Dismissed
+pub termrock::widgets::NotificationCenterOutcome::Dismissed::id: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::FilterChanged
+pub termrock::widgets::NotificationCenterOutcome::Ignored
+pub termrock::widgets::NotificationCenterOutcome::Ingested
+pub termrock::widgets::NotificationCenterOutcome::Ingested::count: usize
+pub termrock::widgets::NotificationCenterOutcome::MarkedAllRead
+pub termrock::widgets::NotificationCenterOutcome::MarkedAllRead::count: usize
+pub termrock::widgets::NotificationCenterOutcome::MarkedRead
+pub termrock::widgets::NotificationCenterOutcome::MarkedRead::id: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::OpenItem
+pub termrock::widgets::NotificationCenterOutcome::OpenItem::id: alloc::string::String
+pub termrock::widgets::NotificationCenterOutcome::Opened
+pub termrock::widgets::NotificationCenterOutcome::SelectionChanged
+pub termrock::widgets::NotificationCenterOutcome::SelectionChanged::id: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterOutcome::clone(&self) -> termrock::widgets::NotificationCenterOutcome
+impl core::cmp::Eq for termrock::widgets::NotificationCenterOutcome
+impl core::cmp::PartialEq for termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterOutcome::eq(&self, &termrock::widgets::NotificationCenterOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationCenterOutcome
+impl core::marker::Freeze for termrock::widgets::NotificationCenterOutcome
+impl core::marker::Send for termrock::widgets::NotificationCenterOutcome
+impl core::marker::Sync for termrock::widgets::NotificationCenterOutcome
+impl core::marker::Unpin for termrock::widgets::NotificationCenterOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationCenterOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationCenterOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationCenterOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationCenterOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationCenterOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationCenterOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationCenterOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationCenterOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationCenterOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationCenterOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationCenterOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationCenterOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationCenterOutcome where T: core::clone::Clone
+pub type termrock::widgets::NotificationCenterOutcome::Owned = T
+pub fn termrock::widgets::NotificationCenterOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationCenterOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationCenterOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationCenterOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationCenterOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationCenterOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationCenterOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationCenterOutcome
+#[non_exhaustive] pub enum termrock::widgets::NotificationFilter
+pub termrock::widgets::NotificationFilter::All
+pub termrock::widgets::NotificationFilter::Group(alloc::string::String)
+pub termrock::widgets::NotificationFilter::Kind(termrock::widgets::ToastKind)
+pub termrock::widgets::NotificationFilter::Query(alloc::string::String)
+pub termrock::widgets::NotificationFilter::Source(alloc::string::String)
+pub termrock::widgets::NotificationFilter::Unread
+impl termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::id(&self) -> &'static str
+impl core::clone::Clone for termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::clone(&self) -> termrock::widgets::NotificationFilter
+impl core::cmp::Eq for termrock::widgets::NotificationFilter
+impl core::cmp::PartialEq for termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::eq(&self, &termrock::widgets::NotificationFilter) -> bool
+impl core::default::Default for termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::default() -> termrock::widgets::NotificationFilter
+impl core::fmt::Debug for termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationFilter
+impl core::marker::Freeze for termrock::widgets::NotificationFilter
+impl core::marker::Send for termrock::widgets::NotificationFilter
+impl core::marker::Sync for termrock::widgets::NotificationFilter
+impl core::marker::Unpin for termrock::widgets::NotificationFilter
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationFilter
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationFilter
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationFilter
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationFilter where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationFilter::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationFilter where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationFilter::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationFilter where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationFilter::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationFilter::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationFilter where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationFilter::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationFilter::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationFilter where T: core::clone::Clone
+pub type termrock::widgets::NotificationFilter::Owned = T
+pub fn termrock::widgets::NotificationFilter::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationFilter::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationFilter where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationFilter::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationFilter where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationFilter::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationFilter where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationFilter::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationFilter where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationFilter::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationFilter::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationFilter
+#[non_exhaustive] pub enum termrock::widgets::NotificationRecipe
+pub termrock::widgets::NotificationRecipe::Drawer
+pub termrock::widgets::NotificationRecipe::FullPage
+impl termrock::widgets::NotificationRecipe
+pub const fn termrock::widgets::NotificationRecipe::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::clone(&self) -> termrock::widgets::NotificationRecipe
+impl core::cmp::Eq for termrock::widgets::NotificationRecipe
+impl core::cmp::PartialEq for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::eq(&self, &termrock::widgets::NotificationRecipe) -> bool
+impl core::default::Default for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::default() -> termrock::widgets::NotificationRecipe
+impl core::fmt::Debug for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::NotificationRecipe
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationRecipe
+impl core::marker::Freeze for termrock::widgets::NotificationRecipe
+impl core::marker::Send for termrock::widgets::NotificationRecipe
+impl core::marker::Sync for termrock::widgets::NotificationRecipe
+impl core::marker::Unpin for termrock::widgets::NotificationRecipe
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationRecipe
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationRecipe
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationRecipe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationRecipe where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationRecipe::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationRecipe where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationRecipe::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationRecipe where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationRecipe::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationRecipe::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationRecipe where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationRecipe::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationRecipe::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationRecipe where T: core::clone::Clone
+pub type termrock::widgets::NotificationRecipe::Owned = T
+pub fn termrock::widgets::NotificationRecipe::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationRecipe::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationRecipe where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationRecipe::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationRecipe::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationRecipe where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationRecipe::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationRecipe where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationRecipe::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationRecipe::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationRecipe
 #[non_exhaustive] pub enum termrock::widgets::NumberInputOutcome
 pub termrock::widgets::NumberInputOutcome::Cancelled
 pub termrock::widgets::NumberInputOutcome::Changed
@@ -43304,6 +43469,254 @@ pub unsafe fn termrock::widgets::NavigationListState<Id>::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::NavigationListState<Id>
 pub fn termrock::widgets::NavigationListState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::NavigationListState<Id>
+pub struct termrock::widgets::NotificationCenter<'a>
+impl<'a> termrock::widgets::NotificationCenter<'a>
+pub const fn termrock::widgets::NotificationCenter<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::NotificationCenter<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::NotificationCenter<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::NotificationCenter<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::NotificationCenterState)
+pub fn termrock::widgets::NotificationCenter<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::NotificationCenterState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::NotificationCenter<'_>
+pub type &termrock::widgets::NotificationCenter<'_>::State = termrock::widgets::NotificationCenterState
+pub fn &termrock::widgets::NotificationCenter<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::NotificationCenter<'_>
+pub type termrock::widgets::NotificationCenter<'_>::State = termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenter<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::NotificationCenter<'a>
+pub fn termrock::widgets::NotificationCenter<'a>::clone(&self) -> termrock::widgets::NotificationCenter<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::NotificationCenter<'a>
+pub fn termrock::widgets::NotificationCenter<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::marker::Send for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::marker::Sync for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationCenter<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationCenter<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationCenter<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationCenter<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationCenter<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationCenter<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationCenter<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationCenter<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationCenter<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationCenter<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationCenter<'a> where T: core::clone::Clone
+pub type termrock::widgets::NotificationCenter<'a>::Owned = T
+pub fn termrock::widgets::NotificationCenter<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationCenter<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationCenter<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenter<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationCenter<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenter<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationCenter<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenter<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationCenter<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationCenter<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationCenter<'a>
+pub fn termrock::widgets::NotificationCenter<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationCenter<'a>
+pub struct termrock::widgets::NotificationCenterSlots
+pub termrock::widgets::NotificationCenterSlots::filter: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NotificationCenterSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NotificationCenterSlots::header: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NotificationCenterSlots::list: ratatui_core::layout::rect::Rect
+pub termrock::widgets::NotificationCenterSlots::root: ratatui_core::layout::rect::Rect
+impl termrock::widgets::NotificationCenterSlots
+pub const fn termrock::widgets::NotificationCenterSlots::empty() -> Self
+impl core::clone::Clone for termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterSlots::clone(&self) -> termrock::widgets::NotificationCenterSlots
+impl core::cmp::Eq for termrock::widgets::NotificationCenterSlots
+impl core::cmp::PartialEq for termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterSlots::eq(&self, &termrock::widgets::NotificationCenterSlots) -> bool
+impl core::default::Default for termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterSlots::default() -> termrock::widgets::NotificationCenterSlots
+impl core::fmt::Debug for termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::NotificationCenterSlots
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationCenterSlots
+impl core::marker::Freeze for termrock::widgets::NotificationCenterSlots
+impl core::marker::Send for termrock::widgets::NotificationCenterSlots
+impl core::marker::Sync for termrock::widgets::NotificationCenterSlots
+impl core::marker::Unpin for termrock::widgets::NotificationCenterSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationCenterSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationCenterSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationCenterSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationCenterSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationCenterSlots where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationCenterSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationCenterSlots where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationCenterSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationCenterSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationCenterSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationCenterSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationCenterSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationCenterSlots where T: core::clone::Clone
+pub type termrock::widgets::NotificationCenterSlots::Owned = T
+pub fn termrock::widgets::NotificationCenterSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationCenterSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationCenterSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationCenterSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationCenterSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationCenterSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationCenterSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationCenterSlots
+pub struct termrock::widgets::NotificationCenterState
+impl termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::clear_all(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::close(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> (termrock::widgets::NotificationCenterOutcome, termrock::interaction::OverlayOutcome<F>)
+pub fn termrock::widgets::NotificationCenterState::cursor(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::NotificationCenterState::cycle_filter(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::dismiss(&mut self, &str) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::filter(&self) -> &termrock::widgets::NotificationFilter
+pub fn termrock::widgets::NotificationCenterState::filtered(&self) -> alloc::vec::Vec<&termrock::widgets::NotificationItem>
+pub fn termrock::widgets::NotificationCenterState::filtered_indices(&self) -> alloc::vec::Vec<usize>
+pub fn termrock::widgets::NotificationCenterState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::ingest_archives(&mut self, impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::ToastArchive>, u64) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::ingest_from_toast_queue(&mut self, &mut termrock::widgets::ToastQueue, u64) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::ingest_item(&mut self, termrock::widgets::NotificationItem) -> termrock::widgets::NotificationCenterOutcome
+pub const fn termrock::widgets::NotificationCenterState::is_focused(&self) -> bool
+pub const fn termrock::widgets::NotificationCenterState::is_open(&self) -> bool
+pub fn termrock::widgets::NotificationCenterState::items(&self) -> &[termrock::widgets::NotificationItem]
+pub fn termrock::widgets::NotificationCenterState::items_mut(&mut self) -> &mut alloc::vec::Vec<termrock::widgets::NotificationItem>
+pub fn termrock::widgets::NotificationCenterState::mark_all_read(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::mark_read(&mut self, &str) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::move_cursor(&mut self, isize) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::new() -> Self
+pub fn termrock::widgets::NotificationCenterState::open(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::open_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>, ratatui_core::layout::rect::Rect, core::option::Option<F>) -> termrock::interaction::OverlayOutcome<F>
+pub const fn termrock::widgets::NotificationCenterState::recipe(&self) -> termrock::widgets::NotificationRecipe
+pub fn termrock::widgets::NotificationCenterState::replace_items(&mut self, alloc::vec::Vec<termrock::widgets::NotificationItem>)
+pub fn termrock::widgets::NotificationCenterState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::NotificationCenterState::set_ascii(&mut self, bool)
+pub fn termrock::widgets::NotificationCenterState::set_capacity(&mut self, usize)
+pub fn termrock::widgets::NotificationCenterState::set_filter(&mut self, termrock::widgets::NotificationFilter) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::set_focused(&mut self, bool)
+pub fn termrock::widgets::NotificationCenterState::set_recipe(&mut self, termrock::widgets::NotificationRecipe)
+pub const fn termrock::widgets::NotificationCenterState::slots(&self) -> termrock::widgets::NotificationCenterSlots
+pub fn termrock::widgets::NotificationCenterState::status_line(&self) -> alloc::string::String
+pub fn termrock::widgets::NotificationCenterState::sync_with_stack<F>(&mut self, &termrock::interaction::OverlayStack<F>)
+pub fn termrock::widgets::NotificationCenterState::toggle(&mut self) -> termrock::widgets::NotificationCenterOutcome
+pub fn termrock::widgets::NotificationCenterState::unread_count(&self) -> usize
+impl core::clone::Clone for termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::clone(&self) -> termrock::widgets::NotificationCenterState
+impl core::cmp::Eq for termrock::widgets::NotificationCenterState
+impl core::cmp::PartialEq for termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::eq(&self, &termrock::widgets::NotificationCenterState) -> bool
+impl core::default::Default for termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationCenterState
+impl core::marker::Freeze for termrock::widgets::NotificationCenterState
+impl core::marker::Send for termrock::widgets::NotificationCenterState
+impl core::marker::Sync for termrock::widgets::NotificationCenterState
+impl core::marker::Unpin for termrock::widgets::NotificationCenterState
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationCenterState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationCenterState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationCenterState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationCenterState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationCenterState where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationCenterState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationCenterState where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationCenterState::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationCenterState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationCenterState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationCenterState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationCenterState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationCenterState where T: core::clone::Clone
+pub type termrock::widgets::NotificationCenterState::Owned = T
+pub fn termrock::widgets::NotificationCenterState::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationCenterState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationCenterState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationCenterState where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationCenterState where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationCenterState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationCenterState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationCenterState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationCenterState
+pub fn termrock::widgets::NotificationCenterState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationCenterState
+pub struct termrock::widgets::NotificationItem
+pub termrock::widgets::NotificationItem::actions: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub termrock::widgets::NotificationItem::announcement: alloc::string::String
+pub termrock::widgets::NotificationItem::coalesce_count: u32
+pub termrock::widgets::NotificationItem::created_at_secs: u64
+pub termrock::widgets::NotificationItem::dedup_key: core::option::Option<alloc::string::String>
+pub termrock::widgets::NotificationItem::group_id: core::option::Option<alloc::string::String>
+pub termrock::widgets::NotificationItem::id: alloc::string::String
+pub termrock::widgets::NotificationItem::kind: termrock::widgets::ToastKind
+pub termrock::widgets::NotificationItem::message: alloc::string::String
+pub termrock::widgets::NotificationItem::priority: termrock::widgets::ToastPriority
+pub termrock::widgets::NotificationItem::progress: core::option::Option<u8>
+pub termrock::widgets::NotificationItem::source: core::option::Option<alloc::string::String>
+pub termrock::widgets::NotificationItem::title: core::option::Option<alloc::string::String>
+pub termrock::widgets::NotificationItem::unread: bool
+impl termrock::widgets::NotificationItem
+pub fn termrock::widgets::NotificationItem::action(self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::NotificationItem::at(self, u64) -> Self
+pub fn termrock::widgets::NotificationItem::dedup_key(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NotificationItem::from_archive(termrock::widgets::ToastArchive, u64) -> Self
+pub fn termrock::widgets::NotificationItem::from_spec(termrock::widgets::ToastSpec, u64) -> Self
+pub fn termrock::widgets::NotificationItem::group(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NotificationItem::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, termrock::widgets::ToastKind) -> Self
+pub const fn termrock::widgets::NotificationItem::progress(self, u8) -> Self
+pub fn termrock::widgets::NotificationItem::source(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::NotificationItem::title(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::NotificationItem::unread(self, bool) -> Self
+impl core::clone::Clone for termrock::widgets::NotificationItem
+pub fn termrock::widgets::NotificationItem::clone(&self) -> termrock::widgets::NotificationItem
+impl core::cmp::Eq for termrock::widgets::NotificationItem
+impl core::cmp::PartialEq for termrock::widgets::NotificationItem
+pub fn termrock::widgets::NotificationItem::eq(&self, &termrock::widgets::NotificationItem) -> bool
+impl core::fmt::Debug for termrock::widgets::NotificationItem
+pub fn termrock::widgets::NotificationItem::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::NotificationItem
+impl core::marker::Freeze for termrock::widgets::NotificationItem
+impl core::marker::Send for termrock::widgets::NotificationItem
+impl core::marker::Sync for termrock::widgets::NotificationItem
+impl core::marker::Unpin for termrock::widgets::NotificationItem
+impl core::marker::UnsafeUnpin for termrock::widgets::NotificationItem
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::NotificationItem
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::NotificationItem
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::NotificationItem where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::NotificationItem::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::NotificationItem where U: core::convert::From<T>
+pub fn termrock::widgets::NotificationItem::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::NotificationItem where U: core::convert::Into<T>
+pub type termrock::widgets::NotificationItem::Error = core::convert::Infallible
+pub fn termrock::widgets::NotificationItem::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::NotificationItem where U: core::convert::TryFrom<T>
+pub type termrock::widgets::NotificationItem::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::NotificationItem::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::NotificationItem where T: core::clone::Clone
+pub type termrock::widgets::NotificationItem::Owned = T
+pub fn termrock::widgets::NotificationItem::clone_into(&self, &mut T)
+pub fn termrock::widgets::NotificationItem::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::NotificationItem where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::NotificationItem::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::NotificationItem where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationItem::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::NotificationItem where T: ?core::marker::Sized
+pub fn termrock::widgets::NotificationItem::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::NotificationItem where T: core::clone::Clone
+pub unsafe fn termrock::widgets::NotificationItem::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::NotificationItem
+pub fn termrock::widgets::NotificationItem::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::NotificationItem
 pub struct termrock::widgets::NumberConstraints
 pub termrock::widgets::NumberConstraints::max: core::option::Option<f64>
 pub termrock::widgets::NumberConstraints::min: core::option::Option<f64>
@@ -55304,6 +55717,9 @@ pub const termrock::widgets::MENU_PROMOTE_MAX_HEIGHT: u16
 pub const termrock::widgets::MENU_PROMOTE_MAX_ITEMS: usize
 pub const termrock::widgets::MENU_PROMOTE_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_PROMOTE_MIN_DEPTH: usize
+pub const termrock::widgets::NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize
+pub const termrock::widgets::NOTIFICATION_CENTER_HINT: &str
+pub const termrock::widgets::NOTIFICATION_CENTER_OVERLAY_ID: &str
 pub const termrock::widgets::PAGINATION_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::PAGINATION_MINIMAL_MAX_WIDTH: u16
 pub const termrock::widgets::PERMISSION_OVERLAY_ID: &str
@@ -55398,6 +55814,7 @@ pub fn termrock::widgets::dismiss_history_picker_overlay<FocusId: core::clone::C
 pub fn termrock::widgets::dismiss_jump_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_keyboard_help_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_menu_bar_overlays<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::dismiss_notification_center_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_popover_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::dismiss_preview_card_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -55416,6 +55833,7 @@ pub fn termrock::widgets::example_file_preview<'a>() -> (termrock::widgets::Prev
 pub fn termrock::widgets::example_help_entries(&termrock::style::DesignSystem) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::example_help_keymap() -> termrock::keymap::Keymap<termrock::widgets::DemoHelpAction>
 pub fn termrock::widgets::example_history_entries() -> alloc::vec::Vec<termrock::widgets::HistoryEntry<&'static str>>
+pub fn termrock::widgets::example_notifications(u64) -> alloc::vec::Vec<termrock::widgets::NotificationItem>
 pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock::widgets::StepItem>
 pub fn termrock::widgets::example_project_tree() -> alloc::vec::Vec<termrock::widgets::TreeNavNode<&'static str>>
 pub fn termrock::widgets::example_quick_open_files() -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<&'static str>>
@@ -55493,6 +55911,8 @@ pub fn termrock::widgets::open_keyboard_help_overlay<FocusId: core::clone::Clone
 pub fn termrock::widgets::open_menu_bar_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_menu_bar_submenu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, usize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_menu_submenu_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, usize, bool, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_notification_center_drawer<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, u16, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
+pub fn termrock::widgets::open_notification_center_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::NotificationRecipe, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_picker_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::PickerSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_configured<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, core::option::Option<FocusId>, termrock::widgets::PopoverModality, core::option::Option<termrock::interaction::OverlayId>, core::option::Option<alloc::string::String>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_popover_modal_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>

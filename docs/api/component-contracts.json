@@ -511,6 +511,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "NotificationCenter": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "TokenMeter": {
     "keyboard": "not-applicable",
     "mouse": "not-applicable",

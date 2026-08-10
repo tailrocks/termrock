@@ -1,0 +1,67 @@
+---
+title: NotificationCenter
+description: 'Persistent notification history with unread, filters, actions, drawer/full-page recipes; host-owned persistence; Toast archive ingest.'
+---
+
+## Previews
+
+### `notification-center/drawer`
+
+NotificationCenter drawer
+
+![NotificationCenter — drawer](/component-previews/notification-center-drawer.svg)
+
+### `notification-center/full-page`
+
+NotificationCenter full page
+
+![NotificationCenter — full page](/component-previews/notification-center-full-page.svg)
+
+### `notification-center/filtered`
+
+NotificationCenter unread filter
+
+![NotificationCenter — filtered](/component-previews/notification-center-filtered.svg)
+
+### `notification-center/empty`
+
+NotificationCenter empty
+
+![NotificationCenter — empty](/component-previews/notification-center-empty.svg)
+
+## Usage
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{
+    NotificationCenter, NotificationCenterState, NotificationRecipe, example_notifications,
+};
+
+let system = DesignSystem::default();
+let mut state = NotificationCenterState::new();
+state.replace_items(example_notifications(now_secs));
+// From toast: state.ingest_from_toast_queue(&mut queue, now_secs);
+state.set_recipe(NotificationRecipe::Drawer);
+let _ = state.open();
+NotificationCenter::new(&system).paint(area, buf, &mut state);
+// Persist: host saves state.items()
+```
+
+## Keys
+
+`j`/`k` move · `enter` open · `u` mark read · `U` all read · `x` dismiss · `c` clear · `/` filter · `esc` close · `1` first action
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered (when open) |
+| Non-color cues | covered (unread glyph, kind glyphs) |
+| Unicode | covered |
+| Narrow terminal | covered (drawer width clamp) |
+
+## Stories
+
+- `notification-center/drawer`, `full-page`, `filtered`, `empty`

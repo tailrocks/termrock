@@ -660,6 +660,23 @@ ToastStack::new(&system).paint(area, buf, &mut queue);
 // missed: queue.drain_missed() → NotificationCenter
 let _ = (toast, TOAST_DEFAULT_TTL, ToastLifetime::default_ttl());`,
   },
+  NotificationCenter: {
+    description:
+      'Persistent notification history: unread, filter/group, timestamps, actions, progress, source, dismiss/clear-all; drawer or full-page; host-owned persistence; ingests ToastArchive without duplicating models.',
+    primaryStory: 'notification-center/drawer',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    NotificationCenter, NotificationCenterState, NotificationRecipe, example_notifications,
+};
+
+let system = DesignSystem::default();
+let mut state = NotificationCenterState::new();
+state.replace_items(example_notifications(now_secs)); // or ingest_from_toast_queue
+state.set_recipe(NotificationRecipe::Drawer);
+let _ = state.open();
+NotificationCenter::new(&system).paint(area, buf, &mut state);
+// Host persists: state.items().to_vec()`,
+  },
   Tree: {
     description: 'A navigable flattened hierarchy with disclosure and multi-select support.',
     primaryStory: 'tree/navigation',

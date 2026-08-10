@@ -188,6 +188,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0172 | `v0.13.0` | [PreviewCard](migrations/0172-v0.13.0-preview-card.md) |
 | 0173 | `v0.13.0` | [Alert and Callout](migrations/0173-v0.13.0-alert-callout.md) |
 | 0174 | `v0.13.0` | [Toast](migrations/0174-v0.13.0-toast.md) |
+| 0175 | `v0.13.0` | [NotificationCenter](migrations/0175-v0.13.0-notification-center.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

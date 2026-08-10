@@ -99,6 +99,7 @@ mod file_picker;
 mod date_time_picker;
 mod keybinding_recorder;
 mod theme_picker;
+mod notification_center;
 mod toast;
 mod transcript;
 mod tree;
@@ -511,7 +512,14 @@ pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
     system_from_preset_id, theme_from_preset_id,
 };
+pub use notification_center::{
+    NOTIFICATION_CENTER_DEFAULT_CAPACITY, NOTIFICATION_CENTER_HINT, NOTIFICATION_CENTER_OVERLAY_ID,
+    NotificationCenter, NotificationCenterOutcome, NotificationCenterSlots, NotificationCenterState,
+    NotificationFilter, NotificationItem, NotificationRecipe, dismiss_notification_center_overlay,
+    example_notifications, open_notification_center_drawer, open_notification_center_overlay,
+};
 pub use toast::{
+
     Anchor, Severity, TOAST_DEFAULT_H_MARGIN, TOAST_DEFAULT_MAX_VISIBLE, TOAST_DEFAULT_TTL,
     TOAST_DEFAULT_V_MARGIN, TOAST_STACK_GAP, Toast, ToastArchive, ToastArchiveReason, ToastKind,
     ToastLifetime, ToastOutcome, ToastPriority, ToastQueue, ToastSpec, ToastStack, ToastState,
