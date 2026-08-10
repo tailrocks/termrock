@@ -33,7 +33,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    interaction::{NavigationMove, PageMove, UiIntent},
+    interaction::UiIntent,
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::diff::{
@@ -1573,7 +1573,7 @@ impl<'a> DiffReview<'a> {
 
         // Decision marks injected into title
         let title = self.title.unwrap_or("review");
-        let mut view = DiffView::new(self.lines, self.system)
+        let view = DiffView::new(self.lines, self.system)
             .hunks(self.hunks)
             .files(self.diff_files)
             .focused(self.focused && state.region == DiffReviewRegion::Diff)
