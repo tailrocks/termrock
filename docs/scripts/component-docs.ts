@@ -901,12 +901,32 @@ EmptyState::new("No results", &system)
 // or: example_empty_search(&system)`,
   },
   ErrorView: {
-    description: 'Centered failure surface with danger marker.',
+    description:
+      'Structured recoverable failure (alias ErrorState): summary, explanation, collapsed technical details, source, retry/alternative/copy/report recovery, retry safety, work-preserved cues; recipes inline/pane/dialog/full-screen; kinds validation/network/permission/not-found/conflict/crash/unsupported.',
     primaryStory: 'error-view/basic',
-    usage: `use termrock::{Theme, widgets::ErrorView};
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{ErrorState, ErrorKind, Recovery, RecoveryAction, RetrySafety};
 
-let theme = Theme::default();
-let error = ErrorView::new("Failed", &theme).detail("Timed out");`,
+let system = DesignSystem::default();
+ErrorState::new("Request failed", &system)
+    .kind(ErrorKind::Network)
+    .explanation("Could not reach the API")
+    .technical("timeout after 30s")
+    .recovery(
+        Recovery::none()
+            .with_retry(RecoveryAction::with_shortcut("Retry", "r"))
+            .with_retry_safety(RetrySafety::Safe)
+            .with_copy_diagnostics(true),
+    )
+    .paint(area, buf);
+// ErrorView is a type alias for ErrorState`,
+  },
+  ErrorState: {
+    description:
+      'Canonical structured recoverable failure surface (see ErrorView). Recovery bundle, detail disclosure, recipes.',
+    primaryStory: 'error-state/network',
+    usage: `use termrock::widgets::{ErrorState, example_error_network};
+example_error_network(&system).paint(area, buf);`,
   },
   JumpOverlay: {
     description: 'Letter-badge jump navigation over registered rectangles.',

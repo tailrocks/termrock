@@ -61,6 +61,7 @@ mod menu_nav;
 mod drawer;
 mod dropdown_menu;
 mod empty_state;
+mod error_state;
 mod fullscreen_viewer;
 mod preview_card;
 mod popover;
@@ -572,7 +573,14 @@ pub use empty_state::{
     example_empty_logs, example_empty_permission, example_empty_projects, example_empty_search,
     example_empty_sessions, example_empty_table,
 };
-pub use view_state::{Banner, ErrorView, LoadingView};
+pub use error_state::{
+    ERROR_STATE_COMPACT_MAX_HEIGHT, ERROR_STATE_INLINE_MAX_WIDTH, ErrorFocus, ErrorKind,
+    ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, ErrorView, Recovery,
+    RecoveryAction, RetrySafety, example_error_conflict, example_error_crash,
+    example_error_dialog, example_error_network, example_error_not_found,
+    example_error_permission, example_error_unsupported, example_error_validation,
+};
+pub use view_state::{Banner, LoadingView};
 pub use viewport::Viewport;
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,

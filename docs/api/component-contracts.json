@@ -287,10 +287,18 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "ErrorState": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "ErrorView": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
     "nonColor": "covered",
     "unicode": "covered",
     "narrowTerminal": "covered"
@@ -688,6 +696,14 @@
     "narrowTerminal": "covered"
   },
   "RangeSlider": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "Recovery": {
     "keyboard": "covered",
     "mouse": "covered",
     "focus": "covered",

@@ -43,7 +43,10 @@ use termrock::{
         DiffState, DiffView, Drawer, EmptyState, EmptyKind, EmptyAction, EmptyDensity,
         example_empty_table, example_empty_logs, example_empty_sessions, example_empty_projects,
         example_empty_search, example_empty_permission,
-        ErrorView, Field, Fieldset, Form, FormState,
+        ErrorView, ErrorState, ErrorKind, ErrorRecipe, Recovery, RecoveryAction, RetrySafety,
+        example_error_network, example_error_validation, example_error_permission,
+        example_error_crash, example_error_dialog, example_error_unsupported,
+        Field, Fieldset, Form, FormState,
         FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
         HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
         InspectorField, JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget,
@@ -2792,10 +2795,73 @@ pub(crate) fn stories() -> Vec<Story> {
             "error-view/basic",
             "Error view",
             "ErrorView",
-            "Centered failure surface with danger glyph.",
-            36,
-            5,
+            "Network failure with recovery (ErrorState / ErrorView).",
+            48,
+            12,
             error_view,
+        ),
+        Story::new(
+            "error-state/network",
+            "ErrorState network",
+            "ErrorState",
+            "Network error: summary, safety, retry, copy diagnostics.",
+            48,
+            12,
+            error_state_network_story,
+        ),
+        Story::new(
+            "error-state/validation",
+            "ErrorState validation",
+            "ErrorState",
+            "Validation failure: work preserved, alternative edit.",
+            48,
+            10,
+            error_state_validation_story,
+        ),
+        Story::new(
+            "error-state/permission",
+            "ErrorState permission",
+            "ErrorState",
+            "Permission denied with report/copy recovery.",
+            48,
+            11,
+            error_state_permission_story,
+        ),
+        Story::new(
+            "error-state/details",
+            "ErrorState technical details",
+            "ErrorState",
+            "Technical details expanded (collapsed by default).",
+            50,
+            12,
+            error_state_details_story,
+        ),
+        Story::new(
+            "error-state/inline",
+            "ErrorState inline",
+            "ErrorState",
+            "Inline recipe for small panes.",
+            36,
+            2,
+            error_state_inline_story,
+        ),
+        Story::new(
+            "error-state/dialog",
+            "ErrorState dialog",
+            "ErrorState",
+            "Dialog-sized recoverable error.",
+            44,
+            12,
+            error_state_dialog_story,
+        ),
+        Story::new(
+            "error-state/fullscreen",
+            "ErrorState full-screen",
+            "ErrorState",
+            "Full-screen crash recovery surface.",
+            56,
+            16,
+            error_state_fullscreen_story,
         ),
         Story::new(
             "banner/basic",
@@ -5290,18 +5356,18 @@ pub(crate) fn stories() -> Vec<Story> {
             "error-view/narrow",
             "Narrow ErrorView",
             "ErrorView",
-            "Narrow-terminal geometry for ErrorView (18 cols).",
+            "Narrow-terminal geometry contracts toward inline error.",
             18,
             5,
-            error_view,
+            error_view_narrow_story,
         ),
         Story::new(
             "error-view/unicode",
             "Unicode ErrorView",
             "ErrorView",
             "Unicode-safe paint path for ErrorView (CJK/emoji-capable layout).",
-            36,
-            5,
+            40,
+            8,
             error_view_unicode_story,
         ),
         Story::new(
@@ -12119,10 +12185,45 @@ fn loading_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn error_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(
-        ErrorView::new("Request failed", system).detail("Timed out"),
-        area,
-    );
+    example_error_network(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_network_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_network(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_validation_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_validation(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_permission(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_details_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = termrock::widgets::ErrorStateState::new();
+    state.set_details_expanded(true);
+    example_error_network(system).paint_with_state(area, frame.buffer_mut(), &mut state);
+}
+
+fn error_state_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_unsupported(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_dialog(system).paint(area, frame.buffer_mut());
+}
+
+fn error_state_fullscreen_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    example_error_crash(system).paint(area, frame.buffer_mut());
+}
+
+fn error_view_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    ErrorState::new("Request failed", system)
+        .kind(ErrorKind::Network)
+        .explanation("Timed out")
+        .recovery(Recovery::retry_only("Retry", RetrySafety::Safe))
+        .paint(area, frame.buffer_mut());
 }
 
 fn banner(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16198,10 +16299,17 @@ fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(
-        ErrorView::new("失敗しました 💥", system).detail("再試行してください"),
-        area,
-    );
+    ErrorState::new("失敗しました 💥", system)
+        .kind(ErrorKind::Network)
+        .explanation("再試行してください")
+        .technical("timeout: GET /v1/jobs")
+        .recovery(
+            Recovery::none()
+                .with_retry(RecoveryAction::with_shortcut("再試行", "r"))
+                .with_retry_safety(RetrySafety::Safe)
+                .with_work_preserved(true, Some("下書きを保持")),
+        )
+        .paint(area, frame.buffer_mut());
 }
 
 fn loading_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
