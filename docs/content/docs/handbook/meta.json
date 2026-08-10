@@ -30,6 +30,7 @@
     "diff-view",
     "diff-review",
     "diagnostic",
-    "terminal-output"
+    "terminal-output",
+    "hex-viewer"
   ]
 }

@@ -14667,6 +14667,11 @@ pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
 pub const termrock::widgets::event_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::event_stream_bench::VIEWPORT: u16
+pub mod termrock::widgets::hex_viewer_bench
+pub const termrock::widgets::hex_viewer_bench::HUGE_LEN: u64
+pub const termrock::widgets::hex_viewer_bench::MAX_PAINT_CELLS: u32
+pub const termrock::widgets::hex_viewer_bench::PAGE_BYTES: usize
+pub const termrock::widgets::hex_viewer_bench::VIEWPORT: u16
 pub mod termrock::widgets::log_stream_bench
 pub const termrock::widgets::log_stream_bench::BOUNDED_HISTORY: usize
 pub const termrock::widgets::log_stream_bench::BURST_BATCH: u32
@@ -22073,6 +22078,179 @@ pub unsafe fn termrock::widgets::HelpEntrySource::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::HelpEntrySource
 pub fn termrock::widgets::HelpEntrySource::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HelpEntrySource
+#[non_exhaustive] pub enum termrock::widgets::HexAsciiMode
+pub termrock::widgets::HexAsciiMode::Ascii
+pub termrock::widgets::HexAsciiMode::Dots
+pub termrock::widgets::HexAsciiMode::Unicode
+impl termrock::widgets::HexAsciiMode
+pub const fn termrock::widgets::HexAsciiMode::id(self) -> &'static str
+pub const fn termrock::widgets::HexAsciiMode::next(self) -> Self
+impl core::clone::Clone for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::clone(&self) -> termrock::widgets::HexAsciiMode
+impl core::cmp::Eq for termrock::widgets::HexAsciiMode
+impl core::cmp::PartialEq for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::eq(&self, &termrock::widgets::HexAsciiMode) -> bool
+impl core::default::Default for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::default() -> termrock::widgets::HexAsciiMode
+impl core::fmt::Debug for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HexAsciiMode
+impl core::marker::StructuralPartialEq for termrock::widgets::HexAsciiMode
+impl core::marker::Freeze for termrock::widgets::HexAsciiMode
+impl core::marker::Send for termrock::widgets::HexAsciiMode
+impl core::marker::Sync for termrock::widgets::HexAsciiMode
+impl core::marker::Unpin for termrock::widgets::HexAsciiMode
+impl core::marker::UnsafeUnpin for termrock::widgets::HexAsciiMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexAsciiMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexAsciiMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexAsciiMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexAsciiMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexAsciiMode where U: core::convert::From<T>
+pub fn termrock::widgets::HexAsciiMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexAsciiMode where U: core::convert::Into<T>
+pub type termrock::widgets::HexAsciiMode::Error = core::convert::Infallible
+pub fn termrock::widgets::HexAsciiMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexAsciiMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexAsciiMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexAsciiMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexAsciiMode where T: core::clone::Clone
+pub type termrock::widgets::HexAsciiMode::Owned = T
+pub fn termrock::widgets::HexAsciiMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexAsciiMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexAsciiMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexAsciiMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexAsciiMode where T: ?core::marker::Sized
+pub fn termrock::widgets::HexAsciiMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexAsciiMode where T: ?core::marker::Sized
+pub fn termrock::widgets::HexAsciiMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexAsciiMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexAsciiMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexAsciiMode
+pub fn termrock::widgets::HexAsciiMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexAsciiMode
+#[non_exhaustive] pub enum termrock::widgets::HexEndian
+pub termrock::widgets::HexEndian::Big
+pub termrock::widgets::HexEndian::Little
+impl termrock::widgets::HexEndian
+pub const fn termrock::widgets::HexEndian::id(self) -> &'static str
+pub const fn termrock::widgets::HexEndian::toggle(self) -> Self
+impl core::clone::Clone for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::clone(&self) -> termrock::widgets::HexEndian
+impl core::cmp::Eq for termrock::widgets::HexEndian
+impl core::cmp::PartialEq for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::eq(&self, &termrock::widgets::HexEndian) -> bool
+impl core::default::Default for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::default() -> termrock::widgets::HexEndian
+impl core::fmt::Debug for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::HexEndian
+impl core::marker::StructuralPartialEq for termrock::widgets::HexEndian
+impl core::marker::Freeze for termrock::widgets::HexEndian
+impl core::marker::Send for termrock::widgets::HexEndian
+impl core::marker::Sync for termrock::widgets::HexEndian
+impl core::marker::Unpin for termrock::widgets::HexEndian
+impl core::marker::UnsafeUnpin for termrock::widgets::HexEndian
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexEndian
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexEndian
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexEndian where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexEndian::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexEndian where U: core::convert::From<T>
+pub fn termrock::widgets::HexEndian::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexEndian where U: core::convert::Into<T>
+pub type termrock::widgets::HexEndian::Error = core::convert::Infallible
+pub fn termrock::widgets::HexEndian::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexEndian where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexEndian::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexEndian::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexEndian where T: core::clone::Clone
+pub type termrock::widgets::HexEndian::Owned = T
+pub fn termrock::widgets::HexEndian::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexEndian::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexEndian where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexEndian::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexEndian where T: ?core::marker::Sized
+pub fn termrock::widgets::HexEndian::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexEndian where T: ?core::marker::Sized
+pub fn termrock::widgets::HexEndian::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexEndian where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexEndian::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexEndian
+pub fn termrock::widgets::HexEndian::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexEndian
+#[non_exhaustive] pub enum termrock::widgets::HexViewerOutcome
+pub termrock::widgets::HexViewerOutcome::AsciiModeChanged(termrock::widgets::HexAsciiMode)
+pub termrock::widgets::HexViewerOutcome::BookmarkToggled
+pub termrock::widgets::HexViewerOutcome::BookmarkToggled::offset: u64
+pub termrock::widgets::HexViewerOutcome::BookmarkToggled::on: bool
+pub termrock::widgets::HexViewerOutcome::BytesPerRowChanged(u8)
+pub termrock::widgets::HexViewerOutcome::Cancelled
+pub termrock::widgets::HexViewerOutcome::CopyAscii
+pub termrock::widgets::HexViewerOutcome::CopyAscii::text: alloc::string::String
+pub termrock::widgets::HexViewerOutcome::CopyHex
+pub termrock::widgets::HexViewerOutcome::CopyHex::text: alloc::string::String
+pub termrock::widgets::HexViewerOutcome::CursorMoved
+pub termrock::widgets::HexViewerOutcome::CursorMoved::offset: u64
+pub termrock::widgets::HexViewerOutcome::EndianChanged(termrock::widgets::HexEndian)
+pub termrock::widgets::HexViewerOutcome::Export
+pub termrock::widgets::HexViewerOutcome::Export::end: u64
+pub termrock::widgets::HexViewerOutcome::Export::start: u64
+pub termrock::widgets::HexViewerOutcome::Export::text: alloc::string::String
+pub termrock::widgets::HexViewerOutcome::Ignored
+pub termrock::widgets::HexViewerOutcome::PageNeeded
+pub termrock::widgets::HexViewerOutcome::PageNeeded::offset: u64
+pub termrock::widgets::HexViewerOutcome::Scrolled
+pub termrock::widgets::HexViewerOutcome::Scrolled::row: u64
+pub termrock::widgets::HexViewerOutcome::SearchChanged(alloc::string::String)
+pub termrock::widgets::HexViewerOutcome::SearchHit
+pub termrock::widgets::HexViewerOutcome::SearchHit::offset: u64
+pub termrock::widgets::HexViewerOutcome::SelectionChanged
+pub termrock::widgets::HexViewerOutcome::SelectionChanged::end: u64
+pub termrock::widgets::HexViewerOutcome::SelectionChanged::start: u64
+pub termrock::widgets::HexViewerOutcome::SelectionCleared
+impl core::clone::Clone for termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerOutcome::clone(&self) -> termrock::widgets::HexViewerOutcome
+impl core::cmp::Eq for termrock::widgets::HexViewerOutcome
+impl core::cmp::PartialEq for termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerOutcome::eq(&self, &termrock::widgets::HexViewerOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HexViewerOutcome
+impl core::marker::Freeze for termrock::widgets::HexViewerOutcome
+impl core::marker::Send for termrock::widgets::HexViewerOutcome
+impl core::marker::Sync for termrock::widgets::HexViewerOutcome
+impl core::marker::Unpin for termrock::widgets::HexViewerOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::HexViewerOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexViewerOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexViewerOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexViewerOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexViewerOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexViewerOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::HexViewerOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexViewerOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::HexViewerOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::HexViewerOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexViewerOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexViewerOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexViewerOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexViewerOutcome where T: core::clone::Clone
+pub type termrock::widgets::HexViewerOutcome::Owned = T
+pub fn termrock::widgets::HexViewerOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexViewerOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexViewerOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexViewerOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexViewerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewerOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexViewerOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewerOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexViewerOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexViewerOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexViewerOutcome
 #[non_exhaustive] pub enum termrock::widgets::HighlightVisual
 pub termrock::widgets::HighlightVisual::Inactive
 pub termrock::widgets::HighlightVisual::Normal
@@ -45160,6 +45338,266 @@ pub unsafe fn termrock::widgets::HelpEntry::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::HelpEntry
 pub fn termrock::widgets::HelpEntry::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HelpEntry
+pub struct termrock::widgets::HexInspectorValues
+pub termrock::widgets::HexInspectorValues::endian: termrock::widgets::HexEndian
+pub termrock::widgets::HexInspectorValues::i16: core::option::Option<i16>
+pub termrock::widgets::HexInspectorValues::i32: core::option::Option<i32>
+pub termrock::widgets::HexInspectorValues::i64: core::option::Option<i64>
+pub termrock::widgets::HexInspectorValues::i8: core::option::Option<i8>
+pub termrock::widgets::HexInspectorValues::offset: u64
+pub termrock::widgets::HexInspectorValues::u16: core::option::Option<u16>
+pub termrock::widgets::HexInspectorValues::u32: core::option::Option<u32>
+pub termrock::widgets::HexInspectorValues::u64: core::option::Option<u64>
+pub termrock::widgets::HexInspectorValues::u8: core::option::Option<u8>
+impl core::clone::Clone for termrock::widgets::HexInspectorValues
+pub fn termrock::widgets::HexInspectorValues::clone(&self) -> termrock::widgets::HexInspectorValues
+impl core::cmp::Eq for termrock::widgets::HexInspectorValues
+impl core::cmp::PartialEq for termrock::widgets::HexInspectorValues
+pub fn termrock::widgets::HexInspectorValues::eq(&self, &termrock::widgets::HexInspectorValues) -> bool
+impl core::fmt::Debug for termrock::widgets::HexInspectorValues
+pub fn termrock::widgets::HexInspectorValues::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HexInspectorValues
+impl core::marker::Freeze for termrock::widgets::HexInspectorValues
+impl core::marker::Send for termrock::widgets::HexInspectorValues
+impl core::marker::Sync for termrock::widgets::HexInspectorValues
+impl core::marker::Unpin for termrock::widgets::HexInspectorValues
+impl core::marker::UnsafeUnpin for termrock::widgets::HexInspectorValues
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexInspectorValues
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexInspectorValues
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexInspectorValues where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexInspectorValues::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexInspectorValues where U: core::convert::From<T>
+pub fn termrock::widgets::HexInspectorValues::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexInspectorValues where U: core::convert::Into<T>
+pub type termrock::widgets::HexInspectorValues::Error = core::convert::Infallible
+pub fn termrock::widgets::HexInspectorValues::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexInspectorValues where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexInspectorValues::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexInspectorValues::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexInspectorValues where T: core::clone::Clone
+pub type termrock::widgets::HexInspectorValues::Owned = T
+pub fn termrock::widgets::HexInspectorValues::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexInspectorValues::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexInspectorValues where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexInspectorValues::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexInspectorValues where T: ?core::marker::Sized
+pub fn termrock::widgets::HexInspectorValues::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexInspectorValues where T: ?core::marker::Sized
+pub fn termrock::widgets::HexInspectorValues::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexInspectorValues where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexInspectorValues::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexInspectorValues
+pub fn termrock::widgets::HexInspectorValues::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexInspectorValues
+pub struct termrock::widgets::HexRegion
+pub termrock::widgets::HexRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::HexRegion::row_offset: u64
+impl core::clone::Clone for termrock::widgets::HexRegion
+pub fn termrock::widgets::HexRegion::clone(&self) -> termrock::widgets::HexRegion
+impl core::cmp::Eq for termrock::widgets::HexRegion
+impl core::cmp::PartialEq for termrock::widgets::HexRegion
+pub fn termrock::widgets::HexRegion::eq(&self, &termrock::widgets::HexRegion) -> bool
+impl core::fmt::Debug for termrock::widgets::HexRegion
+pub fn termrock::widgets::HexRegion::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HexRegion
+impl core::marker::Freeze for termrock::widgets::HexRegion
+impl core::marker::Send for termrock::widgets::HexRegion
+impl core::marker::Sync for termrock::widgets::HexRegion
+impl core::marker::Unpin for termrock::widgets::HexRegion
+impl core::marker::UnsafeUnpin for termrock::widgets::HexRegion
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexRegion
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexRegion
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexRegion where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexRegion::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexRegion where U: core::convert::From<T>
+pub fn termrock::widgets::HexRegion::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexRegion where U: core::convert::Into<T>
+pub type termrock::widgets::HexRegion::Error = core::convert::Infallible
+pub fn termrock::widgets::HexRegion::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexRegion where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexRegion::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexRegion::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexRegion where T: core::clone::Clone
+pub type termrock::widgets::HexRegion::Owned = T
+pub fn termrock::widgets::HexRegion::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexRegion::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexRegion where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexRegion::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::HexRegion::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexRegion where T: ?core::marker::Sized
+pub fn termrock::widgets::HexRegion::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexRegion where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexRegion::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexRegion
+pub fn termrock::widgets::HexRegion::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexRegion
+pub struct termrock::widgets::HexViewer<'a>
+impl<'a> termrock::widgets::HexViewer<'a>
+pub const fn termrock::widgets::HexViewer<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::HexViewer<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::HexViewer<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::HexViewer<'a>::new(termrock::widgets::HexWindow<'a>, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::HexViewer<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::HexViewerState)
+pub const fn termrock::widgets::HexViewer<'a>::title(self, &'a str) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::HexViewer<'_>
+pub type &termrock::widgets::HexViewer<'_>::State = termrock::widgets::HexViewerState
+pub fn &termrock::widgets::HexViewer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::HexViewer<'_>
+pub type termrock::widgets::HexViewer<'_>::State = termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::HexViewer<'a>
+pub fn termrock::widgets::HexViewer<'a>::clone(&self) -> termrock::widgets::HexViewer<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::HexViewer<'a>
+pub fn termrock::widgets::HexViewer<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::HexViewer<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::HexViewer<'a>
+impl<'a> core::marker::Send for termrock::widgets::HexViewer<'a>
+impl<'a> core::marker::Sync for termrock::widgets::HexViewer<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::HexViewer<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::HexViewer<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexViewer<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexViewer<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexViewer<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::HexViewer<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexViewer<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::HexViewer<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::HexViewer<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexViewer<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexViewer<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexViewer<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexViewer<'a> where T: core::clone::Clone
+pub type termrock::widgets::HexViewer<'a>::Owned = T
+pub fn termrock::widgets::HexViewer<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexViewer<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexViewer<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexViewer<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexViewer<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewer<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexViewer<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewer<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexViewer<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexViewer<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexViewer<'a>
+pub fn termrock::widgets::HexViewer<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexViewer<'a>
+pub struct termrock::widgets::HexViewerState
+pub termrock::widgets::HexViewerState::ascii: bool
+pub termrock::widgets::HexViewerState::ascii_mode: termrock::widgets::HexAsciiMode
+pub termrock::widgets::HexViewerState::bookmarks: alloc::collections::btree::set::BTreeSet<u64>
+pub termrock::widgets::HexViewerState::bytes_per_row: u8
+pub termrock::widgets::HexViewerState::colorless: bool
+pub termrock::widgets::HexViewerState::cursor: u64
+pub termrock::widgets::HexViewerState::effective_bpr: u8
+pub termrock::widgets::HexViewerState::endian: termrock::widgets::HexEndian
+pub termrock::widgets::HexViewerState::regions: alloc::vec::Vec<termrock::widgets::HexRegion>
+pub termrock::widgets::HexViewerState::search: core::option::Option<alloc::string::String>
+pub termrock::widgets::HexViewerState::sel_anchor: core::option::Option<u64>
+pub termrock::widgets::HexViewerState::sel_end: core::option::Option<u64>
+pub termrock::widgets::HexViewerState::show_inspector: bool
+impl termrock::widgets::HexViewerState
+pub const fn termrock::widgets::HexViewerState::accepts_input(&self) -> bool
+pub fn termrock::widgets::HexViewerState::bookmarks(&self) -> &alloc::collections::btree::set::BTreeSet<u64>
+pub fn termrock::widgets::HexViewerState::clear_selection(&mut self)
+pub fn termrock::widgets::HexViewerState::handle_intent(&mut self, termrock::context::ContextUiIntent, &termrock::widgets::HexWindow<'_>) -> termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerState::handle_key(&mut self, termrock::input::KeyEvent, &termrock::widgets::HexWindow<'_>) -> termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerState::handle_mouse(&mut self, termrock::input::MouseEvent, &termrock::widgets::HexWindow<'_>) -> termrock::widgets::HexViewerOutcome
+pub fn termrock::widgets::HexViewerState::new() -> Self
+pub const fn termrock::widgets::HexViewerState::row_offset(&self) -> u16
+pub fn termrock::widgets::HexViewerState::selection(&self) -> core::option::Option<(u64, u64)>
+pub fn termrock::widgets::HexViewerState::set_accepts_input(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewerState::clone(&self) -> termrock::widgets::HexViewerState
+impl core::cmp::Eq for termrock::widgets::HexViewerState
+impl core::cmp::PartialEq for termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewerState::eq(&self, &termrock::widgets::HexViewerState) -> bool
+impl core::default::Default for termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewerState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewerState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::HexViewerState
+impl core::marker::Freeze for termrock::widgets::HexViewerState
+impl core::marker::Send for termrock::widgets::HexViewerState
+impl core::marker::Sync for termrock::widgets::HexViewerState
+impl core::marker::Unpin for termrock::widgets::HexViewerState
+impl core::marker::UnsafeUnpin for termrock::widgets::HexViewerState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexViewerState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexViewerState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexViewerState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexViewerState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexViewerState where U: core::convert::From<T>
+pub fn termrock::widgets::HexViewerState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexViewerState where U: core::convert::Into<T>
+pub type termrock::widgets::HexViewerState::Error = core::convert::Infallible
+pub fn termrock::widgets::HexViewerState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexViewerState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexViewerState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexViewerState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexViewerState where T: core::clone::Clone
+pub type termrock::widgets::HexViewerState::Owned = T
+pub fn termrock::widgets::HexViewerState::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexViewerState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexViewerState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexViewerState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexViewerState where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewerState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexViewerState where T: ?core::marker::Sized
+pub fn termrock::widgets::HexViewerState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexViewerState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexViewerState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexViewerState
+pub fn termrock::widgets::HexViewerState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexViewerState
+pub struct termrock::widgets::HexWindow<'a>
+pub termrock::widgets::HexWindow::base_offset: u64
+pub termrock::widgets::HexWindow::data: &'a [u8]
+pub termrock::widgets::HexWindow::total_len: u64
+impl<'a> termrock::widgets::HexWindow<'a>
+pub fn termrock::widgets::HexWindow<'a>::end_offset(&self) -> u64
+pub fn termrock::widgets::HexWindow<'a>::get(&self, u64) -> core::option::Option<u8>
+pub const fn termrock::widgets::HexWindow<'a>::new(u64, &'a [u8], u64) -> Self
+pub fn termrock::widgets::HexWindow<'a>::slice_abs(&self, u64, u64) -> &'a [u8]
+impl<'a> core::clone::Clone for termrock::widgets::HexWindow<'a>
+pub fn termrock::widgets::HexWindow<'a>::clone(&self) -> termrock::widgets::HexWindow<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::HexWindow<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::HexWindow<'a>
+pub fn termrock::widgets::HexWindow<'a>::eq(&self, &termrock::widgets::HexWindow<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::HexWindow<'a>
+pub fn termrock::widgets::HexWindow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::Send for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::HexWindow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::HexWindow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::HexWindow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::HexWindow<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::HexWindow<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::HexWindow<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::HexWindow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::HexWindow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::HexWindow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::HexWindow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::HexWindow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::HexWindow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::HexWindow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::HexWindow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::HexWindow<'a> where T: core::clone::Clone
+pub type termrock::widgets::HexWindow<'a>::Owned = T
+pub fn termrock::widgets::HexWindow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::HexWindow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::HexWindow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::HexWindow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::HexWindow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HexWindow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::HexWindow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::HexWindow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::HexWindow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::HexWindow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::HexWindow<'a>
+pub fn termrock::widgets::HexWindow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::HexWindow<'a>
 pub struct termrock::widgets::HighlightedText<'a>
 impl<'a> termrock::widgets::HighlightedText<'a>
 pub const fn termrock::widgets::HighlightedText<'a>::base_role(self, termrock::style::Role) -> Self
@@ -64103,6 +64541,9 @@ pub const termrock::widgets::FORM_WIZARD_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::FULLSCREEN_VIEWER_HINT: &str
 pub const termrock::widgets::FULLSCREEN_VIEWER_NESTED_PREFIX: &str
 pub const termrock::widgets::FULLSCREEN_VIEWER_OVERLAY_ID: &str
+pub const termrock::widgets::HEX_DEFAULT_BYTES_PER_ROW: u8
+pub const termrock::widgets::HEX_MAX_BYTES_PER_ROW: u8
+pub const termrock::widgets::HEX_MIN_BYTES_PER_ROW: u8
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::HISTORY_PICKER_OVERLAY_ID: &str
@@ -64208,9 +64649,11 @@ pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock:
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::assign_jump_labels<Id: core::clone::Clone>(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::JumpCandidate<Id>>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_labels_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
+pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::code_frame_window<'a>(&'a [&'a str], &[termrock::widgets::SourceLabel<'_>], u32) -> (alloc::vec::Vec<termrock::widgets::CodeFrameLine<'a>>, bool, bool)
+pub fn termrock::widgets::col_for_offset(u64, u8) -> u8
 pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> alloc::vec::Vec<(&'a str, &'a str)>
 pub fn termrock::widgets::collect_jump_candidates<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpCandidate<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
@@ -64321,16 +64764,21 @@ pub fn termrock::widgets::filter_terminal_lines<'a>(&'a [termrock::widgets::Term
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
 pub fn termrock::widgets::filter_tree_table_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeTableRow<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeTableRow<'a, Id>>
 pub fn termrock::widgets::filter_tree_with_ancestors<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::TreeNode<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TreeNode<'a, Id>>
+pub fn termrock::widgets::find_in_window(&termrock::widgets::HexWindow<'_>, &[u8], u64) -> core::option::Option<u64>
 pub fn termrock::widgets::first_invalid_id<'a, Id: core::clone::Clone>(&'a [termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<&'a Id>
 pub const fn termrock::widgets::fixed_visible_range(u64, u16, u64) -> (u64, u64)
 pub fn termrock::widgets::flatten_menu_commands<Id: core::clone::Clone>(&[termrock::widgets::MenuBarMenu<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuCommandRef<Id>>
 pub fn termrock::widgets::flatten_menu_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuNode<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuCommandRef<Id>>
 pub fn termrock::widgets::format_alternatives(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, termrock::widgets::ChordFormat) -> alloc::string::String
+pub fn termrock::widgets::format_byte_hex(u8) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostic_plain(&termrock::widgets::Diagnostic<'_>) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostics_plain(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
 pub fn termrock::widgets::format_duration_ms(u64) -> alloc::string::String
+pub fn termrock::widgets::format_hex_dump(&termrock::widgets::HexWindow<'_>, u64, u64, u8, u8) -> alloc::string::String
+pub fn termrock::widgets::format_inspector_line(&termrock::widgets::HexInspectorValues, bool) -> alloc::string::String
+pub fn termrock::widgets::format_offset(u64, u8) -> alloc::string::String
 pub fn termrock::widgets::format_sequence(&[termrock::keymap::KeyChord], termrock::widgets::ChordFormat, &str) -> alloc::string::String
 pub fn termrock::widgets::fullscreen_viewer_has_nested_top<F>(&termrock::interaction::OverlayStack<F>) -> bool
 pub fn termrock::widgets::fuzzy_match_label(&str, &str) -> core::option::Option<(u32, termrock::widgets::MatchRanges)>
@@ -64344,7 +64792,10 @@ pub fn termrock::widgets::hint_row_cols(&[termrock::widgets::HintSpan<'_>]) -> u
 pub fn termrock::widgets::history_picker_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::HistoryPickerPresentation
 pub const fn termrock::widgets::history_redaction_secret() -> termrock::widgets::HistoryRedaction
 pub fn termrock::widgets::identity_seed(&str) -> u64
+pub fn termrock::widgets::in_selection(u64, core::option::Option<u64>, core::option::Option<u64>) -> bool
 pub fn termrock::widgets::initials_from_name(&str) -> alloc::string::String
+pub fn termrock::widgets::inspect_at(&termrock::widgets::HexWindow<'_>, u64, termrock::widgets::HexEndian) -> termrock::widgets::HexInspectorValues
+pub fn termrock::widgets::interpret_byte(u8, termrock::widgets::HexAsciiMode) -> char
 pub fn termrock::widgets::is_absolute_path(&str) -> bool
 pub fn termrock::widgets::is_paint_safe(&str) -> bool
 pub fn termrock::widgets::join_path(&str, &str, termrock::widgets::PathStyle) -> alloc::string::String
@@ -64362,7 +64813,11 @@ pub fn termrock::widgets::measure_menu_panel<Id>(&[termrock::widgets::MenuNode<I
 pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
 pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuItem<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::min_width_for_bpr(u8, u8) -> u16
+pub fn termrock::widgets::normalize_range(u64, u64) -> (u64, u64)
 pub fn termrock::widgets::normalize_separators(&str, termrock::widgets::PathStyle) -> alloc::string::String
+pub fn termrock::widgets::offset_for_row(u64, u8) -> u64
+pub fn termrock::widgets::offset_width_chars(u64) -> u8
 pub fn termrock::widgets::open_alert_dialog_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::DialogSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_alert_dialog_widget_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>, bool) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_command_palette_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -64402,6 +64857,7 @@ pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut
 pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem)
 pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::widgets::parse_quick_open_query(&str) -> termrock::widgets::ParsedQuickOpenQuery
+pub fn termrock::widgets::parse_search_query(&str) -> core::option::Option<alloc::vec::Vec<u8>>
 pub fn termrock::widgets::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::widgets::place_command_palette(ratatui_core::layout::rect::Rect, termrock::widgets::CommandPaletteSize) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::place_completion_menu(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::widgets::CompletionMenuSize) -> ratatui_core::layout::rect::Rect
@@ -64442,6 +64898,8 @@ pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::resolve_widths(&[termrock::widgets::ColumnWidth], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
+pub fn termrock::widgets::row_count(u64, u8) -> u64
+pub fn termrock::widgets::row_for_offset(u64, u8) -> u64
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::step_items_from_titles(&[&str]) -> alloc::vec::Vec<termrock::widgets::StepItem>

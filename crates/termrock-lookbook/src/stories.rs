@@ -72,6 +72,7 @@ use termrock::{
         DiagnosticNote, SourceLabel, SourceRange, SuggestedFix, CodeFrame, CodeFrameLine,
         TerminalOutput, TerminalOutputState, TerminalCommandMeta, TerminalLine, TerminalRunStatus,
         TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
+        HexViewer, HexViewerState, HexWindow, HexEndian, HexAsciiMode,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2135,6 +2136,69 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             10,
             terminal_output_ascii,
+        ),
+        Story::new(
+            "hex-viewer/basic",
+            "HexViewer basic",
+            "HexViewer",
+            "Offset + hex + ASCII with cursor brackets.",
+            72,
+            14,
+            hex_viewer_basic,
+        ),
+        Story::new(
+            "hex-viewer/selection",
+            "HexViewer selection",
+            "HexViewer",
+            "Selected range braces without color dependence.",
+            72,
+            12,
+            hex_viewer_selection,
+        ),
+        Story::new(
+            "hex-viewer/inspector",
+            "HexViewer inspector",
+            "HexViewer",
+            "Endian-aware value strip at cursor.",
+            72,
+            12,
+            hex_viewer_inspector,
+        ),
+        Story::new(
+            "hex-viewer/search",
+            "HexViewer search",
+            "HexViewer",
+            "Hex search query chrome.",
+            64,
+            10,
+            hex_viewer_search,
+        ),
+        Story::new(
+            "hex-viewer/empty",
+            "HexViewer empty",
+            "HexViewer",
+            "Empty buffer mark.",
+            40,
+            4,
+            hex_viewer_empty,
+        ),
+        Story::new(
+            "hex-viewer/narrow",
+            "HexViewer narrow",
+            "HexViewer",
+            "Tiny-terminal compact mode (18 cols).",
+            18,
+            8,
+            hex_viewer_basic,
+        ),
+        Story::new(
+            "hex-viewer/ascii",
+            "HexViewer ASCII",
+            "HexViewer",
+            "ASCII chrome and colorless selection marks.",
+            64,
+            10,
+            hex_viewer_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -11393,6 +11457,84 @@ fn terminal_output_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let mut state = TerminalOutputState::new();
     state.paint_mode = TerminalPaintMode::Plain;
     TerminalOutput::new(&meta, &lines, system)
+        .ascii(true)
+        .colorless(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_sample() -> Vec<u8> {
+    let mut v: Vec<u8> = (0..48u8).collect();
+    v.extend_from_slice(b"Hello, xxd!\n");
+    v.extend_from_slice("東京🧪".as_bytes());
+    v.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef, 0x00, 0xff]);
+    v
+}
+
+fn hex_viewer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 16;
+    state.cursor = 0x10;
+    HexViewer::new(win, system)
+        .title("blob.bin")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_selection(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 16;
+    state.cursor = 0x08;
+    state.sel_anchor = Some(0x04);
+    state.sel_end = Some(0x0b);
+    state.bookmarks.insert(0x00);
+    HexViewer::new(win, system)
+        .title("selection")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 16;
+    state.cursor = data.len().saturating_sub(6) as u64; // near deadbeef
+    state.endian = HexEndian::Little;
+    state.show_inspector = true;
+    HexViewer::new(win, system)
+        .title("inspector LE")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 16;
+    state.search = Some("dead".into());
+    HexViewer::new(win, system)
+        .title("search")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let win = HexWindow::new(0, &[], 0);
+    let mut state = HexViewerState::new();
+    HexViewer::new(win, system).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn hex_viewer_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 8;
+    state.cursor = 3;
+    state.sel_anchor = Some(1);
+    state.sel_end = Some(5);
+    state.ascii_mode = HexAsciiMode::Ascii;
+    HexViewer::new(win, system)
         .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);

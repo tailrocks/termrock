@@ -1604,6 +1604,24 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** select.  
 24. **Perf:** O(visible events).
 
+## HexViewer
+
+1. **Purpose:** Virtualized binary inspector (host-paged).  
+2. **Anatomy:** title? · search? · rows(offset\|hex\|ascii) · inspector.  
+3. **Public properties:** `HexWindow`, title, focused/ascii/colorless.  
+4. **State:** absolute cursor/selection, bpr, endian, ascii mode, bookmarks, search.  
+5. **Variants:** LE/BE; Ascii/Unicode/Dots; bpr 4–64 or auto.  
+6–8. Tiny collapses to compact hex; wide shows full xxd-like rows.  
+9. **Keyboard:** hjkl · select · /search · b bookmark · e endian · c/x/y copy.  
+10. **Mouse:** wheel · click byte column.  
+11–14. Scene focus; host pages on `PageNeeded`.  
+15–16. Width &lt; 28 compact.  
+17–18. Brackets/braces/bookmarks without color.  
+19. **Composition:** FullscreenViewer body.  
+20. **Outcomes:** Cursor/Selection · Copy · Export · PageNeeded · SearchHit.  
+21. **Stories:** `hex-viewer/{basic,selection,inspector,search,empty,narrow,ascii}`  
+22–24. Property tests for offsets/widths; O(visible rows).
+
 ## TerminalOutput
 
 1. **Purpose:** Safe command-run presentation (never executes).  

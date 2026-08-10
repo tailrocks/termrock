@@ -120,6 +120,7 @@ mod event_stream;
 mod log_stream;
 mod diagnostic;
 mod terminal_output;
+mod hex_viewer;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -172,6 +173,15 @@ pub use terminal_output::{
     format_duration_ms, redact_env_value,
 };
 pub use terminal_output::bench as terminal_output_bench;
+pub use hex_viewer::{
+    HexAsciiMode, HexEndian, HexInspectorValues, HexRegion, HexViewer, HexViewerOutcome,
+    HexViewerState, HexWindow, HEX_DEFAULT_BYTES_PER_ROW, HEX_MAX_BYTES_PER_ROW,
+    HEX_MIN_BYTES_PER_ROW, auto_bytes_per_row, col_for_offset, find_in_window, format_byte_hex,
+    format_hex_dump, format_inspector_line, format_offset, in_selection, inspect_at,
+    interpret_byte, min_width_for_bpr, normalize_range, offset_for_row, offset_width_chars,
+    parse_search_query, row_count, row_for_offset,
+};
+pub use hex_viewer::bench as hex_viewer_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,
