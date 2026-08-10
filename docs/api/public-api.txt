@@ -14710,6 +14710,9 @@ pub mod termrock::widgets::mention_bench
 pub const termrock::widgets::mention_bench::CANDIDATE_COUNT: usize
 pub const termrock::widgets::mention_bench::MENTION_COUNT: usize
 pub const termrock::widgets::mention_bench::PAINT_FRAMES: u32
+pub mod termrock::widgets::message_thread_bench
+pub const termrock::widgets::message_thread_bench::ENTRY_COUNT: usize
+pub const termrock::widgets::message_thread_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::metrics_dashboard_bench
 pub const termrock::widgets::metrics_dashboard_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::metrics_dashboard_bench::SAMPLE_LEN: usize
@@ -26406,6 +26409,183 @@ pub unsafe fn termrock::widgets::MenuRowKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MenuRowKind
 pub fn termrock::widgets::MenuRowKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuRowKind
+#[non_exhaustive] pub enum termrock::widgets::MessageKind
+pub termrock::widgets::MessageKind::Assistant
+pub termrock::widgets::MessageKind::Error
+pub termrock::widgets::MessageKind::Event
+pub termrock::widgets::MessageKind::Status
+pub termrock::widgets::MessageKind::System
+pub termrock::widgets::MessageKind::Thinking
+pub termrock::widgets::MessageKind::Tool
+pub termrock::widgets::MessageKind::User
+impl termrock::widgets::MessageKind
+pub const fn termrock::widgets::MessageKind::default_collapsed_at_summary(self) -> bool
+pub const fn termrock::widgets::MessageKind::id(self) -> &'static str
+pub const fn termrock::widgets::MessageKind::transcript_kind(self) -> termrock::widgets::TranscriptKind
+impl core::clone::Clone for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::clone(&self) -> termrock::widgets::MessageKind
+impl core::cmp::Eq for termrock::widgets::MessageKind
+impl core::cmp::PartialEq for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::eq(&self, &termrock::widgets::MessageKind) -> bool
+impl core::default::Default for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::default() -> termrock::widgets::MessageKind
+impl core::fmt::Debug for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MessageKind
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageKind
+impl core::marker::Freeze for termrock::widgets::MessageKind
+impl core::marker::Send for termrock::widgets::MessageKind
+impl core::marker::Sync for termrock::widgets::MessageKind
+impl core::marker::Unpin for termrock::widgets::MessageKind
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageKind where U: core::convert::From<T>
+pub fn termrock::widgets::MessageKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageKind where U: core::convert::Into<T>
+pub type termrock::widgets::MessageKind::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageKind where T: core::clone::Clone
+pub type termrock::widgets::MessageKind::Owned = T
+pub fn termrock::widgets::MessageKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageKind where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageKind
+pub fn termrock::widgets::MessageKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageKind
+#[non_exhaustive] pub enum termrock::widgets::MessageThreadOutcome
+pub termrock::widgets::MessageThreadOutcome::ActionRequested
+pub termrock::widgets::MessageThreadOutcome::ActionRequested::action: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::ActionRequested::id: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::Activated
+pub termrock::widgets::MessageThreadOutcome::Activated::id: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::Cancelled
+pub termrock::widgets::MessageThreadOutcome::Changed
+pub termrock::widgets::MessageThreadOutcome::CopyRequested
+pub termrock::widgets::MessageThreadOutcome::CopyRequested::id: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::FoldToggled
+pub termrock::widgets::MessageThreadOutcome::FoldToggled::folded: bool
+pub termrock::widgets::MessageThreadOutcome::FoldToggled::id: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::FollowChanged
+pub termrock::widgets::MessageThreadOutcome::FollowChanged::follow: bool
+pub termrock::widgets::MessageThreadOutcome::Ignored
+pub termrock::widgets::MessageThreadOutcome::JumpLatest
+pub termrock::widgets::MessageThreadOutcome::SearchChanged
+pub termrock::widgets::MessageThreadOutcome::SearchChanged::query: alloc::string::String
+pub termrock::widgets::MessageThreadOutcome::ZoomChanged
+pub termrock::widgets::MessageThreadOutcome::ZoomChanged::zoom: termrock::widgets::MessageZoom
+impl core::clone::Clone for termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadOutcome::clone(&self) -> termrock::widgets::MessageThreadOutcome
+impl core::cmp::Eq for termrock::widgets::MessageThreadOutcome
+impl core::cmp::PartialEq for termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadOutcome::eq(&self, &termrock::widgets::MessageThreadOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageThreadOutcome
+impl core::marker::Freeze for termrock::widgets::MessageThreadOutcome
+impl core::marker::Send for termrock::widgets::MessageThreadOutcome
+impl core::marker::Sync for termrock::widgets::MessageThreadOutcome
+impl core::marker::Unpin for termrock::widgets::MessageThreadOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageThreadOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageThreadOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageThreadOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageThreadOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageThreadOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::MessageThreadOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageThreadOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::MessageThreadOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageThreadOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageThreadOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageThreadOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageThreadOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageThreadOutcome where T: core::clone::Clone
+pub type termrock::widgets::MessageThreadOutcome::Owned = T
+pub fn termrock::widgets::MessageThreadOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageThreadOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageThreadOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageThreadOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageThreadOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageThreadOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageThreadOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageThreadOutcome
+#[non_exhaustive] pub enum termrock::widgets::MessageZoom
+pub termrock::widgets::MessageZoom::Compact
+pub termrock::widgets::MessageZoom::Full
+pub termrock::widgets::MessageZoom::Summary
+impl termrock::widgets::MessageZoom
+pub const fn termrock::widgets::MessageZoom::cycle(self) -> Self
+pub const fn termrock::widgets::MessageZoom::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::clone(&self) -> termrock::widgets::MessageZoom
+impl core::cmp::Eq for termrock::widgets::MessageZoom
+impl core::cmp::Ord for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::cmp(&self, &termrock::widgets::MessageZoom) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::eq(&self, &termrock::widgets::MessageZoom) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::partial_cmp(&self, &termrock::widgets::MessageZoom) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::default() -> termrock::widgets::MessageZoom
+impl core::fmt::Debug for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MessageZoom
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageZoom
+impl core::marker::Freeze for termrock::widgets::MessageZoom
+impl core::marker::Send for termrock::widgets::MessageZoom
+impl core::marker::Sync for termrock::widgets::MessageZoom
+impl core::marker::Unpin for termrock::widgets::MessageZoom
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageZoom
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageZoom
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageZoom
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::MessageZoom where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageZoom::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageZoom where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageZoom::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageZoom where U: core::convert::From<T>
+pub fn termrock::widgets::MessageZoom::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageZoom where U: core::convert::Into<T>
+pub type termrock::widgets::MessageZoom::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageZoom::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageZoom where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageZoom::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageZoom::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageZoom where T: core::clone::Clone
+pub type termrock::widgets::MessageZoom::Owned = T
+pub fn termrock::widgets::MessageZoom::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageZoom::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageZoom where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageZoom::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageZoom where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageZoom::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageZoom where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageZoom::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageZoom where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageZoom::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageZoom
+pub fn termrock::widgets::MessageZoom::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageZoom
 #[non_exhaustive] pub enum termrock::widgets::MetricAlertSeverity
 pub termrock::widgets::MetricAlertSeverity::Critical
 pub termrock::widgets::MetricAlertSeverity::Info
@@ -55003,6 +55183,98 @@ pub unsafe fn termrock::widgets::MenuState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MenuState
 pub fn termrock::widgets::MenuState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuState
+pub struct termrock::widgets::MessageAction
+pub termrock::widgets::MessageAction::chord: core::option::Option<alloc::string::String>
+pub termrock::widgets::MessageAction::id: alloc::string::String
+pub termrock::widgets::MessageAction::label: alloc::string::String
+impl termrock::widgets::MessageAction
+pub fn termrock::widgets::MessageAction::chord(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageAction::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::MessageAction
+pub fn termrock::widgets::MessageAction::clone(&self) -> termrock::widgets::MessageAction
+impl core::cmp::Eq for termrock::widgets::MessageAction
+impl core::cmp::PartialEq for termrock::widgets::MessageAction
+pub fn termrock::widgets::MessageAction::eq(&self, &termrock::widgets::MessageAction) -> bool
+impl core::fmt::Debug for termrock::widgets::MessageAction
+pub fn termrock::widgets::MessageAction::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageAction
+impl core::marker::Freeze for termrock::widgets::MessageAction
+impl core::marker::Send for termrock::widgets::MessageAction
+impl core::marker::Sync for termrock::widgets::MessageAction
+impl core::marker::Unpin for termrock::widgets::MessageAction
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageAction
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageAction
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageAction
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageAction where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageAction::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageAction where U: core::convert::From<T>
+pub fn termrock::widgets::MessageAction::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageAction where U: core::convert::Into<T>
+pub type termrock::widgets::MessageAction::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageAction::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageAction where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageAction::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageAction::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageAction where T: core::clone::Clone
+pub type termrock::widgets::MessageAction::Owned = T
+pub fn termrock::widgets::MessageAction::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageAction::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageAction where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageAction::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageAction where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageAction::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageAction where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageAction::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageAction where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageAction::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageAction
+pub fn termrock::widgets::MessageAction::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageAction
+pub struct termrock::widgets::MessageActor
+pub termrock::widgets::MessageActor::id: alloc::string::String
+pub termrock::widgets::MessageActor::label: alloc::string::String
+impl termrock::widgets::MessageActor
+pub fn termrock::widgets::MessageActor::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::MessageActor
+pub fn termrock::widgets::MessageActor::clone(&self) -> termrock::widgets::MessageActor
+impl core::cmp::Eq for termrock::widgets::MessageActor
+impl core::cmp::PartialEq for termrock::widgets::MessageActor
+pub fn termrock::widgets::MessageActor::eq(&self, &termrock::widgets::MessageActor) -> bool
+impl core::fmt::Debug for termrock::widgets::MessageActor
+pub fn termrock::widgets::MessageActor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageActor
+impl core::marker::Freeze for termrock::widgets::MessageActor
+impl core::marker::Send for termrock::widgets::MessageActor
+impl core::marker::Sync for termrock::widgets::MessageActor
+impl core::marker::Unpin for termrock::widgets::MessageActor
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageActor
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageActor
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageActor
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageActor where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageActor::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageActor where U: core::convert::From<T>
+pub fn termrock::widgets::MessageActor::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageActor where U: core::convert::Into<T>
+pub type termrock::widgets::MessageActor::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageActor::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageActor where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageActor::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageActor::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageActor where T: core::clone::Clone
+pub type termrock::widgets::MessageActor::Owned = T
+pub fn termrock::widgets::MessageActor::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageActor::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageActor where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageActor::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageActor where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageActor::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageActor where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageActor::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageActor where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageActor::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageActor
+pub fn termrock::widgets::MessageActor::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageActor
 pub struct termrock::widgets::MessageDialog<'a, Id>
 impl<'a, Id> termrock::widgets::MessageDialog<'a, Id>
 pub const fn termrock::widgets::MessageDialog<'a, Id>::label_width(self, u16) -> Self
@@ -55048,6 +55320,188 @@ pub unsafe fn termrock::widgets::MessageDialog<'a, Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::MessageDialog<'a, Id>
 pub fn termrock::widgets::MessageDialog<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MessageDialog<'a, Id>
+pub struct termrock::widgets::MessageEntry
+pub termrock::widgets::MessageEntry::actions: alloc::vec::Vec<termrock::widgets::MessageAction>
+pub termrock::widgets::MessageEntry::actor: core::option::Option<termrock::widgets::MessageActor>
+pub termrock::widgets::MessageEntry::checkpoint: bool
+pub termrock::widgets::MessageEntry::collapsed: bool
+pub termrock::widgets::MessageEntry::enabled: bool
+pub termrock::widgets::MessageEntry::group: core::option::Option<alloc::string::String>
+pub termrock::widgets::MessageEntry::id: alloc::string::String
+pub termrock::widgets::MessageEntry::kind: termrock::widgets::MessageKind
+pub termrock::widgets::MessageEntry::lines: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::MessageEntry::revision: u64
+pub termrock::widgets::MessageEntry::search_text: core::option::Option<alloc::string::String>
+pub termrock::widgets::MessageEntry::status_letter: core::option::Option<char>
+pub termrock::widgets::MessageEntry::summary: core::option::Option<alloc::string::String>
+pub termrock::widgets::MessageEntry::timestamp: core::option::Option<alloc::string::String>
+impl termrock::widgets::MessageEntry
+pub fn termrock::widgets::MessageEntry::actions(self, alloc::vec::Vec<termrock::widgets::MessageAction>) -> Self
+pub fn termrock::widgets::MessageEntry::actor(self, termrock::widgets::MessageActor) -> Self
+pub fn termrock::widgets::MessageEntry::assistant(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::MessageEntry::checkpoint(self, bool) -> Self
+pub const fn termrock::widgets::MessageEntry::collapsed(self, bool) -> Self
+pub const fn termrock::widgets::MessageEntry::enabled(self, bool) -> Self
+pub fn termrock::widgets::MessageEntry::error(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::event(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::group(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::haystack(&self) -> alloc::string::String
+pub fn termrock::widgets::MessageEntry::new(impl core::convert::Into<alloc::string::String>, termrock::widgets::MessageKind, impl core::iter::traits::collect::IntoIterator<Item = impl core::convert::Into<alloc::string::String>>) -> Self
+pub const fn termrock::widgets::MessageEntry::revision(self, u64) -> Self
+pub fn termrock::widgets::MessageEntry::status(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub const fn termrock::widgets::MessageEntry::status_letter(self, char) -> Self
+pub fn termrock::widgets::MessageEntry::summary(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::timestamp(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::tool(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn termrock::widgets::MessageEntry::user(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::MessageEntry
+pub fn termrock::widgets::MessageEntry::clone(&self) -> termrock::widgets::MessageEntry
+impl core::cmp::Eq for termrock::widgets::MessageEntry
+impl core::cmp::PartialEq for termrock::widgets::MessageEntry
+pub fn termrock::widgets::MessageEntry::eq(&self, &termrock::widgets::MessageEntry) -> bool
+impl core::fmt::Debug for termrock::widgets::MessageEntry
+pub fn termrock::widgets::MessageEntry::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageEntry
+impl core::marker::Freeze for termrock::widgets::MessageEntry
+impl core::marker::Send for termrock::widgets::MessageEntry
+impl core::marker::Sync for termrock::widgets::MessageEntry
+impl core::marker::Unpin for termrock::widgets::MessageEntry
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageEntry
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageEntry
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageEntry
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageEntry where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageEntry::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageEntry where U: core::convert::From<T>
+pub fn termrock::widgets::MessageEntry::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageEntry where U: core::convert::Into<T>
+pub type termrock::widgets::MessageEntry::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageEntry::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageEntry where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageEntry::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageEntry::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageEntry where T: core::clone::Clone
+pub type termrock::widgets::MessageEntry::Owned = T
+pub fn termrock::widgets::MessageEntry::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageEntry::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageEntry where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageEntry::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageEntry::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageEntry where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageEntry::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageEntry where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageEntry::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageEntry
+pub fn termrock::widgets::MessageEntry::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageEntry
+pub struct termrock::widgets::MessageThread<'a>
+impl<'a> termrock::widgets::MessageThread<'a>
+pub const fn termrock::widgets::MessageThread<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::MessageThread<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::MessageThread<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::MessageThread<'a>::new(&'a [termrock::widgets::MessageEntry], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::MessageThread<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MessageThreadState)
+pub fn termrock::widgets::MessageThread<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MessageThreadState)
+impl<'a> core::clone::Clone for termrock::widgets::MessageThread<'a>
+pub fn termrock::widgets::MessageThread<'a>::clone(&self) -> termrock::widgets::MessageThread<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::MessageThread<'a>
+pub fn termrock::widgets::MessageThread<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::MessageThread<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::MessageThread<'a>
+impl<'a> core::marker::Send for termrock::widgets::MessageThread<'a>
+impl<'a> core::marker::Sync for termrock::widgets::MessageThread<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::MessageThread<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::MessageThread<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageThread<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageThread<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageThread<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::MessageThread<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageThread<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::MessageThread<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageThread<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageThread<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageThread<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageThread<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageThread<'a> where T: core::clone::Clone
+pub type termrock::widgets::MessageThread<'a>::Owned = T
+pub fn termrock::widgets::MessageThread<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageThread<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageThread<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageThread<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageThread<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThread<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageThread<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThread<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageThread<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageThread<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageThread<'a>
+pub fn termrock::widgets::MessageThread<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageThread<'a>
+pub struct termrock::widgets::MessageThreadState
+pub termrock::widgets::MessageThreadState::expanded: alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub termrock::widgets::MessageThreadState::force_collapsed: alloc::collections::btree::set::BTreeSet<alloc::string::String>
+pub termrock::widgets::MessageThreadState::search: core::option::Option<alloc::string::String>
+pub termrock::widgets::MessageThreadState::search_active: bool
+pub termrock::widgets::MessageThreadState::transcript: termrock::widgets::TranscriptState<alloc::string::String>
+pub termrock::widgets::MessageThreadState::unread_below: u32
+pub termrock::widgets::MessageThreadState::zoom: termrock::widgets::MessageZoom
+impl termrock::widgets::MessageThreadState
+pub const fn termrock::widgets::MessageThreadState::accepts_input(&self) -> bool
+pub fn termrock::widgets::MessageThreadState::cycle_zoom(&mut self) -> termrock::widgets::MessageThreadOutcome
+pub const fn termrock::widgets::MessageThreadState::follow(&self) -> bool
+pub fn termrock::widgets::MessageThreadState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MessageEntry], &[termrock::widgets::TranscriptBlock<'_, alloc::string::String>]) -> termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::TranscriptBlock<'_, alloc::string::String>]) -> termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadState::jump_latest(&mut self) -> termrock::widgets::MessageThreadOutcome
+pub fn termrock::widgets::MessageThreadState::new() -> Self
+pub fn termrock::widgets::MessageThreadState::on_entries_len(&mut self, usize)
+pub fn termrock::widgets::MessageThreadState::projection(&self, &[termrock::widgets::MessageEntry]) -> termrock::widgets::ThreadProjection
+pub fn termrock::widgets::MessageThreadState::selected(&self) -> core::option::Option<&str>
+pub fn termrock::widgets::MessageThreadState::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::MessageThreadState::set_expanded(&mut self, impl core::convert::Into<alloc::string::String>, bool)
+pub fn termrock::widgets::MessageThreadState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::MessageThreadState::show_new_content(&self) -> bool
+impl core::clone::Clone for termrock::widgets::MessageThreadState
+pub fn termrock::widgets::MessageThreadState::clone(&self) -> termrock::widgets::MessageThreadState
+impl core::cmp::Eq for termrock::widgets::MessageThreadState
+impl core::cmp::PartialEq for termrock::widgets::MessageThreadState
+pub fn termrock::widgets::MessageThreadState::eq(&self, &termrock::widgets::MessageThreadState) -> bool
+impl core::default::Default for termrock::widgets::MessageThreadState
+pub fn termrock::widgets::MessageThreadState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::MessageThreadState
+pub fn termrock::widgets::MessageThreadState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MessageThreadState
+impl core::marker::Freeze for termrock::widgets::MessageThreadState
+impl core::marker::Send for termrock::widgets::MessageThreadState
+impl core::marker::Sync for termrock::widgets::MessageThreadState
+impl core::marker::Unpin for termrock::widgets::MessageThreadState
+impl core::marker::UnsafeUnpin for termrock::widgets::MessageThreadState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MessageThreadState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MessageThreadState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MessageThreadState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MessageThreadState where U: core::convert::From<T>
+pub fn termrock::widgets::MessageThreadState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MessageThreadState where U: core::convert::Into<T>
+pub type termrock::widgets::MessageThreadState::Error = core::convert::Infallible
+pub fn termrock::widgets::MessageThreadState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MessageThreadState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MessageThreadState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MessageThreadState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MessageThreadState where T: core::clone::Clone
+pub type termrock::widgets::MessageThreadState::Owned = T
+pub fn termrock::widgets::MessageThreadState::clone_into(&self, &mut T)
+pub fn termrock::widgets::MessageThreadState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MessageThreadState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MessageThreadState where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MessageThreadState where T: ?core::marker::Sized
+pub fn termrock::widgets::MessageThreadState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MessageThreadState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MessageThreadState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MessageThreadState
+pub fn termrock::widgets::MessageThreadState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MessageThreadState
 pub struct termrock::widgets::MeterSegment<'a>
 pub termrock::widgets::MeterSegment::label: &'a str
 pub termrock::widgets::MeterSegment::role: termrock::style::Role
@@ -60098,6 +60552,54 @@ pub unsafe fn termrock::widgets::ProgressStepsState::clone_to_uninit(&self, *mut
 impl<T> core::convert::From<T> for termrock::widgets::ProgressStepsState
 pub fn termrock::widgets::ProgressStepsState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ProgressStepsState
+pub struct termrock::widgets::ProjectedEntryMeta
+pub termrock::widgets::ProjectedEntryMeta::enabled: bool
+pub termrock::widgets::ProjectedEntryMeta::folded: bool
+pub termrock::widgets::ProjectedEntryMeta::id: alloc::string::String
+pub termrock::widgets::ProjectedEntryMeta::kind: termrock::widgets::MessageKind
+pub termrock::widgets::ProjectedEntryMeta::line_buf_index: usize
+pub termrock::widgets::ProjectedEntryMeta::revision: u64
+pub termrock::widgets::ProjectedEntryMeta::summary: core::option::Option<alloc::string::String>
+impl core::clone::Clone for termrock::widgets::ProjectedEntryMeta
+pub fn termrock::widgets::ProjectedEntryMeta::clone(&self) -> termrock::widgets::ProjectedEntryMeta
+impl core::cmp::Eq for termrock::widgets::ProjectedEntryMeta
+impl core::cmp::PartialEq for termrock::widgets::ProjectedEntryMeta
+pub fn termrock::widgets::ProjectedEntryMeta::eq(&self, &termrock::widgets::ProjectedEntryMeta) -> bool
+impl core::fmt::Debug for termrock::widgets::ProjectedEntryMeta
+pub fn termrock::widgets::ProjectedEntryMeta::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ProjectedEntryMeta
+impl core::marker::Freeze for termrock::widgets::ProjectedEntryMeta
+impl core::marker::Send for termrock::widgets::ProjectedEntryMeta
+impl core::marker::Sync for termrock::widgets::ProjectedEntryMeta
+impl core::marker::Unpin for termrock::widgets::ProjectedEntryMeta
+impl core::marker::UnsafeUnpin for termrock::widgets::ProjectedEntryMeta
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ProjectedEntryMeta
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ProjectedEntryMeta
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ProjectedEntryMeta where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ProjectedEntryMeta::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ProjectedEntryMeta where U: core::convert::From<T>
+pub fn termrock::widgets::ProjectedEntryMeta::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ProjectedEntryMeta where U: core::convert::Into<T>
+pub type termrock::widgets::ProjectedEntryMeta::Error = core::convert::Infallible
+pub fn termrock::widgets::ProjectedEntryMeta::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ProjectedEntryMeta where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ProjectedEntryMeta::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ProjectedEntryMeta::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ProjectedEntryMeta where T: core::clone::Clone
+pub type termrock::widgets::ProjectedEntryMeta::Owned = T
+pub fn termrock::widgets::ProjectedEntryMeta::clone_into(&self, &mut T)
+pub fn termrock::widgets::ProjectedEntryMeta::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ProjectedEntryMeta where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ProjectedEntryMeta::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ProjectedEntryMeta where T: ?core::marker::Sized
+pub fn termrock::widgets::ProjectedEntryMeta::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ProjectedEntryMeta where T: ?core::marker::Sized
+pub fn termrock::widgets::ProjectedEntryMeta::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ProjectedEntryMeta where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ProjectedEntryMeta::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ProjectedEntryMeta
+pub fn termrock::widgets::ProjectedEntryMeta::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ProjectedEntryMeta
 pub struct termrock::widgets::PromptComposer<'a>
 impl<'a> termrock::widgets::PromptComposer<'a>
 pub const fn termrock::widgets::PromptComposer<'a>::new(&'a termrock::style::DesignSystem) -> Self
@@ -68788,6 +69290,48 @@ pub unsafe fn termrock::widgets::ThinkingBlock<'a>::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ThinkingBlock<'a>
 pub fn termrock::widgets::ThinkingBlock<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ThinkingBlock<'a>
+pub struct termrock::widgets::ThreadProjection
+pub termrock::widgets::ThreadProjection::bufs: alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>
+pub termrock::widgets::ThreadProjection::meta: alloc::vec::Vec<termrock::widgets::ProjectedEntryMeta>
+impl termrock::widgets::ThreadProjection
+pub fn termrock::widgets::ThreadProjection::blocks<'a>(&'a self, &'a mut alloc::vec::Vec<alloc::vec::Vec<&'a str>>) -> alloc::vec::Vec<termrock::widgets::TranscriptBlock<'a, alloc::string::String>>
+pub fn termrock::widgets::ThreadProjection::is_empty(&self) -> bool
+pub fn termrock::widgets::ThreadProjection::len(&self) -> usize
+pub fn termrock::widgets::ThreadProjection::project(&[termrock::widgets::MessageEntry], termrock::widgets::MessageZoom, core::option::Option<&str>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::ThreadProjection
+pub fn termrock::widgets::ThreadProjection::clone(&self) -> termrock::widgets::ThreadProjection
+impl core::fmt::Debug for termrock::widgets::ThreadProjection
+pub fn termrock::widgets::ThreadProjection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for termrock::widgets::ThreadProjection
+impl core::marker::Send for termrock::widgets::ThreadProjection
+impl core::marker::Sync for termrock::widgets::ThreadProjection
+impl core::marker::Unpin for termrock::widgets::ThreadProjection
+impl core::marker::UnsafeUnpin for termrock::widgets::ThreadProjection
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ThreadProjection
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ThreadProjection
+impl<T, U> core::convert::Into<U> for termrock::widgets::ThreadProjection where U: core::convert::From<T>
+pub fn termrock::widgets::ThreadProjection::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ThreadProjection where U: core::convert::Into<T>
+pub type termrock::widgets::ThreadProjection::Error = core::convert::Infallible
+pub fn termrock::widgets::ThreadProjection::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ThreadProjection where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ThreadProjection::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ThreadProjection::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ThreadProjection where T: core::clone::Clone
+pub type termrock::widgets::ThreadProjection::Owned = T
+pub fn termrock::widgets::ThreadProjection::clone_into(&self, &mut T)
+pub fn termrock::widgets::ThreadProjection::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ThreadProjection where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ThreadProjection::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ThreadProjection where T: ?core::marker::Sized
+pub fn termrock::widgets::ThreadProjection::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ThreadProjection where T: ?core::marker::Sized
+pub fn termrock::widgets::ThreadProjection::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ThreadProjection where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ThreadProjection::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ThreadProjection
+pub fn termrock::widgets::ThreadProjection::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ThreadProjection
 pub struct termrock::widgets::Timeline<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::Timeline<'a, Id>
 pub const fn termrock::widgets::Timeline<'a, Id>::ascii(self, bool) -> Self
@@ -72624,6 +73168,8 @@ pub const termrock::widgets::MENU_PROMOTE_MAX_HEIGHT: u16
 pub const termrock::widgets::MENU_PROMOTE_MAX_ITEMS: usize
 pub const termrock::widgets::MENU_PROMOTE_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_PROMOTE_MIN_DEPTH: usize
+pub const termrock::widgets::MESSAGE_THREAD_COMPACT_BODY_LINES: usize
+pub const termrock::widgets::MESSAGE_THREAD_EXPAND_LINE_CAP: usize
 pub const termrock::widgets::METRICS_DASHBOARD_DEFAULT_REFRESH_MS: u32
 pub const termrock::widgets::METRICS_DASHBOARD_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::MIN_WIDTH_WITH_PERCENTAGE: u16
@@ -72740,6 +73286,7 @@ pub fn termrock::widgets::attachment_token_items<'a>(&'a [termrock::widgets::Att
 pub fn termrock::widgets::auto_bytes_per_row(u16, u8) -> u8
 pub fn termrock::widgets::binding_from_recorder<A: core::clone::Clone + 'static>(&termrock::widgets::KeybindingRecorderState, A, termrock::keymap::Visibility) -> termrock::keymap::KeyBinding<A>
 pub fn termrock::widgets::breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
+pub fn termrock::widgets::build_transcript_blocks<'a>(&'a [termrock::widgets::ProjectedEntryMeta], &'a [alloc::vec::Vec<alloc::string::String>], &'a mut alloc::vec::Vec<alloc::vec::Vec<&'a str>>) -> alloc::vec::Vec<termrock::widgets::TranscriptBlock<'a, alloc::string::String>>
 pub fn termrock::widgets::button_hit<Id: core::clone::Clone>(Id, &termrock::widgets::ButtonState) -> core::option::Option<termrock::interaction::HitRegion<Id>>
 pub fn termrock::widgets::choose_dependency_view(termrock::widgets::DependencyGraphView, usize, u16, bool) -> (termrock::widgets::DependencyGraphView, core::option::Option<termrock::widgets::GraphUnreadableReason>)
 pub fn termrock::widgets::clamp_cell_display(&str, usize) -> alloc::string::String
@@ -72750,6 +73297,7 @@ pub fn termrock::widgets::collect_errors<'a, Id>(&'a [termrock::widgets::Fieldse
 pub fn termrock::widgets::collect_jump_candidates<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>, &termrock::widgets::JumpFilter) -> alloc::vec::Vec<termrock::widgets::JumpCandidate<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
 pub fn termrock::widgets::collect_match_targets(&[termrock::widgets::SearchResultItem<'_>]) -> alloc::vec::Vec<(usize, bool)>
 pub fn termrock::widgets::command_palette_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::CommandPalettePresentation
+pub fn termrock::widgets::compact_entries(&[termrock::widgets::MessageEntry], usize) -> alloc::vec::Vec<termrock::widgets::MessageEntry>
 pub fn termrock::widgets::completion_prefix(&str, termrock::widgets::PathStyle) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::completion_presentation_for(ratatui_core::layout::rect::Rect) -> termrock::widgets::CompletionPresentation
 pub fn termrock::widgets::composer_chip_to_attachment(&termrock::widgets::ComposerChip) -> core::option::Option<termrock::widgets::AttachmentItem>
@@ -72839,6 +73387,7 @@ pub fn termrock::widgets::example_file_preview<'a>() -> (termrock::widgets::Prev
 pub fn termrock::widgets::example_help_entries(&termrock::style::DesignSystem) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::example_help_keymap() -> termrock::keymap::Keymap<termrock::widgets::DemoHelpAction>
 pub fn termrock::widgets::example_history_entries() -> alloc::vec::Vec<termrock::widgets::HistoryEntry<&'static str>>
+pub fn termrock::widgets::example_message_session() -> alloc::vec::Vec<termrock::widgets::MessageEntry>
 pub fn termrock::widgets::example_model_catalog() -> alloc::vec::Vec<termrock::widgets::ModelOption>
 pub fn termrock::widgets::example_notifications(u64) -> alloc::vec::Vec<termrock::widgets::NotificationItem>
 pub fn termrock::widgets::example_onboarding_steps() -> alloc::vec::Vec<termrock::widgets::StepItem>
@@ -72870,6 +73419,7 @@ pub fn termrock::widgets::filter_critical_path<'a>(&'a [termrock::widgets::Trace
 pub fn termrock::widgets::filter_dep_edges<'a>(&'a [termrock::widgets::DepEdge<'a>], &alloc::collections::btree::set::BTreeSet<&str>) -> alloc::vec::Vec<&'a termrock::widgets::DepEdge<'a>>
 pub fn termrock::widgets::filter_dep_nodes<'a>(&'a [termrock::widgets::DepNode<'a>], &str) -> alloc::vec::Vec<&'a termrock::widgets::DepNode<'a>>
 pub fn termrock::widgets::filter_diff_lines<'a>(&'a [termrock::widgets::DiffLine<'a>], &str, &termrock::widgets::DiffViewState) -> alloc::vec::Vec<&'a termrock::widgets::DiffLine<'a>>
+pub fn termrock::widgets::filter_entries<'a>(&'a [termrock::widgets::MessageEntry], &str) -> alloc::vec::Vec<&'a termrock::widgets::MessageEntry>
 pub fn termrock::widgets::filter_file_tree_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &str, bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::FileTreeEntry<'a, Id>>
 pub fn termrock::widgets::filter_help_entries(&[termrock::widgets::HelpEntry], &str) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::filter_history_entries<Id: core::clone::Clone>(&[termrock::widgets::HistoryEntry<Id>], &str) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<Id>>
@@ -73044,6 +73594,7 @@ pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets:
 pub fn termrock::widgets::project_dep_tree_rows(&[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>], &mut alloc::vec::Vec<[alloc::string::String; 4]>) -> alloc::vec::Vec<(alloc::string::String, u16, bool, bool, core::option::Option<alloc::string::String>, usize)>
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
 pub fn termrock::widgets::project_markdown(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
+pub fn termrock::widgets::project_message_thread(&[termrock::widgets::MessageEntry], termrock::widgets::MessageZoom, core::option::Option<&str>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> (alloc::vec::Vec<termrock::widgets::ProjectedEntryMeta>, alloc::vec::Vec<alloc::vec::Vec<alloc::string::String>>)
 pub fn termrock::widgets::project_plain_lines(&str) -> alloc::vec::Vec<termrock::widgets::MarkdownBlock<'_>>
 pub fn termrock::widgets::project_result_rows(&[termrock::widgets::ResultRow<'_>], &[termrock::widgets::ResultColumn], termrock::widgets::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
 pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>

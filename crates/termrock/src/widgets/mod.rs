@@ -39,6 +39,7 @@ mod attachment_chips;
 mod mention;
 mod slash_command_menu;
 mod model_mode_selectors;
+mod message_thread;
 mod text;
 mod separator;
 mod toolbar;
@@ -598,6 +599,13 @@ pub use model_mode_selectors::{
     modes_to_workbench,
 };
 pub use model_mode_selectors::bench as model_mode_selectors_bench;
+pub use message_thread::{
+    MESSAGE_THREAD_COMPACT_BODY_LINES, MESSAGE_THREAD_EXPAND_LINE_CAP, MessageAction, MessageActor,
+    MessageEntry, MessageKind, MessageThread, MessageThreadOutcome, MessageThreadState, MessageZoom,
+    ProjectedEntryMeta, ThreadProjection, build_transcript_blocks, compact_entries,
+    example_message_session, filter_entries, project_message_thread,
+};
+pub use message_thread::bench as message_thread_bench;
 pub use separator::{
     Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
 };

@@ -1966,6 +1966,21 @@ Every component below uses sections **1–24**:
 
 # 11. AI-agent components
 
+## MessageThread
+
+1. **Purpose:** Virtualized agent conversation / activity transcript.  
+2. **Anatomy:** viewport · projected lines · follow · unread chip · search · zoom.  
+3. **Public properties:** `MessageEntry` (kind, actor, time, group, lines, collapsed, checkpoint).  
+4. **State:** TranscriptState + zoom/search/expanded/unread.  
+5. **Variants:** Compact/Summary/Full zoom; folded tools/events.  
+6–10. j/k select; Enter activate; Ctrl+Z zoom; Ctrl+N jump; / search; r/x tool actions.  
+11–14. Host payloads; project-to-lines; no nested widgets v1.  
+15–18. Drop timestamps narrow; ASCII prefixes; no chat bubbles.  
+19. **Composition:** Transcript substrate; AgentWorkbench center.  
+20. **Outcomes:** Activated · Fold · Follow · Jump · Copy · Search · Zoom · Action.  
+21. **Stories:** `message-thread/{basic,follow,unread,compact-zoom,narrow,ascii}`.  
+22–24. 2k-entry paint; unread accounting; checkpoint compact.
+
 ## ModelSelector
 
 1. **Purpose:** Compact/expandable model id picker with host metadata.  

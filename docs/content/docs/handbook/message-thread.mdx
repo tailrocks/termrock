@@ -1,0 +1,35 @@
+---
+title: MessageThread
+description: Virtualized agent conversation transcript over Transcript substrate.
+---
+
+# MessageThread
+
+Long-running agent sessions: heterogeneous entries projected to lines over
+kernel `Transcript` (virtualization, anchors, follow). Host owns payloads and
+run effects; TermRock owns viewport, zoom, search, and typed outcomes.
+
+## When to use / when not
+
+| Use MessageThread | Prefer |
+|-------------------|--------|
+| Agent conversation center pane | — |
+| Raw log tail | [LogStream](/docs/handbook/log-stream) |
+| Low-level measure/follow only | Transcript |
+
+## v1 law
+
+No nested StatefulWidgets in the viewport. Activate → host expands lines or
+opens overlay detail.
+
+## Streaming
+
+```rust
+entries.push(next);
+state.on_entries_len(entries.len()); // unread if not following
+MessageThread::new(&entries, &system).paint(area, buf, &mut state);
+```
+
+## Related
+
+Transcript · AgentWorkbench · migration `0216`

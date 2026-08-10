@@ -5405,6 +5405,60 @@ pub(crate) fn stories() -> Vec<Story> {
             composer_selectors_strip_story,
         ),
         Story::new(
+            "message-thread/basic",
+            "MessageThread basic",
+            "MessageThread",
+            "Mixed user/assistant/tool/event/error session.",
+            56,
+            16,
+            message_thread_basic_story,
+        ),
+        Story::new(
+            "message-thread/follow",
+            "MessageThread follow",
+            "MessageThread",
+            "Follow-tail session at end.",
+            48,
+            12,
+            message_thread_follow_story,
+        ),
+        Story::new(
+            "message-thread/unread",
+            "MessageThread unread",
+            "MessageThread",
+            "New-content indicator when not following.",
+            48,
+            12,
+            message_thread_unread_story,
+        ),
+        Story::new(
+            "message-thread/compact-zoom",
+            "MessageThread compact zoom",
+            "MessageThread",
+            "Semantic zoom compact (folded tools).",
+            48,
+            12,
+            message_thread_compact_zoom_story,
+        ),
+        Story::new(
+            "message-thread/narrow",
+            "MessageThread narrow",
+            "MessageThread",
+            "Narrow-terminal thread paint.",
+            28,
+            10,
+            message_thread_narrow_story,
+        ),
+        Story::new(
+            "message-thread/ascii",
+            "MessageThread ascii",
+            "MessageThread",
+            "ASCII/colorless prefixes.",
+            48,
+            12,
+            message_thread_ascii_story,
+        ),
+        Story::new(
             "badge/basic",
             "Badge variants",
             "Badge",
@@ -18484,6 +18538,68 @@ fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &De
         &as_,
         &ms,
     );
+}
+
+fn message_thread_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.set_focused(true);
+    st.on_entries_len(entries.len());
+    MessageThread::new(&entries, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn message_thread_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.set_focused(true);
+    st.transcript.set_follow(true);
+    st.on_entries_len(entries.len());
+    MessageThread::new(&entries, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn message_thread_unread_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.set_focused(true);
+    st.transcript.set_follow(false);
+    st.on_entries_len(3);
+    st.on_entries_len(entries.len());
+    MessageThread::new(&entries, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn message_thread_compact_zoom_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_message_session, MessageThread, MessageThreadState, MessageZoom,
+    };
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.zoom = MessageZoom::Compact;
+    st.set_focused(true);
+    MessageThread::new(&entries, system).paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn message_thread_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.set_focused(true);
+    MessageThread::new(&entries, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+
+fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    let entries = example_message_session();
+    let mut st = MessageThreadState::new();
+    st.set_focused(true);
+    MessageThread::new(&entries, system)
+        .ascii(true)
+        .colorless(true)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -14,6 +14,7 @@
     "entity-mention",
     "slash-command-menu",
     "agent-mode-selector",
+    "message-thread",
     "model-selector",
     "permission-prompt",
     "agent-workbench",
