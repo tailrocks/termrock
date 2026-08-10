@@ -1186,6 +1186,98 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "connection-manager".into(),
+            title: "Connection Manager".into(),
+            description: "Reusable DB/SSH/API/service connection inventory: list, status, search, groups, recent, favorites, add/edit/test, safe secrets, reconnect, gated delete; launcher + full views; OfflineState and diagnostic projection. Protocol and persistence host-owned.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::widgets::connection_manager".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/widgets/connection_manager.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/Panel".into(),
+                    "termrock/PasswordInput".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("List".into());
+                c.min_width = Some(20);
+                c.min_height = Some(8);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "search".into(),
+                    label: "Search / view filter".into(),
+                },
+                AnatomyPartRef {
+                    id: "list".into(),
+                    label: "Connection list".into(),
+                },
+                AnatomyPartRef {
+                    id: "detail".into(),
+                    label: "Detail / diagnostics".into(),
+                },
+                AnatomyPartRef {
+                    id: "form".into(),
+                    label: "Add/edit form + secret".into(),
+                },
+                AnatomyPartRef {
+                    id: "confirm".into(),
+                    label: "Delete confirm".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "launcher".into(),
+                    description: "Compact launcher".into(),
+                },
+                VariantRef {
+                    id: "full".into(),
+                    description: "Full management".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "ConnectRequested".into(),
+                },
+                OutcomeRef {
+                    id: "TestRequested".into(),
+                },
+                OutcomeRef {
+                    id: "SaveRequested".into(),
+                },
+                OutcomeRef {
+                    id: "DeleteRequested".into(),
+                },
+            ],
+            stories: vec![
+                "connection-manager/full".into(),
+                "connection-manager/launcher".into(),
+                "connection-manager/empty".into(),
+                "connection-manager/error".into(),
+                "connection-manager/secret".into(),
+                "connection-manager/confirm".into(),
+                "connection-manager/narrow".into(),
+                "connection-manager/unicode".into(),
+            ],
+            tests: vec!["widgets::connection_manager".into()],
+            migration: Some("migrations/0239-v0.13.0-connection-manager.md".into()),
+            provenance: prov("crates/termrock/src/widgets/connection_manager.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 

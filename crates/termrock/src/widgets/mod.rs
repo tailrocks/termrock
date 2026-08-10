@@ -126,6 +126,7 @@ mod object_inspector;
 mod timeline;
 mod checkpoint_timeline;
 mod session_picker;
+mod connection_manager;
 mod prompt_queue;
 mod agent_status_header;
 mod integration_status;
@@ -314,6 +315,17 @@ pub use session_picker::{
     SessionPickerState, SessionStatus, example_sessions, filter_sessions,
 };
 pub use session_picker::bench as session_picker_bench;
+pub use connection_manager::{
+    CONNECTION_MANAGER_LAUNCHER_OVERLAY_ID, CONNECTION_MANAGER_OVERLAY_ID,
+    CONNECTION_MANAGER_RECENT_CAP, CONNECTION_MANAGER_WINDOW, CONNECTION_SECRET_REDACTED,
+    CONNECTION_SECRET_REDACTED_ASCII, ConnectionCredentialMeta, ConnectionDiagnosticSummary,
+    ConnectionEntry, ConnectionFormDraft, ConnectionFormField, ConnectionKind, ConnectionListView,
+    ConnectionManager, ConnectionManagerOutcome, ConnectionManagerPhase,
+    ConnectionManagerPresentation, ConnectionManagerState, ConnectionStatus,
+    connection_error_diagnostic, connection_to_reconnecting_state, example_connections,
+    filter_connections,
+};
+pub use connection_manager::bench as connection_manager_bench;
 pub use question_flow::{
     QUESTION_FLOW_FULLSCREEN_OVERLAY_ID, QUESTION_FLOW_OPTION_WINDOW, Question, QuestionAnswer,
     QuestionAnswerSet, QuestionFlow, QuestionFlowOutcome, QuestionFlowPhase,

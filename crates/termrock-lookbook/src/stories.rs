@@ -6981,6 +6981,60 @@ pub(crate) fn stories() -> Vec<Story> {
             session_picker_empty_story,
         ),
         Story::new(
+            "connection-manager/full",
+            "ConnectionManager full",
+            "ConnectionManager",
+            "Full management view: list, status, detail, offline banner.",
+            72,
+            18,
+            connection_manager_full_story,
+        ),
+        Story::new(
+            "connection-manager/launcher",
+            "ConnectionManager launcher",
+            "ConnectionManager",
+            "Compact launcher presentation for quick connect.",
+            48,
+            12,
+            connection_manager_launcher_story,
+        ),
+        Story::new(
+            "connection-manager/empty",
+            "ConnectionManager empty",
+            "ConnectionManager",
+            "Empty catalog — add prompt.",
+            48,
+            10,
+            connection_manager_empty_story,
+        ),
+        Story::new(
+            "connection-manager/error",
+            "ConnectionManager error",
+            "ConnectionManager",
+            "Connection with last_error + diagnostic projection.",
+            64,
+            14,
+            connection_manager_error_story,
+        ),
+        Story::new(
+            "connection-manager/secret",
+            "ConnectionManager secret form",
+            "ConnectionManager",
+            "Add form with masked secret field (never paints raw secret).",
+            56,
+            14,
+            connection_manager_secret_story,
+        ),
+        Story::new(
+            "connection-manager/confirm",
+            "ConnectionManager delete confirm",
+            "ConnectionManager",
+            "Safe delete confirm with Cancel default focus.",
+            56,
+            12,
+            connection_manager_confirm_story,
+        ),
+        Story::new(
             "task-rail/basic",
             "Task rail",
             "TaskRail",
@@ -8492,6 +8546,24 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             12,
             session_picker_unicode_story,
+        ),
+        Story::new(
+            "connection-manager/narrow",
+            "Narrow ConnectionManager",
+            "ConnectionManager",
+            "Narrow-terminal geometry for ConnectionManager (20 cols).",
+            20,
+            14,
+            connection_manager_full_story,
+        ),
+        Story::new(
+            "connection-manager/unicode",
+            "Unicode ConnectionManager",
+            "ConnectionManager",
+            "Unicode-safe paint path for ConnectionManager (CJK/emoji-capable layout).",
+            48,
+            12,
+            connection_manager_unicode_story,
         ),
         Story::new(
             "skeleton/narrow",
@@ -22083,6 +22155,81 @@ fn session_picker_empty_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
 }
 
+fn connection_manager_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_connections, ConnectionManager, ConnectionManagerPresentation,
+        ConnectionManagerState,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.set_connections(example_connections());
+    state.set_presentation(ConnectionManagerPresentation::Full);
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
+fn connection_manager_launcher_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_connections, ConnectionManager, ConnectionManagerPresentation,
+        ConnectionManagerState,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.set_connections(example_connections());
+    state.set_presentation(ConnectionManagerPresentation::Launcher);
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
+fn connection_manager_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ConnectionManager, ConnectionManagerState};
+    let mut state = ConnectionManagerState::new();
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
+fn connection_manager_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_connections, ConnectionManager, ConnectionManagerState,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.set_connections(example_connections());
+    if let Some(i) = state
+        .filtered_indices()
+        .iter()
+        .position(|&si| state.connections[si].id == "c4")
+    {
+        state.cursor = i;
+    }
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
+fn connection_manager_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ConnectionFormField, ConnectionManager, ConnectionManagerPhase, ConnectionManagerState,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.phase = ConnectionManagerPhase::Add;
+    state.form.name = "New DB".into();
+    state.form.target = "localhost:5432".into();
+    state.form.protocol_label = "postgres".into();
+    state.form.environment = "local".into();
+    state.form_field = ConnectionFormField::Secret;
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
+fn connection_manager_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        example_connections, ConnectionManager, ConnectionManagerPhase, ConnectionManagerState,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.set_connections(example_connections());
+    state.phase = ConnectionManagerPhase::ConfirmDelete;
+    state.confirm_proceed_focused = false;
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
+}
+
 fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
     let items = example_activity_models();
@@ -23424,6 +23571,33 @@ fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     ]);
     state.focused = true;
     frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
+}
+
+fn connection_manager_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ConnectionEntry, ConnectionKind, ConnectionManager, ConnectionManagerState,
+        ConnectionStatus, ConnectionCredentialMeta,
+    };
+    let mut state = ConnectionManagerState::new();
+    state.set_connections(vec![
+        ConnectionEntry::new(
+            "u1",
+            "本番DB 🔍",
+            ConnectionKind::Database,
+            "postgres",
+            "db.東京:5432",
+        )
+        .environment("本番")
+        .group("データベース")
+        .status(ConnectionStatus::Connected)
+        .favorite(true)
+        .credential(ConnectionCredentialMeta::present("パスワード")),
+        ConnectionEntry::new("u2", "堡垒机", ConnectionKind::Ssh, "ssh", "堡垒:22")
+            .environment("运维")
+            .status(ConnectionStatus::AuthRequired),
+    ]);
+    state.focused = true;
+    frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
 }
 
 fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

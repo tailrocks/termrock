@@ -252,6 +252,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0236 | `v0.13.0` | [AgentWorkbench elevated composition block](migrations/0236-v0.13.0-agent-workbench.md) |
 | 0237 | `v0.13.0` | [SettingsScreen elevated searchable settings](migrations/0237-v0.13.0-settings-screen.md) |
 | 0238 | `v0.13.0` | [SetupWizard first-run onboarding block](migrations/0238-v0.13.0-setup-wizard.md) |
+| 0239 | `v0.13.0` | [ConnectionManager connection inventory block](migrations/0239-v0.13.0-connection-manager.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
