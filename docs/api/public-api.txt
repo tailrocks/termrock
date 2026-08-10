@@ -14705,6 +14705,10 @@ pub const termrock::widgets::result_grid_bench::PAGE_ROWS: usize
 pub const termrock::widgets::result_grid_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::result_grid_bench::STREAM_RESIDENT: u64
 pub const termrock::widgets::result_grid_bench::WIDE_COLUMNS: usize
+pub mod termrock::widgets::schema_browser_bench
+pub const termrock::widgets::schema_browser_bench::OBJECT_COUNT: usize
+pub const termrock::widgets::schema_browser_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::schema_browser_bench::VIEWPORT: u16
 pub mod termrock::widgets::terminal_output_bench
 pub const termrock::widgets::terminal_output_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::terminal_output_bench::MAX_PAINT_CELLS: u32
@@ -30109,6 +30113,238 @@ pub unsafe fn termrock::widgets::ScaleMode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ScaleMode
 pub fn termrock::widgets::ScaleMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScaleMode
+#[non_exhaustive] pub enum termrock::widgets::SchemaBrowserOutcome<Id>
+pub termrock::widgets::SchemaBrowserOutcome::BreadcrumbsPath
+pub termrock::widgets::SchemaBrowserOutcome::BreadcrumbsPath::items: alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
+pub termrock::widgets::SchemaBrowserOutcome::Cancelled
+pub termrock::widgets::SchemaBrowserOutcome::CheckToggled(Id)
+pub termrock::widgets::SchemaBrowserOutcome::ContextAction(termrock::widgets::SchemaContextAction<Id>)
+pub termrock::widgets::SchemaBrowserOutcome::CopyPathRequested
+pub termrock::widgets::SchemaBrowserOutcome::CopyPathRequested::paths: alloc::vec::Vec<alloc::string::String>
+pub termrock::widgets::SchemaBrowserOutcome::FilterChanged(alloc::string::String)
+pub termrock::widgets::SchemaBrowserOutcome::Ignored
+pub termrock::widgets::SchemaBrowserOutcome::LoadChildrenRequested(Id)
+pub termrock::widgets::SchemaBrowserOutcome::OpenRequested(Id)
+pub termrock::widgets::SchemaBrowserOutcome::PresentationChanged(termrock::widgets::SchemaBrowserPresentation)
+pub termrock::widgets::SchemaBrowserOutcome::PreviewRequested(Id)
+pub termrock::widgets::SchemaBrowserOutcome::QuickOpenRequested
+pub termrock::widgets::SchemaBrowserOutcome::ReconnectRequested(Id)
+pub termrock::widgets::SchemaBrowserOutcome::RefreshRequested
+pub termrock::widgets::SchemaBrowserOutcome::RefreshRequested::id: core::option::Option<Id>
+pub termrock::widgets::SchemaBrowserOutcome::SelectionChanged(Id)
+pub termrock::widgets::SchemaBrowserOutcome::Toggle(Id)
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SchemaBrowserOutcome<Id>
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::clone(&self) -> termrock::widgets::SchemaBrowserOutcome<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SchemaBrowserOutcome<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SchemaBrowserOutcome<Id>
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::eq(&self, &termrock::widgets::SchemaBrowserOutcome<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SchemaBrowserOutcome<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SchemaBrowserOutcome<Id>
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaBrowserOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaBrowserOutcome<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaBrowserOutcome<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaBrowserOutcome<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaBrowserOutcome<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaBrowserOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaBrowserOutcome<Id> where T: core::clone::Clone
+pub type termrock::widgets::SchemaBrowserOutcome<Id>::Owned = T
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaBrowserOutcome<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaBrowserOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaBrowserOutcome<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaBrowserOutcome<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaBrowserOutcome<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaBrowserOutcome<Id>
+pub fn termrock::widgets::SchemaBrowserOutcome<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaBrowserOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::SchemaBrowserPresentation
+pub termrock::widgets::SchemaBrowserPresentation::Drawer
+pub termrock::widgets::SchemaBrowserPresentation::Fullscreen
+pub termrock::widgets::SchemaBrowserPresentation::SidePane
+impl termrock::widgets::SchemaBrowserPresentation
+pub const fn termrock::widgets::SchemaBrowserPresentation::cycle(self) -> Self
+pub const fn termrock::widgets::SchemaBrowserPresentation::for_bounds(u16, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserPresentation::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::clone(&self) -> termrock::widgets::SchemaBrowserPresentation
+impl core::cmp::Eq for termrock::widgets::SchemaBrowserPresentation
+impl core::cmp::PartialEq for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::eq(&self, &termrock::widgets::SchemaBrowserPresentation) -> bool
+impl core::default::Default for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::default() -> termrock::widgets::SchemaBrowserPresentation
+impl core::fmt::Debug for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::StructuralPartialEq for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::Freeze for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::Send for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::Sync for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::Unpin for termrock::widgets::SchemaBrowserPresentation
+impl core::marker::UnsafeUnpin for termrock::widgets::SchemaBrowserPresentation
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaBrowserPresentation
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaBrowserPresentation
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaBrowserPresentation where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserPresentation::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaBrowserPresentation where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaBrowserPresentation::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaBrowserPresentation where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaBrowserPresentation::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaBrowserPresentation::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaBrowserPresentation where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaBrowserPresentation::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaBrowserPresentation::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaBrowserPresentation where T: core::clone::Clone
+pub type termrock::widgets::SchemaBrowserPresentation::Owned = T
+pub fn termrock::widgets::SchemaBrowserPresentation::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaBrowserPresentation::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaBrowserPresentation where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserPresentation::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaBrowserPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserPresentation::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaBrowserPresentation where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserPresentation::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaBrowserPresentation where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaBrowserPresentation::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserPresentation::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaBrowserPresentation
+#[non_exhaustive] pub enum termrock::widgets::SchemaConnStatus
+pub termrock::widgets::SchemaConnStatus::Connected
+pub termrock::widgets::SchemaConnStatus::Connecting
+pub termrock::widgets::SchemaConnStatus::Error
+pub termrock::widgets::SchemaConnStatus::Offline
+pub termrock::widgets::SchemaConnStatus::Stale
+impl termrock::widgets::SchemaConnStatus
+pub const fn termrock::widgets::SchemaConnStatus::id(self) -> &'static str
+pub const fn termrock::widgets::SchemaConnStatus::letter(self) -> char
+pub const fn termrock::widgets::SchemaConnStatus::letter_ascii(self) -> char
+pub const fn termrock::widgets::SchemaConnStatus::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::clone(&self) -> termrock::widgets::SchemaConnStatus
+impl core::cmp::Eq for termrock::widgets::SchemaConnStatus
+impl core::cmp::PartialEq for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::eq(&self, &termrock::widgets::SchemaConnStatus) -> bool
+impl core::default::Default for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::default() -> termrock::widgets::SchemaConnStatus
+impl core::fmt::Debug for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SchemaConnStatus
+impl core::marker::StructuralPartialEq for termrock::widgets::SchemaConnStatus
+impl core::marker::Freeze for termrock::widgets::SchemaConnStatus
+impl core::marker::Send for termrock::widgets::SchemaConnStatus
+impl core::marker::Sync for termrock::widgets::SchemaConnStatus
+impl core::marker::Unpin for termrock::widgets::SchemaConnStatus
+impl core::marker::UnsafeUnpin for termrock::widgets::SchemaConnStatus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaConnStatus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaConnStatus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaConnStatus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaConnStatus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaConnStatus where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaConnStatus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaConnStatus where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaConnStatus::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaConnStatus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaConnStatus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaConnStatus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaConnStatus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaConnStatus where T: core::clone::Clone
+pub type termrock::widgets::SchemaConnStatus::Owned = T
+pub fn termrock::widgets::SchemaConnStatus::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaConnStatus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaConnStatus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaConnStatus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaConnStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaConnStatus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaConnStatus where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaConnStatus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaConnStatus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaConnStatus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaConnStatus
+pub fn termrock::widgets::SchemaConnStatus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaConnStatus
+#[non_exhaustive] pub enum termrock::widgets::SchemaNodeKind
+pub termrock::widgets::SchemaNodeKind::Column
+pub termrock::widgets::SchemaNodeKind::Connection
+pub termrock::widgets::SchemaNodeKind::Constraint
+pub termrock::widgets::SchemaNodeKind::Database
+pub termrock::widgets::SchemaNodeKind::Group
+pub termrock::widgets::SchemaNodeKind::Index
+pub termrock::widgets::SchemaNodeKind::Other
+pub termrock::widgets::SchemaNodeKind::Routine
+pub termrock::widgets::SchemaNodeKind::Schema
+pub termrock::widgets::SchemaNodeKind::Sequence
+pub termrock::widgets::SchemaNodeKind::Table
+pub termrock::widgets::SchemaNodeKind::View
+impl termrock::widgets::SchemaNodeKind
+pub const fn termrock::widgets::SchemaNodeKind::default_branch(self) -> bool
+pub const fn termrock::widgets::SchemaNodeKind::glyph(self, bool) -> &'static str
+pub const fn termrock::widgets::SchemaNodeKind::id(self) -> &'static str
+pub const fn termrock::widgets::SchemaNodeKind::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::clone(&self) -> termrock::widgets::SchemaNodeKind
+impl core::cmp::Eq for termrock::widgets::SchemaNodeKind
+impl core::cmp::PartialEq for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::eq(&self, &termrock::widgets::SchemaNodeKind) -> bool
+impl core::default::Default for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::default() -> termrock::widgets::SchemaNodeKind
+impl core::fmt::Debug for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::SchemaNodeKind
+impl core::marker::StructuralPartialEq for termrock::widgets::SchemaNodeKind
+impl core::marker::Freeze for termrock::widgets::SchemaNodeKind
+impl core::marker::Send for termrock::widgets::SchemaNodeKind
+impl core::marker::Sync for termrock::widgets::SchemaNodeKind
+impl core::marker::Unpin for termrock::widgets::SchemaNodeKind
+impl core::marker::UnsafeUnpin for termrock::widgets::SchemaNodeKind
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaNodeKind
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaNodeKind
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaNodeKind where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaNodeKind::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaNodeKind where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaNodeKind::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaNodeKind where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaNodeKind::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaNodeKind::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaNodeKind where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaNodeKind::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaNodeKind::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaNodeKind where T: core::clone::Clone
+pub type termrock::widgets::SchemaNodeKind::Owned = T
+pub fn termrock::widgets::SchemaNodeKind::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaNodeKind::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaNodeKind where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaNodeKind::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaNodeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaNodeKind::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaNodeKind where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaNodeKind::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaNodeKind where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaNodeKind::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaNodeKind
+pub fn termrock::widgets::SchemaNodeKind::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaNodeKind
 #[non_exhaustive] pub enum termrock::widgets::ScrollBarVisibility
 pub termrock::widgets::ScrollBarVisibility::Always
 pub termrock::widgets::ScrollBarVisibility::Auto
@@ -58191,6 +58427,234 @@ pub unsafe fn termrock::widgets::ScaleDomain::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ScaleDomain
 pub fn termrock::widgets::ScaleDomain::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScaleDomain
+pub struct termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::SchemaBrowser<'a, Id>
+pub const fn termrock::widgets::SchemaBrowser<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::SchemaBrowser<'a, Id>::focused(self, bool) -> Self
+pub const fn termrock::widgets::SchemaBrowser<'a, Id>::new(&'a [termrock::widgets::SchemaBrowserEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SchemaBrowserState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub const fn termrock::widgets::SchemaBrowser<'a, Id>::title(self, &'a str) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SchemaBrowser<'a, Id>
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::clone(&self) -> termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SchemaBrowser<'a, Id>
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id> core::marker::Freeze for termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id> core::marker::Send for termrock::widgets::SchemaBrowser<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Sync for termrock::widgets::SchemaBrowser<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SchemaBrowser<'a, Id>
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaBrowser<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaBrowser<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaBrowser<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaBrowser<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaBrowser<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaBrowser<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaBrowser<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaBrowser<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::SchemaBrowser<'a, Id>::Owned = T
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaBrowser<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaBrowser<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaBrowser<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaBrowser<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaBrowser<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaBrowser<'a, Id>
+pub fn termrock::widgets::SchemaBrowser<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaBrowser<'a, Id>
+pub struct termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub termrock::widgets::SchemaBrowserEntry::branch: bool
+pub termrock::widgets::SchemaBrowserEntry::conn: termrock::widgets::SchemaConnStatus
+pub termrock::widgets::SchemaBrowserEntry::depth: u16
+pub termrock::widgets::SchemaBrowserEntry::enabled: bool
+pub termrock::widgets::SchemaBrowserEntry::error: core::option::Option<&'a str>
+pub termrock::widgets::SchemaBrowserEntry::expanded: bool
+pub termrock::widgets::SchemaBrowserEntry::id: Id
+pub termrock::widgets::SchemaBrowserEntry::key_badge: core::option::Option<&'a str>
+pub termrock::widgets::SchemaBrowserEntry::kind: termrock::widgets::SchemaNodeKind
+pub termrock::widgets::SchemaBrowserEntry::name: &'a str
+pub termrock::widgets::SchemaBrowserEntry::nullable: core::option::Option<bool>
+pub termrock::widgets::SchemaBrowserEntry::parent: core::option::Option<Id>
+pub termrock::widgets::SchemaBrowserEntry::path: &'a str
+pub termrock::widgets::SchemaBrowserEntry::secondary: core::option::Option<&'a str>
+pub termrock::widgets::SchemaBrowserEntry::status: termrock::widgets::TreeNodeStatus
+pub termrock::widgets::SchemaBrowserEntry::type_label: core::option::Option<&'a str>
+impl<'a, Id> termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::branch(self) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::column(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::conn_status(self, termrock::widgets::SchemaConnStatus) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::connection(Id, &'a str, &'a str) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::database(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::disabled(self) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::error_msg(self, &'a str) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::expanded(self) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::key_badge(self, &'a str) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::lazy(self) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::loading(self) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::new(Id, &'a str, &'a str, termrock::widgets::SchemaNodeKind, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::nullable(self, bool) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::parent(self, Id) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::schema(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::secondary(self, &'a str) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::table(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::type_label(self, &'a str) -> Self
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::view(Id, &'a str, &'a str, u16) -> Self
+pub const fn termrock::widgets::SchemaBrowserEntry<'a, Id>::with_status(self, termrock::widgets::TreeNodeStatus) -> Self
+impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::clone(&self) -> termrock::widgets::SchemaBrowserEntry<'a, Id>
+impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SchemaBrowserEntry<'a, Id>
+impl<'a, Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::eq(&self, &termrock::widgets::SchemaBrowserEntry<'a, Id>) -> bool
+impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SchemaBrowserEntry<'a, Id>
+impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a, Id> core::marker::Freeze for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::marker::Freeze
+impl<'a, Id> core::marker::Send for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::marker::Send
+impl<'a, Id> core::marker::Sync for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::marker::Sync
+impl<'a, Id> core::marker::Unpin for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::marker::Unpin
+impl<'a, Id> core::marker::UnsafeUnpin for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::marker::UnsafeUnpin
+impl<'a, Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<'a, Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaBrowserEntry<'a, Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaBrowserEntry<'a, Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaBrowserEntry<'a, Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaBrowserEntry<'a, Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaBrowserEntry<'a, Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaBrowserEntry<'a, Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaBrowserEntry<'a, Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaBrowserEntry<'a, Id> where T: core::clone::Clone
+pub type termrock::widgets::SchemaBrowserEntry<'a, Id>::Owned = T
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaBrowserEntry<'a, Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaBrowserEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaBrowserEntry<'a, Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaBrowserEntry<'a, Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaBrowserEntry<'a, Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub fn termrock::widgets::SchemaBrowserEntry<'a, Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaBrowserEntry<'a, Id>
+pub struct termrock::widgets::SchemaBrowserState<Id: core::clone::Clone + core::cmp::Ord>
+pub termrock::widgets::SchemaBrowserState::ascii: bool
+pub termrock::widgets::SchemaBrowserState::expanded: alloc::collections::btree::set::BTreeSet<Id>
+pub termrock::widgets::SchemaBrowserState::filter: core::option::Option<alloc::string::String>
+pub termrock::widgets::SchemaBrowserState::presentation: termrock::widgets::SchemaBrowserPresentation
+pub termrock::widgets::SchemaBrowserState::presentation_override: core::option::Option<termrock::widgets::SchemaBrowserPresentation>
+pub termrock::widgets::SchemaBrowserState::title: core::option::Option<alloc::string::String>
+pub termrock::widgets::SchemaBrowserState::tree: termrock::widgets::TreeState<Id>
+impl<Id: core::clone::Clone + core::cmp::Ord + core::cmp::PartialEq> termrock::widgets::SchemaBrowserState<Id>
+pub const fn termrock::widgets::SchemaBrowserState<Id>::accepts_input(&self) -> bool
+pub fn termrock::widgets::SchemaBrowserState<Id>::effective_presentation(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::SchemaBrowserPresentation
+pub fn termrock::widgets::SchemaBrowserState<Id>::enable_multi_select(&mut self)
+pub fn termrock::widgets::SchemaBrowserState<Id>::handle_key(&mut self, &[termrock::widgets::SchemaBrowserEntry<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SchemaBrowserOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub fn termrock::widgets::SchemaBrowserState<Id>::handle_mouse(&mut self, &[termrock::widgets::SchemaBrowserEntry<'_, Id>], termrock::input::MouseEvent) -> termrock::widgets::SchemaBrowserOutcome<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::mark_expanded(&mut self, Id, bool)
+pub fn termrock::widgets::SchemaBrowserState<Id>::new() -> Self
+pub fn termrock::widgets::SchemaBrowserState<Id>::reconcile_expanded(&mut self, &[Id])
+pub fn termrock::widgets::SchemaBrowserState<Id>::select(&mut self, core::option::Option<Id>)
+pub const fn termrock::widgets::SchemaBrowserState<Id>::selected(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::set_accepts_input(&mut self, bool)
+pub fn termrock::widgets::SchemaBrowserState<Id>::sync_expanded_from_entries(&mut self, &[termrock::widgets::SchemaBrowserEntry<'_, Id>])
+pub fn termrock::widgets::SchemaBrowserState<Id>::visible_entries<'a>(&self, &'a [termrock::widgets::SchemaBrowserEntry<'a, Id>]) -> alloc::vec::Vec<&'a termrock::widgets::SchemaBrowserEntry<'a, Id>>
+pub fn termrock::widgets::SchemaBrowserState<Id>::with_selected(core::option::Option<Id>) -> Self
+impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::Ord> core::clone::Clone for termrock::widgets::SchemaBrowserState<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::clone(&self) -> termrock::widgets::SchemaBrowserState<Id>
+impl<Id: core::clone::Clone + core::cmp::Ord> core::default::Default for termrock::widgets::SchemaBrowserState<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::default() -> Self
+impl<Id: core::cmp::Eq + core::clone::Clone + core::cmp::Ord> core::cmp::Eq for termrock::widgets::SchemaBrowserState<Id>
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::Ord> core::cmp::PartialEq for termrock::widgets::SchemaBrowserState<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::eq(&self, &termrock::widgets::SchemaBrowserState<Id>) -> bool
+impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::Ord> core::marker::StructuralPartialEq for termrock::widgets::SchemaBrowserState<Id>
+impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::Ord> core::fmt::Debug for termrock::widgets::SchemaBrowserState<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SchemaBrowserState<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SchemaBrowserState<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SchemaBrowserState<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SchemaBrowserState<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SchemaBrowserState<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaBrowserState<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaBrowserState<Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::RefUnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaBrowserState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserState<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaBrowserState<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaBrowserState<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaBrowserState<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaBrowserState<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaBrowserState<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaBrowserState<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaBrowserState<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaBrowserState<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaBrowserState<Id> where T: core::clone::Clone
+pub type termrock::widgets::SchemaBrowserState<Id>::Owned = T
+pub fn termrock::widgets::SchemaBrowserState<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaBrowserState<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaBrowserState<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserState<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaBrowserState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserState<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaBrowserState<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaBrowserState<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaBrowserState<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaBrowserState<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaBrowserState<Id>
+pub fn termrock::widgets::SchemaBrowserState<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaBrowserState<Id>
+pub struct termrock::widgets::SchemaContextAction<Id>
+pub termrock::widgets::SchemaContextAction::action: alloc::string::String
+pub termrock::widgets::SchemaContextAction::id: Id
+impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SchemaContextAction<Id>
+pub fn termrock::widgets::SchemaContextAction<Id>::clone(&self) -> termrock::widgets::SchemaContextAction<Id>
+impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::SchemaContextAction<Id>
+impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::SchemaContextAction<Id>
+pub fn termrock::widgets::SchemaContextAction<Id>::eq(&self, &termrock::widgets::SchemaContextAction<Id>) -> bool
+impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::SchemaContextAction<Id>
+impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SchemaContextAction<Id>
+pub fn termrock::widgets::SchemaContextAction<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::marker::Freeze for termrock::widgets::SchemaContextAction<Id> where Id: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::SchemaContextAction<Id> where Id: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::SchemaContextAction<Id> where Id: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::SchemaContextAction<Id> where Id: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::SchemaContextAction<Id> where Id: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::SchemaContextAction<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::SchemaContextAction<Id> where Id: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::SchemaContextAction<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::SchemaContextAction<Id>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::SchemaContextAction<Id> where U: core::convert::From<T>
+pub fn termrock::widgets::SchemaContextAction<Id>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::SchemaContextAction<Id> where U: core::convert::Into<T>
+pub type termrock::widgets::SchemaContextAction<Id>::Error = core::convert::Infallible
+pub fn termrock::widgets::SchemaContextAction<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::SchemaContextAction<Id> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::SchemaContextAction<Id>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::SchemaContextAction<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::SchemaContextAction<Id> where T: core::clone::Clone
+pub type termrock::widgets::SchemaContextAction<Id>::Owned = T
+pub fn termrock::widgets::SchemaContextAction<Id>::clone_into(&self, &mut T)
+pub fn termrock::widgets::SchemaContextAction<Id>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::SchemaContextAction<Id> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::SchemaContextAction<Id>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::SchemaContextAction<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaContextAction<Id>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::SchemaContextAction<Id> where T: ?core::marker::Sized
+pub fn termrock::widgets::SchemaContextAction<Id>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::SchemaContextAction<Id> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::SchemaContextAction<Id>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::SchemaContextAction<Id>
+pub fn termrock::widgets::SchemaContextAction<Id>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::SchemaContextAction<Id>
 pub struct termrock::widgets::ScrollAnchor
 pub termrock::widgets::ScrollAnchor::col: u16
 pub termrock::widgets::ScrollAnchor::line: usize
@@ -67356,6 +67820,7 @@ impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
 pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
+pub fn termrock::widgets::apply_expanded_set<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord>(&mut [termrock::widgets::SchemaBrowserEntry<'_, Id>], &alloc::collections::btree::set::BTreeSet<Id>)
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
@@ -67468,6 +67933,7 @@ pub fn termrock::widgets::example_symbol_preview<'a>() -> (termrock::widgets::Pr
 pub fn termrock::widgets::expand_env_vars(&str, impl core::ops::function::FnMut(&str) -> core::option::Option<alloc::string::String>) -> alloc::string::String
 pub fn termrock::widgets::expand_tabs(&str, usize) -> alloc::string::String
 pub fn termrock::widgets::expand_tilde(&str, core::option::Option<&str>) -> alloc::string::String
+pub fn termrock::widgets::expanded_ids_from_entries<Id: core::clone::Clone + core::cmp::Ord>(&[termrock::widgets::SchemaBrowserEntry<'_, Id>]) -> alloc::collections::btree::set::BTreeSet<Id>
 pub fn termrock::widgets::export_result_window_tsv(&[termrock::widgets::ResultColumn], &[termrock::widgets::ResultRow<'_>], termrock::widgets::ResultRedaction, bool, bool) -> alloc::string::String
 pub fn termrock::widgets::file_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::FileTreeEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
 pub fn termrock::widgets::file_tree_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::FileTreeEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
@@ -67481,6 +67947,7 @@ pub fn termrock::widgets::filter_list_rows<'a, Id: core::clone::Clone>(&'a [term
 pub fn termrock::widgets::filter_log_lines<'a>(&'a [termrock::widgets::LogLine<'a>], &str, termrock::widgets::LogLevel) -> alloc::vec::Vec<&'a termrock::widgets::LogLine<'a>>
 pub fn termrock::widgets::filter_processes<'a>(&'a [termrock::widgets::ProcessRow<'a>], &str, core::option::Option<&str>, core::option::Option<termrock::widgets::ProcessStatus>) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>
 pub fn termrock::widgets::filter_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &str) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
+pub fn termrock::widgets::filter_schema_entries<'a, Id: core::clone::Clone + core::cmp::PartialEq>(&'a [termrock::widgets::SchemaBrowserEntry<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::SchemaBrowserEntry<'a, Id>>
 pub fn termrock::widgets::filter_stream_events<'a, Id>(&'a [termrock::widgets::StreamEvent<'a, Id>], &str, termrock::widgets::EventSeverity, &alloc::collections::btree::set::BTreeSet<alloc::string::String>) -> alloc::vec::Vec<&'a termrock::widgets::StreamEvent<'a, Id>>
 pub fn termrock::widgets::filter_terminal_lines<'a>(&'a [termrock::widgets::TerminalLine<'a>], bool, bool) -> alloc::vec::Vec<&'a termrock::widgets::TerminalLine<'a>>
 pub fn termrock::widgets::filter_timeline_events<'a, Id>(&'a [termrock::widgets::TimelineEvent<'a, Id>], &str) -> alloc::vec::Vec<&'a termrock::widgets::TimelineEvent<'a, Id>>
@@ -67637,6 +68104,9 @@ pub fn termrock::widgets::role_for_seed(u64) -> termrock::style::Role
 pub fn termrock::widgets::row_count(u64, u8) -> u64
 pub fn termrock::widgets::row_for_offset(u64, u8) -> u64
 pub fn termrock::widgets::saved_queries_to_history(&[termrock::widgets::SavedQuery]) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<alloc::string::String>>
+pub fn termrock::widgets::schema_breadcrumbs_from_path(&str) -> alloc::vec::Vec<termrock::widgets::BreadcrumbItem<alloc::string::String>>
+pub fn termrock::widgets::schema_entries_to_tree_nodes<'a, Id: core::clone::Clone>(&[&'a termrock::widgets::SchemaBrowserEntry<'a, Id>], bool) -> alloc::vec::Vec<termrock::widgets::TreeNode<'a, Id>>
+pub fn termrock::widgets::schema_to_quick_open_items<Id: core::clone::Clone>(&[termrock::widgets::SchemaBrowserEntry<'_, Id>], bool) -> alloc::vec::Vec<termrock::widgets::QuickOpenItem<Id>>
 pub fn termrock::widgets::session_picker_handle_key<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::widgets::ListState<Id>, &[termrock::widgets::ListRow<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::SessionPickerOutcome<Id>
 pub fn termrock::widgets::sidebar_presentation_for_width(u16) -> termrock::widgets::SidebarPresentation
 pub fn termrock::widgets::sort_processes_flat<'a>(alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>, termrock::widgets::ProcessSortKey, bool) -> alloc::vec::Vec<&'a termrock::widgets::ProcessRow<'a>>

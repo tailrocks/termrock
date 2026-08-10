@@ -125,6 +125,7 @@ mod file_tree;
 mod process_table;
 mod query_editor;
 mod result_grid;
+mod schema_browser;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -214,6 +215,13 @@ pub use result_grid::{
     project_result_rows, result_column_model, result_row_to_inspector_fields,
 };
 pub use result_grid::bench as result_grid_bench;
+pub use schema_browser::{
+    SchemaBrowser, SchemaBrowserEntry, SchemaBrowserOutcome, SchemaBrowserPresentation,
+    SchemaBrowserState, SchemaConnStatus, SchemaContextAction, SchemaNodeKind,
+    apply_expanded_set, expanded_ids_from_entries, filter_schema_entries,
+    schema_breadcrumbs_from_path, schema_entries_to_tree_nodes, schema_to_quick_open_items,
+};
+pub use schema_browser::bench as schema_browser_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

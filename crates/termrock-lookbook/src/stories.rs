@@ -81,6 +81,8 @@ use termrock::{
         QueryParameter, QueryResultSummary, QueryRunStatus,
         ResultGrid, ResultGridState, ResultColumn, ResultRow, ResultCell, ResultQueryStatus,
         ResultColumnStats, ResultRedaction, DataColumnWidth,
+        SchemaBrowser, SchemaBrowserState, SchemaBrowserEntry, SchemaNodeKind, SchemaConnStatus,
+        SchemaBrowserPresentation,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2477,6 +2479,78 @@ pub(crate) fn stories() -> Vec<Story> {
             72,
             12,
             result_grid_ascii,
+        ),
+        Story::new(
+            "schema-browser/basic",
+            "SchemaBrowser basic",
+            "SchemaBrowser",
+            "Connection → db → schema → tables/columns.",
+            40,
+            16,
+            schema_browser_basic,
+        ),
+        Story::new(
+            "schema-browser/lazy",
+            "SchemaBrowser lazy",
+            "SchemaBrowser",
+            "Lazy table and offline connection.",
+            40,
+            14,
+            schema_browser_lazy,
+        ),
+        Story::new(
+            "schema-browser/filter",
+            "SchemaBrowser filter",
+            "SchemaBrowser",
+            "Search with ancestor retention.",
+            40,
+            12,
+            schema_browser_filter,
+        ),
+        Story::new(
+            "schema-browser/error",
+            "SchemaBrowser error",
+            "SchemaBrowser",
+            "Load error on branch.",
+            40,
+            10,
+            schema_browser_error,
+        ),
+        Story::new(
+            "schema-browser/drawer",
+            "SchemaBrowser drawer",
+            "SchemaBrowser",
+            "Drawer presentation mode.",
+            36,
+            12,
+            schema_browser_drawer,
+        ),
+        Story::new(
+            "schema-browser/empty",
+            "SchemaBrowser empty",
+            "SchemaBrowser",
+            "Empty catalog.",
+            28,
+            6,
+            schema_browser_empty,
+        ),
+        Story::new(
+            "schema-browser/narrow",
+            "SchemaBrowser narrow",
+            "SchemaBrowser",
+            "Narrow side pane (24 cols).",
+            24,
+            12,
+            schema_browser_basic,
+        ),
+        Story::new(
+            "schema-browser/ascii",
+            "SchemaBrowser ASCII",
+            "SchemaBrowser",
+            "ASCII kind glyphs.",
+            36,
+            12,
+            schema_browser_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12330,6 +12404,114 @@ fn result_grid_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         rows.len(),
     );
     ResultGrid::new(system, &cols, &rows)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_sample() -> Vec<SchemaBrowserEntry<'static, &'static str>> {
+    vec![
+        SchemaBrowserEntry::connection("conn", "prod", "prod")
+            .expanded()
+            .conn_status(SchemaConnStatus::Connected),
+        SchemaBrowserEntry::database("db", "app", "prod/app", 1)
+            .parent("conn")
+            .expanded(),
+        SchemaBrowserEntry::schema("sch", "public", "prod/app/public", 2)
+            .parent("db")
+            .expanded(),
+        SchemaBrowserEntry::table("users", "users", "prod/app/public/users", 3)
+            .parent("sch")
+            .expanded(),
+        SchemaBrowserEntry::column("users.id", "id", "prod/app/public/users.id", 4)
+            .parent("users")
+            .type_label("int8")
+            .nullable(false)
+            .key_badge("PK"),
+        SchemaBrowserEntry::column("users.email", "email", "prod/app/public/users.email", 4)
+            .parent("users")
+            .type_label("text")
+            .nullable(false),
+        SchemaBrowserEntry::table("orders", "orders", "prod/app/public/orders", 3)
+            .parent("sch")
+            .lazy(),
+        SchemaBrowserEntry::view("v_active", "v_active", "prod/app/public/v_active", 3)
+            .parent("sch"),
+        SchemaBrowserEntry::new(
+            "idx_email",
+            "idx_email",
+            "prod/app/public/users/idx_email",
+            SchemaNodeKind::Index,
+            4,
+        )
+        .parent("users")
+        .type_label("btree"),
+        SchemaBrowserEntry::connection("offline", "staging", "staging")
+            .conn_status(SchemaConnStatus::Offline)
+            .lazy(),
+    ]
+}
+
+fn schema_browser_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = schema_browser_sample();
+    let mut state = SchemaBrowserState::with_selected(Some("users"));
+    SchemaBrowser::new(&entries, system)
+        .title("catalog")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_lazy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = schema_browser_sample();
+    let mut state = SchemaBrowserState::with_selected(Some("orders"));
+    SchemaBrowser::new(&entries, system)
+        .title("lazy")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = schema_browser_sample();
+    let mut state = SchemaBrowserState::new();
+    state.filter = Some("email".into());
+    SchemaBrowser::new(&entries, system)
+        .title("filter")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut entries = schema_browser_sample();
+    entries.push(
+        SchemaBrowserEntry::database("bad", "broken", "prod/broken", 1)
+            .parent("conn")
+            .error_msg("permission denied"),
+    );
+    let mut state = SchemaBrowserState::with_selected(Some("bad"));
+    SchemaBrowser::new(&entries, system)
+        .title("error")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_drawer(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = schema_browser_sample();
+    let mut state = SchemaBrowserState::with_selected(Some("sch"));
+    state.presentation = SchemaBrowserPresentation::Drawer;
+    state.presentation_override = Some(SchemaBrowserPresentation::Drawer);
+    SchemaBrowser::new(&entries, system)
+        .title("drawer")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SchemaBrowserState::<&str>::new();
+    SchemaBrowser::new(&[], system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn schema_browser_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let entries = schema_browser_sample();
+    let mut state = SchemaBrowserState::with_selected(Some("users"));
+    state.ascii = true;
+    SchemaBrowser::new(&entries, system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);

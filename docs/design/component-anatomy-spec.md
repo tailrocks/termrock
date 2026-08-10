@@ -1664,6 +1664,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `result-grid/{basic,streaming,stats,wide,empty,error,narrow,ascii}`  
 22–24. Wide schema project; 500-row page paint; no-driver guard.
 
+## SchemaBrowser
+
+1. **Purpose:** Hierarchical DB catalog navigator.  
+2. **Anatomy:** title · filter? · Tree body.  
+3. **Public properties:** `SchemaBrowserEntry[]` (kind, path, lazy/error, type, key badges).  
+4. **State:** embeds `TreeState`; filter; presentation; expanded preserve set.  
+5. **Variants:** SidePane/Drawer/Fullscreen; conn status; Lazy/Loading/Error.  
+6–10. Tree nav + query/describe/refresh/reconnect/QuickOpen.  
+11–14. No catalog SQL; host lazy-loads children.  
+15–18. ASCII kind glyphs; connection letters.  
+19. **Composition:** Tree paint; QuickOpen; Breadcrumbs; QueryEditor open.  
+20. **Outcomes:** Open/LoadChildren/Refresh/Reconnect/ContextAction/QuickOpen.  
+21. **Stories:** `schema-browser/{basic,lazy,filter,error,drawer,empty,narrow,ascii}`  
+22–24. Expand preserve + filter ancestors; 5k-object filter paint.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

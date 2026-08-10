@@ -36,6 +36,7 @@
     "file-tree",
     "process-table",
     "query-editor",
-    "result-grid"
+    "result-grid",
+    "schema-browser"
   ]
 }

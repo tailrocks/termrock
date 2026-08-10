@@ -219,6 +219,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0203 | `v0.13.0` | [ProcessTable process / task monitor](migrations/0203-v0.13.0-process-table.md) |
 | 0204 | `v0.13.0` | [QueryEditor query workbench](migrations/0204-v0.13.0-query-editor.md) |
 | 0205 | `v0.13.0` | [ResultGrid query results](migrations/0205-v0.13.0-result-grid.md) |
+| 0206 | `v0.13.0` | [SchemaBrowser catalog navigator](migrations/0206-v0.13.0-schema-browser.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
