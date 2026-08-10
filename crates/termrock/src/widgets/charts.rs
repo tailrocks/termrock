@@ -1981,14 +1981,14 @@ impl Widget for BarSeries<'_> {
     }
 }
 
-// ── SegmentedMeter (stacked bars / shares) ──────────────────────────────────
+// ── SegmentedMeter (part-to-whole / pie peer) ───────────────────────────────
 
-/// One segment in a segmented meter.
+/// One segment in a segmented meter (shadcn pie chart peer).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MeterSegment<'a> {
-    /// Segment label for narrow fallback text.
+    /// Segment label for narrow fallback text / label row.
     pub label: &'a str,
-    /// Relative weight (normalized across segments).
+    /// Relative weight (normalized across segments). Zero/NaN → no mass.
     pub weight: f64,
     /// Semantic role used for the fill.
     pub role: Role,
@@ -2004,9 +2004,68 @@ impl<'a> MeterSegment<'a> {
             role,
         }
     }
+
+    /// Finite positive weight, else 0.
+    #[must_use]
+    pub fn effective_weight(self) -> f64 {
+        if self.weight.is_finite() && self.weight > 0.0 {
+            self.weight
+        } else {
+            0.0
+        }
+    }
 }
 
-/// Single-row segmented meter (stacked proportions).
+/// Allocate integer column widths for segment weights that sum to `total_cols`.
+///
+/// Zero/NaN weights get **0** columns (no invented mass). Rounding remainder
+/// goes to the last **positive** segment so the track is full when total > 0.
+#[must_use]
+pub fn allocate_segment_widths(weights: &[f64], total_cols: u16) -> Vec<u16> {
+    let n = weights.len();
+    let mut out = vec![0u16; n];
+    if n == 0 || total_cols == 0 {
+        return out;
+    }
+    let sum: f64 = weights
+        .iter()
+        .map(|w| {
+            if w.is_finite() && *w > 0.0 {
+                *w
+            } else {
+                0.0
+            }
+        })
+        .sum();
+    if sum <= 0.0 {
+        return out;
+    }
+    let mut used = 0u16;
+    let mut last_pos = None;
+    for (i, w) in weights.iter().enumerate() {
+        let ew = if w.is_finite() && *w > 0.0 { *w } else { 0.0 };
+        if ew <= 0.0 {
+            continue;
+        }
+        let width = ((f64::from(total_cols) * ew / sum).round() as u16).max(1);
+        let width = width.min(total_cols.saturating_sub(used));
+        out[i] = width;
+        used = used.saturating_add(width);
+        last_pos = Some(i);
+        if used >= total_cols {
+            break;
+        }
+    }
+    // Give remaining columns to last positive segment (not a zero-weight tail).
+    if let Some(i) = last_pos {
+        if used < total_cols {
+            out[i] = out[i].saturating_add(total_cols - used);
+        }
+    }
+    out
+}
+
+/// Single-row segmented meter (part-to-whole proportions; pie chart TUI peer).
 #[derive(Debug, Clone, Copy)]
 pub struct SegmentedMeter<'a> {
     segments: &'a [MeterSegment<'a>],
@@ -2014,10 +2073,14 @@ pub struct SegmentedMeter<'a> {
     glyphs: VizGlyphSet,
     selected: Option<usize>,
     show_labels: bool,
+    /// Insert 1-col gap between segments (default continuous = separator-none peer).
+    separators: bool,
+    /// Optional center caption (donut-text peer); paints on row below when height ≥ 2.
+    center: Option<&'a str>,
 }
 
 impl<'a> SegmentedMeter<'a> {
-    /// Creates a segmented meter.
+    /// Creates a segmented meter (continuous segments, no separators).
     #[must_use]
     pub const fn new(segments: &'a [MeterSegment<'a>], system: &'a DesignSystem) -> Self {
         Self {
@@ -2026,6 +2089,8 @@ impl<'a> SegmentedMeter<'a> {
             glyphs: VizGlyphSet::Auto,
             selected: None,
             show_labels: false,
+            separators: false,
+            center: None,
         }
     }
 
@@ -2036,17 +2101,31 @@ impl<'a> SegmentedMeter<'a> {
         self
     }
 
-    /// Selected segment.
+    /// Selected / active segment (chart-pie-interactive / donut-active peer).
     #[must_use]
     pub const fn selected(mut self, i: usize) -> Self {
         self.selected = Some(i);
         self
     }
 
-    /// Show label row when height ≥ 2.
+    /// Show per-segment labels on row under the bar when height ≥ 2.
     #[must_use]
     pub const fn show_labels(mut self, on: bool) -> Self {
         self.show_labels = on;
+        self
+    }
+
+    /// 1-column gaps between segments (default off = separator-none continuous).
+    #[must_use]
+    pub const fn separators(mut self, on: bool) -> Self {
+        self.separators = on;
+        self
+    }
+
+    /// Center caption under the meter (donut-text peer; needs height ≥ 2).
+    #[must_use]
+    pub const fn center(mut self, text: &'a str) -> Self {
+        self.center = Some(text);
         self
     }
 }
@@ -2058,40 +2137,57 @@ impl Widget for &SegmentedMeter<'_> {
         }
         let gset = self.glyphs.resolve(self.system.glyphs);
         let fill_ch = *gset.ladder().last().unwrap_or(&'#');
-        let total: f64 = self
+        let sel_ch = if matches!(gset, VizGlyphSet::Ascii) {
+            'X'
+        } else {
+            '█'
+        };
+
+        let weights: Vec<f64> = self
             .segments
             .iter()
-            .map(|segment| {
-                if segment.weight.is_finite() && segment.weight > 0.0 {
-                    segment.weight
-                } else {
-                    0.0
-                }
-            })
-            .sum::<f64>()
-            .max(f64::EPSILON);
+            .map(|s| s.effective_weight())
+            .collect();
+        let positive = weights.iter().filter(|w| **w > 0.0).count();
+        let gap_cols = if self.separators && positive > 1 {
+            (positive - 1) as u16
+        } else {
+            0
+        };
+        let track_w = area.width.saturating_sub(gap_cols);
+        let widths = allocate_segment_widths(&weights, track_w);
 
         let label_h = u16::from(self.show_labels && area.height >= 2);
+        let center_h = u16::from(self.center.is_some() && area.height >= 2 + label_h);
         let bar_y = area.y;
-        let mut remaining = area.width;
         let mut x = area.x;
-        // No-color: use distinct markers per segment instead of color alone
+        let mut painted_positive = 0usize;
+
         for (index, segment) in self.segments.iter().enumerate() {
-            let weight = if segment.weight.is_finite() && segment.weight > 0.0 {
-                segment.weight
-            } else {
-                0.0
-            };
-            let mut width =
-                ((f64::from(area.width) * weight / total).round() as u16).min(remaining);
-            if index + 1 == self.segments.len() {
-                width = remaining;
-            }
+            let width = widths.get(index).copied().unwrap_or(0);
             if width == 0 {
                 continue;
             }
+            if self.separators && painted_positive > 0 {
+                // 1-col separator
+                buffer.set_stringn(
+                    x,
+                    bar_y,
+                    " ",
+                    1,
+                    self.system.style(Role::TextDisabled),
+                );
+                x = x.saturating_add(1);
+            }
+            painted_positive += 1;
+
             let selected = self.selected == Some(index);
-            let ch = if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+            let ch = if selected {
+                sel_ch
+            } else if matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            ) {
                 gset.series_marker(index)
             } else {
                 fill_ch
@@ -2099,8 +2195,11 @@ impl Widget for &SegmentedMeter<'_> {
             let style = if selected {
                 self.system
                     .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD)
-            } else if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+            } else if matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            ) {
                 self.system.style(Role::Text)
             } else {
                 self.system.style(segment.role)
@@ -2118,7 +2217,31 @@ impl Widget for &SegmentedMeter<'_> {
                 );
             }
             x = x.saturating_add(width);
-            remaining = remaining.saturating_sub(width);
+        }
+
+        // Center caption (donut-text) on last available row
+        if let Some(text) = self.center {
+            if center_h > 0 || (area.height >= 2 && !self.show_labels) {
+                let cy = if self.show_labels && area.height >= 3 {
+                    area.y.saturating_add(2)
+                } else if area.height >= 2 {
+                    area.y.saturating_add(1)
+                } else {
+                    area.y
+                };
+                let t = take_display_cols(text, usize::from(area.width));
+                let tw = display_cols(&t) as u16;
+                let cx = area
+                    .x
+                    .saturating_add(area.width.saturating_sub(tw) / 2);
+                buffer.set_stringn(
+                    cx,
+                    cy,
+                    &t,
+                    usize::from(area.width),
+                    self.system.style(Role::TextStrong),
+                );
+            }
         }
     }
 }
@@ -2574,24 +2697,125 @@ mod tests {
 
     #[test]
     fn segmented_meter_covers_full_width() {
-        let system = system();
+        let system = system_ascii_nocolor();
         let segments = [
-            MeterSegment {
-                label: "a",
-                weight: 1.0,
-                role: Role::Success,
-            },
-            MeterSegment {
-                label: "b",
-                weight: 1.0,
-                role: Role::Danger,
-            },
+            MeterSegment::new("a", 1.0, Role::Success),
+            MeterSegment::new("b", 1.0, Role::Danger),
         ];
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 1));
-        SegmentedMeter::new(&segments, &system).render(Rect::new(0, 0, 10, 1), &mut buffer);
+        let area = Rect::new(0, 0, 10, 1);
+        let mut buffer = Buffer::empty(area);
+        SegmentedMeter::new(&segments, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut buffer);
         for x in 0..10 {
             assert!(!buffer[(x, 0)].symbol().is_empty());
         }
+        // Equal weights → equal half occupancy of distinct markers
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        let row: String = (0..10u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let c0 = row.chars().filter(|&c| c == m0).count();
+        let c1 = row.chars().filter(|&c| c == m1).count();
+        assert_eq!(c0 + c1, 10, "full track painted: {row:?}");
+        assert!((c0 as i32 - c1 as i32).abs() <= 1, "equal weights: {row:?}");
+    }
+
+    #[test]
+    fn allocate_segment_widths_zero_weight_no_mass() {
+        let w = allocate_segment_widths(&[1.0, 0.0, 1.0], 10);
+        assert_eq!(w[1], 0, "zero weight must get 0 cols: {w:?}");
+        assert_eq!(w[0] + w[1] + w[2], 10, "positive segments fill track: {w:?}");
+        assert!(w[0] > 0 && w[2] > 0);
+    }
+
+    #[test]
+    fn segmented_meter_selection_changes_glyph() {
+        let system = system_ascii_nocolor();
+        let segments = [
+            MeterSegment::new("a", 2.0, Role::Success),
+            MeterSegment::new("b", 1.0, Role::Danger),
+            MeterSegment::new("c", 1.0, Role::Accent),
+        ];
+        let area = Rect::new(0, 0, 20, 1);
+        let mut plain = Buffer::empty(area);
+        SegmentedMeter::new(&segments, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut plain);
+        let mut selected = Buffer::empty(area);
+        SegmentedMeter::new(&segments, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .selected(1)
+            .render(area, &mut selected);
+        let plain_s: String = (0..20u16).map(|x| plain[(x, 0)].symbol().to_string()).collect();
+        let sel_s: String = (0..20u16)
+            .map(|x| selected[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            sel_s.contains('X'),
+            "selected segment must use X highlight: {sel_s:?}"
+        );
+        assert_ne!(
+            plain_s, sel_s,
+            "selection must change occupancy/glyphs vs unselected"
+        );
+        // Segment b is middle weight 1 of total 4 → about 5 cols of X
+        let x_count = sel_s.chars().filter(|&c| c == 'X').count();
+        assert!(
+            x_count >= 3 && x_count <= 8,
+            "selected mid segment width reasonable: {x_count} in {sel_s:?}"
+        );
+    }
+
+    #[test]
+    fn segmented_meter_center_caption_and_separators() {
+        let system = system_ascii_nocolor();
+        let segments = [
+            MeterSegment::new("a", 1.0, Role::Success),
+            MeterSegment::new("b", 1.0, Role::Danger),
+        ];
+        let area = Rect::new(0, 0, 16, 2);
+        let mut buffer = Buffer::empty(area);
+        SegmentedMeter::new(&segments, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .separators(true)
+            .center("42%")
+            .render(area, &mut buffer);
+        let row0: String = (0..16u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let row1: String = (0..16u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        assert!(
+            row0.contains(' '),
+            "separators insert gap: {row0:?}"
+        );
+        assert!(
+            row1.contains('4') && row1.contains('2'),
+            "center caption on second row: {row1:?}"
+        );
+    }
+
+    #[test]
+    fn segmented_meter_zero_weight_segment_invisible() {
+        let system = system_ascii_nocolor();
+        let segments = [
+            MeterSegment::new("a", 3.0, Role::Success),
+            MeterSegment::new("empty", 0.0, Role::Danger),
+            MeterSegment::new("c", 1.0, Role::Accent),
+        ];
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buffer = Buffer::empty(area);
+        SegmentedMeter::new(&segments, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut buffer);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        let row: String = (0..12u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        // Zero-weight segment index 1 must not paint its marker (no invented mass)
+        let m1_count = row.chars().filter(|&c| c == m1).count();
+        assert_eq!(
+            m1_count, 0,
+            "zero-weight segment must not paint: {row:?}"
+        );
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m2 = VizGlyphSet::Ascii.series_marker(2);
+        assert!(row.contains(m0) && row.contains(m2), "positive segments paint: {row:?}");
     }
 
     #[test]

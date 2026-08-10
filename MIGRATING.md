@@ -268,6 +268,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0252 | `v0.13.0` | [Chart area fill for shadcn charts](migrations/0252-v0.13.0-chart-area-fill.md) |
 | 0253 | `v0.13.0` | [BarSeries stacked + bipolar negatives](migrations/0253-v0.13.0-bar-stacked-negative.md) |
 | 0254 | `v0.13.0` | [Chart line linear/step interpolation](migrations/0254-v0.13.0-chart-line-interpolation.md) |
+| 0255 | `v0.13.0` | [SegmentedMeter pie peers](migrations/0255-v0.13.0-segmented-meter-pie.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

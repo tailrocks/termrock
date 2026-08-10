@@ -48,17 +48,17 @@
 | 28 | chart-line-label | covered | title/legend | |
 | 29 | chart-line-label-custom | partial | host strings | registry label-custom |
 | 30 | chart-line-interactive | covered | selection highlight | |
-| 31 | chart-pie-simple | covered | `SegmentedMeter` | Proportions in cells |
-| 32 | chart-pie-separator-none | covered | continuous meter | |
-| 33 | chart-pie-label | covered | segment labels | |
-| 34 | chart-pie-custom-label | partial | host | |
-| 35 | chart-pie-label-list | partial | legend | |
+| 31 | chart-pie-simple | covered | `SegmentedMeter` | Proportional track |
+| 32 | chart-pie-separator-none | covered | continuous (default) | |
+| 33 | chart-pie-label | covered | `show_labels` | |
+| 34 | chart-pie-label-custom | partial | host strings | registry label-custom |
+| 35 | chart-pie-label-list | partial | host list | |
 | 36 | chart-pie-legend | covered | labels | |
-| 37 | chart-pie-donut | partial | gauge + hole metaphor | True donut N/A |
-| 38 | chart-pie-donut-active | partial | selected segment | |
-| 39 | chart-pie-donut-text | partial | center label host | |
-| 40 | chart-pie-stacked | partial | nested meters | |
-| 41 | chart-pie-interactive | covered | selection | |
+| 37 | chart-pie-donut | partial | linear track | True circular hole N/A |
+| 38 | chart-pie-donut-active | covered | `.selected` (0255) | |
+| 39 | chart-pie-donut-text | covered | `.center` (0255) | |
+| 40 | chart-pie-stacked | partial | nested meters host | |
+| 41 | chart-pie-interactive | covered | `.selected` | |
 | 42 | chart-radar-default | N/A | multi-metric bars | Polar radar not TUI-honest |
 | 43 | chart-radar-dots | N/A | multi-metric bars | |
 | 44 | chart-radar-lines-only | N/A | multi-metric bars | |
@@ -91,8 +91,8 @@
 
 | Status | Count |
 |--------|------:|
-| covered | 34 |
-| partial | 20 |
+| covered | 36 |
+| partial | 18 |
 | missing | 0 |
 | N/A | 14 |
 | **Total** | **68** |
@@ -104,7 +104,7 @@
 | Area / stacked area | `ChartFill::Area` / `AreaStacked` + `Chart::area()` / `area_stacked()` |
 | Line / multi-series / selection | Existing `Chart` |
 | Bar / histogram | `BarSeries` / `Histogram`; stacked + negative on BarSeries (0253) |
-| Pie proportions | `SegmentedMeter` |
+| Pie proportions | `SegmentedMeter` + selection/center (0255) |
 | Radial | `Gauge` |
 | Radar polar | N/A |
 | Continuous gradient | N/A |
