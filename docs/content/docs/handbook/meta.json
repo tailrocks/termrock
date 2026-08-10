@@ -38,6 +38,7 @@
     "query-editor",
     "result-grid",
     "schema-browser",
-    "search-results"
+    "search-results",
+    "metrics-dashboard"
   ]
 }

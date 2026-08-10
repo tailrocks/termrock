@@ -14644,6 +14644,16 @@ pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
 pub const termrock::widgets::charts_bench::STREAM_WINDOW: usize
 pub const termrock::widgets::charts_bench::TINY_HEIGHT: u16
 pub const termrock::widgets::charts_bench::TINY_WIDTH: u16
+pub mod termrock::widgets::commands
+pub const termrock::widgets::commands::COMPARE_CYCLE: &str
+pub const termrock::widgets::commands::DRILL: &str
+pub const termrock::widgets::commands::LAYOUT_GRID: &str
+pub const termrock::widgets::commands::LAYOUT_SUMMARY: &str
+pub const termrock::widgets::commands::PAUSE: &str
+pub const termrock::widgets::commands::REFRESH: &str
+pub const termrock::widgets::commands::RETRY_FAILED: &str
+pub const termrock::widgets::commands::TIME_NEXT: &str
+pub const termrock::widgets::commands::TIME_PREV: &str
 pub mod termrock::widgets::data_view_bench
 pub const termrock::widgets::data_view_bench::COLS_WIDE: usize
 pub const termrock::widgets::data_view_bench::MAX_PAINT_CELLS: u32
@@ -14687,6 +14697,10 @@ pub const termrock::widgets::log_stream_bench::BURST_BATCH: u32
 pub const termrock::widgets::log_stream_bench::LINES_PER_SEC: u32
 pub const termrock::widgets::log_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::log_stream_bench::VIEWPORT: u16
+pub mod termrock::widgets::metrics_dashboard_bench
+pub const termrock::widgets::metrics_dashboard_bench::PAINT_FRAMES: u32
+pub const termrock::widgets::metrics_dashboard_bench::SAMPLE_LEN: usize
+pub const termrock::widgets::metrics_dashboard_bench::TILE_COUNT: usize
 pub mod termrock::widgets::pagination_guidance
 pub const termrock::widgets::pagination_guidance::WHEN_VIRTUALIZE: &str
 pub mod termrock::widgets::process_table_bench
@@ -25280,6 +25294,443 @@ pub unsafe fn termrock::widgets::MenuRowKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::MenuRowKind
 pub fn termrock::widgets::MenuRowKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MenuRowKind
+#[non_exhaustive] pub enum termrock::widgets::MetricAlertSeverity
+pub termrock::widgets::MetricAlertSeverity::Critical
+pub termrock::widgets::MetricAlertSeverity::Info
+pub termrock::widgets::MetricAlertSeverity::Warning
+impl termrock::widgets::MetricAlertSeverity
+pub const fn termrock::widgets::MetricAlertSeverity::id(self) -> &'static str
+pub const fn termrock::widgets::MetricAlertSeverity::letter(self) -> char
+pub const fn termrock::widgets::MetricAlertSeverity::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::clone(&self) -> termrock::widgets::MetricAlertSeverity
+impl core::cmp::Eq for termrock::widgets::MetricAlertSeverity
+impl core::cmp::Ord for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::cmp(&self, &termrock::widgets::MetricAlertSeverity) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::eq(&self, &termrock::widgets::MetricAlertSeverity) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::partial_cmp(&self, &termrock::widgets::MetricAlertSeverity) -> core::option::Option<core::cmp::Ordering>
+impl core::default::Default for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::default() -> termrock::widgets::MetricAlertSeverity
+impl core::fmt::Debug for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricAlertSeverity
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricAlertSeverity
+impl core::marker::Freeze for termrock::widgets::MetricAlertSeverity
+impl core::marker::Send for termrock::widgets::MetricAlertSeverity
+impl core::marker::Sync for termrock::widgets::MetricAlertSeverity
+impl core::marker::Unpin for termrock::widgets::MetricAlertSeverity
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricAlertSeverity
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricAlertSeverity
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricAlertSeverity
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::MetricAlertSeverity where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricAlertSeverity::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricAlertSeverity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricAlertSeverity::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricAlertSeverity where U: core::convert::From<T>
+pub fn termrock::widgets::MetricAlertSeverity::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricAlertSeverity where U: core::convert::Into<T>
+pub type termrock::widgets::MetricAlertSeverity::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricAlertSeverity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricAlertSeverity where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricAlertSeverity::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricAlertSeverity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricAlertSeverity where T: core::clone::Clone
+pub type termrock::widgets::MetricAlertSeverity::Owned = T
+pub fn termrock::widgets::MetricAlertSeverity::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricAlertSeverity::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricAlertSeverity where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricAlertSeverity::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricAlertSeverity where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricAlertSeverity::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricAlertSeverity where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricAlertSeverity::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricAlertSeverity where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricAlertSeverity::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricAlertSeverity
+pub fn termrock::widgets::MetricAlertSeverity::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricAlertSeverity
+#[non_exhaustive] pub enum termrock::widgets::MetricTileHealth
+pub termrock::widgets::MetricTileHealth::Danger
+pub termrock::widgets::MetricTileHealth::Failed
+pub termrock::widgets::MetricTileHealth::Loading
+pub termrock::widgets::MetricTileHealth::Ok
+pub termrock::widgets::MetricTileHealth::Stale
+pub termrock::widgets::MetricTileHealth::Warning
+impl termrock::widgets::MetricTileHealth
+pub const fn termrock::widgets::MetricTileHealth::id(self) -> &'static str
+pub const fn termrock::widgets::MetricTileHealth::letter(self) -> char
+pub const fn termrock::widgets::MetricTileHealth::letter_ascii(self) -> char
+pub const fn termrock::widgets::MetricTileHealth::role(self) -> termrock::style::Role
+impl core::clone::Clone for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::clone(&self) -> termrock::widgets::MetricTileHealth
+impl core::cmp::Eq for termrock::widgets::MetricTileHealth
+impl core::cmp::PartialEq for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::eq(&self, &termrock::widgets::MetricTileHealth) -> bool
+impl core::default::Default for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::default() -> termrock::widgets::MetricTileHealth
+impl core::fmt::Debug for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricTileHealth
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricTileHealth
+impl core::marker::Freeze for termrock::widgets::MetricTileHealth
+impl core::marker::Send for termrock::widgets::MetricTileHealth
+impl core::marker::Sync for termrock::widgets::MetricTileHealth
+impl core::marker::Unpin for termrock::widgets::MetricTileHealth
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricTileHealth
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricTileHealth
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricTileHealth
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricTileHealth where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricTileHealth::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricTileHealth where U: core::convert::From<T>
+pub fn termrock::widgets::MetricTileHealth::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricTileHealth where U: core::convert::Into<T>
+pub type termrock::widgets::MetricTileHealth::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricTileHealth::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricTileHealth where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricTileHealth::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricTileHealth::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricTileHealth where T: core::clone::Clone
+pub type termrock::widgets::MetricTileHealth::Owned = T
+pub fn termrock::widgets::MetricTileHealth::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricTileHealth::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricTileHealth where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricTileHealth::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricTileHealth where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricTileHealth::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricTileHealth where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricTileHealth::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricTileHealth where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricTileHealth::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricTileHealth
+pub fn termrock::widgets::MetricTileHealth::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricTileHealth
+#[non_exhaustive] pub enum termrock::widgets::MetricViz
+pub termrock::widgets::MetricViz::Gauge
+pub termrock::widgets::MetricViz::Sparkline
+pub termrock::widgets::MetricViz::ValueOnly
+impl termrock::widgets::MetricViz
+pub const fn termrock::widgets::MetricViz::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::clone(&self) -> termrock::widgets::MetricViz
+impl core::cmp::Eq for termrock::widgets::MetricViz
+impl core::cmp::PartialEq for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::eq(&self, &termrock::widgets::MetricViz) -> bool
+impl core::default::Default for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::default() -> termrock::widgets::MetricViz
+impl core::fmt::Debug for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricViz
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricViz
+impl core::marker::Freeze for termrock::widgets::MetricViz
+impl core::marker::Send for termrock::widgets::MetricViz
+impl core::marker::Sync for termrock::widgets::MetricViz
+impl core::marker::Unpin for termrock::widgets::MetricViz
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricViz
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricViz
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricViz
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricViz where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricViz::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricViz where U: core::convert::From<T>
+pub fn termrock::widgets::MetricViz::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricViz where U: core::convert::Into<T>
+pub type termrock::widgets::MetricViz::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricViz::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricViz where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricViz::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricViz::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricViz where T: core::clone::Clone
+pub type termrock::widgets::MetricViz::Owned = T
+pub fn termrock::widgets::MetricViz::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricViz::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricViz where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricViz::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricViz where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricViz::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricViz where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricViz::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricViz where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricViz::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricViz
+pub fn termrock::widgets::MetricViz::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricViz
+#[non_exhaustive] pub enum termrock::widgets::MetricsComparison
+pub termrock::widgets::MetricsComparison::DayOverDay
+pub termrock::widgets::MetricsComparison::None
+pub termrock::widgets::MetricsComparison::PreviousPeriod
+pub termrock::widgets::MetricsComparison::WeekOverWeek
+impl termrock::widgets::MetricsComparison
+pub const fn termrock::widgets::MetricsComparison::id(self) -> &'static str
+pub const fn termrock::widgets::MetricsComparison::label(self) -> &'static str
+pub const fn termrock::widgets::MetricsComparison::next(self) -> Self
+impl core::clone::Clone for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::clone(&self) -> termrock::widgets::MetricsComparison
+impl core::cmp::Eq for termrock::widgets::MetricsComparison
+impl core::cmp::PartialEq for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::eq(&self, &termrock::widgets::MetricsComparison) -> bool
+impl core::default::Default for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::default() -> termrock::widgets::MetricsComparison
+impl core::fmt::Debug for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricsComparison
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsComparison
+impl core::marker::Freeze for termrock::widgets::MetricsComparison
+impl core::marker::Send for termrock::widgets::MetricsComparison
+impl core::marker::Sync for termrock::widgets::MetricsComparison
+impl core::marker::Unpin for termrock::widgets::MetricsComparison
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsComparison
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsComparison
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsComparison
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsComparison where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsComparison::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsComparison where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsComparison::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsComparison where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsComparison::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsComparison::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsComparison where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsComparison::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsComparison::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsComparison where T: core::clone::Clone
+pub type termrock::widgets::MetricsComparison::Owned = T
+pub fn termrock::widgets::MetricsComparison::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsComparison::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsComparison where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsComparison::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsComparison where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsComparison::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsComparison where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsComparison::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsComparison where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsComparison::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsComparison
+pub fn termrock::widgets::MetricsComparison::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsComparison
+#[non_exhaustive] pub enum termrock::widgets::MetricsDashboardLayoutMode
+pub termrock::widgets::MetricsDashboardLayoutMode::Grid
+pub termrock::widgets::MetricsDashboardLayoutMode::Summary
+impl termrock::widgets::MetricsDashboardLayoutMode
+pub const fn termrock::widgets::MetricsDashboardLayoutMode::for_width(u16) -> Self
+pub const fn termrock::widgets::MetricsDashboardLayoutMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::clone(&self) -> termrock::widgets::MetricsDashboardLayoutMode
+impl core::cmp::Eq for termrock::widgets::MetricsDashboardLayoutMode
+impl core::cmp::PartialEq for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::eq(&self, &termrock::widgets::MetricsDashboardLayoutMode) -> bool
+impl core::default::Default for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::default() -> termrock::widgets::MetricsDashboardLayoutMode
+impl core::fmt::Debug for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::Freeze for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::Send for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::Sync for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::Unpin for termrock::widgets::MetricsDashboardLayoutMode
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsDashboardLayoutMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsDashboardLayoutMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsDashboardLayoutMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsDashboardLayoutMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardLayoutMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsDashboardLayoutMode where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsDashboardLayoutMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsDashboardLayoutMode where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsDashboardLayoutMode::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsDashboardLayoutMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsDashboardLayoutMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsDashboardLayoutMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsDashboardLayoutMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsDashboardLayoutMode where T: core::clone::Clone
+pub type termrock::widgets::MetricsDashboardLayoutMode::Owned = T
+pub fn termrock::widgets::MetricsDashboardLayoutMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsDashboardLayoutMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsDashboardLayoutMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardLayoutMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsDashboardLayoutMode where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardLayoutMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsDashboardLayoutMode where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardLayoutMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsDashboardLayoutMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsDashboardLayoutMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardLayoutMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsDashboardLayoutMode
+#[non_exhaustive] pub enum termrock::widgets::MetricsDashboardOutcome
+pub termrock::widgets::MetricsDashboardOutcome::AlertActivated
+pub termrock::widgets::MetricsDashboardOutcome::AlertActivated::id: alloc::string::String
+pub termrock::widgets::MetricsDashboardOutcome::AlertsFocused
+pub termrock::widgets::MetricsDashboardOutcome::CommandPaletteRequested
+pub termrock::widgets::MetricsDashboardOutcome::ComparisonChanged(termrock::widgets::MetricsComparison)
+pub termrock::widgets::MetricsDashboardOutcome::DrillDownRequested
+pub termrock::widgets::MetricsDashboardOutcome::DrillDownRequested::id: alloc::string::String
+pub termrock::widgets::MetricsDashboardOutcome::Ignored
+pub termrock::widgets::MetricsDashboardOutcome::LayoutModeChanged(termrock::widgets::MetricsDashboardLayoutMode)
+pub termrock::widgets::MetricsDashboardOutcome::PauseToggled
+pub termrock::widgets::MetricsDashboardOutcome::PauseToggled::paused: bool
+pub termrock::widgets::MetricsDashboardOutcome::RefreshRequested
+pub termrock::widgets::MetricsDashboardOutcome::RetryFailedRequested
+pub termrock::widgets::MetricsDashboardOutcome::TileFocused
+pub termrock::widgets::MetricsDashboardOutcome::TileFocused::id: alloc::string::String
+pub termrock::widgets::MetricsDashboardOutcome::TimeRangeChanged(termrock::widgets::MetricsTimeRange)
+pub termrock::widgets::MetricsDashboardOutcome::ToolbarFocused
+impl core::clone::Clone for termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardOutcome::clone(&self) -> termrock::widgets::MetricsDashboardOutcome
+impl core::cmp::Eq for termrock::widgets::MetricsDashboardOutcome
+impl core::cmp::PartialEq for termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardOutcome::eq(&self, &termrock::widgets::MetricsDashboardOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsDashboardOutcome
+impl core::marker::Freeze for termrock::widgets::MetricsDashboardOutcome
+impl core::marker::Send for termrock::widgets::MetricsDashboardOutcome
+impl core::marker::Sync for termrock::widgets::MetricsDashboardOutcome
+impl core::marker::Unpin for termrock::widgets::MetricsDashboardOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsDashboardOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsDashboardOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsDashboardOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsDashboardOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsDashboardOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsDashboardOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsDashboardOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsDashboardOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsDashboardOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsDashboardOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsDashboardOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsDashboardOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsDashboardOutcome where T: core::clone::Clone
+pub type termrock::widgets::MetricsDashboardOutcome::Owned = T
+pub fn termrock::widgets::MetricsDashboardOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsDashboardOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsDashboardOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsDashboardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsDashboardOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsDashboardOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsDashboardOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsDashboardOutcome
+#[non_exhaustive] pub enum termrock::widgets::MetricsFocus
+pub termrock::widgets::MetricsFocus::Alerts
+pub termrock::widgets::MetricsFocus::Tiles
+pub termrock::widgets::MetricsFocus::Toolbar
+impl core::clone::Clone for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::clone(&self) -> termrock::widgets::MetricsFocus
+impl core::cmp::Eq for termrock::widgets::MetricsFocus
+impl core::cmp::PartialEq for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::eq(&self, &termrock::widgets::MetricsFocus) -> bool
+impl core::default::Default for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::default() -> termrock::widgets::MetricsFocus
+impl core::fmt::Debug for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricsFocus
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsFocus
+impl core::marker::Freeze for termrock::widgets::MetricsFocus
+impl core::marker::Send for termrock::widgets::MetricsFocus
+impl core::marker::Sync for termrock::widgets::MetricsFocus
+impl core::marker::Unpin for termrock::widgets::MetricsFocus
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsFocus
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsFocus
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsFocus
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsFocus where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsFocus::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsFocus where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsFocus::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsFocus where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsFocus::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsFocus::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsFocus where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsFocus::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsFocus::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsFocus where T: core::clone::Clone
+pub type termrock::widgets::MetricsFocus::Owned = T
+pub fn termrock::widgets::MetricsFocus::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsFocus::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsFocus where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsFocus::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsFocus::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsFocus where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsFocus::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsFocus where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsFocus::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsFocus
+pub fn termrock::widgets::MetricsFocus::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsFocus
+#[non_exhaustive] pub enum termrock::widgets::MetricsTimeRange
+pub termrock::widgets::MetricsTimeRange::Custom
+pub termrock::widgets::MetricsTimeRange::D1
+pub termrock::widgets::MetricsTimeRange::D7
+pub termrock::widgets::MetricsTimeRange::H1
+pub termrock::widgets::MetricsTimeRange::H6
+pub termrock::widgets::MetricsTimeRange::M15
+pub termrock::widgets::MetricsTimeRange::M5
+impl termrock::widgets::MetricsTimeRange
+pub const fn termrock::widgets::MetricsTimeRange::id(self) -> &'static str
+pub const fn termrock::widgets::MetricsTimeRange::label(self) -> &'static str
+pub const fn termrock::widgets::MetricsTimeRange::next(self) -> Self
+pub const fn termrock::widgets::MetricsTimeRange::prev(self) -> Self
+impl core::clone::Clone for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::clone(&self) -> termrock::widgets::MetricsTimeRange
+impl core::cmp::Eq for termrock::widgets::MetricsTimeRange
+impl core::cmp::PartialEq for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::eq(&self, &termrock::widgets::MetricsTimeRange) -> bool
+impl core::default::Default for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::default() -> termrock::widgets::MetricsTimeRange
+impl core::fmt::Debug for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::MetricsTimeRange
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsTimeRange
+impl core::marker::Freeze for termrock::widgets::MetricsTimeRange
+impl core::marker::Send for termrock::widgets::MetricsTimeRange
+impl core::marker::Sync for termrock::widgets::MetricsTimeRange
+impl core::marker::Unpin for termrock::widgets::MetricsTimeRange
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsTimeRange
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsTimeRange
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsTimeRange
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsTimeRange where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsTimeRange::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsTimeRange where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsTimeRange::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsTimeRange where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsTimeRange::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsTimeRange::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsTimeRange where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsTimeRange::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsTimeRange::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsTimeRange where T: core::clone::Clone
+pub type termrock::widgets::MetricsTimeRange::Owned = T
+pub fn termrock::widgets::MetricsTimeRange::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsTimeRange::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsTimeRange where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsTimeRange::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsTimeRange where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsTimeRange::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsTimeRange where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsTimeRange::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsTimeRange where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsTimeRange::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsTimeRange
+pub fn termrock::widgets::MetricsTimeRange::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsTimeRange
 #[non_exhaustive] pub enum termrock::widgets::ModeRibbonOutcome<Id>
 pub termrock::widgets::ModeRibbonOutcome::Ignored
 pub termrock::widgets::ModeRibbonOutcome::ModeRequested(Id)
@@ -51744,6 +52195,265 @@ pub unsafe fn termrock::widgets::MeterSegment<'a>::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::MeterSegment<'a>
 pub fn termrock::widgets::MeterSegment<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::MeterSegment<'a>
+pub struct termrock::widgets::MetricAlert<'a>
+pub termrock::widgets::MetricAlert::id: &'a str
+pub termrock::widgets::MetricAlert::message: &'a str
+pub termrock::widgets::MetricAlert::metric_id: core::option::Option<&'a str>
+pub termrock::widgets::MetricAlert::severity: termrock::widgets::MetricAlertSeverity
+impl<'a> termrock::widgets::MetricAlert<'a>
+pub const fn termrock::widgets::MetricAlert<'a>::metric(self, &'a str) -> Self
+pub const fn termrock::widgets::MetricAlert<'a>::new(&'a str, termrock::widgets::MetricAlertSeverity, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::MetricAlert<'a>
+pub fn termrock::widgets::MetricAlert<'a>::clone(&self) -> termrock::widgets::MetricAlert<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::MetricAlert<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::MetricAlert<'a>
+pub fn termrock::widgets::MetricAlert<'a>::eq(&self, &termrock::widgets::MetricAlert<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::MetricAlert<'a>
+pub fn termrock::widgets::MetricAlert<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::MetricAlert<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::MetricAlert<'a>
+impl<'a> core::marker::Send for termrock::widgets::MetricAlert<'a>
+impl<'a> core::marker::Sync for termrock::widgets::MetricAlert<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::MetricAlert<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::MetricAlert<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricAlert<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricAlert<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricAlert<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricAlert<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricAlert<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::MetricAlert<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricAlert<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::MetricAlert<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricAlert<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricAlert<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricAlert<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricAlert<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricAlert<'a> where T: core::clone::Clone
+pub type termrock::widgets::MetricAlert<'a>::Owned = T
+pub fn termrock::widgets::MetricAlert<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricAlert<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricAlert<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricAlert<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricAlert<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricAlert<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricAlert<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricAlert<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricAlert<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricAlert<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricAlert<'a>
+pub fn termrock::widgets::MetricAlert<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricAlert<'a>
+pub struct termrock::widgets::MetricTile<'a>
+pub termrock::widgets::MetricTile::delta: &'a str
+pub termrock::widgets::MetricTile::delta_bad: bool
+pub termrock::widgets::MetricTile::error: core::option::Option<&'a str>
+pub termrock::widgets::MetricTile::gauge_value: core::option::Option<f64>
+pub termrock::widgets::MetricTile::health: termrock::widgets::MetricTileHealth
+pub termrock::widgets::MetricTile::id: &'a str
+pub termrock::widgets::MetricTile::samples: &'a [f64]
+pub termrock::widgets::MetricTile::thresholds: &'a [f64]
+pub termrock::widgets::MetricTile::title: &'a str
+pub termrock::widgets::MetricTile::unit: &'a str
+pub termrock::widgets::MetricTile::value: &'a str
+pub termrock::widgets::MetricTile::viz: termrock::widgets::MetricViz
+impl<'a> termrock::widgets::MetricTile<'a>
+pub const fn termrock::widgets::MetricTile<'a>::delta(self, &'a str, bool) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::failed(self, &'a str) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::gauge(self, f64) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::health(self, termrock::widgets::MetricTileHealth) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::new(&'a str, &'a str, &'a str) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::samples(self, &'a [f64]) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::thresholds(self, &'a [f64]) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::unit(self, &'a str) -> Self
+pub const fn termrock::widgets::MetricTile<'a>::viz(self, termrock::widgets::MetricViz) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::MetricTile<'a>
+pub fn termrock::widgets::MetricTile<'a>::clone(&self) -> termrock::widgets::MetricTile<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::MetricTile<'a>
+pub fn termrock::widgets::MetricTile<'a>::eq(&self, &termrock::widgets::MetricTile<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::widgets::MetricTile<'a>
+pub fn termrock::widgets::MetricTile<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::MetricTile<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::MetricTile<'a>
+impl<'a> core::marker::Send for termrock::widgets::MetricTile<'a>
+impl<'a> core::marker::Sync for termrock::widgets::MetricTile<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::MetricTile<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::MetricTile<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricTile<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricTile<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricTile<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::MetricTile<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricTile<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::MetricTile<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricTile<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricTile<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricTile<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricTile<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricTile<'a> where T: core::clone::Clone
+pub type termrock::widgets::MetricTile<'a>::Owned = T
+pub fn termrock::widgets::MetricTile<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricTile<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricTile<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricTile<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricTile<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricTile<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricTile<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricTile<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricTile<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricTile<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricTile<'a>
+pub fn termrock::widgets::MetricTile<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricTile<'a>
+pub struct termrock::widgets::MetricsDashboard<'a>
+impl<'a> termrock::widgets::MetricsDashboard<'a>
+pub const fn termrock::widgets::MetricsDashboard<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::MetricsDashboard<'a>::focused(self, bool) -> Self
+pub const fn termrock::widgets::MetricsDashboard<'a>::new(&'a [termrock::widgets::MetricTile<'a>], &'a [termrock::widgets::MetricAlert<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::MetricsDashboard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MetricsDashboardState)
+pub const fn termrock::widgets::MetricsDashboard<'a>::title(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::MetricsDashboard<'a>
+pub fn termrock::widgets::MetricsDashboard<'a>::clone(&self) -> termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::MetricsDashboard<'a>
+pub fn termrock::widgets::MetricsDashboard<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::marker::Send for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::marker::Sync for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsDashboard<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsDashboard<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsDashboard<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsDashboard<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsDashboard<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsDashboard<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsDashboard<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsDashboard<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsDashboard<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsDashboard<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsDashboard<'a> where T: core::clone::Clone
+pub type termrock::widgets::MetricsDashboard<'a>::Owned = T
+pub fn termrock::widgets::MetricsDashboard<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsDashboard<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsDashboard<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboard<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsDashboard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboard<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsDashboard<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboard<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsDashboard<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsDashboard<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsDashboard<'a>
+pub fn termrock::widgets::MetricsDashboard<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsDashboard<'a>
+pub struct termrock::widgets::MetricsDashboardSlots
+pub termrock::widgets::MetricsDashboardSlots::alerts: ratatui_core::layout::rect::Rect
+pub termrock::widgets::MetricsDashboardSlots::footer: ratatui_core::layout::rect::Rect
+pub termrock::widgets::MetricsDashboardSlots::metrics: ratatui_core::layout::rect::Rect
+pub termrock::widgets::MetricsDashboardSlots::root: ratatui_core::layout::rect::Rect
+pub termrock::widgets::MetricsDashboardSlots::tiles: alloc::vec::Vec<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::MetricsDashboardSlots::toolbar: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::MetricsDashboardSlots
+pub fn termrock::widgets::MetricsDashboardSlots::clone(&self) -> termrock::widgets::MetricsDashboardSlots
+impl core::cmp::Eq for termrock::widgets::MetricsDashboardSlots
+impl core::cmp::PartialEq for termrock::widgets::MetricsDashboardSlots
+pub fn termrock::widgets::MetricsDashboardSlots::eq(&self, &termrock::widgets::MetricsDashboardSlots) -> bool
+impl core::default::Default for termrock::widgets::MetricsDashboardSlots
+pub fn termrock::widgets::MetricsDashboardSlots::default() -> termrock::widgets::MetricsDashboardSlots
+impl core::fmt::Debug for termrock::widgets::MetricsDashboardSlots
+pub fn termrock::widgets::MetricsDashboardSlots::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsDashboardSlots
+impl core::marker::Freeze for termrock::widgets::MetricsDashboardSlots
+impl core::marker::Send for termrock::widgets::MetricsDashboardSlots
+impl core::marker::Sync for termrock::widgets::MetricsDashboardSlots
+impl core::marker::Unpin for termrock::widgets::MetricsDashboardSlots
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsDashboardSlots
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsDashboardSlots
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsDashboardSlots
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MetricsDashboardSlots where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardSlots::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsDashboardSlots where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsDashboardSlots::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsDashboardSlots where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsDashboardSlots::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsDashboardSlots::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsDashboardSlots where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsDashboardSlots::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsDashboardSlots::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsDashboardSlots where T: core::clone::Clone
+pub type termrock::widgets::MetricsDashboardSlots::Owned = T
+pub fn termrock::widgets::MetricsDashboardSlots::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsDashboardSlots::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsDashboardSlots where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardSlots::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsDashboardSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardSlots::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsDashboardSlots where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardSlots::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsDashboardSlots where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsDashboardSlots::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsDashboardSlots
+pub fn termrock::widgets::MetricsDashboardSlots::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsDashboardSlots
+pub struct termrock::widgets::MetricsDashboardState
+pub termrock::widgets::MetricsDashboardState::ascii: bool
+pub termrock::widgets::MetricsDashboardState::comparison: termrock::widgets::MetricsComparison
+pub termrock::widgets::MetricsDashboardState::focus: termrock::widgets::MetricsFocus
+pub termrock::widgets::MetricsDashboardState::focus_alert: usize
+pub termrock::widgets::MetricsDashboardState::focus_tile: usize
+pub termrock::widgets::MetricsDashboardState::grid_cols: usize
+pub termrock::widgets::MetricsDashboardState::layout_override: core::option::Option<termrock::widgets::MetricsDashboardLayoutMode>
+pub termrock::widgets::MetricsDashboardState::load: termrock::widgets::LoadState
+pub termrock::widgets::MetricsDashboardState::paused: bool
+pub termrock::widgets::MetricsDashboardState::refresh_ms: u32
+pub termrock::widgets::MetricsDashboardState::slots: termrock::widgets::MetricsDashboardSlots
+pub termrock::widgets::MetricsDashboardState::time_range: termrock::widgets::MetricsTimeRange
+impl termrock::widgets::MetricsDashboardState
+pub const fn termrock::widgets::MetricsDashboardState::accepts_input(&self) -> bool
+pub fn termrock::widgets::MetricsDashboardState::focused_metric_id<'a>(&self, &[termrock::widgets::MetricTile<'a>]) -> core::option::Option<&'a str>
+pub fn termrock::widgets::MetricsDashboardState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::MetricTile<'_>], &[termrock::widgets::MetricAlert<'_>]) -> termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::MetricTile<'_>], &[termrock::widgets::MetricAlert<'_>]) -> termrock::widgets::MetricsDashboardOutcome
+pub fn termrock::widgets::MetricsDashboardState::layout_mode(&self, u16) -> termrock::widgets::MetricsDashboardLayoutMode
+pub fn termrock::widgets::MetricsDashboardState::new() -> Self
+pub fn termrock::widgets::MetricsDashboardState::set_accepts_input(&mut self, bool)
+impl core::clone::Clone for termrock::widgets::MetricsDashboardState
+pub fn termrock::widgets::MetricsDashboardState::clone(&self) -> termrock::widgets::MetricsDashboardState
+impl core::cmp::PartialEq for termrock::widgets::MetricsDashboardState
+pub fn termrock::widgets::MetricsDashboardState::eq(&self, &termrock::widgets::MetricsDashboardState) -> bool
+impl core::default::Default for termrock::widgets::MetricsDashboardState
+pub fn termrock::widgets::MetricsDashboardState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::MetricsDashboardState
+pub fn termrock::widgets::MetricsDashboardState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::MetricsDashboardState
+impl core::marker::Freeze for termrock::widgets::MetricsDashboardState
+impl core::marker::Send for termrock::widgets::MetricsDashboardState
+impl core::marker::Sync for termrock::widgets::MetricsDashboardState
+impl core::marker::Unpin for termrock::widgets::MetricsDashboardState
+impl core::marker::UnsafeUnpin for termrock::widgets::MetricsDashboardState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MetricsDashboardState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::MetricsDashboardState
+impl<T, U> core::convert::Into<U> for termrock::widgets::MetricsDashboardState where U: core::convert::From<T>
+pub fn termrock::widgets::MetricsDashboardState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::MetricsDashboardState where U: core::convert::Into<T>
+pub type termrock::widgets::MetricsDashboardState::Error = core::convert::Infallible
+pub fn termrock::widgets::MetricsDashboardState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::MetricsDashboardState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::MetricsDashboardState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::MetricsDashboardState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::MetricsDashboardState where T: core::clone::Clone
+pub type termrock::widgets::MetricsDashboardState::Owned = T
+pub fn termrock::widgets::MetricsDashboardState::clone_into(&self, &mut T)
+pub fn termrock::widgets::MetricsDashboardState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::MetricsDashboardState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::MetricsDashboardState where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::MetricsDashboardState where T: ?core::marker::Sized
+pub fn termrock::widgets::MetricsDashboardState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::MetricsDashboardState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::MetricsDashboardState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::MetricsDashboardState
+pub fn termrock::widgets::MetricsDashboardState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::MetricsDashboardState
 pub struct termrock::widgets::ModeIndicator
 pub termrock::widgets::ModeIndicator::label: alloc::string::String
 pub termrock::widgets::ModeIndicator::warning: bool
@@ -68196,6 +68906,8 @@ pub const termrock::widgets::MENU_PROMOTE_MAX_HEIGHT: u16
 pub const termrock::widgets::MENU_PROMOTE_MAX_ITEMS: usize
 pub const termrock::widgets::MENU_PROMOTE_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_PROMOTE_MIN_DEPTH: usize
+pub const termrock::widgets::METRICS_DASHBOARD_DEFAULT_REFRESH_MS: u32
+pub const termrock::widgets::METRICS_DASHBOARD_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::MIN_WIDTH_WITH_PERCENTAGE: u16
 pub const termrock::widgets::NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize
 pub const termrock::widgets::NOTIFICATION_CENTER_HINT: &str
@@ -68280,6 +68992,7 @@ pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line s
 pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::apply_expanded_set<Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord>(&mut [termrock::widgets::SchemaBrowserEntry<'_, Id>], &alloc::collections::btree::set::BTreeSet<Id>)
+pub fn termrock::widgets::apply_metrics_command(&mut termrock::widgets::MetricsDashboardState, &str, &[termrock::widgets::MetricTile<'_>]) -> termrock::widgets::MetricsDashboardOutcome
 pub fn termrock::widgets::ascii_ellipsis() -> &'static str
 pub fn termrock::widgets::assign_jump_badges<Id: core::clone::Clone>(&[termrock::interaction::HitRegion<Id>]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::assign_jump_badges_from_semantics<Id, Action>(&termrock::interaction::SemanticScene<Id, Action>) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>> where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone + core::fmt::Debug
@@ -68460,6 +69173,7 @@ pub fn termrock::widgets::kbd_from_chord<'a>(termrock::keymap::KeyChord, &'a mut
 pub fn termrock::widgets::keep_first_match_slice(&str, &[termrock::widgets::MatchRange], usize) -> alloc::string::String
 pub fn termrock::widgets::keyboard_help_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::KeyboardHelpPresentation
 pub fn termrock::widgets::lay_out_tabs<'a>(&[(&'a str, bool)], u16) -> alloc::vec::Vec<termrock::widgets::TabCell<'a>>
+pub fn termrock::widgets::layout_metrics_dashboard(ratatui_core::layout::rect::Rect, usize, usize, termrock::widgets::MetricsDashboardLayoutMode) -> termrock::widgets::MetricsDashboardSlots
 pub fn termrock::widgets::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::widgets::line_plain(&ratatui_core::text::line::Line<'_>) -> alloc::string::String
 pub fn termrock::widgets::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
@@ -68470,6 +69184,7 @@ pub fn termrock::widgets::measure_menu_panel<Id>(&[termrock::widgets::MenuNode<I
 pub fn termrock::widgets::menu_bar_presentation_for_width(u16) -> termrock::widgets::MenuBarPresentation
 pub fn termrock::widgets::menu_items_to_nodes<Id: core::clone::Clone>(&[termrock::widgets::MenuItem<Id>]) -> alloc::vec::Vec<termrock::widgets::MenuNode<Id>>
 pub fn termrock::widgets::merge_help_entries(impl core::iter::traits::collect::IntoIterator<Item = alloc::vec::Vec<termrock::widgets::HelpEntry>>) -> alloc::vec::Vec<termrock::widgets::HelpEntry>
+pub fn termrock::widgets::metrics_dashboard_commands() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::min_width_for_bpr(u8, u8) -> u16
 pub fn termrock::widgets::normalize_path_display(&str) -> alloc::string::String
 pub fn termrock::widgets::normalize_range(u64, u64) -> (u64, u64)

@@ -1694,6 +1694,21 @@ Every component below uses sections **1–24**:
 21. **Stories:** `search-results/{basic,loading,empty,stale,collapsed,streaming,narrow,ascii}`  
 22–24. Generation stale tests; 2k-hit paint; match keep-visible.
 
+## MetricsDashboard
+
+1. **Purpose:** Observability dashboard from public Sparkline/Gauge APIs.  
+2. **Anatomy:** toolbar · metric tile grid/summary · alerts · footer.  
+3. **Public properties:** MetricTile[] (value, samples, thresholds, health), alerts.  
+4. **State:** time_range, comparison, focus zone/tile, layout override, pause.  
+5. **Variants:** Grid vs Summary (≤48 cols); tile health Ok/Warn/Danger/Failed.  
+6–10. Spatial hjkl; Tab zones; Ctrl+R/T/D/K commands.  
+11–14. No scrape/query IO; partial failure per tile.  
+15–18. Health letters; ASCII sparkline/gauge glyphs.  
+19. **Composition:** Sparkline · Gauge · CommandPalette entries.  
+20. **Outcomes:** DrillDown · Refresh · TimeRange · Comparison · AlertActivated.  
+21. **Stories:** `metrics-dashboard/{basic,narrow,partial-fail,paused,empty,ascii}`  
+22–24. Layout grid/summary; 24-tile paint; public-API-only guard.
+
 ## Charts (Sparkline / Chart / Gauge / Histogram)
 
 1. **Purpose:** Coherent terminal data-viz family.  

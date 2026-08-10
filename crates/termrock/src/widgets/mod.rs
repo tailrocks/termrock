@@ -127,6 +127,7 @@ mod query_editor;
 mod result_grid;
 mod schema_browser;
 mod search_results;
+mod metrics_dashboard;
 mod tree_navigation;
 mod view_state;
 mod viewport;
@@ -230,6 +231,14 @@ pub use search_results::{
     truncate_snippet_keep_match,
 };
 pub use search_results::bench as search_results_bench;
+pub use metrics_dashboard::{
+    METRICS_DASHBOARD_DEFAULT_REFRESH_MS, METRICS_DASHBOARD_NARROW_MAX_WIDTH, MetricAlert,
+    MetricAlertSeverity, MetricTile, MetricTileHealth, MetricViz, MetricsComparison,
+    MetricsDashboard, MetricsDashboardLayoutMode, MetricsDashboardOutcome, MetricsDashboardSlots,
+    MetricsDashboardState, MetricsFocus, MetricsTimeRange, apply_metrics_command, commands,
+    layout_metrics_dashboard, metrics_dashboard_commands,
+};
+pub use metrics_dashboard::bench as metrics_dashboard_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, PlanReview, PlanReviewOutcome, PlanReviewState,
     PlanStep, QuestionFlow, QuestionFlowOutcome, QuestionFlowState, QuestionOption, QuestionStep,

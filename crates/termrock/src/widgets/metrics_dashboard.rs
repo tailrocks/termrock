@@ -1,0 +1,1759 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! **MetricsDashboard** — reusable observability dashboard block.
+//!
+//! **Mission.** Compose metric cards, sparklines/gauges, alerts, and time
+//! controls from **public** TermRock APIs only. Time range, refresh, comparison,
+//! thresholds, drill-down, loading, partial failure, and responsive grid.
+//! Prioritize trend and exception readability. Keyboard spatial navigation and
+//! command-palette action ids. Narrow terminals collapse to a vertical summary.
+//!
+//! **vs [`super::blocks::OpsDashboardState`].** OpsDashboard is a thin region
+//! router over DataTable + LogStream. MetricsDashboard owns metric-card grid
+//! chrome, thresholds, comparison deltas, and layout contraction.
+//!
+//! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
+
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::Widget,
+};
+
+use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, Role},
+    text::take_display_cols,
+    widgets::{
+        charts::{Gauge, ScaleMode, Sparkline, VizGlyphSet},
+        command_palette::CommandEntry,
+        data_view::LoadState,
+    },
+};
+
+/// Width at or below which layout becomes a vertical summary stack.
+pub const METRICS_DASHBOARD_NARROW_MAX_WIDTH: u16 = 48;
+/// Default refresh interval display (host timer).
+pub const METRICS_DASHBOARD_DEFAULT_REFRESH_MS: u32 = 5_000;
+
+// ── Time / comparison ───────────────────────────────────────────────────────
+
+/// Dashboard time window (host resolves absolute times).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricsTimeRange {
+    /// Last 5 minutes.
+    M5,
+    /// Last 15 minutes.
+    #[default]
+    M15,
+    /// Last 1 hour.
+    H1,
+    /// Last 6 hours.
+    H6,
+    /// Last 24 hours.
+    D1,
+    /// Last 7 days.
+    D7,
+    /// Custom (host).
+    Custom,
+}
+
+impl MetricsTimeRange {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::M5 => "5m",
+            Self::M15 => "15m",
+            Self::H1 => "1h",
+            Self::H6 => "6h",
+            Self::D1 => "24h",
+            Self::D7 => "7d",
+            Self::Custom => "custom",
+        }
+    }
+
+    /// Human label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::M5 => "5m",
+            Self::M15 => "15m",
+            Self::H1 => "1h",
+            Self::H6 => "6h",
+            Self::D1 => "24h",
+            Self::D7 => "7d",
+            Self::Custom => "custom",
+        }
+    }
+
+    /// Cycle forward.
+    #[must_use]
+    pub const fn next(self) -> Self {
+        match self {
+            Self::M5 => Self::M15,
+            Self::M15 => Self::H1,
+            Self::H1 => Self::H6,
+            Self::H6 => Self::D1,
+            Self::D1 => Self::D7,
+            Self::D7 => Self::Custom,
+            Self::Custom => Self::M5,
+        }
+    }
+
+    /// Cycle backward.
+    #[must_use]
+    pub const fn prev(self) -> Self {
+        match self {
+            Self::M5 => Self::Custom,
+            Self::M15 => Self::M5,
+            Self::H1 => Self::M15,
+            Self::H6 => Self::H1,
+            Self::D1 => Self::H6,
+            Self::D7 => Self::D1,
+            Self::Custom => Self::D7,
+        }
+    }
+}
+
+/// Comparison baseline for delta chrome.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricsComparison {
+    /// No comparison.
+    #[default]
+    None,
+    /// Versus previous window of same length.
+    PreviousPeriod,
+    /// Versus same period yesterday.
+    DayOverDay,
+    /// Versus previous week.
+    WeekOverWeek,
+}
+
+impl MetricsComparison {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::PreviousPeriod => "prev",
+            Self::DayOverDay => "dod",
+            Self::WeekOverWeek => "wow",
+        }
+    }
+
+    /// Short label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::None => "—",
+            Self::PreviousPeriod => "vs prev",
+            Self::DayOverDay => "DoD",
+            Self::WeekOverWeek => "WoW",
+        }
+    }
+
+    /// Cycle.
+    #[must_use]
+    pub const fn next(self) -> Self {
+        match self {
+            Self::None => Self::PreviousPeriod,
+            Self::PreviousPeriod => Self::DayOverDay,
+            Self::DayOverDay => Self::WeekOverWeek,
+            Self::WeekOverWeek => Self::None,
+        }
+    }
+}
+
+// ── Metric / alert model ────────────────────────────────────────────────────
+
+/// How a metric tile paints its body.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricViz {
+    /// Value + sparkline trend (default).
+    #[default]
+    Sparkline,
+    /// Single gauge fill.
+    Gauge,
+    /// Value only (no spark/gauge).
+    ValueOnly,
+}
+
+impl MetricViz {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Sparkline => "sparkline",
+            Self::Gauge => "gauge",
+            Self::ValueOnly => "value",
+        }
+    }
+}
+
+/// Health of one tile (partial failure support).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricTileHealth {
+    /// Ok.
+    #[default]
+    Ok,
+    /// Crossing warning threshold.
+    Warning,
+    /// Crossing danger threshold / error.
+    Danger,
+    /// Loading.
+    Loading,
+    /// Failed to load this metric (others may succeed).
+    Failed,
+    /// Stale data.
+    Stale,
+}
+
+impl MetricTileHealth {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Warning => "warning",
+            Self::Danger => "danger",
+            Self::Loading => "loading",
+            Self::Failed => "failed",
+            Self::Stale => "stale",
+        }
+    }
+
+    /// Letter (never color alone).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Ok => '·',
+            Self::Warning => '!',
+            Self::Danger => '‼',
+            Self::Loading => '…',
+            Self::Failed => 'x',
+            Self::Stale => '~',
+        }
+    }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter_ascii(self) -> char {
+        match self {
+            Self::Ok => '.',
+            Self::Warning => '!',
+            Self::Danger => 'X',
+            Self::Loading => '.',
+            Self::Failed => 'x',
+            Self::Stale => '~',
+        }
+    }
+
+    /// Role.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Ok => Role::Success,
+            Self::Warning | Self::Stale | Self::Loading => Role::Warning,
+            Self::Danger | Self::Failed => Role::Danger,
+        }
+    }
+}
+
+/// One metric card projection (host-owned samples).
+#[derive(Debug, Clone, PartialEq)]
+pub struct MetricTile<'a> {
+    /// Stable id (drill-down / commands).
+    pub id: &'a str,
+    /// Title.
+    pub title: &'a str,
+    /// Formatted primary value (`42.1%`, `1.2k rps`).
+    pub value: &'a str,
+    /// Unit / subtitle.
+    pub unit: &'a str,
+    /// Comparison delta text (`+3.2%`, `−12`). Empty = hide.
+    pub delta: &'a str,
+    /// True when delta is “bad” direction (host policy).
+    pub delta_bad: bool,
+    /// Samples for sparkline / gauge domain (NaN = missing).
+    pub samples: &'a [f64],
+    /// Current numeric value for gauge (optional).
+    pub gauge_value: Option<f64>,
+    /// Thresholds in domain units (warning/danger).
+    pub thresholds: &'a [f64],
+    /// Visualization.
+    pub viz: MetricViz,
+    /// Health.
+    pub health: MetricTileHealth,
+    /// Error message when Failed.
+    pub error: Option<&'a str>,
+}
+
+impl<'a> MetricTile<'a> {
+    /// Construct value-only tile.
+    #[must_use]
+    pub const fn new(id: &'a str, title: &'a str, value: &'a str) -> Self {
+        Self {
+            id,
+            title,
+            value,
+            unit: "",
+            delta: "",
+            delta_bad: false,
+            samples: &[],
+            gauge_value: None,
+            thresholds: &[],
+            viz: MetricViz::Sparkline,
+            health: MetricTileHealth::Ok,
+            error: None,
+        }
+    }
+
+    /// Unit.
+    #[must_use]
+    pub const fn unit(mut self, u: &'a str) -> Self {
+        self.unit = u;
+        self
+    }
+
+    /// Delta.
+    #[must_use]
+    pub const fn delta(mut self, d: &'a str, bad: bool) -> Self {
+        self.delta = d;
+        self.delta_bad = bad;
+        self
+    }
+
+    /// Samples.
+    #[must_use]
+    pub const fn samples(mut self, s: &'a [f64]) -> Self {
+        self.samples = s;
+        self
+    }
+
+    /// Gauge value.
+    #[must_use]
+    pub const fn gauge(mut self, v: f64) -> Self {
+        self.gauge_value = Some(v);
+        self.viz = MetricViz::Gauge;
+        self
+    }
+
+    /// Thresholds.
+    #[must_use]
+    pub const fn thresholds(mut self, t: &'a [f64]) -> Self {
+        self.thresholds = t;
+        self
+    }
+
+    /// Viz.
+    #[must_use]
+    pub const fn viz(mut self, v: MetricViz) -> Self {
+        self.viz = v;
+        self
+    }
+
+    /// Health.
+    #[must_use]
+    pub const fn health(mut self, h: MetricTileHealth) -> Self {
+        self.health = h;
+        self
+    }
+
+    /// Failed with message.
+    #[must_use]
+    pub const fn failed(mut self, msg: &'a str) -> Self {
+        self.health = MetricTileHealth::Failed;
+        self.error = Some(msg);
+        self
+    }
+}
+
+/// Severity for dashboard alerts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum MetricAlertSeverity {
+    /// Info.
+    #[default]
+    Info,
+    /// Warning.
+    Warning,
+    /// Critical.
+    Critical,
+}
+
+impl MetricAlertSeverity {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Info => "info",
+            Self::Warning => "warning",
+            Self::Critical => "critical",
+        }
+    }
+
+    /// Letter.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Info => 'i',
+            Self::Warning => 'w',
+            Self::Critical => 'c',
+        }
+    }
+
+    /// Role.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Info => Role::Info,
+            Self::Warning => Role::Warning,
+            Self::Critical => Role::Danger,
+        }
+    }
+}
+
+/// One alert row (host projection).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MetricAlert<'a> {
+    /// Id.
+    pub id: &'a str,
+    /// Severity.
+    pub severity: MetricAlertSeverity,
+    /// Message.
+    pub message: &'a str,
+    /// Optional related metric id.
+    pub metric_id: Option<&'a str>,
+}
+
+impl<'a> MetricAlert<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(id: &'a str, severity: MetricAlertSeverity, message: &'a str) -> Self {
+        Self {
+            id,
+            severity,
+            message,
+            metric_id: None,
+        }
+    }
+
+    /// Link to metric.
+    #[must_use]
+    pub const fn metric(mut self, id: &'a str) -> Self {
+        self.metric_id = Some(id);
+        self
+    }
+}
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+
+/// Presentation mode from width.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricsDashboardLayoutMode {
+    /// Multi-column card grid.
+    #[default]
+    Grid,
+    /// Single-column vertical summary.
+    Summary,
+}
+
+impl MetricsDashboardLayoutMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Grid => "grid",
+            Self::Summary => "summary",
+        }
+    }
+
+    /// From width.
+    #[must_use]
+    pub const fn for_width(width: u16) -> Self {
+        if width <= METRICS_DASHBOARD_NARROW_MAX_WIDTH {
+            Self::Summary
+        } else {
+            Self::Grid
+        }
+    }
+}
+
+/// Slot rects after layout.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MetricsDashboardSlots {
+    /// Outer.
+    pub root: Rect,
+    /// Time / refresh toolbar.
+    pub toolbar: Rect,
+    /// Metric tiles area (grid or summary).
+    pub metrics: Rect,
+    /// Alerts strip.
+    pub alerts: Rect,
+    /// Footer / status.
+    pub footer: Rect,
+    /// Per-tile rects (grid order matching tiles slice).
+    pub tiles: Vec<Rect>,
+}
+
+/// Layout dashboard chrome.
+#[must_use]
+pub fn layout_metrics_dashboard(
+    area: Rect,
+    tile_count: usize,
+    alert_count: usize,
+    mode: MetricsDashboardLayoutMode,
+) -> MetricsDashboardSlots {
+    if area.is_empty() {
+        return MetricsDashboardSlots::default();
+    }
+    let mut y = area.y;
+    let mut h = area.height;
+    let toolbar = Rect {
+        x: area.x,
+        y,
+        width: area.width,
+        height: 1.min(h),
+    };
+    y = y.saturating_add(toolbar.height);
+    h = h.saturating_sub(toolbar.height);
+
+    let footer_h = 1u16.min(h);
+    let alert_h = if alert_count == 0 || h < 4 {
+        0
+    } else {
+        (1 + alert_count.min(3) as u16).min(h.saturating_sub(footer_h + 2))
+    };
+    let metrics_h = h.saturating_sub(footer_h).saturating_sub(alert_h).max(1);
+
+    let metrics = Rect {
+        x: area.x,
+        y,
+        width: area.width,
+        height: metrics_h,
+    };
+    y = y.saturating_add(metrics_h);
+
+    let alerts = Rect {
+        x: area.x,
+        y,
+        width: area.width,
+        height: alert_h,
+    };
+    y = y.saturating_add(alert_h);
+
+    let footer = Rect {
+        x: area.x,
+        y,
+        width: area.width,
+        height: footer_h,
+    };
+
+    let tiles = match mode {
+        MetricsDashboardLayoutMode::Summary => layout_summary_tiles(metrics, tile_count),
+        MetricsDashboardLayoutMode::Grid => layout_grid_tiles(metrics, tile_count),
+    };
+
+    MetricsDashboardSlots {
+        root: area,
+        toolbar,
+        metrics,
+        alerts,
+        footer,
+        tiles,
+    }
+}
+
+fn layout_summary_tiles(area: Rect, n: usize) -> Vec<Rect> {
+    if n == 0 || area.is_empty() {
+        return Vec::new();
+    }
+    let row_h = 1u16;
+    let mut out = Vec::with_capacity(n);
+    let mut y = area.y;
+    for _ in 0..n {
+        if y >= area.y.saturating_add(area.height) {
+            break;
+        }
+        out.push(Rect {
+            x: area.x,
+            y,
+            width: area.width,
+            height: row_h,
+        });
+        y = y.saturating_add(row_h);
+    }
+    out
+}
+
+fn layout_grid_tiles(area: Rect, n: usize) -> Vec<Rect> {
+    if n == 0 || area.is_empty() {
+        return Vec::new();
+    }
+    // Prefer 2–4 columns by width
+    let cols = if area.width >= 100 {
+        4usize
+    } else if area.width >= 72 {
+        3
+    } else {
+        2
+    };
+    let cols = cols.min(n.max(1));
+    let rows = n.div_ceil(cols);
+    let cell_w = (area.width / cols as u16).max(1);
+    let cell_h = (area.height / rows as u16).max(3);
+    let mut out = Vec::with_capacity(n);
+    for i in 0..n {
+        let r = i / cols;
+        let c = i % cols;
+        let x = area.x.saturating_add(c as u16 * cell_w);
+        let y = area.y.saturating_add(r as u16 * cell_h);
+        let w = if c + 1 == cols {
+            area.right().saturating_sub(x)
+        } else {
+            cell_w.saturating_sub(1).max(1)
+        };
+        let h = if r + 1 == rows {
+            area.bottom().saturating_sub(y)
+        } else {
+            cell_h.saturating_sub(1).max(2)
+        };
+        out.push(Rect {
+            x,
+            y,
+            width: w,
+            height: h,
+        });
+    }
+    out
+}
+
+// ── Outcomes / commands ─────────────────────────────────────────────────────
+
+/// Typed outcomes — host owns scrape/query/refresh effects.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MetricsDashboardOutcome {
+    /// No change.
+    Ignored,
+    /// Focused tile changed.
+    TileFocused {
+        /// Metric id.
+        id: String,
+    },
+    /// Drill-down / open detail for metric.
+    DrillDownRequested {
+        /// Metric id.
+        id: String,
+    },
+    /// Alert activated.
+    AlertActivated {
+        /// Alert id.
+        id: String,
+    },
+    /// Time range changed (state already updated).
+    TimeRangeChanged(MetricsTimeRange),
+    /// Comparison mode changed.
+    ComparisonChanged(MetricsComparison),
+    /// Host should refresh all metrics.
+    RefreshRequested,
+    /// Retry failed tiles only.
+    RetryFailedRequested,
+    /// Pause auto-refresh.
+    PauseToggled {
+        /// Paused after.
+        paused: bool,
+    },
+    /// Open command palette with dashboard actions.
+    CommandPaletteRequested,
+    /// Layout mode changed (grid ↔ summary force).
+    LayoutModeChanged(MetricsDashboardLayoutMode),
+    /// Focus moved to alerts strip.
+    AlertsFocused,
+    /// Focus moved to toolbar.
+    ToolbarFocused,
+}
+
+/// Stable command ids for CommandPalette integration.
+pub mod commands {
+    /// Refresh.
+    pub const REFRESH: &str = "metrics.refresh";
+    /// Retry failed.
+    pub const RETRY_FAILED: &str = "metrics.retry_failed";
+    /// Cycle time range.
+    pub const TIME_NEXT: &str = "metrics.time_next";
+    /// Previous time range.
+    pub const TIME_PREV: &str = "metrics.time_prev";
+    /// Cycle comparison.
+    pub const COMPARE_CYCLE: &str = "metrics.compare_cycle";
+    /// Pause auto-refresh.
+    pub const PAUSE: &str = "metrics.pause";
+    /// Force summary layout.
+    pub const LAYOUT_SUMMARY: &str = "metrics.layout_summary";
+    /// Force grid layout.
+    pub const LAYOUT_GRID: &str = "metrics.layout_grid";
+    /// Drill focused tile.
+    pub const DRILL: &str = "metrics.drill";
+}
+
+/// Build command palette entries for the dashboard (host wires handlers).
+#[must_use]
+pub fn metrics_dashboard_commands() -> Vec<CommandEntry<&'static str>> {
+    vec![
+        CommandEntry::new(commands::REFRESH, "Refresh metrics").group("metrics"),
+        CommandEntry::new(commands::RETRY_FAILED, "Retry failed tiles").group("metrics"),
+        CommandEntry::new(commands::TIME_NEXT, "Next time range").group("metrics"),
+        CommandEntry::new(commands::TIME_PREV, "Previous time range").group("metrics"),
+        CommandEntry::new(commands::COMPARE_CYCLE, "Cycle comparison").group("metrics"),
+        CommandEntry::new(commands::PAUSE, "Toggle pause refresh").group("metrics"),
+        CommandEntry::new(commands::LAYOUT_SUMMARY, "Summary layout").group("metrics"),
+        CommandEntry::new(commands::LAYOUT_GRID, "Grid layout").group("metrics"),
+        CommandEntry::new(commands::DRILL, "Drill into focused metric").group("metrics"),
+    ]
+}
+
+/// Apply a command id (from palette) to state.
+pub fn apply_metrics_command(
+    state: &mut MetricsDashboardState,
+    command_id: &str,
+    tiles: &[MetricTile<'_>],
+) -> MetricsDashboardOutcome {
+    match command_id {
+        commands::REFRESH => MetricsDashboardOutcome::RefreshRequested,
+        commands::RETRY_FAILED => MetricsDashboardOutcome::RetryFailedRequested,
+        commands::TIME_NEXT => {
+            state.time_range = state.time_range.next();
+            MetricsDashboardOutcome::TimeRangeChanged(state.time_range)
+        }
+        commands::TIME_PREV => {
+            state.time_range = state.time_range.prev();
+            MetricsDashboardOutcome::TimeRangeChanged(state.time_range)
+        }
+        commands::COMPARE_CYCLE => {
+            state.comparison = state.comparison.next();
+            MetricsDashboardOutcome::ComparisonChanged(state.comparison)
+        }
+        commands::PAUSE => {
+            state.paused = !state.paused;
+            MetricsDashboardOutcome::PauseToggled {
+                paused: state.paused,
+            }
+        }
+        commands::LAYOUT_SUMMARY => {
+            state.layout_override = Some(MetricsDashboardLayoutMode::Summary);
+            MetricsDashboardOutcome::LayoutModeChanged(MetricsDashboardLayoutMode::Summary)
+        }
+        commands::LAYOUT_GRID => {
+            state.layout_override = Some(MetricsDashboardLayoutMode::Grid);
+            MetricsDashboardOutcome::LayoutModeChanged(MetricsDashboardLayoutMode::Grid)
+        }
+        commands::DRILL => {
+            if let Some(t) = tiles.get(state.focus_tile) {
+                MetricsDashboardOutcome::DrillDownRequested {
+                    id: t.id.to_string(),
+                }
+            } else {
+                MetricsDashboardOutcome::Ignored
+            }
+        }
+        _ => MetricsDashboardOutcome::Ignored,
+    }
+}
+
+// ── State ───────────────────────────────────────────────────────────────────
+
+/// Focus zone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum MetricsFocus {
+    /// Metric grid.
+    #[default]
+    Tiles,
+    /// Alerts strip.
+    Alerts,
+    /// Toolbar (time/refresh).
+    Toolbar,
+}
+
+/// Dashboard interaction state.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MetricsDashboardState {
+    /// Time range.
+    pub time_range: MetricsTimeRange,
+    /// Comparison.
+    pub comparison: MetricsComparison,
+    /// Refresh cadence ms (chrome).
+    pub refresh_ms: u32,
+    /// Auto-refresh paused.
+    pub paused: bool,
+    /// Global load (all tiles).
+    pub load: LoadState,
+    /// Focus zone.
+    pub focus: MetricsFocus,
+    /// Focused tile index.
+    pub focus_tile: usize,
+    /// Focused alert index.
+    pub focus_alert: usize,
+    /// Layout override (None = auto from width).
+    pub layout_override: Option<MetricsDashboardLayoutMode>,
+    /// Grid column count cache for spatial nav (set on paint).
+    pub grid_cols: usize,
+    /// Last slots.
+    pub slots: MetricsDashboardSlots,
+    /// ASCII.
+    pub ascii: bool,
+    accepts_input: bool,
+}
+
+impl Default for MetricsDashboardState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MetricsDashboardState {
+    /// Fresh.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            time_range: MetricsTimeRange::M15,
+            comparison: MetricsComparison::None,
+            refresh_ms: METRICS_DASHBOARD_DEFAULT_REFRESH_MS,
+            paused: false,
+            load: LoadState::Ready { count: 0 },
+            focus: MetricsFocus::Tiles,
+            focus_tile: 0,
+            focus_alert: 0,
+            layout_override: None,
+            grid_cols: 2,
+            slots: MetricsDashboardSlots::default(),
+            ascii: false,
+            accepts_input: true,
+        }
+    }
+
+    /// Host input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Effective layout mode.
+    #[must_use]
+    pub fn layout_mode(&self, width: u16) -> MetricsDashboardLayoutMode {
+        self.layout_override
+            .unwrap_or_else(|| MetricsDashboardLayoutMode::for_width(width))
+    }
+
+    /// Focused metric id.
+    #[must_use]
+    pub fn focused_metric_id<'a>(&self, tiles: &[MetricTile<'a>]) -> Option<&'a str> {
+        tiles.get(self.focus_tile).map(|t| t.id)
+    }
+
+    /// Keys.
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        tiles: &[MetricTile<'_>],
+        alerts: &[MetricAlert<'_>],
+    ) -> MetricsDashboardOutcome {
+        if !self.accepts_input || key.kind != KeyEventKind::Press {
+            return MetricsDashboardOutcome::Ignored;
+        }
+
+        // Global chords
+        if key.modifiers.contains(KeyModifiers::CONTROL)
+            && !key.modifiers.contains(KeyModifiers::ALT)
+        {
+            match key.code {
+                KeyCode::Char('r' | 'R') => {
+                    return MetricsDashboardOutcome::RefreshRequested;
+                }
+                KeyCode::Char('p' | 'P') => {
+                    self.paused = !self.paused;
+                    return MetricsDashboardOutcome::PauseToggled {
+                        paused: self.paused,
+                    };
+                }
+                KeyCode::Char('k' | 'K') => {
+                    return MetricsDashboardOutcome::CommandPaletteRequested;
+                }
+                KeyCode::Char('t' | 'T') if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                    self.time_range = self.time_range.prev();
+                    return MetricsDashboardOutcome::TimeRangeChanged(self.time_range);
+                }
+                KeyCode::Char('t' | 'T') => {
+                    self.time_range = self.time_range.next();
+                    return MetricsDashboardOutcome::TimeRangeChanged(self.time_range);
+                }
+                KeyCode::Char('d' | 'D') => {
+                    self.comparison = self.comparison.next();
+                    return MetricsDashboardOutcome::ComparisonChanged(self.comparison);
+                }
+                KeyCode::Char('f' | 'F') => {
+                    return MetricsDashboardOutcome::RetryFailedRequested;
+                }
+                _ => {}
+            }
+        }
+
+        // Tab zones
+        if key.code == KeyCode::Tab {
+            self.focus = if key.modifiers.contains(KeyModifiers::SHIFT) {
+                match self.focus {
+                    MetricsFocus::Tiles => MetricsFocus::Toolbar,
+                    MetricsFocus::Alerts => MetricsFocus::Tiles,
+                    MetricsFocus::Toolbar => MetricsFocus::Alerts,
+                }
+            } else {
+                match self.focus {
+                    MetricsFocus::Tiles => MetricsFocus::Alerts,
+                    MetricsFocus::Alerts => MetricsFocus::Toolbar,
+                    MetricsFocus::Toolbar => MetricsFocus::Tiles,
+                }
+            };
+            return match self.focus {
+                MetricsFocus::Alerts => MetricsDashboardOutcome::AlertsFocused,
+                MetricsFocus::Toolbar => MetricsDashboardOutcome::ToolbarFocused,
+                MetricsFocus::Tiles => {
+                    if let Some(t) = tiles.get(self.focus_tile) {
+                        MetricsDashboardOutcome::TileFocused {
+                            id: t.id.to_string(),
+                        }
+                    } else {
+                        MetricsDashboardOutcome::Ignored
+                    }
+                }
+            };
+        }
+
+        match self.focus {
+            MetricsFocus::Toolbar => self.handle_toolbar_key(key),
+            MetricsFocus::Alerts => self.handle_alerts_key(key, alerts),
+            MetricsFocus::Tiles => self.handle_tiles_key(key, tiles),
+        }
+    }
+
+    fn handle_toolbar_key(&mut self, key: KeyEvent) -> MetricsDashboardOutcome {
+        match key.code {
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.time_range = self.time_range.prev();
+                MetricsDashboardOutcome::TimeRangeChanged(self.time_range)
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.time_range = self.time_range.next();
+                MetricsDashboardOutcome::TimeRangeChanged(self.time_range)
+            }
+            KeyCode::Char('c') if key.modifiers.is_empty() => {
+                self.comparison = self.comparison.next();
+                MetricsDashboardOutcome::ComparisonChanged(self.comparison)
+            }
+            KeyCode::Enter | KeyCode::Char('r') => MetricsDashboardOutcome::RefreshRequested,
+            KeyCode::Char(' ') => {
+                self.paused = !self.paused;
+                MetricsDashboardOutcome::PauseToggled {
+                    paused: self.paused,
+                }
+            }
+            _ => MetricsDashboardOutcome::Ignored,
+        }
+    }
+
+    fn handle_alerts_key(
+        &mut self,
+        key: KeyEvent,
+        alerts: &[MetricAlert<'_>],
+    ) -> MetricsDashboardOutcome {
+        if alerts.is_empty() {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        match key.code {
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.focus_alert = (self.focus_alert + 1).min(alerts.len() - 1);
+                MetricsDashboardOutcome::Ignored
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.focus_alert = self.focus_alert.saturating_sub(1);
+                MetricsDashboardOutcome::Ignored
+            }
+            KeyCode::Enter => {
+                let a = &alerts[self.focus_alert.min(alerts.len() - 1)];
+                MetricsDashboardOutcome::AlertActivated {
+                    id: a.id.to_string(),
+                }
+            }
+            _ => MetricsDashboardOutcome::Ignored,
+        }
+    }
+
+    fn handle_tiles_key(
+        &mut self,
+        key: KeyEvent,
+        tiles: &[MetricTile<'_>],
+    ) -> MetricsDashboardOutcome {
+        if tiles.is_empty() {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        self.focus_tile = self.focus_tile.min(tiles.len() - 1);
+        let cols = self.grid_cols.max(1);
+
+        match key.code {
+            KeyCode::Right | KeyCode::Char('l') if key.modifiers.is_empty() => {
+                let next = (self.focus_tile + 1).min(tiles.len() - 1);
+                self.focus_tile = next;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[next].id.to_string(),
+                }
+            }
+            KeyCode::Left | KeyCode::Char('h') if key.modifiers.is_empty() => {
+                let next = self.focus_tile.saturating_sub(1);
+                self.focus_tile = next;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[next].id.to_string(),
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => {
+                let next = (self.focus_tile + cols).min(tiles.len() - 1);
+                self.focus_tile = next;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[next].id.to_string(),
+                }
+            }
+            KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => {
+                let next = self.focus_tile.saturating_sub(cols);
+                self.focus_tile = next;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[next].id.to_string(),
+                }
+            }
+            KeyCode::Home => {
+                self.focus_tile = 0;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[0].id.to_string(),
+                }
+            }
+            KeyCode::End => {
+                self.focus_tile = tiles.len() - 1;
+                MetricsDashboardOutcome::TileFocused {
+                    id: tiles[self.focus_tile].id.to_string(),
+                }
+            }
+            KeyCode::Enter => MetricsDashboardOutcome::DrillDownRequested {
+                id: tiles[self.focus_tile].id.to_string(),
+            },
+            _ => MetricsDashboardOutcome::Ignored,
+        }
+    }
+
+    /// Mouse click tiles/alerts.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        tiles: &[MetricTile<'_>],
+        alerts: &[MetricAlert<'_>],
+    ) -> MetricsDashboardOutcome {
+        if !self.accepts_input {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        let pos = event.position;
+        if !self.slots.toolbar.is_empty() && self.slots.toolbar.contains(pos) {
+            self.focus = MetricsFocus::Toolbar;
+            return MetricsDashboardOutcome::ToolbarFocused;
+        }
+        if !self.slots.alerts.is_empty() && self.slots.alerts.contains(pos) {
+            self.focus = MetricsFocus::Alerts;
+            // row by y
+            let rel = pos.y.saturating_sub(self.slots.alerts.y) as usize;
+            if rel < alerts.len() {
+                self.focus_alert = rel;
+            }
+            return MetricsDashboardOutcome::AlertsFocused;
+        }
+        for (i, rect) in self.slots.tiles.iter().enumerate() {
+            if rect.contains(pos) {
+                self.focus = MetricsFocus::Tiles;
+                self.focus_tile = i;
+                if let Some(t) = tiles.get(i) {
+                    return MetricsDashboardOutcome::TileFocused {
+                        id: t.id.to_string(),
+                    };
+                }
+            }
+        }
+        MetricsDashboardOutcome::Ignored
+    }
+}
+
+// ── Widget ──────────────────────────────────────────────────────────────────
+
+/// Metrics dashboard paint.
+#[derive(Debug, Clone, Copy)]
+pub struct MetricsDashboard<'a> {
+    tiles: &'a [MetricTile<'a>],
+    alerts: &'a [MetricAlert<'a>],
+    system: &'a DesignSystem,
+    focused: bool,
+    title: Option<&'a str>,
+    ascii: bool,
+}
+
+impl<'a> MetricsDashboard<'a> {
+    /// Tiles + alerts + system.
+    #[must_use]
+    pub const fn new(
+        tiles: &'a [MetricTile<'a>],
+        alerts: &'a [MetricAlert<'a>],
+        system: &'a DesignSystem,
+    ) -> Self {
+        Self {
+            tiles,
+            alerts,
+            system,
+            focused: true,
+            title: None,
+            ascii: false,
+        }
+    }
+
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, t: &'a str) -> Self {
+        self.title = Some(t);
+        self
+    }
+
+    /// Focus.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
+    /// ASCII.
+    #[must_use]
+    pub const fn ascii(mut self, on: bool) -> Self {
+        self.ascii = on;
+        self
+    }
+
+    /// Paint using public Sparkline/Gauge APIs only.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
+        if area.is_empty() {
+            return;
+        }
+        let ascii = self.ascii || state.ascii;
+        let mode = state.layout_mode(area.width);
+        let slots =
+            layout_metrics_dashboard(area, self.tiles.len(), self.alerts.len(), mode);
+        // grid cols for nav
+        state.grid_cols = match mode {
+            MetricsDashboardLayoutMode::Summary => 1,
+            MetricsDashboardLayoutMode::Grid => {
+                if area.width >= 100 {
+                    4
+                } else if area.width >= 72 {
+                    3
+                } else {
+                    2
+                }
+            }
+        };
+        if !self.tiles.is_empty() {
+            state.focus_tile = state.focus_tile.min(self.tiles.len() - 1);
+        }
+        if !self.alerts.is_empty() {
+            state.focus_alert = state.focus_alert.min(self.alerts.len() - 1);
+        }
+
+        // Toolbar
+        if !slots.toolbar.is_empty() {
+            let title = self.title.unwrap_or("metrics");
+            let pause = if state.paused { "paused" } else { "live" };
+            let line = format!(
+                "{title} · {} · {} · {}ms · {pause} · {}",
+                state.time_range.label(),
+                state.comparison.label(),
+                state.refresh_ms,
+                mode.id()
+            );
+            let style = if matches!(state.focus, MetricsFocus::Toolbar) && self.focused {
+                self.system.style(Role::Focus)
+            } else {
+                self.system.style(Role::TextStrong)
+            };
+            buffer.set_stringn(
+                slots.toolbar.x,
+                slots.toolbar.y,
+                take_display_cols(&line, usize::from(slots.toolbar.width)),
+                usize::from(slots.toolbar.width),
+                style,
+            );
+        }
+
+        // Tiles
+        for (i, tile) in self.tiles.iter().enumerate() {
+            let Some(rect) = slots.tiles.get(i).copied() else {
+                break;
+            };
+            if rect.is_empty() {
+                continue;
+            }
+            let focused =
+                matches!(state.focus, MetricsFocus::Tiles) && i == state.focus_tile && self.focused;
+            match mode {
+                MetricsDashboardLayoutMode::Summary => {
+                    paint_summary_tile(tile, rect, buffer, self.system, focused, ascii);
+                }
+                MetricsDashboardLayoutMode::Grid => {
+                    paint_grid_tile(tile, rect, buffer, self.system, focused, ascii);
+                }
+            }
+        }
+
+        // Alerts
+        if !slots.alerts.is_empty() && !self.alerts.is_empty() {
+            let mut y = slots.alerts.y;
+            let max_y = slots.alerts.bottom();
+            for (i, a) in self.alerts.iter().enumerate().take(3) {
+                if y >= max_y {
+                    break;
+                }
+                let focused = matches!(state.focus, MetricsFocus::Alerts)
+                    && i == state.focus_alert
+                    && self.focused;
+                let letter = a.severity.letter();
+                let line = format!("{letter} {}", a.message);
+                buffer.set_stringn(
+                    slots.alerts.x,
+                    y,
+                    take_display_cols(&line, usize::from(slots.alerts.width)),
+                    usize::from(slots.alerts.width),
+                    if focused {
+                        self.system.style(Role::Focus)
+                    } else {
+                        self.system.style(a.severity.role())
+                    },
+                );
+                y = y.saturating_add(1);
+            }
+        }
+
+        // Footer
+        if !slots.footer.is_empty() {
+            let failed = self
+                .tiles
+                .iter()
+                .filter(|t| matches!(t.health, MetricTileHealth::Failed))
+                .count();
+            let warn = self
+                .tiles
+                .iter()
+                .filter(|t| matches!(t.health, MetricTileHealth::Warning | MetricTileHealth::Danger))
+                .count();
+            let footer = if failed > 0 {
+                format!(
+                    "Tab zones · hjkl tiles · Enter drill · Ctrl+R refresh · {failed} failed · {warn} thr"
+                )
+            } else {
+                "Tab zones · hjkl tiles · Enter drill · Ctrl+T range · Ctrl+D compare · Ctrl+K cmds"
+                    .to_string()
+            };
+            buffer.set_stringn(
+                slots.footer.x,
+                slots.footer.y,
+                take_display_cols(&footer, usize::from(slots.footer.width)),
+                usize::from(slots.footer.width),
+                self.system.style(Role::TextMuted),
+            );
+        }
+
+        state.slots = slots;
+    }
+}
+
+fn paint_summary_tile(
+    tile: &MetricTile<'_>,
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    focused: bool,
+    ascii: bool,
+) {
+    let letter = if ascii {
+        tile.health.letter_ascii()
+    } else {
+        tile.health.letter()
+    };
+    let mark = if focused {
+        if ascii { ">" } else { "›" }
+    } else {
+        " "
+    };
+    let delta = if tile.delta.is_empty() {
+        String::new()
+    } else {
+        format!(" {}", tile.delta)
+    };
+    let line = if let Some(err) = tile.error {
+        format!("{mark}{letter} {}: {err}", tile.title)
+    } else {
+        format!(
+            "{mark}{letter} {} {}{}{}",
+            tile.title,
+            tile.value,
+            if tile.unit.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", tile.unit)
+            },
+            delta
+        )
+    };
+    let style = if focused {
+        system.style(Role::Focus)
+    } else if matches!(tile.health, MetricTileHealth::Failed | MetricTileHealth::Danger) {
+        system.style(tile.health.role())
+    } else if tile.delta_bad && !tile.delta.is_empty() {
+        system.style(Role::Danger)
+    } else {
+        system.style(Role::Text)
+    };
+    buffer.set_stringn(
+        area.x,
+        area.y,
+        take_display_cols(&line, usize::from(area.width)),
+        usize::from(area.width),
+        style,
+    );
+}
+
+fn paint_grid_tile(
+    tile: &MetricTile<'_>,
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    focused: bool,
+    ascii: bool,
+) {
+    if area.height == 0 || area.width == 0 {
+        return;
+    }
+    // Border-ish fill with title line
+    let letter = if ascii {
+        tile.health.letter_ascii()
+    } else {
+        tile.health.letter()
+    };
+    let border = if focused {
+        system.style(Role::BorderFocused)
+    } else {
+        system.style(Role::Border)
+    };
+    // top edge
+    for x in area.x..area.right() {
+        if let Some(cell) = buffer.cell_mut((x, area.y)) {
+            cell.set_symbol(if ascii { "-" } else { "─" });
+            cell.set_style(border);
+        }
+    }
+    let title = format!(
+        "{} {}",
+        letter,
+        take_display_cols(tile.title, usize::from(area.width.saturating_sub(4)))
+    );
+    buffer.set_stringn(
+        area.x.saturating_add(1),
+        area.y,
+        take_display_cols(&title, usize::from(area.width.saturating_sub(2))),
+        usize::from(area.width.saturating_sub(2)),
+        if focused {
+            system.style(Role::Focus)
+        } else {
+            system.style(Role::TextStrong)
+        },
+    );
+
+    let mut y = area.y.saturating_add(1);
+    // Value line
+    if y < area.bottom() {
+        if let Some(err) = tile.error {
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                y,
+                take_display_cols(err, usize::from(area.width.saturating_sub(2))),
+                usize::from(area.width.saturating_sub(2)),
+                system.style(Role::Danger),
+            );
+        } else {
+            let val = format!(
+                "{}{}",
+                tile.value,
+                if tile.unit.is_empty() {
+                    String::new()
+                } else {
+                    format!(" {}", tile.unit)
+                }
+            );
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                y,
+                take_display_cols(&val, usize::from(area.width.saturating_sub(2))),
+                usize::from(area.width.saturating_sub(2)),
+                system.style(Role::Text),
+            );
+            if !tile.delta.is_empty() {
+                let dw = crate::text::display_cols(tile.delta) as u16;
+                if dw + 2 < area.width {
+                    buffer.set_stringn(
+                        area.right().saturating_sub(dw.saturating_add(1)),
+                        y,
+                        tile.delta,
+                        usize::from(dw),
+                        system.style(if tile.delta_bad {
+                            Role::Danger
+                        } else {
+                            Role::Success
+                        }),
+                    );
+                }
+            }
+        }
+        y = y.saturating_add(1);
+    }
+
+    // Viz body
+    let body = Rect {
+        x: area.x.saturating_add(1),
+        y,
+        width: area.width.saturating_sub(2),
+        height: area.bottom().saturating_sub(y).max(0),
+    };
+    if body.height == 0 || body.width == 0 {
+        return;
+    }
+    if matches!(tile.health, MetricTileHealth::Failed | MetricTileHealth::Loading) {
+        let msg = match tile.health {
+            MetricTileHealth::Loading => "loading…",
+            _ => tile.error.unwrap_or("failed"),
+        };
+        buffer.set_stringn(
+            body.x,
+            body.y,
+            take_display_cols(msg, usize::from(body.width)),
+            usize::from(body.width),
+            system.style(tile.health.role()),
+        );
+        return;
+    }
+
+    match tile.viz {
+        MetricViz::Sparkline if !tile.samples.is_empty() => {
+            let mut sp = Sparkline::new(tile.samples, system).role(tile.health.role());
+            if let Some(&t) = tile.thresholds.first() {
+                sp = sp.threshold(t);
+            }
+            if ascii {
+                sp = sp.glyphs(VizGlyphSet::Ascii);
+            }
+            Widget::render(&sp, body, buffer);
+        }
+        MetricViz::Gauge => {
+            let v = tile.gauge_value.unwrap_or(0.0);
+            let mut g = Gauge::percent(v, system)
+                .label(tile.title)
+                .thresholds(tile.thresholds)
+                .role(tile.health.role());
+            if ascii {
+                g = g.glyphs(VizGlyphSet::Ascii);
+            }
+            // if value not percent-like, use fixed scale from samples max
+            if v > 100.0 {
+                let max = tile
+                    .samples
+                    .iter()
+                    .copied()
+                    .filter(|x| x.is_finite())
+                    .fold(v, f64::max)
+                    .max(1.0);
+                g = Gauge::new(v, system)
+                    .scale(ScaleMode::Fixed { min: 0.0, max })
+                    .thresholds(tile.thresholds)
+                    .role(tile.health.role());
+                if ascii {
+                    g = g.glyphs(VizGlyphSet::Ascii);
+                }
+            }
+            Widget::render(&g, body, buffer);
+        }
+        MetricViz::ValueOnly | MetricViz::Sparkline => {
+            // empty spark → status only
+            if matches!(tile.health, MetricTileHealth::Stale) {
+                buffer.set_stringn(
+                    body.x,
+                    body.y,
+                    take_display_cols("stale", usize::from(body.width)),
+                    usize::from(body.width),
+                    system.style(Role::Warning),
+                );
+            }
+        }
+    }
+}
+
+// ── Bench ───────────────────────────────────────────────────────────────────
+
+/// Dashboard scale targets.
+pub mod bench {
+    /// Metric tiles.
+    pub const TILE_COUNT: usize = 24;
+    /// Samples per sparkline.
+    pub const SAMPLE_LEN: usize = 64;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::style::DesignSystem;
+
+    fn samples() -> &'static [f64] {
+        &[1.0, 2.0, 3.0, 2.5, 4.0, 3.5, 5.0, 4.2]
+    }
+
+    fn tiles() -> Vec<MetricTile<'static>> {
+        static THR: &[f64] = &[70.0, 90.0];
+        vec![
+            MetricTile::new("cpu", "CPU", "42%")
+                .unit("util")
+                .delta("+2.1%", true)
+                .samples(samples())
+                .thresholds(THR)
+                .health(MetricTileHealth::Ok),
+            MetricTile::new("mem", "Memory", "71%")
+                .gauge(71.0)
+                .thresholds(THR)
+                .health(MetricTileHealth::Warning),
+            MetricTile::new("rps", "RPS", "1.2k")
+                .samples(samples())
+                .delta("−3%", false)
+                .health(MetricTileHealth::Ok),
+            MetricTile::new("err", "Errors", "—")
+                .failed("scrape timeout")
+                .viz(MetricViz::ValueOnly),
+        ]
+    }
+
+    fn alerts() -> Vec<MetricAlert<'static>> {
+        vec![
+            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%")
+                .metric("mem"),
+            MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed")
+                .metric("err"),
+        ]
+    }
+
+    #[test]
+    fn layout_grid_and_summary() {
+        let wide = layout_metrics_dashboard(
+            Rect::new(0, 0, 100, 24),
+            4,
+            2,
+            MetricsDashboardLayoutMode::Grid,
+        );
+        assert_eq!(wide.tiles.len(), 4);
+        assert!(wide.metrics.height > 0);
+        let narrow = layout_metrics_dashboard(
+            Rect::new(0, 0, 40, 16),
+            4,
+            1,
+            MetricsDashboardLayoutMode::Summary,
+        );
+        assert!(narrow.tiles.iter().all(|t| t.height == 1));
+    }
+
+    #[test]
+    fn spatial_nav() {
+        let tiles = tiles();
+        let mut state = MetricsDashboardState::new();
+        state.grid_cols = 2;
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            &tiles,
+            &[],
+        );
+        assert!(matches!(
+            out,
+            MetricsDashboardOutcome::TileFocused { id } if id == "mem"
+        ));
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &tiles,
+            &[],
+        );
+        assert!(matches!(out, MetricsDashboardOutcome::TileFocused { .. }));
+    }
+
+    #[test]
+    fn time_range_and_refresh() {
+        let tiles = tiles();
+        let mut state = MetricsDashboardState::new();
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL),
+                &tiles,
+                &[]
+            ),
+            MetricsDashboardOutcome::TimeRangeChanged(MetricsTimeRange::H1)
+        ));
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+                &tiles,
+                &[]
+            ),
+            MetricsDashboardOutcome::RefreshRequested
+        ));
+    }
+
+    #[test]
+    fn command_list_and_apply() {
+        let cmds = metrics_dashboard_commands();
+        assert!(cmds.iter().any(|c| c.id == commands::REFRESH));
+        let tiles = tiles();
+        let mut state = MetricsDashboardState::new();
+        assert!(matches!(
+            apply_metrics_command(&mut state, commands::COMPARE_CYCLE, &tiles),
+            MetricsDashboardOutcome::ComparisonChanged(MetricsComparison::PreviousPeriod)
+        ));
+    }
+
+    #[test]
+    fn paint_grid_and_narrow() {
+        let system = DesignSystem::default();
+        let tiles = tiles();
+        let alerts = alerts();
+        let mut state = MetricsDashboardState::new();
+        let area = Rect::new(0, 0, 80, 20);
+        let mut buf = Buffer::empty(area);
+        MetricsDashboard::new(&tiles, &alerts, &system)
+            .title("ops")
+            .render(area, &mut buf, &mut state);
+        assert!(!state.slots.tiles.is_empty());
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(text.contains("CPU") || text.contains("ops") || text.contains("42"), "{text}");
+
+        let area_n = Rect::new(0, 0, 40, 12);
+        let mut buf_n = Buffer::empty(area_n);
+        MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
+        assert_eq!(
+            state.layout_mode(40),
+            MetricsDashboardLayoutMode::Summary
+        );
+    }
+
+    #[test]
+    fn drill_and_alert() {
+        let tiles = tiles();
+        let alerts = alerts();
+        let mut state = MetricsDashboardState::new();
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &tiles,
+                &alerts
+            ),
+            MetricsDashboardOutcome::DrillDownRequested { id } if id == "cpu"
+        ));
+        state.focus = MetricsFocus::Alerts;
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &tiles,
+                &alerts
+            ),
+            MetricsDashboardOutcome::AlertActivated { .. }
+        ));
+    }
+
+    #[test]
+    fn accepts_input_gate() {
+        let mut state = MetricsDashboardState::new();
+        state.set_accepts_input(false);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+                &tiles(),
+                &[]
+            ),
+            MetricsDashboardOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn large_dashboard_paint() {
+        let system = DesignSystem::default();
+        let sample_store: Vec<Vec<f64>> = (0..bench::TILE_COUNT)
+            .map(|i| {
+                (0..bench::SAMPLE_LEN)
+                    .map(|j| (i + j) as f64 * 0.1)
+                    .collect()
+            })
+            .collect();
+        let titles: Vec<String> = (0..bench::TILE_COUNT).map(|i| format!("m{i}")).collect();
+        let values: Vec<String> = (0..bench::TILE_COUNT).map(|i| format!("{i}")).collect();
+        let ids: Vec<String> = (0..bench::TILE_COUNT).map(|i| format!("id{i}")).collect();
+        let tiles: Vec<MetricTile<'_>> = (0..bench::TILE_COUNT)
+            .map(|i| {
+                MetricTile::new(&ids[i], &titles[i], &values[i])
+                    .samples(&sample_store[i])
+                    .health(if i % 7 == 0 {
+                        MetricTileHealth::Warning
+                    } else {
+                        MetricTileHealth::Ok
+                    })
+            })
+            .collect();
+        let mut state = MetricsDashboardState::new();
+        let area = Rect::new(0, 0, 120, 36);
+        let mut buf = Buffer::empty(area);
+        for _ in 0..6 {
+            MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
+            let _ = state.handle_key(
+                KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+                &tiles,
+                &[],
+            );
+        }
+    }
+
+    #[test]
+    fn uses_only_public_viz() {
+        // Guard: dashboard must not reimplement chart raster.
+        let src = include_str!("metrics_dashboard.rs");
+        let body = src.split("#[cfg(test)]").next().unwrap_or(src);
+        assert!(body.contains("Sparkline::"));
+        assert!(body.contains("Gauge::"));
+        assert!(!body.contains("braille_plot"));
+    }
+}

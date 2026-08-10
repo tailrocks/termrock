@@ -85,6 +85,8 @@ use termrock::{
         SchemaBrowserPresentation,
         SearchResults, SearchResultsState, SearchResultGroup, SearchResultItem, SearchResultKind,
         SearchResultsStatus,
+        MetricsDashboard, MetricsDashboardState, MetricTile, MetricTileHealth, MetricAlert,
+        MetricAlertSeverity, MetricViz,
         MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
         DropdownMenuState, example_app_menus,
@@ -2625,6 +2627,60 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             12,
             search_results_ascii,
+        ),
+        Story::new(
+            "metrics-dashboard/basic",
+            "MetricsDashboard basic",
+            "MetricsDashboard",
+            "Metric cards, sparklines, gauges, alerts.",
+            88,
+            20,
+            metrics_dashboard_basic,
+        ),
+        Story::new(
+            "metrics-dashboard/narrow",
+            "MetricsDashboard narrow",
+            "MetricsDashboard",
+            "Vertical summary under 48 cols.",
+            40,
+            14,
+            metrics_dashboard_basic,
+        ),
+        Story::new(
+            "metrics-dashboard/partial-fail",
+            "MetricsDashboard partial fail",
+            "MetricsDashboard",
+            "One failed tile among healthy metrics.",
+            80,
+            18,
+            metrics_dashboard_partial,
+        ),
+        Story::new(
+            "metrics-dashboard/paused",
+            "MetricsDashboard paused",
+            "MetricsDashboard",
+            "Paused auto-refresh chrome.",
+            72,
+            16,
+            metrics_dashboard_paused,
+        ),
+        Story::new(
+            "metrics-dashboard/empty",
+            "MetricsDashboard empty",
+            "MetricsDashboard",
+            "No tiles yet.",
+            48,
+            8,
+            metrics_dashboard_empty,
+        ),
+        Story::new(
+            "metrics-dashboard/ascii",
+            "MetricsDashboard ASCII",
+            "MetricsDashboard",
+            "ASCII glyphs and borders.",
+            72,
+            16,
+            metrics_dashboard_ascii,
         ),
         Story::new(
             "completion-menu/basic",
@@ -12701,6 +12757,86 @@ fn search_results_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     state.ascii = true;
     state.apply_results(1, SearchResultsStatus::Ready { total: Some(4) }, 4);
     SearchResults::new(&groups, &items, system)
+        .title("ascii")
+        .ascii(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn metrics_dashboard_tiles() -> (Vec<MetricTile<'static>>, Vec<MetricAlert<'static>>) {
+    static S: &[f64] = &[1.0, 2.0, 3.0, 2.5, 4.0, 3.5, 5.0, 4.2, 6.0, 5.1];
+    static THR: &[f64] = &[70.0, 90.0];
+    let tiles = vec![
+        MetricTile::new("cpu", "CPU", "42%")
+            .unit("util")
+            .delta("+2.1%", true)
+            .samples(S)
+            .thresholds(THR)
+            .health(MetricTileHealth::Ok),
+        MetricTile::new("mem", "Memory", "71%")
+            .gauge(71.0)
+            .thresholds(THR)
+            .delta("+1%", true)
+            .health(MetricTileHealth::Warning),
+        MetricTile::new("rps", "RPS", "1.2k")
+            .samples(S)
+            .delta("−3%", false)
+            .health(MetricTileHealth::Ok),
+        MetricTile::new("lat", "p99", "48ms")
+            .samples(S)
+            .health(MetricTileHealth::Ok)
+            .viz(MetricViz::Sparkline),
+    ];
+    let alerts = vec![
+        MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%").metric("mem"),
+        MetricAlert::new("a2", MetricAlertSeverity::Critical, "error budget burning")
+            .metric("lat"),
+    ];
+    (tiles, alerts)
+}
+
+fn metrics_dashboard_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (tiles, alerts) = metrics_dashboard_tiles();
+    let mut state = MetricsDashboardState::new();
+    state.focus_tile = 1;
+    MetricsDashboard::new(&tiles, &alerts, system)
+        .title("ops")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn metrics_dashboard_partial(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    static S: &[f64] = &[1.0, 2.0, 3.0, 4.0];
+    let tiles = vec![
+        MetricTile::new("cpu", "CPU", "20%").samples(S),
+        MetricTile::new("disk", "Disk", "—").failed("timeout"),
+        MetricTile::new("net", "Net", "12MB/s").samples(S),
+    ];
+    let mut state = MetricsDashboardState::new();
+    MetricsDashboard::new(&tiles, &[], system)
+        .title("partial")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn metrics_dashboard_paused(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (tiles, alerts) = metrics_dashboard_tiles();
+    let mut state = MetricsDashboardState::new();
+    state.paused = true;
+    MetricsDashboard::new(&tiles, &alerts, system)
+        .title("paused")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn metrics_dashboard_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = MetricsDashboardState::new();
+    MetricsDashboard::new(&[], &[], system)
+        .title("empty")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn metrics_dashboard_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (tiles, alerts) = metrics_dashboard_tiles();
+    let mut state = MetricsDashboardState::new();
+    state.ascii = true;
+    MetricsDashboard::new(&tiles, &alerts, system)
         .title("ascii")
         .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
