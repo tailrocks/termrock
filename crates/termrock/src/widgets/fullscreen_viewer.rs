@@ -33,7 +33,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
-        HitRegion, OverlayId, OverlayKind, OverlayOutcome, OverlayStack, SemanticNode, SemanticRole,
+        HitRegion, OverlayId, OverlayOutcome, OverlayStack, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
@@ -1502,7 +1502,7 @@ impl<'a> SemanticZoomBadge<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interaction::{OverlayOutcome, OverlaySize};
+    use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
     use crate::input::KeyModifiers;
 
     fn ctx(id: &'static str) -> SourceContext<&'static str> {
