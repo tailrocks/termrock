@@ -42,6 +42,7 @@
     "context-menu",
     "empty-state",
     "error-view",
+    "loading-overlay",
     "field",
     "fieldset",
     "file-picker",

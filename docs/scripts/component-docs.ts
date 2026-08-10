@@ -948,6 +948,32 @@ state.open();`,
 let theme = Theme::default();
 let loading = LoadingView::new("Loading…", "⠋", &theme);`,
   },
+  LoadingOverlay: {
+    description:
+      'Regional loading chrome over a pane: BusyMode non-blocking/blocking/cancellable/optimistic/stale; min-show and short-op policy; composes Spinner; pairs with BusyBoundary input routing.',
+    primaryStory: 'loading-overlay/blocking',
+    usage: `use termrock::widgets::{BusyBoundary, BusyBoundaryState, BusyMode, LoadingOverlay};
+use termrock::style::Motion;
+
+let mut busy = BusyBoundaryState::new();
+let _ = busy.begin(BusyMode::Cancellable, "Syncing");
+busy.set_elapsed_ms(400);
+BusyBoundary::paint(area, buf, &mut busy, &system, tick, Motion::Full);`,
+  },
+  BusyBoundary: {
+    description:
+      'Region-scoped busy state: modes, nest depth, cancel, focus trap, key/pointer routing (Deliver/Blocked/Cancel/Outside).',
+    primaryStory: 'loading-overlay/nested',
+    usage: `use termrock::widgets::{BusyBoundaryState, BusyMode, BusyRoute};
+
+let mut busy = BusyBoundaryState::new();
+busy.begin(BusyMode::Blocking, "Loading");
+match busy.route_key(key) {
+    BusyRoute::Blocked => {}
+    BusyRoute::Deliver => {}
+    _ => {}
+}`,
+  },
   Spinner: {
     description:
       'Semantic activity spinner with verb label, phases (indeterminate/waiting/queued/reconnecting), capability glyphs, reduced-motion static frames, and idle redraw when inactive/hidden.',

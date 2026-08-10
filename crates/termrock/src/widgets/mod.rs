@@ -55,6 +55,7 @@ mod keyboard_help;
 mod image_surface;
 mod jump_overlay;
 mod list;
+mod loading_overlay;
 mod log_pane;
 mod markdown;
 mod menu_nav;
@@ -579,6 +580,12 @@ pub use error_state::{
     RecoveryAction, RetrySafety, example_error_conflict, example_error_crash,
     example_error_dialog, example_error_network, example_error_not_found,
     example_error_permission, example_error_unsupported, example_error_validation,
+};
+pub use loading_overlay::{
+    BUSY_BOUNDARY_MAX_NEST, BusyBoundary, BusyBoundaryOutcome, BusyBoundaryState, BusyMode,
+    BusyRoute, LOADING_OVERLAY_MIN_SHOW_MS, LOADING_OVERLAY_SHORT_OP_HINT_MS, LoadingOverlay,
+    example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
+    example_busy_optimistic, example_busy_stale,
 };
 pub use view_state::{Banner, LoadingView};
 pub use viewport::Viewport;

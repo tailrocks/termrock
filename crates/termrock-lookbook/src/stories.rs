@@ -54,7 +54,10 @@ use termrock::{
         KeyValueListState, KvEntry,
         KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
         MatchTruncate, PresenceStatus,
-        ListRow, ListState, LoadingView, LogLevel, LogLine, LogPane,
+        ListRow, ListState, LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
+        example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
+        example_busy_optimistic, example_busy_stale,
+        LogLevel, LogLine, LogPane,
         LogPaneState,
         LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
@@ -2790,6 +2793,60 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             3,
             loading_view,
+        ),
+        Story::new(
+            "loading-overlay/blocking",
+            "LoadingOverlay blocking",
+            "LoadingOverlay",
+            "Regional blocking wash after min-show; content unavailable.",
+            42,
+            10,
+            loading_overlay_blocking_story,
+        ),
+        Story::new(
+            "loading-overlay/cancellable",
+            "LoadingOverlay cancellable",
+            "LoadingOverlay",
+            "Cancellable long op with esc cancel routing.",
+            42,
+            10,
+            loading_overlay_cancellable_story,
+        ),
+        Story::new(
+            "loading-overlay/non-blocking",
+            "LoadingOverlay non-blocking",
+            "LoadingOverlay",
+            "Non-blocking busy cue; input still delivered.",
+            36,
+            6,
+            loading_overlay_non_blocking_story,
+        ),
+        Story::new(
+            "loading-overlay/optimistic",
+            "LoadingOverlay optimistic",
+            "LoadingOverlay",
+            "Optimistic update badge; content preserved.",
+            36,
+            5,
+            loading_overlay_optimistic_story,
+        ),
+        Story::new(
+            "loading-overlay/stale",
+            "LoadingOverlay stale",
+            "LoadingOverlay",
+            "Stale-content presentation while revalidating.",
+            40,
+            8,
+            loading_overlay_stale_story,
+        ),
+        Story::new(
+            "loading-overlay/nested",
+            "BusyBoundary nested",
+            "BusyBoundary",
+            "Parent + child regional busy without freezing whole app.",
+            48,
+            12,
+            loading_overlay_nested_story,
         ),
         Story::new(
             "error-view/basic",
@@ -12182,6 +12239,130 @@ fn empty_state_projects_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn loading_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(LoadingView::new("Loading…", "⠋", system), area);
+}
+
+fn loading_tick() -> termrock::runtime::FrameTick {
+    use std::time::{Duration, Instant};
+    termrock::runtime::FrameTick::manual(
+        Instant::now(),
+        Duration::from_millis(400),
+        Duration::from_millis(16),
+    )
+}
+
+fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    use termrock::widgets::Panel;
+    let _ = Panel::new(system).title("table").paint(area, frame.buffer_mut(), None);
+    let (overlay, mut st) = example_busy_blocking(system);
+    overlay.paint(
+        area,
+        frame.buffer_mut(),
+        &mut st,
+        loading_tick(),
+        Motion::Off,
+    );
+}
+
+fn loading_overlay_cancellable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    let (overlay, mut st) = example_busy_cancellable(system);
+    overlay.paint(
+        area,
+        frame.buffer_mut(),
+        &mut st,
+        loading_tick(),
+        Motion::Off,
+    );
+}
+
+fn loading_overlay_non_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    frame.buffer_mut().set_stringn(
+        area.x,
+        area.y.saturating_add(1),
+        "rows still interactive",
+        22,
+        system.style(Role::TextMuted),
+    );
+    let (overlay, mut st) = example_busy_non_blocking(system);
+    overlay.paint(
+        area,
+        frame.buffer_mut(),
+        &mut st,
+        loading_tick(),
+        Motion::Off,
+    );
+}
+
+fn loading_overlay_optimistic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    frame.buffer_mut().set_stringn(
+        area.x,
+        area.y.saturating_add(1),
+        "saved draft body",
+        16,
+        system.style(Role::Text),
+    );
+    let (overlay, mut st) = example_busy_optimistic(system);
+    overlay.paint(
+        area,
+        frame.buffer_mut(),
+        &mut st,
+        loading_tick(),
+        Motion::Off,
+    );
+}
+
+fn loading_overlay_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    frame.buffer_mut().set_stringn(
+        area.x,
+        area.y.saturating_add(2),
+        "old cached rows",
+        15,
+        system.style(Role::TextMuted),
+    );
+    let (overlay, mut st) = example_busy_stale(system);
+    overlay.paint(
+        area,
+        frame.buffer_mut(),
+        &mut st,
+        loading_tick(),
+        Motion::Off,
+    );
+}
+
+fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::Motion;
+    use termrock::widgets::Panel;
+    let _ = Panel::new(system)
+        .title("workbench")
+        .paint(area, frame.buffer_mut(), None);
+    let mut parent = BusyBoundaryState::new();
+    let _ = parent.begin(BusyMode::Blocking, "Outer load");
+    parent.set_elapsed_ms(400);
+    parent.set_expected_ms(Some(5_000));
+    let mut child = BusyBoundaryState::nested_under(&parent);
+    let _ = child.begin(BusyMode::Cancellable, "Pane fetch");
+    child.set_elapsed_ms(400);
+    child.set_expected_ms(Some(5_000));
+    let child_area = Rect::new(
+        area.x.saturating_add(2),
+        area.y.saturating_add(2),
+        area.width.saturating_sub(4).max(1),
+        area.height.saturating_sub(4).max(1),
+    );
+    BusyBoundary::paint_nested(
+        area,
+        child_area,
+        frame.buffer_mut(),
+        &mut parent,
+        &mut child,
+        system,
+        loading_tick(),
+        Motion::Off,
+    );
 }
 
 fn error_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

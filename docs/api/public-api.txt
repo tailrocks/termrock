@@ -66,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.30s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.29s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -15959,6 +15959,160 @@ pub unsafe fn termrock::widgets::BreadcrumbsPresentation::clone_to_uninit(&self,
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsPresentation
 pub fn termrock::widgets::BreadcrumbsPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsPresentation
+#[non_exhaustive] pub enum termrock::widgets::BusyBoundaryOutcome
+pub termrock::widgets::BusyBoundaryOutcome::CancelRequested
+pub termrock::widgets::BusyBoundaryOutcome::Ended
+pub termrock::widgets::BusyBoundaryOutcome::Ignored
+pub termrock::widgets::BusyBoundaryOutcome::Started
+impl core::clone::Clone for termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryOutcome::clone(&self) -> termrock::widgets::BusyBoundaryOutcome
+impl core::cmp::Eq for termrock::widgets::BusyBoundaryOutcome
+impl core::cmp::PartialEq for termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryOutcome::eq(&self, &termrock::widgets::BusyBoundaryOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryOutcome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::StructuralPartialEq for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::Freeze for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::Send for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::Sync for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::Unpin for termrock::widgets::BusyBoundaryOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::BusyBoundaryOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BusyBoundaryOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BusyBoundaryOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BusyBoundaryOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BusyBoundaryOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::BusyBoundaryOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BusyBoundaryOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::BusyBoundaryOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::BusyBoundaryOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BusyBoundaryOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BusyBoundaryOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BusyBoundaryOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BusyBoundaryOutcome where T: core::clone::Clone
+pub type termrock::widgets::BusyBoundaryOutcome::Owned = T
+pub fn termrock::widgets::BusyBoundaryOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::BusyBoundaryOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BusyBoundaryOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BusyBoundaryOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BusyBoundaryOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BusyBoundaryOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BusyBoundaryOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BusyBoundaryOutcome
+#[non_exhaustive] pub enum termrock::widgets::BusyMode
+pub termrock::widgets::BusyMode::Blocking
+pub termrock::widgets::BusyMode::Cancellable
+pub termrock::widgets::BusyMode::NonBlocking
+pub termrock::widgets::BusyMode::Optimistic
+pub termrock::widgets::BusyMode::StaleContent
+impl termrock::widgets::BusyMode
+pub const fn termrock::widgets::BusyMode::blocks_input(self) -> bool
+pub const fn termrock::widgets::BusyMode::cancellable(self) -> bool
+pub const fn termrock::widgets::BusyMode::id(self) -> &'static str
+pub const fn termrock::widgets::BusyMode::prefers_light_chrome(self) -> bool
+pub const fn termrock::widgets::BusyMode::preserve_content(self) -> bool
+pub const fn termrock::widgets::BusyMode::wants_wash(self) -> bool
+impl core::clone::Clone for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::clone(&self) -> termrock::widgets::BusyMode
+impl core::cmp::Eq for termrock::widgets::BusyMode
+impl core::cmp::PartialEq for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::eq(&self, &termrock::widgets::BusyMode) -> bool
+impl core::default::Default for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::default() -> termrock::widgets::BusyMode
+impl core::fmt::Debug for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BusyMode
+impl core::marker::StructuralPartialEq for termrock::widgets::BusyMode
+impl core::marker::Freeze for termrock::widgets::BusyMode
+impl core::marker::Send for termrock::widgets::BusyMode
+impl core::marker::Sync for termrock::widgets::BusyMode
+impl core::marker::Unpin for termrock::widgets::BusyMode
+impl core::marker::UnsafeUnpin for termrock::widgets::BusyMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BusyMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BusyMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BusyMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BusyMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BusyMode where U: core::convert::From<T>
+pub fn termrock::widgets::BusyMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BusyMode where U: core::convert::Into<T>
+pub type termrock::widgets::BusyMode::Error = core::convert::Infallible
+pub fn termrock::widgets::BusyMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BusyMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BusyMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BusyMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BusyMode where T: core::clone::Clone
+pub type termrock::widgets::BusyMode::Owned = T
+pub fn termrock::widgets::BusyMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::BusyMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BusyMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BusyMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BusyMode where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BusyMode where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BusyMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BusyMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BusyMode
+pub fn termrock::widgets::BusyMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BusyMode
+#[non_exhaustive] pub enum termrock::widgets::BusyRoute
+pub termrock::widgets::BusyRoute::Blocked
+pub termrock::widgets::BusyRoute::Cancel
+pub termrock::widgets::BusyRoute::Deliver
+pub termrock::widgets::BusyRoute::Outside
+impl core::clone::Clone for termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyRoute::clone(&self) -> termrock::widgets::BusyRoute
+impl core::cmp::Eq for termrock::widgets::BusyRoute
+impl core::cmp::PartialEq for termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyRoute::eq(&self, &termrock::widgets::BusyRoute) -> bool
+impl core::fmt::Debug for termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyRoute::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyRoute::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::BusyRoute
+impl core::marker::StructuralPartialEq for termrock::widgets::BusyRoute
+impl core::marker::Freeze for termrock::widgets::BusyRoute
+impl core::marker::Send for termrock::widgets::BusyRoute
+impl core::marker::Sync for termrock::widgets::BusyRoute
+impl core::marker::Unpin for termrock::widgets::BusyRoute
+impl core::marker::UnsafeUnpin for termrock::widgets::BusyRoute
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BusyRoute
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BusyRoute
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BusyRoute where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BusyRoute::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BusyRoute where U: core::convert::From<T>
+pub fn termrock::widgets::BusyRoute::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BusyRoute where U: core::convert::Into<T>
+pub type termrock::widgets::BusyRoute::Error = core::convert::Infallible
+pub fn termrock::widgets::BusyRoute::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BusyRoute where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BusyRoute::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BusyRoute::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BusyRoute where T: core::clone::Clone
+pub type termrock::widgets::BusyRoute::Owned = T
+pub fn termrock::widgets::BusyRoute::clone_into(&self, &mut T)
+pub fn termrock::widgets::BusyRoute::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BusyRoute where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BusyRoute::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BusyRoute where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyRoute::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BusyRoute where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyRoute::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BusyRoute where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BusyRoute::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyRoute::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BusyRoute
 #[non_exhaustive] pub enum termrock::widgets::ButtonGroupOrientation
 pub termrock::widgets::ButtonGroupOrientation::Horizontal
 pub termrock::widgets::ButtonGroupOrientation::Vertical
@@ -34602,6 +34756,117 @@ pub unsafe fn termrock::widgets::BreadcrumbsState::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::widgets::BreadcrumbsState
 pub fn termrock::widgets::BreadcrumbsState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::BreadcrumbsState
+pub struct termrock::widgets::BusyBoundary
+impl termrock::widgets::BusyBoundary
+pub fn termrock::widgets::BusyBoundary::paint(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BusyBoundaryState, &termrock::style::DesignSystem, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::widgets::BusyBoundary::paint_nested(ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BusyBoundaryState, &mut termrock::widgets::BusyBoundaryState, &termrock::style::DesignSystem, termrock::runtime::FrameTick, termrock::style::Motion)
+impl core::clone::Clone for termrock::widgets::BusyBoundary
+pub fn termrock::widgets::BusyBoundary::clone(&self) -> termrock::widgets::BusyBoundary
+impl core::default::Default for termrock::widgets::BusyBoundary
+pub fn termrock::widgets::BusyBoundary::default() -> termrock::widgets::BusyBoundary
+impl core::fmt::Debug for termrock::widgets::BusyBoundary
+pub fn termrock::widgets::BusyBoundary::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::BusyBoundary
+impl core::marker::Freeze for termrock::widgets::BusyBoundary
+impl core::marker::Send for termrock::widgets::BusyBoundary
+impl core::marker::Sync for termrock::widgets::BusyBoundary
+impl core::marker::Unpin for termrock::widgets::BusyBoundary
+impl core::marker::UnsafeUnpin for termrock::widgets::BusyBoundary
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BusyBoundary
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BusyBoundary
+impl<T, U> core::convert::Into<U> for termrock::widgets::BusyBoundary where U: core::convert::From<T>
+pub fn termrock::widgets::BusyBoundary::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BusyBoundary where U: core::convert::Into<T>
+pub type termrock::widgets::BusyBoundary::Error = core::convert::Infallible
+pub fn termrock::widgets::BusyBoundary::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BusyBoundary where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BusyBoundary::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BusyBoundary::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BusyBoundary where T: core::clone::Clone
+pub type termrock::widgets::BusyBoundary::Owned = T
+pub fn termrock::widgets::BusyBoundary::clone_into(&self, &mut T)
+pub fn termrock::widgets::BusyBoundary::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BusyBoundary where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundary::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BusyBoundary where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundary::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BusyBoundary where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundary::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BusyBoundary where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BusyBoundary::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BusyBoundary
+pub fn termrock::widgets::BusyBoundary::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BusyBoundary
+pub struct termrock::widgets::BusyBoundaryState
+impl termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::advance_ms(&mut self, u64)
+pub fn termrock::widgets::BusyBoundaryState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::Motion) -> termrock::runtime::AnimationDemand
+pub fn termrock::widgets::BusyBoundaryState::begin(&mut self, termrock::widgets::BusyMode, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryState::blocks_position(&self, ratatui_core::layout::position::Position, ratatui_core::layout::rect::Rect) -> bool
+pub const fn termrock::widgets::BusyBoundaryState::cancel_requested(&self) -> bool
+pub const fn termrock::widgets::BusyBoundaryState::elapsed_ms(&self) -> u64
+pub fn termrock::widgets::BusyBoundaryState::end(&mut self) -> termrock::widgets::BusyBoundaryOutcome
+pub const fn termrock::widgets::BusyBoundaryState::focus_trapped(&self) -> bool
+pub const fn termrock::widgets::BusyBoundaryState::is_active(&self) -> bool
+pub fn termrock::widgets::BusyBoundaryState::is_short_op(&self) -> bool
+pub fn termrock::widgets::BusyBoundaryState::label(&self) -> &str
+pub const fn termrock::widgets::BusyBoundaryState::mode(&self) -> termrock::widgets::BusyMode
+pub const fn termrock::widgets::BusyBoundaryState::nest_depth(&self) -> u8
+pub fn termrock::widgets::BusyBoundaryState::nested_under(&Self) -> Self
+pub fn termrock::widgets::BusyBoundaryState::new() -> Self
+pub fn termrock::widgets::BusyBoundaryState::request_cancel(&mut self) -> termrock::widgets::BusyBoundaryOutcome
+pub fn termrock::widgets::BusyBoundaryState::route_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyBoundaryState::route_pointer(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect) -> termrock::widgets::BusyRoute
+pub fn termrock::widgets::BusyBoundaryState::set_elapsed_ms(&mut self, u64)
+pub fn termrock::widgets::BusyBoundaryState::set_expected_ms(&mut self, core::option::Option<u64>)
+pub fn termrock::widgets::BusyBoundaryState::set_unavailable(&mut self, core::option::Option<impl core::convert::Into<alloc::string::String>>)
+pub fn termrock::widgets::BusyBoundaryState::should_show_chrome(&self) -> bool
+pub fn termrock::widgets::BusyBoundaryState::should_show_wash(&self) -> bool
+pub fn termrock::widgets::BusyBoundaryState::spinner(&self) -> &termrock::widgets::SpinnerState
+pub fn termrock::widgets::BusyBoundaryState::spinner_mut(&mut self) -> &mut termrock::widgets::SpinnerState
+pub fn termrock::widgets::BusyBoundaryState::unavailable(&self) -> core::option::Option<&str>
+impl core::clone::Clone for termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::clone(&self) -> termrock::widgets::BusyBoundaryState
+impl core::cmp::Eq for termrock::widgets::BusyBoundaryState
+impl core::cmp::PartialEq for termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::eq(&self, &termrock::widgets::BusyBoundaryState) -> bool
+impl core::default::Default for termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::BusyBoundaryState
+impl core::marker::Freeze for termrock::widgets::BusyBoundaryState
+impl core::marker::Send for termrock::widgets::BusyBoundaryState
+impl core::marker::Sync for termrock::widgets::BusyBoundaryState
+impl core::marker::Unpin for termrock::widgets::BusyBoundaryState
+impl core::marker::UnsafeUnpin for termrock::widgets::BusyBoundaryState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::BusyBoundaryState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::BusyBoundaryState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::BusyBoundaryState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::BusyBoundaryState where U: core::convert::From<T>
+pub fn termrock::widgets::BusyBoundaryState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::BusyBoundaryState where U: core::convert::Into<T>
+pub type termrock::widgets::BusyBoundaryState::Error = core::convert::Infallible
+pub fn termrock::widgets::BusyBoundaryState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::BusyBoundaryState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::BusyBoundaryState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::BusyBoundaryState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::BusyBoundaryState where T: core::clone::Clone
+pub type termrock::widgets::BusyBoundaryState::Owned = T
+pub fn termrock::widgets::BusyBoundaryState::clone_into(&self, &mut T)
+pub fn termrock::widgets::BusyBoundaryState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::BusyBoundaryState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::BusyBoundaryState where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::BusyBoundaryState where T: ?core::marker::Sized
+pub fn termrock::widgets::BusyBoundaryState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::BusyBoundaryState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::BusyBoundaryState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::BusyBoundaryState
+pub fn termrock::widgets::BusyBoundaryState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::BusyBoundaryState
 pub struct termrock::widgets::Button<'a>
 impl termrock::widgets::Button<'_>
 pub fn termrock::widgets::Button<'_>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ButtonState) -> termrock::widgets::ButtonParts
@@ -43213,6 +43478,51 @@ pub unsafe fn termrock::widgets::ListState<Id>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListState<Id>
+pub struct termrock::widgets::LoadingOverlay<'a>
+impl<'a> termrock::widgets::LoadingOverlay<'a>
+pub const fn termrock::widgets::LoadingOverlay<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::LoadingOverlay<'a>::cancel_hint(self, &'a str) -> Self
+pub fn termrock::widgets::LoadingOverlay<'a>::from_boundary(&'a termrock::widgets::BusyBoundaryState, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::LoadingOverlay<'a>::mode(self, termrock::widgets::BusyMode) -> Self
+pub const fn termrock::widgets::LoadingOverlay<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::LoadingOverlay<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::BusyBoundaryState, termrock::runtime::FrameTick, termrock::style::Motion)
+pub fn termrock::widgets::LoadingOverlay<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::BusyBoundaryState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
+pub const fn termrock::widgets::LoadingOverlay<'a>::unavailable(self, &'a str) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::LoadingOverlay<'a>
+pub fn termrock::widgets::LoadingOverlay<'a>::clone(&self) -> termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::LoadingOverlay<'a>
+pub fn termrock::widgets::LoadingOverlay<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::marker::Send for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::marker::Sync for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::LoadingOverlay<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::LoadingOverlay<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::LoadingOverlay<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::LoadingOverlay<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::LoadingOverlay<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::LoadingOverlay<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::LoadingOverlay<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::LoadingOverlay<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::LoadingOverlay<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::LoadingOverlay<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::LoadingOverlay<'a> where T: core::clone::Clone
+pub type termrock::widgets::LoadingOverlay<'a>::Owned = T
+pub fn termrock::widgets::LoadingOverlay<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::LoadingOverlay<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::LoadingOverlay<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::LoadingOverlay<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::LoadingOverlay<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::LoadingOverlay<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::LoadingOverlay<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::LoadingOverlay<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::LoadingOverlay<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::LoadingOverlay<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::LoadingOverlay<'a>
+pub fn termrock::widgets::LoadingOverlay<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::LoadingOverlay<'a>
 pub struct termrock::widgets::LoadingView<'a>
 impl<'a> termrock::widgets::LoadingView<'a>
 pub const fn termrock::widgets::LoadingView<'a>::new(&'a str, &'a str, &'a termrock::style::DesignSystem) -> Self
@@ -57805,6 +58115,7 @@ pub const termrock::widgets::BREADCRUMBS_COLLAPSE_MAX_WIDTH: u16
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS: &str
 pub const termrock::widgets::BREADCRUMBS_ELLIPSIS_ASCII: &str
 pub const termrock::widgets::BUILTIN_THEME_PRESETS: &[termrock::widgets::ThemePreset]
+pub const termrock::widgets::BUSY_BOUNDARY_MAX_NEST: u8
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::COMMAND_PALETTE_HISTORY_CAP: usize
@@ -57862,6 +58173,8 @@ pub const termrock::widgets::KEYBOARD_HELP_OVERLAY_ID: &str
 pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_HEIGHT: u16
 pub const termrock::widgets::KEYBOARD_HELP_TINY_MAX_WIDTH: u16
 pub const termrock::widgets::LARGE_PASTE_THRESHOLD: usize
+pub const termrock::widgets::LOADING_OVERLAY_MIN_SHOW_MS: u64
+pub const termrock::widgets::LOADING_OVERLAY_SHORT_OP_HINT_MS: u64
 pub const termrock::widgets::MENU_BAR_NARROW_MAX_WIDTH: u16
 pub const termrock::widgets::MENU_BAR_OVERLAY_ID: &str
 pub const termrock::widgets::MENU_BAR_SUBMENU_OVERLAY_PREFIX: &str
@@ -57994,6 +58307,11 @@ pub fn termrock::widgets::example_agent_plan_steps() -> alloc::vec::Vec<termrock
 pub fn termrock::widgets::example_agent_workbench_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>
 pub fn termrock::widgets::example_app_menus() -> alloc::vec::Vec<termrock::widgets::MenuBarMenu<&'static str>>
 pub fn termrock::widgets::example_build_pipeline() -> alloc::vec::Vec<termrock::widgets::ProgressStep>
+pub fn termrock::widgets::example_busy_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_busy_cancellable(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_busy_non_blocking(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_busy_optimistic(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
+pub fn termrock::widgets::example_busy_stale(&termrock::style::DesignSystem) -> (termrock::widgets::LoadingOverlay<'_>, termrock::widgets::BusyBoundaryState)
 pub fn termrock::widgets::example_command_catalog() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::widgets::example_command_preview<'a>() -> (termrock::widgets::PreviewCardContent<'a>, &'a [termrock::widgets::PreviewMetadata<'a>], &'a [&'a str])
 pub fn termrock::widgets::example_database_nav() -> alloc::vec::Vec<termrock::widgets::NavItem<&'static str>>

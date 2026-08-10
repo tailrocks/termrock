@@ -1,0 +1,90 @@
+---
+title: LoadingOverlay / BusyBoundary
+description: 'Regional loading that blocks only the affected area — modes, cancel, nested boundaries.'
+---
+
+## Previews
+
+### `loading-overlay/blocking`
+
+Blocking regional wash
+
+![LoadingOverlay — blocking](/component-previews/loading-overlay-blocking.svg)
+
+### `loading-overlay/cancellable`
+
+Cancellable operation
+
+![LoadingOverlay — cancellable](/component-previews/loading-overlay-cancellable.svg)
+
+### `loading-overlay/non-blocking`
+
+Non-blocking busy
+
+![LoadingOverlay — non-blocking](/component-previews/loading-overlay-non-blocking.svg)
+
+### `loading-overlay/optimistic`
+
+Optimistic update
+
+![LoadingOverlay — optimistic](/component-previews/loading-overlay-optimistic.svg)
+
+### `loading-overlay/stale`
+
+Stale content
+
+![LoadingOverlay — stale](/component-previews/loading-overlay-stale.svg)
+
+### `loading-overlay/nested`
+
+Nested BusyBoundary
+
+![BusyBoundary — nested](/component-previews/loading-overlay-nested.svg)
+
+## Usage
+
+```rust
+use termrock::style::{DesignSystem, Motion};
+use termrock::runtime::FrameTick;
+use termrock::widgets::{BusyBoundary, BusyBoundaryState, BusyMode, BusyRoute};
+
+let system = DesignSystem::default();
+let mut busy = BusyBoundaryState::new();
+let _ = busy.begin(BusyMode::Cancellable, "Syncing workspace");
+busy.set_unavailable(Some("Edits paused until sync finishes"));
+busy.set_expected_ms(Some(2_000));
+
+// paint content, then:
+BusyBoundary::paint(pane, buf, &mut busy, &system, tick, Motion::Full);
+
+match busy.route_key(key) {
+    BusyRoute::Cancel => { /* abort */ }
+    BusyRoute::Blocked => {}
+    BusyRoute::Deliver => { /* normal */ }
+    BusyRoute::Outside => {}
+}
+```
+
+## Rules
+
+1. Block **regions**, not the whole app, when possible.
+2. Short ops (`expected_ms` &lt; 300ms): no heavy wash — light chrome only.
+3. Blocking wash waits for min-show (150ms) to avoid flash.
+4. Explain what is unavailable; preserve readable content for optimistic/stale.
+5. Cancellable: Esc / bottom-click cancel; host aborts work.
+6. Prefer `LoadingView` only when replacing the entire body; else LoadingOverlay.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (route + cancel) |
+| Mouse | covered (outside/block/cancel) |
+| Focus | covered (trap while blocking) |
+| Non-color cues | covered (spinner + labels + badges) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `loading-overlay/blocking`, `cancellable`, `non-blocking`, `optimistic`, `stale`, `nested`

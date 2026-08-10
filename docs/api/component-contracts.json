@@ -103,6 +103,14 @@
     "unicode": "covered",
     "narrowTerminal": "covered"
   },
+  "BusyBoundary": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
   "Button": {
     "keyboard": "covered",
     "mouse": "covered",
@@ -472,6 +480,14 @@
     "narrowTerminal": "covered"
   },
   "List": {
+    "keyboard": "covered",
+    "mouse": "covered",
+    "focus": "covered",
+    "nonColor": "covered",
+    "unicode": "covered",
+    "narrowTerminal": "covered"
+  },
+  "LoadingOverlay": {
     "keyboard": "covered",
     "mouse": "covered",
     "focus": "covered",
