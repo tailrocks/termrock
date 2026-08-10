@@ -357,6 +357,37 @@ impl TextInputState {
         true
     }
 
+    /// Overwrite secret bytes then clear (best-effort; not a full memory wipe).
+    ///
+    /// Used by [`super::PasswordInputState`] and hosts that must not leave
+    /// plaintext lingering in the `String` buffer after dismiss.
+    pub fn secure_clear(&mut self) {
+        let taken = std::mem::take(&mut self.value);
+        let mut bytes = taken.into_bytes();
+        for byte in &mut bytes {
+            *byte = 0;
+        }
+        drop(bytes);
+        self.cursor = 0;
+        self.anchor = None;
+        self.viewport = 0;
+        // Drop undo/redo snapshots that may hold prior secrets.
+        for snap in self.undo.drain(..) {
+            let mut bytes = snap.value.into_bytes();
+            for byte in &mut bytes {
+                *byte = 0;
+            }
+            drop(bytes);
+        }
+        for snap in self.redo.drain(..) {
+            let mut bytes = snap.value.into_bytes();
+            for byte in &mut bytes {
+                *byte = 0;
+            }
+            drop(bytes);
+        }
+    }
+
     /// Set cursor to grapheme boundary.
     pub fn set_cursor_byte(&mut self, cursor: usize) -> bool {
         let valid = edit_core::is_boundary(&self.value, cursor);
@@ -928,7 +959,11 @@ impl<'a> TextInput<'a> {
         self
     }
 
-    /// Secret / password recipe (mask graphemes).
+    /// Secret / password paint mask only.
+    ///
+    /// Prefer [`super::PasswordInput`] for real credentials: it redacts
+    /// `Debug`, blocks secret clipboard outcomes, and never embeds the value
+    /// in submit outcomes. This flag only masks paint for non-secret demos.
     #[must_use]
     pub const fn secret(mut self, on: bool) -> Self {
         self.secret = on;

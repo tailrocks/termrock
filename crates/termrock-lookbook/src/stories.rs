@@ -56,7 +56,8 @@ use termrock::{
         SurfaceRecipe, Switch, SwitchState, Tab,
         Table,
         TableRow, TableState, Tabs, TabsState, TaskRail, TextArea, TextAreaState, TextCursor,
-        TextInput, TextInputState, TextWrap, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
+        TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
+        RevealPolicy, ThemePicker, ThemePickerState, ThinkingBlock, Timeline,
         TimelineEvent, Toast, TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
         TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
         Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
@@ -4820,10 +4821,46 @@ pub(crate) fn stories() -> Vec<Story> {
             "text-input/secret",
             "TextInput secret",
             "TextInput",
-            "Password mask with clear action.",
+            "Paint-only mask (prefer PasswordInput for credentials).",
             36,
             2,
             text_input_secret_story,
+        ),
+        Story::new(
+            "password-input/basic",
+            "Password input",
+            "PasswordInput",
+            "Masked secret field with redacted diagnostics.",
+            36,
+            2,
+            password_input_basic_story,
+        ),
+        Story::new(
+            "password-input/reveal",
+            "Password reveal",
+            "PasswordInput",
+            "Explicit reveal policy with toggle glyph.",
+            36,
+            2,
+            password_input_reveal_story,
+        ),
+        Story::new(
+            "password-input/invalid",
+            "Password invalid",
+            "PasswordInput",
+            "Invalid + strength status without leaking secret.",
+            36,
+            3,
+            password_input_invalid_story,
+        ),
+        Story::new(
+            "password-input/pending",
+            "Password pending",
+            "PasswordInput",
+            "Pending verification blocks edits.",
+            36,
+            3,
+            password_input_pending_story,
         ),
         Story::new(
             "text-input/invalid",
@@ -12737,6 +12774,46 @@ fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let _ = TextInput::new("Password", system)
         .secret(true)
         .show_clear(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn password_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PasswordInputState::with_secret("hunter2");
+    state.set_focused(true);
+    let _ = PasswordInput::new("Password", system)
+        .placeholder("Enter secret…")
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn password_input_reveal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PasswordInputState::with_secret("hunter2")
+        .with_reveal_policy(RevealPolicy::Explicit);
+    state.set_focused(true);
+    let _ = state.set_revealed(true);
+    let _ = PasswordInput::new("Password", system)
+        .ascii(true)
+        .show_reveal(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn password_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PasswordInputState::with_secret("x");
+    state.set_focused(true);
+    let _ = PasswordInput::new("Password", system)
+        .validation(Validation::Invalid("too short"))
+        .strength(PasswordStrengthHint::Weak)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn password_input_pending_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = PasswordInputState::with_secret("token");
+    state.set_focused(true);
+    state.set_pending(true);
+    let _ = PasswordInput::new("Token", system)
+        .strength(PasswordStrengthHint::Pending)
+        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 

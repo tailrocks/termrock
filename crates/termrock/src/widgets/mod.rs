@@ -70,6 +70,7 @@ mod table;
 mod tabs;
 mod text_area;
 mod text_input;
+mod password_input;
 mod theme_picker;
 mod toast;
 mod transcript;
@@ -302,6 +303,10 @@ pub use text_area::{
 pub use text_input::{
     EditAction, TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity,
     Validation,
+};
+pub use password_input::{
+    ClipboardPolicy, PasswordConfirmState, PasswordInput, PasswordInputOutcome, PasswordInputParts,
+    PasswordInputState, PasswordStrengthHint, RevealPolicy,
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,

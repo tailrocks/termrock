@@ -15890,6 +15890,57 @@ pub unsafe fn termrock::widgets::ChipOutcome<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ChipOutcome<Id>
 pub fn termrock::widgets::ChipOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ChipOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ClipboardPolicy
+pub termrock::widgets::ClipboardPolicy::AllowHostCopy
+pub termrock::widgets::ClipboardPolicy::DenyAll
+pub termrock::widgets::ClipboardPolicy::PasteOnly
+impl termrock::widgets::ClipboardPolicy
+pub const fn termrock::widgets::ClipboardPolicy::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::clone(&self) -> termrock::widgets::ClipboardPolicy
+impl core::cmp::Eq for termrock::widgets::ClipboardPolicy
+impl core::cmp::PartialEq for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::eq(&self, &termrock::widgets::ClipboardPolicy) -> bool
+impl core::default::Default for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::default() -> termrock::widgets::ClipboardPolicy
+impl core::fmt::Debug for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ClipboardPolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::ClipboardPolicy
+impl core::marker::Freeze for termrock::widgets::ClipboardPolicy
+impl core::marker::Send for termrock::widgets::ClipboardPolicy
+impl core::marker::Sync for termrock::widgets::ClipboardPolicy
+impl core::marker::Unpin for termrock::widgets::ClipboardPolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::ClipboardPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ClipboardPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ClipboardPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ClipboardPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ClipboardPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ClipboardPolicy where U: core::convert::From<T>
+pub fn termrock::widgets::ClipboardPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ClipboardPolicy where U: core::convert::Into<T>
+pub type termrock::widgets::ClipboardPolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::ClipboardPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ClipboardPolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ClipboardPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ClipboardPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ClipboardPolicy where T: core::clone::Clone
+pub type termrock::widgets::ClipboardPolicy::Owned = T
+pub fn termrock::widgets::ClipboardPolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::ClipboardPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ClipboardPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ClipboardPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ClipboardPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::ClipboardPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ClipboardPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::ClipboardPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ClipboardPolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ClipboardPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::ClipboardPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ClipboardPolicy
 #[non_exhaustive] pub enum termrock::widgets::CodeBlockOutcome
 pub termrock::widgets::CodeBlockOutcome::Copy
 pub termrock::widgets::CodeBlockOutcome::Copy::text: alloc::string::String
@@ -19998,6 +20049,112 @@ pub unsafe fn termrock::widgets::ParagraphRecipe::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ParagraphRecipe
 pub fn termrock::widgets::ParagraphRecipe::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ParagraphRecipe
+#[non_exhaustive] pub enum termrock::widgets::PasswordInputOutcome
+pub termrock::widgets::PasswordInputOutcome::Cancelled
+pub termrock::widgets::PasswordInputOutcome::Changed
+pub termrock::widgets::PasswordInputOutcome::ClipboardCopyAllowed
+pub termrock::widgets::PasswordInputOutcome::ClipboardDenied
+pub termrock::widgets::PasswordInputOutcome::ClipboardPasteRequest
+pub termrock::widgets::PasswordInputOutcome::Ignored
+pub termrock::widgets::PasswordInputOutcome::RevealChanged
+pub termrock::widgets::PasswordInputOutcome::RevealChanged::revealed: bool
+pub termrock::widgets::PasswordInputOutcome::Submitted
+impl core::clone::Clone for termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputOutcome::clone(&self) -> termrock::widgets::PasswordInputOutcome
+impl core::cmp::Eq for termrock::widgets::PasswordInputOutcome
+impl core::cmp::PartialEq for termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputOutcome::eq(&self, &termrock::widgets::PasswordInputOutcome) -> bool
+impl core::fmt::Debug for termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasswordInputOutcome
+impl core::marker::Freeze for termrock::widgets::PasswordInputOutcome
+impl core::marker::Send for termrock::widgets::PasswordInputOutcome
+impl core::marker::Sync for termrock::widgets::PasswordInputOutcome
+impl core::marker::Unpin for termrock::widgets::PasswordInputOutcome
+impl core::marker::UnsafeUnpin for termrock::widgets::PasswordInputOutcome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordInputOutcome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordInputOutcome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasswordInputOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputOutcome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordInputOutcome where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordInputOutcome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordInputOutcome where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordInputOutcome::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordInputOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordInputOutcome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordInputOutcome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordInputOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordInputOutcome where T: core::clone::Clone
+pub type termrock::widgets::PasswordInputOutcome::Owned = T
+pub fn termrock::widgets::PasswordInputOutcome::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordInputOutcome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordInputOutcome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputOutcome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputOutcome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordInputOutcome where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputOutcome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordInputOutcome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordInputOutcome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputOutcome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInputOutcome
+#[non_exhaustive] pub enum termrock::widgets::PasswordStrengthHint
+pub termrock::widgets::PasswordStrengthHint::Empty
+pub termrock::widgets::PasswordStrengthHint::Fair
+pub termrock::widgets::PasswordStrengthHint::Good
+pub termrock::widgets::PasswordStrengthHint::None
+pub termrock::widgets::PasswordStrengthHint::Pending
+pub termrock::widgets::PasswordStrengthHint::Strong
+pub termrock::widgets::PasswordStrengthHint::Weak
+impl termrock::widgets::PasswordStrengthHint
+pub const fn termrock::widgets::PasswordStrengthHint::id(self) -> &'static str
+pub const fn termrock::widgets::PasswordStrengthHint::label(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::clone(&self) -> termrock::widgets::PasswordStrengthHint
+impl core::cmp::Eq for termrock::widgets::PasswordStrengthHint
+impl core::cmp::PartialEq for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::eq(&self, &termrock::widgets::PasswordStrengthHint) -> bool
+impl core::default::Default for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::default() -> termrock::widgets::PasswordStrengthHint
+impl core::fmt::Debug for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::PasswordStrengthHint
+impl core::marker::StructuralPartialEq for termrock::widgets::PasswordStrengthHint
+impl core::marker::Freeze for termrock::widgets::PasswordStrengthHint
+impl core::marker::Send for termrock::widgets::PasswordStrengthHint
+impl core::marker::Sync for termrock::widgets::PasswordStrengthHint
+impl core::marker::Unpin for termrock::widgets::PasswordStrengthHint
+impl core::marker::UnsafeUnpin for termrock::widgets::PasswordStrengthHint
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordStrengthHint
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordStrengthHint
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasswordStrengthHint where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasswordStrengthHint::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordStrengthHint where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordStrengthHint::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordStrengthHint where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordStrengthHint::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordStrengthHint::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordStrengthHint where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordStrengthHint::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordStrengthHint::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordStrengthHint where T: core::clone::Clone
+pub type termrock::widgets::PasswordStrengthHint::Owned = T
+pub fn termrock::widgets::PasswordStrengthHint::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordStrengthHint::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordStrengthHint where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordStrengthHint::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordStrengthHint where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordStrengthHint::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordStrengthHint where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordStrengthHint::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordStrengthHint where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordStrengthHint::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordStrengthHint
+pub fn termrock::widgets::PasswordStrengthHint::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordStrengthHint
 #[non_exhaustive] pub enum termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionAction::Allow
 pub termrock::widgets::PermissionAction::AllowEdited
@@ -20996,6 +21153,57 @@ pub unsafe fn termrock::widgets::ResourceBrowserOutcome<Id>::clone_to_uninit(&se
 impl<T> core::convert::From<T> for termrock::widgets::ResourceBrowserOutcome<Id>
 pub fn termrock::widgets::ResourceBrowserOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ResourceBrowserOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::RevealPolicy
+pub termrock::widgets::RevealPolicy::Explicit
+pub termrock::widgets::RevealPolicy::Hold
+pub termrock::widgets::RevealPolicy::Never
+impl termrock::widgets::RevealPolicy
+pub const fn termrock::widgets::RevealPolicy::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::clone(&self) -> termrock::widgets::RevealPolicy
+impl core::cmp::Eq for termrock::widgets::RevealPolicy
+impl core::cmp::PartialEq for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::eq(&self, &termrock::widgets::RevealPolicy) -> bool
+impl core::default::Default for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::default() -> termrock::widgets::RevealPolicy
+impl core::fmt::Debug for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::RevealPolicy
+impl core::marker::StructuralPartialEq for termrock::widgets::RevealPolicy
+impl core::marker::Freeze for termrock::widgets::RevealPolicy
+impl core::marker::Send for termrock::widgets::RevealPolicy
+impl core::marker::Sync for termrock::widgets::RevealPolicy
+impl core::marker::Unpin for termrock::widgets::RevealPolicy
+impl core::marker::UnsafeUnpin for termrock::widgets::RevealPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::RevealPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::RevealPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::RevealPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::RevealPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::RevealPolicy where U: core::convert::From<T>
+pub fn termrock::widgets::RevealPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::RevealPolicy where U: core::convert::Into<T>
+pub type termrock::widgets::RevealPolicy::Error = core::convert::Infallible
+pub fn termrock::widgets::RevealPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::RevealPolicy where U: core::convert::TryFrom<T>
+pub type termrock::widgets::RevealPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::RevealPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::RevealPolicy where T: core::clone::Clone
+pub type termrock::widgets::RevealPolicy::Owned = T
+pub fn termrock::widgets::RevealPolicy::clone_into(&self, &mut T)
+pub fn termrock::widgets::RevealPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::RevealPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::RevealPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::RevealPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::RevealPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::RevealPolicy where T: ?core::marker::Sized
+pub fn termrock::widgets::RevealPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::RevealPolicy where T: core::clone::Clone
+pub unsafe fn termrock::widgets::RevealPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::RevealPolicy
+pub fn termrock::widgets::RevealPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::RevealPolicy
 #[non_exhaustive] pub enum termrock::widgets::RowRole
 pub termrock::widgets::RowRole::Item
 pub termrock::widgets::RowRole::Separator
@@ -33986,6 +34194,232 @@ pub unsafe fn termrock::widgets::ParagraphParts::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ParagraphParts
 pub fn termrock::widgets::ParagraphParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ParagraphParts
+pub struct termrock::widgets::PasswordConfirmState
+pub termrock::widgets::PasswordConfirmState::confirm: termrock::widgets::PasswordInputState
+pub termrock::widgets::PasswordConfirmState::password: termrock::widgets::PasswordInputState
+impl termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::is_mismatch(&self) -> bool
+pub fn termrock::widgets::PasswordConfirmState::new() -> Self
+pub fn termrock::widgets::PasswordConfirmState::secrets_match(&self) -> bool
+impl core::clone::Clone for termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::clone(&self) -> termrock::widgets::PasswordConfirmState
+impl core::cmp::Eq for termrock::widgets::PasswordConfirmState
+impl core::cmp::PartialEq for termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::eq(&self, &termrock::widgets::PasswordConfirmState) -> bool
+impl core::default::Default for termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasswordConfirmState
+impl core::marker::Freeze for termrock::widgets::PasswordConfirmState
+impl core::marker::Send for termrock::widgets::PasswordConfirmState
+impl core::marker::Sync for termrock::widgets::PasswordConfirmState
+impl core::marker::Unpin for termrock::widgets::PasswordConfirmState
+impl core::marker::UnsafeUnpin for termrock::widgets::PasswordConfirmState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordConfirmState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordConfirmState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasswordConfirmState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasswordConfirmState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordConfirmState where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordConfirmState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordConfirmState where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordConfirmState::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordConfirmState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordConfirmState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordConfirmState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordConfirmState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordConfirmState where T: core::clone::Clone
+pub type termrock::widgets::PasswordConfirmState::Owned = T
+pub fn termrock::widgets::PasswordConfirmState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordConfirmState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordConfirmState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordConfirmState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordConfirmState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordConfirmState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordConfirmState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordConfirmState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordConfirmState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordConfirmState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordConfirmState
+pub fn termrock::widgets::PasswordConfirmState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordConfirmState
+pub struct termrock::widgets::PasswordInput<'a>
+impl<'a> termrock::widgets::PasswordInput<'a>
+pub const fn termrock::widgets::PasswordInput<'a>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::PasswordInput<'a>::mask(self, char) -> Self
+pub const fn termrock::widgets::PasswordInput<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::PasswordInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PasswordInputState) -> termrock::widgets::PasswordInputParts
+pub const fn termrock::widgets::PasswordInput<'a>::placeholder(self, &'a str) -> Self
+pub fn termrock::widgets::PasswordInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PasswordInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::PasswordInput<'a>::show_reveal(self, bool) -> Self
+pub const fn termrock::widgets::PasswordInput<'a>::strength(self, termrock::widgets::PasswordStrengthHint) -> Self
+pub const fn termrock::widgets::PasswordInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PasswordInput<'_>
+pub type &termrock::widgets::PasswordInput<'_>::State = termrock::widgets::PasswordInputState
+pub fn &termrock::widgets::PasswordInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::PasswordInput<'_>
+pub type termrock::widgets::PasswordInput<'_>::State = termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInput<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
+impl<'a> core::clone::Clone for termrock::widgets::PasswordInput<'a>
+pub fn termrock::widgets::PasswordInput<'a>::clone(&self) -> termrock::widgets::PasswordInput<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::PasswordInput<'a>
+pub fn termrock::widgets::PasswordInput<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::PasswordInput<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::PasswordInput<'a>
+impl<'a> core::marker::Send for termrock::widgets::PasswordInput<'a>
+impl<'a> core::marker::Sync for termrock::widgets::PasswordInput<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::PasswordInput<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::PasswordInput<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordInput<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordInput<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordInput<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordInput<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordInput<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordInput<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordInput<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordInput<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordInput<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordInput<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordInput<'a> where T: core::clone::Clone
+pub type termrock::widgets::PasswordInput<'a>::Owned = T
+pub fn termrock::widgets::PasswordInput<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordInput<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordInput<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInput<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInput<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordInput<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInput<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordInput<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordInput<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordInput<'a>
+pub fn termrock::widgets::PasswordInput<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInput<'a>
+pub struct termrock::widgets::PasswordInputParts
+pub termrock::widgets::PasswordInputParts::cursor: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PasswordInputParts::field: ratatui_core::layout::rect::Rect
+pub termrock::widgets::PasswordInputParts::reveal: core::option::Option<ratatui_core::layout::rect::Rect>
+pub termrock::widgets::PasswordInputParts::root: ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::widgets::PasswordInputParts
+pub fn termrock::widgets::PasswordInputParts::clone(&self) -> termrock::widgets::PasswordInputParts
+impl core::cmp::Eq for termrock::widgets::PasswordInputParts
+impl core::cmp::PartialEq for termrock::widgets::PasswordInputParts
+pub fn termrock::widgets::PasswordInputParts::eq(&self, &termrock::widgets::PasswordInputParts) -> bool
+impl core::fmt::Debug for termrock::widgets::PasswordInputParts
+pub fn termrock::widgets::PasswordInputParts::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasswordInputParts
+impl core::marker::Freeze for termrock::widgets::PasswordInputParts
+impl core::marker::Send for termrock::widgets::PasswordInputParts
+impl core::marker::Sync for termrock::widgets::PasswordInputParts
+impl core::marker::Unpin for termrock::widgets::PasswordInputParts
+impl core::marker::UnsafeUnpin for termrock::widgets::PasswordInputParts
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordInputParts
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordInputParts
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasswordInputParts where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputParts::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordInputParts where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordInputParts::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordInputParts where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordInputParts::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordInputParts::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordInputParts where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordInputParts::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordInputParts::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordInputParts where T: core::clone::Clone
+pub type termrock::widgets::PasswordInputParts::Owned = T
+pub fn termrock::widgets::PasswordInputParts::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordInputParts::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordInputParts where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputParts::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputParts::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordInputParts where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputParts::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordInputParts where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordInputParts::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordInputParts
+pub fn termrock::widgets::PasswordInputParts::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInputParts
+pub struct termrock::widgets::PasswordInputState
+impl termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::can_edit(&self) -> bool
+pub fn termrock::widgets::PasswordInputState::clear(&mut self) -> bool
+pub const fn termrock::widgets::PasswordInputState::clipboard_policy(&self) -> termrock::widgets::ClipboardPolicy
+pub fn termrock::widgets::PasswordInputState::grapheme_len(&self) -> usize
+pub fn termrock::widgets::PasswordInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::insert_str(&mut self, &str) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::is_empty(&self) -> bool
+pub const fn termrock::widgets::PasswordInputState::is_enabled(&self) -> bool
+pub const fn termrock::widgets::PasswordInputState::is_focused(&self) -> bool
+pub const fn termrock::widgets::PasswordInputState::is_pending(&self) -> bool
+pub const fn termrock::widgets::PasswordInputState::is_read_only(&self) -> bool
+pub const fn termrock::widgets::PasswordInputState::is_revealed(&self) -> bool
+pub fn termrock::widgets::PasswordInputState::new() -> Self
+pub fn termrock::widgets::PasswordInputState::parts(&self) -> core::option::Option<&termrock::widgets::TextInputParts>
+pub const fn termrock::widgets::PasswordInputState::reveal_policy(&self) -> termrock::widgets::RevealPolicy
+pub fn termrock::widgets::PasswordInputState::secret(&self) -> &str
+pub fn termrock::widgets::PasswordInputState::secrets_equal(&self, &str) -> bool
+pub fn termrock::widgets::PasswordInputState::secure_clear(&mut self)
+pub const fn termrock::widgets::PasswordInputState::set_clipboard_policy(&mut self, termrock::widgets::ClipboardPolicy)
+pub fn termrock::widgets::PasswordInputState::set_enabled(&mut self, bool)
+pub fn termrock::widgets::PasswordInputState::set_focused(&mut self, bool)
+pub fn termrock::widgets::PasswordInputState::set_pending(&mut self, bool)
+pub fn termrock::widgets::PasswordInputState::set_read_only(&mut self, bool)
+pub fn termrock::widgets::PasswordInputState::set_reveal_policy(&mut self, termrock::widgets::RevealPolicy)
+pub fn termrock::widgets::PasswordInputState::set_revealed(&mut self, bool) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::take_secret(&mut self) -> alloc::string::String
+pub fn termrock::widgets::PasswordInputState::toggle_reveal(&mut self) -> termrock::widgets::PasswordInputOutcome
+pub fn termrock::widgets::PasswordInputState::validity(&self) -> termrock::widgets::TextInputValidity
+pub const fn termrock::widgets::PasswordInputState::with_clipboard_policy(self, termrock::widgets::ClipboardPolicy) -> Self
+pub fn termrock::widgets::PasswordInputState::with_max_graphemes(self, usize) -> Self
+pub fn termrock::widgets::PasswordInputState::with_reveal_policy(self, termrock::widgets::RevealPolicy) -> Self
+pub fn termrock::widgets::PasswordInputState::with_secret(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::clone(&self) -> termrock::widgets::PasswordInputState
+impl core::cmp::Eq for termrock::widgets::PasswordInputState
+impl core::cmp::PartialEq for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::eq(&self, &termrock::widgets::PasswordInputState) -> bool
+impl core::default::Default for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::default() -> Self
+impl core::fmt::Debug for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::PasswordInputState
+impl core::ops::drop::Drop for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::drop(&mut self)
+impl core::marker::Freeze for termrock::widgets::PasswordInputState
+impl core::marker::Send for termrock::widgets::PasswordInputState
+impl core::marker::Sync for termrock::widgets::PasswordInputState
+impl core::marker::Unpin for termrock::widgets::PasswordInputState
+impl core::marker::UnsafeUnpin for termrock::widgets::PasswordInputState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PasswordInputState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::PasswordInputState
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PasswordInputState where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputState::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::PasswordInputState where U: core::convert::From<T>
+pub fn termrock::widgets::PasswordInputState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::PasswordInputState where U: core::convert::Into<T>
+pub type termrock::widgets::PasswordInputState::Error = core::convert::Infallible
+pub fn termrock::widgets::PasswordInputState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::PasswordInputState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::PasswordInputState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::PasswordInputState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::PasswordInputState where T: core::clone::Clone
+pub type termrock::widgets::PasswordInputState::Owned = T
+pub fn termrock::widgets::PasswordInputState::clone_into(&self, &mut T)
+pub fn termrock::widgets::PasswordInputState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::PasswordInputState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::PasswordInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::PasswordInputState where T: ?core::marker::Sized
+pub fn termrock::widgets::PasswordInputState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::PasswordInputState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::PasswordInputState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::PasswordInputState
+pub fn termrock::widgets::PasswordInputState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::PasswordInputState
 pub struct termrock::widgets::PermissionActionRegion
 pub termrock::widgets::PermissionActionRegion::action: termrock::widgets::PermissionAction
 pub termrock::widgets::PermissionActionRegion::area: ratatui_core::layout::rect::Rect
@@ -39489,6 +39923,7 @@ pub fn termrock::widgets::TextInputState::insert_str(&mut self, &str) -> termroc
 pub fn termrock::widgets::TextInputState::is_valid(&self) -> bool
 pub fn termrock::widgets::TextInputState::new(impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::widgets::TextInputState::parts(&self) -> core::option::Option<&termrock::widgets::TextInputParts>
+pub fn termrock::widgets::TextInputState::secure_clear(&mut self)
 pub fn termrock::widgets::TextInputState::selected_text(&self) -> core::option::Option<&str>
 pub const fn termrock::widgets::TextInputState::selection_anchor(&self) -> core::option::Option<usize>
 pub fn termrock::widgets::TextInputState::selection_range(&self) -> core::option::Option<(usize, usize)>

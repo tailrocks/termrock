@@ -330,6 +330,24 @@ state.set_accepts_input(true);
 state.set_wrap(TextWrap::Soft);
 let valid = state.set_cursor(TextCursor { line: 1, byte: 0 });`,
   },
+  PasswordInput: {
+    description:
+      'A secure secret-entry field that masks paint, redacts Debug/semantic output, and never embeds secrets in outcomes.',
+    primaryStory: 'password-input/basic',
+    usage: `use termrock::style::DesignSystem;
+use termrock::widgets::{
+    ClipboardPolicy, PasswordInput, PasswordInputState, PasswordStrengthHint, RevealPolicy,
+};
+
+let system = DesignSystem::default();
+let mut state = PasswordInputState::new()
+    .with_reveal_policy(RevealPolicy::Explicit)
+    .with_clipboard_policy(ClipboardPolicy::PasteOnly);
+state.set_focused(true);
+let _ = PasswordInput::new("Password", &system)
+    .placeholder("••••")
+    .strength(PasswordStrengthHint::Weak);`,
+  },
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',
