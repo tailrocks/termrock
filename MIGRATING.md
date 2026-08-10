@@ -254,6 +254,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0238 | `v0.13.0` | [SetupWizard first-run onboarding block](migrations/0238-v0.13.0-setup-wizard.md) |
 | 0239 | `v0.13.0` | [ConnectionManager connection inventory block](migrations/0239-v0.13.0-connection-manager.md) |
 | 0240 | `v0.13.0` | [DatabaseWorkbench data composition block](migrations/0240-v0.13.0-database-workbench.md) |
+| 0241 | `v0.13.0` | [GitWorkbench source-control composition block](migrations/0241-v0.13.0-git-workbench.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

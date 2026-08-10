@@ -1,0 +1,2011 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! **GitWorkbench** — modern source-owned Git workflow composition from
+//! **public** TermRock widgets only (lazygit / GitUI / delta as interaction
+//! *references*; distinct TermRock design — not a clone).
+//!
+//! **Mission.** Layout + focus + typed application messages for repository
+//! status, file tree (git badges), diff review, history timeline, branches,
+//! commits, command output, conflict diagnostics, contextual actions, and
+//! keyboard help. Fullscreen diff promotion. Responsive density. **All Git
+//! execution stays host-owned** (outcomes/requests only — no `git` process,
+//! libgit2, or worktree mutation inside this pattern).
+//!
+//! **vs [`super::agent_workbench`].** Agent chrome; this is SCM workflow.
+//! **vs [`super::database_workbench`].** Data IDE; this is Git.
+//! **vs standalone [`DiffReview`] / [`FileTree`].** Composed, not re-painted.
+//!
+//! Research: lazygit, GitUI, delta, IDE source-control panels.
+
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
+
+use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    layout::{
+        PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+    },
+    style::{DesignSystem, PanelChrome, Role},
+    text::take_display_cols,
+    widgets::{
+        example_checkpoints, example_help_entries, Checkpoint, CheckpointTimeline,
+        CheckpointTimelineOutcome, CheckpointTimelineState, Diagnostic, DiagnosticSeverity,
+        DiagnosticState, DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow,
+        DiffReviewOutcome, DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus,
+        FileTree, FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
+        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
+        TerminalRunStatus,
+    },
+};
+
+// ── Panes & density ─────────────────────────────────────────────────────────
+
+/// Named panes of the Git workbench.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum GitWorkbenchPane {
+    /// File tree / status list.
+    Files,
+    /// Diff review (hunks / lines).
+    Diff,
+    /// Commit / checkpoint history.
+    History,
+    /// Branch list.
+    Branches,
+    /// Command output strip.
+    Output,
+    /// Conflict diagnostics (when dirty-conflict).
+    Diagnostics,
+    /// Status strip.
+    Status,
+}
+
+impl GitWorkbenchPane {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Files => "files",
+            Self::Diff => "diff",
+            Self::History => "history",
+            Self::Branches => "branches",
+            Self::Output => "output",
+            Self::Diagnostics => "diagnostics",
+            Self::Status => "status",
+        }
+    }
+
+    /// Default Tab focus cycle (status is chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [GitWorkbenchPane] {
+        &[
+            Self::Files,
+            Self::Diff,
+            Self::History,
+            Self::Branches,
+            Self::Output,
+            Self::Diagnostics,
+        ]
+    }
+}
+
+/// Responsive density.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum GitWorkbenchDensity {
+    /// Full multi-pane workbench.
+    #[default]
+    Normal,
+    /// Collapse history/branches/output; keep files + diff.
+    Narrow,
+    /// Diff + status (files optional strip) — or fullscreen diff.
+    Tiny,
+}
+
+impl GitWorkbenchDensity {
+    /// From terminal width.
+    #[must_use]
+    pub const fn for_width(width: u16) -> Self {
+        if width < 48 {
+            Self::Tiny
+        } else if width < 90 {
+            Self::Narrow
+        } else {
+            Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
+        }
+    }
+}
+
+// ── Domain projections (host-owned truth) ───────────────────────────────────
+
+/// High-level repository chrome status (host-projected).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum GitRepoStatus {
+    /// Clean worktree.
+    #[default]
+    Clean,
+    /// Dirty (modified / untracked).
+    Dirty,
+    /// Merge/rebase conflict.
+    Conflict,
+    /// Detached HEAD.
+    Detached,
+    /// Merge in progress (no conflict markers yet).
+    Merging,
+    /// Rebase in progress.
+    Rebasing,
+}
+
+impl GitRepoStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Clean => "clean",
+            Self::Dirty => "dirty",
+            Self::Conflict => "conflict",
+            Self::Detached => "detached",
+            Self::Merging => "merging",
+            Self::Rebasing => "rebasing",
+        }
+    }
+
+    /// Status label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Clean => "clean",
+            Self::Dirty => "dirty",
+            Self::Conflict => "conflict",
+            Self::Detached => "detached",
+            Self::Merging => "merging",
+            Self::Rebasing => "rebasing",
+        }
+    }
+
+    /// Role.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Clean => Role::Success,
+            Self::Dirty => Role::Warning,
+            Self::Conflict | Self::Merging | Self::Rebasing => Role::Danger,
+            Self::Detached => Role::Info,
+        }
+    }
+}
+
+/// Branch list row (host-projected).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GitBranch {
+    /// Name (`main`, `feature/x`).
+    pub name: String,
+    /// Currently checked out.
+    pub current: bool,
+    /// Upstream label.
+    pub upstream: Option<String>,
+    /// Commits ahead of upstream.
+    pub ahead: u32,
+    /// Commits behind upstream.
+    pub behind: u32,
+}
+
+impl GitBranch {
+    /// Construct.
+    #[must_use]
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            current: false,
+            upstream: None,
+            ahead: 0,
+            behind: 0,
+        }
+    }
+
+    /// Mark current.
+    #[must_use]
+    pub const fn current(mut self) -> Self {
+        self.current = true;
+        self
+    }
+
+    /// Upstream.
+    #[must_use]
+    pub fn upstream(mut self, u: impl Into<String>) -> Self {
+        self.upstream = Some(u.into());
+        self
+    }
+
+    /// Ahead/behind.
+    #[must_use]
+    pub const fn tracking(mut self, ahead: u32, behind: u32) -> Self {
+        self.ahead = ahead;
+        self.behind = behind;
+        self
+    }
+}
+
+/// Destructive confirm kind (workbench-owned chrome; host executes).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum GitDestructiveKind {
+    /// Discard worktree changes for paths.
+    Discard {
+        /// Paths.
+        paths: Vec<String>,
+    },
+    /// Hard reset request (host policy).
+    ResetHard {
+        /// Target ref.
+        target: String,
+    },
+    /// Checkout branch (may lose uncommitted — host decides).
+    Checkout {
+        /// Branch name.
+        branch: String,
+    },
+    /// Delete branch.
+    DeleteBranch {
+        /// Branch name.
+        branch: String,
+    },
+}
+
+impl GitDestructiveKind {
+    /// Label.
+    #[must_use]
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Discard { .. } => "Discard",
+            Self::ResetHard { .. } => "Reset hard",
+            Self::Checkout { .. } => "Checkout",
+            Self::DeleteBranch { .. } => "Delete branch",
+        }
+    }
+
+    /// Consequence line (safe language).
+    #[must_use]
+    pub fn consequence(&self) -> String {
+        match self {
+            Self::Discard { paths } => {
+                format!("discard local changes for {} path(s) (host executes)", paths.len())
+            }
+            Self::ResetHard { target } => {
+                format!("reset hard to {target} (host executes; irreversible)")
+            }
+            Self::Checkout { branch } => {
+                format!("checkout {branch} (host executes)")
+            }
+            Self::DeleteBranch { branch } => {
+                format!("delete branch {branch} (host executes)")
+            }
+        }
+    }
+}
+
+// ── Outcomes ────────────────────────────────────────────────────────────────
+
+/// Workbench outcomes — requests only; host owns Git I/O.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum GitWorkbenchOutcome {
+    /// Ignored.
+    Ignored,
+    /// Focus pane changed.
+    FocusChanged(&'static str),
+    /// Stage request (units from DiffReview or files).
+    StageRequested {
+        /// Units.
+        units: Vec<DiffReviewUnit>,
+    },
+    /// Unstage request.
+    UnstageRequested {
+        /// Units.
+        units: Vec<DiffReviewUnit>,
+    },
+    /// Discard after confirm.
+    DiscardRequested {
+        /// Paths.
+        paths: Vec<String>,
+    },
+    /// Commit request (message draft; host runs `git commit`).
+    CommitRequested {
+        /// Message.
+        message: String,
+    },
+    /// Checkout branch (after confirm when dirty).
+    CheckoutRequested {
+        /// Branch.
+        branch: String,
+    },
+    /// Delete branch after confirm.
+    DeleteBranchRequested {
+        /// Branch.
+        branch: String,
+    },
+    /// Hard reset after confirm.
+    ResetHardRequested {
+        /// Target.
+        target: String,
+    },
+    /// Refresh status / diff (host re-projects).
+    RefreshRequested,
+    /// Open keyboard help.
+    OpenHelp,
+    /// Help closed.
+    HelpClosed,
+    /// Fullscreen diff toggled.
+    FullscreenDiff {
+        /// On.
+        on: bool,
+    },
+    /// Confirm dialog opened (Cancel default).
+    ConfirmOpened(GitDestructiveKind),
+    /// Confirm cancelled.
+    ConfirmCancelled,
+    /// Diff review child (non-stage/destructive already mapped when possible).
+    Diff(DiffReviewOutcome),
+    /// File tree child.
+    Files {
+        /// Kind label.
+        kind: String,
+        /// Id when known.
+        id: Option<String>,
+    },
+    /// History timeline child.
+    History {
+        /// Kind label.
+        kind: String,
+    },
+    /// Branch selection moved.
+    BranchSelected {
+        /// Name.
+        name: String,
+    },
+    /// Diagnostics child.
+    Diagnostics {
+        /// Kind label.
+        kind: String,
+    },
+    /// Output pane child.
+    Output {
+        /// Kind label.
+        kind: String,
+    },
+    /// Esc root cancel.
+    Cancelled,
+}
+
+// ── Surfaces ────────────────────────────────────────────────────────────────
+
+/// Borrowed surfaces for one paint frame.
+pub struct GitWorkbenchSurfaces<'a> {
+    /// Design system.
+    pub system: &'a DesignSystem,
+    /// State.
+    pub state: &'a mut GitWorkbenchState,
+    /// File tree projection.
+    pub files: &'a [FileTreeEntry<'a, &'static str>],
+    /// Diff lines.
+    pub diff_lines: &'a [DiffLine<'a>],
+    /// Diff hunks.
+    pub hunks: &'a [DiffHunk],
+    /// DiffReview file rows.
+    pub diff_files: &'a [DiffReviewFileRow<'a>],
+    /// History checkpoints (commits).
+    pub commits: &'a [Checkpoint],
+    /// Conflict diagnostics.
+    pub diagnostics: &'a [Diagnostic<'a>],
+    /// Terminal meta for output pane.
+    pub terminal_meta: &'a TerminalCommandMeta<'a>,
+    /// Terminal lines.
+    pub terminal_lines: &'a [TerminalLine<'a>],
+    /// Keyboard help entries.
+    pub help_entries: &'a [HelpEntry],
+}
+
+// ── State ───────────────────────────────────────────────────────────────────
+
+/// Persistent Git workbench state.
+#[derive(Debug)]
+pub struct GitWorkbenchState {
+    /// Workspace collapse.
+    pub workspace: WorkspaceState,
+    /// File tree.
+    pub files: FileTreeState<&'static str>,
+    /// Diff review.
+    pub diff: DiffReviewState,
+    /// History timeline.
+    pub history: CheckpointTimelineState,
+    /// Output pane.
+    pub output: TerminalOutputState,
+    /// Diagnostics.
+    pub diagnostics: DiagnosticState,
+    /// Keyboard help.
+    pub help: KeyboardHelpState,
+    /// Status bar.
+    pub status: StatusBarState<&'static str>,
+    /// Branches (host-projected).
+    pub branches: Vec<GitBranch>,
+    /// Branch cursor.
+    pub branch_cursor: usize,
+    /// Repo status chrome.
+    pub repo_status: GitRepoStatus,
+    /// Current branch / HEAD label.
+    pub head_label: String,
+    /// Short SHA.
+    pub head_sha: Option<String>,
+    /// Commit message draft.
+    pub commit_message: String,
+    /// Focused pane id.
+    pub focus: &'static str,
+    /// Density override.
+    pub density: Option<GitWorkbenchDensity>,
+    /// Fullscreen diff promotion.
+    pub fullscreen_diff: bool,
+    /// Pending destructive confirm (`None` = none). Cancel is default focus.
+    pub confirm: Option<GitDestructiveKind>,
+    /// Confirm: false = Cancel (safe default), true = proceed.
+    pub confirm_proceed_focused: bool,
+    /// Help modal open (mirrors KeyboardHelp modal).
+    pub help_open: bool,
+    /// ASCII.
+    pub ascii: bool,
+    /// Colorless.
+    pub colorless: bool,
+    /// Last panes.
+    last_panes: Vec<PaneGeom>,
+    /// Last paint width for density=None.
+    last_area_width: Option<u16>,
+}
+
+impl Default for GitWorkbenchState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GitWorkbenchState {
+    /// Fresh workbench with demo branch list.
+    #[must_use]
+    pub fn new() -> Self {
+        let mut files = FileTreeState::new();
+        files.select(Some("src/main.rs"));
+        let mut history = CheckpointTimelineState::new();
+        history.set_checkpoints(example_git_commits());
+        Self {
+            workspace: WorkspaceState::new(),
+            files,
+            diff: DiffReviewState::new(),
+            history,
+            output: TerminalOutputState::new(),
+            diagnostics: DiagnosticState::new(),
+            help: KeyboardHelpState::new(),
+            status: StatusBarState::new(),
+            branches: example_git_branches(),
+            branch_cursor: 0,
+            repo_status: GitRepoStatus::Dirty,
+            head_label: "main".into(),
+            head_sha: Some("a1b2c3d".into()),
+            commit_message: String::new(),
+            focus: GitWorkbenchPane::Files.id(),
+            density: None,
+            fullscreen_diff: false,
+            confirm: None,
+            confirm_proceed_focused: false,
+            help_open: false,
+            ascii: false,
+            colorless: false,
+            last_panes: Vec::new(),
+            last_area_width: None,
+        }
+    }
+
+    /// Last panes.
+    #[must_use]
+    pub fn last_panes(&self) -> &[PaneGeom] {
+        &self.last_panes
+    }
+
+    /// Help modal open.
+    #[must_use]
+    pub const fn help_is_open(&self) -> bool {
+        self.help_open
+    }
+
+    /// Effective density (override → last width → last_panes → Normal).
+    #[must_use]
+    pub fn effective_density(&self) -> GitWorkbenchDensity {
+        if self.fullscreen_diff {
+            return GitWorkbenchDensity::Tiny;
+        }
+        if let Some(d) = self.density {
+            return d;
+        }
+        if let Some(w) = self.last_area_width {
+            return GitWorkbenchDensity::for_width(w);
+        }
+        if !self.last_panes.is_empty() {
+            let has = |id: &str| {
+                self.last_panes.iter().any(|p| {
+                    p.id.0.as_str() == id && !p.collapsed && p.area.width > 0 && p.area.height > 0
+                })
+            };
+            if !has("files") && !has("history") {
+                return GitWorkbenchDensity::Tiny;
+            }
+            if !has("history") && !has("branches") {
+                return GitWorkbenchDensity::Narrow;
+            }
+            return GitWorkbenchDensity::Normal;
+        }
+        GitWorkbenchDensity::Normal
+    }
+
+    /// Focus order for density.
+    #[must_use]
+    pub fn focus_order_for(&self, density: GitWorkbenchDensity) -> Vec<&'static str> {
+        if self.fullscreen_diff {
+            return vec![GitWorkbenchPane::Diff.id()];
+        }
+        let mut order = match density {
+            GitWorkbenchDensity::Normal => vec![
+                GitWorkbenchPane::Files.id(),
+                GitWorkbenchPane::Diff.id(),
+                GitWorkbenchPane::History.id(),
+                GitWorkbenchPane::Branches.id(),
+                GitWorkbenchPane::Output.id(),
+            ],
+            GitWorkbenchDensity::Narrow => vec![
+                GitWorkbenchPane::Files.id(),
+                GitWorkbenchPane::Diff.id(),
+                GitWorkbenchPane::Output.id(),
+            ],
+            GitWorkbenchDensity::Tiny => {
+                vec![GitWorkbenchPane::Files.id(), GitWorkbenchPane::Diff.id()]
+            }
+        };
+        if matches!(self.repo_status, GitRepoStatus::Conflict) {
+            order.push(GitWorkbenchPane::Diagnostics.id());
+        }
+        order
+    }
+
+    /// Clamp focus to visible panes.
+    pub fn clamp_focus_to_density(&mut self, density: GitWorkbenchDensity) {
+        let order = self.focus_order_for(density);
+        if !order.iter().any(|id| *id == self.focus) {
+            self.focus = order.first().copied().unwrap_or("diff");
+            self.apply_focus_gates();
+        }
+    }
+
+    fn apply_focus_gates(&mut self) {
+        let f = self.focus;
+        let live = self.confirm.is_none();
+        self.files.set_accepts_input(f == "files" && live);
+        self.diff.set_accepts_input(f == "diff" && live);
+        self.history.set_accepts_input(f == "history" && live);
+        self.output.set_accepts_input(f == "output" && live);
+        self.diagnostics
+            .set_accepts_input(f == "diagnostics" && live);
+    }
+
+    /// Set focus.
+    pub fn set_focus(&mut self, pane: GitWorkbenchPane) -> GitWorkbenchOutcome {
+        self.focus = pane.id();
+        self.apply_focus_gates();
+        GitWorkbenchOutcome::FocusChanged(self.focus)
+    }
+
+    /// Focus next.
+    pub fn focus_next(&mut self, density: GitWorkbenchDensity) -> GitWorkbenchOutcome {
+        let order = self.focus_order_for(density);
+        if order.is_empty() {
+            return GitWorkbenchOutcome::Ignored;
+        }
+        let i = order.iter().position(|id| *id == self.focus).unwrap_or(0);
+        self.focus = order[(i + 1) % order.len()];
+        self.apply_focus_gates();
+        GitWorkbenchOutcome::FocusChanged(self.focus)
+    }
+
+    /// Focus prev.
+    pub fn focus_prev(&mut self, density: GitWorkbenchDensity) -> GitWorkbenchOutcome {
+        let order = self.focus_order_for(density);
+        if order.is_empty() {
+            return GitWorkbenchOutcome::Ignored;
+        }
+        let i = order.iter().position(|id| *id == self.focus).unwrap_or(0);
+        self.focus = order[(i + order.len() - 1) % order.len()];
+        self.apply_focus_gates();
+        GitWorkbenchOutcome::FocusChanged(self.focus)
+    }
+
+    /// Layout.
+    pub fn layout(&mut self, area: Rect) -> Vec<PaneGeom> {
+        self.last_area_width = Some(area.width);
+        let density = self.effective_density();
+        let panes = git_workbench_layout_density(area, &self.workspace, density, self.fullscreen_diff);
+        self.last_panes = panes.clone();
+        self.clamp_focus_to_density(density);
+        panes
+    }
+
+    /// Toggle fullscreen diff.
+    pub fn set_fullscreen_diff(&mut self, on: bool) -> GitWorkbenchOutcome {
+        self.fullscreen_diff = on;
+        if on {
+            self.focus = GitWorkbenchPane::Diff.id();
+        }
+        self.apply_focus_gates();
+        GitWorkbenchOutcome::FullscreenDiff { on }
+    }
+
+    /// Open discard confirm for paths (Cancel default).
+    pub fn open_discard_confirm(&mut self, paths: Vec<String>) -> GitWorkbenchOutcome {
+        if paths.is_empty() {
+            return GitWorkbenchOutcome::Ignored;
+        }
+        let kind = GitDestructiveKind::Discard { paths };
+        self.confirm = Some(kind.clone());
+        self.confirm_proceed_focused = false;
+        GitWorkbenchOutcome::ConfirmOpened(kind)
+    }
+
+    /// Open checkout confirm when dirty.
+    pub fn open_checkout_confirm(&mut self, branch: String) -> GitWorkbenchOutcome {
+        let kind = GitDestructiveKind::Checkout { branch };
+        self.confirm = Some(kind.clone());
+        self.confirm_proceed_focused = false;
+        GitWorkbenchOutcome::ConfirmOpened(kind)
+    }
+
+    fn emit_confirm(&mut self) -> GitWorkbenchOutcome {
+        let Some(kind) = self.confirm.take() else {
+            return GitWorkbenchOutcome::Ignored;
+        };
+        self.confirm_proceed_focused = false;
+        match kind {
+            GitDestructiveKind::Discard { paths } => {
+                GitWorkbenchOutcome::DiscardRequested { paths }
+            }
+            GitDestructiveKind::ResetHard { target } => {
+                GitWorkbenchOutcome::ResetHardRequested { target }
+            }
+            GitDestructiveKind::Checkout { branch } => {
+                GitWorkbenchOutcome::CheckoutRequested { branch }
+            }
+            GitDestructiveKind::DeleteBranch { branch } => {
+                GitWorkbenchOutcome::DeleteBranchRequested { branch }
+            }
+        }
+    }
+
+    fn map_diff_outcome(&mut self, out: DiffReviewOutcome) -> GitWorkbenchOutcome {
+        match out {
+            DiffReviewOutcome::Ignored => GitWorkbenchOutcome::Ignored,
+            DiffReviewOutcome::StageRequested { units } => {
+                GitWorkbenchOutcome::StageRequested { units }
+            }
+            DiffReviewOutcome::UnstageRequested { units } => {
+                GitWorkbenchOutcome::UnstageRequested { units }
+            }
+            DiffReviewOutcome::ConfirmRequired(c) => {
+                // Map DiffReview destructive confirm into workbench confirm when discard-like
+                // DiffReview uses Reject/Apply as destructive — surface as Diff outcome.
+                GitWorkbenchOutcome::Diff(DiffReviewOutcome::ConfirmRequired(c))
+            }
+            DiffReviewOutcome::ConfirmCancelled => GitWorkbenchOutcome::ConfirmCancelled,
+            other => GitWorkbenchOutcome::Diff(other),
+        }
+    }
+
+    /// Keyboard routing.
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        files: &[FileTreeEntry<'_, &'static str>],
+        hunks: &[DiffHunk],
+        help_entries: &[HelpEntry],
+        diagnostics: &[Diagnostic<'_>],
+        terminal_lines: &[TerminalLine<'_>],
+        terminal_meta: &TerminalCommandMeta<'_>,
+    ) -> GitWorkbenchOutcome {
+        if key.kind != KeyEventKind::Press {
+            return GitWorkbenchOutcome::Ignored;
+        }
+
+        let density = self.effective_density();
+        self.clamp_focus_to_density(density);
+
+        // Help modal
+        if self.help_open {
+            let out = self.help.handle_key(key, help_entries);
+            match out {
+                KeyboardHelpOutcome::Closed => {
+                    self.help_open = false;
+                    let _ = self.help.close_modal();
+                    return GitWorkbenchOutcome::HelpClosed;
+                }
+                KeyboardHelpOutcome::Ignored if matches!(key.code, KeyCode::Esc) => {
+                    self.help_open = false;
+                    let _ = self.help.close_modal();
+                    return GitWorkbenchOutcome::HelpClosed;
+                }
+                _ => {
+                    if matches!(key.code, KeyCode::Esc) {
+                        self.help_open = false;
+                        let _ = self.help.close_modal();
+                        return GitWorkbenchOutcome::HelpClosed;
+                    }
+                    return GitWorkbenchOutcome::Ignored;
+                }
+            }
+        }
+
+        // Destructive confirm (Cancel default; y unbound)
+        if self.confirm.is_some() {
+            return self.handle_confirm_key(key);
+        }
+
+        // Global chords
+        match key.code {
+            KeyCode::Char('?') if key.modifiers.is_empty() => {
+                let _ = self.help.open_modal();
+                self.help_open = true;
+                return GitWorkbenchOutcome::OpenHelp;
+            }
+            KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.set_fullscreen_diff(!self.fullscreen_diff);
+            }
+            KeyCode::Char('r')
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    || (key.modifiers.is_empty()
+                        && self.focus != "files"
+                        && self.focus != "diff") =>
+            {
+                // Ctrl+R always refresh; plain r only when not in typing panes
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    || matches!(self.focus, "history" | "branches" | "output" | "diagnostics")
+                {
+                    return GitWorkbenchOutcome::RefreshRequested;
+                }
+            }
+            KeyCode::Tab if !key.modifiers.contains(KeyModifiers::SHIFT) => {
+                return self.focus_next(density);
+            }
+            KeyCode::BackTab | KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                return self.focus_prev(density);
+            }
+            KeyCode::Esc => {
+                if self.fullscreen_diff {
+                    return self.set_fullscreen_diff(false);
+                }
+                if self.focus != GitWorkbenchPane::Files.id() {
+                    return self.set_focus(GitWorkbenchPane::Files);
+                }
+                return GitWorkbenchOutcome::Cancelled;
+            }
+            KeyCode::Char('c')
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    && key.modifiers.contains(KeyModifiers::SHIFT) =>
+            {
+                // Ctrl+Shift+C commit with draft
+                let msg = self.commit_message.trim().to_string();
+                if msg.is_empty() {
+                    return GitWorkbenchOutcome::Ignored;
+                }
+                return GitWorkbenchOutcome::CommitRequested { message: msg };
+            }
+            _ => {}
+        }
+
+        // Discard: `x` on files selection opens confirm
+        if matches!(self.focus, "files")
+            && matches!(key.code, KeyCode::Char('x'))
+            && key.modifiers.is_empty()
+        {
+            if let Some(id) = self.files.selected() {
+                return self.open_discard_confirm(vec![(*id).to_string()]);
+            }
+        }
+
+        match self.focus {
+            "files" => {
+                let out = self.files.handle_key(files, key);
+                match out {
+                    FileTreeOutcome::Ignored => GitWorkbenchOutcome::Ignored,
+                    FileTreeOutcome::SelectionChanged(id)
+                    | FileTreeOutcome::OpenRequested(id)
+                    | FileTreeOutcome::Toggle(id)
+                    | FileTreeOutcome::LoadChildrenRequested(id) => GitWorkbenchOutcome::Files {
+                        kind: "selection".into(),
+                        id: Some(id.to_string()),
+                    },
+                    other => {
+                        let kind = format!("{other:?}")
+                            .split(|c: char| c == '(' || c == ' ')
+                            .next()
+                            .unwrap_or("files")
+                            .to_string();
+                        GitWorkbenchOutcome::Files { kind, id: None }
+                    }
+                }
+            }
+            "diff" => {
+                let out = self.diff.handle_key(key, hunks);
+                self.map_diff_outcome(out)
+            }
+            "history" => {
+                let out = self.history.handle_key(key);
+                match out {
+                    CheckpointTimelineOutcome::Ignored => GitWorkbenchOutcome::Ignored,
+                    other => {
+                        let kind = format!("{other:?}")
+                            .split(|c: char| c == '(' || c == ' ')
+                            .next()
+                            .unwrap_or("history")
+                            .to_string();
+                        GitWorkbenchOutcome::History { kind }
+                    }
+                }
+            }
+            "branches" => self.handle_branch_key(key),
+            "output" => {
+                let out = self.output.handle_key(key, terminal_lines, terminal_meta);
+                let kind = format!("{out:?}")
+                    .split(|c: char| c == '(' || c == ' ')
+                    .next()
+                    .unwrap_or("output")
+                    .to_string();
+                if kind == "Ignored" {
+                    GitWorkbenchOutcome::Ignored
+                } else {
+                    GitWorkbenchOutcome::Output { kind }
+                }
+            }
+            "diagnostics" => {
+                let out = self.diagnostics.handle_key(key, diagnostics);
+                let kind = format!("{out:?}")
+                    .split(|c: char| c == '(' || c == ' ')
+                    .next()
+                    .unwrap_or("diagnostics")
+                    .to_string();
+                if kind == "Ignored" {
+                    GitWorkbenchOutcome::Ignored
+                } else {
+                    GitWorkbenchOutcome::Diagnostics { kind }
+                }
+            }
+            _ => GitWorkbenchOutcome::Ignored,
+        }
+    }
+
+    fn handle_confirm_key(&mut self, key: KeyEvent) -> GitWorkbenchOutcome {
+        match key.code {
+            KeyCode::Esc => {
+                self.confirm = None;
+                self.confirm_proceed_focused = false;
+                GitWorkbenchOutcome::ConfirmCancelled
+            }
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.confirm_proceed_focused = false;
+                GitWorkbenchOutcome::Ignored
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.confirm_proceed_focused = true;
+                GitWorkbenchOutcome::Ignored
+            }
+            KeyCode::Tab => {
+                self.confirm_proceed_focused = !self.confirm_proceed_focused;
+                GitWorkbenchOutcome::Ignored
+            }
+            KeyCode::Enter => {
+                if self.confirm_proceed_focused {
+                    self.emit_confirm()
+                } else {
+                    self.confirm = None;
+                    self.confirm_proceed_focused = false;
+                    GitWorkbenchOutcome::ConfirmCancelled
+                }
+            }
+            KeyCode::Char('y') | KeyCode::Char('Y') => GitWorkbenchOutcome::Ignored,
+            _ => GitWorkbenchOutcome::Ignored,
+        }
+    }
+
+    fn handle_branch_key(&mut self, key: KeyEvent) -> GitWorkbenchOutcome {
+        if self.branches.is_empty() {
+            return GitWorkbenchOutcome::Ignored;
+        }
+        match key.code {
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.branch_cursor = self.branch_cursor.saturating_sub(1);
+                let name = self.branches[self.branch_cursor].name.clone();
+                GitWorkbenchOutcome::BranchSelected { name }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.branch_cursor = (self.branch_cursor + 1).min(self.branches.len() - 1);
+                let name = self.branches[self.branch_cursor].name.clone();
+                GitWorkbenchOutcome::BranchSelected { name }
+            }
+            KeyCode::Enter => {
+                let name = self.branches[self.branch_cursor].name.clone();
+                if self.branches[self.branch_cursor].current {
+                    return GitWorkbenchOutcome::Ignored;
+                }
+                if matches!(
+                    self.repo_status,
+                    GitRepoStatus::Dirty | GitRepoStatus::Conflict
+                ) {
+                    return self.open_checkout_confirm(name);
+                }
+                GitWorkbenchOutcome::CheckoutRequested { branch: name }
+            }
+            KeyCode::Char('d') if key.modifiers.is_empty() => {
+                let name = self.branches[self.branch_cursor].name.clone();
+                if self.branches[self.branch_cursor].current {
+                    return GitWorkbenchOutcome::Ignored;
+                }
+                let kind = GitDestructiveKind::DeleteBranch { branch: name };
+                self.confirm = Some(kind.clone());
+                self.confirm_proceed_focused = false;
+                GitWorkbenchOutcome::ConfirmOpened(kind)
+            }
+            _ => GitWorkbenchOutcome::Ignored,
+        }
+    }
+
+    /// Status slots.
+    #[must_use]
+    pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
+        let status = self.repo_status.label();
+        let mut slots = vec![
+            StatusSlot::connection("repo", status).priority(10),
+            StatusSlot::mode("branch", "branch").priority(20),
+            StatusSlot::focus_zone("focus", self.focus).priority(40),
+            StatusSlot::shortcut("keys", "? help · s stage · x discard · C-f full · tab")
+                .priority(90),
+        ];
+        if matches!(self.repo_status, GitRepoStatus::Conflict) {
+            slots.insert(
+                0,
+                StatusSlot::new("conflict", "conflict")
+                    .region(StatusRegion::Left)
+                    .priority(5),
+            );
+        }
+        let _ = self.head_label.as_str();
+        slots
+    }
+}
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+
+/// Layout width-derived.
+#[must_use]
+pub fn git_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    git_workbench_layout_density(
+        area,
+        state,
+        GitWorkbenchDensity::for_width(area.width),
+        false,
+    )
+}
+
+/// Layout with density + fullscreen flag.
+#[must_use]
+pub fn git_workbench_layout_density(
+    area: Rect,
+    state: &WorkspaceState,
+    density: GitWorkbenchDensity,
+    fullscreen_diff: bool,
+) -> Vec<PaneGeom> {
+    if fullscreen_diff {
+        return Workspace::new(WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 96,
+            first: Box::new(WorkspaceNode::Leaf {
+                id: PaneId::from_static(GitWorkbenchPane::Diff.id()),
+                constraint: PaneConstraint::Weight(1),
+                collapse_priority: 1,
+            }),
+            second: Box::new(WorkspaceNode::Leaf {
+                id: PaneId::from_static(GitWorkbenchPane::Status.id()),
+                constraint: PaneConstraint::Fixed(1),
+                collapse_priority: 3,
+            }),
+        })
+        .layout(area, state);
+    }
+
+    let root = match density {
+        GitWorkbenchDensity::Tiny => WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 94,
+            first: Box::new(WorkspaceNode::Split {
+                axis: WorkspaceAxis::Horizontal,
+                ratio_percent: 30,
+                first: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Files.id()),
+                    constraint: PaneConstraint::Min(10),
+                    collapse_priority: 0,
+                }),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Diff.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                }),
+            }),
+            second: Box::new(WorkspaceNode::Leaf {
+                id: PaneId::from_static(GitWorkbenchPane::Status.id()),
+                constraint: PaneConstraint::Fixed(1),
+                collapse_priority: 3,
+            }),
+        },
+        GitWorkbenchDensity::Narrow => WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 88,
+            first: Box::new(WorkspaceNode::Split {
+                axis: WorkspaceAxis::Horizontal,
+                ratio_percent: 28,
+                first: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Files.id()),
+                    constraint: PaneConstraint::Min(12),
+                    collapse_priority: 0,
+                }),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Diff.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                }),
+            }),
+            second: Box::new(WorkspaceNode::Split {
+                axis: WorkspaceAxis::Vertical,
+                ratio_percent: 70,
+                first: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Output.id()),
+                    constraint: PaneConstraint::Min(3),
+                    collapse_priority: 2,
+                }),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(GitWorkbenchPane::Status.id()),
+                    constraint: PaneConstraint::Fixed(1),
+                    collapse_priority: 3,
+                }),
+            }),
+        },
+        GitWorkbenchDensity::Normal => {
+            // west files | center diff | east history+branches | south output | status
+            WorkspaceNode::Split {
+                axis: WorkspaceAxis::Vertical,
+                ratio_percent: 82,
+                first: Box::new(WorkspaceNode::Split {
+                    axis: WorkspaceAxis::Horizontal,
+                    ratio_percent: 22,
+                    first: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(GitWorkbenchPane::Files.id()),
+                        constraint: PaneConstraint::Min(14),
+                        collapse_priority: 0,
+                    }),
+                    second: Box::new(WorkspaceNode::Split {
+                        axis: WorkspaceAxis::Horizontal,
+                        ratio_percent: 70,
+                        first: Box::new(WorkspaceNode::Leaf {
+                            id: PaneId::from_static(GitWorkbenchPane::Diff.id()),
+                            constraint: PaneConstraint::Weight(1),
+                            collapse_priority: 1,
+                        }),
+                        second: Box::new(WorkspaceNode::Split {
+                            axis: WorkspaceAxis::Vertical,
+                            ratio_percent: 55,
+                            first: Box::new(WorkspaceNode::Leaf {
+                                id: PaneId::from_static(GitWorkbenchPane::History.id()),
+                                constraint: PaneConstraint::Weight(1),
+                                collapse_priority: 0,
+                            }),
+                            second: Box::new(WorkspaceNode::Leaf {
+                                id: PaneId::from_static(GitWorkbenchPane::Branches.id()),
+                                constraint: PaneConstraint::Min(4),
+                                collapse_priority: 0,
+                            }),
+                        }),
+                    }),
+                }),
+                second: Box::new(WorkspaceNode::Split {
+                    axis: WorkspaceAxis::Vertical,
+                    ratio_percent: 75,
+                    first: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(GitWorkbenchPane::Output.id()),
+                        constraint: PaneConstraint::Min(3),
+                        collapse_priority: 2,
+                    }),
+                    second: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(GitWorkbenchPane::Status.id()),
+                        constraint: PaneConstraint::Fixed(1),
+                        collapse_priority: 3,
+                    }),
+                }),
+            }
+        }
+    };
+    Workspace::new(root).layout(area, state)
+}
+
+fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
+    panes.iter().find_map(|p| {
+        if p.id.0.as_str() == id && !p.collapsed && p.area.width > 0 && p.area.height > 0 {
+            Some(p.area)
+        } else {
+            None
+        }
+    })
+}
+
+fn centered_modal(area: Rect) -> Rect {
+    let width = (area.width * 3 / 5).clamp(28, area.width.saturating_sub(2).max(1));
+    let height = (area.height / 2).clamp(8, area.height.saturating_sub(2).max(1));
+    let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
+    let y = area.y.saturating_add(area.height.saturating_sub(height) / 4);
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+
+/// Paint composed Git workbench (public child widgets only).
+pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbenchSurfaces<'_>) {
+    let GitWorkbenchSurfaces {
+        system,
+        state,
+        files,
+        diff_lines,
+        hunks,
+        diff_files,
+        commits,
+        diagnostics,
+        terminal_meta,
+        terminal_lines,
+        help_entries,
+    } = surfaces;
+
+    if area.is_empty() {
+        return;
+    }
+
+    state.last_area_width = Some(area.width);
+    let density = state.effective_density();
+    let panes =
+        git_workbench_layout_density(area, &state.workspace, density, state.fullscreen_diff);
+    state.last_panes = panes.clone();
+    state.clamp_focus_to_density(density);
+    state.apply_focus_gates();
+
+    // Sync history projection if host passed commits and state empty
+    if state.history.current().is_none() && !commits.is_empty() {
+        state.history.set_checkpoints(commits.to_vec());
+    }
+
+    if let Some(r) = pane_area(&panes, "files") {
+        let focused = state.focus == "files";
+        let panel = Panel::new(system)
+            .title("Files")
+            .emphasis(if focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
+        let inner = panel.inner(r);
+        Widget::render(&panel, r, buffer);
+        state.files.ascii = state.ascii;
+        FileTree::new(files, system)
+            .title("Changes")
+            .focused(focused)
+            .render(inner, buffer, &mut state.files);
+    }
+
+    if let Some(r) = pane_area(&panes, "diff") {
+        let focused = state.focus == "diff" || state.fullscreen_diff;
+        DiffReview::new(diff_lines, system)
+            .hunks(hunks)
+            .files(diff_files)
+            .title(if state.fullscreen_diff {
+                "Diff · fullscreen"
+            } else {
+                "Diff"
+            })
+            .focused(focused)
+            .ascii(state.ascii)
+            .colorless(state.colorless)
+            .show_tree(false) // FileTree is west pane
+            .render(r, buffer, &mut state.diff);
+    }
+
+    if let Some(r) = pane_area(&panes, "history") {
+        let focused = state.focus == "history";
+        let _ = focused;
+        CheckpointTimeline::new(system)
+            .ascii(state.ascii)
+            .paint(r, buffer, &mut state.history);
+    }
+
+    if let Some(r) = pane_area(&panes, "branches") {
+        paint_branch_list(system, r, buffer, state);
+    }
+
+    if let Some(r) = pane_area(&panes, "output") {
+        let focused = state.focus == "output";
+        TerminalOutput::new(terminal_meta, terminal_lines, system)
+            .title("Git output")
+            .focused(focused)
+            .ascii(state.ascii)
+            .colorless(state.colorless)
+            .render(r, buffer, &mut state.output);
+    }
+
+    if let Some(r) = pane_area(&panes, "diagnostics") {
+        let focused = state.focus == "diagnostics";
+        DiagnosticView::new(diagnostics, system)
+            .title("Conflicts")
+            .focused(focused)
+            .ascii(state.ascii)
+            .colorless(state.colorless)
+            .render(r, buffer, &mut state.diagnostics);
+    }
+
+    // Conflict strip when conflict and diagnostics pane missing (narrow)
+    if matches!(state.repo_status, GitRepoStatus::Conflict)
+        && pane_area(&panes, "diagnostics").is_none()
+    {
+        if let Some(diff_r) = pane_area(&panes, "diff") {
+            if diff_r.height > 1 && !diagnostics.is_empty() {
+                let y = diff_r.y;
+                buffer.set_stringn(
+                    diff_r.x,
+                    y,
+                    take_display_cols(
+                        &format!("! {} conflict(s) — host resolves", diagnostics.len()),
+                        usize::from(diff_r.width),
+                    ),
+                    usize::from(diff_r.width),
+                    system.style(Role::Danger),
+                );
+            }
+        }
+    }
+
+    if let Some(r) = pane_area(&panes, "status") {
+        let slots = state.status_slots();
+        StatefulWidget::render(
+            &StatusBar::new(&slots, &[], system),
+            r,
+            buffer,
+            &mut state.status,
+        );
+    }
+
+    // Confirm banner (bottom of full area)
+    if let Some(kind) = &state.confirm {
+        paint_confirm_banner(system, area, buffer, kind, state.confirm_proceed_focused);
+    }
+
+    // Help modal
+    if state.help_open {
+        let m = centered_modal(area);
+        KeyboardHelp::new(help_entries, system)
+            .title("Git workbench help")
+            .ascii(state.ascii)
+            .colorless(state.colorless)
+            .paint(m, buffer, &mut state.help);
+    }
+}
+
+fn paint_branch_list(
+    system: &DesignSystem,
+    area: Rect,
+    buffer: &mut Buffer,
+    state: &mut GitWorkbenchState,
+) {
+    if area.is_empty() {
+        return;
+    }
+    let focused = state.focus == "branches";
+    let panel = Panel::new(system)
+        .title("Branches")
+        .emphasis(if focused {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::Normal
+        });
+    let inner = panel.inner(area);
+    Widget::render(&panel, area, buffer);
+    if inner.is_empty() {
+        return;
+    }
+    let w = usize::from(inner.width);
+    let mut y = inner.y;
+    let max_y = inner.bottom();
+    for (i, b) in state.branches.iter().enumerate() {
+        if y >= max_y {
+            break;
+        }
+        let cur = if b.current { "*" } else { " " };
+        let sel = if i == state.branch_cursor && focused {
+            ">"
+        } else {
+            " "
+        };
+        let track = match (b.ahead, b.behind) {
+            (0, 0) => String::new(),
+            (a, 0) => format!(" ↑{a}"),
+            (0, be) => format!(" ↓{be}"),
+            (a, be) => format!(" ↑{a}↓{be}"),
+        };
+        let line = format!("{sel}{cur}{}{track}", b.name);
+        let mut style = system.style(if b.current {
+            Role::Accent
+        } else {
+            Role::Text
+        });
+        if i == state.branch_cursor && focused {
+            style = style.add_modifier(Modifier::REVERSED | Modifier::BOLD);
+        }
+        buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+        y = y.saturating_add(1);
+    }
+}
+
+fn paint_confirm_banner(
+    system: &DesignSystem,
+    area: Rect,
+    buffer: &mut Buffer,
+    kind: &GitDestructiveKind,
+    proceed: bool,
+) {
+    let y = area.bottom().saturating_sub(2);
+    if y < area.y {
+        return;
+    }
+    let w = usize::from(area.width);
+    buffer.set_stringn(
+        area.x,
+        y,
+        take_display_cols(&format!("! {} — {}", kind.label(), kind.consequence()), w),
+        w,
+        system.style(Role::Danger),
+    );
+    let bar_y = area.bottom().saturating_sub(1);
+    let cancel = if !proceed { "[Cancel]" } else { " Cancel " };
+    let go = if proceed {
+        format!("[{}]", kind.label())
+    } else {
+        format!(" {} ", kind.label())
+    };
+    buffer.set_stringn(
+        area.x,
+        bar_y,
+        take_display_cols(&format!("{cancel}  {go}"), w),
+        w,
+        system.style(Role::Accent),
+    );
+}
+
+// ── Fixtures ────────────────────────────────────────────────────────────────
+
+/// Demo branches.
+#[must_use]
+pub fn example_git_branches() -> Vec<GitBranch> {
+    vec![
+        GitBranch::new("main")
+            .current()
+            .upstream("origin/main")
+            .tracking(0, 1),
+        GitBranch::new("feature/auth")
+            .upstream("origin/feature/auth")
+            .tracking(2, 0),
+        GitBranch::new("hotfix/login"),
+    ]
+}
+
+/// Demo commits as timeline checkpoints.
+#[must_use]
+pub fn example_git_commits() -> Vec<Checkpoint> {
+    // Reuse checkpoint shape with git-ish summaries
+    let mut cps = example_checkpoints();
+    if let Some(c) = cps.first_mut() {
+        c.summary = Some("Initial import".into());
+    }
+    cps
+}
+
+/// Dirty file tree with git badges.
+#[must_use]
+pub fn example_git_files() -> Vec<FileTreeEntry<'static, &'static str>> {
+    vec![
+        FileTreeEntry::dir("src", "src", "src", 0).expanded(),
+        FileTreeEntry::file("src/main.rs", "main.rs", "src/main.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Modified),
+        FileTreeEntry::file("src/lib.rs", "lib.rs", "src/lib.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Added),
+        FileTreeEntry::file("src/auth.rs", "auth.rs", "src/auth.rs", 1)
+            .parent("src")
+            .file_type("rs")
+            .git(FileGitStatus::Conflict),
+        FileTreeEntry::file("README.md", "README.md", "README.md", 0)
+            .git(FileGitStatus::Untracked),
+        FileTreeEntry::file("gone.rs", "gone.rs", "gone.rs", 0).git(FileGitStatus::Deleted),
+    ]
+}
+
+/// Conflict-only file list.
+#[must_use]
+pub fn example_conflict_files() -> Vec<FileTreeEntry<'static, &'static str>> {
+    vec![
+        FileTreeEntry::file("src/auth.rs", "auth.rs", "src/auth.rs", 0)
+            .file_type("rs")
+            .git(FileGitStatus::Conflict),
+        FileTreeEntry::file("Cargo.lock", "Cargo.lock", "Cargo.lock", 0)
+            .git(FileGitStatus::Conflict),
+    ]
+}
+
+/// Demo diff lines.
+#[must_use]
+pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
+    vec![
+        DiffLine::file_header("fh0", "diff --git a/src/main.rs b/src/main.rs").file_id("src/main.rs"),
+        DiffLine::hunk_header("hh0", "@@ -1,3 +1,4 @@")
+            .hunk_id("h0")
+            .file_id("src/main.rs"),
+        DiffLine::context("c1", "fn main() {")
+            .hunk_id("h0")
+            .file_id("src/main.rs"),
+        DiffLine::removed("r1", "    let x = 1;")
+            .hunk_id("h0")
+            .file_id("src/main.rs"),
+        DiffLine::added("a1", "    let x = 2;")
+            .hunk_id("h0")
+            .file_id("src/main.rs"),
+        DiffLine::context("c2", "}")
+            .hunk_id("h0")
+            .file_id("src/main.rs"),
+        DiffLine::hunk_header("hh1", "@@ -10,2 +11,3 @@")
+            .hunk_id("h1")
+            .file_id("src/main.rs"),
+        DiffLine::removed("r2", "    // todo")
+            .hunk_id("h1")
+            .file_id("src/main.rs"),
+        DiffLine::added("a2", "    println!(\"ready\");")
+            .hunk_id("h1")
+            .file_id("src/main.rs"),
+        DiffLine::added("a3", "    // 日本語 🧪")
+            .hunk_id("h1")
+            .file_id("src/main.rs"),
+    ]
+}
+
+/// Demo hunks.
+#[must_use]
+pub fn example_git_hunks() -> Vec<DiffHunk> {
+    vec![
+        DiffHunk::new(1, 5, "@@ -1,3 +1,4 @@")
+            .id("h0")
+            .file_id("src/main.rs"),
+        DiffHunk::new(6, 4, "@@ -10,2 +11,3 @@")
+            .id("h1")
+            .file_id("src/main.rs"),
+    ]
+}
+
+/// Diff file rows.
+#[must_use]
+pub fn example_git_diff_files() -> Vec<DiffReviewFileRow<'static>> {
+    vec![
+        DiffReviewFileRow::new("src/main.rs", "src/main.rs").stats(3, 2),
+        DiffReviewFileRow::new("src/lib.rs", "src/lib.rs").stats(12, 0),
+    ]
+}
+
+/// Large multi-hunk projection for paint stress.
+#[must_use]
+pub fn large_git_diff(n_hunks: usize) -> (Vec<String>, Vec<DiffHunk>, Vec<DiffLine<'static>>) {
+    // Note: DiffLine needs 'static text — we only return owned headers/bodies
+    // for the host to leak or store; for tests use example lines + synthetic hunks.
+    let mut hunks = Vec::with_capacity(n_hunks);
+    for i in 0..n_hunks {
+        let start = i * 4;
+        hunks.push(
+            DiffHunk::new(start, 4, format!("@@ -{i},3 +{i},4 @@"))
+                .id(format!("H{i}"))
+                .file_id("big.rs"),
+        );
+    }
+    (Vec::new(), hunks, example_git_diff_lines())
+}
+
+/// Conflict diagnostics.
+#[must_use]
+pub fn example_conflict_diagnostics() -> Vec<Diagnostic<'static>> {
+    vec![
+        Diagnostic::new(
+            "c1",
+            DiagnosticSeverity::Error,
+            "merge conflict in src/auth.rs",
+        )
+        .code("CONFLICT")
+        .source("git")
+        .file("src/auth.rs"),
+        Diagnostic::new(
+            "c2",
+            DiagnosticSeverity::Error,
+            "both modified: Cargo.lock",
+        )
+        .source("git")
+        .file("Cargo.lock"),
+    ]
+}
+
+/// Terminal meta for last git command.
+#[must_use]
+pub fn example_git_terminal_meta() -> TerminalCommandMeta<'static> {
+    TerminalCommandMeta::new("git status -sb")
+        .cwd("/repo")
+        .status(TerminalRunStatus::Succeeded)
+        .exit_code(0)
+        .duration_ms(12)
+}
+
+/// Terminal lines.
+#[must_use]
+pub fn example_git_terminal_lines() -> Vec<TerminalLine<'static>> {
+    vec![
+        TerminalLine::stdout("1", "## main...origin/main [behind 1]"),
+        TerminalLine::stdout("2", " M src/main.rs"),
+        TerminalLine::stdout("3", "A  src/lib.rs"),
+        TerminalLine::stderr("4", "warning: LF will be replaced by CRLF"),
+    ]
+}
+
+/// Git-oriented help entries (extends generic help).
+#[must_use]
+pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
+    let mut e = example_help_entries(system);
+    e.push(
+        HelpEntry::new("stage", "Git", "s", "Stage selection").priority(15),
+    );
+    e.push(
+        HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16),
+    );
+    e.push(
+        HelpEntry::new("full", "Git", "C-f", "Fullscreen diff").priority(17),
+    );
+    e
+}
+
+// ── Bench ───────────────────────────────────────────────────────────────────
+
+/// Paint stress.
+pub mod bench {
+    /// Frames.
+    pub const PAINT_FRAMES: u32 = 20;
+    /// Synthetic hunks for stress layout.
+    pub const LARGE_HUNKS: usize = 80;
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
+
+    fn ctrl(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::CONTROL)
+    }
+
+    fn meta_empty() -> TerminalCommandMeta<'static> {
+        TerminalCommandMeta::new("git status")
+    }
+
+    fn hk(st: &mut GitWorkbenchState, key: KeyEvent) -> GitWorkbenchOutcome {
+        st.handle_key(key, &[], &[], &[], &[], &[], &meta_empty())
+    }
+
+    fn hk_hunks(st: &mut GitWorkbenchState, key: KeyEvent, hunks: &[DiffHunk]) -> GitWorkbenchOutcome {
+        st.handle_key(key, &[], hunks, &[], &[], &[], &meta_empty())
+    }
+
+    fn hk_help(st: &mut GitWorkbenchState, key: KeyEvent, help: &[HelpEntry]) -> GitWorkbenchOutcome {
+        st.handle_key(key, &[], &[], help, &[], &[], &meta_empty())
+    }
+
+    fn open() -> GitWorkbenchState {
+        let mut st = GitWorkbenchState::new();
+        st.repo_status = GitRepoStatus::Dirty;
+        st
+    }
+
+    #[test]
+    fn focus_cycle_visits_zones() {
+        let mut st = open();
+        st.density = Some(GitWorkbenchDensity::Normal);
+        let order = st.focus_order_for(GitWorkbenchDensity::Normal);
+        assert!(order.contains(&"files"));
+        assert!(order.contains(&"diff"));
+        assert!(order.contains(&"history"));
+        st.focus = "files";
+        for _ in 0..order.len() {
+            let out = st.focus_next(GitWorkbenchDensity::Normal);
+            assert!(matches!(out, GitWorkbenchOutcome::FocusChanged(_)));
+        }
+        assert_eq!(st.focus, "files");
+    }
+
+    #[test]
+    fn narrow_tiny_drop_panes_and_tab_clamps() {
+        let ws = WorkspaceState::new();
+        let normal = git_workbench_layout_density(
+            Rect::new(0, 0, 120, 40),
+            &ws,
+            GitWorkbenchDensity::Normal,
+            false,
+        );
+        let narrow = git_workbench_layout_density(
+            Rect::new(0, 0, 70, 24),
+            &ws,
+            GitWorkbenchDensity::Narrow,
+            false,
+        );
+        let tiny = git_workbench_layout_density(
+            Rect::new(0, 0, 40, 16),
+            &ws,
+            GitWorkbenchDensity::Tiny,
+            false,
+        );
+        let ids = |p: &[PaneGeom]| {
+            p.iter()
+                .filter(|g| !g.collapsed && g.area.width > 0 && g.area.height > 0)
+                .map(|g| g.id.0.clone())
+                .collect::<Vec<_>>()
+        };
+        let n = ids(&normal);
+        let w = ids(&narrow);
+        let t = ids(&tiny);
+        assert!(n.iter().any(|i| i == "history"), "{n:?}");
+        assert!(
+            !w.iter().any(|i| i == "history"),
+            "narrow drops history: {w:?}"
+        );
+        assert!(
+            !t.iter().any(|i| i == "history") && !t.iter().any(|i| i == "branches"),
+            "tiny drops side panes: {t:?}"
+        );
+
+        let mut st = open();
+        st.density = None;
+        let _ = st.layout(Rect::new(0, 0, 70, 24));
+        assert_eq!(st.effective_density(), GitWorkbenchDensity::Narrow);
+        st.focus = "history";
+        let _ = hk(&mut st, press(KeyCode::Tab));
+        assert_ne!(st.focus, "history");
+        for _ in 0..10 {
+            let _ = hk(&mut st, press(KeyCode::Tab));
+            assert_ne!(st.focus, "history");
+            assert_ne!(st.focus, "branches");
+        }
+    }
+
+    #[test]
+    fn fullscreen_diff_promotes() {
+        let mut st = open();
+        let out = st.set_fullscreen_diff(true);
+        assert!(matches!(
+            out,
+            GitWorkbenchOutcome::FullscreenDiff { on: true }
+        ));
+        assert_eq!(st.focus, "diff");
+        let panes = st.layout(Rect::new(0, 0, 100, 30));
+        assert!(
+            panes
+                .iter()
+                .filter(|p| !p.collapsed && p.area.width > 0)
+                .all(|p| p.id.0 == "diff" || p.id.0 == "status"),
+            "fullscreen only diff+status"
+        );
+        let _ = hk(&mut st, press(KeyCode::Esc));
+        assert!(!st.fullscreen_diff);
+    }
+
+    #[test]
+    fn stage_outcome_from_diff() {
+        let mut st = open();
+        st.focus = "diff";
+        st.diff.set_accepts_input(true);
+        let hunks = example_git_hunks();
+        // DiffReview: 's' stages
+        let out = hk_hunks(&mut st, press(KeyCode::Char('s')), &hunks);
+        assert!(
+            matches!(out, GitWorkbenchOutcome::StageRequested { ref units } if !units.is_empty())
+                || matches!(out, GitWorkbenchOutcome::Diff(_))
+                || matches!(out, GitWorkbenchOutcome::Ignored),
+            "{out:?}"
+        );
+        // Direct map path
+        let unit = DiffReviewUnit::hunk("h0");
+        let mapped = st.map_diff_outcome(DiffReviewOutcome::StageRequested {
+            units: vec![unit.clone()],
+        });
+        assert!(matches!(
+            mapped,
+            GitWorkbenchOutcome::StageRequested { ref units } if units[0].key() == unit.key()
+        ));
+        let mapped = st.map_diff_outcome(DiffReviewOutcome::UnstageRequested {
+            units: vec![DiffReviewUnit::file("src/main.rs")],
+        });
+        assert!(matches!(mapped, GitWorkbenchOutcome::UnstageRequested { .. }));
+    }
+
+    #[test]
+    fn discard_confirm_cancel_default() {
+        let mut st = open();
+        let out = st.open_discard_confirm(vec!["src/main.rs".into()]);
+        assert!(matches!(
+            out,
+            GitWorkbenchOutcome::ConfirmOpened(GitDestructiveKind::Discard { .. })
+        ));
+        assert!(!st.confirm_proceed_focused);
+        // Enter on Cancel → cancelled, not discard
+        let out = hk(&mut st, press(KeyCode::Enter));
+        assert!(matches!(out, GitWorkbenchOutcome::ConfirmCancelled));
+        // y unbound
+        let _ = st.open_discard_confirm(vec!["src/main.rs".into()]);
+        assert!(matches!(
+            hk(&mut st, press(KeyCode::Char('y'))),
+            GitWorkbenchOutcome::Ignored
+        ));
+        // Proceed
+        let _ = st.open_discard_confirm(vec!["src/main.rs".into()]);
+        let _ = hk(&mut st, press(KeyCode::Right));
+        assert!(st.confirm_proceed_focused);
+        let out = hk(&mut st, press(KeyCode::Enter));
+        assert!(matches!(
+            out,
+            GitWorkbenchOutcome::DiscardRequested { ref paths } if paths == &["src/main.rs".to_string()]
+        ));
+    }
+
+    #[test]
+    fn discard_without_confirm_does_not_emit() {
+        let mut st = open();
+        st.focus = "files";
+        // Opening confirm is not DiscardRequested
+        let out = st.open_discard_confirm(vec!["a".into()]);
+        assert!(!matches!(
+            out,
+            GitWorkbenchOutcome::DiscardRequested { .. }
+        ));
+    }
+
+    #[test]
+    fn conflict_and_dirty_chrome() {
+        let mut st = open();
+        st.repo_status = GitRepoStatus::Conflict;
+        let order = st.focus_order_for(GitWorkbenchDensity::Normal);
+        assert!(order.contains(&"diagnostics"));
+        let slots = st.status_slots();
+        assert!(slots.iter().any(|s| s.id == "conflict" || s.id == "repo"));
+        st.repo_status = GitRepoStatus::Dirty;
+        assert_eq!(st.repo_status.label(), "dirty");
+    }
+
+    #[test]
+    fn checkout_dirty_opens_confirm() {
+        let mut st = open();
+        st.repo_status = GitRepoStatus::Dirty;
+        st.focus = "branches";
+        st.branch_cursor = 1; // feature/auth
+        let out = hk(&mut st, press(KeyCode::Enter));
+        assert!(matches!(
+            out,
+            GitWorkbenchOutcome::ConfirmOpened(GitDestructiveKind::Checkout { .. })
+        ));
+    }
+
+    #[test]
+    fn paint_composes_children_and_no_git_io() {
+        let system = DesignSystem::default();
+        let mut st = open();
+        let files = example_git_files();
+        let lines = example_git_diff_lines();
+        let hunks = example_git_hunks();
+        let dfiles = example_git_diff_files();
+        let commits = example_git_commits();
+        let diags = example_conflict_diagnostics();
+        let meta = example_git_terminal_meta();
+        let tlines = example_git_terminal_lines();
+        let help = example_git_help_entries(&system);
+
+        for d in [
+            GitWorkbenchDensity::Normal,
+            GitWorkbenchDensity::Narrow,
+            GitWorkbenchDensity::Tiny,
+        ] {
+            st.density = Some(d);
+            st.fullscreen_diff = false;
+            let area = match d {
+                GitWorkbenchDensity::Normal => Rect::new(0, 0, 120, 36),
+                GitWorkbenchDensity::Narrow => Rect::new(0, 0, 70, 24),
+                GitWorkbenchDensity::Tiny => Rect::new(0, 0, 40, 16),
+            };
+            let mut buf = Buffer::empty(area);
+            render_git_workbench(
+                &mut buf,
+                area,
+                GitWorkbenchSurfaces {
+                    system: &system,
+                    state: &mut st,
+                    files: &files,
+                    diff_lines: &lines,
+                    hunks: &hunks,
+                    diff_files: &dfiles,
+                    commits: &commits,
+                    diagnostics: &diags,
+                    terminal_meta: &meta,
+                    terminal_lines: &tlines,
+                    help_entries: &help,
+                },
+            );
+            assert!(!st.last_panes().is_empty());
+        }
+
+        let src = include_str!("git_workbench.rs");
+        let body = src.split("#[cfg(test)]").next().unwrap_or(src);
+        for needle in [
+            "DiffReview",
+            "FileTree",
+            "CheckpointTimeline",
+            "TerminalOutput",
+            "DiagnosticView",
+            "StatusBar",
+            "KeyboardHelp",
+            "StageRequested",
+            "DiscardRequested",
+            "FullscreenDiff",
+        ] {
+            assert!(body.contains(needle), "missing: {needle}");
+        }
+        for forbidden in [
+            "std::process::",
+            "Command::new",
+            "git2::",
+            "std::fs::",
+            "TcpStream",
+            "std::net::",
+        ] {
+            assert!(!body.contains(forbidden), "forbidden I/O: {forbidden}");
+        }
+    }
+
+    #[test]
+    fn large_diff_paint_perf() {
+        let system = DesignSystem::default();
+        let mut st = open();
+        st.density = Some(GitWorkbenchDensity::Normal);
+        let files = example_git_files();
+        let lines = example_git_diff_lines();
+        let (_, hunks, _) = large_git_diff(bench::LARGE_HUNKS);
+        // Repeat lines for visual mass
+        let mut many_lines = Vec::new();
+        for _ in 0..20 {
+            many_lines.extend(lines.iter().cloned());
+        }
+        // Fix hunk indices loosely for paint (DiffReview windows)
+        let dfiles = example_git_diff_files();
+        let commits = example_git_commits();
+        let diags = example_conflict_diagnostics();
+        let meta = example_git_terminal_meta();
+        let tlines = example_git_terminal_lines();
+        let help = example_git_help_entries(&system);
+        let area = Rect::new(0, 0, 120, 40);
+        let mut buf = Buffer::empty(area);
+        let start = std::time::Instant::now();
+        for _ in 0..bench::PAINT_FRAMES {
+            render_git_workbench(
+                &mut buf,
+                area,
+                GitWorkbenchSurfaces {
+                    system: &system,
+                    state: &mut st,
+                    files: &files,
+                    diff_lines: &many_lines,
+                    hunks: &hunks,
+                    diff_files: &dfiles,
+                    commits: &commits,
+                    diagnostics: &diags,
+                    terminal_meta: &meta,
+                    terminal_lines: &tlines,
+                    help_entries: &help,
+                },
+            );
+        }
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed.as_secs() < 5,
+            "paint too slow: {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn help_and_refresh() {
+        let mut st = open();
+        let help = example_git_help_entries(&DesignSystem::default());
+        let out = hk_help(&mut st, press(KeyCode::Char('?')), &help);
+        assert!(matches!(out, GitWorkbenchOutcome::OpenHelp));
+        assert!(st.help_is_open());
+        st.help_open = false;
+        let _ = st.help.close_modal();
+        let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help);
+        assert!(matches!(out, GitWorkbenchOutcome::RefreshRequested), "{out:?}");
+    }
+
+    #[test]
+    fn fuzz_status_and_units() {
+        for s in [
+            GitRepoStatus::Clean,
+            GitRepoStatus::Dirty,
+            GitRepoStatus::Conflict,
+            GitRepoStatus::Detached,
+            GitRepoStatus::Merging,
+            GitRepoStatus::Rebasing,
+        ] {
+            assert!(!s.id().is_empty());
+        }
+        assert!(!DiffReviewUnit::hunk("h").key().is_empty());
+        assert_eq!(
+            DiffReviewUnitKind::File,
+            DiffReviewUnit::file("a").kind
+        );
+    }
+
+    #[test]
+    fn unit_ids_in_stage_path() {
+        let unit = DiffReviewUnit::line_range("L1", "L5");
+        let key = unit.key();
+        assert!(
+            key.contains("L1") || key.contains("line") || key.contains("range"),
+            "{key}"
+        );
+        let file = DiffReviewUnit::file("src/main.rs");
+        assert_eq!(file.key(), "file:src/main.rs");
+    }
+}

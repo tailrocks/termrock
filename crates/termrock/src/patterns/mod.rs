@@ -14,6 +14,7 @@ mod agent_shell;
 mod agent_workbench;
 mod app_shell;
 mod database_workbench;
+mod git_workbench;
 mod ops_dashboard;
 mod resource_browser;
 mod settings_screen;
@@ -38,6 +39,16 @@ pub use database_workbench::{
     DatabaseWorkbenchState, DatabaseWorkbenchSurfaces,
 };
 pub use database_workbench::bench as database_workbench_bench;
+pub use git_workbench::{
+    example_conflict_diagnostics, example_conflict_files, example_git_branches,
+    example_git_commits, example_git_diff_files, example_git_diff_lines, example_git_files,
+    example_git_help_entries, example_git_hunks, example_git_terminal_lines,
+    example_git_terminal_meta, git_workbench_layout, git_workbench_layout_density,
+    large_git_diff, render_git_workbench, GitBranch, GitDestructiveKind, GitRepoStatus,
+    GitWorkbenchDensity, GitWorkbenchOutcome, GitWorkbenchPane, GitWorkbenchState,
+    GitWorkbenchSurfaces,
+};
+pub use git_workbench::bench as git_workbench_bench;
 pub use app_shell::{
     app_shell_viewport, layout_app_shell, AppShellConfig, AppShellLifecycle, AppShellRecipe,
     AppShellSlots, AppShellZone,

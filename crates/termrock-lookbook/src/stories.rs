@@ -6882,6 +6882,51 @@ pub(crate) fn stories() -> Vec<Story> {
             database_workbench_unicode,
         ),
         Story::new(
+            "git-workbench/basic",
+            "Git workbench",
+            "GitWorkbench",
+            "Dirty repo: files, diff, history, branches, output.",
+            120,
+            36,
+            git_workbench_basic,
+        ),
+        Story::new(
+            "git-workbench/conflict",
+            "Git workbench conflict",
+            "GitWorkbench",
+            "Conflict status + diagnostics chrome.",
+            100,
+            28,
+            git_workbench_conflict,
+        ),
+        Story::new(
+            "git-workbench/narrow",
+            "Git workbench narrow",
+            "GitWorkbench",
+            "Narrow density — history/branches collapsed.",
+            70,
+            24,
+            git_workbench_narrow,
+        ),
+        Story::new(
+            "git-workbench/fullscreen-diff",
+            "Git workbench fullscreen diff",
+            "GitWorkbench",
+            "Fullscreen diff promotion.",
+            100,
+            28,
+            git_workbench_fullscreen,
+        ),
+        Story::new(
+            "git-workbench/unicode",
+            "Git workbench unicode",
+            "GitWorkbench",
+            "Unicode-safe diff path paint.",
+            100,
+            28,
+            git_workbench_unicode,
+        ),
+        Story::new(
             "permission-prompt/basic",
             "Permission prompt",
             "PermissionPrompt",
@@ -24989,6 +25034,99 @@ fn database_workbench_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn database_workbench_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Unicode);
+}
+
+#[derive(Clone, Copy)]
+enum GitWorkbenchStoryKind {
+    Basic,
+    Conflict,
+    Narrow,
+    Fullscreen,
+    Unicode,
+}
+
+fn paint_git_workbench_story(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    kind: GitWorkbenchStoryKind,
+) {
+    use termrock::patterns::{
+        example_conflict_diagnostics, example_conflict_files, example_git_commits,
+        example_git_diff_files, example_git_diff_lines, example_git_files,
+        example_git_help_entries, example_git_hunks, example_git_terminal_lines,
+        example_git_terminal_meta, render_git_workbench, GitRepoStatus, GitWorkbenchDensity,
+        GitWorkbenchState, GitWorkbenchSurfaces,
+    };
+
+    let mut state = GitWorkbenchState::new();
+    match kind {
+        GitWorkbenchStoryKind::Narrow => {
+            state.density = Some(GitWorkbenchDensity::Narrow);
+        }
+        GitWorkbenchStoryKind::Conflict => {
+            state.repo_status = GitRepoStatus::Conflict;
+            state.focus = "diagnostics";
+        }
+        GitWorkbenchStoryKind::Fullscreen => {
+            let _ = state.set_fullscreen_diff(true);
+        }
+        GitWorkbenchStoryKind::Unicode | GitWorkbenchStoryKind::Basic => {
+            state.repo_status = GitRepoStatus::Dirty;
+        }
+    }
+
+    let files = if matches!(kind, GitWorkbenchStoryKind::Conflict) {
+        example_conflict_files()
+    } else {
+        example_git_files()
+    };
+    let lines = example_git_diff_lines();
+    let hunks = example_git_hunks();
+    let dfiles = example_git_diff_files();
+    let commits = example_git_commits();
+    let diags = example_conflict_diagnostics();
+    let meta = example_git_terminal_meta();
+    let tlines = example_git_terminal_lines();
+    let help = example_git_help_entries(system);
+
+    render_git_workbench(
+        frame.buffer_mut(),
+        area,
+        GitWorkbenchSurfaces {
+            system,
+            state: &mut state,
+            files: &files,
+            diff_lines: &lines,
+            hunks: &hunks,
+            diff_files: &dfiles,
+            commits: &commits,
+            diagnostics: &diags,
+            terminal_meta: &meta,
+            terminal_lines: &tlines,
+            help_entries: &help,
+        },
+    );
+}
+
+fn git_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Basic);
+}
+
+fn git_workbench_conflict(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Conflict);
+}
+
+fn git_workbench_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Narrow);
+}
+
+fn git_workbench_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Fullscreen);
+}
+
+fn git_workbench_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Unicode);
 }
 
 #[derive(Clone, Copy)]

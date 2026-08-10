@@ -1376,6 +1376,102 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             source_hash: None,
             complete: true,
         },
+        ComponentContract {
+            schema: CONTRACT_SCHEMA,
+            id: "git-workbench".into(),
+            title: "Git Workbench".into(),
+            description: "Source-owned Git workflow composition: FileTree, DiffReview, history timeline, branches, TerminalOutput, conflict diagnostics, StatusBar, KeyboardHelp; stage/discard confirms; fullscreen diff; host owns Git I/O.".into(),
+            kind: RegistryItemKind::Block,
+            license: "Apache-2.0".into(),
+            module: Some("termrock::patterns::git_workbench".into()),
+            namespace: "termrock".into(),
+            version: "0.13.0".into(),
+            files: vec![file(
+                "crates/termrock/src/patterns/git_workbench.rs",
+                ContractFileRole::Primary,
+            )],
+            dependencies: {
+                let mut d = kernel_dep();
+                d.registry = vec![
+                    "termrock/Panel".into(),
+                ];
+                d
+            },
+            capabilities: {
+                let mut c = caps_basic();
+                c.responsive_surface = Some("Workbench".into());
+                c.min_width = Some(30);
+                c.min_height = Some(12);
+                c
+            },
+            anatomy: vec![
+                AnatomyPartRef {
+                    id: "files".into(),
+                    label: "File tree / status".into(),
+                },
+                AnatomyPartRef {
+                    id: "diff".into(),
+                    label: "Diff review".into(),
+                },
+                AnatomyPartRef {
+                    id: "history".into(),
+                    label: "Commit history".into(),
+                },
+                AnatomyPartRef {
+                    id: "branches".into(),
+                    label: "Branches".into(),
+                },
+                AnatomyPartRef {
+                    id: "output".into(),
+                    label: "Command output".into(),
+                },
+                AnatomyPartRef {
+                    id: "status".into(),
+                    label: "Status bar".into(),
+                },
+            ],
+            semantic_roles: vec![],
+            variants: vec![
+                VariantRef {
+                    id: "normal".into(),
+                    description: "Full multi-pane".into(),
+                },
+                VariantRef {
+                    id: "narrow".into(),
+                    description: "Files + diff + output".into(),
+                },
+                VariantRef {
+                    id: "fullscreen-diff".into(),
+                    description: "Promoted diff".into(),
+                },
+            ],
+            outcomes: vec![
+                OutcomeRef {
+                    id: "StageRequested".into(),
+                },
+                OutcomeRef {
+                    id: "DiscardRequested".into(),
+                },
+                OutcomeRef {
+                    id: "CheckoutRequested".into(),
+                },
+                OutcomeRef {
+                    id: "FullscreenDiff".into(),
+                },
+            ],
+            stories: vec![
+                "git-workbench/basic".into(),
+                "git-workbench/conflict".into(),
+                "git-workbench/narrow".into(),
+                "git-workbench/fullscreen-diff".into(),
+                "git-workbench/unicode".into(),
+            ],
+            tests: vec!["patterns::git_workbench".into()],
+            migration: Some("migrations/0241-v0.13.0-git-workbench.md".into()),
+            provenance: prov("crates/termrock/src/patterns/git_workbench.rs"),
+            source_hash: None,
+            complete: true,
+        },
     ]
 }
 
