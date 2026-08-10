@@ -4047,6 +4047,42 @@ pub(crate) fn stories() -> Vec<Story> {
             data_table_loading,
         ),
         Story::new(
+            "data-table/visidata",
+            "DataTable VisiData",
+            "DataTable",
+            "Cell nav, sort markers, pin, multi-select chrome.",
+            68,
+            12,
+            data_table_visidata,
+        ),
+        Story::new(
+            "data-table/range",
+            "DataTable range select",
+            "DataTable",
+            "Range navigation mode with cell selection.",
+            56,
+            10,
+            data_table_range,
+        ),
+        Story::new(
+            "data-table/groups",
+            "DataTable groups",
+            "DataTable",
+            "Group header bands in the projected stream.",
+            56,
+            10,
+            data_table_groups,
+        ),
+        Story::new(
+            "data-table/edit",
+            "DataTable inline edit",
+            "DataTable",
+            "Inline edit draft on focused cell.",
+            48,
+            8,
+            data_table_edit,
+        ),
+        Story::new(
             "data-table/error",
             "DataTable error",
             "DataTable",
@@ -14510,6 +14546,125 @@ fn data_table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         retryable: true,
     };
     DataTable::new(&tokens, &columns, &rows).render(area, frame.buffer_mut(), &mut state);
+}
+
+fn data_table_visidata(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ColumnPin, DataColumn, DataColumnWidth, DataTableNavMode, LoadState, SortSpec,
+    };
+    let tokens = system.clone().density(Density::Compact);
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        DataColumn::new("pid", "PID", DataColumnWidth::Fixed(6))
+            .priority(100)
+            .pin(ColumnPin::Start)
+            .sortable(),
+        DataColumn::new("name", "NAME", DataColumnWidth::Min(14))
+            .priority(90)
+            .sortable()
+            .editable(),
+        DataColumn::new("cpu", "CPU%", DataColumnWidth::Fixed(6))
+            .priority(70)
+            .sortable(),
+        DataColumn::new("mem", "MEM", DataColumnWidth::Min(8)).priority(40),
+        DataColumn::new("status", "STAT", DataColumnWidth::Fixed(6)).priority(50),
+    ]);
+    let r0: &[&str] = &["101", "termrock", "42.1", "128M", "R"];
+    let r1: &[&str] = &["208", "cargo", "11.0", "640M", "S"];
+    let r2: &[&str] = &["317", "rustc", "88.4", "1.2G", "R"];
+    let r3: &[&str] = &["422", "rg", "3.2", "48M", "S"];
+    let r4: &[&str] = &["509", "vim", "0.4", "32M", "S"];
+    let rows = [
+        (101u64, r0),
+        (208, r1),
+        (317, r2),
+        (422, r3),
+        (509, r4),
+    ];
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = LoadState::Ready { count: 5 };
+    state.nav_mode = DataTableNavMode::Cell;
+    state.cursor_row = 2;
+    state.cursor_col = 1;
+    state.selection.toggle_row(101);
+    state.selection.toggle_row(317);
+    state.sort = Some(SortSpec {
+        column: "cpu",
+        ascending: false,
+    });
+    state.filter.query = "rust".into();
+    DataTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .fullscreen_hint(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn data_table_range(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{CellCoord, DataColumn, DataColumnWidth, DataTableNavMode, LoadState};
+    let tokens = system.clone().density(Density::Compact);
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        DataColumn::new("a", "A", DataColumnWidth::Fixed(6)),
+        DataColumn::new("b", "B", DataColumnWidth::Fixed(6)),
+        DataColumn::new("c", "C", DataColumnWidth::Fixed(6)),
+        DataColumn::new("d", "D", DataColumnWidth::Fixed(6)),
+    ]);
+    let r0: &[&str] = &["a0", "b0", "c0", "d0"];
+    let r1: &[&str] = &["a1", "b1", "c1", "d1"];
+    let r2: &[&str] = &["a2", "b2", "c2", "d2"];
+    let rows = [(0u64, r0), (1, r1), (2, r2)];
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = LoadState::Ready { count: 3 };
+    state.set_nav_mode(DataTableNavMode::Range);
+    state.selection.select_cell(CellCoord { row: 0, col: 1 });
+    state.selection.extend_cell(CellCoord { row: 2, col: 2 });
+    state.cursor_row = 2;
+    state.cursor_col = 2;
+    DataTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn data_table_groups(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{DataColumn, DataColumnWidth, GroupHeader, LoadState};
+    let tokens = system.clone().density(Density::default());
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        DataColumn::new("name", "Name", DataColumnWidth::Min(12)),
+        DataColumn::new("val", "Val", DataColumnWidth::Fixed(6)),
+    ]);
+    let g: &[&str] = &["group", ""];
+    let r0: &[&str] = &["alpha", "10"];
+    let r1: &[&str] = &["beta", "20"];
+    let rows = [(900u64, g), (1, r0), (2, r1)];
+    let groups = [GroupHeader {
+        id: 900,
+        label: "eu-west".into(),
+        count: 2,
+        expanded: true,
+    }];
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = LoadState::Ready { count: 2 };
+    DataTable::new(&tokens, &columns, &rows)
+        .groups(&groups)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
+fn data_table_edit(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{DataColumn, DataColumnWidth, LoadState};
+    let tokens = system.clone().density(Density::default());
+    let columns = termrock::widgets::ColumnModel::new(vec![
+        DataColumn::new("id", "ID", DataColumnWidth::Fixed(4)),
+        DataColumn::new("name", "Name", DataColumnWidth::Min(12)).editable(),
+    ]);
+    let r0: &[&str] = &["1", "alpha"];
+    let rows = [(1u64, r0)];
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = LoadState::Ready { count: 1 };
+    state.editing = true;
+    state.edit_draft = "alpha-edited".into();
+    state.cursor_col = 1;
+    DataTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

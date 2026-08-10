@@ -1,4 +1,3 @@
-    Blocking waiting for file lock on build directory
  Documenting termrock v0.11.0 (/Users/donbeave/Projects/tailrocks/termrock/crates/termrock)
 warning: unresolved link to `DataTableState::handle_key`
    --> crates/termrock/src/interaction/intent.rs:281:7
@@ -67,7 +66,7 @@ warning: unresolved link to `Self::from_slots`
     |                 ^^^^^^^^^^^^^^^^ the struct `StatusBar` has no field or associated item named `from_slots`
 
 warning: `termrock` (lib doc) generated 9 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.03s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.83s
 pub mod termrock
 pub mod termrock::ansi_text
 #[non_exhaustive] pub enum termrock::ansi_text::AnsiTextMode
@@ -18319,21 +18318,92 @@ pub unsafe fn termrock::widgets::DataDensity::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DataDensity
 pub fn termrock::widgets::DataDensity::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataDensity
+#[non_exhaustive] pub enum termrock::widgets::DataTableNavMode
+pub termrock::widgets::DataTableNavMode::Cell
+pub termrock::widgets::DataTableNavMode::Range
+pub termrock::widgets::DataTableNavMode::Row
+impl termrock::widgets::DataTableNavMode
+pub const fn termrock::widgets::DataTableNavMode::cycle(self) -> Self
+pub const fn termrock::widgets::DataTableNavMode::id(self) -> &'static str
+impl core::clone::Clone for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::clone(&self) -> termrock::widgets::DataTableNavMode
+impl core::cmp::Eq for termrock::widgets::DataTableNavMode
+impl core::cmp::PartialEq for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::eq(&self, &termrock::widgets::DataTableNavMode) -> bool
+impl core::default::Default for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::default() -> termrock::widgets::DataTableNavMode
+impl core::fmt::Debug for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DataTableNavMode
+impl core::marker::StructuralPartialEq for termrock::widgets::DataTableNavMode
+impl core::marker::Freeze for termrock::widgets::DataTableNavMode
+impl core::marker::Send for termrock::widgets::DataTableNavMode
+impl core::marker::Sync for termrock::widgets::DataTableNavMode
+impl core::marker::Unpin for termrock::widgets::DataTableNavMode
+impl core::marker::UnsafeUnpin for termrock::widgets::DataTableNavMode
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataTableNavMode
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataTableNavMode
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataTableNavMode where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DataTableNavMode::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DataTableNavMode where U: core::convert::From<T>
+pub fn termrock::widgets::DataTableNavMode::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DataTableNavMode where U: core::convert::Into<T>
+pub type termrock::widgets::DataTableNavMode::Error = core::convert::Infallible
+pub fn termrock::widgets::DataTableNavMode::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DataTableNavMode where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DataTableNavMode::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DataTableNavMode::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DataTableNavMode where T: core::clone::Clone
+pub type termrock::widgets::DataTableNavMode::Owned = T
+pub fn termrock::widgets::DataTableNavMode::clone_into(&self, &mut T)
+pub fn termrock::widgets::DataTableNavMode::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DataTableNavMode where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DataTableNavMode::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DataTableNavMode where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableNavMode::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DataTableNavMode where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableNavMode::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DataTableNavMode where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DataTableNavMode::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DataTableNavMode
+pub fn termrock::widgets::DataTableNavMode::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DataTableNavMode
 #[non_exhaustive] pub enum termrock::widgets::DataTableOutcome<RowId, ColId>
 pub termrock::widgets::DataTableOutcome::Activate(RowId)
+pub termrock::widgets::DataTableOutcome::ColumnReorderRequested
+pub termrock::widgets::DataTableOutcome::ColumnReorderRequested::from: usize
+pub termrock::widgets::DataTableOutcome::ColumnReorderRequested::to: usize
+pub termrock::widgets::DataTableOutcome::ColumnResized
+pub termrock::widgets::DataTableOutcome::ColumnResized::column: ColId
+pub termrock::widgets::DataTableOutcome::ColumnResized::width: u16
+pub termrock::widgets::DataTableOutcome::ColumnVisibility
+pub termrock::widgets::DataTableOutcome::ColumnVisibility::column: ColId
+pub termrock::widgets::DataTableOutcome::ColumnVisibility::visible: bool
 pub termrock::widgets::DataTableOutcome::ContextMenu
+pub termrock::widgets::DataTableOutcome::ContextMenu::column: core::option::Option<ColId>
 pub termrock::widgets::DataTableOutcome::ContextMenu::row: RowId
 pub termrock::widgets::DataTableOutcome::Copy(termrock::widgets::CopyPayload)
 pub termrock::widgets::DataTableOutcome::CursorMoved
+pub termrock::widgets::DataTableOutcome::EditCancelled
+pub termrock::widgets::DataTableOutcome::EditCommitted
+pub termrock::widgets::DataTableOutcome::EditCommitted::column: ColId
+pub termrock::widgets::DataTableOutcome::EditCommitted::row: RowId
+pub termrock::widgets::DataTableOutcome::EditCommitted::text: alloc::string::String
 pub termrock::widgets::DataTableOutcome::EditStarted
 pub termrock::widgets::DataTableOutcome::EditStarted::column: core::option::Option<ColId>
 pub termrock::widgets::DataTableOutcome::EditStarted::row: RowId
 pub termrock::widgets::DataTableOutcome::ExpandToggled(RowId)
 pub termrock::widgets::DataTableOutcome::FilterChanged(termrock::widgets::FilterSpec)
+pub termrock::widgets::DataTableOutcome::FullscreenRequested
+pub termrock::widgets::DataTableOutcome::GroupToggled(RowId)
 pub termrock::widgets::DataTableOutcome::Ignored
+pub termrock::widgets::DataTableOutcome::NavModeChanged(termrock::widgets::DataTableNavMode)
 pub termrock::widgets::DataTableOutcome::RetryLoad
 pub termrock::widgets::DataTableOutcome::Scrolled
 pub termrock::widgets::DataTableOutcome::SelectAllRequested
+pub termrock::widgets::DataTableOutcome::SelectionChanged
 pub termrock::widgets::DataTableOutcome::SortRequested(ColId)
 pub termrock::widgets::DataTableOutcome::SortSpec(termrock::widgets::SortSpec<ColId>)
 pub termrock::widgets::DataTableOutcome::ToggleRow(RowId)
@@ -37379,9 +37449,16 @@ pub struct termrock::widgets::ColumnModel<Id>
 pub termrock::widgets::ColumnModel::columns: alloc::vec::Vec<termrock::widgets::DataColumn<Id>>
 pub termrock::widgets::ColumnModel::width_overrides: alloc::vec::Vec<core::option::Option<u16>>
 impl<Id: core::cmp::PartialEq> termrock::widgets::ColumnModel<Id>
+pub fn termrock::widgets::ColumnModel<Id>::clear_width_override(&mut self, &Id) -> bool
 pub fn termrock::widgets::ColumnModel<Id>::contract_to_budget(&mut self, usize, u8)
+pub fn termrock::widgets::ColumnModel<Id>::effective_width(&self, usize) -> u16
+pub fn termrock::widgets::ColumnModel<Id>::index_of(&self, &Id) -> core::option::Option<usize>
+pub fn termrock::widgets::ColumnModel<Id>::move_column(&mut self, usize, usize) -> bool
 pub fn termrock::widgets::ColumnModel<Id>::new(alloc::vec::Vec<termrock::widgets::DataColumn<Id>>) -> Self
+pub fn termrock::widgets::ColumnModel<Id>::resolve_paint_widths(&self, u16, &mut alloc::vec::Vec<(usize, u16)>)
+pub fn termrock::widgets::ColumnModel<Id>::set_sortable(&mut self, &Id, bool) -> bool
 pub fn termrock::widgets::ColumnModel<Id>::set_visible(&mut self, &Id, bool) -> bool
+pub fn termrock::widgets::ColumnModel<Id>::set_width_override(&mut self, &Id, u16) -> bool
 pub fn termrock::widgets::ColumnModel<Id>::visible(&self) -> impl core::iter::traits::iterator::Iterator<Item = (usize, &termrock::widgets::DataColumn<Id>)>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ColumnModel<Id>
 pub fn termrock::widgets::ColumnModel<Id>::clone(&self) -> termrock::widgets::ColumnModel<Id>
@@ -38383,10 +38460,12 @@ pub termrock::widgets::DataColumn::title: alloc::string::String
 pub termrock::widgets::DataColumn::visible: bool
 pub termrock::widgets::DataColumn::width: termrock::widgets::DataColumnWidth
 impl<Id> termrock::widgets::DataColumn<Id>
+pub const fn termrock::widgets::DataColumn<Id>::editable(self) -> Self
 pub const fn termrock::widgets::DataColumn<Id>::hidden(self) -> Self
 pub fn termrock::widgets::DataColumn<Id>::new(Id, impl core::convert::Into<alloc::string::String>, termrock::widgets::DataColumnWidth) -> Self
 pub const fn termrock::widgets::DataColumn<Id>::pin(self, termrock::widgets::ColumnPin) -> Self
 pub const fn termrock::widgets::DataColumn<Id>::priority(self, u8) -> Self
+pub const fn termrock::widgets::DataColumn<Id>::sortable(self) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DataColumn<Id>
 pub fn termrock::widgets::DataColumn<Id>::clone(&self) -> termrock::widgets::DataColumn<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DataColumn<Id>
@@ -38476,8 +38555,10 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DataMovement
 pub struct termrock::widgets::DataTable<'a, RowId, ColId>
 impl<'a, RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DataTable<'a, RowId, ColId>
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::focused(self, bool) -> Self
+pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::fullscreen_hint(self, bool) -> Self
+pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::groups(self, &'a [termrock::widgets::GroupHeader<RowId>]) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [(RowId, &'a [&'a str])]) -> Self
-pub fn termrock::widgets::DataTable<'a, RowId, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>)
+pub fn termrock::widgets::DataTable<'a, RowId, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>) where ColId: core::clone::Clone
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::toolbar(self, &'a termrock::widgets::DataTableToolbar<'a>) -> Self
 impl<'a, RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DataTable<'a, RowId, ColId>
 pub type &termrock::widgets::DataTable<'a, RowId, ColId>::State = termrock::widgets::DataTableState<RowId, ColId>
@@ -38489,7 +38570,6 @@ impl<'a, RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clon
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::clone(&self) -> termrock::widgets::DataTable<'a, RowId, ColId>
 impl<'a, RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DataTable<'a, RowId, ColId>
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, RowId: core::marker::Copy, ColId: core::marker::Copy> core::marker::Copy for termrock::widgets::DataTable<'a, RowId, ColId>
 impl<'a, RowId, ColId> core::marker::Freeze for termrock::widgets::DataTable<'a, RowId, ColId>
 impl<'a, RowId, ColId> core::marker::Send for termrock::widgets::DataTable<'a, RowId, ColId> where RowId: core::marker::Sync, ColId: core::marker::Sync
 impl<'a, RowId, ColId> core::marker::Sync for termrock::widgets::DataTable<'a, RowId, ColId> where RowId: core::marker::Sync, ColId: core::marker::Sync
@@ -38520,17 +38600,115 @@ pub unsafe fn termrock::widgets::DataTable<'a, RowId, ColId>::clone_to_uninit(&s
 impl<T> core::convert::From<T> for termrock::widgets::DataTable<'a, RowId, ColId>
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataTable<'a, RowId, ColId>
+pub struct termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub termrock::widgets::DataTableCellRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DataTableCellRegion::col_index: usize
+pub termrock::widgets::DataTableCellRegion::column: ColId
+pub termrock::widgets::DataTableCellRegion::row: RowId
+pub termrock::widgets::DataTableCellRegion::row_index: usize
+impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::clone(&self) -> termrock::widgets::DataTableCellRegion<RowId, ColId>
+impl<RowId: core::cmp::Eq, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DataTableCellRegion<RowId, ColId>
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::eq(&self, &termrock::widgets::DataTableCellRegion<RowId, ColId>) -> bool
+impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DataTableCellRegion<RowId, ColId>
+impl<RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<RowId, ColId> core::marker::Freeze for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::marker::Freeze, ColId: core::marker::Freeze
+impl<RowId, ColId> core::marker::Send for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::marker::Send, ColId: core::marker::Send
+impl<RowId, ColId> core::marker::Sync for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::marker::Sync, ColId: core::marker::Sync
+impl<RowId, ColId> core::marker::Unpin for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::marker::Unpin, ColId: core::marker::Unpin
+impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::marker::UnsafeUnpin, ColId: core::marker::UnsafeUnpin
+impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::panic::unwind_safe::RefUnwindSafe, ColId: core::panic::unwind_safe::RefUnwindSafe
+impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataTableCellRegion<RowId, ColId> where RowId: core::panic::unwind_safe::UnwindSafe, ColId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataTableCellRegion<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DataTableCellRegion<RowId, ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DataTableCellRegion<RowId, ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::DataTableCellRegion<RowId, ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DataTableCellRegion<RowId, ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DataTableCellRegion<RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DataTableCellRegion<RowId, ColId> where T: core::clone::Clone
+pub type termrock::widgets::DataTableCellRegion<RowId, ColId>::Owned = T
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DataTableCellRegion<RowId, ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DataTableCellRegion<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DataTableCellRegion<RowId, ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DataTableCellRegion<RowId, ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DataTableCellRegion<RowId, ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub fn termrock::widgets::DataTableCellRegion<RowId, ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DataTableCellRegion<RowId, ColId>
+pub struct termrock::widgets::DataTableHeaderRegion<ColId>
+pub termrock::widgets::DataTableHeaderRegion::area: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DataTableHeaderRegion::id: ColId
+pub termrock::widgets::DataTableHeaderRegion::resize_handle: ratatui_core::layout::rect::Rect
+pub termrock::widgets::DataTableHeaderRegion::sortable: bool
+impl<ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::DataTableHeaderRegion<ColId>
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::clone(&self) -> termrock::widgets::DataTableHeaderRegion<ColId>
+impl<ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DataTableHeaderRegion<ColId>
+impl<ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DataTableHeaderRegion<ColId>
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::eq(&self, &termrock::widgets::DataTableHeaderRegion<ColId>) -> bool
+impl<ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DataTableHeaderRegion<ColId>
+impl<ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DataTableHeaderRegion<ColId>
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<ColId> core::marker::Freeze for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::marker::Freeze
+impl<ColId> core::marker::Send for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::marker::Send
+impl<ColId> core::marker::Sync for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::marker::Sync
+impl<ColId> core::marker::Unpin for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::marker::Unpin
+impl<ColId> core::marker::UnsafeUnpin for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::marker::UnsafeUnpin
+impl<ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::panic::unwind_safe::RefUnwindSafe
+impl<ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataTableHeaderRegion<ColId> where ColId: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataTableHeaderRegion<ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DataTableHeaderRegion<ColId> where U: core::convert::From<T>
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DataTableHeaderRegion<ColId> where U: core::convert::Into<T>
+pub type termrock::widgets::DataTableHeaderRegion<ColId>::Error = core::convert::Infallible
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DataTableHeaderRegion<ColId> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DataTableHeaderRegion<ColId>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DataTableHeaderRegion<ColId> where T: core::clone::Clone
+pub type termrock::widgets::DataTableHeaderRegion<ColId>::Owned = T
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::clone_into(&self, &mut T)
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DataTableHeaderRegion<ColId> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DataTableHeaderRegion<ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DataTableHeaderRegion<ColId> where T: ?core::marker::Sized
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DataTableHeaderRegion<ColId> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DataTableHeaderRegion<ColId>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DataTableHeaderRegion<ColId>
+pub fn termrock::widgets::DataTableHeaderRegion<ColId>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DataTableHeaderRegion<ColId>
 pub struct termrock::widgets::DataTableState<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq>
 pub termrock::widgets::DataTableState::accepts_input: bool
 pub termrock::widgets::DataTableState::ascii: bool
-pub termrock::widgets::DataTableState::col_window: termrock::widgets::VirtualWindow
+pub termrock::widgets::DataTableState::cell_regions: alloc::vec::Vec<termrock::widgets::DataTableCellRegion<RowId, ColId>>
 pub termrock::widgets::DataTableState::colorless: bool
 pub termrock::widgets::DataTableState::cursor_col: usize
 pub termrock::widgets::DataTableState::cursor_row: usize
 pub termrock::widgets::DataTableState::density: termrock::widgets::DataDensity
+pub termrock::widgets::DataTableState::edit_draft: alloc::string::String
+pub termrock::widgets::DataTableState::editing: bool
 pub termrock::widgets::DataTableState::expand: termrock::widgets::ExpandState<RowId>
 pub termrock::widgets::DataTableState::filter: termrock::widgets::FilterSpec
+pub termrock::widgets::DataTableState::h_offset: u16
+pub termrock::widgets::DataTableState::header_regions: alloc::vec::Vec<termrock::widgets::DataTableHeaderRegion<ColId>>
 pub termrock::widgets::DataTableState::load: termrock::widgets::LoadState
+pub termrock::widgets::DataTableState::nav_mode: termrock::widgets::DataTableNavMode
+pub termrock::widgets::DataTableState::pin_end_count: usize
+pub termrock::widgets::DataTableState::pin_start_count: usize
 pub termrock::widgets::DataTableState::selection: termrock::widgets::SelectionModel<RowId>
 pub termrock::widgets::DataTableState::sort: core::option::Option<termrock::widgets::SortSpec<ColId>>
 pub termrock::widgets::DataTableState::striped: bool
@@ -38538,10 +38716,12 @@ pub termrock::widgets::DataTableState::window: termrock::widgets::VirtualWindow
 impl<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DataTableState<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
 pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
-pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[RowId]) -> termrock::widgets::DataTableOutcome<RowId, ColId>
+pub fn termrock::widgets::DataTableState<RowId, ColId>::handle_mouse(&mut self, termrock::input::MouseEvent, &[RowId], &mut termrock::widgets::ColumnModel<ColId>) -> termrock::widgets::DataTableOutcome<RowId, ColId> where ColId: core::clone::Clone
 pub fn termrock::widgets::DataTableState<RowId, ColId>::new() -> Self
+pub fn termrock::widgets::DataTableState<RowId, ColId>::scroll_horizontal(&mut self, i16) -> bool
 pub fn termrock::widgets::DataTableState<RowId, ColId>::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::DataTableState<RowId, ColId>::set_logical_rows(&mut self, u64)
+pub fn termrock::widgets::DataTableState<RowId, ColId>::set_nav_mode(&mut self, termrock::widgets::DataTableNavMode)
 impl<RowId: core::clone::Clone + core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::widgets::DataTableState<RowId, ColId>
 pub fn termrock::widgets::DataTableState<RowId, ColId>::clone(&self) -> termrock::widgets::DataTableState<RowId, ColId>
 impl<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::DataTableState<RowId, ColId>

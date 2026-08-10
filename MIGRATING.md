@@ -202,6 +202,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0186 | `v0.13.0` | [VirtualList](migrations/0186-v0.13.0-virtual-list.md) |
 | 0187 | `v0.13.0` | [Tree hierarchy](migrations/0187-v0.13.0-tree-hierarchy.md) |
 | 0188 | `v0.13.0` | [Table presentation](migrations/0188-v0.13.0-table-presentation.md) |
+| 0189 | `v0.13.0` | [DataTable interactive](migrations/0189-v0.13.0-data-table-interactive.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

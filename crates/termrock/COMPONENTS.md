@@ -56,6 +56,20 @@ navigation contract. Index-addressed pickers use the `ListState<usize>` count,
 wrap-navigation, bounded-gesture, reconciliation, and selected-item methods so
 consumers do not retain a second list-state crate or generic picker helpers.
 
+`DataTable` is the interactive / virtualized flagship grid for professional
+developer tools. Consumers project only `window.visible_range()`; TermRock never
+allocates the logical universe. Kits in `data_view` supply `ColumnModel` (width,
+pin, visibility, priority, resize overrides, reorder), `SelectionModel`
+(row/multi/cell/range), `VirtualWindow`, `LoadState` (idle/loading/partial/ready/
+empty/error), sort/filter specs, expand/group headers, and copy payloads.
+`DataTableState` owns cursor, nav modes (`Cell`/`Row`/`Range`), h-scroll, sticky
+header geometry, header/cell hit regions, resize drag, range anchors, and edit
+draft. Outcomes cover sort, filter, selection, resize, reorder, visibility,
+edit start/commit/cancel, copy, context menu, toolbar, fullscreen promotion,
+and select-all **request** (visible scope only). Pointer: header sort, edge
+resize, cell click/drag range, wheel, context click. Colorless: gutter markers
+and ASCII sort glyphs. Display-only moderate tables use `Table`.
+
 `Table` is the polished static / moderate-size columnar presentation surface
 (display model; interactive 1M kit is `DataTable`). Caller-owned borrowed
 columns, styled cells, and stable-ID rows. Fixed/minimum/fill policies plus

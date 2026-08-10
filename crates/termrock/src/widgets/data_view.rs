@@ -313,6 +313,20 @@ impl<Id> DataColumn<Id> {
         self.visible = false;
         self
     }
+
+    /// Marks the column sortable (header / `s` chrome).
+    #[must_use]
+    pub const fn sortable(mut self) -> Self {
+        self.sortable = true;
+        self
+    }
+
+    /// Marks the column inline-editable (`e` / edit outcomes).
+    #[must_use]
+    pub const fn editable(mut self) -> Self {
+        self.editable = true;
+        self
+    }
 }
 
 /// Column layout state: order, visibility, widths, pins.
@@ -340,6 +354,63 @@ impl<Id: PartialEq> ColumnModel<Id> {
         self.columns.iter().enumerate().filter(|(_, c)| c.visible)
     }
 
+    /// Index of column by id.
+    #[must_use]
+    pub fn index_of(&self, id: &Id) -> Option<usize> {
+        self.columns.iter().position(|c| &c.id == id)
+    }
+
+    /// Effective width for a column index (override or policy floor).
+    #[must_use]
+    pub fn effective_width(&self, index: usize) -> u16 {
+        if let Some(Some(w)) = self.width_overrides.get(index) {
+            return (*w).max(1);
+        }
+        match self.columns.get(index).map(|c| c.width) {
+            Some(DataColumnWidth::Fixed(w) | DataColumnWidth::Min(w)) => w.max(1),
+            Some(DataColumnWidth::Fill(_)) => 8,
+            None => 1,
+        }
+    }
+
+    /// Set a resized width override (min 1).
+    pub fn set_width_override(&mut self, id: &Id, width: u16) -> bool {
+        let Some(i) = self.index_of(id) else {
+            return false;
+        };
+        if self.width_overrides.len() <= i {
+            self.width_overrides.resize(i + 1, None);
+        }
+        self.width_overrides[i] = Some(width.max(1));
+        true
+    }
+
+    /// Clear width override for a column.
+    pub fn clear_width_override(&mut self, id: &Id) -> bool {
+        let Some(i) = self.index_of(id) else {
+            return false;
+        };
+        if let Some(slot) = self.width_overrides.get_mut(i) {
+            *slot = None;
+            return true;
+        }
+        false
+    }
+
+    /// Reorder: move column at `from` so it lands at `to` (display order).
+    pub fn move_column(&mut self, from: usize, to: usize) -> bool {
+        if from >= self.columns.len() || to >= self.columns.len() || from == to {
+            return false;
+        }
+        self.width_overrides.resize(self.columns.len(), None);
+        let col = self.columns.remove(from);
+        let w = self.width_overrides.remove(from);
+        let insert_at = if from < to { to - 1 } else { to }.min(self.columns.len());
+        self.columns.insert(insert_at, col);
+        self.width_overrides.insert(insert_at, w);
+        true
+    }
+
     /// Toggle visibility by id.
     pub fn set_visible(&mut self, id: &Id, visible: bool) -> bool {
         if let Some(col) = self.columns.iter_mut().find(|c| &c.id == id) {
@@ -347,6 +418,15 @@ impl<Id: PartialEq> ColumnModel<Id> {
                 return false;
             }
             col.visible = visible;
+            return true;
+        }
+        false
+    }
+
+    /// Builder-style sortable / editable markers.
+    pub fn set_sortable(&mut self, id: &Id, sortable: bool) -> bool {
+        if let Some(col) = self.columns.iter_mut().find(|c| &c.id == id) {
+            col.sortable = sortable;
             return true;
         }
         false
@@ -378,6 +458,70 @@ impl<Id: PartialEq> ColumnModel<Id> {
                 break;
             };
             self.columns[i].visible = false;
+        }
+    }
+
+    /// Resolve paint widths for visible columns into `out` (declaration index, width).
+    /// Fills share remaining budget after fixed/min/overrides.
+    pub fn resolve_paint_widths(&self, budget: u16, out: &mut Vec<(usize, u16)>) {
+        out.clear();
+        let visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
+        if visible.is_empty() || budget == 0 {
+            return;
+        }
+        let gap = 1u16;
+        let gaps = gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
+        let mut remaining = budget.saturating_sub(gaps);
+        // (index, assigned_or_weight, is_fill)
+        let mut bases: Vec<(usize, u16, bool)> = Vec::with_capacity(visible.len());
+        let mut fill_weight = 0u32;
+        for &i in &visible {
+            if let Some(Some(w)) = self.width_overrides.get(i).copied() {
+                let take = w.max(1).min(remaining);
+                remaining = remaining.saturating_sub(take);
+                bases.push((i, take, false));
+                continue;
+            }
+            match self.columns[i].width {
+                DataColumnWidth::Fixed(w) | DataColumnWidth::Min(w) => {
+                    let take = w.max(1).min(remaining);
+                    remaining = remaining.saturating_sub(take);
+                    bases.push((i, take, false));
+                }
+                DataColumnWidth::Fill(weight) => {
+                    fill_weight += u32::from(weight.get());
+                    bases.push((i, weight.get(), true));
+                }
+            }
+        }
+        let fill_positions: Vec<usize> = bases
+            .iter()
+            .enumerate()
+            .filter_map(|(pos, (_, _, f))| (*f).then_some(pos))
+            .collect();
+        if fill_positions.is_empty() {
+            // nothing
+        } else if remaining == 0 {
+            for pos in fill_positions {
+                bases[pos].1 = 1;
+            }
+        } else {
+            let total_w = fill_weight.max(1);
+            let mut distributed = 0u16;
+            for (n, &pos) in fill_positions.iter().enumerate() {
+                let weight = u32::from(bases[pos].1.max(1));
+                let share = if n + 1 == fill_positions.len() {
+                    remaining.saturating_sub(distributed).max(1)
+                } else {
+                    let s = ((u64::from(remaining) * u64::from(weight)) / u64::from(total_w)) as u16;
+                    s.max(1)
+                };
+                bases[pos].1 = share;
+                distributed = distributed.saturating_add(share);
+            }
+        }
+        for (i, w, _) in bases {
+            out.push((i, w.max(1)));
         }
     }
 }

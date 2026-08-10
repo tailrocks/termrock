@@ -239,7 +239,10 @@ pub use controls::{
     RadioGroupOrientation, RadioGroupParts, RadioOption, RadioOptionParts, RadioOutcome,
     RadioSelectionPolicy, RadioState, Switch, SwitchOutcome, SwitchParts, SwitchRecipe, SwitchState,
 };
-pub use data_table::{DataTable, DataTableOutcome, DataTableState, DataTableToolbar};
+pub use data_table::{
+    DataTable, DataTableCellRegion, DataTableHeaderRegion, DataTableNavMode, DataTableOutcome,
+    DataTableState, DataTableToolbar,
+};
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
     CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataDensity,

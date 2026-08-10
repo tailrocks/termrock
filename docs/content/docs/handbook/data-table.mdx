@@ -1,26 +1,30 @@
 ---
 title: DataTable
-description: Virtualized tabular data for DB tools and ops — project only the visible window.
+description: Interactive virtualized grid for pro tools — project only the visible window.
 ---
 
 # DataTable
 
-**Purpose.** Show multi-column data at scale without allocating or painting the
-entire universe. TermRock owns chrome (header, selection, load states); you own
-query, sort, filter, and `project(start..end)`.
+**Purpose.** Multi-column interactive grids at professional scale: sort/filter
+chrome, pin/resize/reorder hooks, row/cell/range selection, inline edit, copy,
+context actions, and 1M-row logical datasets without allocating the universe.
 
-Today’s handbook covers **`DataTable` + `data_view` kits** and the mature
-`Table` widget. Prefer `VirtualWindow` for 10k–1M logical rows.
+TermRock owns chrome and interaction geometry. You own query, sort execution,
+filter execution, and `project(start..end)`.
+
+For static / moderate-size presentation without virtualization kits, use
+[Table](/docs/handbook/table).
 
 ## When to use / when not
 
-| Use DataTable / Table | Prefer |
-|----------------------|--------|
-| Relational grids, query results | — |
-| Sort/filter chrome outcomes | Consumer executes sort |
-| Simple vertical navigation | [List](/docs/handbook/list) |
-| Hierarchy | Tree / TreeTable |
-| Key/value object detail | DetailTable / ObjectInspector |
+| Use DataTable | Prefer |
+|---------------|--------|
+| DB results, k8s/ops tables, large lists | — |
+| Sort/filter/resize/edit outcomes | Host executes |
+| 10k–1M logical rows | `VirtualWindow` projection only |
+| Simple vertical nav | [List](/docs/handbook/list) |
+| Moderate static grid | [Table](/docs/handbook/table) |
+| Hierarchy | Tree |
 
 ## Installation
 
@@ -28,176 +32,66 @@ Today’s handbook covers **`DataTable` + `data_view` kits** and the mature
 termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
 ```
 
-Design: `docs/design/data-presentation.md`.
+Design: `docs/design/data-presentation.md`. Migration `0189`.
 
 ## Source files
 
-| Unit | Path |
-|------|------|
-| DataTable | `termrock::widgets::{DataTable, DataTableState, DataTableOutcome}` |
-| Kits | `termrock::widgets::{VirtualWindow, ColumnModel, LoadState, …}` |
-| Table | `termrock::widgets::{Table, TableRow, TableState, Column}` |
+`termrock::widgets::{DataTable, DataTableState, DataTableOutcome, DataTableNavMode,
+ColumnModel, DataColumn, VirtualWindow, LoadState, SelectionModel, …}`
 
-## Basic example
+## Projection law
 
 ```rust
-use termrock::widgets::{VirtualWindow, data_view_bench};
+use termrock::widgets::{DataTableState, VirtualWindow, data_view_bench};
 
-// Logical 1M rows — never allocate 1M cells in TermRock.
-let mut window = VirtualWindow::new(data_view_bench::ROWS_1M, 40);
-let (start, end) = window.visible_range();
+let mut state = DataTableState::<u64, &str>::new();
+state.set_logical_rows(data_view_bench::ROWS_1M);
+state.window.viewport = 40;
+let (start, end) = state.window.visible_range();
+// project ONLY [start, end) — never Vec of 1M
 assert!(end - start <= 40);
-// consumer: project only [start, end)
-let _ = window.scroll_by(100);
 ```
 
-## Interactive example
+## Basic paint
 
 ```rust
-use ratatui_core::text::Line;
 use termrock::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    style::DesignTokens,
-    widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState},
+    style::DesignSystem,
+    widgets::{
+        ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState, LoadState,
+    },
 };
 
-let tokens = DesignTokens::default();
-let columns = [Column::new("name", Line::from("Name"), ColumnWidth::Min(12))];
-let cells = [Line::from("alpha")];
-let rows = [TableRow::new("r1", &cells)];
-let table = Table::new(&columns, &rows, &tokens);
-let mut state: TableState<&str, &str> = TableState::new(Some("r1"));
-let _ = (
-    table,
-    state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-    CellAlignment::Left,
-);
+let system = DesignSystem::default();
+let columns = ColumnModel::new(vec![
+    DataColumn::new("id", "ID", DataColumnWidth::Fixed(6)).priority(100).sortable(),
+    DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(80).editable(),
+]);
+let cells: &[&str] = &["1", "alpha"];
+let rows = [(1u64, cells)];
+let mut state = DataTableState::new();
+state.load = LoadState::Ready { count: 1 };
+DataTable::new(&system, &columns, &rows)
+    .focused(true)
+    .render(/* area, buf, &mut state */);
 ```
+
+## Nav modes
+
+| Mode | Keys |
+|------|------|
+| `Cell` (default) | Arrows move cell; edges h-scroll |
+| `Row` | Vertical row focus; ←/→ h-scroll |
+| `Range` | Shift-extend rectangular selection |
+
+Cycle with `\`. Fullscreen promotion: `Ctrl+F` → `FullscreenRequested`.
 
 ## Anatomy
 
-`toolbar?` · **sticky header** · body viewport · footer (count / load) ·
-selection gutter · optional expand detail  
-
-Pinned columns stay outside horizontal scroll when using column kits.
-
-## Public API
-
-| API | Why |
-|-----|-----|
-| `VirtualWindow` | O(1) visible range over 1M logical rows |
-| `DataTableState::set_logical_rows` | Universe size without row alloc |
-| `DataTableOutcome::SelectAllRequested` | Never invent unloaded ids |
-| `ColumnModel::contract_to_budget` | Responsive drop of low-priority columns |
-| `Table` | Mature interactive grid when rows are resident |
-
-## State ownership
-
-| TermRock | Consumer |
-|----------|----------|
-| Window offset, focus, selection chrome | Dataset, sort, filter execution |
-| LoadState paint | Fetch / stream / error messages |
-| | Clipboard write for Copy payloads |
-
-## Typed outcomes
-
-`DataTableOutcome` / table `Outcome`: sort/filter **requests**, activate,
-toggle, copy, expand — effects stay outside.
-
-## Variants
-
-- Load: Idle / Loading / Partial / Ready / Empty / Error.  
-- Selection: row / multi / cell (kits).  
-- Density: Compact vs Comfortable.
-
-## Sizes
-
-Min ~ header + 2 body rows. Wide terminals enable more columns; narrow contracts
-by priority.
-
-## Density
-
-Compact reduces pad; still one body line per row for virtualization.
-
-## Keyboard
-
-Arrows, Page, Home/End, Space multi-toggle, Enter activate, `s` sort request,
-`/` filter request, `c` copy, Shift+expand (DataTable shell).
-
-## Mouse
-
-Header sort clicks, row select, wheel scroll (breaks follow if used in streams).
-
-## Focus
-
-Table is a pane target; cell/row focus separate from selection set.
-
-## Responsive
-
-`contract_to_budget` drops low priority first; primary id columns pin high
-priority. Story: `data-table/narrow-priority`.
-
-## Accessibility / colorless
-
-Selection gutter glyphs; sort `▲`/`^`; load/error text not color-only.
-
-## Unicode
-
-Stories: `data-table/cjk`, `data-table/combining`. Measure with display cols.
-
-## Composition
-
-Ops dashboards, ResourceBrowser, agent DiffReview neighbors, Workbench panes.
-
-## Theming
-
-`Role::TextStrong` header, `Role::Selection` / `Focus`, `Role::Danger` errors.
-
-## Custom recipe
-
-```rust
-// Project only the window — never build Vec of logical_len in the widget.
-use termrock::widgets::VirtualWindow;
-let w = VirtualWindow::new(1_000_000, 40);
-let (a, b) = w.visible_range();
-assert!(b - a <= 40);
-```
-
-## Common mistakes
-
-- Materializing all rows for paint.  
-- Select-all that scans unloaded pages.  
-- Re-sorting inside the widget on every key.
-
-## Performance
-
-Budgets: `datatable_million_window`, table hot path. See streaming-performance.
-
-## Testing
-
-- Stories: `data-table/rows-10`, `rows-10k`, `rows-1m-virtual`, `wide-64`, `stream-partial`, `empty`  
-- `documentation_examples::handbook_datatable_*` / `handbook_table_*`  
-- `table_hot_path` CI budget  
-
-## Migration
-
-VirtualGrid resident projection: `migrations/0033`. DataTable evolves alongside
-`Table` (D9 fold planned in data-presentation design).
+`toolbar?` · **sticky header** (sort + resize handles) · pin-start \| scroll body \| pin-end ·
+selection gutter · group bands · footer (count / partial / filter / nav / edit)
 
 ## Related
 
-List · VirtualGrid · DetailTable · LogStream · DiffReview  
-
-## Complete application example
-
-```text
-query → total_count → state.window.logical_len = total
-each frame: project(visible_range) → DataTable/Table::render
-on SortRequested → re-query → reset window offset carefully
-on SelectAllRequested → select only projected ids
-```
-
-
-## Cursor vs scene focus (0068)
-
-Use `cursor_row` / `CursorMoved` for in-table navigation. Host owns surface focus via `focused(bool)` + `accepts_input`.
+- [Table](/docs/handbook/table) — display-only moderate tables
+- Migration `0189-v0.13.0-data-table-interactive`
