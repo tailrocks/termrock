@@ -16,6 +16,7 @@ name = "termrock"
 path = "src/main.rs"
 
 [dependencies]
+termrock = { path = "../termrock", version = "0.11.0", default-features = false }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true

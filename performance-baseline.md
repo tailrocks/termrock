@@ -2,11 +2,14 @@
 
 > **Authoritative budgets (0.12.x):** `termrock::perf::budgets()` and
 > [`docs/design/streaming-performance.md`](docs/design/streaming-performance.md).
-> CI: `tree_hot_path` uses `check_batch_budget("tree_viewport_10k")` and
-> `check_zero_alloc_steady("tree_viewport_10k_alloc")` (100× paint / 250 ms
-> debug + zero steady alloc).
 >
-> **Staleness note (2026-07-16 table):** historical v0.6 donor comparison only.
+> **CI hot paths (fail on regression):**
+> - `tree_hot_path` → `tree_viewport_10k` + `tree_viewport_10k_alloc`
+> - `table_hot_path` → `table_viewport_10k` + `table_viewport_10k_alloc`
+> - `log_pane_hot_path` → `log_append_follow` + `log_append_follow_alloc`
+> - `perf` unit → `stream_coalesce_batch`, `datatable_million_window` checks
+>
+> **Staleness note (2026-07-16 table below):** historical v0.6 donor comparison only.
 
 Measured on 2026-07-15 on Linux aarch64 after jackin❯ parity, using Rust 1.97.0. These budgets compare against the frozen donor baseline; they guard behavior as well as speed.
 

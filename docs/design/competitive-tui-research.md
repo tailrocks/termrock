@@ -18,7 +18,9 @@ Most TUI “ecosystems” are either:
 
 **TermRock’s open gap is not “more widgets.”** It is being the **shadcn of the terminal**: open, owned, contract-tested components with studio-grade evidence, agent-native trust/input, and performance/capability ladders — while staying product-neutral.
 
-**2026 research refresh (this doc §9–12):** Grok Build as primary agent TUI grammar; Amp for thread/mode/MCP-as-panel; OpenCode for plan/multi-session/client-server; hero-app DNA from awesome-tuis; multi-lang port map; think-big breaking roadmap.
+**2026 research refresh (this doc §9–12 + external pulse):** Grok Build as primary agent TUI grammar; Amp for thread/mode/MCP-as-panel; OpenCode for plan/multi-session/client-server (Bubble Tea TUI praised for speed); Claude Code as multi-surface agent loop with Ink-class building blocks and permission/progress chrome; Ratatui maintainers publicly point at Textual as “S-tier framework” model for coherent ecosystems while Ratatui stays paint-only; Charm stack still wins aesthetic defaults + distribution culture; hero-app DNA from awesome-tuis; multi-lang port map; think-big breaking roadmap.
+
+**Non-goal:** copy branding, product copy, or source. Extract reusable interaction *patterns* only.
 
 **Full experience research (concepts + packs + roadmap):** [`experience-research-2026.md`](./experience-research-2026.md).  
 **Strategic architecture brief (kernel + registry + Studio + agent pack + first PRs):** [`shadcn-tui-strategic-brief.md`](./shadcn-tui-strategic-brief.md).
@@ -166,13 +168,13 @@ Sparse mature design systems; apps often roll custom. **Extract:** zero-cost abs
 
 | Lens | Analysis |
 |------|----------|
-| **Praise** | Speed of flow; plan modes; tool visibility; permissions; session resume |
-| **Unusually good** | **Autonomy dial**, plan→approve→execute, tool cards, nested agents, queue while busy |
-| **Visual** | Dense transcript + south composer; status chips; mode badges |
-| **Architecture** | Client/server or event stream; UI is a projection of agent runtime |
-| **Doesn’t generalize** | Provider policy, branding, product wire formats |
-| **Extract** | `@termrock/agent` surfaces already designed: PromptComposer, PermissionPrompt, MessageThread, TaskRail, Workbench |
-| **Avoid** | Embedding models, secrets, or “yolo allow” defaults |
+| **Praise** | Speed of flow; plan modes; tool visibility; permissions; session resume; multi-surface (CLI/IDE/desktop) |
+| **Unusually good** | **Autonomy dial**, plan→approve→execute, tool cards, nested/background agents, queue while busy, durable sessions (OpenCode client/server survives disconnect) |
+| **Visual** | Dense transcript + south composer; status chips; mode badges; timer/token chrome (Claude Code class) |
+| **Architecture** | Client/server or event stream; **one agent loop, many surfaces** (Claude Code pattern); UI is a projection of agent runtime; OpenCode often Bubble Tea; Claude Code ecosystem uses Ink-class blocks on some surfaces |
+| **Doesn’t generalize** | Provider policy, branding, product wire formats, monorepo code-intel (Amp) |
+| **Extract** | `@termrock/agent` surfaces: PromptComposer, PermissionPrompt, MessageThread, TaskRail, Workbench; surface/runtime split |
+| **Avoid** | Embedding models, secrets, or “yolo allow” defaults; product slash vocab as library enums |
 | **Home** | **Component + block** (source-owned agent pack); **core** (overlay, intents, perf) |
 
 ### 2.2 lazygit / GitUI

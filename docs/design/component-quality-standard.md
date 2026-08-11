@@ -1,8 +1,13 @@
 # TermRock component quality standard
 
-**Status:** binding design SoT  
-**Rule:** A component is **not** complete because it compiles and paints.  
-**Related:** [`component-anatomy-spec.md`](./component-anatomy-spec.md), Studio stories, `docs/api/component-contracts.json`, lookbook SVG gate.
+| Field | Value |
+|-------|-------|
+| **Status** | Binding design SoT |
+| **Rule** | A component is **not** complete because it compiles and paints |
+| **Schema** | `docs/api/component-contract.schema.json` |
+| **Contracts v1** | `docs/api/component-contracts.json` (six axes; catalog CI) |
+| **Contracts v2** | `docs/api/component-contracts.v2.json` (optional until Q2) + example |
+| **Related** | [`component-anatomy-spec.md`](./component-anatomy-spec.md), Studio stories, lookbook SVG gate, migration `0048` |
 
 ---
 
@@ -10,10 +15,13 @@
 
 A public interactive component is **complete** only when:
 
-1. Every **applicable** quality axis below is either **proven** by automated evidence or explicitly **`not_applicable`** with a one-line reason.  
-2. Evidence is **machine-linkable** (story id, test name, snapshot path, bench name).  
+1. Every **applicable** quality axis (§1) is either **`covered`** with machine-linkable evidence or explicitly **`not_applicable` / `caller_owned`** with a one-line reason.  
+2. Evidence is **machine-linkable** (story id, test filter, snapshot path, bench name, recording path).  
 3. Claiming `covered` without evidence **fails CI**.  
-4. Design lints for that component are clean (or waived with ticket + expiry).
+4. Design lints (§3) for that component are clean (or **waived** with ticket + expiry).  
+5. Public inventory alignment holds: `public-api.txt` ↔ `COMPONENTS.md` ↔ stories ↔ contracts.
+
+**Compile + render alone never suffice.**
 
 Static/decorative components may mark interaction axes `not_applicable`.
 
@@ -21,246 +29,288 @@ Static/decorative components may mark interaction axes `not_applicable`.
 
 ## 1. Mandatory quality contracts
 
-Each axis has: **intent**, **pass criteria**, **evidence kinds**, **N/A when**.
+Each axis: **intent · pass criteria · evidence kinds · N/A when**.
+
+Canonical axis ids (JSON / CI):
+
+```
+visual_states | keyboard | mouse | focus | disabled | loading | error | empty
+overlay | escape | responsive | tiny_terminal
+unicode | cjk | combining | emoji | ascii_fallback
+no_color | color_ladder | streaming | large_data | resize | panic_safety
+```
 
 ### 1.1 Visual states
 
-| Requirement | Pass criteria |
-|-------------|---------------|
-| Default, hover (if pointer), focus-visible, active/pressed (if applicable), selected, disabled, loading, invalid/error, empty | Distinct **non-color** cues where state is interactive; focus never color-only |
-| Emphasis uses semantic `Role` tokens | No ad-hoc RGB for state meaning |
+| Pass |
+|------|
+| Default, hover (if pointer), focus-visible, active/pressed (if applicable), selected, disabled, loading, invalid/error, empty are distinct |
+| Interactive states use **non-color** cues (glyph, border role, text prefix) — never color alone |
+| Emphasis uses semantic `Role` tokens (no ad-hoc RGB for meaning) |
 
 **Evidence:** buffer/SVG snapshots per state; Studio story matrix.  
-**N/A:** pure paint decorations without state.
+**N/A:** pure decorations without state.
 
 ### 1.2 Keyboard access
 
-| Requirement | Pass |
-|-------------|------|
-| All primary actions reachable without mouse | Documented chords → intents/keymap |
-| No dead focus traps inside component | Tab/Esc behavior specified |
-| No hardcoded product chords that bypass `Keymap`/`UiIntent` | Lint `hardcoded_key_handling` |
+| Pass |
+|------|
+| All primary actions reachable without mouse |
+| Chords map through intents / keymap adapters — not product-hardcoded only paths |
+| No dead focus traps; Tab/Esc specified |
 
-**Evidence:** interaction tests; keymap story; Studio keyboard-only scenario.  
+**Evidence:** interaction tests; keyboard-only Studio scenario.  
+**Lint:** `hardcoded_key_handling`, `mouse_without_keyboard` (inverse).  
 **N/A:** non-interactive.
 
 ### 1.3 Mouse access
 
-| Requirement | Pass |
-|-------------|------|
-| Click/activate hit regions match painted controls | `HitRegion` / scene registration |
-| Every mouse action has keyboard equivalent **or** explicit N/A | Lint `mouse_without_keyboard` |
-| Wheel ownership documented (capture vs bubble) | Overlay/scroll contracts |
+| Pass |
+|------|
+| Hit regions match painted controls |
+| Every mouse action has keyboard equivalent **or** explicit N/A reason |
+| Wheel ownership documented (capture vs bubble) for scroll surfaces |
 
-**Evidence:** mouse tests; hit-region snapshot.  
-**N/A:** non-interactive.
+**Evidence:** mouse tests; hit-region / scene snapshot.  
+**Lint:** `mouse_without_keyboard`.
 
 ### 1.4 Focus entry and exit
 
-| Requirement | Pass |
-|-------------|------|
-| Focus entry paints `Role::BorderFocused` / focus cue | Snapshot focus vs blur |
-| Focus exit restores prior chrome | Opener restoration where overlays |
-| Focus order stable and documented | Scene focus_order inspect |
+| Pass |
+|------|
+| Entry paints focus-visible chrome (`Role::BorderFocused` / gutter / underline) |
+| Exit restores prior chrome (opener restoration for overlays) |
+| Focus order stable and inspectable |
 
 **Evidence:** focus tests; semantic-scene snapshot.  
+**Lint:** `invisible_keyboard_focus`, `focus_selection_indistinguishable`.  
 **N/A:** never focusable.
 
 ### 1.5 Disabled-state behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Disabled ignores activate keys/clicks | Tests return Ignored |
-| Disabled non-color cue (`TextDisabled` / glyph) | Snapshot |
-| Disabled items skip focus cycle | Focus order test |
+| Pass |
+|------|
+| Disabled ignores activate keys and clicks → `Ignored` |
+| Non-color disabled cue (`TextDisabled` / glyph) |
+| Disabled items skip focus cycle |
+
+**Evidence:** unit tests + snapshot.
 
 ### 1.6 Loading behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Loading does not look “empty success” | Distinct skeleton/spinner/pending |
-| Motion respects `Motion::Off` | Static glyph when motion off |
-| Partial load distinguishable (tables/grids) | `LoadState::Partial` story |
+| Pass |
+|------|
+| Loading does not look like empty success |
+| Motion respects `Motion::Off` (static glyph) |
+| Partial load distinguishable when applicable (`LoadState::Partial`) |
 
 **N/A:** no async/projection.
 
 ### 1.7 Error behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Error state visible + non-color | Danger role + text/glyph |
-| Retry affordance only if retryable | Outcome `Retry` optional |
-| No panic on bad data | Fuzz / invalid input tests |
+| Pass |
+|------|
+| Error visible with non-color cue (text + Danger role) |
+| Retry only if retryable (typed outcome optional) |
+| No panic on bad / partial data |
+
+**Evidence:** error story; invalid-input tests.
 
 ### 1.8 Empty behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Empty ≠ error ≠ loading | Dedicated empty copy/chrome |
-| Primary action still reachable if applicable | Keyboard test |
+| Pass |
+|------|
+| Empty ≠ error ≠ loading |
+| Guidance copy present |
+| Primary action still reachable when applicable |
 
 ### 1.9 Overlay behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Uses `OverlayStack` / scene layers when floating | No ad-hoc z invent |
-| Placement flip/clamp/narrow documented | Placement tests |
-| Backdrop policy matches kind | Policy table |
+| Pass |
+|------|
+| Floating UI uses `OverlayStack` / scene layers (no ad-hoc z) |
+| Placement flip/clamp/narrow documented |
+| Backdrop + dismiss policy match kind (menu vs alert) |
 
-**N/A:** never an overlay.
+**Lint:** `unpredictable_overlay_dismiss`.  
+**N/A:** never an overlay host.
 
 ### 1.10 Escape behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Esc closes **exactly one** conceptual layer | Overlay/scene tests |
-| Trap vs dismissible explicit | `LayerDismissPolicy` |
-| Esc never silently “approves” | Permission-class tests |
+| Pass |
+|------|
+| Esc closes **exactly one** conceptual layer |
+| Trap vs dismissible explicit (`LayerDismissPolicy`) |
+| Esc never silently grants / confirms destructive primary |
+
+**Evidence:** overlay peel tests; permission-class tests.
 
 ### 1.11 Responsive behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Contraction drops **secondary before primary** | Priority / ComposedRow / ColumnModel tests |
-| Uses responsive kits where applicable | `ResponsiveSurface` / anatomy |
-| No grapheme-unsafe truncate | Unicode tests |
+| Pass |
+|------|
+| Contraction drops **secondary before primary** |
+| Uses responsive kits / column priority / ComposedRow where applicable |
+| Truncation is grapheme-safe |
+
+**Lint:** `primary_clipped_before_secondary`.
 
 ### 1.12 Tiny-terminal behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Usable at ≤20×5 or documented hide | Story `tiny` / narrow |
-| Essential labels survive | Contract primary survival |
+| Pass |
+|------|
+| Usable at ≤20×5 **or** documented hide / LineMode |
+| Essential labels survive |
 
-### 1.13 Unicode / CJK / combining / emoji
+**Evidence:** `tiny` / extreme narrow stories.
 
-| Requirement | Pass |
-|-------------|------|
-| Width via `display_cols` / grapheme boundaries | CJK + combining stories |
-| No mid-grapheme split | Fuzz |
-| Emoji / wide cells don’t corrupt layout | Snapshot |
+### 1.13 Unicode · CJK · combining · emoji
+
+| Pass |
+|------|
+| Width via `display_cols` / grapheme boundaries |
+| No mid-grapheme split |
+| CJK wide cells lay out without corruption |
+| Combining marks don’t break cursor/measure |
+| Emoji / ZWJ sequences don’t destroy adjacent cells |
+
+**Evidence:** dedicated stories or combined unicode matrix + fuzz.  
+**Split axes** allow partial migration from a single “unicode covered” claim.
 
 ### 1.14 ASCII fallback
 
-| Requirement | Pass |
-|-------------|------|
-| `GlyphSet::Ascii` (or equivalent) substitutes | Story `ascii` |
-| No mojibake boxes as sole status | Lint `missing_ascii_fallback` |
+| Pass |
+|------|
+| Glyph sets provide ASCII substitutes |
+| Status not only emoji / box-drawing that fails on limited terminals |
 
-### 1.15 No-color / truecolor / reduced color
+**Lint:** `missing_ascii_fallback`.  
+**Evidence:** `ascii` story or glyph-set tests.
 
-| Requirement | Pass |
-|-------------|------|
-| `ColorCapability::Mono` still conveys state | nonColor covered + story |
-| Quantized themes acceptable | 256/16 stories optional matrix |
-| State not color-alone | Lint `color_only_state` |
+### 1.15 No-color · truecolor · reduced color
+
+| Axis | Pass |
+|------|------|
+| **no_color** | Monochrome / `NO_COLOR` still conveys state via glyphs + text |
+| **color_ladder** | Truecolor design target; 256/16 acceptable via quantization; no reliance on truecolor-only meaning |
+
+**Lint:** `color_only_state`.
 
 ### 1.16 Streaming behavior
 
-| Requirement | Pass |
-|-------------|------|
-| Append/partial update O(visible) or documented | Hot-path / stream story |
-| Incomplete markdown/fences safe | Stream tests |
-| Selection/follow semantics stable | Follow-break tests |
+| Pass |
+|------|
+| Append/partial update O(visible) or budget-documented |
+| Incomplete streams safe (no panic; stable prefixes where claimed) |
+| Follow/selection semantics documented (e.g. wheel breaks follow) |
 
 **N/A:** static content only.
 
 ### 1.17 Large-data performance
 
-| Requirement | Pass |
-|-------------|------|
-| Paint O(viewport) not O(dataset) | Bench / hot-path |
-| Virtual windows for large logical sets | data_view kits |
-| Allocation budget documented if claimed | Bench alloc |
+| Pass |
+|------|
+| Paint O(viewport), not O(dataset) |
+| Virtual windows for large logical sets |
+| Allocation budget documented when claimed |
 
+**Evidence:** hot-path tests / benches (`data_view::bench`, `*_hot_path`).  
 **N/A:** bounded tiny content.
 
 ### 1.18 Terminal resizing
 
-| Requirement | Pass |
-|-------------|------|
-| Reflow without panic | Resize story / property test |
-| Overlays reflow (`OverlayStack::reflow`) | Overlay tests |
-| Selection remains valid or clamps | Unit test |
+| Pass |
+|------|
+| Reflow without panic on Resize events |
+| Overlays reflow |
+| Selection/focus clamp when out of range |
 
 ### 1.19 Panic and restoration safety
 
-| Requirement | Pass |
-|-------------|------|
-| No panic on empty/zero rect | Zero-area tests |
-| No panic on invalid cursor/paste | Fuzz |
-| Session restore path documented for adapters | Runtime docs |
-| Failed paint doesn’t corrupt consumer state machine | State still queryable after error outcomes |
+| Pass |
+|------|
+| Empty / zero rect early-return, no panic |
+| Invalid cursor / paste / partial input safe |
+| Adapter session restore path documented |
+| Failed paint/outcomes leave state queryable |
+
+**Lint:** `zero_area_panic`.  
+**Evidence:** zero-area tests; fuzz; session lifecycle tests for adapters.
 
 ---
 
 ## 2. Testing layers
 
 | Layer | What | Tooling |
-|-------|------|---------|
-| **L0 Unit** | State machines, outcomes, clamp | `cargo test -p termrock` |
-| **L1 Buffer snapshots** | Cell grid + role tags | Studio `.snap` / TestBackend |
-| **L2 ANSI snapshots** | Serialized styled lines | Optional export |
-| **L3 SVG previews** | Deterministic lookbook render | `termrock-lookbook check` |
-| **L4 Semantic-scene snapshots** | Focus, layers, hits, actions | `InspectionFrame` digest |
-| **L5 Interaction traces** | Key/mouse → outcome log | Unit + Studio |
-| **L6 Replay recordings** | `.rec.json` scripts | Studio replay (design) |
-| **L7 PTY integration** | Real terminal adapters | `#[cfg]` / CI job optional |
-| **L8 Property layout** | Random sizes still contain rects | proptest-style |
-| **L9 Unicode fuzz** | Random grapheme inserts | cargo-fuzz / quickcheck |
-| **L10 Performance benches** | Viewport paint vs N | criterion / custom |
-| **L11 Allocation budgets** | Max allocs per frame class | dhat / stats_alloc studio |
-| **L12 Design linting** | Static/heuristic lints | `termrock-lint` / CI script |
+|------:|------|---------|
+| **L0** Unit | State machines, outcomes, clamp | `cargo test -p termrock` |
+| **L1** Buffer snapshots | Cell grid + styles | TestBackend / Studio `.snap` |
+| **L2** ANSI snapshots | Serialized styled lines | Optional export |
+| **L3** SVG previews | Deterministic lookbook | `termrock-lookbook check` |
+| **L4** Semantic-scene snapshots | Focus, layers, hits, actions | `InspectionFrame` digest |
+| **L5** Interaction traces | Key/mouse → outcome log | Unit + Studio |
+| **L6** Replay recordings | `.rec.json` scripts | Studio replay |
+| **L7** PTY integration | Real terminal adapters | Feature-gated CI job |
+| **L8** Property layout | Random sizes still valid geometry | proptest / quickcheck |
+| **L9** Unicode fuzz | Random grapheme inserts | cargo-fuzz / quickcheck |
+| **L10** Performance benches | Viewport paint vs N | criterion / custom hot-path |
+| **L11** Allocation budgets | Max allocs per frame class | dhat / stats_alloc |
+| **L12** Design linting | Static + heuristic rules | `docs/scripts/check-contracts.ts` + lints |
 
-Evidence links in the contract file must name **at least one** layer artifact per `covered` axis.
+**Rule:** each `covered` axis links **≥1** evidence artifact from some layer.
 
 ---
 
 ## 3. Design lints
 
-Lints are **machine-checkable rules**. Severity: `error` (blocks complete), `warn` (debt).
+Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt) · **waived** (ticket + expiry).
 
 | Id | Detects | Severity |
 |----|---------|----------|
-| `color_only_state` | Selected/focus/error differ only by fg/bg role without glyph/text/border role change | error |
-| `invisible_keyboard_focus` | Focusable control with no focus-visible chrome in focus story | error |
-| `primary_clipped_before_secondary` | Contraction drops primary label while secondary/meta still shown | error |
-| `interactive_without_semantic_role` | Hit/focusable area registered without `SemanticRole::Control` (or Overlay) | error |
-| `mouse_without_keyboard` | Mouse outcome path without keyboard path (unless N/A) | error |
-| `unpredictable_overlay_dismiss` | Overlay open without Esc policy / outside policy declared | error |
-| `hardcoded_key_handling` | Raw `KeyCode` match for product chords outside keymap adapter modules | warn→error |
-| `missing_ascii_fallback` | Unicode-only status glyphs without ascii story or glyph set | error |
-| `focus_selection_indistinguishable` | Focus and selection use identical chrome in snapshots | error |
-| `idle_animation_redraw` | Spinner/animation advances when `Motion::Off` or no dirty state | warn |
-| `zero_area_panic` | Missing empty-rect early return | error |
-| `missing_contract_evidence` | Axis `covered` without evidence link | error |
-| `stale_contract_component` | Contract key not in public API inventory | error |
+| `color_only_state` | Selected/focus/error differ only by color, no glyph/text/border change | error |
+| `invisible_keyboard_focus` | Focusable control with no focus-visible chrome | error |
+| `primary_clipped_before_secondary` | Contraction drops primary while secondary remains | error |
+| `interactive_without_semantic_role` | Hit/focusable area without control semantic role | error |
+| `mouse_without_keyboard` | Mouse path without keyboard equivalent (unless N/A) | error |
+| `unpredictable_overlay_dismiss` | Overlay without Esc/dismiss policy | error |
+| `hardcoded_key_handling` | Product `KeyCode` chords outside keymap adapters | warn→error |
+| `missing_ascii_fallback` | Unicode-only status without ASCII path | error |
+| `focus_selection_indistinguishable` | Focus and selection identical chrome | error |
+| `idle_animation_redraw` | Animation advances under `Motion::Off` / idle dirty spam | warn |
+| `zero_area_panic` | Missing empty-rect guard | error |
+| `missing_contract_evidence` | `covered` without evidence | error |
+| `stale_contract_component` | Contract key not in public API | error |
 
-### Lint implementation strategy
+### Implementation strategy
 
-1. **Static (CI script / rust-analyzer-like):** scan for `KeyCode::` in `widgets/` excluding `keymap` adapters.  
-2. **Snapshot-diff heuristics:** compare focus vs default buffers for glyph/border delta.  
-3. **Contract validator:** schema + evidence existence.  
-4. **Studio inspector:** optional live warnings.
+1. **Static (CI):** scan `crates/termrock/src/widgets/**/*.rs` for raw product-key patterns; allowlist `keymap`, `input`, adapters.  
+2. **Contract validator:** schema + evidence path/story existence.  
+3. **Snapshot heuristics (Q4):** buffer diff focus vs default for glyph/border delta.  
+4. **Studio inspector:** live warnings during authoring.
 
 ---
 
 ## 4. Machine-readable contract schema
 
-### 4.1 Schema location
+### 4.1 Locations
 
-- JSON Schema: `docs/api/component-contract.schema.json`  
-- Instance catalog: evolve `docs/api/component-contracts.json` → **v2** documents  
-- Legacy v1 (six axes) remains until all components migrate; CI accepts v1 **or** v2 during transition
+| Artifact | Path |
+|----------|------|
+| JSON Schema | `docs/api/component-contract.schema.json` |
+| v1 catalog (live CI) | `docs/api/component-contracts.json` |
+| v2 example | `docs/api/component-contracts.v2.example.json` |
+| v2 catalog (target) | `docs/api/component-contracts.v2.json` |
+| Validator | `docs/scripts/check-contracts.ts` |
+| Catalog inventory | `docs/scripts/check-catalog.ts` |
 
-### 4.2 Status vocabulary
+### 4.2 Status vocabulary (v2)
 
 | Status | Meaning |
 |--------|---------|
 | `covered` | Proven by linked evidence |
-| `partial` | Some subcases covered; remainder tracked |
-| `caller_owned` | Consumer must implement; component documents hook |
-| `not_applicable` | Axis does not apply; reason required |
+| `partial` | Some cases covered; remainder tracked (reason required) |
+| `caller_owned` | Host/consumer must implement; hook documented (reason) |
+| `not_applicable` | Axis does not apply (reason) |
 | `missing` | Known gap — **not shippable as complete** |
 
 ### 4.3 Evidence object
@@ -272,238 +322,198 @@ Lints are **machine-checkable rules**. Severity: `error` (blocks complete), `war
   "snapshots": ["docs/public/component-previews/list-selection.svg"],
   "benches": ["list_paint_10k"],
   "recordings": ["stories/list/selection.rec.json"],
-  "notes": "optional"
+  "notes": "optional free text"
 }
 ```
 
-### 4.4 Axis ids (canonical)
+`covered` requires at least one of: stories · tests · snapshots · recordings · benches.
 
-```
-visual_states
-keyboard
-mouse
-focus
-disabled
-loading
-error
-empty
-overlay
-escape
-responsive
-tiny_terminal
-unicode
-cjk
-combining
-emoji
-ascii_fallback
-no_color
-color_ladder
-streaming
-large_data
-resize
-panic_safety
-```
+### 4.4 `complete` flag
 
-### 4.5 Example v2 contract (List excerpt)
+`complete: true` only if:
+
+- no axis is `missing`, and  
+- no axis is `partial` **without** a waiver `{ ticket, expires }`, and  
+- all design lints are `pass` or `waived`.
+
+### 4.5 Example (excerpt)
+
+See `docs/api/component-contracts.v2.example.json` (ApprovalCard, List). Full schema: `component-contract.schema.json`.
 
 ```json
 {
   "schema": 2,
   "component": "List",
-  "module": "termrock::widgets::List",
   "kind": "interactive",
   "complete": false,
   "axes": {
     "keyboard": {
       "status": "covered",
-      "evidence": { "tests": ["list::tests::keyboard_moves"], "stories": ["list/selection"] }
-    },
-    "mouse": {
-      "status": "covered",
-      "evidence": { "tests": ["list::tests::mouse_click"], "stories": ["list/selection"] }
-    },
-    "focus": {
-      "status": "covered",
-      "evidence": { "stories": ["list/selection"] }
-    },
-    "no_color": {
-      "status": "covered",
-      "evidence": { "stories": ["list/selection"], "notes": "gutter selection marker" }
-    },
-    "unicode": {
-      "status": "covered",
-      "evidence": { "stories": ["list/unicode"] }
-    },
-    "responsive": {
-      "status": "covered",
-      "evidence": { "stories": ["list/narrow"], "tests": ["composed_row::parts_drop"] }
-    },
-    "tiny_terminal": {
-      "status": "partial",
-      "evidence": { "stories": ["list/narrow"] },
-      "reason": "explicit tiny 20x5 story pending"
+      "evidence": { "tests": ["list::tests::…"], "stories": ["list/selection"] }
     },
     "streaming": { "status": "not_applicable", "reason": "static projection per frame" },
-    "large_data": {
-      "status": "partial",
-      "evidence": { "notes": "viewport paint; full virtualization via VirtualGrid/DataTable" }
-    },
-    "overlay": { "status": "not_applicable", "reason": "not an overlay host" },
-    "escape": { "status": "caller_owned", "reason": "scene layer policy" },
-    "ascii_fallback": { "status": "missing", "reason": "no ascii story yet" },
-    "cjk": { "status": "partial", "evidence": { "stories": ["list/unicode"] } },
-    "combining": { "status": "missing", "reason": "no combining story" },
-    "emoji": { "status": "missing", "reason": "no emoji story" },
-    "loading": { "status": "not_applicable", "reason": "no intrinsic async" },
-    "error": { "status": "not_applicable", "reason": "no intrinsic error panel" },
-    "empty": { "status": "covered", "evidence": { "stories": ["picker/empty"] } },
-    "disabled": { "status": "covered", "evidence": { "tests": ["list::disabled_skips"] } },
-    "visual_states": { "status": "covered", "evidence": { "stories": ["list/selection"] } },
-    "color_ladder": { "status": "partial", "evidence": { "notes": "truecolor default; matrix pending" } },
-    "resize": { "status": "partial", "evidence": { "notes": "relayout on area change" } },
-    "panic_safety": { "status": "covered", "evidence": { "tests": ["widgets::tests::tiny_areas"] } }
+    "ascii_fallback": { "status": "missing", "reason": "no ascii story yet" }
   },
   "lints": {
     "hardcoded_key_handling": "pass",
-    "color_only_state": "pass",
-    "missing_ascii_fallback": "fail"
+    "color_only_state": "pass"
   }
 }
 ```
 
-`complete: true` only if no axis is `missing`/`partial` (unless project policy allows partial with waiver).
+### 4.6 v1 → v2 mapping
+
+| v1 | v2 |
+|----|-----|
+| keyboard | keyboard |
+| mouse | mouse |
+| focus | focus |
+| nonColor | no_color (+ visual_states) |
+| unicode | unicode (+ cjk / combining / emoji) |
+| narrowTerminal | responsive + tiny_terminal |
+
+During transition CI accepts **v1 catalog** (inventory) and optionally validates **v2** documents when present.
 
 ---
 
 ## 5. CI enforcement
 
-### 5.1 Jobs (recommended)
+### 5.1 Pipeline
 
 ```
-check-contracts
-  - validate JSON against component-contract.schema.json
-  - every public Widget/StatefulWidget has a contract entry
-  - no stale contract keys
-  - every status=covered has ≥1 existing evidence path/test/story
-  - every status=not_applicable has reason
-  - complete flag consistency
-
-check-catalog (existing)
-  - public API ↔ COMPONENTS.md ↔ stories ↔ contracts
-
-check-previews
-  - termrock-lookbook check (SVG)
-
-check-design-lints
-  - hardcoded KeyCode in widgets (allowlist adapters)
-  - optional snapshot heuristics
-
-check / gate (existing)
-  - unit + clippy + deny + …
+┌─────────────────┐
+│ public-api.txt  │──┐
+│ COMPONENTS.md   │──┼──► check-catalog.ts (inventory + v1 six-axis)
+│ lookbook stories│──┤
+│ contracts v1    │──┘
+└─────────────────┘
+┌─────────────────┐
+│ schema.json     │──┐
+│ contracts v2*   │──┼──► check-contracts.ts (schema rules + evidence + lints)
+│ example v2      │──┘
+└─────────────────┘
+┌─────────────────┐
+│ lookbook SVG    │──► termrock-lookbook check
+└─────────────────┘
+┌─────────────────┐
+│ unit / nextest  │──► axis evidence (tests)
+│ hot_path / bench│──► large_data / streaming
+└─────────────────┘
 ```
 
-### 5.2 Validator algorithm (pseudocode)
+\* `component-contracts.v2.json` optional until Q2; example always validated.
+
+### 5.2 Validator algorithm
 
 ```
 public = widgets from public-api.txt
-contracts = load component-contracts.v2.json
-schema_validate(contracts)
+stories = lookbook list --format json
+validate_schema_struct(v2_docs)
 
-for c in public:
-  assert c in contracts
-  for axis in REQUIRED_AXES:
-    cell = contracts[c].axes[axis]
-    assert cell.status in VOCAB
-    if cell.status == covered|partial:
-      assert evidence non-empty
-      assert all stories exist in lookbook list
-      assert all snapshot files exist
-      assert all tests match cargo test --list regex (optional)
-    if cell.status == not_applicable|caller_owned|missing:
-      assert reason non-empty
-  if contracts[c].complete:
-    assert no axis in {missing, partial} without waiver
+for each v2 component:
+  for each REQUIRED_AXIS:
+    cell.status ∈ vocabulary
+    if covered: evidence non-empty; stories ⊆ lookbook; snapshots exist if listed
+    if not_applicable|caller_owned|missing|partial: reason non-empty
+  if complete: no missing/partial without waiver; lints not fail
 
-for c in contracts:
-  assert c in public  # no stale
+if component-contracts.v2.json present:
+  every public interactive widget has entry (or policy allowlist)
+  no stale component names
+
+design_lint_hardcoded_keys(widgets/) → warn/error by phase
 ```
 
-### 5.3 Migration from v1 six-axis map
+### 5.3 Commands
 
-| v1 key | v2 axes |
-|--------|---------|
-| keyboard | keyboard |
-| mouse | mouse |
-| focus | focus |
-| nonColor | no_color (+ visual_states partial) |
-| unicode | unicode (+ cjk/combining/emoji split later) |
-| narrowTerminal | responsive + tiny_terminal |
+```bash
+# inventory + v1 contracts + story axis names
+bun run docs/scripts/check-catalog.ts
 
-CI: if document has `"schema": 2` use v2 rules; else v1 rules (current `check-catalog.ts`).
+# v2 schema rules + example + optional v2 catalog + static key lint
+bun run docs/scripts/check-contracts.ts
 
-### 5.4 mise / GitHub Actions sketch
+# SVG drift
+cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
 
-```toml
-# mise.toml
-[tasks.contracts]
-run = "bun run docs/scripts/check-contracts.ts"
-
-[tasks.gate]
-run = "mise run check && mise run contracts && mise run docs-quality && …"
+# mise
+mise run contracts
+mise run check   # includes docs-quality; gate includes lookbook check
 ```
 
-```yaml
-# .github/workflows/ci.yml (add step)
-- run: mise run contracts
-```
+### 5.4 GitHub Actions
+
+`rust-required` / docs lane should run:
+
+1. `bun run docs/scripts/check-catalog.ts`  
+2. `bun run docs/scripts/check-contracts.ts`  
+3. lookbook `check` (existing gate)  
+4. unit tests that prove axis evidence  
+
+`complete: true` enforcement for **new** widgets starts phase **Q5**.
 
 ---
 
-## 6. Relationship to Studio & registry
+## 6. Studio, registry, anatomy
 
-| System | Role in quality |
-|--------|-----------------|
-| **Studio stories** | Primary evidence for visual/interaction axes |
-| **Replay recordings** | Escape, overlay, streaming proofs |
-| **InspectionFrame** | Semantic-scene snapshots |
-| **Registry items** | Must ship contract + stories with block |
-| **Anatomy spec** | Human 24-point; quality standard is gate |
+| System | Role |
+|--------|------|
+| **Studio / lookbook stories** | Primary visual + interaction evidence |
+| **Replay recordings** | Escape, overlay, stream proofs (L6) |
+| **InspectionFrame** | Semantic-scene snapshots (L4) |
+| **Registry items** | Ship contract + stories with block |
+| **Anatomy spec (1–24)** | Human checklist; this standard is the **gate** |
 
 ---
 
-## 7. Definition of Done (component PR checklist)
+## 7. Definition of Done (component PR)
 
-- [ ] Public API + COMPONENTS inventory  
-- [ ] Contract v2 entry; no `missing` on ship path  
-- [ ] Stories for every `covered` interaction/visual axis  
-- [ ] SVG/buffer evidence generated  
-- [ ] Unit tests for outcomes + empty/disabled  
+- [ ] Public API + COMPONENTS inventory updated  
+- [ ] Contract entry (v1 minimum; v2 preferred)  
+- [ ] No un-evidenced `covered`; no silent `missing` on ship path without waiver  
+- [ ] Stories for interaction + visual claims  
+- [ ] SVG/buffer evidence generated where claimed  
+- [ ] Unit tests: outcomes, empty, disabled, zero-area  
 - [ ] Narrow/tiny or explicit N/A  
-- [ ] Unicode or explicit N/A  
+- [ ] Unicode / colorless or explicit N/A  
 - [ ] Design lints pass  
-- [ ] Migration if breaking  
+- [ ] Migration file if public break  
 - [ ] No color-only state  
 
 ---
 
 ## 8. Phased rollout
 
-| Phase | Work |
-|-------|------|
-| **Q0** | This standard + JSON Schema (shipped) |
-| **Q1** | `check-contracts.ts` dual v1/v2; evidence path existence |
-| **Q2** | Expand all components to v2 axes (many partial/missing OK) |
-| **Q3** | Design lint: hardcoded keys + missing evidence = error |
-| **Q4** | Snapshot heuristics for color-only / focus visible |
-| **Q5** | Require `complete: true` for new public widgets |
+| Phase | Work | Status |
+|-------|------|--------|
+| **Q0** | Standard + JSON Schema + example | **Done** |
+| **Q1** | `check-contracts.ts` dual validation + evidence paths | **Done** (this pass) |
+| **Q2** | Expand components to v2 axes (partial/missing OK) | Next |
+| **Q3** | Design lint hardcoded keys → error | Next |
+| **Q4** | Snapshot heuristics color-only / focus-visible | Later |
+| **Q5** | Require `complete: true` for new public widgets | Later |
 
 ---
 
 ## 9. Decision summary
 
 1. **Compile ≠ complete.**  
-2. **Axes are mandatory**; N/A needs reason.  
-3. **Evidence is mandatory** for covered.  
-4. **Lints catch systemic UX failures.**  
-5. **CI enforces schema + inventory + evidence.**  
-6. **v1 contracts remain** until v2 migration finishes.
+2. **22 quality axes** are mandatory to classify (cover, N/A, or missing).  
+3. **Evidence is mandatory** for `covered`.  
+4. **12 testing layers** scale from unit to PTY to fuzz to benches.  
+5. **Design lints** catch systemic UX failures (color-only focus, undismissible overlay, …).  
+6. **CI enforces** inventory (v1) + schema/evidence (v2) + previews.  
+7. **v1 six-axis map remains** until v2 migration finishes — dual-accept.
+
+---
+
+## 10. References
+
+- `docs/api/component-contract.schema.json`  
+- `docs/api/component-contracts.json`  
+- `docs/api/component-contracts.v2.example.json`  
+- `docs/scripts/check-catalog.ts`  
+- `docs/scripts/check-contracts.ts`  
+- `migrations/0048-v0.12.0-component-quality-standard.md`  
+- `docs/design/component-anatomy-spec.md`  
+- `docs/design/overlay-stack.md`, `responsive-layout.md`, `data-presentation.md`
