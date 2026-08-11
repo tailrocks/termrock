@@ -1,11 +1,11 @@
 {
-  "story_id": "agent-workbench/basic",
-  "title": "Agent workbench",
-  "component": "AgentWorkbench",
-  "cols": 42,
-  "rows": 10,
-  "story_cols": 40,
-  "story_rows": 8,
+  "story_id": "list/selection",
+  "title": "List",
+  "component": "List",
+  "cols": 30,
+  "rows": 8,
+  "story_cols": 28,
+  "story_rows": 6,
   "cells": [
     {
       "ch": " ",
@@ -535,215 +535,11 @@
       "reversed": false
     },
     {
-      "ch": " ",
+      "ch": "─",
       "fg": [
         255,
         255,
         255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "┌",
-      "fg": [
-        0,
-        255,
-        65
       ],
       "bg": [
         0,
@@ -767,13 +563,13 @@
         0,
         0
       ],
-      "bold": true,
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
     },
     {
-      "ch": "T",
+      "ch": "W",
       "fg": [
         255,
         255,
@@ -784,7 +580,24 @@
         0,
         0
       ],
-      "bold": true,
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "o",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
@@ -801,13 +614,13 @@
         0,
         0
       ],
-      "bold": true,
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
     },
     {
-      "ch": "a",
+      "ch": "k",
       "fg": [
         255,
         255,
@@ -818,24 +631,7 @@
         0,
         0
       ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "n",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
@@ -852,58 +648,7 @@
         0,
         0
       ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "c",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "r",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
@@ -920,629 +665,17 @@
         0,
         0
       ],
-      "bold": true,
+      "bold": false,
       "dim": false,
       "underline": false,
       "reversed": false
     },
     {
-      "ch": "t",
+      "ch": "a",
       "fg": [
         255,
         255,
         255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "┐",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "│",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "▾",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "⚙",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
       ],
       "bg": [
         0,
@@ -1557,9 +690,978 @@
     {
       "ch": "c",
       "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
         0,
-        180,
-        180
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "e",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        28,
+        28,
+        28
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        28,
+        28,
+        28
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "▌",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "☑",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "A",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": true,
+      "reversed": false
+    },
+    {
+      "ch": "l",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": true,
+      "reversed": false
+    },
+    {
+      "ch": "p",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": true,
+      "reversed": false
+    },
+    {
+      "ch": "h",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": true,
+      "reversed": false
+    },
+    {
+      "ch": "a",
+      "fg": [
+        0,
+        255,
+        65
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": true,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        0,
+        0
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "1",
+      "fg": [
+        0,
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "2",
+      "fg": [
+        0,
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        0,
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "m",
+      "fg": [
+        0,
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "s",
+      "fg": [
+        0,
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        255,
+        65
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        28,
+        28,
+        28
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        28,
+        28,
+        28
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "☐",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "B",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "e",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "t",
+      "fg": [
+        255,
+        255,
+        255
       ],
       "bg": [
         0,
@@ -1574,9 +1676,9 @@
     {
       "ch": "a",
       "fg": [
-        0,
-        180,
-        180
+        255,
+        255,
+        255
       ],
       "bg": [
         0,
@@ -1589,11 +1691,11 @@
       "reversed": false
     },
     {
-      "ch": "r",
+      "ch": " ",
       "fg": [
-        0,
-        180,
-        180
+        255,
+        255,
+        255
       ],
       "bg": [
         0,
@@ -1606,11 +1708,11 @@
       "reversed": false
     },
     {
-      "ch": "g",
+      "ch": " ",
       "fg": [
-        0,
-        180,
-        180
+        255,
+        255,
+        255
       ],
       "bg": [
         0,
@@ -1623,11 +1725,249 @@
       "reversed": false
     },
     {
-      "ch": "o",
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "2",
       "fg": [
         0,
-        180,
-        180
+        140,
+        30
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "8",
+      "fg": [
+        0,
+        140,
+        30
       ],
       "bg": [
         0,
@@ -1643,8 +1983,8 @@
       "ch": " ",
       "fg": [
         0,
-        180,
-        180
+        140,
+        30
       ],
       "bg": [
         0,
@@ -1657,28 +1997,11 @@
       "reversed": false
     },
     {
-      "ch": "t",
+      "ch": "m",
       "fg": [
         0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        0,
-        180,
-        180
+        140,
+        30
       ],
       "bg": [
         0,
@@ -1694,25 +2017,8 @@
       "ch": "s",
       "fg": [
         0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "t",
-      "fg": [
-        0,
-        180,
-        180
+        140,
+        30
       ],
       "bg": [
         0,
@@ -1727,14 +2033,14 @@
     {
       "ch": " ",
       "fg": [
-        0,
-        180,
-        180
+        255,
+        255,
+        255
       ],
       "bg": [
-        0,
-        0,
-        0
+        28,
+        28,
+        28
       ],
       "bold": false,
       "dim": false,
@@ -1742,16 +2048,16 @@
       "reversed": false
     },
     {
-      "ch": "-",
+      "ch": " ",
       "fg": [
-        0,
-        180,
-        180
+        255,
+        255,
+        255
       ],
       "bg": [
-        0,
-        0,
-        0
+        28,
+        28,
+        28
       ],
       "bold": false,
       "dim": false,
@@ -1759,62 +2065,11 @@
       "reversed": false
     },
     {
-      "ch": "-",
+      "ch": " ",
       "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "l",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "b",
-      "fg": [
-        0,
-        180,
-        180
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -1829,9 +2084,60 @@
     {
       "ch": " ",
       "fg": [
+        80,
+        80,
+        80
+      ],
+      "bg": [
         0,
-        180,
-        180
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "☐",
+      "fg": [
+        80,
+        80,
+        80
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        80,
+        80,
+        80
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": "G",
+      "fg": [
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -1846,1386 +2152,9 @@
     {
       "ch": "a",
       "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "g",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "n",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "t",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "_",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "w",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "r",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "k",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "b",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "n",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "c",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "h",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "│",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "│",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "k",
-      "fg": [
-        0,
-        180,
-        180
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "│",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "│",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "▾",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "◦",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "T",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "l",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "f",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "n",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "s",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "h",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "d",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": ";",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -3238,11 +2167,11 @@
       "reversed": false
     },
     {
-      "ch": "r",
+      "ch": "m",
       "fg": [
-        255,
-        255,
-        255
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -3255,11 +2184,11 @@
       "reversed": false
     },
     {
-      "ch": "e",
+      "ch": "m",
       "fg": [
-        255,
-        255,
-        255
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -3274,43 +2203,9 @@
     {
       "ch": "a",
       "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "d",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "y",
-      "fg": [
-        255,
-        255,
-        255
+        80,
+        80,
+        80
       ],
       "bg": [
         0,
@@ -3340,160 +2235,7 @@
       "reversed": false
     },
     {
-      "ch": "f",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "r",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
       "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "r",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "v",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "w",
       "fg": [
         255,
         255,
@@ -3544,11 +2286,249 @@
       "reversed": false
     },
     {
-      "ch": "│",
+      "ch": " ",
       "fg": [
-        0,
         255,
-        65
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
       ],
       "bg": [
         0,
@@ -3588,924 +2568,6 @@
         28,
         28,
         28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "└",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "─",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "┘",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "◉",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "r",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "e",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "a",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "d",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "y",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
       ],
       "bold": false,
       "dim": false,
@@ -5492,1128 +3554,6 @@
         0,
         0,
         0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        0,
-        0,
-        0
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        28,
-        28,
-        28
       ],
       "bold": false,
       "dim": false,
@@ -7148,6 +4088,6 @@
       "reversed": false
     }
   ],
-  "interactive": false,
+  "interactive": true,
   "theme": "phosphor"
 }

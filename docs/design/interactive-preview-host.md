@@ -48,5 +48,13 @@ Primary embeds: **List** (`list/selection`), **Button** (`button/activation`),
 
 - 24-bit RGB cells from Ratatui `Color::Rgb` / named phosphor greens.
 - ~9×18 cell metrics (matches SVG export); JetBrains Mono stack.
-- ResizeObserver re-paints; full col/row remap is a follow-up (re-export or WASM).
+- **Responsive remap (shipped):** host `ResizeObserver` → `storySizeForCssHost` /
+  `colsForCssWidth` / `rowsForCssHeight` (mirrors Rust `frame.rs`) →
+  `pickSizeKey` → load `preview-frames/<story>/<cols>x<rows>/<step>.json`
+  re-painted at that story size. Not letterbox-only.
 - Interactive packs step pre-painted interactor states (real TermRock paint), not mock HTML lists.
+
+## Size packs
+
+`export-frames` writes every `RESPONSIVE_STORY_SIZES` entry (`28x6` … `80x24`)
+with interactive steps, plus a default root copy of `40x8`.

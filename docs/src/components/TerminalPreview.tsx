@@ -44,10 +44,65 @@ export type FrameManifest = {
   steps: number
   cellWidthPx: number
   cellHeightPx: number
+  /** Exported size keys e.g. `40x8` (story cols×rows). */
+  sizes?: string[]
+  defaultSize?: string
+  padCells?: number
 }
 
 const DEFAULT_CELL_W = 9
 const DEFAULT_CELL_H = 18
+const PAD = 1
+const DEFAULT_SIZES = ['28x6', '40x8', '56x12', '72x16', '80x24']
+
+/** Mirrors `frame::cols_for_css_width` (total terminal cols). */
+export function colsForCssWidth(cssPx: number, cellW = DEFAULT_CELL_W): number {
+  const cell = Math.max(1, cellW)
+  return Math.max(8, Math.floor(cssPx / cell))
+}
+
+/** Mirrors `frame::rows_for_css_height` (total terminal rows). */
+export function rowsForCssHeight(cssPx: number, cellH = DEFAULT_CELL_H): number {
+  const cell = Math.max(1, cellH)
+  return Math.max(4, Math.floor(cssPx / cell))
+}
+
+/** Mirrors `frame::story_size_for_css_host` (inner story size). */
+export function storySizeForCssHost(
+  cssW: number,
+  cssH: number,
+  cellW = DEFAULT_CELL_W,
+  cellH = DEFAULT_CELL_H,
+): { storyCols: number; storyRows: number } {
+  const totalC = colsForCssWidth(cssW, cellW)
+  const totalR = rowsForCssHeight(cssH, cellH)
+  return {
+    storyCols: Math.max(8, totalC - PAD * 2),
+    storyRows: Math.max(4, totalR - PAD * 2),
+  }
+}
+
+/** Mirrors `frame::pick_size_key`. */
+export function pickSizeKey(
+  wantCols: number,
+  wantRows: number,
+  sizes: string[] = DEFAULT_SIZES,
+): string {
+  let best = sizes[0] ?? '40x8'
+  let bestScore = Number.POSITIVE_INFINITY
+  for (const key of sizes) {
+    const [cs, rs] = key.split('x').map((n) => Number(n))
+    if (!cs || !rs) continue
+    const dc = cs - wantCols
+    const dr = rs - wantRows
+    const score = Math.abs(dc) * 2 + Math.abs(dr)
+    if (score < bestScore) {
+      bestScore = score
+      best = key
+    }
+  }
+  return best
+}
 
 function rgb(c: [number, number, number]): string {
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
@@ -55,7 +110,6 @@ function rgb(c: [number, number, number]): string {
 
 function basePath(): string {
   if (typeof document === 'undefined') return ''
-  // Vite base for GitHub Pages is /termrock/
   const base = import.meta.env.BASE_URL ?? '/'
   return base.endsWith('/') ? base.slice(0, -1) : base
 }
@@ -83,7 +137,6 @@ function paintCanvas(
   if (!ctx) return
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.imageSmoothingEnabled = false
-  // Ghostty-class black stage
   ctx.fillStyle = '#0a0a0a'
   ctx.fillRect(0, 0, w, h)
   const fontSize = Math.max(11, Math.floor(cellH * 0.78))
@@ -117,20 +170,17 @@ function paintCanvas(
 }
 
 export type TerminalPreviewProps = {
-  /** Lookbook story id, e.g. list/selection */
   story: string
-  /** Optional caption under the chrome */
   caption?: string
-  /** Max CSS height for the host (responsive width fills container) */
   maxHeight?: number
-  /** Prefer interactive pack when available */
   interactive?: boolean
 }
 
 /**
  * Ghostty-class interactive terminal surface for TermRock docs.
- * Loads truecolor cell frames from `public/preview-frames/{story}/`
- * (exported by `termrock-lookbook export-frames`).
+ * Host ResizeObserver remaps story cols×rows via the same helpers as
+ * `termrock-lookbook` export (`storySizeForCssHost` / `pickSizeKey`) and
+ * loads the matching size pack — not letterbox-only.
  */
 export function TerminalPreview({
   story,
@@ -140,25 +190,37 @@ export function TerminalPreview({
 }: TerminalPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const [frame, setFrame] = useState<TerminalFrame | null>(null)
   const [manifest, setManifest] = useState<FrameManifest | null>(null)
   const [step, setStep] = useState(0)
+  const [sizeKey, setSizeKey] = useState('40x8')
   const [error, setError] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
   const labelId = useId()
+  const stepRef = useRef(0)
+  stepRef.current = step
 
   const slug = useMemo(() => story.replaceAll('/', '-'), [story])
   const packBase = `${basePath()}/preview-frames/${slug}`
 
   const cellW = manifest?.cellWidthPx ?? DEFAULT_CELL_W
   const cellH = manifest?.cellHeightPx ?? DEFAULT_CELL_H
+  const sizes = manifest?.sizes?.length ? manifest.sizes : DEFAULT_SIZES
 
-  const loadStep = useCallback(
-    async (n: number) => {
+  const loadFrame = useCallback(
+    async (size: string, n: number) => {
       try {
-        const f = await loadJson<TerminalFrame>(`${packBase}/${n}.json`)
+        // Prefer size pack; fall back to root step for older packs.
+        let f: TerminalFrame
+        try {
+          f = await loadJson<TerminalFrame>(`${packBase}/${size}/${n}.json`)
+        } catch {
+          f = await loadJson<TerminalFrame>(`${packBase}/${n}.json`)
+        }
         setFrame(f)
         setStep(n)
+        setSizeKey(size)
         setError(null)
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e))
@@ -174,7 +236,8 @@ export function TerminalPreview({
         const m = await loadJson<FrameManifest>(`${packBase}/manifest.json`)
         if (cancelled) return
         setManifest(m)
-        await loadStep(0)
+        const initial = m.defaultSize ?? m.sizes?.[1] ?? '40x8'
+        await loadFrame(initial, 0)
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e))
       }
@@ -182,7 +245,7 @@ export function TerminalPreview({
     return () => {
       cancelled = true
     }
-  }, [packBase, loadStep])
+  }, [packBase, loadFrame])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -191,21 +254,39 @@ export function TerminalPreview({
     paintCanvas(canvas, frame, cellW, cellH, dpr)
   }, [frame, cellW, cellH])
 
-  // Responsive: when host resizes, we keep native cell metrics (Ghostty-like fixed
-  // cell size) and letterbox; true row/col remap needs re-export. CSS scales host.
+  // Real remap: host CSS size → story cols/rows → nearest exported pack → load.
   useEffect(() => {
-    const host = hostRef.current
-    if (!host || !frame) return
-    const ro = new ResizeObserver(() => {
-      // Re-paint for DPR / CSS size; cell grid stays story-native for fidelity.
-      const canvas = canvasRef.current
-      if (!canvas) return
-      const dpr = window.devicePixelRatio || 1
-      paintCanvas(canvas, frame, cellW, cellH, dpr)
+    const stage = stageRef.current
+    if (!stage || !manifest) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const apply = (cssW: number, cssH: number) => {
+      const { storyCols, storyRows } = storySizeForCssHost(cssW, cssH, cellW, cellH)
+      const nextKey = pickSizeKey(storyCols, storyRows, sizes)
+      stage.dataset['hostCssW'] = String(Math.round(cssW))
+      stage.dataset['hostCssH'] = String(Math.round(cssH))
+      stage.dataset['wantStoryCols'] = String(storyCols)
+      stage.dataset['wantStoryRows'] = String(storyRows)
+      stage.dataset['sizeKey'] = nextKey
+      if (nextKey !== sizeKey) {
+        void loadFrame(nextKey, stepRef.current)
+      }
+    }
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const { width, height } = entry.contentRect
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => apply(width, height), 50)
     })
-    ro.observe(host)
-    return () => ro.disconnect()
-  }, [frame, cellW, cellH])
+    ro.observe(stage)
+    // Initial measure
+    const rect = stage.getBoundingClientRect()
+    apply(rect.width, rect.height)
+    return () => {
+      ro.disconnect()
+      if (timer) clearTimeout(timer)
+    }
+  }, [manifest, cellW, cellH, sizes, sizeKey, loadFrame])
 
   const onKeyDown = (e: ReactKeyboardEvent) => {
     if (!interactive || !manifest?.interactive) return
@@ -223,19 +304,18 @@ export function TerminalPreview({
     if (!key) return
     e.preventDefault()
     e.stopPropagation()
-    // Step graph: Down advances selection frames; Up goes back; Home resets.
     if (key === 'ArrowDown' || key === 'j') {
       const next = Math.min((manifest.steps || 1) - 1, step + 1)
-      void loadStep(next)
+      void loadFrame(sizeKey, next)
       return
     }
     if (key === 'ArrowUp' || key === 'k') {
       const next = Math.max(0, step - 1)
-      void loadStep(next)
+      void loadFrame(sizeKey, next)
       return
     }
     if (key === 'Home' || key === 'Escape') {
-      void loadStep(0)
+      void loadFrame(sizeKey, 0)
     }
   }
 
@@ -243,10 +323,9 @@ export function TerminalPreview({
     hostRef.current?.focus()
     setFocused(true)
     if (!interactive || !manifest?.interactive) return
-    // Click advances selection — feels like activating rows in a list TUI.
     if (e.button === 0) {
       const next = Math.min((manifest.steps || 1) - 1, step + 1)
-      void loadStep(next)
+      void loadFrame(sizeKey, next)
     }
   }
 
@@ -275,11 +354,18 @@ export function TerminalPreview({
     userSelect: 'none',
   }
 
+  const gridLabel = frame
+    ? `${frame.cols}×${frame.rows} cells · story ${frame.story_cols}×${frame.story_rows} · ${sizeKey}`
+    : sizeKey
+
   return (
     <figure
       className="not-prose my-6"
       data-termrock-preview={story}
       data-preview-step={step}
+      data-preview-size={sizeKey}
+      data-preview-cols={frame?.cols ?? ''}
+      data-preview-rows={frame?.rows ?? ''}
       data-preview-interactive={manifest?.interactive ? 'true' : 'false'}
     >
       <div
@@ -324,24 +410,23 @@ export function TerminalPreview({
           <span style={{ color: '#c8d6c8' }}>Ghostty · TermRock</span>
           <span style={{ opacity: 0.7 }}>—</span>
           <span style={{ color: '#39ff14' }}>{story}</span>
-          {manifest?.interactive ? (
-            <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.8 }}>
-              ↑↓ select · click · Esc reset
-            </span>
-          ) : (
-            <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.65 }}>
-              truecolor · responsive host
-            </span>
-          )}
+          <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.85 }}>
+            {gridLabel}
+          </span>
         </div>
         <div
+          ref={stageRef}
+          data-termrock-stage="1"
           style={{
             padding: 10,
             background: '#0a0a0a',
             overflow: 'auto',
             maxHeight,
+            minHeight: 120,
+            width: '100%',
             display: 'flex',
             justifyContent: 'center',
+            boxSizing: 'border-box',
           }}
         >
           {error ? (

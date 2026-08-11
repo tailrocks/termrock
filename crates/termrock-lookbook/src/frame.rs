@@ -349,20 +349,52 @@ pub fn paint_story_after_keys(
     }
 }
 
-/// Suggest terminal cols from a CSS pixel width (Ghostty-class ~9px cell).
+/// Ghostty-class default cell width in CSS pixels (matches SVG export).
+pub const CELL_WIDTH_PX: u16 = 9;
+/// Ghostty-class default cell height in CSS pixels (matches SVG export).
+pub const CELL_HEIGHT_PX: u16 = 18;
+
+/// Story-size presets exported for responsive host remapping (story cols×rows, no pad).
+pub const RESPONSIVE_STORY_SIZES: &[(u16, u16)] = &[(28, 6), (40, 8), (56, 12), (72, 16), (80, 24)];
+
+/// Suggest **total** terminal cols (including pad) from a CSS pixel width.
 #[must_use]
-#[allow(dead_code)] // public bridge API for hosts / future live resize export
 pub fn cols_for_css_width(css_px: u16, cell_w: u16) -> u16 {
     let cell = cell_w.max(1);
     (css_px / cell).max(8)
 }
 
-/// Suggest terminal rows from a CSS pixel height (Ghostty-class ~18px cell).
+/// Suggest **total** terminal rows (including pad) from a CSS pixel height.
 #[must_use]
-#[allow(dead_code)] // public bridge API for hosts / future live resize export
 pub fn rows_for_css_height(css_px: u16, cell_h: u16) -> u16 {
     let cell = cell_h.max(1);
     (css_px / cell).max(4)
+}
+
+/// Map host CSS size → story paint size (inner, pad stripped).
+#[must_use]
+pub fn story_size_for_css_host(css_w: u16, css_h: u16) -> (u16, u16) {
+    let total_c = cols_for_css_width(css_w, CELL_WIDTH_PX);
+    let total_r = rows_for_css_height(css_h, CELL_HEIGHT_PX);
+    let story_c = total_c.saturating_sub(STORY_PAD * 2).max(8);
+    let story_r = total_r.saturating_sub(STORY_PAD * 2).max(4);
+    (story_c, story_r)
+}
+
+/// Pick nearest exported size key (`40x8`) for a desired story cols×rows.
+#[must_use]
+pub fn pick_size_key(want_cols: u16, want_rows: u16) -> String {
+    let (bc, br) = RESPONSIVE_STORY_SIZES
+        .iter()
+        .copied()
+        .min_by_key(|(c, r)| {
+            let dc = i32::from(*c) - i32::from(want_cols);
+            let dr = i32::from(*r) - i32::from(want_rows);
+            // Prefer not undershooting width when close.
+            dc.unsigned_abs() * 2 + dr.unsigned_abs()
+        })
+        .unwrap_or((40, 8));
+    format!("{bc}x{br}")
 }
 
 #[cfg(test)]
@@ -475,9 +507,42 @@ mod tests {
 
     #[test]
     fn responsive_col_row_helpers() {
-        assert_eq!(cols_for_css_width(360, 9), 40);
-        assert_eq!(rows_for_css_height(180, 18), 10);
-        assert!(cols_for_css_width(10, 9) >= 8);
+        assert_eq!(cols_for_css_width(360, CELL_WIDTH_PX), 40);
+        assert_eq!(rows_for_css_height(180, CELL_HEIGHT_PX), 10);
+        assert!(cols_for_css_width(10, CELL_WIDTH_PX) >= 8);
+        let (sc, sr) = story_size_for_css_host(360, 180);
+        // 360/9=40 total cols → 38 story; 180/18=10 total → 8 story
+        assert_eq!((sc, sr), (38, 8));
+        assert_eq!(pick_size_key(38, 8), "40x8");
+        assert_eq!(pick_size_key(10, 4), "28x6");
+        assert_eq!(pick_size_key(90, 30), "80x24");
+    }
+
+    #[test]
+    fn paint_at_two_host_sizes_remaps_grid() {
+        let story = story_by_id("list/selection").expect("list/selection");
+        let theme = RolePalette::default();
+        let (c1, r1) = story_size_for_css_host(280, 120);
+        let (c2, r2) = story_size_for_css_host(720, 320);
+        assert!(
+            c2 > c1 || r2 > r1,
+            "wider host must request larger story size"
+        );
+        let f1 = paint_story_frame(story, &theme, Some(c1), Some(r1));
+        let f2 = paint_story_frame(story, &theme, Some(c2), Some(r2));
+        assert_eq!(f1.story_cols, c1);
+        assert_eq!(f1.story_rows, r1);
+        assert_eq!(f2.story_cols, c2);
+        assert_eq!(f2.story_rows, r2);
+        assert_ne!(f1.cols, f2.cols, "total cols must remap with host");
+        assert_ne!(
+            f1.cells.len(),
+            f2.cells.len(),
+            "cell grid length must track remapped size"
+        );
+        let k1 = pick_size_key(c1, r1);
+        let k2 = pick_size_key(c2, r2);
+        assert_ne!(k1, k2, "distinct hosts map to distinct size packs");
     }
 
     #[test]

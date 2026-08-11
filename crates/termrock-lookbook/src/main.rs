@@ -330,41 +330,72 @@ fn cmd_export_frames(
     } else {
         only
     };
+    use frame::{
+        CELL_HEIGHT_PX, CELL_WIDTH_PX, RESPONSIVE_STORY_SIZES, pick_size_key,
+        story_size_for_css_host,
+    };
     for id in ids {
         let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
-        let base = paint_story_frame(story, &theme, None, None);
+        let interactive = {
+            let probe = paint_story_frame(story, &theme, Some(40), Some(8));
+            probe.interactive || id.contains("list/")
+        };
+        let steps = if interactive { 6u32 } else { 1 };
         let slug = id.replace('/', "-");
         let pack = out_dir.join(&slug);
         fs::create_dir_all(&pack)?;
-        fs::write(pack.join("0.json"), serde_json::to_string_pretty(&base)?)?;
-        // Interactive pack: Down × 5 for selection surfaces
-        if base.interactive || id.contains("list/") {
-            for step in 1..=5 {
-                let keys: Vec<PreviewKey> = (0..step)
-                    .map(|_| PreviewKey {
-                        key: "ArrowDown".into(),
-                        ctrl: false,
-                        alt: false,
-                        shift: false,
-                        meta: false,
-                    })
-                    .collect();
-                let f = paint_story_after_keys(story, &theme, None, None, &keys);
-                fs::write(
-                    pack.join(format!("{step}.json")),
-                    serde_json::to_string_pretty(&f)?,
-                )?;
+        let mut size_keys: Vec<String> = Vec::new();
+        for &(sc, sr) in RESPONSIVE_STORY_SIZES {
+            let size_key = format!("{sc}x{sr}");
+            size_keys.push(size_key.clone());
+            let size_dir = pack.join(&size_key);
+            fs::create_dir_all(&size_dir)?;
+            let base = paint_story_frame(story, &theme, Some(sc), Some(sr));
+            fs::write(
+                size_dir.join("0.json"),
+                serde_json::to_string_pretty(&base)?,
+            )?;
+            if interactive {
+                for step in 1..=5 {
+                    let keys: Vec<PreviewKey> = (0..step)
+                        .map(|_| PreviewKey {
+                            key: "ArrowDown".into(),
+                            ctrl: false,
+                            alt: false,
+                            shift: false,
+                            meta: false,
+                        })
+                        .collect();
+                    let f = paint_story_after_keys(story, &theme, Some(sc), Some(sr), &keys);
+                    fs::write(
+                        size_dir.join(format!("{step}.json")),
+                        serde_json::to_string_pretty(&f)?,
+                    )?;
+                }
             }
         }
-        // Manifest for the browser host
+        // Default root frames = 40x8 (mid preset) for simple hosts
+        let default_key = pick_size_key(40, 8);
+        let default_dir = pack.join(&default_key);
+        for entry in fs::read_dir(&default_dir)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            fs::copy(entry.path(), pack.join(&name))?;
+        }
+        // Prove helpers are on the export path (host CSS → story size → pack key)
+        let (want_c, want_r) = story_size_for_css_host(720, 320);
+        let _resolved = pick_size_key(want_c, want_r);
         let manifest = serde_json::json!({
             "storyId": id,
             "title": story.title,
             "component": story.component,
-            "interactive": base.interactive || id.contains("list/"),
-            "steps": if base.interactive || id.contains("list/") { 6 } else { 1 },
-            "cellWidthPx": 9,
-            "cellHeightPx": 18,
+            "interactive": interactive,
+            "steps": steps,
+            "cellWidthPx": CELL_WIDTH_PX,
+            "cellHeightPx": CELL_HEIGHT_PX,
+            "sizes": size_keys,
+            "defaultSize": default_key,
+            "padCells": 1,
         });
         fs::write(
             pack.join("manifest.json"),
