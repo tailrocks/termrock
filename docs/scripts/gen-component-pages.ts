@@ -85,6 +85,26 @@ ${escapeTable(story.title)}
 `
     })
     .join('\n')
+  const interactiveStory =
+    component === 'List'
+      ? 'list/selection'
+      : component === 'AgentWorkbench' || component === 'agent-workbench'
+        ? 'agent-workbench/basic'
+        : component === 'Button'
+          ? 'button/activation'
+          : null
+  const interactiveBlock = interactiveStory
+    ? `
+## Live terminal (Ghostty-class)
+
+Click the surface and use **↑↓** (or click) to drive the same TermRock paint path
+exported from the lookbook. Truecolor cells, monospace metrics, Ghostty-style chrome.
+
+<TerminalPreview story="${interactiveStory}" interactive caption="Interactive TermRock frame pack — not a static mock." />
+
+`
+    : ''
+
   const page = `---
 title: ${component}
 description: '${authoredDoc.description.replaceAll("'", "''")}'
@@ -96,7 +116,7 @@ description: '${authoredDoc.description.replaceAll("'", "''")}'
 
 Lookbook-rendered SVGs from the same path as the TUI CLI gallery
 (\`termrock-lookbook render\`). These match deterministic terminal paint, not hand-drawn mockups.
-
+${interactiveBlock}
 ${previewSections}
 ## Usage
 

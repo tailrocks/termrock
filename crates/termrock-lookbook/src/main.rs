@@ -5,6 +5,7 @@
 
 mod app;
 mod focus;
+mod frame;
 mod host_frame;
 mod interactors;
 mod json;
@@ -24,7 +25,7 @@ use termrock::{
     style::RolePalette,
 };
 
-const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check>";
+const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check|frame|export-frames>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SidebarAction {
@@ -229,7 +230,149 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return check_svgs(PathBuf::from(dir));
     }
 
+    if first == OsStr::new("frame") {
+        return cmd_frame(args);
+    }
+
+    if first == OsStr::new("export-frames") {
+        return cmd_export_frames(args);
+    }
+
     Err(USAGE.into())
+}
+
+fn cmd_frame(
+    mut args: impl Iterator<Item = std::ffi::OsString>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use frame::{PreviewKey, paint_story_after_keys, paint_story_frame, story_by_id};
+    let usage = "usage: termrock-lookbook frame --story <id> [--cols N] [--rows N] [--keys k1,k2]";
+    let mut story_id = None;
+    let mut cols = None;
+    let mut rows = None;
+    let mut keys_raw = None;
+    while let Some(flag) = args.next() {
+        if flag == OsStr::new("--story") {
+            story_id = args.next().and_then(|s| s.into_string().ok());
+        } else if flag == OsStr::new("--cols") {
+            cols = args
+                .next()
+                .and_then(|s| s.into_string().ok())
+                .and_then(|s| s.parse().ok());
+        } else if flag == OsStr::new("--rows") {
+            rows = args
+                .next()
+                .and_then(|s| s.into_string().ok())
+                .and_then(|s| s.parse().ok());
+        } else if flag == OsStr::new("--keys") {
+            keys_raw = args.next().and_then(|s| s.into_string().ok());
+        } else {
+            return Err(usage.into());
+        }
+    }
+    let Some(story_id) = story_id else {
+        return Err(usage.into());
+    };
+    let story = story_by_id(&story_id).ok_or_else(|| format!("unknown story: {story_id}"))?;
+    let theme = RolePalette::default();
+    let keys: Vec<PreviewKey> = keys_raw
+        .as_deref()
+        .unwrap_or("")
+        .split(',')
+        .filter(|s| !s.is_empty())
+        .map(|k| PreviewKey {
+            key: k.trim().into(),
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        })
+        .collect();
+    let frame = if keys.is_empty() {
+        paint_story_frame(story, &theme, cols, rows)
+    } else {
+        paint_story_after_keys(story, &theme, cols, rows, &keys)
+    };
+    println!("{}", serde_json::to_string(&frame)?);
+    Ok(())
+}
+
+fn cmd_export_frames(
+    mut args: impl Iterator<Item = std::ffi::OsString>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use frame::{PreviewKey, paint_story_after_keys, paint_story_frame, story_by_id};
+    use std::fs;
+    let usage = "usage: termrock-lookbook export-frames --out <dir> [--story id]*";
+    let mut out_dir = None;
+    let mut only: Vec<String> = Vec::new();
+    while let Some(flag) = args.next() {
+        if flag == OsStr::new("--out") {
+            out_dir = args.next().map(PathBuf::from);
+        } else if flag == OsStr::new("--story") {
+            if let Some(s) = args.next().and_then(|s| s.into_string().ok()) {
+                only.push(s);
+            }
+        } else {
+            return Err(usage.into());
+        }
+    }
+    let Some(out_dir) = out_dir else {
+        return Err(usage.into());
+    };
+    fs::create_dir_all(&out_dir)?;
+    let theme = RolePalette::default();
+    let defaults = [
+        "list/selection",
+        "button/activation",
+        "agent-workbench/basic",
+    ];
+    let ids: Vec<String> = if only.is_empty() {
+        defaults.iter().map(|s| (*s).to_string()).collect()
+    } else {
+        only
+    };
+    for id in ids {
+        let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
+        let base = paint_story_frame(story, &theme, None, None);
+        let slug = id.replace('/', "-");
+        let pack = out_dir.join(&slug);
+        fs::create_dir_all(&pack)?;
+        fs::write(pack.join("0.json"), serde_json::to_string_pretty(&base)?)?;
+        // Interactive pack: Down × 5 for selection surfaces
+        if base.interactive || id.contains("list/") {
+            for step in 1..=5 {
+                let keys: Vec<PreviewKey> = (0..step)
+                    .map(|_| PreviewKey {
+                        key: "ArrowDown".into(),
+                        ctrl: false,
+                        alt: false,
+                        shift: false,
+                        meta: false,
+                    })
+                    .collect();
+                let f = paint_story_after_keys(story, &theme, None, None, &keys);
+                fs::write(
+                    pack.join(format!("{step}.json")),
+                    serde_json::to_string_pretty(&f)?,
+                )?;
+            }
+        }
+        // Manifest for the browser host
+        let manifest = serde_json::json!({
+            "storyId": id,
+            "title": story.title,
+            "component": story.component,
+            "interactive": base.interactive || id.contains("list/"),
+            "steps": if base.interactive || id.contains("list/") { 6 } else { 1 },
+            "cellWidthPx": 9,
+            "cellHeightPx": 18,
+        });
+        fs::write(
+            pack.join("manifest.json"),
+            serde_json::to_string_pretty(&manifest)?,
+        )?;
+        println!("{}", pack.display());
+    }
+    Ok(())
 }
 
 fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,0 +1,9 @@
+{
+  "cellHeightPx": 18,
+  "cellWidthPx": 9,
+  "component": "AgentWorkbench",
+  "interactive": false,
+  "steps": 1,
+  "storyId": "agent-workbench/basic",
+  "title": "Agent workbench"
+}

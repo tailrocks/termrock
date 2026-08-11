@@ -1,0 +1,9 @@
+{
+  "cellHeightPx": 18,
+  "cellWidthPx": 9,
+  "component": "Button",
+  "interactive": false,
+  "steps": 1,
+  "storyId": "button/activation",
+  "title": "Button primary"
+}

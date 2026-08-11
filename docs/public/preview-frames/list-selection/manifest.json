@@ -1,0 +1,9 @@
+{
+  "cellHeightPx": 18,
+  "cellWidthPx": 9,
+  "component": "List",
+  "interactive": true,
+  "steps": 6,
+  "storyId": "list/selection",
+  "title": "List"
+}
