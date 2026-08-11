@@ -326,16 +326,34 @@ export function paintCanvas(
     ctx.globalAlpha = 0.92
     ctx.fillRect(px, py, cellW, cellH)
     ctx.globalAlpha = 1
-    // Invert glyph under cursor when present.
+    // Invert glyph under cursor when present (same vector path as cell paint).
     if (under?.ch && under.ch !== ' ' && under.ch !== '\u00a0') {
-      const weight = boldFontWeight(under.bold)
-      ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
-      ctx.fillStyle = '#0a0a0a'
-      const box = isBoxOrBlockGlyph(under.ch)
-      ctx.textBaseline = box ? 'middle' : 'alphabetic'
-      const tw = ctx.measureText(under.ch).width
-      const dy = box ? py + cellH / 2 : py + baseline
-      ctx.fillText(under.ch, glyphDrawX(px, cellW, tw, under.ch), dy)
+      const inv = '#0a0a0a'
+      const plan = boxStrokeForGlyph(under.ch)
+      if (plan) {
+        const { segs, fills } = boxStrokeGeometry(plan, px, py, cellW, cellH)
+        ctx.fillStyle = inv
+        for (const fr of fills) ctx.fillRect(fr.x, fr.y, fr.w, fr.h)
+        ctx.strokeStyle = inv
+        ctx.lineCap = 'butt'
+        ctx.lineJoin = 'miter'
+        for (const seg of segs) {
+          ctx.lineWidth = seg.width
+          ctx.beginPath()
+          ctx.moveTo(seg.x1, seg.y1)
+          ctx.lineTo(seg.x2, seg.y2)
+          ctx.stroke()
+        }
+      } else {
+        const weight = boldFontWeight(under.bold)
+        ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
+        ctx.fillStyle = inv
+        const box = isBoxOrBlockGlyph(under.ch)
+        ctx.textBaseline = box ? 'middle' : 'alphabetic'
+        const tw = ctx.measureText(under.ch).width
+        const dy = box ? py + cellH / 2 : py + baseline
+        ctx.fillText(under.ch, glyphDrawX(px, cellW, tw, under.ch), dy)
+      }
     }
   }
 }

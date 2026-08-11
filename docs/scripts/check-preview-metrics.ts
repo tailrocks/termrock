@@ -106,8 +106,68 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
   const fill = boxStrokeGeometry(boxStrokeForGlyph('█')!, 0, 0, 9, 18)
   assert(fill.fills.length === 1 && fill.fills[0]!.w === 9, '█ fill cell')
   const half = boxStrokeGeometry(boxStrokeForGlyph('▌')!, 0, 0, 10, 18)
-  assert(half.fills[0]!.w === 5, '▌ half width')
+  assert(half.fills[0]!.w === 5, '▌ left half width (4/8)')
   assert(boxStrokeForGlyph('A') === null, 'latin no stroke plan')
+
+  // Partial blocks must NOT be full fill (sparkline / metrics bars).
+  const lowerPlans: Array<[string, number]> = [
+    ['▁', 1],
+    ['▂', 2],
+    ['▃', 3],
+    ['▄', 4],
+    ['▅', 5],
+    ['▆', 6],
+    ['▇', 7],
+  ]
+  for (const [ch, e] of lowerPlans) {
+    const plan = boxStrokeForGlyph(ch)
+    assert(plan?.kind === 'lower' && plan.eighths === e, `${ch} lower ${e} got ${JSON.stringify(plan)}`)
+    const geo = boxStrokeGeometry(plan!, 0, 0, 8, 16)
+    assert(geo.fills.length === 1, `${ch} one fill`)
+    const fh = geo.fills[0]!.h
+    const expect = Math.max(1, Math.round((16 * e) / 8))
+    assert(fh === expect, `${ch} height ${fh} want ${expect}`)
+    assert(geo.fills[0]!.y === 16 - fh, `${ch} bottom-aligned`)
+    assert(fh < 16 || e === 8, `${ch} not full cell (e=${e})`)
+  }
+  assert(boxStrokeForGlyph('▉')?.kind === 'left', '▉ left partial')
+  assert(boxStrokeForGlyph('▉') && (boxStrokeForGlyph('▉') as { eighths: number }).eighths === 7, '▉ 7/8')
+  const leftGeo = boxStrokeGeometry(boxStrokeForGlyph('▉')!, 0, 0, 16, 8)
+  assert(leftGeo.fills[0]!.w === Math.round((16 * 7) / 8), '▉ width 7/8')
+  assert(leftGeo.fills[0]!.w < 16, '▉ not full width')
+  // █ alone is full fill
+  assert(boxStrokeForGlyph('█')?.kind === 'fill', '█ is fill')
+
+  // Real sparkline pack: ▅ must be lower-5, never full fill.
+  {
+    const sp = join(import.meta.dir, '..', 'public', 'preview-frames', 'sparkline-basic', '40x8', '0.json')
+    const fr = JSON.parse(readFileSync(sp, 'utf8')) as { cells: { ch: string }[] }
+    const bars = fr.cells.filter((c) => c.ch === '▅' || c.ch === '▂' || c.ch === '▁')
+    assert(bars.length > 0, 'sparkline has partial bars')
+    for (const c of bars) {
+      const plan = boxStrokeForGlyph(c.ch)
+      assert(plan && plan.kind === 'lower', `spark ${c.ch} lower plan got ${JSON.stringify(plan)}`)
+      assert(plan.kind !== 'fill', `spark ${c.ch} must not full-fill`)
+    }
+  }
+  // metrics-dashboard larger size uses ▅▆▇
+  {
+    const mp = join(
+      import.meta.dir,
+      '..',
+      'public',
+      'preview-frames',
+      'metrics-dashboard-basic',
+      '56x12',
+      '0.json',
+    )
+    const fr = JSON.parse(readFileSync(mp, 'utf8')) as { cells: { ch: string }[] }
+    for (const ch of ['▅', '▆', '▇'] as const) {
+      assert(fr.cells.some((c) => c.ch === ch), `metrics pack has ${ch}`)
+      const plan = boxStrokeForGlyph(ch)
+      assert(plan?.kind === 'lower', `metrics ${ch} lower got ${JSON.stringify(plan)}`)
+    }
+  }
 }
 
 assert(stepDeltaFromWheel(0) === 0, 'dead zone zero')

@@ -59,14 +59,26 @@ export function boldFontWeight(bold: boolean | undefined): '400' | '700' {
  * Vector stroke plan for common terminal box/block glyphs.
  * When non-null, paint geometry instead of font glyphs so borders join exactly
  * at cell edges (Ghostty grid chrome). Unknown box glyphs return null → font path.
+ *
+ * Block partials use `eighths` in 1..8 (Unicode eighths ladder). Full █ is fill.
+ * Shade ░▒▓ stay on the font path (null).
  */
 export type BoxStrokePlan =
   | { kind: 'h'; heavy: boolean }
   | { kind: 'v'; heavy: boolean }
   | { kind: 'corner'; n: boolean; s: boolean; e: boolean; w: boolean }
   | { kind: 'fill' }
-  | { kind: 'half-left' }
-  | { kind: 'half-right' }
+  | { kind: 'lower'; eighths: number }
+  | { kind: 'upper'; eighths: number }
+  | { kind: 'left'; eighths: number }
+  | { kind: 'right'; eighths: number }
+
+/** Clamp Unicode eighths ladder to 1..8. */
+export function clampEighths(n: number): number {
+  if (!(n > 0) || !Number.isFinite(n)) return 1
+  if (n >= 8) return 8
+  return n | 0
+}
 
 export function boxStrokeForGlyph(ch: string): BoxStrokePlan | null {
   if (!ch) return null
@@ -105,18 +117,44 @@ export function boxStrokeForGlyph(ch: string): BoxStrokePlan | null {
       return { kind: 'corner', n: true, s: false, e: true, w: true }
     case '┼':
       return { kind: 'corner', n: true, s: true, e: true, w: true }
+    // Full block only — partials use eighths ladders (sparklines / meters).
     case '█':
-    case '▉':
-    case '▇':
-    case '▆':
-    case '▅':
       return { kind: 'fill' }
-    case '▌':
+    // Lower blocks (bottom-aligned): ▁▂▃▄▅▆▇
+    case '▁':
+      return { kind: 'lower', eighths: 1 }
+    case '▂':
+      return { kind: 'lower', eighths: 2 }
+    case '▃':
+      return { kind: 'lower', eighths: 3 }
+    case '▄':
+      return { kind: 'lower', eighths: 4 }
+    case '▅':
+      return { kind: 'lower', eighths: 5 }
+    case '▆':
+      return { kind: 'lower', eighths: 6 }
+    case '▇':
+      return { kind: 'lower', eighths: 7 }
+    // Upper half
+    case '▀':
+      return { kind: 'upper', eighths: 4 }
+    // Left blocks: ▏▎▍▌▋▊▉
+    case '▏':
+      return { kind: 'left', eighths: 1 }
     case '▎':
-    case '\u258d': // left three eighths → half-left approx
-      return { kind: 'half-left' }
+      return { kind: 'left', eighths: 2 }
+    case '▍':
+      return { kind: 'left', eighths: 3 }
+    case '▌':
+      return { kind: 'left', eighths: 4 }
+    case '▋':
+      return { kind: 'left', eighths: 5 }
+    case '▊':
+      return { kind: 'left', eighths: 6 }
+    case '▉':
+      return { kind: 'left', eighths: 7 }
     case '▐':
-      return { kind: 'half-right' }
+      return { kind: 'right', eighths: 4 }
     default:
       return null
   }
@@ -135,7 +173,7 @@ export type BoxFillRect = { x: number; y: number; w: number; h: number }
 /**
  * Geometry for a stroke plan in cell-local CSS pixels (absolute canvas coords).
  * Horizontal segs span the full cell width; vertical segs span full height so
- * neighboring cells' strokes abut with no gap.
+ * neighboring cells' strokes abut with no gap. Partial blocks are fractional fills.
  */
 export function boxStrokeGeometry(
   plan: BoxStrokePlan,
@@ -157,13 +195,28 @@ export function boxStrokeGeometry(
     fills.push({ x: px, y: py, w, h })
     return { segs, fills }
   }
-  if (plan.kind === 'half-left') {
-    fills.push({ x: px, y: py, w: Math.ceil(w / 2), h })
+  if (plan.kind === 'lower') {
+    const e = clampEighths(plan.eighths)
+    const fh = Math.max(1, Math.round((h * e) / 8))
+    fills.push({ x: px, y: py + h - fh, w, h: fh })
     return { segs, fills }
   }
-  if (plan.kind === 'half-right') {
-    const half = Math.floor(w / 2)
-    fills.push({ x: px + half, y: py, w: w - half, h })
+  if (plan.kind === 'upper') {
+    const e = clampEighths(plan.eighths)
+    const fh = Math.max(1, Math.round((h * e) / 8))
+    fills.push({ x: px, y: py, w, h: fh })
+    return { segs, fills }
+  }
+  if (plan.kind === 'left') {
+    const e = clampEighths(plan.eighths)
+    const fw = Math.max(1, Math.round((w * e) / 8))
+    fills.push({ x: px, y: py, w: fw, h })
+    return { segs, fills }
+  }
+  if (plan.kind === 'right') {
+    const e = clampEighths(plan.eighths)
+    const fw = Math.max(1, Math.round((w * e) / 8))
+    fills.push({ x: px + w - fw, y: py, w: fw, h })
     return { segs, fills }
   }
   if (plan.kind === 'h') {
