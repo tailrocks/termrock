@@ -4,10 +4,13 @@
  */
 import {
   adjacentSteps,
+  allSteps,
   baselineForCell,
   clampStep,
   fontSizeForCell,
+  glyphCellSpan,
   glyphDrawX,
+  isLoadStillCurrent,
   stepDeltaFromWheel,
 } from '../src/components/preview-metrics'
 
@@ -40,5 +43,12 @@ assert(clampStep(9, 5) === 5, 'clamp high')
 assert(JSON.stringify(adjacentSteps(0, 5)) === JSON.stringify([1]), 'adj start')
 assert(JSON.stringify(adjacentSteps(3, 5)) === JSON.stringify([2, 4]), 'adj mid')
 assert(JSON.stringify(adjacentSteps(5, 5)) === JSON.stringify([4]), 'adj end')
+
+assert(glyphCellSpan(5, 9) === 1, 'narrow span')
+assert(glyphCellSpan(18, 9) === 2, 'wide span')
+assert(glyphCellSpan(0, 9) === 1, 'empty span')
+assert(isLoadStillCurrent(3, 3), 'current load')
+assert(!isLoadStillCurrent(2, 3), 'stale load rejected')
+assert(JSON.stringify(allSteps(2)) === JSON.stringify([0, 1, 2]), 'all steps')
 
 console.log('preview-metrics: ok')

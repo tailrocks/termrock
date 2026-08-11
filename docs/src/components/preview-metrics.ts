@@ -54,3 +54,29 @@ export function adjacentSteps(step: number, maxStep: number): number[] {
   if (cur < maxStep) out.push(cur + 1)
   return out
 }
+
+/**
+ * How many terminal cells a measured glyph should occupy (1 or 2).
+ * Wide CJK / emoji advances ~2 mono cells in Ghostty-class grids.
+ */
+export function glyphCellSpan(textWidth: number, cellW: number): number {
+  const w = Math.max(1, cellW)
+  if (!(textWidth > 0)) return 1
+  // Round ratio; cap at 2 — terminal cells rarely paint beyond double-width.
+  const span = Math.round(textWidth / w)
+  if (span <= 1) return 1
+  return 2
+}
+
+/** True when this async load generation is still the latest request. */
+export function isLoadStillCurrent(requestId: number, latestId: number): boolean {
+  return requestId === latestId
+}
+
+/** All step indices for a size pack (prefetch whole interactive graph). */
+export function allSteps(maxStep: number): number[] {
+  const max = Math.max(0, maxStep)
+  const out: number[] = []
+  for (let i = 0; i <= max; i++) out.push(i)
+  return out
+}

@@ -88,9 +88,14 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
 - **Paint fidelity:** canvas repaints after `document.fonts.ready` / JetBrains Mono
   load; glyphs centered in cells via measured mono advance; window-capture
   keydown while focused for reliable TUI nav under automation.
-- **Snappy interaction:** adjacent step frames are prefetched into an in-memory
-  cache; wheel over the focused host steps state/tour; status bar pulses on step
-  change; unfocused chrome dims slightly like a real Ghostty window.
+- **Snappy interaction:** adjacent step frames (and the full current size pack)
+  are prefetched into an in-memory cache; wheel over the focused host steps
+  state/tour; status bar pulses on step change; unfocused chrome dims slightly
+  like a real Ghostty window.
+- **Load races:** each `loadFrame` carries a generation id; stale async completes
+  are ignored so rapid ArrowDown never rewinds the painted step.
+- **Wide glyphs:** measured advances spanning ~2 cells paint across the
+  continuation cell when it is empty (CJK/emoji grid fidelity).
 
 ## Size packs
 

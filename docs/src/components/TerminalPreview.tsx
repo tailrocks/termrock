@@ -15,20 +15,26 @@ import {
 import {
   PREVIEW_MONO_STACK,
   adjacentSteps,
+  allSteps,
   baselineForCell,
   clampStep,
   fontSizeForCell,
+  glyphCellSpan,
   glyphDrawX,
+  isLoadStillCurrent,
   stepDeltaFromWheel,
 } from '@/components/preview-metrics'
 
 export {
   PREVIEW_MONO_STACK,
   adjacentSteps,
+  allSteps,
   baselineForCell,
   clampStep,
   fontSizeForCell,
+  glyphCellSpan,
   glyphDrawX,
+  isLoadStillCurrent,
   stepDeltaFromWheel,
 } from '@/components/preview-metrics'
 
@@ -196,6 +202,27 @@ export function paintCanvas(
       ctx.fillStyle = paintFg(cell)
       ctx.textBaseline = 'alphabetic'
       const tw = ctx.measureText(ch).width
+      const span = glyphCellSpan(tw, cellW)
+      // Double-width glyphs: paint across two cells when the next cell is empty.
+      if (span === 2 && x + 1 < frame.cols) {
+        const next = frame.cells[y * frame.cols + x + 1]
+        if (next && (!next.ch || next.ch === ' ' || next.ch === '\u00a0')) {
+          ctx.fillStyle = rgb(cell.bg)
+          ctx.fillRect(px + cellW, py, cellW, cellH)
+          ctx.fillStyle = paintFg(cell)
+          ctx.fillText(ch, px + 0.5, py + baseline)
+          if (cell.underline) {
+            ctx.strokeStyle = paintFg(cell)
+            ctx.lineWidth = 1
+            ctx.beginPath()
+            ctx.moveTo(px, py + cellH - 2)
+            ctx.lineTo(px + cellW * 2, py + cellH - 2)
+            ctx.stroke()
+          }
+          x += 1 // skip continuation cell
+          continue
+        }
+      }
       ctx.fillText(ch, glyphDrawX(px, cellW, tw), py + baseline)
       if (cell.underline) {
         ctx.strokeStyle = paintFg(cell)
@@ -244,6 +271,7 @@ export function TerminalPreview({
   const sizeKeyRef = useRef(sizeKey)
   const maxStepRef = useRef(0)
   const frameCacheRef = useRef<Map<string, TerminalFrame>>(new Map())
+  const loadGenRef = useRef(0)
   stepRef.current = step
   sizeKeyRef.current = sizeKey
 
@@ -276,6 +304,18 @@ export function TerminalPreview({
     [packBase],
   )
 
+  const prefetchSizePack = useCallback(
+    (size: string) => {
+      // Warm every step in this size so tours/arrows feel instantaneous.
+      for (const s of allSteps(maxStepRef.current)) {
+        void fetchFrame(size, s).catch(() => {
+          /* optional pack hole */
+        })
+      }
+    },
+    [fetchFrame],
+  )
+
   const prefetchAdjacent = useCallback(
     (size: string, n: number) => {
       for (const s of adjacentSteps(n, maxStepRef.current)) {
@@ -289,25 +329,31 @@ export function TerminalPreview({
 
   const loadFrame = useCallback(
     async (size: string, n: number) => {
+      const reqId = ++loadGenRef.current
       try {
         const next = clampStep(n, maxStepRef.current)
         const f = await fetchFrame(size, next)
+        // Drop stale responses so rapid nav never rewinds the visible step.
+        if (!isLoadStillCurrent(reqId, loadGenRef.current)) return
         setFrame(f)
         setStep(next)
         setSizeKey(size)
         setError(null)
         setStepPulse((p) => p + 1)
         prefetchAdjacent(size, next)
+        prefetchSizePack(size)
       } catch (e) {
+        if (!isLoadStillCurrent(reqId, loadGenRef.current)) return
         setError(e instanceof Error ? e.message : String(e))
       }
     },
-    [fetchFrame, prefetchAdjacent],
+    [fetchFrame, prefetchAdjacent, prefetchSizePack],
   )
 
-  // Drop cache when pack story changes.
+  // Drop cache + invalidate in-flight loads when pack story changes.
   useEffect(() => {
     frameCacheRef.current = new Map()
+    loadGenRef.current += 1
   }, [packBase])
 
   useEffect(() => {
