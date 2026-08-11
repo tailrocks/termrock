@@ -113,8 +113,10 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   `combinedHostViewport` (min of stage + chrome width) + RO on both nodes +
   window resize + reconcile on focus/pointerenter so style-driven shrinks remapped.
 - **Box/block chrome:** common ─│┌┐└┘┼ and block fills use `boxStrokeForGlyph` +
-  `boxStrokeGeometry` vector strokes full-cell (exact edge join). Other box
-  glyphs still flush-left via font. Bold weight 700 for text.
+  `boxStrokeGeometry` vector strokes full-cell (exact edge join). Partial bars
+  use eighths ladders; ░▒▓ shade fills use density alpha. Other box glyphs still
+  flush-left via font. Bold weight 700 for text. Dim fg runs through
+  `resolvePaintFg` / Ghostty-like `ensureMinContrast` vs cell bg.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

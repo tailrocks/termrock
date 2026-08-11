@@ -24,7 +24,9 @@ import {
   boxStrokeGeometry,
   cellAtPointer,
   clampStep,
+  contrastRatio,
   cursorCellForStep,
+  ensureMinContrast,
   fontSizeForCell,
   formatCellProbe,
   glyphCellSpan,
@@ -36,6 +38,7 @@ import {
   hostViewportSize,
   materialViewportChange,
   paintDpr,
+  resolvePaintFg,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
   stepDeltaFromNavKey,
@@ -58,7 +61,9 @@ export {
   cellAtPointer,
   clampStep,
   combinedHostViewport,
+  contrastRatio,
   cursorCellForStep,
+  ensureMinContrast,
   fontSizeForCell,
   formatCellProbe,
   formatRgbHex,
@@ -70,6 +75,7 @@ export {
   isLoadStillCurrent,
   materialViewportChange,
   paintDpr,
+  resolvePaintFg,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
   stepDeltaFromNavKey,
@@ -180,10 +186,9 @@ function rgb(c: [number, number, number]): string {
   return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
 }
 
-/** Dim/faint: bake remaining dim flag on already-encoded RGB for host safety. */
+/** Dim + Ghostty min-contrast vs cell bg (pure resolvePaintFg). */
 function paintFg(cell: FrameCell): string {
-  if (!cell.dim) return rgb(cell.fg)
-  return `rgb(${Math.round(cell.fg[0] * 0.7)},${Math.round(cell.fg[1] * 0.7)},${Math.round(cell.fg[2] * 0.7)})`
+  return rgb(resolvePaintFg(cell.fg, cell.bg, cell.dim))
 }
 
 function basePath(): string {
@@ -253,6 +258,11 @@ export function paintCanvas(
       if (strokePlan) {
         const { segs, fills } = boxStrokeGeometry(strokePlan, px, py, cellW, cellH)
         const fg = paintFg(cell)
+        const shadeAlpha =
+          strokePlan.kind === 'shade'
+            ? Math.max(0.05, Math.min(1, strokePlan.density))
+            : 1
+        ctx.globalAlpha = shadeAlpha
         ctx.fillStyle = fg
         for (const fr of fills) {
           ctx.fillRect(fr.x, fr.y, fr.w, fr.h)
@@ -267,6 +277,7 @@ export function paintCanvas(
           ctx.lineTo(seg.x2, seg.y2)
           ctx.stroke()
         }
+        ctx.globalAlpha = 1
         if (cell.underline) {
           ctx.lineWidth = 1
           ctx.beginPath()

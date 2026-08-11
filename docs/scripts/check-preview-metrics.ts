@@ -2,7 +2,7 @@
  * Unit check of shipped Ghostty preview metric helpers (no DOM canvas required).
  * Invoked from docs quality path / local verify.
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   adjacentSteps,
@@ -13,6 +13,9 @@ import {
   boxStrokeForGlyph,
   boxStrokeGeometry,
   cellAtPointer,
+  contrastRatio,
+  ensureMinContrast,
+  resolvePaintFg,
   clampStep,
   cursorCellForStep,
   fontSizeForCell,
@@ -167,6 +170,79 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
       const plan = boxStrokeForGlyph(ch)
       assert(plan?.kind === 'lower', `metrics ${ch} lower got ${JSON.stringify(plan)}`)
     }
+  }
+
+  // Shade blocks ░▒▓ — density fill, not solid █
+  assert(boxStrokeForGlyph('░')?.kind === 'shade', '░ shade')
+  assert(
+    boxStrokeForGlyph('░') && (boxStrokeForGlyph('░') as { density: number }).density === 0.25,
+    '░ density 0.25',
+  )
+  assert(
+    boxStrokeForGlyph('▒') && (boxStrokeForGlyph('▒') as { density: number }).density === 0.5,
+    '▒ density 0.5',
+  )
+  assert(
+    boxStrokeForGlyph('▓') && (boxStrokeForGlyph('▓') as { density: number }).density === 0.75,
+    '▓ density 0.75',
+  )
+  const shadeGeo = boxStrokeGeometry(boxStrokeForGlyph('░')!, 0, 0, 9, 18)
+  assert(shadeGeo.fills.length === 1 && shadeGeo.fills[0]!.w === 9, '░ full-cell fill geom')
+}
+
+// Ghostty min-contrast: dim near-bg fg is boosted.
+{
+  const darkBg: [number, number, number] = [0, 0, 0]
+  const nearBg: [number, number, number] = [10, 10, 10]
+  const raw = contrastRatio(nearBg, darkBg)
+  assert(raw < 1.6, `near-bg contrast low got ${raw}`)
+  const boosted = ensureMinContrast(nearBg, darkBg, 1.6)
+  assert(contrastRatio(boosted, darkBg) >= 1.6, `boosted ratio ${contrastRatio(boosted, darkBg)}`)
+  // Already-contrasting phosphor green unchanged enough to stay green-ish.
+  const green: [number, number, number] = [0, 255, 65]
+  const kept = ensureMinContrast(green, darkBg, 1.6)
+  assert(kept[1] >= 200, `green stays bright g=${kept[1]}`)
+  // Dim + contrast path
+  const dimmed = resolvePaintFg([20, 20, 20], [0, 0, 0], true, 1.6)
+  assert(contrastRatio(dimmed, [0, 0, 0]) >= 1.6, `dim resolve contrast ${contrastRatio(dimmed, [0, 0, 0])}`)
+  // Real pack: dim cells exist and resolve to readable fg
+  {
+    const path = join(import.meta.dir, '..', 'public', 'preview-frames', 'list-selection', '40x8', '0.json')
+    const fr = JSON.parse(readFileSync(path, 'utf8')) as {
+      cells: { fg: [number, number, number]; bg: [number, number, number]; dim?: boolean }[]
+    }
+    const dimCells = fr.cells.filter((c) => c.dim)
+    // If pack has dim, each resolve meets min contrast
+    for (const c of dimCells.slice(0, 20)) {
+      const fg = resolvePaintFg(c.fg, c.bg, true, 1.6)
+      assert(
+        contrastRatio(fg, c.bg) >= 1.6,
+        `dim cell contrast ${contrastRatio(fg, c.bg)}`,
+      )
+    }
+  }
+  // Real pack shade ░ present in catalog
+  {
+    let found = false
+    const root = join(import.meta.dir, '..', 'public', 'preview-frames')
+    for (const name of readdirSync(root)) {
+      const manPath = join(root, name, 'manifest.json')
+      if (!existsSync(manPath)) continue
+      const man = JSON.parse(readFileSync(manPath, 'utf8')) as {
+        defaultSize?: string
+        sizes?: string[]
+      }
+      const size = man.defaultSize ?? man.sizes?.[0] ?? '40x8'
+      const frPath = join(root, name, size, '0.json')
+      if (!existsSync(frPath)) continue
+      const fr = JSON.parse(readFileSync(frPath, 'utf8')) as { cells: { ch: string }[] }
+      if (fr.cells.some((c) => c.ch === '░')) {
+        found = true
+        assert(boxStrokeForGlyph('░')?.kind === 'shade', 'pack ░ shade plan')
+        break
+      }
+    }
+    assert(found, 'catalog has at least one ░ shade cell for fixture')
   }
 }
 

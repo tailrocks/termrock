@@ -55,6 +55,88 @@ export function boldFontWeight(bold: boolean | undefined): '400' | '700' {
   return bold ? '700' : '400'
 }
 
+/** sRGB channel → linear (WCAG). */
+function srgbToLinear(c: number): number {
+  const x = Math.max(0, Math.min(255, c)) / 255
+  return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)
+}
+
+/** Relative luminance 0..1 (WCAG). */
+export function relativeLuminance(rgb: [number, number, number]): number {
+  const r = srgbToLinear(rgb[0])
+  const g = srgbToLinear(rgb[1])
+  const b = srgbToLinear(rgb[2])
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** Contrast ratio ≥ 1 (WCAG). */
+export function contrastRatio(
+  a: [number, number, number],
+  b: [number, number, number],
+): number {
+  const l1 = relativeLuminance(a)
+  const l2 = relativeLuminance(b)
+  const hi = Math.max(l1, l2)
+  const lo = Math.min(l1, l2)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/**
+ * Ghostty-like minimum-contrast: nudge fg toward black/white until ratio ≥ min.
+ * Used after dim so faint phosphor text stays readable on near-bg cells.
+ */
+export function ensureMinContrast(
+  fg: [number, number, number],
+  bg: [number, number, number],
+  minRatio = 1.6,
+): [number, number, number] {
+  const min = minRatio > 1 ? minRatio : 1
+  if (contrastRatio(fg, bg) >= min) {
+    return [fg[0] | 0, fg[1] | 0, fg[2] | 0]
+  }
+  const bgLum = relativeLuminance(bg)
+  // Push toward white on dark bg, black on light bg.
+  const target: [number, number, number] = bgLum < 0.5 ? [255, 255, 255] : [0, 0, 0]
+  let out: [number, number, number] = [fg[0], fg[1], fg[2]]
+  // Binary-ish mix toward target until ratio met (max 12 steps).
+  for (let i = 0; i < 12; i++) {
+    if (contrastRatio(out, bg) >= min) break
+    const t = 0.2 + i * 0.07
+    out = [
+      Math.round(out[0] + (target[0] - out[0]) * t),
+      Math.round(out[1] + (target[1] - out[1]) * t),
+      Math.round(out[2] + (target[2] - out[2]) * t),
+    ]
+  }
+  // Final clamp if still short — snap to target.
+  if (contrastRatio(out, bg) < min) return target
+  return [
+    Math.max(0, Math.min(255, out[0])),
+    Math.max(0, Math.min(255, out[1])),
+    Math.max(0, Math.min(255, out[2])),
+  ]
+}
+
+/**
+ * Resolve paint RGB for a cell fg given dim flag and Ghostty min-contrast vs bg.
+ */
+export function resolvePaintFg(
+  fg: [number, number, number],
+  bg: [number, number, number],
+  dim?: boolean,
+  minRatio = 1.6,
+): [number, number, number] {
+  let r: [number, number, number] = [fg[0], fg[1], fg[2]]
+  if (dim) {
+    r = [
+      Math.round(r[0] * 0.7),
+      Math.round(r[1] * 0.7),
+      Math.round(r[2] * 0.7),
+    ]
+  }
+  return ensureMinContrast(r, bg, minRatio)
+}
+
 /**
  * Vector stroke plan for common terminal box/block glyphs.
  * When non-null, paint geometry instead of font glyphs so borders join exactly
@@ -72,6 +154,8 @@ export type BoxStrokePlan =
   | { kind: 'upper'; eighths: number }
   | { kind: 'left'; eighths: number }
   | { kind: 'right'; eighths: number }
+  /** Full-cell shade fill; density is paint alpha (░≈0.25 ▒≈0.5 ▓≈0.75). */
+  | { kind: 'shade'; density: number }
 
 /** Clamp Unicode eighths ladder to 1..8. */
 export function clampEighths(n: number): number {
@@ -155,6 +239,13 @@ export function boxStrokeForGlyph(ch: string): BoxStrokePlan | null {
       return { kind: 'left', eighths: 7 }
     case '▐':
       return { kind: 'right', eighths: 4 }
+    // Shade blocks — density for alpha fill (not solid █).
+    case '░':
+      return { kind: 'shade', density: 0.25 }
+    case '▒':
+      return { kind: 'shade', density: 0.5 }
+    case '▓':
+      return { kind: 'shade', density: 0.75 }
     default:
       return null
   }
@@ -192,6 +283,11 @@ export function boxStrokeGeometry(
   const fills: BoxFillRect[] = []
 
   if (plan.kind === 'fill') {
+    fills.push({ x: px, y: py, w, h })
+    return { segs, fills }
+  }
+  if (plan.kind === 'shade') {
+    // Full cell; paint path applies density as alpha.
     fills.push({ x: px, y: py, w, h })
     return { segs, fills }
   }
