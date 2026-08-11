@@ -299,7 +299,10 @@ fn cmd_frame(
 fn cmd_export_frames(
     mut args: impl Iterator<Item = std::ffi::OsString>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use frame::{PreviewKey, paint_story_after_keys, paint_story_frame, story_by_id};
+    use frame::{
+        PreviewKey, composite_tour_stories, paint_story_after_keys, paint_story_frame,
+        preferred_step_key, story_by_id,
+    };
     use std::fs;
     let usage = "usage: termrock-lookbook export-frames --out <dir> [--story id]*";
     let mut out_dir = None;
@@ -340,11 +343,16 @@ fn cmd_export_frames(
     };
     for id in ids {
         let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
-        let interactive = {
-            let probe = paint_story_frame(story, &theme, Some(40), Some(8));
-            probe.interactive || id.contains("list/")
+        let tour = composite_tour_stories(&id);
+        let step_key = preferred_step_key(story);
+        let interactive = tour.is_some() || step_key.is_some();
+        let steps = if let Some(tour) = tour {
+            tour.len() as u32
+        } else if step_key.is_some() {
+            6
+        } else {
+            1
         };
-        let steps = if interactive { 6u32 } else { 1 };
         let slug = id.replace('/', "-");
         let pack = out_dir.join(&slug);
         fs::create_dir_all(&pack)?;
@@ -354,27 +362,49 @@ fn cmd_export_frames(
             size_keys.push(size_key.clone());
             let size_dir = pack.join(&size_key);
             fs::create_dir_all(&size_dir)?;
-            let base = paint_story_frame(story, &theme, Some(sc), Some(sr));
-            fs::write(
-                size_dir.join("0.json"),
-                serde_json::to_string_pretty(&base)?,
-            )?;
-            if interactive {
-                for step in 1..=5 {
-                    let keys: Vec<PreviewKey> = (0..step)
-                        .map(|_| PreviewKey {
-                            key: "ArrowDown".into(),
-                            ctrl: false,
-                            alt: false,
-                            shift: false,
-                            meta: false,
-                        })
-                        .collect();
-                    let f = paint_story_after_keys(story, &theme, Some(sc), Some(sr), &keys);
+            if let Some(tour) = tour {
+                for (step, story_id) in tour.iter().enumerate() {
+                    let step_story =
+                        story_by_id(story_id).ok_or_else(|| format!("unknown tour story: {story_id}"))?;
+                    let f = paint_story_frame(step_story, &theme, Some(sc), Some(sr));
+                    // Force interactive flag so hosts enable input for tour packs.
+                    let mut f = f;
+                    f.interactive = true;
+                    f.story_id = id.clone();
                     fs::write(
                         size_dir.join(format!("{step}.json")),
                         serde_json::to_string_pretty(&f)?,
                     )?;
+                }
+            } else {
+                // Prefer interactor paint for interactive stories so step 0 matches step graph.
+                let base = if let Some(key) = step_key {
+                    let _ = key;
+                    paint_story_after_keys(story, &theme, Some(sc), Some(sr), &[])
+                } else {
+                    paint_story_frame(story, &theme, Some(sc), Some(sr))
+                };
+                fs::write(
+                    size_dir.join("0.json"),
+                    serde_json::to_string_pretty(&base)?,
+                )?;
+                if let Some(key) = step_key {
+                    for step in 1..=5 {
+                        let keys: Vec<PreviewKey> = (0..step)
+                            .map(|_| PreviewKey {
+                                key: key.into(),
+                                ctrl: false,
+                                alt: false,
+                                shift: false,
+                                meta: false,
+                            })
+                            .collect();
+                        let f = paint_story_after_keys(story, &theme, Some(sc), Some(sr), &keys);
+                        fs::write(
+                            size_dir.join(format!("{step}.json")),
+                            serde_json::to_string_pretty(&f)?,
+                        )?;
+                    }
                 }
             }
         }
@@ -384,7 +414,11 @@ fn cmd_export_frames(
         for entry in fs::read_dir(&default_dir)? {
             let entry = entry?;
             let name = entry.file_name();
-            fs::copy(entry.path(), pack.join(&name))?;
+            let name_str = name.to_string_lossy();
+            // Copy only step JSON into pack root (skip nested size dirs).
+            if name_str.ends_with(".json") {
+                fs::copy(entry.path(), pack.join(&name))?;
+            }
         }
         // Prove helpers are on the export path (host CSS → story size → pack key)
         let (want_c, want_r) = story_size_for_css_host(720, 320);
@@ -400,6 +434,8 @@ fn cmd_export_frames(
             "sizes": size_keys,
             "defaultSize": default_key,
             "padCells": 1,
+            "stepKey": step_key,
+            "tour": tour.map(|t| t.to_vec()),
         });
         fs::write(
             pack.join("manifest.json"),

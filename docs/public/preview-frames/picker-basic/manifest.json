@@ -12,7 +12,9 @@
     "72x16",
     "80x24"
   ],
+  "stepKey": "ArrowDown",
   "steps": 6,
   "storyId": "picker/basic",
-  "title": "Filterable picker"
+  "title": "Filterable picker",
+  "tour": null
 }

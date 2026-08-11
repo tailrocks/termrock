@@ -36252,6 +36252,6 @@
       "reversed": false
     }
   ],
-  "interactive": false,
+  "interactive": true,
   "theme": "phosphor"
 }

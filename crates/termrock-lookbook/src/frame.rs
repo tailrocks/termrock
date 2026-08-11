@@ -284,14 +284,66 @@ pub fn paint_story_frame(
     }
 }
 
-fn probe_interactive(story: Story) -> bool {
-    let mut inter = story.make_interactor();
-    inter.handle_key(KeyEvent {
-        code: KeyCode::Down,
+/// Keys tried when probing whether a story interactor accepts navigation.
+const PROBE_KEY_CODES: &[KeyCode] = &[
+    KeyCode::Down,
+    KeyCode::Right,
+    KeyCode::Left,
+    KeyCode::Up,
+    KeyCode::Char('j'),
+    KeyCode::Tab,
+];
+
+fn probe_key_event(code: KeyCode) -> KeyEvent {
+    KeyEvent {
+        code,
         modifiers: KeyModifiers::NONE,
         kind: KeyEventKind::Press,
         state: Default::default(),
-    })
+    }
+}
+
+/// True when any common navigation key is accepted by the story interactor.
+#[must_use]
+pub fn probe_interactive(story: Story) -> bool {
+    preferred_step_key(story).is_some()
+}
+
+/// Prefer the first probe key that the interactor accepts (for multi-step export).
+#[must_use]
+pub fn preferred_step_key(story: Story) -> Option<&'static str> {
+    for code in PROBE_KEY_CODES {
+        let mut inter = story.make_interactor();
+        if inter.handle_key(probe_key_event(*code)) {
+            return Some(match code {
+                KeyCode::Down => "ArrowDown",
+                KeyCode::Right => "ArrowRight",
+                KeyCode::Left => "ArrowLeft",
+                KeyCode::Up => "ArrowUp",
+                KeyCode::Char('j') => "j",
+                KeyCode::Tab => "Tab",
+                _ => continue,
+            });
+        }
+    }
+    None
+}
+
+/// Multi-scene composite tours: one pack id → several real story paints as steps.
+/// Used when a surface is product-important but has no single multi-state interactor.
+#[must_use]
+pub fn composite_tour_stories(pack_story_id: &str) -> Option<&'static [&'static str]> {
+    match pack_story_id {
+        "agent-workbench/basic" => Some(&[
+            "agent-workbench/basic",
+            "agent-workbench/tool-running",
+            "agent-workbench/permission",
+            "agent-workbench/plan",
+            "agent-workbench/diff",
+            "agent-workbench/session",
+        ]),
+        _ => None,
+    }
 }
 
 /// Paint after applying a sequence of keys through the real story interactor.
@@ -558,6 +610,59 @@ mod tests {
         assert!(
             nonempty > 40,
             "composite must fill terminal, nonempty={nonempty}"
+        );
+    }
+
+    #[test]
+    fn preferred_step_key_detects_tabs_right_or_down() {
+        let story = story_by_id("tabs/status").expect("tabs/status");
+        let key = preferred_step_key(story).expect("tabs must accept a nav key");
+        assert!(
+            matches!(key, "ArrowRight" | "ArrowDown" | "ArrowLeft" | "ArrowUp" | "j" | "Tab"),
+            "unexpected step key {key}"
+        );
+        assert!(probe_interactive(story));
+        let theme = RolePalette::default();
+        let base = paint_story_after_keys(story, &theme, Some(40), Some(4), &[]);
+        let after = paint_story_after_keys(
+            story,
+            &theme,
+            Some(40),
+            Some(4),
+            &[PreviewKey {
+                key: key.into(),
+                ctrl: false,
+                alt: false,
+                shift: false,
+                meta: false,
+            }],
+        );
+        assert_ne!(
+            base.cells, after.cells,
+            "tabs preferred key must change paint"
+        );
+    }
+
+    #[test]
+    fn composite_tour_agent_workbench_multi_scene() {
+        let tour = composite_tour_stories("agent-workbench/basic").expect("tour");
+        assert_eq!(tour.len(), 6);
+        let theme = RolePalette::default();
+        let mut frames = Vec::new();
+        for id in tour {
+            let story = story_by_id(id).unwrap_or_else(|| panic!("missing tour story {id}"));
+            let f = paint_story_frame(story, &theme, Some(56), Some(12));
+            assert_eq!(f.component, "AgentWorkbench");
+            frames.push(f);
+        }
+        // At least two tour scenes must paint differently (not a static mock).
+        let distinct = frames
+            .windows(2)
+            .filter(|w| w[0].cells != w[1].cells)
+            .count();
+        assert!(
+            distinct >= 2,
+            "workbench tour must include multiple distinct scenes, distinct_pairs={distinct}"
         );
     }
 }

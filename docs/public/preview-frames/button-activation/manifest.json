@@ -12,7 +12,9 @@
     "72x16",
     "80x24"
   ],
+  "stepKey": null,
   "steps": 1,
   "storyId": "button/activation",
-  "title": "Button primary"
+  "title": "Button primary",
+  "tour": null
 }

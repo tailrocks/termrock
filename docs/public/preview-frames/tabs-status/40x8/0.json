@@ -756,40 +756,6 @@
       "reversed": false
     },
     {
-      "ch": "●",
-      "fg": [
-        0,
-        255,
-        65
-      ],
-      "bg": [
-        42,
-        42,
-        42
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        42,
-        42,
-        42
-      ],
-      "bold": true,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
       "ch": "O",
       "fg": [
         255,
@@ -1113,23 +1079,6 @@
       "reversed": false
     },
     {
-      "ch": "2",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
       "ch": " ",
       "fg": [
         255,
@@ -1137,9 +1086,9 @@
         255
       ],
       "bg": [
-        30,
-        30,
-        30
+        0,
+        0,
+        0
       ],
       "bold": false,
       "dim": false,
@@ -1171,26 +1120,9 @@
         255
       ],
       "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "●",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
+        0,
+        0,
+        0
       ],
       "bold": false,
       "dim": false,
@@ -1205,77 +1137,9 @@
         255
       ],
       "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "L",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "o",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "g",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false
-    },
-    {
-      "ch": "s",
-      "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        30,
-        30,
-        30
+        0,
+        0,
+        0
       ],
       "bold": false,
       "dim": false,
@@ -1290,9 +1154,145 @@
         255
       ],
       "bg": [
-        30,
-        30,
-        30
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        0,
+        0,
+        0
       ],
       "bold": false,
       "dim": false,
@@ -1623,11 +1623,11 @@
       "reversed": false
     },
     {
-      "ch": "━",
+      "ch": " ",
       "fg": [
-        0,
         255,
-        65
+        255,
+        255
       ],
       "bg": [
         0,
@@ -1640,11 +1640,11 @@
       "reversed": false
     },
     {
-      "ch": "━",
+      "ch": " ",
       "fg": [
-        0,
         255,
-        65
+        255,
+        255
       ],
       "bg": [
         0,
@@ -7148,6 +7148,6 @@
       "reversed": false
     }
   ],
-  "interactive": false,
+  "interactive": true,
   "theme": "phosphor"
 }

@@ -57,13 +57,21 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
 
 ## Fidelity notes
 
-- 24-bit RGB cells from Ratatui `Color::Rgb` / named phosphor greens.
-- ~9×18 cell metrics (matches SVG export); JetBrains Mono stack.
+- 24-bit RGB cells from Ratatui `Color::Rgb` / named phosphor greens; host paints
+  **every** cell background (including pure black) — no ANSI 16 collapse.
+- ~9×18 cell metrics (matches SVG export); JetBrains Mono stack; canvas keeps
+  **fixed CSS pixel size** (no `max-width` stretch) so cell geometry stays integer.
+- Ghostty window chrome: traffic lights, title, blinking caret when focused,
+  status bar (`step n/m`, size key, RGB24, key hints).
 - **Responsive remap (shipped):** host `ResizeObserver` → `storySizeForCssHost` /
   `colsForCssWidth` / `rowsForCssHeight` (mirrors Rust `frame.rs`) →
   `pickSizeKey` → load `preview-frames/<story>/<cols>x<rows>/<step>.json`
   re-painted at that story size. Not letterbox-only.
 - Interactive packs step pre-painted interactor states (real TermRock paint), not mock HTML lists.
+- **Step key probe:** export uses `preferred_step_key` (Down/Right/Left/Up/j/Tab)
+  so horizontal widgets (Tabs) bake correct multi-step graphs.
+- **Composite tour:** `agent-workbench/basic` packs multi-scene workbench stories
+  (`tool-running`, `permission`, `plan`, `diff`, `session`) as interactive steps.
 
 ## Size packs
 
