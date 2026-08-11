@@ -41,8 +41,19 @@ cargo run -p termrock-lookbook -- frame --story list/selection --keys ArrowDown
 <TerminalPreview story="list/selection" interactive />
 ```
 
-Primary embeds: **List** (`list/selection`), **Button** (`button/activation`),
-**AgentWorkbench** handbook (`agent-workbench/basic`).
+Primary embeds (widget + composite):
+
+| Surface | Story pack |
+|---------|------------|
+| List | `list/selection` |
+| Button | `button/activation` |
+| Tabs | `tabs/status` |
+| Tree | `tree/navigation` |
+| Form | `form/responsive` |
+| Picker | `picker/basic` |
+| AgentWorkbench (handbook) | `agent-workbench/basic` |
+
+Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook export-frames`).
 
 ## Fidelity notes
 

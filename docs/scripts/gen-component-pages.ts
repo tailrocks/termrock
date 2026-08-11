@@ -85,14 +85,15 @@ ${escapeTable(story.title)}
 `
     })
     .join('\n')
-  const interactiveStory =
-    component === 'List'
-      ? 'list/selection'
-      : component === 'AgentWorkbench' || component === 'agent-workbench'
-        ? 'agent-workbench/basic'
-        : component === 'Button'
-          ? 'button/activation'
-          : null
+  const interactiveByComponent: Record<string, string> = {
+    List: 'list/selection',
+    Button: 'button/activation',
+    Tabs: 'tabs/status',
+    Tree: 'tree/navigation',
+    Form: 'form/responsive',
+    Picker: 'picker/basic',
+  }
+  const interactiveStory = interactiveByComponent[component] ?? null
   const interactiveBlock = interactiveStory
     ? `
 ## Live terminal (Ghostty-class)

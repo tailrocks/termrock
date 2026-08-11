@@ -71,3 +71,9 @@ run = """
 bun run docs/scripts/check-contracts.ts
 """
 
+[tasks.export-preview-frames]
+description = "Export Ghostty-class interactive truecolor frame packs for docs TerminalPreview"
+run = """
+cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames
+"""
+

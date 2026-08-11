@@ -324,6 +324,10 @@ fn cmd_export_frames(
         "list/selection",
         "button/activation",
         "agent-workbench/basic",
+        "tabs/status",
+        "tree/navigation",
+        "form/responsive",
+        "picker/basic",
     ];
     let ids: Vec<String> = if only.is_empty() {
         defaults.iter().map(|s| (*s).to_string()).collect()

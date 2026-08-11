@@ -199,7 +199,9 @@ export function TerminalPreview({
   const [focused, setFocused] = useState(false)
   const labelId = useId()
   const stepRef = useRef(0)
+  const sizeKeyRef = useRef(sizeKey)
   stepRef.current = step
+  sizeKeyRef.current = sizeKey
 
   const slug = useMemo(() => story.replaceAll('/', '-'), [story])
   const packBase = `${basePath()}/preview-frames/${slug}`
@@ -255,6 +257,7 @@ export function TerminalPreview({
   }, [frame, cellW, cellH])
 
   // Real remap: host CSS size → story cols/rows → nearest exported pack → load.
+  // sizeKeyRef avoids re-binding ResizeObserver on every size change.
   useEffect(() => {
     const stage = stageRef.current
     if (!stage || !manifest) return
@@ -267,7 +270,7 @@ export function TerminalPreview({
       stage.dataset['wantStoryCols'] = String(storyCols)
       stage.dataset['wantStoryRows'] = String(storyRows)
       stage.dataset['sizeKey'] = nextKey
-      if (nextKey !== sizeKey) {
+      if (nextKey !== sizeKeyRef.current) {
         void loadFrame(nextKey, stepRef.current)
       }
     }
@@ -279,14 +282,13 @@ export function TerminalPreview({
       timer = setTimeout(() => apply(width, height), 50)
     })
     ro.observe(stage)
-    // Initial measure
     const rect = stage.getBoundingClientRect()
     apply(rect.width, rect.height)
     return () => {
       ro.disconnect()
       if (timer) clearTimeout(timer)
     }
-  }, [manifest, cellW, cellH, sizes, sizeKey, loadFrame])
+  }, [manifest, cellW, cellH, sizes, loadFrame])
 
   const onKeyDown = (e: ReactKeyboardEvent) => {
     if (!interactive || !manifest?.interactive) return
@@ -323,10 +325,23 @@ export function TerminalPreview({
     hostRef.current?.focus()
     setFocused(true)
     if (!interactive || !manifest?.interactive) return
-    if (e.button === 0) {
-      const next = Math.min((manifest.steps || 1) - 1, step + 1)
+    if (e.button !== 0) return
+    const canvas = canvasRef.current
+    if (canvas && frame) {
+      const rect = canvas.getBoundingClientRect()
+      const yCss =
+        (e.clientY - rect.top) *
+        (rect.height > 0 ? canvas.clientHeight / rect.height : 1)
+      // Map click Y → terminal row → selection step (list/tabs/tree demos).
+      const row = Math.floor(yCss / cellH)
+      const bodyRow = Math.max(0, row - PAD)
+      const maxStep = Math.max(0, (manifest.steps || 1) - 1)
+      const next = Math.min(maxStep, bodyRow)
       void loadFrame(sizeKey, next)
+      return
     }
+    const next = Math.min((manifest.steps || 1) - 1, step + 1)
+    void loadFrame(sizeKey, next)
   }
 
   const chrome: CSSProperties = {
