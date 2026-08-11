@@ -10,6 +10,8 @@ import {
   applyNavStepAction,
   baselineForCell,
   boldFontWeight,
+  boxStrokeForGlyph,
+  boxStrokeGeometry,
   cellAtPointer,
   clampStep,
   cursorCellForStep,
@@ -82,7 +84,30 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
     )
     assert(isBoxOrBlockGlyph(ch), `pack glyph ${ch} is box`)
     assert(glyphDrawX(9, 9, 4, ch) === 9, `pack ${ch} flush drawX`)
+    const plan = boxStrokeForGlyph(ch)
+    assert(plan, `vector plan for pack ${ch}`)
   }
+  // Vector geometry: horizontal ─ spans full cell; corners reach edges.
+  const hPlan = boxStrokeForGlyph('─')
+  assert(hPlan?.kind === 'h', '─ is h plan')
+  const hGeo = boxStrokeGeometry(hPlan!, 10, 20, 9, 18)
+  assert(hGeo.segs.length === 1, '─ one segment')
+  assert(hGeo.segs[0]!.x1 === 10 && hGeo.segs[0]!.x2 === 19, `─ full width segs ${JSON.stringify(hGeo.segs[0])}`)
+  assert(hGeo.segs[0]!.y1 === hGeo.segs[0]!.y2, '─ horizontal')
+  // Two adjacent ─ cells abut: cell0 ends at 19, cell1 starts at 19
+  const hGeo2 = boxStrokeGeometry(hPlan!, 19, 20, 9, 18)
+  assert(hGeo.segs[0]!.x2 === hGeo2.segs[0]!.x1, 'adjacent ─ abut')
+  const vPlan = boxStrokeForGlyph('│')
+  assert(vPlan?.kind === 'v', '│ is v')
+  const vGeo = boxStrokeGeometry(vPlan!, 0, 0, 9, 18)
+  assert(vGeo.segs[0]!.y1 === 0 && vGeo.segs[0]!.y2 === 18, '│ full height')
+  const tl = boxStrokeGeometry(boxStrokeForGlyph('┌')!, 0, 0, 9, 18)
+  assert(tl.segs.length === 2, '┌ two arms')
+  const fill = boxStrokeGeometry(boxStrokeForGlyph('█')!, 0, 0, 9, 18)
+  assert(fill.fills.length === 1 && fill.fills[0]!.w === 9, '█ fill cell')
+  const half = boxStrokeGeometry(boxStrokeForGlyph('▌')!, 0, 0, 10, 18)
+  assert(half.fills[0]!.w === 5, '▌ half width')
+  assert(boxStrokeForGlyph('A') === null, 'latin no stroke plan')
 }
 
 assert(stepDeltaFromWheel(0) === 0, 'dead zone zero')

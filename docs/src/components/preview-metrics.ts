@@ -55,6 +55,136 @@ export function boldFontWeight(bold: boolean | undefined): '400' | '700' {
   return bold ? '700' : '400'
 }
 
+/**
+ * Vector stroke plan for common terminal box/block glyphs.
+ * When non-null, paint geometry instead of font glyphs so borders join exactly
+ * at cell edges (Ghostty grid chrome). Unknown box glyphs return null → font path.
+ */
+export type BoxStrokePlan =
+  | { kind: 'h'; heavy: boolean }
+  | { kind: 'v'; heavy: boolean }
+  | { kind: 'corner'; n: boolean; s: boolean; e: boolean; w: boolean }
+  | { kind: 'fill' }
+  | { kind: 'half-left' }
+  | { kind: 'half-right' }
+
+export function boxStrokeForGlyph(ch: string): BoxStrokePlan | null {
+  if (!ch) return null
+  switch (ch) {
+    case '─':
+    case '┄':
+    case '┈':
+      return { kind: 'h', heavy: false }
+    case '━':
+    case '┅':
+    case '┉':
+      return { kind: 'h', heavy: true }
+    case '│':
+    case '┊':
+    case '┆':
+      return { kind: 'v', heavy: false }
+    case '┃':
+    case '┋':
+    case '┇':
+      return { kind: 'v', heavy: true }
+    case '┌':
+      return { kind: 'corner', n: false, s: true, e: true, w: false }
+    case '┐':
+      return { kind: 'corner', n: false, s: true, e: false, w: true }
+    case '└':
+      return { kind: 'corner', n: true, s: false, e: true, w: false }
+    case '┘':
+      return { kind: 'corner', n: true, s: false, e: false, w: true }
+    case '├':
+      return { kind: 'corner', n: true, s: true, e: true, w: false }
+    case '┤':
+      return { kind: 'corner', n: true, s: true, e: false, w: true }
+    case '┬':
+      return { kind: 'corner', n: false, s: true, e: true, w: true }
+    case '┴':
+      return { kind: 'corner', n: true, s: false, e: true, w: true }
+    case '┼':
+      return { kind: 'corner', n: true, s: true, e: true, w: true }
+    case '█':
+    case '▉':
+    case '▇':
+    case '▆':
+    case '▅':
+      return { kind: 'fill' }
+    case '▌':
+    case '▎':
+    case '\u258d': // left three eighths → half-left approx
+      return { kind: 'half-left' }
+    case '▐':
+      return { kind: 'half-right' }
+    default:
+      return null
+  }
+}
+
+export type BoxStrokeSeg = {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  width: number
+}
+
+export type BoxFillRect = { x: number; y: number; w: number; h: number }
+
+/**
+ * Geometry for a stroke plan in cell-local CSS pixels (absolute canvas coords).
+ * Horizontal segs span the full cell width; vertical segs span full height so
+ * neighboring cells' strokes abut with no gap.
+ */
+export function boxStrokeGeometry(
+  plan: BoxStrokePlan,
+  px: number,
+  py: number,
+  cellW: number,
+  cellH: number,
+): { segs: BoxStrokeSeg[]; fills: BoxFillRect[] } {
+  const w = Math.max(1, cellW)
+  const h = Math.max(1, cellH)
+  const mx = px + w / 2
+  const my = py + h / 2
+  const light = Math.max(1, Math.min(w, h) * 0.12)
+  const heavy = Math.max(light * 1.6, Math.min(w, h) * 0.2)
+  const segs: BoxStrokeSeg[] = []
+  const fills: BoxFillRect[] = []
+
+  if (plan.kind === 'fill') {
+    fills.push({ x: px, y: py, w, h })
+    return { segs, fills }
+  }
+  if (plan.kind === 'half-left') {
+    fills.push({ x: px, y: py, w: Math.ceil(w / 2), h })
+    return { segs, fills }
+  }
+  if (plan.kind === 'half-right') {
+    const half = Math.floor(w / 2)
+    fills.push({ x: px + half, y: py, w: w - half, h })
+    return { segs, fills }
+  }
+  if (plan.kind === 'h') {
+    const lw = plan.heavy ? heavy : light
+    segs.push({ x1: px, y1: my, x2: px + w, y2: my, width: lw })
+    return { segs, fills }
+  }
+  if (plan.kind === 'v') {
+    const lw = plan.heavy ? heavy : light
+    segs.push({ x1: mx, y1: py, x2: mx, y2: py + h, width: lw })
+    return { segs, fills }
+  }
+  // corner / junction
+  const lw = light
+  if (plan.n) segs.push({ x1: mx, y1: py, x2: mx, y2: my, width: lw })
+  if (plan.s) segs.push({ x1: mx, y1: my, x2: mx, y2: py + h, width: lw })
+  if (plan.w) segs.push({ x1: px, y1: my, x2: mx, y2: my, width: lw })
+  if (plan.e) segs.push({ x1: mx, y1: my, x2: px + w, y2: my, width: lw })
+  return { segs, fills }
+}
+
 /** Monospace stack matching docs --font-mono / Ghostty-class host. */
 export const PREVIEW_MONO_STACK =
   '"JetBrains Mono", "SF Mono", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace'

@@ -20,6 +20,8 @@ import {
   applyNavStepAction,
   baselineForCell,
   boldFontWeight,
+  boxStrokeForGlyph,
+  boxStrokeGeometry,
   cellAtPointer,
   clampStep,
   cursorCellForStep,
@@ -51,6 +53,8 @@ export {
   applyNavStepAction,
   baselineForCell,
   boldFontWeight,
+  boxStrokeForGlyph,
+  boxStrokeGeometry,
   cellAtPointer,
   clampStep,
   combinedHostViewport,
@@ -204,8 +208,8 @@ export type PaintCursor = {
 /**
  * Ghostty-class cell paint: full 24-bit RGB bg+fg, monospaced metrics, no smoothing.
  * Always fills every cell background (including pure black) so truecolor is preserved.
- * Text glyphs are centered in-cell; box/block glyphs flush-left so panel
- * borders join without hairline gaps (Ghostty/TUI chrome).
+ * Text glyphs are centered in-cell. Common box/block glyphs are vector-stroked
+ * full-cell so panel borders join exactly at edges (Ghostty grid chrome).
  * Optional block cursor overlays the active selection row when the host is focused.
  */
 export function paintCanvas(
@@ -245,14 +249,37 @@ export function paintCanvas(
       ctx.fillRect(px, py, cellW, cellH)
       const ch = cell.ch
       if (!ch || ch === ' ' || ch === '\u00a0') continue
+      const strokePlan = boxStrokeForGlyph(ch)
+      if (strokePlan) {
+        const { segs, fills } = boxStrokeGeometry(strokePlan, px, py, cellW, cellH)
+        const fg = paintFg(cell)
+        ctx.fillStyle = fg
+        for (const fr of fills) {
+          ctx.fillRect(fr.x, fr.y, fr.w, fr.h)
+        }
+        ctx.strokeStyle = fg
+        ctx.lineCap = 'butt'
+        ctx.lineJoin = 'miter'
+        for (const seg of segs) {
+          ctx.lineWidth = seg.width
+          ctx.beginPath()
+          ctx.moveTo(seg.x1, seg.y1)
+          ctx.lineTo(seg.x2, seg.y2)
+          ctx.stroke()
+        }
+        if (cell.underline) {
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(px, py + cellH - 2)
+          ctx.lineTo(px + cellW, py + cellH - 2)
+          ctx.stroke()
+        }
+        continue
+      }
       const weight = boldFontWeight(cell.bold)
       ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
       ctx.fillStyle = paintFg(cell)
-      ctx.textBaseline = 'alphabetic'
-      // Box/block: alphabetic baseline can lift line glyphs; use middle for seams.
-      if (isBoxOrBlockGlyph(ch)) {
-        ctx.textBaseline = 'middle'
-      }
+      ctx.textBaseline = isBoxOrBlockGlyph(ch) ? 'middle' : 'alphabetic'
       const tw = ctx.measureText(ch).width
       const span = isBoxOrBlockGlyph(ch) ? 1 : glyphCellSpan(tw, cellW)
       const drawY = isBoxOrBlockGlyph(ch) ? py + cellH / 2 : py + baseline
