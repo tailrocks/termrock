@@ -2350,7 +2350,6 @@ No blocking open questions remain for A1+ implementation.
 - `docs/design/terminal-design-system.md`
 - `docs/design/experience-research-2026.md`
 - `docs/design/competitive-tui-research.md`
-- `plans/046-agent-workbench-flagship.md`
 - Kernel: `crates/termrock/src/widgets/{prompt_composer,permission,transcript,agent,agent_blocks,review,markdown,diff}.rs`
 - Kernel: `crates/termrock/src/patterns/agent_workbench.rs`
 - Kernel: `crates/termrock/src/interaction/{overlay_stack,scene}.rs`
