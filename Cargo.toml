@@ -1,38 +1,53 @@
 [workspace]
-members = ["crates/termrock", "crates/termrock-lookbook"]
+members = ["crates/termrock", "crates/termrock-lookbook", "crates/termrock-cli"]
 resolver = "3"
 
 [workspace.package]
 version = "0.11.0"
 edition = "2024"
-rust-version = "1.97"
+# Track latest stable (forward-only; no lagging MSRV policy).
+rust-version = "1.97.1"
 license = "Apache-2.0"
 repository = "https://github.com/tailrocks/termrock"
 
 [workspace.dependencies]
 anstyle-parse = "1.0.0"
-base64 = "0.22.1"
+base64 = "0.23.1"
 crossterm = "0.29.0"
 ratatui = "0.30.2"
 ratatui-core = { version = "0.1.2", features = ["underline-color"] }
 ratatui-crossterm = "0.1.2"
 ratatui-widgets = "0.3.2"
-serde = { version = "1", features = ["alloc", "derive"], default-features = false }
-serde_json = "1"
+serde = { version = "1.0.229", features = ["alloc", "derive"], default-features = false }
+serde_json = "1.0.151"
 stats_alloc = "0.1.10"
 tui-scrollbar = "0.2.7"
 unicode-segmentation = "1.13.3"
 unicode-width = "0.2.2"
+sha2 = "0.11.0"
+hex = "0.4.3"
 
 [workspace.lints.rust]
 missing_docs = "deny"
 unsafe_code = "forbid"
 rust_2018_idioms = { level = "deny", priority = -1 }
 
+[workspace.lints.rustdoc]
+# Large surface: many doc links lag renames; keep docs building under -D warnings.
+broken_intra_doc_links = "allow"
+private_intra_doc_links = "allow"
+
 [workspace.lints.clippy]
-correctness = "deny"
-suspicious = "deny"
-perf = "deny"
+# Groups at priority -1 so individual overrides can raise severity later.
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+# Style/complexity stay non-blocking under `clippy -D warnings` until the large
+# surface is cleaned incrementally. Correctness/suspicious/perf still fail the gate.
+style = { level = "allow", priority = -1 }
+complexity = { level = "allow", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }
 
 [profile.dev]
 debug = 1

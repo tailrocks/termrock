@@ -11,6 +11,8 @@
 
 ## Status
 
+- **Execution**: DONE — migration 0052
+
 - **Priority**: P2
 - **Effort**: L
 - **Risk**: MEDIUM
@@ -118,13 +120,13 @@ check; warmed O(1)/visible-text allocation checks; separate
 
 ## Done criteria
 
-- [ ] All listed primitives/content/feedback contracts are implemented.
-- [ ] Interaction uses scene/actions and returns typed neutral outcomes.
-- [ ] All paint uses DesignSystem recipes and composed anatomy.
-- [ ] Disabled/loading/tiny/ASCII/no-color/motion behaviors are proven.
-- [ ] Existing feedback surfaces have one canonical contract; duplicates gone.
-- [ ] Migration `0043`, docs, evidence, previews/traces/API are fresh.
-- [ ] Full gates pass.
+- [x] All listed primitives/content/feedback contracts are implemented.
+- [x] Interaction uses scene/actions and returns typed neutral outcomes.
+- [x] All paint uses DesignSystem recipes and composed anatomy.
+- [x] Disabled/loading/tiny/ASCII/no-color/motion behaviors are proven.
+- [x] Existing feedback surfaces have one canonical contract; duplicates gone.
+- [x] Migration `0043`, docs, evidence, previews/traces/API are fresh.
+- [x] Full gates pass.
 
 ## STOP conditions
 

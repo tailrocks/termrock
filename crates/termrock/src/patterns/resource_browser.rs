@@ -5,13 +5,14 @@
 //!
 //! Preview pane wires through [`CapabilityPreviewHost`] for generation-safe
 //! placement planning. Consumers emit protocol bytes outside render.
+//! Built on AppShell Workbench (rail=sidebar, preview=inspector).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
-use crate::{
-    layout::{RegionId, RegionSize, RegionSpec, SurfaceAxis, WorkSurface},
-    style::{CapabilityPreviewHost, Density},
-};
+use crate::style::{CapabilityPreviewHost, Density};
+
+use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
 /// Slots for a resource browser (file manager / k8s / DB class).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,54 +54,43 @@ impl Default for ResourceBrowserLayout {
 /// Resolves resource browser rectangles.
 #[must_use]
 pub fn layout_resource_browser(area: Rect, config: ResourceBrowserLayout) -> ResourceBrowserSlots {
-    let (body, status) = {
-        let surface = WorkSurface::new()
-            .axis(SurfaceAxis::Vertical)
-            .density(Density::Dashboard)
-            .regions([
-                RegionSpec {
-                    id: RegionId::from_static("body"),
-                    size: RegionSize::Weight(1),
-                },
-                RegionSpec {
-                    id: RegionId::from_static("status"),
-                    size: RegionSize::Fixed(config.status_height.max(1)),
-                },
-            ]);
-        let regions = surface.layout(area);
-        (regions[0].area, regions[1].area)
-    };
+    let shell = layout_app_shell(
+        area,
+        AppShellConfig {
+            recipe: AppShellRecipe::Workbench,
+            density: config.density,
+            header_height: 0,
+            sidebar_width: config.rail_width.max(1),
+            inspector_width: config.preview_width,
+            footer_height: config.status_height.max(1),
+            command_height: 0,
+            metrics_height: 0,
+            log_height: 0,
+            lifecycle: Default::default(),
+            inline: false,
+        },
+    );
 
-    let mut specs = vec![RegionSpec {
-        id: RegionId::from_static("rail"),
-        size: RegionSize::Fixed(config.rail_width.max(1).min(body.width.saturating_sub(4))),
-    }];
-    specs.push(RegionSpec {
-        id: RegionId::from_static("detail"),
-        size: RegionSize::Weight(1),
+    let status = shell.footer.unwrap_or(Rect {
+        x: area.x,
+        y: area.y.saturating_add(area.height.saturating_sub(1)),
+        width: area.width,
+        height: 1.min(area.height),
     });
-    if config.preview_width > 0
-        && body.width
-            > config
-                .rail_width
-                .saturating_add(config.preview_width)
-                .saturating_add(4)
-    {
-        specs.push(RegionSpec {
-            id: RegionId::from_static("preview"),
-            size: RegionSize::Fixed(config.preview_width),
-        });
-    }
 
-    let surface = WorkSurface::new()
-        .axis(SurfaceAxis::Horizontal)
-        .density(config.density)
-        .regions(specs);
-    let regions = surface.layout(body);
-    let preview = regions.get(2).map(|r| r.area);
+    // When responsive collapses sidebar, fall back to full-width detail.
+    let rail = shell.sidebar.unwrap_or(Rect {
+        x: shell.main.x,
+        y: shell.main.y,
+        width: 0,
+        height: shell.main.height,
+    });
+    let detail = shell.main;
+    let preview = shell.inspector;
+
     ResourceBrowserSlots {
-        rail: regions[0].area,
-        detail: regions[1].area,
+        rail,
+        detail,
         preview,
         status,
     }
@@ -193,5 +183,89 @@ mod tests {
             cmds2.is_empty(),
             "frame2 steady wire must not thrash: {cmds2:?}"
         );
+    }
+}
+
+// ── Resource browser state machine (example composite) ───────────────────────
+
+use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    widgets::{ScrollAreaState, SidebarItem, SidebarOutcome, SidebarState},
+};
+
+// ── ResourceBrowser ─────────────────────────────────────────────────────────
+
+/// Resource browser outcomes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ResourceBrowserOutcome<Id> {
+    /// No change.
+    Ignored,
+    /// Sidebar selection.
+    Sidebar(SidebarOutcome<Id>),
+    /// Request load of selection (consumer).
+    LoadRequested(Id),
+    /// Open preview.
+    PreviewRequested(Id),
+}
+
+/// Resource browser state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResourceBrowserState<Id: Clone + PartialEq> {
+    /// Sidebar.
+    pub sidebar: SidebarState<Id>,
+    /// List scroll.
+    pub list_scroll: ScrollAreaState,
+    /// Generation for stale preview guard.
+    pub selection_generation: u64,
+}
+
+impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
+    /// Fresh.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            sidebar: SidebarState::new(None),
+            list_scroll: ScrollAreaState::new(),
+            selection_generation: 0,
+        }
+    }
+
+    /// Keys.
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        items: &[crate::widgets::SidebarItem<Id>],
+    ) -> ResourceBrowserOutcome<Id> {
+        let out = self.sidebar.handle_key(key, items);
+        match out {
+            SidebarOutcome::Selected(id) => {
+                self.selection_generation = self.selection_generation.saturating_add(1);
+                ResourceBrowserOutcome::LoadRequested(id)
+            }
+            other => ResourceBrowserOutcome::Sidebar(other),
+        }
+    }
+}
+
+impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod state_tests {
+    use super::*;
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::widgets::SidebarItem;
+
+    #[test]
+    fn resource_load_on_select() {
+        let mut state = ResourceBrowserState::new();
+        let items = [SidebarItem::new("a", "A")];
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
+        assert!(matches!(out, ResourceBrowserOutcome::LoadRequested("a")));
+        assert_eq!(state.selection_generation, 1);
     }
 }

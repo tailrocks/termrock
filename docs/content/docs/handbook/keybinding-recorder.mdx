@@ -1,0 +1,42 @@
+---
+title: KeybindingRecorder
+description: Capture and validate user keybindings with escape law, conflicts, and protocol limits.
+---
+
+# KeybindingRecorder
+
+**Purpose.** Settings control for one action’s binding. Capture chords/sequences,
+show normalized glyphs (`format_chord`), surface conflicts/reserved/protocol
+limits, commit into a [`Keymap`].
+
+## Escape law
+
+**Esc always cancels recording.** No mode traps the user. Idle Esc → blur.
+
+## Integrate with Keymap
+
+```rust
+state.load_occupied_from_keymap(&map, Action::Save, |a| format!("{a:?}"));
+// on Committed:
+state.apply_to_keymap(&mut map, Action::Save);
+```
+
+## KeyboardHelp
+
+KeyboardHelp is a separate discovery surface. Build rows with
+`binding_from_recorder(&state, action, Visibility::Shown)` or read the
+updated Keymap via `hint_spans` / `ShortcutHint`.
+
+## Protocol limits
+
+Neutral `KeyCode` has no F-keys/media keys (`Unknown`). Shift on chars is
+folded into the character. Enhanced protocols must map into `KeyEvent` →
+`KeyChord` before capture. PTY path: `capture_bytes` / `raw_bytes_to_chord`.
+
+## Reserved defaults
+
+Ctrl+C/Z/S/Q/`\` — terminal hazards. Extend with host policy.
+
+## Related
+
+Keymap · Kbd · ShortcutHint · HintBar · migration `0150`

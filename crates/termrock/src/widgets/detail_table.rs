@@ -1,3 +1,4 @@
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -9,7 +10,8 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     osc::HyperlinkRegion,
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
-    style::{Role, Theme},
+    style::DesignSystem,
+    style::{Role, RolePalette},
 };
 
 const SELECTED_MARKER: &str = "▸ ";
@@ -291,19 +293,19 @@ pub struct DetailTable<'a, Id> {
     label_width: u16,
     /// Wrap values into aligned continuation rows instead of scrolling horizontally.
     wrap: bool,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     content_revision: u64,
 }
 
 impl<'a, Id> DetailTable<'a, Id> {
     #[must_use]
     /// Creates a detail table over borrowed rows and mutable table state.
-    pub const fn new(rows: &'a [DetailRow<'a, Id>], theme: &'a Theme) -> Self {
+    pub const fn new(rows: &'a [DetailRow<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             rows,
             label_width: 0,
             wrap: false,
-            theme,
+            system,
             content_revision: UNCACHED_REVISION,
         }
     }
@@ -556,13 +558,13 @@ fn render_row<Id: Clone + PartialEq>(
     let value_col = marker_width + label_width + separator_width;
     let value_style = row.style.unwrap_or_else(|| {
         if hovered && (row.capability.copyable() || row.capability.linkable()) {
-            table.theme.style(Role::LinkHover)
+            table.system.style(Role::LinkHover)
         } else if row.capability.copyable() || row.capability.linkable() {
-            table.theme.style(Role::Link)
+            table.system.style(Role::Link)
         } else if row.emphasis {
-            table.theme.style(Role::Accent)
+            table.system.style(Role::Accent)
         } else {
-            table.theme.style(Role::Text)
+            table.system.style(Role::Text)
         }
     });
     let value_style = if row.emphasis || row.capability != DetailCapability::None {
@@ -578,7 +580,7 @@ fn render_row<Id: Clone + PartialEq>(
             marker,
             0,
             scroll_x,
-            table.theme.style(Role::Focus),
+            table.system.style(Role::Focus),
             &mut scratch.segment,
         );
         paint_segment(
@@ -587,7 +589,7 @@ fn render_row<Id: Clone + PartialEq>(
             row.label,
             marker_width,
             scroll_x,
-            table.theme.style(Role::TextMuted),
+            table.system.style(Role::TextMuted),
             &mut scratch.segment,
         );
         paint_segment(
@@ -596,7 +598,7 @@ fn render_row<Id: Clone + PartialEq>(
             SEPARATOR,
             marker_width + label_width,
             scroll_x,
-            table.theme.style(Role::Border),
+            table.system.style(Role::Border),
             &mut scratch.segment,
         );
     }
@@ -753,8 +755,9 @@ mod tests {
     #[test]
     fn stable_selection_and_typed_activation_follow_painted_regions() {
         let rows = rows();
-        let theme = Theme::default();
-        let table = DetailTable::new(&rows, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let table = DetailTable::new(&rows, &system);
         let mut state = DetailTableState::default();
         assert_eq!(
             state.select_next(&rows),
@@ -792,31 +795,33 @@ mod tests {
     #[test]
     fn wrap_and_both_axis_scroll_are_bounded_and_unicode_safe() {
         let rows = rows();
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = DetailTableState::default();
         state.scroll.scroll_x = u16::MAX;
         state.scroll.scroll_y = u16::MAX;
         let mut buffer = Buffer::empty(Rect::new(0, 0, 18, 2));
-        (&DetailTable::new(&rows, &theme)).render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &system)).render(buffer.area, &mut buffer, &mut state);
         assert!(usize::from(state.scroll.scroll_x) <= state.content_width);
         assert!(usize::from(state.scroll.scroll_y) <= state.content_height);
 
         state.scroll.scroll_x = 9;
-        (&DetailTable::new(&rows, &theme).wrap(true)).render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &system).wrap(true)).render(buffer.area, &mut buffer, &mut state);
         assert_eq!(state.scroll.scroll_x, 0);
         assert!(state.content_height > rows.len());
 
         state.selected = Some("role");
         state.scroll.scroll_y = 0;
-        (&DetailTable::new(&rows, &theme).wrap(true)).render(buffer.area, &mut buffer, &mut state);
+        (&DetailTable::new(&rows, &system).wrap(true)).render(buffer.area, &mut buffer, &mut state);
         assert!(state.scroll.scroll_y > 0);
     }
 
     #[test]
     fn hyperlink_regions_use_caller_urls_and_visible_value_geometry() {
         let rows = rows();
-        let theme = Theme::default();
-        let table = DetailTable::new(&rows, &theme);
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let table = DetailTable::new(&rows, &system);
         let area = Rect::new(0, 0, 40, 3);
         let mut state = DetailTableState::default();
         let mut buffer = Buffer::empty(area);

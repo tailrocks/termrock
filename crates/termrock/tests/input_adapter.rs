@@ -6,7 +6,7 @@ use crossterm::event::{
     MouseEventKind as CrosstermMouseEventKind,
 };
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
-use termrock::style::DesignTokens;
+use termrock::style::DesignSystem;
 use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind},
     interaction::Outcome,
@@ -66,7 +66,7 @@ fn every_mouse_button_action_maps_to_the_neutral_vocabulary() {
 
 #[test]
 fn neutral_mouse_event_drives_list_activation() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     let backend = crossterm::event::Event::Mouse(crossterm::event::MouseEvent {
         kind: CrosstermMouseEventKind::Down(CrosstermMouseButton::Left),
         column: 2,
@@ -83,9 +83,12 @@ fn neutral_mouse_event_drives_list_activation() {
         label: Line::from("Entry"),
         leading: None,
         secondary: None,
+        status: None,
         badge: None,
         shortcut: None,
+        actions: None,
         trailing: None,
+        custom: None,
         role: RowRole::Item,
         enabled: true,
         loading: false,
@@ -124,9 +127,12 @@ fn unknown_is_inert_in_widgets() {
         label: Line::from("one"),
         leading: None,
         secondary: None,
+        status: None,
         badge: None,
         shortcut: None,
+        actions: None,
         trailing: None,
+        custom: None,
         role: RowRole::Item,
         enabled: true,
         loading: false,
@@ -157,9 +163,12 @@ fn release_events_are_ignored() {
         label: Line::from("one"),
         leading: None,
         secondary: None,
+        status: None,
         badge: None,
         shortcut: None,
+        actions: None,
         trailing: None,
+        custom: None,
         role: RowRole::Item,
         enabled: true,
         loading: false,

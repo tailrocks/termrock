@@ -1,0 +1,40 @@
+---
+title: TaskRail
+description: Unified task and agent activity side panel on ActivityModel.
+---
+
+# TaskRail
+
+Vertical inventory of workflows, subagents, foreground/background tasks,
+watchers, and completed history. Neutral `ActivityModel` — not product-branded.
+
+## When to use / when not
+
+| Use TaskRail | Prefer |
+|--------------|--------|
+| Agent/workbench task side panel | — |
+| Glanceable concurrent strip | [ActivityShelf](/docs/handbook/activity-shelf) |
+| Raw custom list only | List + ListRow |
+| Command stream detail | TerminalRunCard / ToolCallCard |
+
+## Groups
+
+Workflows · Subagents · Foreground · Background · Watchers · Completed
+
+Needs-input rows sort first. Completed collapses by default.
+
+## Responsive
+
+| Width | Hint |
+|-------|------|
+| ≥ 48 | Panel |
+| < 48 | Drawer (`TASK_RAIL_DRAWER_OVERLAY_ID`) |
+| 1 row | StatusBar summary projection |
+
+## Keys
+
+j/k navigate · Enter open · Tab next input · `/` filter · x cancel · r retry · z zoom
+
+## Related
+
+ActivityShelf · StatusBar · Drawer · List · migration `0222`

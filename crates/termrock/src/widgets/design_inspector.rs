@@ -5,10 +5,12 @@
 //!
 //! Multi-panel studio shell: focus/layers, tokens, capabilities, recipes.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{ColorCapability, DesignSystem, Role, Theme},
+    style::DesignSystem,
+    style::{ColorCapability, Role, RolePalette},
     text::take_display_cols,
 };
 
@@ -25,6 +27,10 @@ pub enum InspectorPanel {
     Tokens,
     /// Recipe summary.
     Recipes,
+    /// Frame-local semantic tree summary.
+    Semantics,
+    /// Focus graph / Focus Lens summary.
+    FocusGraph,
 }
 
 /// Read-only inspector snapshot for one frame.
@@ -44,6 +50,10 @@ pub struct DesignInspectorFrame<'a> {
     pub recipes: &'a [&'a str],
     /// Selection chrome label.
     pub selection_chrome: &'a str,
+    /// Optional semantic-tree summary lines (from [`crate::interaction::SemanticSnapshot`]).
+    pub semantics: &'a [&'a str],
+    /// Optional FocusGraph / Focus Lens summary lines.
+    pub focus_graph: &'a [&'a str],
 }
 
 impl Default for DesignInspectorFrame<'_> {
@@ -56,6 +66,8 @@ impl Default for DesignInspectorFrame<'_> {
             layers: &[],
             recipes: &[],
             selection_chrome: "gutter",
+            semantics: &[],
+            focus_graph: &[],
         }
     }
 }
@@ -64,17 +76,17 @@ impl Default for DesignInspectorFrame<'_> {
 #[derive(Debug, Clone)]
 pub struct DesignInspector<'a> {
     frame: DesignInspectorFrame<'a>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
     panel: InspectorPanel,
 }
 
 impl<'a> DesignInspector<'a> {
     /// Creates an inspector for the given snapshot.
     #[must_use]
-    pub const fn new(frame: DesignInspectorFrame<'a>, theme: &'a Theme) -> Self {
+    pub const fn new(frame: DesignInspectorFrame<'a>, system: &'a DesignSystem) -> Self {
         Self {
             frame,
-            theme,
+            system,
             panel: InspectorPanel::Focus,
         }
     }
@@ -91,7 +103,7 @@ impl<'a> DesignInspector<'a> {
     pub fn from_system(system: &'a DesignSystem, frame: DesignInspectorFrame<'a>) -> Self {
         Self {
             frame,
-            theme: system.theme(),
+            system,
             panel: InspectorPanel::Focus,
         }
     }
@@ -102,12 +114,12 @@ impl Widget for &DesignInspector<'_> {
         if area.width == 0 || area.height == 0 {
             return;
         }
-        let style = self.theme.style(Role::TextMuted);
-        let strong = self.theme.style(Role::TextStrong);
+        let style = self.system.style(Role::TextMuted);
+        let strong = self.system.style(Role::TextStrong);
 
         // Tab strip on row 0 when height >= 2.
         let body_y = if area.height >= 2 {
-            let tabs = " F:focus L:layers T:tokens R:recipes ";
+            let tabs = " F:focus L:layers T:tokens R:recipes S:sem G:graph ";
             let clipped = take_display_cols(tabs, usize::from(area.width));
             buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), strong);
             area.y.saturating_add(1)
@@ -155,6 +167,31 @@ impl Widget for &DesignInspector<'_> {
                         .collect()
                 }
             }
+            InspectorPanel::Semantics => {
+                if self.frame.semantics.is_empty() {
+                    vec![format!(
+                        "semantics: {} nodes (register SemanticScene)",
+                        self.frame.semantics.len()
+                    )]
+                } else {
+                    self.frame
+                        .semantics
+                        .iter()
+                        .map(|line| (*line).to_string())
+                        .collect()
+                }
+            }
+            InspectorPanel::FocusGraph => {
+                if self.frame.focus_graph.is_empty() {
+                    vec!["focus_graph: (register FocusGraph)".into()]
+                } else {
+                    self.frame
+                        .focus_graph
+                        .iter()
+                        .map(|line| (*line).to_string())
+                        .collect()
+                }
+            }
         };
 
         for (i, line) in lines.into_iter().take(usize::from(body_h)).enumerate() {
@@ -174,11 +211,12 @@ impl Widget for DesignInspector<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::Theme;
+    use crate::style::RolePalette;
 
     #[test]
     fn studio_shell_paints_tab_and_layers() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let layers = ["root", "approval"];
         let frame = DesignInspectorFrame {
             focused: Some("prompt"),
@@ -188,11 +226,13 @@ mod tests {
             layers: &layers,
             recipes: &["list_row", "panel"],
             selection_chrome: "gutter",
+            semantics: &["list@list [f] Files", "row0@list_item [fs] a.rs"],
+            focus_graph: &["focus:list trap:—"],
         };
         let area = Rect::new(0, 0, 40, 4);
         let mut buffer = Buffer::empty(area);
         Widget::render(
-            DesignInspector::new(frame, &theme).panel(InspectorPanel::Layers),
+            DesignInspector::new(frame, &system).panel(InspectorPanel::Layers),
             area,
             &mut buffer,
         );
@@ -203,5 +243,29 @@ mod tests {
             .collect();
         assert!(text.contains("layers") || text.contains("root") || text.contains("F:focus"));
         assert!(text.contains("approval") || text.contains("0:root"));
+    }
+
+    #[test]
+    fn studio_semantics_panel_paints_snapshot_lines() {
+        let system = crate::style::DesignSystem::phosphor();
+        let lines = ["list@list [f] Files", "row0@list_item [fs] a.rs"];
+        let frame = DesignInspectorFrame {
+            semantics: &lines,
+            ..DesignInspectorFrame::default()
+        };
+        let area = Rect::new(0, 0, 48, 4);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(
+            DesignInspector::new(frame, &system).panel(InspectorPanel::Semantics),
+            area,
+            &mut buffer,
+        );
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(text.contains("list") || text.contains("sem") || text.contains("S:sem"));
+        assert!(text.contains("row0") || text.contains("Files"));
     }
 }

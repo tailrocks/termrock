@@ -18,6 +18,7 @@
 - **Category**: tooling, design system, accessibility, DX, tests
 - **Planned at**: commit `16b0ee8`, 2026-08-09
 - **Execution**: DONE — multi-panel DesignInspector + layout_studio_shell in lookbook + expanded interactors
+- **Successor design**: [`docs/design/termrock-studio.md`](../docs/design/termrock-studio.md) — full Studio IA, story format, record/replay, inspection protocol, registry integration, lookbook migration phases S0–S8
 
 ## Why this matters
 

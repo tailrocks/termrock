@@ -1,0 +1,44 @@
+---
+title: TokenField
+description: Editable tokens with free-text draft, single-surface focus, and completion hooks.
+---
+
+# TokenField
+
+**Purpose.** Recipients, filters, tags, file mentions, command arguments — an
+owned token collection with a draft input. Hosts own async completion menus.
+
+## vs TokenStrip
+
+| | TokenStrip | TokenField |
+|--|------------|------------|
+| Data | borrowed projection | owned tokens + draft |
+| Input | none | free-text commit |
+| Focus | roving on chips | draft ↔ tokens one surface |
+
+## Focus model
+
+One host Tab stop for the field. Inside:
+
+- **Draft** — type; Left at caret start moves to last token
+- **Token** — Left/Right; optional remove part without Tab
+- Empty draft **Backspace** removes previous token
+- **Alt+Left/Right** reorders focused token
+
+## Example
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{FieldToken, TokenField, TokenFieldState};
+
+let system = DesignSystem::default();
+let mut state = TokenFieldState::new();
+state.set_focused(true);
+let _ = state.push_token(FieldToken::new("1".into(), "alice@ex.com"));
+// comma / Enter commits draft; Tab → CompletionRequested
+let _ = TokenField::new(&system).label("To");
+```
+
+## Related
+
+TokenStrip · Tag · Chip · CompletionMenu · migration `0144`

@@ -1,386 +1,1066 @@
 {
-  "ActionBar": {
-    "keyboard": "caller-owned",
-    "mouse": "covered",
+  "Accordion": {
     "focus": "covered",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
-  "ApprovalCard": {
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "ActionBar": {
+    "focus": "covered",
+    "keyboard": "caller-owned",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ActionLink": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Alert": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "AlertDialog": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "AvatarGlyph": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Backdrop": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "Badge": {
+    "focus": "partial",
+    "keyboard": "partial",
+    "mouse": "partial",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Banner": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "BarSeries": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Breadcrumbs": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Button": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ButtonGroup": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Callout": {
+    "focus": "caller-owned",
+    "keyboard": "caller-owned",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Card": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Chart": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Checkbox": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "CheckpointTimeline": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "ChoiceDialog": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "CodeBlock": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Collapsible": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "CommandPalette": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "caller-owned",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "CompletionMenu": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "DataTable": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "DateTimePicker": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Description": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "DesignInspector": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "DetailTable": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "DiagnosticView": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Dialog": {
+    "focus": "caller-owned",
     "keyboard": "caller-owned",
     "mouse": "caller-owned",
-    "focus": "caller-owned",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "DiffReview": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "DiffView": {
+    "focus": "caller-owned",
     "keyboard": "caller-owned",
     "mouse": "caller-owned",
-    "focus": "caller-owned",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "Drawer": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "DropdownMenu": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "EmptyState": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
-  "ErrorView": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+  "ErrorState": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "EventStream": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "FieldCaption": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "FilePicker": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Form": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "FormWizard": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "FullscreenViewer": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Gauge": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Heading": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "HexViewer": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "HighlightedText": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "HintBar": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "Histogram": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "HistoryPicker": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Icon": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Identity": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "ImageSurface": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "JumpOverlay": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "caller-owned",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Kbd": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "KeyValueTable": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "KeybindingRecorder": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "KeyboardHelp": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Label": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Link": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "List": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "LoadingView": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "LogPane": {
+    "focus": "caller-owned",
     "keyboard": "covered",
     "mouse": "caller-owned",
-    "focus": "caller-owned",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "LogStream": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "MarkdownView": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Menu": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "MenuBar": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "MessageDialog": {
+    "focus": "caller-owned",
     "keyboard": "caller-owned",
     "mouse": "caller-owned",
-    "focus": "caller-owned",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "MetricRadar": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ModeRibbon": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "MultiSelect": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "NavigationList": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "NotificationCenter": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "NumberInput": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ObjectInspector": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "OfflineBanner": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Pagination": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Panel": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Paragraph": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "PasswordInput": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "PathInput": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "PermissionPrompt": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Picker": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Popover": {
     "focus": "covered",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
-  "Progress": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
-    "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
-  },
-  "PromptBox": {
     "keyboard": "covered",
-    "mouse": "caller-owned",
-    "focus": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "PreviewCard": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ProgressBar": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ProgressSteps": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "PromptComposer": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "QuestionFlow": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "QuickOpen": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "RangeSlider": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ResizablePanelGroup": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "SearchInput": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Section": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "SegmentedControl": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "SegmentedMeter": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Select": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Separator": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ShortcutHint": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Sidebar": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Skeleton": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "caller-owned",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Slider": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Sparkline": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Spinner": {
+    "focus": "covered",
+    "keyboard": "caller-owned",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "SplitPane": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "StatusBar": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "covered",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
-  "StreamView": {
-    "keyboard": "caller-owned",
-    "mouse": "caller-owned",
-    "focus": "caller-owned",
+  "StatusIndicator": {
+    "focus": "covered",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Stepper": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Surface": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Switch": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Table": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "Tabs": {
-    "keyboard": "caller-owned",
-    "mouse": "covered",
     "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "TerminalOutput": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Text": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "TextArea": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "TextInput": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "caller-owned",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "ThemePicker": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "caller-owned",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "ThinkingBlock": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "Timeline": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "Toast": {
-    "keyboard": "not-applicable",
-    "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "focus": "covered",
+    "keyboard": "caller-owned",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "Toggle": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "ToggleGroup": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "TokenField": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "TokenMeter": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
   },
   "ToolCard": {
+    "focus": "not-applicable",
     "keyboard": "not-applicable",
     "mouse": "not-applicable",
-    "focus": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "not-applicable",
-    "narrowTerminal": "not-applicable"
+    "unicode": "covered"
+  },
+  "Toolbar": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "Tooltip": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Transcript": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "Tree": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "TreeNavigation": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "TreeTable": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   },
   "Viewport": {
-    "keyboard": "caller-owned",
-    "mouse": "caller-owned",
-    "focus": "caller-owned",
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
   },
   "VirtualGrid": {
+    "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
-    "focus": "covered",
+    "narrowTerminal": "covered",
     "nonColor": "covered",
-    "unicode": "covered",
-    "narrowTerminal": "covered"
+    "unicode": "covered"
+  },
+  "VirtualList": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
   }
 }

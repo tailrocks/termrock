@@ -1,0 +1,90 @@
+---
+title: TextArea
+description: Multi-line grapheme-safe editor with selection, undo, soft wrap, and host clipboard hooks.
+---
+
+# TextArea
+
+**Purpose.** Multi-line editing for forms, notes, prompts, and comments:
+grapheme-safe cursor ops, selection, undo/redo, word/indent motion, optional
+soft wrap, line numbers, ScrollArea dual-axis viewport, and host-owned side
+effects (clipboard, external editor, fullscreen).
+
+## When to use / when not
+
+| Use TextArea | Prefer |
+|--------------|--------|
+| Multi-line notes, code snippets, forms | — |
+| Agent draft with queue/chips | [PromptComposer](/docs/handbook/prompt-composer) |
+| Single line | TextInput |
+
+## Focus law
+
+| Concern | Owner |
+|---------|--------|
+| Input gate | Host `set_accepts_input` |
+| Caret / selection | TextAreaState (local) |
+| Panel chrome | accepts_input → Focused border |
+| Read-only | `set_read_only` (scroll ok, no edit) |
+| Review chrome | `TextArea::review()` / `TextAreaVariant::Review` |
+
+## Outcomes
+
+- `Ignored`
+- `Changed` — text, caret, or selection
+- `Scrolled` — viewport only (wheel)
+- `Cancelled` — Esc (after clearing selection)
+- `ClipboardCopy { text }` / `ClipboardCut { text }` / `ClipboardPasteRequest`
+- `ExternalEditorRequested` / `FullscreenRequested`
+
+## Intents
+
+`default_text_area_intent` — Home/End, Page, Left/Right, Esc.
+Up/Down line motion, word chords, indent, undo, and character insert stay on
+`handle_key`.
+
+## Non-color
+
+- Caret: Focus role or TextStrong when colorless
+- Selection: reversed Focus
+- Scroll track: `░` / `|` (ascii)
+- Placeholder: muted text
+- Line numbers: muted gutter digits
+
+## Responsive
+
+| Constraint | Behavior |
+|------------|----------|
+| Soft wrap | Visual rows; no horizontal scroll |
+| Wrap None | Horizontal scroll for wide lines |
+| Resize / reflow | Caret absolute; `reveal` re-centers viewport |
+| Line numbers | Gutter width scales with line count (capped) |
+
+## Example
+
+```rust
+use termrock::{
+    input::{KeyCode, KeyEvent, KeyModifiers},
+    style::DesignSystem,
+    widgets::{TextArea, TextAreaOutcome, TextAreaState, TextWrap},
+};
+
+let system = DesignSystem::default();
+let mut state = TextAreaState::new("hello");
+state.set_accepts_input(true);
+state.set_wrap(TextWrap::Soft);
+assert!(matches!(
+    state.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE)),
+    TextAreaOutcome::Changed
+));
+let _ = TextArea::new(&system)
+    .title("Notes")
+    .placeholder("Type…")
+    .line_numbers(true)
+    .soft_wrap();
+```
+
+## Related
+
+TextInput · PromptComposer · ScrollArea · migration `0139` · design
+`text-area-accepts-input.md`

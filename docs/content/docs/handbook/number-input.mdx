@@ -1,0 +1,46 @@
+---
+title: NumberInput
+description: Numeric field with draft text separate from committed value, steppers, and Slider composition.
+---
+
+# NumberInput
+
+**Purpose.** Integer or decimal entry for forms and settings: min/max/step,
+units, empty/intermediate invalid states, steppers, and safe overflow.
+
+## Draft vs committed
+
+| | Draft (`draft_text`) | Committed (`value`) |
+|--|----------------------|---------------------|
+| Typing | live | unchanged |
+| Enter / blur / step | reformatted | clamped + snapped |
+| Esc | restored | unchanged |
+
+Storage uses locale-independent `f64` with `.` as the only decimal separator.
+
+## Compose with Slider
+
+```rust
+let bounds = SliderBounds::new(0.0, 100.0, 1.0);
+state.set_from_slider(bounds, slider.value());
+slider.set_value(state.to_slider_value(bounds));
+```
+
+## Example
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{NumberConstraints, NumberInput, NumberInputState, NumberKind};
+
+let system = DesignSystem::default();
+let mut state = NumberInputState::new()
+    .with_kind(NumberKind::decimal2())
+    .with_constraints(NumberConstraints::bounded(0.0, 100.0, 0.5))
+    .with_value(12.5);
+state.set_focused(true);
+let _ = NumberInput::new("Opacity", &system).unit("%").ascii(true);
+```
+
+## Related
+
+TextInput · Slider · Field · migration `0141`

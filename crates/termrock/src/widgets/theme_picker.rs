@@ -3,6 +3,7 @@
 
 //! Live theme picker: select a named preset; caller re-renders with that theme.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -10,10 +11,11 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{Density, DesignTokens, Role, Theme},
+    input::{KeyEvent, KeyEventKind},
+    interaction::{EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent},
+    style::{Density, DesignSystem, Role, RolePalette},
     text::take_display_cols,
-    widgets::{Panel, PanelEmphasis},
+    widgets::{Panel, PanelChrome},
 };
 
 /// One selectable theme preset.
@@ -31,7 +33,7 @@ pub struct ThemePreset {
 pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
     ThemePreset {
         id: "phosphor",
-        label: "Phosphor",
+        label: "Phosphor Obsidian",
         requires_truecolor: false,
     },
     ThemePreset {
@@ -39,14 +41,54 @@ pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
         label: "Slate",
         requires_truecolor: true,
     },
+    ThemePreset {
+        id: "paper",
+        label: "Paper",
+        requires_truecolor: true,
+    },
+    ThemePreset {
+        id: "ansi",
+        label: "ANSI 16",
+        requires_truecolor: false,
+    },
+    ThemePreset {
+        id: "high-contrast",
+        label: "High Contrast",
+        requires_truecolor: false,
+    },
+    ThemePreset {
+        id: "adaptive",
+        label: "Terminal Adaptive",
+        requires_truecolor: false,
+    },
 ];
 
 /// Resolves a built-in theme by preset id.
 #[must_use]
-pub fn theme_from_preset_id(id: &str) -> Option<Theme> {
+pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
     match id {
-        "phosphor" | "tailrocks_phosphor" | "dark" => Some(Theme::tailrocks_phosphor()),
-        "slate" | "light" => Some(Theme::slate()),
+        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => {
+            Some(RolePalette::tailrocks_phosphor())
+        }
+        "slate" => Some(RolePalette::slate()),
+        "paper" | "light" => Some(RolePalette::paper()),
+        "ansi" | "ansi16" => Some(RolePalette::ansi()),
+        "high-contrast" | "hc" | "high_contrast" => Some(RolePalette::high_contrast()),
+        "adaptive" => Some(DesignSystem::adaptive().palette),
+        _ => None,
+    }
+}
+
+/// Resolves a full [`DesignSystem`] for a preset id.
+#[must_use]
+pub fn system_from_preset_id(id: &str) -> Option<DesignSystem> {
+    match id {
+        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => Some(DesignSystem::phosphor()),
+        "slate" => Some(DesignSystem::slate()),
+        "paper" | "light" => Some(DesignSystem::paper()),
+        "ansi" | "ansi16" => Some(DesignSystem::ansi()),
+        "high-contrast" | "hc" | "high_contrast" => Some(DesignSystem::high_contrast()),
+        "adaptive" => Some(DesignSystem::adaptive()),
         _ => None,
     }
 }
@@ -91,34 +133,72 @@ impl ThemePickerState {
         self.confirmed = None;
     }
 
-    /// Handles navigation / confirm / cancel.
+    /// Handles navigation / confirm / cancel via default list intents (no raw key match).
     pub fn handle_key(&mut self, key: KeyEvent, preset_count: usize) -> ThemePickerOutcome {
         if key.kind != KeyEventKind::Press || preset_count == 0 {
             return ThemePickerOutcome::Ignored;
         }
-        match key.code {
-            KeyCode::Up | KeyCode::Char('k') => {
+        match default_list_intent(key) {
+            Some(intent) => self.handle_intent(intent, preset_count),
+            None => ThemePickerOutcome::Ignored,
+        }
+    }
+
+    /// Semantic intent path (preferred when the host owns keymaps).
+    pub fn handle_intent(&mut self, intent: UiIntent, preset_count: usize) -> ThemePickerOutcome {
+        if preset_count == 0 {
+            return ThemePickerOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => {
                 self.selected = self.selected.saturating_sub(1);
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Down | KeyCode::Char('j') => {
+            UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => {
                 self.selected = (self.selected + 1).min(preset_count - 1);
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Home => {
+            UiIntent::Move(NavigationMove::First) => {
                 self.selected = 0;
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::End => {
+            UiIntent::Move(NavigationMove::Last) => {
                 self.selected = preset_count - 1;
                 ThemePickerOutcome::SelectionChanged
             }
-            KeyCode::Enter => {
-                // Caller supplies presets at render; confirmation uses index only here.
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 ThemePickerOutcome::ConfirmIndex(self.selected)
             }
-            KeyCode::Esc => ThemePickerOutcome::Cancelled,
+            UiIntent::Cancel | UiIntent::Close => ThemePickerOutcome::Cancelled,
             _ => ThemePickerOutcome::Ignored,
+        }
+    }
+
+    /// Key path with standard [`EventResult`] envelope (domain = [`ThemePickerOutcome`]).
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        preset_count: usize,
+    ) -> EventResult<ThemePickerOutcome> {
+        Self::outcome_to_result(self.handle_key(key, preset_count))
+    }
+
+    /// Intent path with [`EventResult`]. Cancel attaches dismiss-top overlay request.
+    pub fn handle_intent_result(
+        &mut self,
+        intent: UiIntent,
+        preset_count: usize,
+    ) -> EventResult<ThemePickerOutcome> {
+        Self::outcome_to_result(self.handle_intent(intent, preset_count))
+    }
+
+    fn outcome_to_result(outcome: ThemePickerOutcome) -> EventResult<ThemePickerOutcome> {
+        match outcome {
+            ThemePickerOutcome::Ignored => EventResult::ignored(),
+            ThemePickerOutcome::Cancelled => {
+                EventResult::emit(outcome).with_overlay(OverlayRequest::DismissTop)
+            }
+            other => EventResult::emit(other),
         }
     }
 
@@ -146,13 +226,13 @@ pub enum ThemePickerOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct ThemePicker<'a> {
     presets: &'a [ThemePreset],
-    paint_theme: &'a Theme,
+    paint_theme: &'a DesignSystem,
 }
 
 impl<'a> ThemePicker<'a> {
     /// Creates a picker.
     #[must_use]
-    pub const fn new(presets: &'a [ThemePreset], paint_theme: &'a Theme) -> Self {
+    pub const fn new(presets: &'a [ThemePreset], paint_theme: &'a DesignSystem) -> Self {
         Self {
             presets,
             paint_theme,
@@ -167,10 +247,10 @@ impl StatefulWidget for &ThemePicker<'_> {
         if area.is_empty() {
             return;
         }
-        let tokens = DesignTokens::new(self.paint_theme.clone(), Density::default());
+        let tokens = (*self.paint_theme).clone();
         let panel = Panel::new(&tokens)
             .title("Theme")
-            .emphasis(PanelEmphasis::Focused);
+            .emphasis(PanelChrome::Focused);
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -218,7 +298,8 @@ impl StatefulWidget for ThemePicker<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyCode, KeyModifiers};
+    use crate::interaction::{OverlayRequest, Propagation};
 
     #[test]
     fn navigation_and_confirm_index() {
@@ -238,6 +319,18 @@ mod tests {
             ),
             ThemePickerOutcome::ConfirmIndex(1)
         );
-        assert_eq!(theme_from_preset_id("slate"), Some(Theme::slate()));
+        assert_eq!(theme_from_preset_id("slate"), Some(RolePalette::slate()));
+    }
+
+    #[test]
+    fn event_result_cancel_requests_dismiss_top() {
+        let mut state = ThemePickerState::new(0);
+        let r = state.handle_key_result(
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+            BUILTIN_THEME_PRESETS.len(),
+        );
+        assert_eq!(r.propagation(), Propagation::Stop);
+        assert_eq!(r.message(), Some(&ThemePickerOutcome::Cancelled));
+        assert_eq!(r.overlay(), Some(&OverlayRequest::DismissTop));
     }
 }

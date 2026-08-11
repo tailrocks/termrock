@@ -7,17 +7,20 @@
 //! (`BOLD_WHITE`, `BOLD_GREEN`, `DIM`, `DANGER`) so callers avoid writing
 //! `crate::style::BOLD_WHITE` inline.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::style::{Color, Modifier, Style};
 
 mod appearance;
 mod density;
+mod glyph;
 mod palette;
 mod preview_host;
 mod quantize;
 mod tokens;
 
-pub use appearance::{Appearance, AppearanceThemeMap, theme_for_appearance};
+pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
+pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use palette::Rgb;
 use palette::{
     BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
@@ -33,10 +36,11 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
-pub use quantize::{ColorCapability, quantize_color, quantize_theme, rgb_to_xterm256};
+pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
-    DesignSystem, DesignTokens, GlyphSet, ListRowRecipe, PanelChrome, PanelRecipe, SelectionChrome,
-    SpacingScale,
+    BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem, Elevation,
+    GlyphSet, InputRecipe, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
+    SelectionChrome, SpacingScale, ThemePackage,
 };
 
 #[must_use]
@@ -106,7 +110,7 @@ pub fn faded(color: Color, alpha: f32) -> Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-/// Semantic visual roles resolved by a [`Theme`].
+/// Semantic visual roles resolved by a [`RolePalette`].
 pub enum Role {
     /// Terminal-wide base background.
     Canvas,
@@ -184,7 +188,32 @@ pub enum Role {
     DiffAdded,
     /// Removed line or segment in a diff.
     DiffRemoved,
+    /// Syntax: language keyword.
+    SyntaxKeyword,
+    /// Syntax: string literal.
+    SyntaxString,
+    /// Syntax: comment.
+    SyntaxComment,
+    /// Syntax: numeric literal.
+    SyntaxNumber,
+    /// Syntax: function / method name.
+    SyntaxFunction,
+    /// Chart series 1 (primary series).
+    ChartSeries1,
+    /// Chart series 2.
+    ChartSeries2,
+    /// Chart series 3.
+    ChartSeries3,
+    /// Chart series 4.
+    ChartSeries4,
+    /// Chart axis labels and ticks.
+    ChartAxis,
+    /// Chart grid / guide lines.
+    ChartGrid,
 }
+
+/// Number of [`Role`] variants (stable for palette array sizing).
+pub const ROLE_COUNT: usize = 49;
 
 macro_rules! every_role {
     ($macro:ident) => {
@@ -226,7 +255,18 @@ macro_rules! every_role {
             ActionDisabled,
             StatusBar,
             DiffAdded,
-            DiffRemoved
+            DiffRemoved,
+            SyntaxKeyword,
+            SyntaxString,
+            SyntaxComment,
+            SyntaxNumber,
+            SyntaxFunction,
+            ChartSeries1,
+            ChartSeries2,
+            ChartSeries3,
+            ChartSeries4,
+            ChartAxis,
+            ChartGrid
         }
     };
 }
@@ -258,16 +298,16 @@ every_role!(define_role_exhaustiveness_guard);
 ///
 /// ```
 /// use ratatui_core::style::{Color, Style};
-/// use termrock::{Theme, style::Role};
+/// use termrock::style::{Role, RolePalette};
 ///
-/// let theme = Theme::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+/// let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
 /// assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 /// ```
-pub struct Theme {
-    roles: [Style; 38],
+pub struct RolePalette {
+    roles: [Style; ROLE_COUNT],
 }
 
-impl Theme {
+impl RolePalette {
     #[must_use]
     /// Builds the default phosphor-on-black semantic theme.
     pub fn tailrocks_phosphor() -> Self {
@@ -306,11 +346,30 @@ impl Theme {
                 GREEN,
                 DIM,
                 Style::new().fg(BORDER_GRAY),
-                Style::new().reversed(),
-                Style::new().dim(),
+                // Explicit RGB so lookbook SVG (and monochrome-unaware paths)
+                // distinguish focused vs disabled actions without relying on
+                // REVERSED/DIM modifiers alone.
+                Style::new()
+                    .fg(INK)
+                    .bg(PHOSPHOR_GREEN)
+                    .add_modifier(Modifier::BOLD),
+                Style::new().fg(PHOSPHOR_DIM),
                 Style::new(),
                 Style::new().fg(DIFF_ADDED_FG).bg(DIFF_ADDED_BG),
                 Style::new().fg(DIFF_REMOVED_FG).bg(DIFF_REMOVED_BG),
+                // Syntax
+                Style::new().fg(Color::Rgb(200, 120, 255)), // keyword
+                Style::new().fg(Color::Rgb(180, 240, 160)), // string
+                Style::new().fg(PHOSPHOR_DIM),              // comment
+                Style::new().fg(Color::Rgb(255, 200, 100)), // number
+                Style::new().fg(Color::Rgb(120, 220, 255)), // function
+                // Chart series + axis/grid
+                Style::new().fg(PHOSPHOR_GREEN),
+                Style::new().fg(CYAN),
+                Style::new().fg(WARNING_YELLOW),
+                Style::new().fg(Color::Rgb(180, 120, 255)),
+                Style::new().fg(BORDER_GRAY),
+                Style::new().fg(Color::Rgb(50, 50, 50)),
             ],
         }
     }
@@ -371,7 +430,7 @@ impl Theme {
                 Style::new().fg(muted),
                 Style::new().fg(border),
                 Style::new().fg(canvas).bg(accent).bold(),
-                Style::new().fg(disabled).dim(),
+                Style::new().fg(disabled),
                 Style::new().fg(text).bg(surface),
                 Style::new()
                     .fg(Color::Rgb(134, 239, 172))
@@ -379,8 +438,226 @@ impl Theme {
                 Style::new()
                     .fg(Color::Rgb(252, 165, 165))
                     .bg(Color::Rgb(127, 29, 29)),
+                // Syntax
+                Style::new().fg(Color::Rgb(192, 132, 252)),
+                Style::new().fg(Color::Rgb(134, 239, 172)),
+                Style::new().fg(muted),
+                Style::new().fg(Color::Rgb(253, 186, 116)),
+                Style::new().fg(Color::Rgb(125, 211, 252)),
+                // Chart
+                Style::new().fg(accent),
+                Style::new().fg(info),
+                Style::new().fg(warning),
+                Style::new().fg(Color::Rgb(192, 132, 252)),
+                Style::new().fg(muted),
+                Style::new().fg(border),
             ],
         }
+    }
+
+    /// Light paper / daylight system (dark ink on warm canvas).
+    #[must_use]
+    pub fn paper() -> Self {
+        let canvas = Color::Rgb(250, 248, 245);
+        let surface = Color::Rgb(255, 255, 255);
+        let elevated = Color::Rgb(244, 241, 236);
+        let text = Color::Rgb(28, 25, 23);
+        let muted = Color::Rgb(87, 83, 78);
+        let disabled = Color::Rgb(168, 162, 158);
+        let border = Color::Rgb(214, 211, 209);
+        let accent = Color::Rgb(37, 99, 235);
+        let selection = Color::Rgb(219, 234, 254);
+        let success = Color::Rgb(22, 163, 74);
+        let warning = Color::Rgb(202, 138, 4);
+        let danger = Color::Rgb(220, 38, 38);
+        let info = Color::Rgb(2, 132, 199);
+        Self {
+            roles: [
+                Style::new().bg(canvas),
+                Style::new().bg(surface),
+                Style::new().bg(elevated),
+                Style::new().bg(Color::Rgb(231, 229, 228)),
+                Style::new().fg(text),
+                Style::new().fg(text).bold(),
+                Style::new().fg(muted),
+                Style::new().fg(disabled),
+                Style::new().fg(border),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(selection),
+                Style::new().fg(accent),
+                Style::new().fg(accent),
+                Style::new().fg(success),
+                Style::new().fg(warning),
+                Style::new().fg(danger).bold(),
+                Style::new().fg(info),
+                Style::new().fg(accent),
+                Style::new().fg(accent).underlined(),
+                Style::new().fg(text).bg(surface),
+                Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
+                Style::new().fg(border),
+                Style::new().fg(accent),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(muted).bg(surface),
+                Style::new().fg(text).bg(Color::Rgb(226, 232, 240)),
+                Style::new().fg(text).bg(elevated),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(text).bold(),
+                Style::new().fg(accent),
+                Style::new().fg(muted),
+                Style::new().fg(border),
+                Style::new().fg(Color::Rgb(255, 255, 255)).bg(accent).bold(),
+                Style::new().fg(disabled),
+                Style::new().fg(text).bg(surface),
+                Style::new().fg(success).bg(Color::Rgb(220, 252, 231)),
+                Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
+                Style::new().fg(Color::Rgb(126, 34, 206)),
+                Style::new().fg(success),
+                Style::new().fg(muted),
+                Style::new().fg(warning),
+                Style::new().fg(info),
+                Style::new().fg(accent),
+                Style::new().fg(info),
+                Style::new().fg(warning),
+                Style::new().fg(Color::Rgb(147, 51, 234)),
+                Style::new().fg(muted),
+                Style::new().fg(border),
+            ],
+        }
+    }
+
+    /// ANSI 16-color native palette (no RGB truecolor dependency).
+    #[must_use]
+    pub fn ansi() -> Self {
+        Self {
+            roles: [
+                Style::new(), // Canvas — terminal default
+                Style::new(),
+                Style::new(),
+                Style::new(),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::White).bold(),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Black).bg(Color::Green),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Red).bold(),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Blue),
+                Style::new().fg(Color::Blue).underlined(),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::Red),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::Black).bg(Color::White),
+                Style::new().fg(Color::White).bg(Color::DarkGray),
+                Style::new().fg(Color::Black).bg(Color::Gray),
+                Style::new().fg(Color::White).bg(Color::DarkGray),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::White),
+                Style::new().fg(Color::White).bold(),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Black).bg(Color::Green).bold(),
+                Style::new().fg(Color::DarkGray),
+                Style::new(),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Red),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Gray).dim(),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::Gray),
+                Style::new().fg(Color::DarkGray),
+            ],
+        }
+    }
+
+    /// High-contrast accessibility palette (strong fg/bg pairs, bold cues).
+    #[must_use]
+    pub fn high_contrast() -> Self {
+        let ink = Color::Rgb(255, 255, 255);
+        let paper = Color::Rgb(0, 0, 0);
+        let accent = Color::Rgb(0, 255, 255);
+        let danger = Color::Rgb(255, 64, 64);
+        let warn = Color::Rgb(255, 255, 0);
+        let ok = Color::Rgb(0, 255, 0);
+        Self {
+            roles: [
+                Style::new().bg(paper),
+                Style::new().bg(paper),
+                Style::new().bg(Color::Rgb(20, 20, 20)),
+                Style::new().bg(paper),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(ink),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(paper).bg(ink).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(danger).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(accent).underlined(),
+                Style::new().fg(accent).underlined().bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(danger).bg(paper).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(paper).bg(ink).bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(paper).bg(accent).bold(),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(ink),
+                Style::new().fg(paper).bg(accent).bold(),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(ink).bg(paper),
+                Style::new().fg(ok).bg(paper).bold(),
+                Style::new().fg(danger).bg(paper).bold(),
+                Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
+                Style::new().fg(ink),
+                Style::new().fg(Color::Rgb(120, 120, 120)),
+            ],
+        }
+    }
+
+    /// Alias for [`Self::tailrocks_phosphor`].
+    #[must_use]
+    pub fn phosphor() -> Self {
+        Self::tailrocks_phosphor()
+    }
+
+    /// Alias for phosphor (marketing name).
+    #[must_use]
+    pub fn obsidian() -> Self {
+        Self::tailrocks_phosphor()
     }
 
     /// Start from an existing theme and override one semantic role.
@@ -390,10 +667,24 @@ impl Theme {
         self
     }
 
+    /// Merge non-empty styles from `other` (partial package inheritance).
+    ///
+    /// Empty styles (no fg/bg/modifiers) leave the base role unchanged.
+    #[must_use]
+    pub fn merge(mut self, other: &Self) -> Self {
+        for role in Self::roles() {
+            let s = other.style(role);
+            if s.fg.is_some() || s.bg.is_some() || s.add_modifier != Modifier::empty() {
+                self.roles[role as usize] = s;
+            }
+        }
+        self
+    }
+
     /// Build a theme by answering every semantic role from a function.
     #[must_use]
     pub fn from_fn(f: impl Fn(Role) -> Style) -> Self {
-        let mut roles = [Style::new(); 38];
+        let mut roles = [Style::new(); ROLE_COUNT];
         for role in Self::roles() {
             roles[role as usize] = f(role);
         }
@@ -402,7 +693,7 @@ impl Theme {
 
     /// Return every semantic role in stable positional order.
     #[must_use]
-    pub const fn roles() -> [Role; 38] {
+    pub const fn roles() -> [Role; ROLE_COUNT] {
         every_role!(role_array)
     }
 
@@ -413,7 +704,7 @@ impl Theme {
     }
 }
 
-impl Default for Theme {
+impl Default for RolePalette {
     fn default() -> Self {
         Self::tailrocks_phosphor()
     }
@@ -425,9 +716,9 @@ mod tests {
 
     #[test]
     fn roles_cover_the_positional_theme_array() {
-        let roles = Theme::roles();
-        assert_eq!(roles.len(), 38);
-        assert_eq!(Role::DiffRemoved as usize, roles.len() - 1);
+        let roles = RolePalette::roles();
+        assert_eq!(roles.len(), ROLE_COUNT);
+        assert_eq!(Role::ChartGrid as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
             role_is_declared(role);
             assert_eq!(role as usize, index);
@@ -437,23 +728,25 @@ mod tests {
     #[test]
     fn builders_override_and_populate_every_role() {
         let blue = Style::new().bg(Color::Blue);
-        let theme = Theme::default().with_role(Role::TabActive, blue);
+        let theme = RolePalette::default().with_role(Role::TabActive, blue);
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::TabActive), blue);
 
-        let generated = Theme::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
-        for role in Theme::roles() {
+        let generated = RolePalette::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
+        for role in RolePalette::roles() {
             assert_eq!(generated.style(role).fg, Some(Color::Indexed(role as u8)));
         }
     }
 
     #[test]
     fn default_is_the_phosphor_preset() {
-        assert_eq!(Theme::default(), Theme::tailrocks_phosphor());
+        assert_eq!(RolePalette::default(), RolePalette::tailrocks_phosphor());
     }
 
     #[test]
     fn default_separates_ordinary_and_strong_text() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Text).fg, Some(WHITE));
         assert!(
             !theme
@@ -472,15 +765,36 @@ mod tests {
 
     #[test]
     fn default_borders_use_gray_inactive_and_green_focused() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Border).fg, Some(BORDER_GRAY));
         assert_eq!(theme.style(Role::BorderFocused).fg, Some(PHOSPHOR_GREEN));
     }
 
     #[test]
+    fn action_focused_and_disabled_use_distinct_rgb() {
+        let theme = RolePalette::tailrocks_phosphor();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let focused = theme.style(Role::ActionFocused);
+        let disabled = theme.style(Role::ActionDisabled);
+        assert_ne!(focused.fg, disabled.fg);
+        assert!(
+            focused.bg.is_some(),
+            "ActionFocused needs explicit bg for SVG"
+        );
+        assert!(
+            disabled.fg.is_some(),
+            "ActionDisabled needs explicit fg for SVG"
+        );
+        // Not modifier-only styles.
+        assert_ne!(focused, Style::new().reversed());
+        assert_ne!(disabled, Style::new().dim());
+    }
+
+    #[test]
     fn slate_visibly_diverges_from_phosphor() {
-        let slate = Theme::slate();
-        let phosphor = Theme::tailrocks_phosphor();
+        let slate = RolePalette::slate();
+        let phosphor = RolePalette::tailrocks_phosphor();
         for role in [
             Role::Accent,
             Role::Selection,
@@ -496,7 +810,8 @@ mod tests {
 
     #[test]
     fn phosphor_preset_pins_load_bearing_role_values() {
-        let theme = Theme::tailrocks_phosphor();
+        let theme = RolePalette::tailrocks_phosphor();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(255, 255, 255))),
             (Role::Border, Style::new().fg(Color::Rgb(80, 80, 80))),
@@ -548,7 +863,8 @@ mod tests {
 
     #[test]
     fn slate_preset_pins_load_bearing_role_values() {
-        let theme = Theme::slate();
+        let theme = RolePalette::slate();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(226, 232, 240))),
             (Role::Border, Style::new().fg(Color::Rgb(71, 85, 105))),

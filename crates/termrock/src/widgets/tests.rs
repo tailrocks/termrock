@@ -1,3 +1,4 @@
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -7,14 +8,14 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Density, DesignTokens, Role, Theme};
+use crate::style::{Density, DesignSystem, Role, RolePalette};
 
 #[cfg(feature = "serde")]
 #[test]
 fn persistable_states_implement_serde_contracts() {
     fn assert_serde<T: serde::Serialize + serde::de::DeserializeOwned>() {}
 
-    assert_serde::<DiffState>();
+    // DiffViewState is session-local (scroll/search/folds); not serde-stable.
     assert_serde::<SplitRatio>();
     assert_serde::<TextInputState>();
 }
@@ -31,19 +32,20 @@ fn areas() -> [Rect; 5] {
 
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let hints = [Hint {
         chord: "Enter",
         label: "choose",
         priority: 1,
         visible: true,
     }];
-    let hint_bar = HintBar::new(&hints, &theme).separator(" · ");
-    let toast = Toast::new(&theme, "Updated", Severity::Success).anchor(Anchor::TopRight);
+    let hint_bar = HintBar::new(&hints, &system).separator(" · ");
+    let toast = Toast::new(&system, "Updated", Severity::Success).anchor(Anchor::TopRight);
     let backdrop = Backdrop::new().symbol(' ').style(Style::new().dim());
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
@@ -56,19 +58,21 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 
 #[test]
 fn focused_panel_preserves_plain_border_glyphs() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    let panel = Panel::new(&panel_tokens).emphasis(PanelEmphasis::Focused);
+    let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
     (&panel).render(area, &mut buffer);
     assert_panel_border(&buffer, area, theme.style(Role::BorderFocused));
 }
 
 #[test]
 fn inactive_panel_preserves_plain_gray_border() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).render(area, &mut buffer);
@@ -100,16 +104,19 @@ fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
 
 #[test]
 fn stable_ids_survive_reordering() {
-    let _tokens = DesignTokens::default();
+    let _tokens = DesignSystem::default();
     let first = [
         ListRow {
             id: "a",
             label: Line::from("Alpha"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -119,9 +126,12 @@ fn stable_ids_survive_reordering() {
             label: Line::from("Beta"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -131,15 +141,15 @@ fn stable_ids_survive_reordering() {
     let mut state = ListState::new(Some("b"));
     let area = Rect::new(0, 0, 20, 2);
     let mut buffer = Buffer::empty(area);
-    let _theme = Theme::default();
+    let _theme = RolePalette::default();
     StatefulWidget::render(
-        &List::new(&first, &DesignTokens::default()),
+        &List::new(&first, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
     );
     StatefulWidget::render(
-        &List::new(&second, &DesignTokens::default()),
+        &List::new(&second, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
@@ -159,16 +169,19 @@ fn stable_ids_survive_reordering() {
 
 #[test]
 fn disabled_and_separator_rows_have_no_hit_regions() {
-    let _tokens = DesignTokens::default();
+    let _tokens = DesignSystem::default();
     let rows = [
         ListRow {
             id: 1,
             label: Line::from("Disabled"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Item,
             enabled: false,
             loading: false,
@@ -178,9 +191,12 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
             label: Line::from("Section"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Separator,
             enabled: true,
             loading: false,
@@ -190,9 +206,12 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
             label: Line::from("Enabled"),
             leading: None,
             secondary: None,
+            status: None,
             badge: None,
             shortcut: None,
+            actions: None,
             trailing: None,
+            custom: None,
             role: RowRole::Item,
             enabled: true,
             loading: false,
@@ -201,9 +220,9 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
     let mut state = ListState::default();
     let area = Rect::new(4, 3, 20, 3);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 10));
-    let _theme = Theme::default();
+    let _theme = RolePalette::default();
     StatefulWidget::render(
-        &List::new(&rows, &DesignTokens::default()),
+        &List::new(&rows, &DesignSystem::default()),
         area,
         &mut buffer,
         &mut state,
@@ -217,9 +236,9 @@ fn disabled_and_separator_rows_have_no_hit_regions() {
 fn text_input_edits_extended_graphemes_atomically() {
     for value in ["e\u{301}", "👩‍💻", "👍🏽", "🌐", "🧪", "\u{200b}"] {
         let mut state = TextInputState::new(value);
-        state.apply(EditAction::MoveLeft);
+        state.apply(EditAction::move_left());
         assert_eq!(state.cursor_byte(), 0, "{value:?}");
-        state.apply(EditAction::MoveRight);
+        state.apply(EditAction::move_right());
         assert_eq!(state.cursor_byte(), value.len(), "{value:?}");
         state.apply(EditAction::Backspace);
         assert_eq!(state.value(), "", "{value:?}");
@@ -228,7 +247,8 @@ fn text_input_edits_extended_graphemes_atomically() {
 
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
-    let theme = Theme::default();
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let actions = [
         Action {
             id: "save",
@@ -247,7 +267,7 @@ fn action_and_status_regions_match_painted_geometry() {
     let area = Rect::new(5, 2, 30, 1);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 5));
     StatefulWidget::render(
-        &ActionBar::new(&actions, &theme).gap(" "),
+        &ActionBar::new(&actions, &system).gap(" "),
         area,
         &mut buffer,
         &mut action_state,
@@ -255,25 +275,11 @@ fn action_and_status_regions_match_painted_geometry() {
     assert_eq!(action_state.regions[0].id, "save");
     assert_eq!(action_state.regions[0].area.x, area.x);
 
-    let left = [StatusSlot {
-        id: "left",
-        content: "Ready",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
-    let right = [StatusSlot {
-        id: "right",
-        content: "42%",
-        priority: 1,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
-    let status = StatusBar::new(&left, &right, &theme).alpha(1.0);
+    let left = [StatusSlot::new("left", "Ready").priority(1)];
+    let right = [StatusSlot::new("right", "42%")
+        .priority(1)
+        .region(crate::widgets::StatusRegion::Right)];
+    let status = StatusBar::new(&left, &right, &system).alpha(1.0);
     let regions = status.regions(area);
     assert_eq!(regions[1].area.right(), area.right());
     (&status).render(area, &mut buffer, &mut StatusBarState::default());
@@ -287,8 +293,9 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("two"),
         Line::from("three"),
     ];
-    let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme).title(" Log ");
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
     let mut state = crate::scroll::DialogScroll {
@@ -309,10 +316,11 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 #[test]
 fn viewport_emphasis_focused_uses_border_focused_role() {
     let lines = [Line::from("row")];
-    let theme = Theme::default();
-    let viewport = Viewport::new(&lines, &theme)
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let viewport = Viewport::new(&lines, &system)
         .title("Active")
-        .emphasis(PanelEmphasis::Focused);
+        .emphasis(PanelChrome::Focused);
     let area = Rect::new(0, 0, 16, 4);
     let mut buffer = Buffer::empty(area);
     let mut state = crate::scroll::DialogScroll::default();
@@ -334,15 +342,19 @@ fn viewport_emphasis_focused_uses_border_focused_role() {
 fn theme_override_reaches_active_tab_cells() {
     use ratatui_core::style::Color;
 
-    let theme = Theme::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
+    let theme = RolePalette::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
     let tabs = [Tab {
         id: "active",
         label: "Active",
         glyph: None,
+        badge: None,
+        status: TabStatus::None,
         active: true,
         enabled: true,
+        closable: false,
     }];
-    let widget = Tabs::new(&tabs, &theme).gap(1);
+    let widget = Tabs::new(&tabs, &system).gap(1);
     let area = Rect::new(0, 0, 12, 2);
     let mut buffer = Buffer::empty(area);
     let mut state = TabsState::default();
@@ -354,8 +366,9 @@ fn theme_override_reaches_active_tab_cells() {
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
-    let theme = Theme::default();
-    let panel_tokens = DesignTokens::new(theme.clone(), Density::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

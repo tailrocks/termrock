@@ -1,43 +1,43 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Agent-era experience widgets: stream, tool cards, approvals, prompt, meters.
+//! Agent-era experience widgets: tool cards, thinking, meters.
+//! Timeline: [`super::timeline`].
+//!
+//! Conversation stream: [`crate::widgets::Transcript`] only (StreamView deleted).
+//! Trust / prompt: [`crate::widgets::PermissionPrompt`] / [`crate::widgets::PromptComposer`].
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{Density, DesignTokens, Role, Theme},
-    text::{display_cols, take_display_cols},
-    widgets::{Panel, PanelEmphasis, TextArea, TextAreaOutcome, TextAreaState},
+    style::{DesignSystem, Role},
+    text::take_display_cols,
+    widgets::{PanelChrome, SemanticStatus},
 };
 
 // ── Token meter ─────────────────────────────────────────────────────────────
 
 /// Compact token/cost usage meter.
+///
+/// Prefer [`crate::widgets::ContextMeter`] for approximate precision, breakdown,
+/// compaction thresholds, and non-token budgets (migration `0225`).
 #[derive(Debug, Clone, Copy)]
 pub struct TokenMeter<'a> {
     used: u64,
     limit: u64,
     label: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> TokenMeter<'a> {
     /// Creates a token meter.
     #[must_use]
-    pub const fn new(used: u64, limit: u64, theme: &'a Theme) -> Self {
+    pub const fn new(used: u64, limit: u64, system: &'a DesignSystem) -> Self {
         Self {
             used,
             limit,
             label: "tokens",
-            theme,
+            system,
         }
     }
 
@@ -79,7 +79,7 @@ impl Widget for &TokenMeter<'_> {
             area.y,
             &clipped,
             usize::from(area.width),
-            self.theme.style(role),
+            self.system.style(role),
         );
     }
 }
@@ -103,19 +103,19 @@ pub struct ThinkingBlock<'a> {
     expanded: bool,
     body: &'a str,
     frame: &'a str,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ThinkingBlock<'a> {
     /// Creates a thinking block.
     #[must_use]
-    pub const fn new(summary: &'a str, theme: &'a Theme) -> Self {
+    pub const fn new(summary: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             summary,
             expanded: false,
             body: "",
             frame: "·",
-            theme,
+            system,
         }
     }
 
@@ -146,24 +146,41 @@ impl Widget for &ThinkingBlock<'_> {
         if area.is_empty() {
             return;
         }
-        let marker = if self.expanded { "▾" } else { "▸" };
+        use crate::layout::{FlexSize, Stack};
+
+        let show_body = self.expanded && !self.body.is_empty() && area.height > 1;
+        let layout = if show_body {
+            Stack::new().layout(area, &[FlexSize::Fixed(1), FlexSize::fill()])
+        } else {
+            Stack::new().layout(area, &[FlexSize::Fixed(1)])
+        };
+        let marker = if self.expanded {
+            self.system.glyphs.disclosure_open()
+        } else {
+            self.system.glyphs.disclosure_closed()
+        };
         let header = format!("{} {} {}", marker, self.frame, self.summary);
-        let clipped = take_display_cols(&header, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            self.theme.style(Role::TextMuted),
-        );
-        if self.expanded && area.height > 1 && !self.body.is_empty() {
-            let body = take_display_cols(self.body, usize::from(area.width));
+        if let Some(header_r) = layout.get(0) {
+            let clipped = take_display_cols(&header, usize::from(header_r.width));
             buffer.set_stringn(
-                area.x,
-                area.y.saturating_add(1),
+                header_r.x,
+                header_r.y,
+                &clipped,
+                usize::from(header_r.width),
+                self.system.style(Role::TextMuted),
+            );
+        }
+        if show_body
+            && let Some(body_r) = layout.get(1)
+            && body_r.height > 0
+        {
+            let body = take_display_cols(self.body, usize::from(body_r.width));
+            buffer.set_stringn(
+                body_r.x,
+                body_r.y,
                 &body,
-                usize::from(area.width),
-                self.theme.style(Role::TextDisabled),
+                usize::from(body_r.width),
+                self.system.style(Role::TextDisabled),
             );
         }
     }
@@ -182,48 +199,144 @@ impl Widget for ThinkingBlock<'_> {
 // ── Tool card ───────────────────────────────────────────────────────────────
 
 /// Lifecycle status for a tool invocation card.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+///
+/// Elevated for [`crate::widgets::ToolCallCard`] (migration `0219`). Prefer these
+/// names over historical Pending/Done/Error.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ToolStatus {
     /// Queued, not started.
-    Pending,
+    #[default]
+    Queued,
+    /// Preparing / resolving args.
+    Preparing,
     /// Currently executing.
     Running,
+    /// Waiting for host / user input.
+    WaitingInput,
+    /// Waiting for permission grant.
+    WaitingPermission,
+    /// Streaming tool output.
+    Streaming,
     /// Completed successfully.
-    Done,
+    Success,
+    /// Completed with warning.
+    Warning,
     /// Failed.
-    Error,
+    Failed,
     /// Cancelled by user or policy.
     Cancelled,
+    /// Detached / backgrounded (host still owns process).
+    Detached,
 }
 
 impl ToolStatus {
-    /// Non-color status glyph.
+    /// Stable id.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn id(self) -> &'static str {
         match self {
-            Self::Pending => "…",
-            Self::Running => "◉",
-            Self::Done => "✓",
-            Self::Error => "✗",
-            Self::Cancelled => "⊘",
+            Self::Queued => "queued",
+            Self::Preparing => "preparing",
+            Self::Running => "running",
+            Self::WaitingInput => "waiting-input",
+            Self::WaitingPermission => "waiting-permission",
+            Self::Streaming => "streaming",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+            Self::Detached => "detached",
         }
     }
 
-    /// Theme role for the status.
+    /// Short badge label.
+    #[must_use]
+    pub const fn badge(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Preparing => "prep",
+            Self::Running => "run",
+            Self::WaitingInput => "input",
+            Self::WaitingPermission => "perm",
+            Self::Streaming => "stream",
+            Self::Success => "ok",
+            Self::Warning => "warn",
+            Self::Failed => "err",
+            Self::Cancelled => "cancel",
+            Self::Detached => "bg",
+        }
+    }
+
+    /// Shared vocabulary projection.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::Queued | Self::Preparing => SemanticStatus::Queued,
+            Self::Running | Self::Streaming | Self::Detached => SemanticStatus::Running,
+            Self::WaitingInput | Self::WaitingPermission => SemanticStatus::Paused,
+            Self::Success => SemanticStatus::Success,
+            Self::Warning => SemanticStatus::Warning,
+            Self::Failed => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
+        }
+    }
+
+    /// Non-color status glyph (shared [`SemanticStatus`] unicode set).
+    #[must_use]
+    pub const fn glyph(self) -> &'static str {
+        self.semantic().glyph_unicode()
+    }
+
+    /// ASCII / letter fallback for colorless.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Queued => 'Q',
+            Self::Preparing => 'P',
+            Self::Running => 'R',
+            Self::WaitingInput => 'I',
+            Self::WaitingPermission => 'A',
+            Self::Streaming => 'S',
+            Self::Success => '✓',
+            Self::Warning => '!',
+            Self::Failed => 'E',
+            Self::Cancelled => 'X',
+            Self::Detached => 'D',
+        }
+    }
+
+    /// Whether cancel action is meaningful.
+    #[must_use]
+    pub const fn can_cancel(self) -> bool {
+        matches!(
+            self,
+            Self::Queued
+                | Self::Preparing
+                | Self::Running
+                | Self::Streaming
+                | Self::WaitingInput
+                | Self::WaitingPermission
+                | Self::Detached
+        )
+    }
+
+    /// Whether retry is meaningful.
+    #[must_use]
+    pub const fn can_retry(self) -> bool {
+        matches!(self, Self::Failed | Self::Cancelled | Self::Warning)
+    }
+
+    /// Theme role for the status (aligned with [`SemanticStatus`]).
     #[must_use]
     pub const fn role(self) -> Role {
-        match self {
-            Self::Pending => Role::TextMuted,
-            Self::Running => Role::Info,
-            Self::Done => Role::Success,
-            Self::Error => Role::Danger,
-            Self::Cancelled => Role::TextDisabled,
-        }
+        self.semantic().role()
     }
 }
 
 /// Mutable streaming tool call card.
+///
+/// For full command chrome (cwd, exit, follow, cancel **requests**), prefer
+/// [`super::TerminalOutput`]. ToolCard stays the compact agent-tool summary.
 #[derive(Debug, Clone, Copy)]
 pub struct ToolCard<'a> {
     name: &'a str,
@@ -231,7 +344,7 @@ pub struct ToolCard<'a> {
     status: ToolStatus,
     detail: Option<&'a str>,
     expanded: bool,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ToolCard<'a> {
@@ -241,7 +354,7 @@ impl<'a> ToolCard<'a> {
         name: &'a str,
         summary: &'a str,
         status: ToolStatus,
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             name,
@@ -249,7 +362,7 @@ impl<'a> ToolCard<'a> {
             status,
             detail: None,
             expanded: false,
-            theme,
+            system,
         }
     }
 
@@ -270,41 +383,50 @@ impl<'a> ToolCard<'a> {
 
 impl Widget for &ToolCard<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
-
         if area.is_empty() {
             return;
         }
-        let panel = Panel::new(&panel_tokens).emphasis(match self.status {
-            ToolStatus::Error => PanelEmphasis::Danger,
-            ToolStatus::Running => PanelEmphasis::Focused,
-            _ => PanelEmphasis::Normal,
-        });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        if inner.is_empty() {
+        use crate::widgets::Card;
+        let status_label = self.status.badge();
+        // Chrome owns name / status badge / summary; body owns tool output only.
+        let kind = self.status.semantic();
+        let card = Card::new(self.system)
+            .title(self.name)
+            .leading(kind.glyph_for_set(self.system.glyphs))
+            .badge(status_label)
+            .subtitle(self.summary)
+            .emphasis(match self.status {
+                ToolStatus::Failed => PanelChrome::Danger,
+                ToolStatus::Running | ToolStatus::Streaming | ToolStatus::WaitingPermission => {
+                    PanelChrome::Focused
+                }
+                ToolStatus::Warning => PanelChrome::Normal,
+                _ => PanelChrome::Normal,
+            });
+        let body = card.paint(area, buffer, None);
+        if body.is_empty() {
             return;
         }
-        let header = format!("{} {} — {}", self.status.glyph(), self.name, self.summary);
-        let clipped = take_display_cols(&header, usize::from(inner.width));
-        buffer.set_stringn(
-            inner.x,
-            inner.y,
-            &clipped,
-            usize::from(inner.width),
-            self.theme.style(self.status.role()),
-        );
-        if self.expanded
-            && let Some(detail) = self.detail
-            && inner.height > 1
-        {
-            let body = take_display_cols(detail, usize::from(inner.width));
+        if self.expanded {
+            if let Some(detail) = self.detail {
+                let line = take_display_cols(detail, usize::from(body.width));
+                buffer.set_stringn(
+                    body.x,
+                    body.y,
+                    &line,
+                    usize::from(body.width),
+                    self.system.style(Role::TextMuted),
+                );
+            }
+        } else {
+            // Collapsed: one muted status line (non-color status already in badge).
+            let line = take_display_cols(self.summary, usize::from(body.width));
             buffer.set_stringn(
-                inner.x,
-                inner.y.saturating_add(1),
-                &body,
-                usize::from(inner.width),
-                self.theme.style(Role::TextMuted),
+                body.x,
+                body.y,
+                &line,
+                usize::from(body.width),
+                self.system.style(self.status.role()),
             );
         }
     }
@@ -320,874 +442,36 @@ impl Widget for ToolCard<'_> {
     }
 }
 
-// ── Approval card ───────────────────────────────────────────────────────────
-
-/// Semantic permission decision (message only — never executes policy).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum ApprovalDecision {
-    /// Allow once.
-    AllowOnce,
-    /// Allow for this session.
-    AllowSession,
-    /// Always allow this class of action.
-    Always,
-    /// Deny.
-    Deny,
-    /// Defer / ask later.
-    Defer,
-}
-
-impl ApprovalDecision {
-    /// Canonical navigation/render order for every decision.
-    pub const ALL: [Self; 5] = [
-        Self::AllowOnce,
-        Self::AllowSession,
-        Self::Always,
-        Self::Deny,
-        Self::Defer,
-    ];
-
-    /// Short chrome label.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::AllowOnce => "Once",
-            Self::AllowSession => "Session",
-            Self::Always => "Always",
-            Self::Deny => "Deny",
-            Self::Defer => "Defer",
-        }
-    }
-
-    fn index(self) -> usize {
-        Self::ALL
-            .iter()
-            .position(|&decision| decision == self)
-            .unwrap_or(3)
-    }
-}
-
-/// Risk tier for approval chrome.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum ApprovalRisk {
-    /// Low risk informational.
-    Low,
-    /// Caution.
-    Medium,
-    /// Destructive / high impact.
-    High,
-}
-
-impl ApprovalRisk {
-    /// Theme role for the risk tier.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Low => Role::Info,
-            Self::Medium => Role::Warning,
-            Self::High => Role::Danger,
-        }
-    }
-
-    /// Non-color marker.
-    #[must_use]
-    pub const fn glyph(self) -> &'static str {
-        match self {
-            Self::Low => "ℹ",
-            Self::Medium => "!",
-            Self::High => "⚠",
-        }
-    }
-}
-
-/// Typed result of approval interaction (no side effects).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum ApprovalCardOutcome {
-    /// Input did not apply.
-    Ignored,
-    /// Selected decision changed.
-    SelectionChanged,
-    /// User confirmed a decision (consumer applies policy).
-    Confirmed(ApprovalDecision),
-    /// User cancelled without confirming (Esc). Not a Deny decision.
-    Cancelled,
-}
-
-/// Painted hit region for one decision control.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ApprovalDecisionRegion {
-    /// Decision identity.
-    pub decision: ApprovalDecision,
-    /// Exact painted rectangle.
-    pub area: Rect,
-}
-
-/// Fail-safe approval interaction state.
-///
-/// Default selection is [`ApprovalDecision::Deny`]. Untouched Enter never
-/// approves.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ApprovalCardState {
-    selected: ApprovalDecision,
-    /// Exact decision hit regions from the latest render.
-    pub decision_regions: Vec<ApprovalDecisionRegion>,
-}
-
-impl Default for ApprovalCardState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ApprovalCardState {
-    /// Creates state with the safe default selection (`Deny`).
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            selected: ApprovalDecision::Deny,
-            decision_regions: Vec::new(),
-        }
-    }
-
-    /// Creates state with an explicit initial selection.
-    #[must_use]
-    pub fn with_selected(selected: ApprovalDecision) -> Self {
-        Self {
-            selected,
-            decision_regions: Vec::new(),
-        }
-    }
-
-    /// Currently selected decision.
-    #[must_use]
-    pub const fn selected(&self) -> ApprovalDecision {
-        self.selected
-    }
-
-    /// Sets the selected decision.
-    pub fn set_selected(&mut self, selected: ApprovalDecision) {
-        self.selected = selected;
-    }
-
-    fn move_selection(&mut self, delta: isize) -> ApprovalCardOutcome {
-        let len = ApprovalDecision::ALL.len() as isize;
-        let next = (self.selected.index() as isize + delta).rem_euclid(len) as usize;
-        let next = ApprovalDecision::ALL[next];
-        if next == self.selected {
-            return ApprovalCardOutcome::Ignored;
-        }
-        self.selected = next;
-        ApprovalCardOutcome::SelectionChanged
-    }
-
-    /// Handles keyboard navigation and confirmation.
-    ///
-    /// Navigation accepts Press and Repeat. Confirmation and shortcuts are
-    /// Press-only so held Enter cannot multi-fire.
-    pub fn handle_key(&mut self, key: KeyEvent) -> ApprovalCardOutcome {
-        match key.kind {
-            KeyEventKind::Press | KeyEventKind::Repeat => {}
-            KeyEventKind::Release => return ApprovalCardOutcome::Ignored,
-        }
-        let is_press = key.kind == KeyEventKind::Press;
-        match key.code {
-            KeyCode::Left | KeyCode::Up => self.move_selection(-1),
-            KeyCode::Right | KeyCode::Down => self.move_selection(1),
-            KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => self.move_selection(-1),
-            KeyCode::Tab => self.move_selection(1),
-            KeyCode::BackTab => self.move_selection(-1),
-            KeyCode::Enter if is_press => ApprovalCardOutcome::Confirmed(self.selected),
-            KeyCode::Enter => ApprovalCardOutcome::Ignored,
-            KeyCode::Esc if is_press => ApprovalCardOutcome::Cancelled,
-            KeyCode::Esc => ApprovalCardOutcome::Ignored,
-            KeyCode::Char('n' | 'N') if is_press => {
-                ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
-            }
-            KeyCode::Char('y' | 'Y') if is_press => {
-                ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
-            }
-            _ => ApprovalCardOutcome::Ignored,
-        }
-    }
-
-    /// Handles pointer input against the latest decision hit regions.
-    ///
-    /// A left-button Down on a decision selects it and confirms once.
-    pub fn handle_mouse(&mut self, event: MouseEvent) -> ApprovalCardOutcome {
-        match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                let Some(region) = self
-                    .decision_regions
-                    .iter()
-                    .find(|region| region.area.contains(event.position))
-                    .copied()
-                else {
-                    return ApprovalCardOutcome::Ignored;
-                };
-                self.selected = region.decision;
-                ApprovalCardOutcome::Confirmed(region.decision)
-            }
-            MouseEventKind::Moved => {
-                let Some(region) = self
-                    .decision_regions
-                    .iter()
-                    .find(|region| region.area.contains(event.position))
-                    .copied()
-                else {
-                    return ApprovalCardOutcome::Ignored;
-                };
-                if region.decision == self.selected {
-                    return ApprovalCardOutcome::Ignored;
-                }
-                self.selected = region.decision;
-                ApprovalCardOutcome::SelectionChanged
-            }
-            _ => ApprovalCardOutcome::Ignored,
-        }
-    }
-}
-
-/// Blocking permission card.
-#[derive(Debug, Clone, Copy)]
-pub struct ApprovalCard<'a> {
-    title: &'a str,
-    detail: &'a str,
-    risk: ApprovalRisk,
-    theme: &'a Theme,
-}
-
-impl<'a> ApprovalCard<'a> {
-    /// Creates an approval card.
-    #[must_use]
-    pub const fn new(
-        title: &'a str,
-        detail: &'a str,
-        risk: ApprovalRisk,
-        theme: &'a Theme,
-    ) -> Self {
-        Self {
-            title,
-            detail,
-            risk,
-            theme,
-        }
-    }
-}
-
-fn decision_chip(decision: ApprovalDecision, selected: bool) -> String {
-    let label = decision.label();
-    if selected {
-        format!("[{label}]")
-    } else {
-        format!(" {label} ")
-    }
-}
-
-impl StatefulWidget for &ApprovalCard<'_> {
-    type State = ApprovalCardState;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let panel_tokens = DesignTokens::new(self.theme.clone(), Density::default());
-
-        state.decision_regions.clear();
-        if area.is_empty() {
-            return;
-        }
-        let emphasis = match self.risk {
-            ApprovalRisk::High => PanelEmphasis::Danger,
-            _ => PanelEmphasis::Focused,
-        };
-        let panel = Panel::new(&panel_tokens)
-            .title(self.title)
-            .emphasis(emphasis);
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        if inner.is_empty() {
-            return;
-        }
-        let header = format!("{} {}", self.risk.glyph(), self.detail);
-        buffer.set_stringn(
-            inner.x,
-            inner.y,
-            take_display_cols(&header, usize::from(inner.width)),
-            usize::from(inner.width),
-            self.theme.style(self.risk.role()),
-        );
-
-        // Tiny height: selected decision + non-color nav cue on one row.
-        if inner.height < 3 {
-            if inner.height >= 2 {
-                paint_selected_only_fallback(self.theme, inner, state, buffer);
-            }
-            return;
-        }
-
-        let chips: Vec<(ApprovalDecision, String)> = ApprovalDecision::ALL
-            .iter()
-            .copied()
-            .map(|decision| {
-                (
-                    decision,
-                    decision_chip(decision, decision == state.selected),
-                )
-            })
-            .collect();
-        let total_width: u16 = chips
-            .iter()
-            .map(|(_, text)| display_cols(text) as u16)
-            .sum::<u16>()
-            .saturating_add((chips.len().saturating_sub(1) as u16).saturating_mul(1));
-
-        if total_width <= inner.width {
-            // Wide: single horizontal row.
-            let y = inner.bottom().saturating_sub(1);
-            let mut x = inner.x;
-            for (decision, text) in &chips {
-                let width = display_cols(text) as u16;
-                if x.saturating_add(width) > inner.right() {
-                    break;
-                }
-                let style = if *decision == state.selected {
-                    self.theme.style(Role::ActionFocused)
-                } else {
-                    self.theme.style(Role::TextMuted)
-                };
-                buffer.set_stringn(x, y, text, usize::from(width), style);
-                state.decision_regions.push(ApprovalDecisionRegion {
-                    decision: *decision,
-                    area: Rect {
-                        x,
-                        y,
-                        width,
-                        height: 1,
-                    },
-                });
-                x = x.saturating_add(width.saturating_add(1));
-            }
-            return;
-        }
-
-        // Medium: wrap decisions across available body rows (keep order).
-        let body_top = inner.y.saturating_add(1);
-        let body_bottom = inner.bottom();
-        if body_top >= body_bottom {
-            paint_selected_only_fallback(self.theme, inner, state, buffer);
-            return;
-        }
-        let mut y = body_top;
-        let mut x = inner.x;
-        let mut painted_any = false;
-        for (decision, text) in &chips {
-            let width = (display_cols(text) as u16).max(1);
-            if x > inner.x && x.saturating_add(width) > inner.right() {
-                y = y.saturating_add(1);
-                x = inner.x;
-                if y >= body_bottom {
-                    break;
-                }
-            }
-            if width > inner.width {
-                // Can't fit this chip at all on this width — selected-only.
-                state.decision_regions.clear();
-                paint_selected_only_fallback(self.theme, inner, state, buffer);
-                return;
-            }
-            let style = if *decision == state.selected {
-                self.theme.style(Role::ActionFocused)
-            } else {
-                self.theme.style(Role::TextMuted)
-            };
-            buffer.set_stringn(x, y, text, usize::from(width), style);
-            state.decision_regions.push(ApprovalDecisionRegion {
-                decision: *decision,
-                area: Rect {
-                    x,
-                    y,
-                    width,
-                    height: 1,
-                },
-            });
-            painted_any = true;
-            x = x.saturating_add(width.saturating_add(1));
-        }
-
-        // If selected is missing from painted regions, force selected-only.
-        let selected_visible = state
-            .decision_regions
-            .iter()
-            .any(|region| region.decision == state.selected);
-        if !painted_any || !selected_visible {
-            state.decision_regions.clear();
-            paint_selected_only_fallback(self.theme, inner, state, buffer);
-        }
-    }
-}
-
-fn paint_selected_only_fallback(
-    theme: &Theme,
-    inner: Rect,
-    state: &mut ApprovalCardState,
-    buffer: &mut Buffer,
-) {
-    let y = if inner.height >= 2 {
-        inner.bottom().saturating_sub(1)
-    } else {
-        inner.y
-    };
-    // Non-color nav cue: ‹ [Deny] ›
-    let core = decision_chip(state.selected, true);
-    let text = format!("‹ {core} ›");
-    let clipped = take_display_cols(&text, usize::from(inner.width));
-    let width = (display_cols(&clipped) as u16).min(inner.width);
-    buffer.set_stringn(
-        inner.x,
-        y,
-        &clipped,
-        usize::from(width),
-        theme.style(Role::ActionFocused),
-    );
-    state.decision_regions.push(ApprovalDecisionRegion {
-        decision: state.selected,
-        area: Rect {
-            x: inner.x,
-            y,
-            width: width.max(1),
-            height: 1,
-        },
-    });
-}
-
-impl StatefulWidget for ApprovalCard<'_> {
-    type State = ApprovalCardState;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        <&Self as StatefulWidget>::render(&self, area, buffer, state);
-    }
-}
-
-// ── Stream view ─────────────────────────────────────────────────────────────
-
-/// Kind of stream turn/block.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum StreamItemKind {
-    /// User prompt.
-    User,
-    /// Assistant message.
-    Assistant,
-    /// Tool invocation summary line.
-    Tool,
-    /// System notice.
-    System,
-    /// Thinking/reasoning.
-    Thinking,
-}
-
-/// One stable-ID stream item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StreamItem<'a, Id> {
-    /// Stable identity.
-    pub id: Id,
-    /// Kind chrome.
-    pub kind: StreamItemKind,
-    /// Primary visible text (single line or pre-wrapped).
-    pub text: &'a str,
-    /// Whether the block is folded.
-    pub folded: bool,
-}
-
-/// Virtualized conversation stream.
-#[derive(Debug, Clone, Copy)]
-pub struct StreamView<'a, Id> {
-    items: &'a [StreamItem<'a, Id>],
-    first: usize,
-    theme: &'a Theme,
-}
-
-impl<'a, Id> StreamView<'a, Id> {
-    /// Creates a stream view.
-    #[must_use]
-    pub const fn new(items: &'a [StreamItem<'a, Id>], theme: &'a Theme) -> Self {
-        Self {
-            items,
-            first: 0,
-            theme,
-        }
-    }
-
-    /// First visible item index.
-    #[must_use]
-    pub const fn first(mut self, first: usize) -> Self {
-        self.first = first;
-        self
-    }
-}
-
-impl<Id> Widget for &StreamView<'_, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        for row in 0..area.height {
-            let index = self.first.saturating_add(usize::from(row));
-            let Some(item) = self.items.get(index) else {
-                break;
-            };
-            let (prefix, role) = match item.kind {
-                StreamItemKind::User => ("› ", Role::TextStrong),
-                StreamItemKind::Assistant => ("▍ ", Role::Text),
-                StreamItemKind::Tool => ("⚙ ", Role::Info),
-                StreamItemKind::System => ("· ", Role::TextMuted),
-                StreamItemKind::Thinking => ("… ", Role::TextDisabled),
-            };
-            let fold = if item.folded { "▸ " } else { "" };
-            let line = format!("{fold}{prefix}{}", item.text);
-            buffer.set_stringn(
-                area.x,
-                area.y.saturating_add(row),
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                self.theme.style(role),
-            );
-        }
-    }
-}
-
-impl<Id> Widget for StreamView<'_, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
-// ── Timeline ────────────────────────────────────────────────────────────────
-
-/// One timeline event.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TimelineEvent<'a> {
-    /// Time or sequence label.
-    pub when: &'a str,
-    /// Event summary.
-    pub text: &'a str,
-    /// Whether this is the active/current event.
-    pub active: bool,
-}
-
-/// Vertical activity timeline.
-#[derive(Debug, Clone, Copy)]
-pub struct Timeline<'a> {
-    events: &'a [TimelineEvent<'a>],
-    theme: &'a Theme,
-}
-
-impl<'a> Timeline<'a> {
-    /// Creates a timeline.
-    #[must_use]
-    pub const fn new(events: &'a [TimelineEvent<'a>], theme: &'a Theme) -> Self {
-        Self { events, theme }
-    }
-}
-
-impl Widget for &Timeline<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
-            return;
-        }
-        for (row, event) in self
-            .events
-            .iter()
-            .enumerate()
-            .take(usize::from(area.height))
-        {
-            let y = area.y.saturating_add(row as u16);
-            let bullet = if event.active { "●" } else { "○" };
-            let line = format!("{bullet} {}  {}", event.when, event.text);
-            let role = if event.active {
-                Role::Accent
-            } else {
-                Role::TextMuted
-            };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                self.theme.style(role),
-            );
-        }
-    }
-}
-
-impl Widget for Timeline<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
-// ── Prompt box ──────────────────────────────────────────────────────────────
-
-/// Outcome from the multi-line agent prompt.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum PromptBoxOutcome {
-    /// Ignored.
-    Ignored,
-    /// Draft text changed.
-    Changed,
-    /// Submit requested (caller reads draft).
-    Submitted,
-    /// Cancel / clear request.
-    Cancelled,
-}
-
-/// Multi-line prompt chrome around [`TextArea`].
-#[derive(Debug, Clone, Copy)]
-pub struct PromptBox<'a> {
-    placeholder: &'a str,
-    theme: &'a Theme,
-}
-
-impl<'a> PromptBox<'a> {
-    /// Creates a prompt box.
-    #[must_use]
-    pub const fn new(theme: &'a Theme) -> Self {
-        Self {
-            placeholder: "Message…",
-            theme,
-        }
-    }
-
-    /// Placeholder when empty.
-    #[must_use]
-    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
-        self.placeholder = placeholder;
-        self
-    }
-}
-
-/// Prompt state (text area + focused flag).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PromptBoxState {
-    /// Underlying multiline editor.
-    pub editor: TextAreaState,
-    focused: bool,
-}
-
-impl Default for PromptBoxState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl PromptBoxState {
-    /// Creates an empty prompt.
-    #[must_use]
-    pub fn new() -> Self {
-        let mut editor = TextAreaState::default();
-        editor.set_focused(true);
-        Self {
-            editor,
-            focused: true,
-        }
-    }
-
-    /// Draft text.
-    #[must_use]
-    pub fn text(&self) -> String {
-        self.editor.text()
-    }
-
-    /// Whether the prompt owns keyboard focus.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
-    /// Sets focus.
-    pub fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-        self.editor.set_focused(focused);
-    }
-
-    /// Handles a key. Enter submits when modifiers are empty and draft non-empty;
-    /// plain Enter inserts newline when Shift is held? Convention: Enter submits,
-    /// Ctrl/Shift+Enter inserts newline via TextArea when mapped by caller.
-    /// Here: Enter submits; Alt+Enter inserts newline.
-    pub fn handle_key(&mut self, key: KeyEvent) -> PromptBoxOutcome {
-        if !self.focused || key.kind != KeyEventKind::Press {
-            return PromptBoxOutcome::Ignored;
-        }
-        if key.code == KeyCode::Enter && key.modifiers.is_empty() {
-            if self.text().trim().is_empty() {
-                return PromptBoxOutcome::Ignored;
-            }
-            return PromptBoxOutcome::Submitted;
-        }
-        if key.code == KeyCode::Esc {
-            return PromptBoxOutcome::Cancelled;
-        }
-        match self.editor.handle_key(key) {
-            TextAreaOutcome::Changed => PromptBoxOutcome::Changed,
-            TextAreaOutcome::Cancelled => PromptBoxOutcome::Cancelled,
-            TextAreaOutcome::Ignored => PromptBoxOutcome::Ignored,
-        }
-    }
-}
-
-impl StatefulWidget for &PromptBox<'_> {
-    type State = PromptBoxState;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        if area.is_empty() {
-            return;
-        }
-        StatefulWidget::render(
-            &TextArea::new(self.theme).placeholder(self.placeholder),
-            area,
-            buffer,
-            &mut state.editor,
-        );
-    }
-}
-
-impl StatefulWidget for PromptBox<'_> {
-    type State = PromptBoxState;
-
-    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        <&Self as StatefulWidget>::render(&self, area, buffer, state);
-    }
-}
+// Timeline lives in `timeline` module (re-exported from widgets root).
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
 
     #[test]
     fn tool_status_glyphs_are_non_color() {
-        assert_eq!(ToolStatus::Done.glyph(), "✓");
-        assert_eq!(ToolStatus::Error.glyph(), "✗");
-        assert_eq!(ToolStatus::Cancelled.glyph(), "⊘");
+        assert_eq!(
+            ToolStatus::Success.glyph(),
+            SemanticStatus::Success.glyph_unicode()
+        );
+        assert_eq!(
+            ToolStatus::Failed.glyph(),
+            SemanticStatus::Failed.glyph_unicode()
+        );
+        assert_eq!(
+            ToolStatus::Cancelled.glyph(),
+            SemanticStatus::Paused.glyph_unicode()
+        );
+        assert_eq!(ToolStatus::Queued.semantic(), SemanticStatus::Queued);
     }
 
     #[test]
-    fn approval_default_enter_confirms_deny_never_allow() {
-        let mut state = ApprovalCardState::new();
-        assert_eq!(state.selected(), ApprovalDecision::Deny);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
-        );
-        assert_ne!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
-        );
-    }
-
-    #[test]
-    fn approval_escape_is_cancelled_not_deny() {
-        let mut state = ApprovalCardState::new();
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            ApprovalCardOutcome::Cancelled
-        );
-    }
-
-    #[test]
-    fn approval_tab_and_backtab_wrap_full_decision_set() {
-        let mut state = ApprovalCardState::new();
-        assert_eq!(state.selected(), ApprovalDecision::Deny);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-            ApprovalCardOutcome::SelectionChanged
-        );
-        assert_eq!(state.selected(), ApprovalDecision::Defer);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-            ApprovalCardOutcome::SelectionChanged
-        );
-        assert_eq!(state.selected(), ApprovalDecision::AllowOnce);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)),
-            ApprovalCardOutcome::SelectionChanged
-        );
-        assert_eq!(state.selected(), ApprovalDecision::Defer);
-    }
-
-    #[test]
-    fn approval_enter_repeat_does_not_confirm() {
-        let mut state = ApprovalCardState::with_selected(ApprovalDecision::AllowOnce);
-        let mut key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        key.kind = KeyEventKind::Repeat;
-        assert_eq!(state.handle_key(key), ApprovalCardOutcome::Ignored);
-    }
-
-    #[test]
-    fn approval_y_n_shortcuts_are_explicit_confirms() {
-        let mut state = ApprovalCardState::new();
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE)),
-            ApprovalCardOutcome::Confirmed(ApprovalDecision::AllowOnce)
-        );
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE)),
-            ApprovalCardOutcome::Confirmed(ApprovalDecision::Deny)
-        );
-    }
-
-    #[test]
-    fn approval_selected_visible_at_every_non_empty_width() {
-        use ratatui_core::{backend::TestBackend, terminal::Terminal};
-
-        let theme = Theme::default();
-        let card = ApprovalCard::new("Permission", "Run tool?", ApprovalRisk::High, &theme);
-        for width in 0u16..=48 {
-            let mut state = ApprovalCardState::new();
-            let height = 6u16;
-            let mut terminal = Terminal::new(TestBackend::new(width.max(1), height)).unwrap();
-            let area = Rect::new(0, 0, width, height);
-            terminal
-                .draw(|frame| {
-                    frame.render_stateful_widget(&card, area, &mut state);
-                })
-                .unwrap();
-            if width == 0 {
-                assert!(state.decision_regions.is_empty());
-                continue;
-            }
-            // Selected must be published as a hit region whenever anything painted.
-            if !state.decision_regions.is_empty() {
-                assert!(
-                    state
-                        .decision_regions
-                        .iter()
-                        .any(|region| region.decision == state.selected()),
-                    "width {width}: selected {:?} missing from {:?}",
-                    state.selected(),
-                    state.decision_regions
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn prompt_submit_requires_non_empty_draft() {
-        let mut state = PromptBoxState::new();
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            PromptBoxOutcome::Ignored
-        );
-        state.editor = TextAreaState::new("hello");
-        state.editor.set_focused(true);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            PromptBoxOutcome::Submitted
-        );
+    fn no_legacy_approval_or_prompt_box_types() {
+        let src = include_str!("agent.rs");
+        let code = src.split("#[cfg(test)]").next().unwrap_or(src);
+        let a = ["pub struct Approv", "alCard"].concat();
+        let b = ["pub struct Prompt", "Box"].concat();
+        let c = ["pub enum Approval", "Decision"].concat();
+        assert!(!code.contains(&a) && !code.contains(&b) && !code.contains(&c));
     }
 }

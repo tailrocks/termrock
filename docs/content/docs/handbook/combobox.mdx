@@ -1,0 +1,39 @@
+---
+title: Combobox & Autocomplete
+description: Editable input with CompletionMenu suggestions and generation-gated async apply.
+---
+
+# Combobox & Autocomplete
+
+**Purpose.** Free-form or constrained values with suggestions. TermRock owns
+draft typing, menu navigation, and race-safe apply. Hosts own fetch/rank and
+OverlayStack.
+
+## Three values
+
+| Value | API |
+|-------|-----|
+| Draft | `draft()` |
+| Active suggestion | `active_suggestion()` |
+| Committed | `value()` / `value_label()` |
+
+## Async race gate
+
+```rust
+// on DraftChanged { generation }
+host.fetch(text, generation);
+
+// on response
+if state.apply_suggestions(generation, &cands) {
+    // fresh
+} // stale generation → false, ignored
+```
+
+## Modes
+
+- **Combobox** — `ComboboxState::new()`: exact-required, not creatable by default  
+- **Autocomplete** — `ComboboxState::autocomplete()`: creatable free text  
+
+## Related
+
+CompletionMenu · TextInput · Select · migration `0147`

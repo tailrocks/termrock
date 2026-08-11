@@ -8,8 +8,8 @@ use std::{
     time::{Duration, Instant},
 };
 use termrock::{
-    Theme,
     input::{KeyCode, KeyEvent, KeyModifiers},
+    style::{DesignSystem, RolePalette},
     widgets::{TextArea, TextAreaState},
 };
 
@@ -22,9 +22,11 @@ fn warmed_large_document_render_is_allocation_free() {
         .map(|_| "resident line with 東京 and emoji 🧪")
         .collect::<Vec<_>>()
         .join("\n");
-    let theme = Theme::default();
-    let widget = TextArea::new(&theme);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let widget = TextArea::new(&system);
     let mut state = TextAreaState::new(text);
+    state.set_accepts_input(true);
     let area = Rect::new(0, 0, 80, 40);
     let mut buffer = Buffer::empty(area);
     widget.render(area, &mut buffer, &mut state);
@@ -49,7 +51,7 @@ fn warmed_large_document_render_is_allocation_free() {
 #[test]
 fn ordinary_inline_insert_reuses_existing_line_capacity() {
     let mut state = TextAreaState::new("");
-    state.set_focused(true);
+    state.set_accepts_input(true);
     let reserve = "x".repeat(256);
     let _ = state.insert_text(&reserve);
     for _ in 0..256 {

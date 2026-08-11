@@ -1,0 +1,63 @@
+---
+title: SearchResults
+description: Grouped navigable search hits with match-preserving snippets.
+---
+
+# SearchResults
+
+Grouped, keyboard-navigable search results for files, logs, objects, commands,
+and docs. Host runs the search; TermRock paints groups, match highlights, and
+emits open/preview/page/cancel **requests**.
+
+## When to use / when not
+
+| Use SearchResults | Prefer |
+|-------------------|--------|
+| Workspace / log / doc search pane | — |
+| Query field alone | [SearchInput](/docs/handbook/search-input) |
+| Fuzzy jump palette | [QuickOpen](/docs/components/quick-open) |
+| Command palette | [CommandPalette](/docs/handbook/command-palette) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Search execution, ranking, async | Host |
+| Generation gate, cursor, collapse, match walk | `SearchResultsState` |
+| Open / preview / fullscreen targets | Host via outcomes |
+
+## Async generation
+
+```rust
+let gen = state.begin_search();
+// spawn search tagged with gen…
+state.apply_results(gen, status, page_len);
+// older gen → SearchResultsStatus::Stale
+```
+
+## Match visibility
+
+Snippets use `keep_first_match_slice` / `MatchTruncate::KeepFirstMatch` so the
+first match stays visible under narrow width. `n`/`N` walk title and snippet
+matches.
+
+## Compose
+
+| Piece | How |
+|-------|-----|
+| SearchInput | Host: debounce → `begin_search` / re-query |
+| QuickOpen | `search_results_to_quick_open(&items)` |
+| FullscreenViewer | `FullscreenRequested { id }` |
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · n/N | Navigate · next/prev match |
+| Enter · Space | Open / preview · group toggle |
+| Esc | Cancel in-flight search |
+| Ctrl+O · Ctrl+Shift+F | QuickOpen · fullscreen |
+
+## Related
+
+SearchInput · HighlightedText · QuickOpen · FullscreenViewer · migration `0207`

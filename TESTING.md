@@ -8,5 +8,5 @@ no-default-features and examples checks, rustdoc with warnings denied,
 feature powerset (cargo-hack), dependency policy (cargo-deny: advisories,
 bans, licenses, sources), unused-dependency check (cargo-shear), packaging,
 and the deterministic lookbook preview check. CI additionally verifies the
-Rust 1.97 MSRV, latest stable Rust, and REUSE compliance. Run before every
+Rust 1.97.1 (toolchain-pinned latest stable), and REUSE compliance. Run before every
 push.

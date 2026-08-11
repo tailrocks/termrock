@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "ops-dashboard",
+  "version": "0.1.0",
+  "description": "OpsDashboard source-owned block",
+  "license": "Apache-2.0",
+  "kernel": "0.11.0",
+  "files": [
+    {
+      "source": "src/lib.rs",
+      "dest": "src/ui/blocks/ops_dashboard.rs",
+      "sha256": "90c86b0c109fd5daa5a54f756a11c65eeb87b91e8711200b4d87c011fe9f79cb"
+    }
+  ]
+}

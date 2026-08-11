@@ -1,0 +1,64 @@
+---
+title: IntegrationStatus
+description: 'MCP/plugin/extension health with provenance and egress language.'
+---
+
+## Previews
+
+### `integration-status/list`
+
+![IntegrationStatus — list](/component-previews/integration-status-list.svg)
+
+### `integration-status/panel`
+
+![IntegrationStatus — panel](/component-previews/integration-status-panel.svg)
+
+### `integration-status/badge`
+
+![IntegrationStatus — badge](/component-previews/integration-status-badge.svg)
+
+### `integration-status/narrow`
+
+![IntegrationStatus — narrow](/component-previews/integration-status-narrow.svg)
+
+### `integration-status/unicode`
+
+![IntegrationStatus — unicode](/component-previews/integration-status-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_integrations, IntegrationStatus, IntegrationStatusOutcome,
+    IntegrationStatusState,
+};
+
+let mut state = IntegrationStatusState::new();
+state.set_entries(example_integrations());
+IntegrationStatus::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    IntegrationStatusOutcome::PermissionRequested { id, .. } => { let _ = id; }
+    IntegrationStatusOutcome::RestartRequested { id } => { let _ = id; }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `integration-status/list`
+- `integration-status/panel`
+- `integration-status/badge`
+- `integration-status/narrow`
+- `integration-status/unicode`

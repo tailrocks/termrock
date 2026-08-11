@@ -1,31 +1,46 @@
 //! Responsive layout specifications and caller-defined bottom slots.
+//!
+//! Component-local packing: [`Stack`] / [`Inline`] / [`layout_stack`].
+//! Multi-pane shells: [`WorkSurface`] / [`Workspace`].
 
+mod center;
 mod dialog;
+mod grid;
+mod responsive;
+mod stack;
 mod work_surface;
 mod workspace;
 
 use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
+pub use center::{
+    Center, CenterAxis, CenterLayout, CenterSpec, center_block_y, center_line_x, centered_rect,
+    layout_center,
+};
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
+pub use grid::{
+    Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize, auto_flow_items,
+    dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
+    grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns,
+    settings_grid_template,
+};
+pub use responsive::{
+    AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
+    OverflowAction, OverflowBehavior, ResponsiveRecipe, ResponsiveSnapshot, ResponsiveSurface,
+    SizeBudget, SurfaceResponsivePolicy, ViewportClass, WIDTH_LADDER, composed_row_anatomy,
+    contract_parts, dialog_anatomy, dialog_stack_actions, essential_survives, status_bar_anatomy,
+    table_row_shows_optional, tabs_show_status_glyphs,
+};
+pub use stack::{
+    Align, FlexSize, Inline, Justify, OverflowPolicy, Stack, StackDirection, StackLayout,
+    StackSpec, direction_for_width, layout_stack, layout_stack_into, layout_stack_into_cross,
+    layout_stack_with_cross,
+};
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
 pub use workspace::{
     PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
 };
-
-/// Center a fixed-size rectangle inside `area`, leaving a one-cell margin
-/// where the terminal has room for it.
-#[must_use]
-pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
-    let w = width.min(area.width.saturating_sub(2));
-    let h = height.min(area.height.saturating_sub(2));
-    Rect {
-        x: area.x + area.width.saturating_sub(w) / 2,
-        y: area.y + area.height.saturating_sub(h) / 2,
-        width: w,
-        height: h,
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Vertical placement policies for bounded dialog geometry.
@@ -72,16 +87,26 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
         .preferred_height
         .clamp(spec.min_height, spec.max_height.max(spec.min_height))
         .min(available_height.max(spec.min_height));
-    let x = outer
-        .x
-        .saturating_add(outer.width.saturating_sub(width) / 2);
-    let y = match spec.placement {
-        Placement::Centered => outer
-            .y
-            .saturating_add(outer.height.saturating_sub(height) / 2),
-        Placement::Top => outer.y,
-    };
-    Rect::new(x, y, width, height)
+    match spec.placement {
+        Placement::Centered => {
+            Center::new(width, height)
+                .max(width, height)
+                .min(spec.min_width.min(width), spec.min_height.min(height))
+                .margin(spec.horizontal_margin / 2, spec.vertical_margin / 2)
+                .safe_margin(true)
+                .layout(outer)
+                .child
+        }
+        Placement::Top => {
+            // Horizontal center only; top-aligned (onboarding banners, etc.).
+            let child = Center::new(width, height)
+                .axis(CenterAxis::Horizontal)
+                .max_width(width)
+                .layout(outer)
+                .child;
+            Rect::new(child.x, outer.y, child.width, height.min(outer.height))
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

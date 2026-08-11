@@ -209,10 +209,8 @@ impl<A: Clone + 'static> KeyBinding<A> {
 /// # Examples
 ///
 /// ```
-/// use termrock::{
-///     input::KeyCode,
-///     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
-/// };
+/// use termrock::input::KeyCode;
+/// use termrock::keymap::{KeyBinding, KeyChord, Keymap, Visibility};
 ///
 /// #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// enum Action { Quit }

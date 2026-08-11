@@ -1,0 +1,56 @@
+---
+title: SearchInput
+description: Search field with status, clear, history, filter chips, and host-polled debounce.
+---
+
+# SearchInput
+
+**Purpose.** Query chrome for tables, logs, quick-open, palettes, and
+inspectors. TermRock owns typing, clear, history, metadata strip, and debounce
+*signals*. Hosts own filtering, scoring, and async search.
+
+## Debounce (no async inside)
+
+```rust
+// after handle_key / insert_str
+match state.poll(frame_tick) {
+    SearchInputOutcome::DebouncedQuery { query } => host.search(query),
+    _ => {}
+}
+```
+
+`Duration::ZERO` debounce + `flush_debounce()` for immediate apply.
+
+## Escape
+
+1. Non-empty → clear → `Cleared`
+2. Empty → `Cancelled` (dismiss)
+
+## Status projection
+
+Host sets `SearchStatus::{Idle,Searching,Results{count},NoResults,Error}` after
+its own search completes. Never computed by scanning domain data inside the widget.
+
+## Metadata before query
+
+Leading icon + active `SearchFilterChip`s paint **left of** the editable query
+so filter context contracts first under narrow widths.
+
+## Example
+
+```rust
+use termrock::style::DesignSystem;
+use termrock::widgets::{SearchFilterChip, SearchInput, SearchInputState, SearchStatus};
+
+let system = DesignSystem::default();
+let mut state = SearchInputState::new();
+state.set_focused(true);
+let chips = [SearchFilterChip::new("ext", "rs")];
+let _ = SearchInput::new(&system)
+    .filters(&chips)
+    .status(SearchStatus::Results { count: 4 });
+```
+
+## Related
+
+TextInput · Picker · CommandPalette · migration `0142`

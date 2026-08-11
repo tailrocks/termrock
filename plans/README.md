@@ -10,9 +10,29 @@ Historical plans **001–038** are complete (removed after verification).
 | [`docs/design/architecture-foundation.md`](../docs/design/architecture-foundation.md) | Hybrid kernel + progressive capability (0031) |
 | [`docs/design/shadcn-quality-roadmap.md`](../docs/design/shadcn-quality-roadmap.md) | Full R1–R8 recommendations |
 | [`docs/design/terminal-design-system.md`](../docs/design/terminal-design-system.md) | Full token + recipe system (DesignSystem) |
+| [`docs/design/phosphor-obsidian-visual-direction.md`](../docs/design/phosphor-obsidian-visual-direction.md) | Visual audit + Phosphor Obsidian paint direction |
+| [`docs/design/semantic-interaction-architecture.md`](../docs/design/semantic-interaction-architecture.md) | UiIntent / KeymapStack / FocusGraph architecture |
+| [`docs/design/overlay-stack.md`](../docs/design/overlay-stack.md) | Unified OverlayStack placement and Esc law |
+| [`docs/design/responsive-layout.md`](../docs/design/responsive-layout.md) | Contraction stages, priority, WIDTH_LADDER matrix |
 | [`docs/design/product-audit.md`](../docs/design/product-audit.md) | Product/architecture audit |
 | [`docs/design/component-anatomy-spec.md`](../docs/design/component-anatomy-spec.md) | Component anatomy/behavior/state catalog |
 | [`docs/design/component-prompt-library.md`](../docs/design/component-prompt-library.md) | **164 agent prompts** (global contract + per-component tasks) |
+| [`docs/design/source-owned-registry.md`](../docs/design/source-owned-registry.md) | **Source-owned registry + CLI architecture** (shadcn-class distribution) |
+| [`docs/design/termrock-studio.md`](../docs/design/termrock-studio.md) | **TermRock Studio** (Storybook/DevTools-class lookbook evolution) |
+| [`docs/design/termrock-agent.md`](../docs/design/termrock-agent.md) | **`@termrock/agent`** agent component collection + AgentWorkbench |
+| [`docs/design/prompt-composer.md`](../docs/design/prompt-composer.md) | **PromptComposer** flagship agent input surface |
+| [`docs/design/permission-trust.md`](../docs/design/permission-trust.md) | **Permission & trust** surface (queue, provenance, stale safety) |
+| [`docs/design/data-presentation.md`](../docs/design/data-presentation.md) | **Data presentation** (DataTable, virtualization kits, 1M-row targets) |
+| [`docs/design/component-quality-standard.md`](../docs/design/component-quality-standard.md) | **Component quality standard** (contracts, lints, CI evidence) |
+| [`docs/design/streaming-performance.md`](../docs/design/streaming-performance.md) | **Streaming / large-data performance** (budgets, coalesce, follow) |
+| [`docs/design/terminal-capability-architecture.md`](../docs/design/terminal-capability-architecture.md) | **Terminal capabilities** (profiles, doctor, graceful degrade) |
+| [`docs/design/component-documentation-standard.md`](../docs/design/component-documentation-standard.md) | **Component docs standard** (shadcn-depth handbook template) |
+| [`docs/design/competitive-tui-research.md`](../docs/design/competitive-tui-research.md) | **Competitive TUI research** (matrix + 10 exceed opportunities) |
+| [`docs/design/experience-research-2026.md`](../docs/design/experience-research-2026.md) | **shadcn-TUI experience research** (Grok Build, Amp, hero apps, multi-lang ports, concept catalog, roadmap) |
+| [`docs/design/shadcn-tui-strategic-brief.md`](../docs/design/shadcn-tui-strategic-brief.md) | **Strategic brief** (hybrid kernel+registry, DesignSystem, agent pack, Studio, first six PRs) |
+| [`docs/design/product-audit-shadcn-tui.md`](../docs/design/product-audit-shadcn-tui.md) | **Full product audit** (16 sections, P0–P3, first 10 PRs, preserve/remove APIs) |
+| [`docs/design/pre-1.0-api-redesign.md`](../docs/design/pre-1.0-api-redesign.md) | **Pre-1.0 dual-authority kill** (breaking public API redesign) |
+| [`docs/design/showcase-workbench.md`](../docs/design/showcase-workbench.md) | **Flagship showcase** AI/dev workbench (IA, mockups, dogfood law) |
 
 ### Using the component prompt library
 
@@ -33,16 +53,16 @@ Historical plans **001–038** are complete (removed after verification).
 | [044](044-universal-intent-collections.md) | Universal intents for collections | P1 | M | DONE | 039–040 | 0038 |
 | [045](045-composed-row-panel-anatomy.md) | Priority-aware row/panel anatomy | P2 | M | DONE | 041, 043 | 0039 |
 | [046](046-agent-workbench-flagship.md) | Agent Workbench flagship | P2 | L | DONE | 039–045 | 0040 |
-| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | BLOCKED | 046 + approval | — |
+| [047](047-source-registry-cli-spike.md) | Safe source-registry CLI spike | P3 | L | DONE | 046 + approval | 0055 |
 | [048](048-lookbook-studio-inspector.md) | Lookbook → executable Studio | P3 | L | DONE | 040, 043–046 | 0041 |
 | [049](049-capability-aware-preview-host.md) | Capability-aware preview/media host | P3 | L | DONE | 042–043, 048 | 0042 |
-| [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | TODO | 043, 045, 048–049 | 0043 |
-| [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | TODO | 040, 043–045, 048, 050 | 0044 |
-| [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | TODO | 041, 043–045, 048, 050–051 | 0045 |
-| [053](053-application-block-collection.md) | Source-ownable application blocks | P2 | L | TODO | 042, 046–047, 049–052 | 0046 |
+| [050](050-terminal-native-primitives.md) | Primitives, content, and feedback | P2 | L | DONE | 043, 045, 048–049 | 0052 |
+| [051](051-controls-navigation-overlays.md) | Controls, navigation, and overlays | P2 | L | DONE | 040, 043–045, 048, 050 | 0053 |
+| [052](052-data-review-surfaces.md) | Scalable data/log/review surfaces | P2 | L | DONE | 041, 043–045, 048, 050–051 | 0054 |
+| [053](053-application-block-collection.md) | Source-ownable application blocks | P2 | L | DONE | 042, 046–047, 049–052 | 0056 |
 
-Plan 047 is a gate: DONE means public CLI/schema and migration `0040` shipped.
-If rejected/blocked, stop and re-plan every later migration number.
+Plan 047 is DONE (offline `termrock-cli` + fixtures; migration `0055`).
+Historical plan bodies may still say `0040`; live tip ids `0052`–`0056` are authoritative.
 
 ## Execution notes
 

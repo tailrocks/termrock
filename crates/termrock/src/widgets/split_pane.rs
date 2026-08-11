@@ -1,3 +1,4 @@
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -7,7 +8,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    style::{Role, Theme},
+    style::{DesignSystem, Role, RolePalette},
 };
 
 const RATIO_SCALE: u16 = 10_000;
@@ -320,7 +321,7 @@ pub struct SplitPane<'a> {
     direction: SplitDirection,
     first_min: u16,
     second_min: u16,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> SplitPane<'a> {
@@ -330,13 +331,13 @@ impl<'a> SplitPane<'a> {
         direction: SplitDirection,
         first_min: u16,
         second_min: u16,
-        theme: &'a Theme,
+        system: &'a DesignSystem,
     ) -> Self {
         Self {
             direction,
             first_min,
             second_min,
-            theme,
+            system,
         }
     }
 
@@ -390,7 +391,7 @@ impl StatefulWidget for &SplitPane<'_> {
             (SplitDirection::Vertical, None, false) if state.hovered => ("┅", Role::Focus),
             (SplitDirection::Vertical, None, false) => ("─", Role::Border),
         };
-        let mut style = self.theme.style(role);
+        let mut style = self.system.style(role);
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }

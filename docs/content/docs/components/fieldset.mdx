@@ -1,0 +1,19 @@
+---
+title: Fieldset
+description: 'Grouped form fields with legend and optional description.'
+---
+
+## Usage
+
+```rust
+use termrock::widgets::{Field, Fieldset};
+
+let fields = [Field::new("a", "A", "1"), Field::new("b", "B", "2")];
+Fieldset::new("Network", &fields).description("Connectivity");
+```
+
+Historical alias: `FormSection`.
+
+## Migration
+
+See `migrations/0137-v0.13.0-form-field-fieldset.md`.

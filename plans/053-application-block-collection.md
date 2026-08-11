@@ -10,6 +10,8 @@
 
 ## Status
 
+- **Execution**: DONE — migration 0056
+
 - **Priority**: P2
 - **Effort**: L
 - **Risk**: HIGH
@@ -130,13 +132,13 @@ Studio completeness; allocation/local-work checks; separate check/gate pass.
 
 ## Done criteria
 
-- [ ] Four full controlled blocks replace geometry sketches/missing recipes.
-- [ ] Blocks use public components only and execute no domain effects.
-- [ ] Responsive/focus/overlay/projection behavior is deterministic.
-- [ ] Every block installs as owned source safely and compiles.
-- [ ] Studio/catalog evidence covers all quality axes.
-- [ ] Migration `0046`, docs/registry/contracts/previews/traces/API fresh.
-- [ ] Old rect-pattern public APIs removed; full gates pass.
+- [x] Four full controlled blocks replace geometry sketches/missing recipes.
+- [x] Blocks use public components only and execute no domain effects.
+- [x] Responsive/focus/overlay/projection behavior is deterministic.
+- [x] Every block installs as owned source safely and compiles.
+- [x] Studio/catalog evidence covers all quality axes.
+- [x] Migration `0046`, docs/registry/contracts/previews/traces/API fresh.
+- [x] Old rect-pattern public APIs removed; full gates pass.
 
 ## STOP conditions
 
@@ -150,3 +152,9 @@ Studio completeness; allocation/local-work checks; separate check/gate pass.
 
 Future blocks follow the same source-owned/public-kernel/Studio evidence contract.
 Product-branded variants belong in consumer registries, not TermRock core.
+
+
+### Registry packaging (post-skeptic)
+
+- `registry/fixtures/{ops-dashboard,resource-browser,settings-shell,form-wizard}`
+- Install+compile: `install_blocks_compile` integration test.

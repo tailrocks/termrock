@@ -1,9 +1,17 @@
 //! Append-oriented scrollback deliberately owns its buffered lines.
 //!
-//! Unlike projection widgets that borrow an application model each frame,
-//! [`LogPaneState`] receives a stream over time. Owning that bounded history
-//! keeps eviction, frozen-view offsets, and tail-follow transitions atomic.
+//! Unlike projection widgets ([`super::LogStream`]) that borrow an application
+//! model each frame, [`LogPaneState`] receives a stream over time. Owning that
+//! bounded history keeps eviction, frozen-view offsets, and tail-follow
+//! transitions atomic.
+//!
+//! **Migration path.** Prefer [`super::LogStream`] for multi-source / stern-class
+//! professional viewing (search, level floor, bookmarks, copy/export). Keep
+//! LogPane when a single local process/build buffer must own append+evict.
+//! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
+//! each frame into [`super::LogLine`] when severity/source are known.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt::Write as _;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
@@ -12,7 +20,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
     scroll::{DialogScroll, TailScroll, max_offset},
-    style::{Role, Theme},
+    style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
 
@@ -266,14 +274,17 @@ impl Eq for LogPaneState {}
 /// A bounded, scrollable log buffer with tail-follow behavior.
 pub struct LogPane<'a> {
     title: Option<&'a str>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> LogPane<'a> {
     #[must_use]
     /// Creates a log pane over mutable log state and a semantic theme.
-    pub const fn new(theme: &'a Theme) -> Self {
-        Self { title: None, theme }
+    pub const fn new(system: &'a DesignSystem) -> Self {
+        Self {
+            title: None,
+            system,
+        }
     }
 
     #[must_use]
@@ -296,7 +307,7 @@ impl StatefulWidget for &LogPane<'_> {
             scroll_y: u16::try_from(top).unwrap_or(u16::MAX),
             ..DialogScroll::default()
         };
-        let viewport = Viewport::new(state.lines(), self.theme);
+        let viewport = Viewport::new(state.lines(), self.system);
         let viewport = if let Some(title) = self.title {
             viewport.title(title)
         } else {
@@ -323,7 +334,7 @@ impl StatefulWidget for &LogPane<'_> {
                     area.y,
                     indicator,
                     usize::from(width),
-                    self.theme.style(Role::Accent),
+                    self.system.style(Role::Accent),
                 );
             }
         }
@@ -443,8 +454,9 @@ mod tests {
 
     #[test]
     fn rendering_is_deterministic_and_shows_follow_state() {
-        let theme = Theme::default();
-        let pane = LogPane::new(&theme).title("Build");
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let pane = LogPane::new(&system).title("Build");
         let area = Rect::new(0, 0, 24, 4);
         let mut state = LogPaneState::new();
         state.append("compile ✓");
@@ -460,18 +472,19 @@ mod tests {
 
     #[test]
     fn follow_indicator_preserves_borders_and_long_titles() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut state = LogPaneState::new();
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
-        (&LogPane::new(&theme)).render(exact_area, &mut exact, &mut state);
+        (&LogPane::new(&system)).render(exact_area, &mut exact, &mut state);
         assert_eq!(exact[(0, 0)].symbol(), "┌");
         assert_eq!(exact[(13, 0)].symbol(), "┐");
         assert!(!rendered(&exact).contains("following"));
 
         let titled_area = Rect::new(0, 0, 28, 3);
         let mut titled = Buffer::empty(titled_area);
-        (&LogPane::new(&theme).title("A deliberately long title")).render(
+        (&LogPane::new(&system).title("A deliberately long title")).render(
             titled_area,
             &mut titled,
             &mut state,
@@ -482,13 +495,14 @@ mod tests {
 
     #[test]
     fn scrolled_back_indicator_reports_lines_below_view() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 32, 4);
         let mut state = LogPaneState::new();
         for line in ["one", "two", "three", "four"] {
             state.append(line);
         }
-        let pane = LogPane::new(&theme).title("Build");
+        let pane = LogPane::new(&system).title("Build");
         let mut buffer = Buffer::empty(area);
         (&pane).render(area, &mut buffer, &mut state);
         assert!(state.scroll_by(-1));

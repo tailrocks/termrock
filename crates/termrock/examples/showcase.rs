@@ -9,21 +9,19 @@ use std::{io, time::Duration};
 use crossterm::event;
 use ratatui_core::{
     layout::Rect,
-    style::Style,
     terminal::Terminal,
     text::{Line, Span},
 };
 use termrock::{
-    Theme,
     crossterm::{CrosstermBackend, Session, SessionOptions},
     input::{Event, KeyCode, KeyEventKind, MouseButton, MouseEventKind},
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     layout::bottom_rows,
-    style::{Density, DesignTokens, Role},
+    style::{Density, DesignSystem, Role, RolePalette},
     widgets::{
-        List, ListRow, ListState, Panel, PanelEmphasis, Severity, StatusBar, StatusBarState,
-        StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
+        List, ListRow, ListState, Panel, PanelChrome, Severity, StatusBar, StatusBarState,
+        StatusKind, StatusRegion, StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
     },
 };
 
@@ -97,11 +95,11 @@ fn main() -> io::Result<()> {
 
     let result = loop {
         let theme = if phosphor {
-            Theme::default()
+            RolePalette::default()
         } else {
-            Theme::slate()
+            RolePalette::slate()
         };
-        let tokens = DesignTokens::new(theme.clone(), Density::default());
+        let tokens = DesignSystem::new(theme.clone(), Density::default());
         terminal.draw(|frame| {
             let area = frame.area();
             let tabs_area = Rect::new(area.x, area.y, area.width, area.height.min(2));
@@ -112,20 +110,20 @@ fn main() -> io::Result<()> {
                 area.height.saturating_sub(tabs_area.height),
             );
             let (content, [hints_area, status_area]) = bottom_rows(below_tabs, [1, 1]);
-            render_tabs(frame, tabs_area, &theme, &mut tabs_state);
+            render_tabs(frame, tabs_area, &tokens, &mut tabs_state);
 
             let panel = Panel::new(&tokens)
                 .title("Components")
-                .emphasis(PanelEmphasis::Focused);
+                .emphasis(PanelChrome::Focused);
             let list_area = panel.inner(content);
             frame.render_widget(&panel, content);
             frame.render_stateful_widget(List::new(&rows, &tokens), list_area, &mut list_state);
 
-            render_hint_bar(frame, hints_area, &keymap.hint_spans(), &theme);
-            render_status(frame, status_area, &theme, phosphor, &mut status_state);
+            render_hint_bar(frame, hints_area, &keymap.hint_spans(), &tokens);
+            render_status(frame, status_area, &tokens, phosphor, &mut status_state);
             if activated {
                 frame.render_widget(
-                    Toast::new(&theme, "Activated selected component", Severity::Success),
+                    Toast::new(&tokens, "Activated selected component", Severity::Success),
                     area,
                 );
             }
@@ -183,52 +181,34 @@ fn showcase_rows() -> [ListRow<'static, &'static str>; 6] {
 fn render_tabs(
     frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
-    theme: &Theme,
+    system: &DesignSystem,
     state: &mut TabsState<&'static str>,
 ) {
     let tabs = [
-        Tab {
-            id: "components",
-            label: "Components",
-            glyph: Some(Span::styled("●", theme.style(Role::Accent))),
-            active: true,
-            enabled: true,
-        },
-        Tab {
-            id: "events",
-            label: "Events",
-            glyph: None,
-            active: false,
-            enabled: true,
-        },
+        Tab::new("components", "Components")
+            .glyph(Span::styled("●", system.style(Role::Accent)))
+            .active(true),
+        Tab::new("events", "Events"),
     ];
-    frame.render_stateful_widget(Tabs::new(&tabs, theme), area, state);
+    frame.render_stateful_widget(Tabs::new(&tabs, system), area, state);
 }
 
 fn render_status(
     frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
-    theme: &Theme,
+    system: &DesignSystem,
     phosphor: bool,
     state: &mut StatusBarState<&'static str>,
 ) {
-    let left = [StatusSlot {
-        id: "state",
-        content: " ready ",
-        priority: 10,
-        min_width: 0,
-        enabled: true,
-        style: theme.style(Role::Success),
-        hover_style: Some(theme.style(Role::LinkHover)),
-    }];
-    let right = [StatusSlot {
-        id: "theme",
-        content: if phosphor { " phosphor " } else { " slate " },
-        priority: 10,
-        min_width: 0,
-        enabled: true,
-        style: Style::new(),
-        hover_style: None,
-    }];
-    frame.render_stateful_widget(StatusBar::new(&left, &right, theme), area, state);
+    let left = [StatusSlot::new("state", " ready ")
+        .priority(10)
+        .kind(StatusKind::Connection)
+        .style(system.style(Role::Success))
+        .hover_style(system.style(Role::LinkHover))];
+    let right = [
+        StatusSlot::new("theme", if phosphor { " phosphor " } else { " slate " })
+            .priority(10)
+            .region(StatusRegion::Right),
+    ];
+    frame.render_stateful_widget(StatusBar::new(&left, &right, system), area, state);
 }

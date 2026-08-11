@@ -1,0 +1,66 @@
+---
+title: WorkingStateCard
+description: 'Privacy-safe current agent work summary with ActivityShelf collapse.'
+---
+
+## Previews
+
+### `working-state-card/basic`
+
+![WorkingStateCard — basic](/component-previews/working-state-card-basic.svg)
+
+### `working-state-card/waiting`
+
+![WorkingStateCard — waiting](/component-previews/working-state-card-waiting.svg)
+
+### `working-state-card/collapsed`
+
+![WorkingStateCard — collapsed](/component-previews/working-state-card-collapsed.svg)
+
+### `working-state-card/narrow`
+
+![WorkingStateCard — narrow](/component-previews/working-state-card-narrow.svg)
+
+### `working-state-card/unicode`
+
+![WorkingStateCard — unicode](/component-previews/working-state-card-unicode.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    example_working_state, WorkingStateCard, WorkingStateCardState,
+    WorkingStateOutcome,
+};
+
+let mut state = WorkingStateCardState::new();
+state.set_work(Some(example_working_state()));
+WorkingStateCard::new(&system).paint(area, buf, &mut state);
+
+match state.handle_key(key) {
+    WorkingStateOutcome::CancelRequested { id } => { let _ = id; }
+    WorkingStateOutcome::Collapsed => {
+        let _ = state.to_activity_item(); // ActivityShelf
+    }
+    _ => {}
+}
+```
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `working-state-card/basic`
+- `working-state-card/waiting`
+- `working-state-card/collapsed`
+- `working-state-card/narrow`
+- `working-state-card/unicode`

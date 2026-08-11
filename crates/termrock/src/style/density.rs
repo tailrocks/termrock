@@ -54,6 +54,15 @@ impl Density {
             Self::Compact | Self::Dashboard => 1,
         }
     }
+
+    /// Cells of indent per hierarchy depth for tree rows.
+    #[must_use]
+    pub const fn tree_indent(self) -> u16 {
+        match self {
+            Self::Comfortable => 2,
+            Self::Compact | Self::Dashboard => 1,
+        }
+    }
 }
 
 /// Motion intensity for frame-driven animations.

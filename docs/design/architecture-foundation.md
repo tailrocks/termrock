@@ -1,10 +1,28 @@
 # TermRock architecture foundation
 
 **Status:** binding product direction (pre-stable)  
-**Date:** 2026-08-09  
+**Date:** 2026-08-09 (north-star stack law reinforced 2026-08-10)  
+**Contributor law:** root [`AGENTS.md`](../../AGENTS.md) — *North star*  
 **Related:** [shadcn-tui-direction.md](./shadcn-tui-direction.md),
 [terminal-design-system.md](./terminal-design-system.md),
 [product-audit.md](./product-audit.md), migrations `0029`–`0031`
+
+## North star
+
+TermRock is the **de facto base layer for modern Rust terminal applications**:
+simple defaults, advanced power, modern APIs, shadcn-class ownership and quality
+**on Ratatui**. The emotional bar is intentional: a developer who builds a new
+TUI should think *this is the best foundation I have used*. Breaking redesigns
+are free; excellence is not. Full contributor statement: **AGENTS.md → North
+star**.
+
+### Stack law
+
+| Layer | Role |
+|-------|------|
+| **Ratatui** | Mandatory paint engine (`Buffer`, `Frame`, layout cells, widgets). TermRock never replaces Ratatui with a retained UI DOM. |
+| **crossterm** (feature) | Preferred session / backend / event adapter while it remains the best Ratatui-ecosystem choice. Kernel events stay backend-neutral. |
+| **TermRock kernel** | Design system, intents, focus, overlays, semantic scene, capabilities — product-grade contracts on top of paint. |
 
 ## Category definition
 
@@ -46,9 +64,10 @@ This supersedes the README line that claimed “no reduced-color or `NO_COLOR` d
 
 1. **Immediate mode:** per-frame registration; no retained widget DOM.
 2. **Semantic intents:** widgets consume `UiIntent` where practical; raw keys map via `default_list_intents` / application keymaps.
-3. **Overlay stack:** `OverlayHost` + `EscCascade` peel one layer; focus scopes restore via `FocusRing`.
-4. **Semantic scene:** `SemanticScene` registers id + rect + role for hit/focus discovery without replacing Ratatui.
-5. **Ownership:** domain state, effects, secrets, and process policy stay application-owned.
+3. **Overlay stack:** `OverlayStack` peels one layer; focus traps restore openers via `FocusGraph` (not public `FocusRing`).
+4. **Semantic scene:** `SemanticScene` rebuilds a parented tree each frame (id, parent, role, label, description, state, actions, rect, focusable/disabled) for hit discovery, help, jump, Studio snapshots, and AI-readable UI — without replacing Ratatui or owning focus (`InteractionScene` remains sole input layer authority). See `semantic-scene.md` / migration `0079`.
+5. **Focus graph:** `FocusGraph` is the sole public focus-graph authority (tab, spatial, zones, traps, history, roving). Collection **selection** stays widget-local. See `focus-graph.md` / migration `0081`.
+6. **Ownership:** domain state, effects, secrets, and process policy stay application-owned.
 
 ## Forward-only API
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::{Theme, input::KeyCode, keymap::KeyChord};
+use termrock::{input::KeyCode, keymap::KeyChord, style::RolePalette};
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction, stories::stories,
@@ -15,8 +15,8 @@ fn list_story_visibly_uses_the_selected_theme() {
         .into_iter()
         .find(|story| story.id == "list/selection")
         .expect("list story exists");
-    let phosphor = render_story_to_buffer(story, &Theme::tailrocks_phosphor());
-    let slate = render_story_to_buffer(story, &Theme::slate());
+    let phosphor = render_story_to_buffer(story, &RolePalette::tailrocks_phosphor());
+    let slate = render_story_to_buffer(story, &RolePalette::slate());
 
     assert_eq!(phosphor.area, slate.area);
     assert!(
@@ -248,4 +248,68 @@ fn preview_hints_advertise_back_and_interact() {
         !text.contains("BackTab"),
         "BackTab alias must not appear in hint: {text}"
     );
+}
+
+#[test]
+fn no_dual_agent_chrome_stories() {
+    for story in stories() {
+        assert!(
+            !story.id.starts_with("approval-card/")
+                && !story.id.starts_with("prompt-box/")
+                && !story.id.starts_with("stream-view/"),
+            "deleted dual story still registered: {}",
+            story.id
+        );
+        assert!(
+            story.component != "ApprovalCard"
+                && story.component != "PromptBox"
+                && story.component != "StreamView",
+            "deleted dual component label: {} ({})",
+            story.component,
+            story.id
+        );
+    }
+}
+
+fn production_source(s: &str) -> String {
+    let head = s.split("#[cfg(test)]").next().unwrap_or(s);
+    head.lines()
+        .filter(|l| {
+            let t = l.trim_start();
+            !t.starts_with("//") && !t.starts_with("//!")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[test]
+fn no_modal_stack_in_lookbook_sources() {
+    let app_p = production_source(include_str!("app.rs"));
+    let host_p = production_source(include_str!("host_frame.rs"));
+    assert!(!app_p.contains("ModalStack"), "app must use OverlayStack");
+    assert!(
+        !host_p.contains("ModalStack"),
+        "host_frame must not import ModalStack"
+    );
+    assert!(
+        app_p.contains("HostFrame") && host_p.contains("OverlayStack"),
+        "lookbook must dogfood HostFrame/OverlayStack"
+    );
+}
+
+#[test]
+fn no_focus_ring_fork_in_lookbook() {
+    let app = production_source(include_str!("app.rs"));
+    let focus = production_source(include_str!("focus.rs"));
+    let host = production_source(include_str!("host_frame.rs"));
+    assert!(
+        !app.contains("FocusRing") && !focus.contains("FocusRing") && !host.contains("FocusRing")
+    );
+    assert!(
+        !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/host_focus.rs")
+            .exists(),
+        "host_focus.rs must be deleted"
+    );
+    assert!(host.contains("InteractionScene"));
 }

@@ -1,0 +1,61 @@
+---
+title: SchemaBrowser
+description: Hierarchical database/schema catalog navigator with lazy load.
+---
+
+# SchemaBrowser
+
+Hierarchical catalog navigator for connections → databases → schemas →
+tables/views → columns/indexes/constraints/routines. Host owns metadata fetch
+and SQL; TermRock paints the tree and emits **typed requests**.
+
+## When to use / when not
+
+| Use SchemaBrowser | Prefer |
+|-------------------|--------|
+| DB catalog side pane | — |
+| Filesystem explorer | [FileTree](/docs/handbook/file-tree) |
+| Generic hierarchy | [Tree](/docs/components/tree) |
+| Query body / results | [QueryEditor](/docs/handbook/query-editor) · [ResultGrid](/docs/handbook/result-grid) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Catalog introspection, reconnect | Host |
+| Cursor, filter, presentation, expand preserve set | `SchemaBrowserState` |
+| Children load / open query / DDL UI | Host via outcomes |
+
+## Lazy expansion & preserve
+
+1. Host projects flattened **visible** rows (`branch` + `TreeNodeStatus::Lazy`).
+2. Expand → `LoadChildrenRequested` or `Toggle`.
+3. `state.expanded` accumulates open branch ids.
+4. On refresh/reconnect: reproject, then `apply_expanded_set(&mut entries, &state.expanded)` and `state.reconcile_expanded(&live_ids)`.
+
+## Integration
+
+```rust
+// QuickOpen over tables/views
+schema_to_quick_open_items(&entries, false)
+
+// Breadcrumbs
+schema_breadcrumbs_from_path(entry.path)
+```
+
+## Presentation
+
+`SidePane` (default) → `Drawer` → `Fullscreen` via Ctrl+M or auto from bounds.
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| `/` · `r` · `R` | Filter · refresh node · refresh all |
+| `y` · `p` · Ctrl+O | Copy path · preview · QuickOpen |
+| `q` · `d` · `x` | Query · describe · context |
+| Ctrl+M · Ctrl+Shift+C | Presentation · reconnect |
+
+## Related
+
+Tree · FileTree · QuickOpen · Breadcrumbs · QueryEditor · migration `0206`

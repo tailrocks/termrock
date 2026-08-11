@@ -1,0 +1,35 @@
+---
+title: TreeNavigation
+description: Hierarchical route navigation with expand, lazy load, typeahead, and route≠focus.
+---
+
+# TreeNavigation
+
+**Purpose.** Project explorers, schema browsers, settings trees, documentation
+outlines. **Not** the multi-select data [`Tree`](/docs/components/tree) widget.
+
+## Route ≠ focus
+
+- `route()` — active destination (survives filter when still in projection)
+- `focus()` — keyboard cursor
+- Enter on routeable leaf → `RouteChanged`
+
+## Arrows
+
+- **←** collapse or parent  
+- **→** expand / lazy load / first child  
+- **↑/↓** move focus  
+
+## Lazy children
+
+`LazyLoadRequested { id, generation }` → host loads → `apply_lazy_result` + new
+projection → `reconcile_route` keeps selection when possible.
+
+## Examples
+
+`example_project_tree` · `example_schema_tree` · `example_settings_tree` ·
+`example_docs_tree`
+
+## Related
+
+Tree · Sidebar · NavigationList · migration `0154`

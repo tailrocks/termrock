@@ -1,0 +1,93 @@
+---
+title: Offline / ReconnectingState
+description: 'Connectivity for remote sessions — banner, full recovery, StatusBar and NotificationCenter projection.'
+---
+
+## Previews
+
+### `connectivity/banner`
+
+Unobtrusive reconnecting banner
+
+![OfflineBanner](/component-previews/connectivity-banner.svg)
+
+### `connectivity/reconnecting`
+
+Full reconnect surface
+
+![OfflineSurface — reconnecting](/component-previews/connectivity-reconnecting.svg)
+
+### `connectivity/auth`
+
+Auth required
+
+![OfflineSurface — auth](/component-previews/connectivity-auth.svg)
+
+### `connectivity/unavailable`
+
+Server unavailable
+
+![OfflineSurface — unavailable](/component-previews/connectivity-unavailable.svg)
+
+### `connectivity/status-bar`
+
+StatusBar projection
+
+![ReconnectingState — status bar](/component-previews/connectivity-status-bar.svg)
+
+### `connectivity/notification`
+
+NotificationCenter ingest
+
+![ReconnectingState — notification](/component-previews/connectivity-notification.svg)
+
+## Usage
+
+```rust
+use termrock::widgets::{
+    ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
+    StatusSlot, StatusBar,
+};
+
+let mut conn = ReconnectingState::new("agent://prod-1");
+conn.begin_reconnect(3);
+conn.set_now_secs(now);
+conn.set_last_success_secs(Some(last_ok));
+
+// StatusBar
+let label = conn.status_bar_content();
+let right = [conn.status_slot_template("c", &label)];
+
+// Banner
+OfflineBanner::new(&conn, &system).paint(banner_row, buf);
+
+// Full recovery
+conn.set_presentation(ConnectivityPresentation::Full);
+OfflineSurface::new(&system).paint(area, buf, &mut conn);
+
+// Notifications
+center.ingest_item(conn.to_notification_item("conn-1"));
+```
+
+## Rules
+
+1. Prefer banner for transient blips; full surface for auth/unavailable/long outages.
+2. Always show **target** + phase; include last-ok and retry when known.
+3. Default **drafts + selection preserved** — say so on full surface.
+4. Project StatusBar/NotificationCenter from the same state (no private strings).
+5. Esc dismisses banner only; StatusBar still carries the connection cue.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered (r/a/o/q, Tab, Esc, Enter) |
+| Mouse | covered (banner click, action bands) |
+| Focus | covered (full surface actions) |
+| Non-color cues | covered (glyph + labels) |
+| Unicode | covered |
+| Narrow terminal | covered |
+
+## Stories
+
+- `connectivity/banner`, `reconnecting`, `auth`, `unavailable`, `status-bar`, `notification`

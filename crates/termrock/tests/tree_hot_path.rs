@@ -1,14 +1,11 @@
 //! Integration coverage for the tree rendering hot path.
 
-use std::{
-    alloc::System,
-    hint::black_box,
-    time::{Duration, Instant},
-};
+use std::{alloc::System, hint::black_box, time::Instant};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
-use termrock::style::DesignTokens;
+use termrock::perf::{check_batch_budget, check_zero_alloc_steady};
+use termrock::style::DesignSystem;
 use termrock::widgets::{Tree, TreeNode, TreeNodeStatus, TreeState};
 
 #[global_allocator]
@@ -16,7 +13,7 @@ static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
 
 #[test]
 fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
-    let tokens = DesignTokens::default();
+    let tokens = DesignSystem::default();
     const NODE_COUNT: usize = 10_000;
     const VIEWPORT_HEIGHT: u16 = 40;
     const SAMPLES: usize = 100;
@@ -35,6 +32,8 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
             expanded: id % 14 == 0,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         })
         .collect::<Vec<_>>();
     let tree = Tree::new(&nodes, &tokens);
@@ -53,19 +52,15 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
     let elapsed = started.elapsed();
     let change = allocations.change();
 
-    assert_eq!(
-        change.allocations, 0,
-        "warmed renders allocated: {change:?}"
-    );
-    assert_eq!(
-        change.reallocations, 0,
-        "warmed renders reallocated: {change:?}"
-    );
+    check_zero_alloc_steady(
+        "tree_viewport_10k_alloc",
+        change.allocations,
+        change.reallocations,
+    )
+    .unwrap_or_else(|e| panic!("{e}; stats={change:?}"));
     assert_eq!(state.regions().len(), usize::from(VIEWPORT_HEIGHT));
-    assert!(
-        elapsed <= Duration::from_millis(250),
-        "100 warmed renders exceeded the 250 ms debug-profile budget: {elapsed:?}"
-    );
+    check_batch_budget("tree_viewport_10k", SAMPLES as u32, elapsed)
+        .unwrap_or_else(|e| panic!("{e}"));
     eprintln!(
         "tree hot path: {SAMPLES} renders, {NODE_COUNT} nodes, {VIEWPORT_HEIGHT} visible, {elapsed:?}, {change:?}"
     );

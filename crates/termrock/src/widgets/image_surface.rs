@@ -8,10 +8,11 @@
 //! product-neutral cell fallback. Pair with [`crate::style::CapabilityPreviewHost`]
 //! for generation-safe placement planning and session commands.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{PreviewPresentation, Role, Theme},
+    style::{DesignSystem, PreviewPresentation, Role, RolePalette},
     text::take_display_cols,
 };
 
@@ -93,14 +94,14 @@ impl<'a> ImageMeta<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct ImageSurface<'a> {
     meta: ImageMeta<'a>,
-    theme: &'a Theme,
+    system: &'a DesignSystem,
 }
 
 impl<'a> ImageSurface<'a> {
     /// Creates an image surface.
     #[must_use]
-    pub const fn new(meta: ImageMeta<'a>, theme: &'a Theme) -> Self {
-        Self { meta, theme }
+    pub const fn new(meta: ImageMeta<'a>, system: &'a DesignSystem) -> Self {
+        Self { meta, system }
     }
 
     /// Meta borrow.
@@ -128,7 +129,7 @@ impl Widget for &ImageSurface<'_> {
         if area.is_empty() {
             return;
         }
-        let border = self.theme.style(Role::Border);
+        let border = self.system.style(Role::Border);
         for x in area.x..area.right() {
             buffer[(x, area.y)].set_symbol("─").set_style(border);
             if area.height > 1 {
@@ -187,9 +188,9 @@ impl Widget for &ImageSurface<'_> {
         let line1 = format!("▣ {}", self.meta.label);
         let line2 = format!("{proto} · {dims} · {status}");
         let style = if self.meta.stale || self.meta.pending {
-            self.theme.style(Role::TextMuted)
+            self.system.style(Role::TextMuted)
         } else {
-            self.theme.style(Role::Text)
+            self.system.style(Role::Text)
         };
         buffer.set_stringn(
             inner.x,
@@ -204,7 +205,7 @@ impl Widget for &ImageSurface<'_> {
                 inner.y + 1,
                 take_display_cols(&line2, usize::from(inner.width)),
                 usize::from(inner.width),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
         }
         if inner.height > 2 && self.meta.generation > 0 {
@@ -214,7 +215,7 @@ impl Widget for &ImageSurface<'_> {
                 inner.y + 2,
                 take_display_cols(&generation_label, usize::from(inner.width)),
                 usize::from(inner.width),
-                self.theme.style(Role::TextMuted),
+                self.system.style(Role::TextMuted),
             );
         }
     }
@@ -233,17 +234,18 @@ impl Widget for ImageSurface<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::Theme;
+    use crate::style::RolePalette;
 
     #[test]
     fn paints_label_and_lifecycle_flags() {
-        let theme = Theme::default();
+        let theme = RolePalette::default();
+        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut meta = ImageMeta::new("shot.png", ImageProtocol::Kitty);
         meta.pending = true;
         meta.generation = 3;
         let area = Rect::new(0, 0, 24, 5);
         let mut buffer = Buffer::empty(area);
-        Widget::render(ImageSurface::new(meta, &theme), area, &mut buffer);
+        Widget::render(ImageSurface::new(meta, &system), area, &mut buffer);
         let text: String = buffer
             .content()
             .iter()

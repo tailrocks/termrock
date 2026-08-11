@@ -1,10 +1,25 @@
 # TermRock terminal-native design system
 
-**Status:** specification for implementation (plan 043+)  
+**Status:** design SoT (partially implemented; complete as target architecture)  
 **Supersedes:** treating `Theme` / `Role` alone as the design system  
 **Builds on:** `Theme`, `Role`, `Density`, `Motion`, `GlyphSet`, `SelectionChrome`,
-`SpacingScale`, `DesignTokens`, `ColorCapability`, `Appearance`  
+`SpacingScale`, `DesignTokens`, `DesignSystem`, `ColorCapability`, `Appearance`  
+**Related:** `pre-1.0-api-redesign.md`, `product-audit-shadcn-tui.md`,
+`shadcn-tui-strategic-brief.md`  
 **Constraint:** terminal-native (cells, glyphs, modifiers, capability ladders)—not CSS-in-Rust
+
+### Implementation gap (HEAD)
+
+| Spec | Tree today |
+|------|------------|
+| `DesignSystem` as sole paint root | Exists; many widgets still take `&Theme` |
+| Full `ColorTokens` surface ladder | Flattened into 38 `Role`s; phosphor Canvas–Backdrop empty |
+| Full `ListRecipe` part×state | Simplified `ListRowRecipe` (label/trailing/gutter only) |
+| `RecipeBook` + surgical patches | Missing |
+| Capability projection on whole system | `quantize_theme` on `Theme` only |
+| Phosphor Obsidian | Named intent; palette not fully distinct in `tailrocks_phosphor` |
+
+This document is the **target**. Implementation proceeds with breaking changes; no long dual-path.
 
 ---
 
@@ -362,81 +377,147 @@ impl CellGlyph {
 }
 ```
 
-### Component recipes (List example)
+### Component recipes (List — full anatomy)
+
+List is the flagship recipe: parts × states × narrow contraction.
 
 ```rust
+/// Runtime facts for one row (widget state + row projection).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ListRowState {
     pub selected: bool,
-    pub focused: bool,   // list owns keyboard focus AND this row is cursor
+    /// List owns keyboard focus AND this row is the cursor.
+    pub focused: bool,
     pub hovered: bool,
     pub disabled: bool,
     pub loading: bool,
-    pub checked: bool,   // multi-select
+    pub checked: bool, // multi-select
 }
 
-/// Authoring-time recipe (stored in DesignSystem).
+/// Authoring-time recipe stored in `DesignSystem.recipes.list`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ListRecipe {
+    /// List outer chrome (borderless by default; optional surface).
     pub container: ContainerRecipe,
+    /// Base row background / min height / pad before state patches.
     pub row: PartRecipe,
+    /// Icon / status glyph column.
     pub leading: PartRecipe,
+    /// Primary label (must survive contraction).
     pub primary: PartRecipe,
+    /// Secondary metadata (path, subtitle).
     pub secondary: PartRecipe,
+    /// Compact badge / tag.
     pub badge: PartRecipe,
+    /// Trailing shortcut chord (hint key style).
     pub shortcut: PartRecipe,
+    /// Selection gutter / fill / tint.
     pub selection_indicator: SelectionIndicatorRecipe,
-    // state patches
+    // ── state patches (applied in order: base → selected → focused → hover → disabled → loading)
     pub when_selected: ListStatePatch,
     pub when_focused: ListStatePatch,
     pub when_hovered: ListStatePatch,
     pub when_disabled: ListStatePatch,
     pub when_loading: ListStatePatch,
-    /// Drop order for narrow terminals (first dropped first).
-    pub part_priority: [ListPart; 6],
+    /// Drop order for narrow terminals (first entry dropped first).
+    /// Primary is never dropped—only truncated last.
+    pub part_priority: [ListPart; 5],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ListPart { Secondary, Badge, Shortcut, Leading, SelectionIndicator, Primary }
+pub enum ListPart {
+    Shortcut,
+    Badge,
+    Secondary,
+    Leading,
+    SelectionIndicator,
+    // Primary is implicit survivor
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ListStatePatch {
+    pub row_bg: Option<ColorKey>,
+    pub primary_fg: Option<ColorKey>,
+    pub primary_modifiers: Option<Modifier>,
+    pub secondary_fg: Option<ColorKey>,
+    pub show_selection_indicator: Option<bool>,
+    pub focus_underline: Option<bool>,
+    pub fill: Option<ColorKey>, // only if SelectionChrome::Fill
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PartRecipe {
-    pub fg: ColorKey,          // semantic key into ColorTokens
+    /// Semantic key into ColorTokens (not raw RGB).
+    pub fg: ColorKey,
     pub bg: Option<ColorKey>,
     pub modifiers: Modifier,
     pub prefix: Option<GlyphKey>,
+    pub min_cols: u16,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ContainerRecipe {
+    pub surface: Option<ColorKey>,
+    pub border: BorderStyleKey, // None | Normal | (never Double for focus)
+    pub pad: Inset,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectionIndicatorRecipe {
     pub kind: SelectionChrome, // Gutter | Fill | Tint | None
     pub glyph: GlyphKey,
-    pub color: ColorKey,       // accent by default
+    pub color: ColorKey, // Accent default
 }
 
-/// Paint-ready plan for one row at a given width.
+/// Paint-ready plan for one row at a given width (after priority culling).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResolvedListRow {
     pub pad_x: u16,
     pub fill: Option<Style>,
-    pub parts: Vec<ResolvedPart>, // already priority-culled for cols
+    pub gutter: Option<ResolvedGlyph>,
+    pub leading: Option<ResolvedPart>,
+    pub primary: ResolvedPart,
+    pub secondary: Option<ResolvedPart>,
+    pub badge: Option<ResolvedPart>,
+    pub shortcut: Option<ResolvedPart>,
     pub focus_underline: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResolvedPart {
-    pub kind: ListPart,
     pub style: Style,
     pub min_cols: u16,
 }
+
+impl DesignSystem {
+    /// Resolve list row chrome for paint (widgets must not re-derive roles ad hoc).
+    pub fn resolve_list_row(&self, state: ListRowState, cols: u16) -> ResolvedListRow {
+        let mut recipe = self.recipes.list.clone();
+        // apply state patches…
+        // drop parts by part_priority until primary + essentials fit cols
+        todo!("implementation")
+    }
+}
 ```
 
-Widgets take `&DesignSystem` (or `&RecipeBook` + colors) instead of bare `&Theme` over time.
+**Default Phosphor Obsidian list behavior:**
+
+| State | Paint |
+|-------|--------|
+| Idle | `fg` primary, `fg_muted` secondary, no gutter |
+| Selected (unfocused list) | Gutter glyph + `fg_strong` primary; optional `selection_muted` tint — **not** neon fill |
+| Selected + focused (list owns keys) | Gutter + underline on primary + accent gutter color |
+| Hovered only | Subtle hover bg; does not steal selection chrome |
+| Disabled | `fg_disabled` + dim; no accent |
+| Loading | `fg_muted` + spinner glyph from catalog |
+
+Widgets take `&DesignSystem` instead of bare `&Theme`.
 
 ```rust
 pub struct List<'a, Id> {
     rows: &'a [ComposedRow<'a, Id>],
     system: &'a DesignSystem,
+    recipe_override: Option<ListRecipePatch>,
 }
 
 pub struct ComposedRow<'a, Id> {
@@ -450,6 +531,8 @@ pub struct ComposedRow<'a, Id> {
     pub loading: bool,
 }
 ```
+
+`RecipeBook` also holds: `panel`, `button`, `dialog`, `input`, `tabs`, `menu`, `toast`, `composer` — same part×state pattern.
 
 ---
 
@@ -631,30 +714,34 @@ Detection: existing `ColorCapability::detect_from_env()`; apps may force.
 
 ## 10. Migration from current `Theme` API
 
-### Current
+### Current (HEAD)
 
-- `Theme { roles: [Style; 38] }` + `Role` enum  
-- Widgets take `theme: &Theme`  
-- Partial `DesignTokens` unused by paint  
+- `Theme { roles: [Style; 38] }` + `Role` enum — still the common widget parameter  
+- `DesignTokens` / `DesignSystem` exist with partial recipes (`ListRowRecipe`, `PanelRecipe`)  
+- Phosphor still authors empty Canvas–Backdrop and neon Selection fill in `Theme::tailrocks_phosphor`  
+- `quantize_theme` projects `Theme` only  
 
 ### Target
 
-- `DesignSystem` is the root  
-- `Theme` / `Role` remain as **compatibility projection** for one migration window *or* collapse into `ColorTokens` immediately (preferred: **forward-only**, plan 043)
+- `DesignSystem` is the **only** public paint root  
+- `ColorTokens` replace ad-hoc Role soup for authors; optional thin Role bridge internal  
+- Full `RecipeBook`; widgets call `resolve_*` only  
+- Forward-only (AGENTS.md): no long dual Theme/DesignSystem public API  
 
-### Steps (migration `0036` / plan 043)
+### Steps (align with pre-1.0 dual-kill + sequential migrations)
 
-1. Land `DesignSystem` + token structs + Phosphor Obsidian preset (parallel module).  
-2. Implement `From<&DesignSystem> for Theme` mapping ColorTokens → legacy Role array for leftover widgets.  
-3. Migrate List → `DesignSystem` + recipes; delete hardcoded selection paint.  
-4. Migrate Panel, Tree, Table, dialogs.  
-5. Remove bare `theme: &Theme` from public constructors (breaking) **or** accept `impl IntoSystem` that wraps Theme as “colors only + defaults.”  
-6. ThemePicker switches `DesignSystem` presets.  
-7. Lookbook stories for density, capability, gutter vs fill, Obsidian vs Day.  
-8. Delete dead role constants that forced green selection.
+1. **Land ColorTokens + Phosphor Obsidian values** (distinct surfaces; gutter selection default).  
+2. **Expand ListRecipe** to full part anatomy; paint path uses `resolve_list_row` only.  
+3. **Migrate Panel, Tree, Table, Menu, Completion** to recipes.  
+4. **`DesignSystem::with_capability`** quantizes all color tokens (replace Theme-only quantize at public edge).  
+5. **Breaking:** public constructors take `&DesignSystem` (or `impl AsRef<DesignSystem>`).  
+6. **ThemePicker / Appearance** switch full `DesignSystem` presets.  
+7. **Lookbook** stories: density × capability × gutter/fill × Obsidian/Day/HC.  
+8. **Delete** public `Theme` as entry (or rename to private `RolePalette`).  
+9. Wire syntax/viz tokens into CodeBlock, DiffView, charts.
 
 ```rust
-// Bridge during migration only
+// One-release bridge only if needed for in-tree lookbook migration mid-PR
 impl DesignSystem {
     pub fn legacy_theme(&self) -> Theme {
         Theme::from_fn(|role| match role {
@@ -662,16 +749,16 @@ impl DesignSystem {
             Role::Surface => self.color.surface,
             Role::Elevated => self.color.elevated,
             Role::BorderFocused => self.color.border_focused,
-            Role::Selection => self.color.selection,
+            Role::Selection => self.color.selection_muted, // not neon
             Role::Accent => self.color.accent,
-            // …
+            // … exhaustive map
             _ => self.color.fg,
         })
     }
 }
 ```
 
-Preferred end state: widgets **only** take `&DesignSystem`; `Role` becomes internal or removed.
+Preferred end state: widgets **only** take `&DesignSystem`; raw `Role` indexing is not a consumer API.
 
 ---
 
@@ -766,16 +853,16 @@ controller.set_preset(SystemPreset::PhosphorDay);
 
 ---
 
-## Implementation order (for plan 043+)
+## Implementation order (PRs — after interaction dual-kill or in parallel where safe)
 
-1. **Token structs + Phosphor Obsidian** (no widget migration yet) + tests.  
-2. **List recipe resolution + paint migration** (delete hardcoded selection).  
-3. **Panel recipe** (surface/border/title).  
-4. **Capability projection on DesignSystem**.  
-5. **Legacy Theme bridge** + migrate remaining chrome.  
-6. **Stories** (density/capability/gutter).  
-7. **Breaking:** constructors take `&DesignSystem`.  
-8. Tree/Table recipes; syntax/viz tokens wired to CodeBlock/Diff/charts.
+1. **Token structs + Phosphor Obsidian palette** (surfaces distinct) + unit tests.  
+2. **List full recipe resolution + paint** (ComposedRow parts; drop priority).  
+3. **Panel / Dialog / Input recipes**.  
+4. **`DesignSystem::with_capability` + mono glyph rules**.  
+5. **Breaking:** public paint entry is `&DesignSystem` only.  
+6. **Tree/Table/Menu recipes**; selection never raw `Role::Selection` fill by default.  
+7. **Stories + ThemePicker presets** (Obsidian/Day/Slate/HC/Adaptive).  
+8. **Syntax + viz tokens** wired to CodeBlock/Diff/charts.
 
 ---
 

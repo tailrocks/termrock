@@ -1,15 +1,27 @@
 # TermRock
 
-Product-neutral Ratatui components, interaction foundations, styles, a
-lookbook, and generated component documentation for building terminal
-applications quickly.
+**Beautiful, inspectable terminal components you own.**
 
-TermRock is a **hybrid terminal design system**: a stable interaction kernel
-(session lifecycle, focus, overlays, semantic intents, design tokens), product-
-neutral widgets, and composition patterns—inspired by the open, inspectable
-source model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust,
-Ratatui, and terminal constraints. See
+**North star:** TermRock is the de facto base layer for modern Rust TUIs — the
+shadcn-class design system **on [Ratatui](https://ratatui.rs/)** (with
+**crossterm** as the preferred session/backend adapter). Simple defaults,
+advanced power when you need it, modern APIs only. Breaking redesigns are
+always allowed; quality is the only permanent constraint. Contributor law:
+[`AGENTS.md`](AGENTS.md) (*North star*).
+
+TermRock is the **source-owned design system for building exceptional terminal
+software** on Ratatui—not merely another widget dump. Category direction
+(kernel + registry + Studio + agent pack):
+[`docs/design/shadcn-tui-strategic-brief.md`](docs/design/shadcn-tui-strategic-brief.md).
+
+It is a **hybrid terminal design system**: interaction kernel (session
+lifecycle, focus, overlays, semantic intents, design tokens), product-neutral
+widgets, and composition patterns—inspired by the open, inspectable source
+model of [shadcn/ui](https://ui.shadcn.com/docs), adapted to Rust, Ratatui, and
+terminal constraints. Architecture foundation:
 [`docs/design/architecture-foundation.md`](docs/design/architecture-foundation.md).
+Experience research:
+[`docs/design/experience-research-2026.md`](docs/design/experience-research-2026.md).
 
 Reusable visual and interaction behavior belongs here. Applications keep only
 their domain state and wording, effects, process policy, secrets, executor
@@ -21,7 +33,7 @@ pin exact revisions and adapt to deliberate breaking changes using
 The repository is in its bootstrap extraction period. Consumers pin exact Git
 revisions; crates.io publication is not part of the initial migration.
 
-The **design** baseline is Rust 1.95 on Linux and macOS with truecolor terminals
+The **design** baseline is latest stable Rust (1.97.1+) on Linux and macOS with truecolor terminals
 in the Ghostty class. Optional requests cover OSC 8 hyperlinks, OSC 22 pointer
 shapes, and OSC 52 clipboard writes. **Runtime progressive enhancement** is
 supported via `ColorCapability` (including `NO_COLOR` → monochrome),
@@ -38,7 +50,7 @@ Default features are empty. Enable `crossterm` only for its event, backend, and 
 
 | Surface | Baseline |
 |---|---|
-| Rust | 1.95 minimum; 1.97 tested |
+| Rust | 1.97.1 (latest stable; toolchain-pinned) |
 | Operating systems | Linux and macOS |
 | Ratatui | `ratatui-core 0.1.2`, `ratatui-widgets 0.3.2`, optional `ratatui-crossterm 0.1.2` |
 | Crossterm | optional `0.29.0` adapter feature |

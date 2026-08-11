@@ -5,7 +5,7 @@ use std::{alloc::System, hint::black_box, time::Duration, time::Instant};
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
 use termrock::{
-    Theme,
+    style::{DesignSystem, RolePalette},
     widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState},
 };
 
@@ -29,8 +29,9 @@ fn unchanged_large_table_reuses_measurement_and_paints_visible_rows() {
             style: None,
         })
         .collect::<Vec<_>>();
-    let theme = Theme::default();
-    let table = DetailTable::new(&rows, &theme).content_revision(1);
+    let theme = RolePalette::default();
+    let system = DesignSystem::from_palette(theme.clone());
+    let table = DetailTable::new(&rows, &system).content_revision(1);
     let area = Rect::new(0, 0, 120, 40);
     let mut buffer = Buffer::empty(area);
     let mut state = DetailTableState::default();

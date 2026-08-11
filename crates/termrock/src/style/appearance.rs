@@ -85,10 +85,10 @@ impl Appearance {
 
 /// Builds a theme for the current appearance using standard presets.
 #[must_use]
-pub fn theme_for_appearance(appearance: Appearance) -> crate::Theme {
+pub fn palette_for_appearance(appearance: Appearance) -> crate::style::RolePalette {
     match appearance {
-        Appearance::Light => crate::Theme::slate(),
-        Appearance::Dark | Appearance::Unknown => crate::Theme::tailrocks_phosphor(),
+        Appearance::Light => crate::style::RolePalette::slate(),
+        Appearance::Dark | Appearance::Unknown => crate::style::RolePalette::tailrocks_phosphor(),
     }
 }
 
@@ -123,9 +123,9 @@ mod tests {
     }
 
     #[test]
-    fn theme_for_appearance_diverges() {
-        let dark = theme_for_appearance(Appearance::Dark);
-        let light = theme_for_appearance(Appearance::Light);
+    fn palette_for_appearance_diverges() {
+        let dark = palette_for_appearance(Appearance::Dark);
+        let light = palette_for_appearance(Appearance::Light);
         assert_ne!(
             dark.style(crate::style::Role::Canvas),
             light.style(crate::style::Role::Canvas)

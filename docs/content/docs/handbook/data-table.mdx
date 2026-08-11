@@ -1,0 +1,97 @@
+---
+title: DataTable
+description: Interactive virtualized grid for pro tools — project only the visible window.
+---
+
+# DataTable
+
+**Purpose.** Multi-column interactive grids at professional scale: sort/filter
+chrome, pin/resize/reorder hooks, row/cell/range selection, inline edit, copy,
+context actions, and 1M-row logical datasets without allocating the universe.
+
+TermRock owns chrome and interaction geometry. You own query, sort execution,
+filter execution, and `project(start..end)`.
+
+For static / moderate-size presentation without virtualization kits, use
+[Table](/docs/handbook/table).
+
+## When to use / when not
+
+| Use DataTable | Prefer |
+|---------------|--------|
+| DB results, k8s/ops tables, large lists | — |
+| Sort/filter/resize/edit outcomes | Host executes |
+| 10k–1M logical rows | `VirtualWindow` projection only |
+| Simple vertical nav | [List](/docs/handbook/list) |
+| Moderate static grid | [Table](/docs/handbook/table) |
+| Hierarchy | Tree |
+
+## Installation
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+```
+
+Design: `docs/design/data-presentation.md`. Migration `0189`.
+
+## Source files
+
+`termrock::widgets::{DataTable, DataTableState, DataTableOutcome, DataTableNavMode,
+ColumnModel, DataColumn, VirtualWindow, LoadState, SelectionModel, …}`
+
+## Projection law
+
+```rust
+use termrock::widgets::{DataTableState, VirtualWindow, data_view_bench};
+
+let mut state = DataTableState::<u64, &str>::new();
+state.set_logical_rows(data_view_bench::ROWS_1M);
+state.window.viewport = 40;
+let (start, end) = state.window.visible_range();
+// project ONLY [start, end) — never Vec of 1M
+assert!(end - start <= 40);
+```
+
+## Basic paint
+
+```rust
+use termrock::{
+    style::DesignSystem,
+    widgets::{
+        ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState, LoadState,
+    },
+};
+
+let system = DesignSystem::default();
+let columns = ColumnModel::new(vec![
+    DataColumn::new("id", "ID", DataColumnWidth::Fixed(6)).priority(100).sortable(),
+    DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(80).editable(),
+]);
+let cells: &[&str] = &["1", "alpha"];
+let rows = [(1u64, cells)];
+let mut state = DataTableState::new();
+state.load = LoadState::Ready { count: 1 };
+DataTable::new(&system, &columns, &rows)
+    .focused(true)
+    .render(/* area, buf, &mut state */);
+```
+
+## Nav modes
+
+| Mode | Keys |
+|------|------|
+| `Cell` (default) | Arrows move cell; edges h-scroll |
+| `Row` | Vertical row focus; ←/→ h-scroll |
+| `Range` | Shift-extend rectangular selection |
+
+Cycle with `\`. Fullscreen promotion: `Ctrl+F` → `FullscreenRequested`.
+
+## Anatomy
+
+`toolbar?` · **sticky header** (sort + resize handles) · pin-start \| scroll body \| pin-end ·
+selection gutter · group bands · footer (count / partial / filter / nav / edit)
+
+## Related
+
+- [Table](/docs/handbook/table) — display-only moderate tables
+- Migration `0189-v0.13.0-data-table-interactive`
