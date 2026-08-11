@@ -330,28 +330,6 @@ if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifie
 let tokens = DesignTokens::default();
 let picker = Picker::new(&rows, &tokens);`,
   },
-  Progress: {
-    description:
-      'Determinate/indeterminate progress with percentage, units, rate, ETA, phases, buffering/paused/cancelled/complete/failed; compact/detailed/multi-line recipes; ASCII/tiny widths; throttled state updates for task/transfer models.',
-    primaryStory: 'progress/determinate',
-    usage: `use termrock::style::{DesignSystem, Motion};
-use termrock::widgets::{
-    Progress, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe, ProgressStatus,
-};
-
-let system = DesignSystem::default();
-// Legacy one-shot:
-Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &system)
-    .label("Indexing")
-    .paint(area, buf);
-// Task/transfer state (throttle + ETA):
-let mut state = ProgressBarState::transfer(12_000_000, 30_000_000);
-state.set_label("Download");
-state.set_rate(Some(2_000_000.0));
-state.recompute_eta();
-state.set_recipe(ProgressRecipe::Detailed);
-ProgressBar::paint_state(&system, area, buf, &mut state, tick, Motion::Off);`,
-  },
   ProgressSteps: {
     description:
       'Pipeline/phase progress for builds and agent plans: queued→running→complete with waiting/skipped/warning/failed/retrying/cancelled; passive or interactive; narrow summary; Timeline/TaskRail projections.',
@@ -378,30 +356,6 @@ let theme = Theme::default();
 let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &theme);
 let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);`,
-  },
-  IntegrationStatus: {
-    description:
-      'MCP/plugin/extension health — provenance, egress language, restart/enable/details requests.',
-    primaryStory: 'integration-status/list',
-    usage: `use termrock::widgets::{
-    example_integrations, IntegrationStatus, IntegrationStatusState,
-};
-
-let mut state = IntegrationStatusState::new();
-state.set_entries(example_integrations());
-IntegrationStatus::new(&system).paint(area, buf, &mut state);`,
-  },
-  AgentStatusHeader: {
-    description:
-      'Compact agent/session status — actionable first; narrow contracts to StatusBar; quick actions.',
-    primaryStory: 'agent-status-header/basic',
-    usage: `use termrock::widgets::{
-    example_agent_status, AgentStatusHeader, AgentStatusHeaderState,
-};
-
-let mut state = AgentStatusHeaderState::new();
-state.set_snapshot(example_agent_status());
-AgentStatusHeader::new(&system).paint(area, buf, &mut state);`,
   },
   StatusBar: {
     description: 'A one-row collection of prioritized, interactive status slots.',
@@ -622,27 +576,6 @@ let mut state = MultiSelectState::new().with_selected(["rs"]);
 state.set_focused(true);
 let _ = MultiSelect::new(&options, &system).label("Filters");`,
   },
-  Combobox: {
-    description:
-      'An editable input with CompletionMenu suggestions, async generation gating, and separate draft/active/value.',
-    primaryStory: 'combobox/basic',
-    usage: `use termrock::style::DesignSystem;
-use termrock::widgets::{Combobox, ComboboxState, CompletionCandidate};
-
-let system = DesignSystem::default();
-let mut state: ComboboxState<&str> = ComboboxState::new();
-state.set_focused(true);
-// DraftChanged { generation } → host fetch → apply_suggestions(generation, …)
-let _ = Combobox::new(&system).label("Language");`,
-  },
-  Autocomplete: {
-    description:
-      'Creatable free-text field with optional suggestions (Combobox autocomplete mode).',
-    primaryStory: 'autocomplete/basic',
-    usage: `use termrock::widgets::ComboboxState;
-let mut state: ComboboxState<&str> = ComboboxState::autocomplete();
-state.set_focused(true);`,
-  },
   FilePicker: {
     description:
       'A host-driven file/directory browser with breadcrumbs, multi-select, path entry, and optional preview — no filesystem I/O in TermRock.',
@@ -786,20 +719,6 @@ state.scroll_y = 1;
 let _vertical_offset = state.scroll_y;`,
   },
 
-  ApprovalCard: {
-    description: 'Fail-safe permission card with default Deny and typed outcomes (no side effects).',
-    primaryStory: 'approval-card/basic',
-    usage: `use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ApprovalCard, ApprovalCardOutcome, ApprovalCardState, ApprovalRisk}};
-
-let theme = Theme::default();
-let card = ApprovalCard::new("Permission", "Run cargo publish?", ApprovalRisk::High, &theme);
-let mut state = ApprovalCardState::new(); // selected = Deny
-match state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)) {
-    ApprovalCardOutcome::Confirmed(decision) => { let _ = decision; }
-    ApprovalCardOutcome::Cancelled => {}
-    _ => {}
-}`,
-  },
   Banner: {
     description: 'A single-line severity banner with non-color glyphs.',
     primaryStory: 'banner/basic',
@@ -839,29 +758,6 @@ let mut state = CommandPaletteState::new(None);
 state.set_focused(true);
 let visible = state.refilter(&catalog);
 CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);`,
-  },
-  JumpMode: {
-    description:
-      'Easymotion-style jump navigation over SemanticScene regions with prefix-free multi-key labels, role/action filters, and OverlayStack Esc restore.',
-    primaryStory: 'jump-mode/multi',
-    usage: `use termrock::style::DesignSystem;
-use termrock::widgets::{JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges_from_semantics};
-
-let system = DesignSystem::default();
-let targets = assign_jump_badges_from_semantics(&scene);
-let mut state = JumpOverlayState::new();
-state.open();
-JumpOverlay::from_state(&targets, &system, &state).render(area, buf);`,
-  },
-  FocusLens: {
-    description:
-      'Studio focus inspection lens: tab-order indices and focused markers over a FocusGraph without mutating widgets.',
-    primaryStory: 'focus-lens/combined',
-    usage: `use termrock::interaction::{FocusGraph, FocusLens, FocusLensMode};
-use termrock::style::DesignSystem;
-
-let system = DesignSystem::default();
-FocusLens::new(&graph, &system).mode(FocusLensMode::Combined).render(area, buf);`,
   },
   Tooltip: {
     description:
@@ -947,27 +843,6 @@ EmptyState::new("No results", &system)
     .paint(area, buf);
 // or: example_empty_search(&system)`,
   },
-  ErrorView: {
-    description:
-      'Structured recoverable failure (alias ErrorState): summary, explanation, collapsed technical details, source, retry/alternative/copy/report recovery, retry safety, work-preserved cues; recipes inline/pane/dialog/full-screen; kinds validation/network/permission/not-found/conflict/crash/unsupported.',
-    primaryStory: 'error-view/basic',
-    usage: `use termrock::style::DesignSystem;
-use termrock::widgets::{ErrorState, ErrorKind, Recovery, RecoveryAction, RetrySafety};
-
-let system = DesignSystem::default();
-ErrorState::new("Request failed", &system)
-    .kind(ErrorKind::Network)
-    .explanation("Could not reach the API")
-    .technical("timeout after 30s")
-    .recovery(
-        Recovery::none()
-            .with_retry(RecoveryAction::with_shortcut("Retry", "r"))
-            .with_retry_safety(RetrySafety::Safe)
-            .with_copy_diagnostics(true),
-    )
-    .paint(area, buf);
-// ErrorView is a type alias for ErrorState`,
-  },
   ErrorState: {
     description:
       'Canonical structured recoverable failure surface (see ErrorView). Recovery bundle, detail disclosure, recipes.',
@@ -995,55 +870,11 @@ state.open();`,
 let theme = Theme::default();
 let loading = LoadingView::new("Loading…", "⠋", &theme);`,
   },
-  LoadingOverlay: {
-    description:
-      'Regional loading chrome over a pane: BusyMode non-blocking/blocking/cancellable/optimistic/stale; min-show and short-op policy; composes Spinner; pairs with BusyBoundary input routing.',
-    primaryStory: 'loading-overlay/blocking',
-    usage: `use termrock::widgets::{BusyBoundary, BusyBoundaryState, BusyMode, LoadingOverlay};
-use termrock::style::Motion;
-
-let mut busy = BusyBoundaryState::new();
-let _ = busy.begin(BusyMode::Cancellable, "Syncing");
-busy.set_elapsed_ms(400);
-BusyBoundary::paint(area, buf, &mut busy, &system, tick, Motion::Full);`,
-  },
-  BusyBoundary: {
-    description:
-      'Region-scoped busy state: modes, nest depth, cancel, focus trap, key/pointer routing (Deliver/Blocked/Cancel/Outside).',
-    primaryStory: 'loading-overlay/nested',
-    usage: `use termrock::widgets::{BusyBoundaryState, BusyMode, BusyRoute};
-
-let mut busy = BusyBoundaryState::new();
-busy.begin(BusyMode::Blocking, "Loading");
-match busy.route_key(key) {
-    BusyRoute::Blocked => {}
-    BusyRoute::Deliver => {}
-    _ => {}
-}`,
-  },
-  ReconnectingState: {
-    description:
-      'Connectivity model for remote sessions/agents/DBs: phases disconnected/reconnecting/auth/unavailable; target, last-ok, retry, queue, offline caps; projects to StatusBar and NotificationCenter; banner or full OfflineSurface.',
-    primaryStory: 'connectivity/reconnecting',
-    usage: `use termrock::widgets::{ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation};
-
-let mut conn = ReconnectingState::new("agent://prod-1");
-conn.begin_reconnect(2);
-OfflineBanner::new(&conn, &system).paint(area, buf);
-// StatusBar: StatusSlot::connection(id, &conn.status_bar_content())
-// Notifications: center.ingest_item(conn.to_notification_item("c1"))`,
-  },
   OfflineBanner: {
     description:
       'Unobtrusive single-line connectivity banner (Esc dismisses; StatusBar still shows connection).',
     primaryStory: 'connectivity/banner',
     usage: `OfflineBanner::new(&conn, &system).paint(area, buf);`,
-  },
-  OfflineSurface: {
-    description:
-      'Full offline/reconnect recovery: retry, auth, work offline, queue, capabilities, drafts/selection preserved.',
-    primaryStory: 'connectivity/reconnecting',
-    usage: `OfflineSurface::new(&system).paint(area, buf, &mut conn);`,
   },
   Spinner: {
     description:
@@ -1060,19 +891,6 @@ state.set_phase(ActivityPhase::Indeterminate);
 Spinner::labeled("Fetching packages", &system)
     .paint(area, buf, &state, tick, Motion::Full);`,
   },
-  ActivityIndicator: {
-    description:
-      'Activity line with phase spinner, required verb, and optional detail (reconnect attempts, targets).',
-    primaryStory: 'activity-indicator/basic',
-    usage: `use termrock::widgets::{ActivityIndicator, SpinnerState, ActivityPhase};
-use termrock::style::Motion;
-
-let mut state = SpinnerState::new();
-state.set_phase(ActivityPhase::Reconnecting);
-ActivityIndicator::new("Reconnecting to agent", &system)
-    .detail("attempt 2/5")
-    .paint(area, buf, &state, tick, Motion::Full);`,
-  },
   MarkdownView: {
     description: 'Projected markdown-like blocks with semantic roles.',
     primaryStory: 'markdown-view/basic',
@@ -1081,15 +899,6 @@ ActivityIndicator::new("Reconnecting to agent", &system)
 let theme = Theme::default();
 let blocks = [MarkdownBlock { kind: MarkdownBlockKind::Heading, text: "Plan" }];
 let view = MarkdownView::new(&blocks, &theme);`,
-  },
-  PromptBox: {
-    description: 'Agent prompt chrome over the multi-line editor.',
-    primaryStory: 'prompt-box/basic',
-    usage: `use termrock::{Theme, widgets::{PromptBox, PromptBoxState}};
-
-let theme = Theme::default();
-let prompt = PromptBox::new(&theme).placeholder("Message…");
-let mut state = PromptBoxState::new();`,
   },
   SegmentedMeter: {
     description: 'Single-row proportional meter for stacked shares.',
@@ -1132,27 +941,6 @@ StatusIndicator::new(SemanticStatus::Running, &system)
 let theme = Theme::default();
 let samples = [0.1, 0.5, 0.9];
 let spark = Sparkline::new(&samples, &theme);`,
-  },
-  StreamView: {
-    description: 'Stable-ID conversation stream with fold markers.',
-    primaryStory: 'stream-view/basic',
-    usage: `use termrock::{Theme, widgets::{StreamItem, StreamItemKind, StreamView}};
-
-let theme = Theme::default();
-let items = [StreamItem { id: "u1", kind: StreamItemKind::User, text: "Hello", folded: false }];
-let stream = StreamView::new(&items, &theme);`,
-  },
-  WorkingStateCard: {
-    description:
-      'Privacy-safe current agent work summary — phase, public summary, files; collapses to ActivityShelf.',
-    primaryStory: 'working-state-card/basic',
-    usage: `use termrock::widgets::{
-    example_working_state, WorkingStateCard, WorkingStateCardState,
-};
-
-let mut state = WorkingStateCardState::new();
-state.set_work(Some(example_working_state()));
-WorkingStateCard::new(&system).paint(area, buf, &mut state);`,
   },
   ThinkingBlock: {
     description: 'Collapsible thinking/reasoning chrome.',
@@ -1220,7 +1008,7 @@ let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);`,
 
   ThemePicker: {
     description: 'A live theme preset list; selection changes drive caller re-render.',
-    primaryStory: 'theme-picker/basic',
+    primaryStory: 'system-picker/basic',
     usage: `use termrock::{Theme, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
 
 let theme = Theme::default();
@@ -1300,23 +1088,6 @@ let bounds = Rect::new(0, 0, 80, 24);
 let _ = state.open_from_keyboard(&nodes, bounds);
 // stack: open_dropdown_menu_overlay(...); paint: DropdownMenu::new(&nodes, &system).paint(...)`,
   },
-  ContextMenu: {
-    description:
-      'Pointer/context-key command menu at origin with nested cascade, same item model as DropdownMenu, OverlayKind::ContextMenu placement.',
-    primaryStory: 'context-menu/basic',
-    usage: `use termrock::widgets::{
-    ContextMenu, DropdownMenuState, MenuNode, open_context_menu_overlay,
-};
-
-let nodes = vec![
-    MenuNode::command("copy", "Copy").shortcut("C-c"),
-    MenuNode::command("delete", "Delete").destructive(true),
-];
-let mut state = DropdownMenuState::context();
-let _ = state.open_from_context_pointer(&nodes, bounds);
-// open_context_menu_overlay(&mut stack, bounds, origin, size, opener);
-// ContextMenu::new(&nodes, &system).paint(rect, buf, &mut state);`,
-  },
   MenuBar: {
     description:
       'Desktop-style top-level menus with nested cascade, mnemonics, checked/radio rows, OverlayStack helpers, and narrow CommandPalette replacement.',
@@ -1392,16 +1163,6 @@ Drawer::new("Inspector", &system)
     .paint(entry.rect, buf, &mut state);
 // Host paints domain content into state.body_area().`,
   },
-  Sheet: {
-    description:
-      'Bottom-edge drawer (shadcn Sheet metaphor) — same engine as Drawer with DrawerEdge::Bottom default.',
-    primaryStory: 'drawer/sheet',
-    usage: `use termrock::widgets::{Sheet, DrawerState};
-
-let mut state = DrawerState::sheet();
-state.open();
-Sheet::new("Actions", &system).paint(area, buf, &mut state);`,
-  },
   FullscreenViewer: {
     description:
       'Promotion chrome compact→detail→fullscreen with frozen SourceContext (selection, scroll anchor, focus, breadcrumbs). Host paints CodeBlock/Diff/logs/objects/tasks/media into body slot; nested Esc peels stack first.',
@@ -1476,18 +1237,6 @@ let ribbon = ModeRibbon::new(&modes, &tokens);`,
 let tokens = DesignTokens::default();
 let p = Paragraph::new("Body text", &tokens);`,
   },
-  ApprovalQueue: {
-    description:
-      'Unified inbox for permissions, questions, plans, diffs — Open default; no bulk high-risk approve.',
-    primaryStory: 'approval-queue/basic',
-    usage: `use termrock::widgets::{
-    example_approval_queue, ApprovalQueue, ApprovalQueueState,
-};
-
-let mut state = ApprovalQueueState::new();
-state.set_items(example_approval_queue());
-ApprovalQueue::new(&system).paint(area, buf, &mut state);`,
-  },
   PermissionPrompt: {
     description: 'Fail-safe permission/trust surface with default-deny focus.',
     primaryStory: 'permission-prompt/basic',
@@ -1497,23 +1246,6 @@ let theme = Theme::default();
 let prompt = PermissionPrompt::new(&theme);
 let mut state = PermissionPromptState::new();
 state.enqueue(PermissionRequest::new("r1", "bash", "workspace"));`,
-  },
-  PlanReview: {
-    description:
-      'Agent plan document review — Markdown, comments, version diff, safe action focus (Approve never default).',
-    primaryStory: 'plan-review/basic',
-    usage: `use termrock::widgets::{
-    example_plan_document, PlanReview, PlanReviewOutcome, PlanReviewState,
-};
-
-let mut state = PlanReviewState::new();
-state.open(example_plan_document());
-PlanReview::new(&system).paint(area, buf, &mut state);
-match state.handle_key(key) {
-    PlanReviewOutcome::Approved => {}
-    PlanReviewOutcome::Cancelled => {}
-    _ => {}
-}`,
   },
   Popover: {
     description:
@@ -1536,21 +1268,6 @@ let _ = state.open_on_stack(&mut stack, bounds, anchor, size, Some("trigger"));
 // Paint: Popover::new("Settings", &system).paint(entry.rect, buf, &mut state);
 // Host fills state.slots().body. Dismiss via stack → opener focus restored.`,
   },
-  PromptQueue: {
-    description:
-      'Editable queue of user prompts behind busy agent work — compact summary + expanded manager; no auto-drain on fail.',
-    primaryStory: 'prompt-queue/expanded',
-    usage: `use termrock::widgets::{
-    example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
-    PromptQueueState,
-};
-
-let mut state = PromptQueueState::new();
-state.set_items(example_prompt_queue());
-state.set_agent(AgentBusyState::Busy);
-state.presentation = PromptQueuePresentation::Expanded;
-PromptQueue::new(&system).paint(area, buf, &mut state);`,
-  },
   PromptComposer: {
     description: 'Flagship agent prompt composer with chips, policy, and completion overlays.',
     primaryStory: 'prompt-composer/basic',
@@ -1571,31 +1288,6 @@ let opts = [QuestionOption { id: "y", label: "Yes" }];
 let steps = [QuestionStep { id: "q1", prompt: "Continue?", options: &opts, required: true }];
 let flow = QuestionFlow::new(&steps, &tokens);`,
   },
-  SeparatorLine: {
-    description: 'Horizontal or vertical separator rule using border role paint.',
-    primaryStory: 'separator/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::SeparatorLine};
-
-let tokens = DesignTokens::default();
-let sep = SeparatorLine::horizontal(&tokens);`,
-  },
-  SessionPicker: {
-    description:
-      'Agent session create/resume/search/rename/archive/delete — draft preserved on cancel; safe confirm.',
-    primaryStory: 'session-picker/basic',
-    usage: `use termrock::widgets::{
-    example_sessions, SessionPicker, SessionPickerOutcome, SessionPickerState,
-};
-
-let mut state = SessionPickerState::new();
-state.set_sessions(example_sessions());
-SessionPicker::new(&system).paint(area, buf, &mut state);
-match state.handle_key(key) {
-    SessionPickerOutcome::Opened { id } => { let _ = id; }
-    SessionPickerOutcome::Cancelled => {}
-    _ => {}
-}`,
-  },
   Surface: {
     description:
       'Lowest-level visual ownership: fill, padding, border, clip, and hit geometry with canvas→destructive recipes.',
@@ -1610,14 +1302,271 @@ let content = Surface::new(&system)
 // Canvas / terminal-default:
 Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDefault);`,
   },
-  TaskRail: {
-    description: 'Titled task list rail composing Panel + List.',
-    primaryStory: 'task-rail/basic',
-    usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, widgets::{ListRow, RowRole, TaskRail}};
+  Accordion: {
+    description: 'Accordion widget.',
+    primaryStory: 'accordion/section',
+    usage: `use termrock::widgets::Accordion;
 
-let tokens = DesignTokens::default();
-let rows = [ListRow { id: "t1", label: Line::from("Task"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
-let rail = TaskRail::new(&rows, &tokens, "Tasks");`,
+// See handbook / lookbook story accordion/basic.`,
   },
+  ActionLink: {
+    description: 'ActionLink widget.',
+    primaryStory: 'action-link/basic',
+    usage: `use termrock::widgets::ActionLink;
+
+// See handbook / lookbook story action-link/basic.`,
+  },
+  AvatarGlyph: {
+    description: 'AvatarGlyph widget.',
+    primaryStory: 'avatar-glyph/basic',
+    usage: `use termrock::widgets::AvatarGlyph;
+
+// See handbook / lookbook story avatar-glyph/basic.`,
+  },
+  ButtonGroup: {
+    description: 'ButtonGroup widget.',
+    primaryStory: 'button-group/dialog',
+    usage: `use termrock::widgets::ButtonGroup;
+
+// See handbook / lookbook story button-group/basic.`,
+  },
+  Chart: {
+    description: 'Chart widget.',
+    primaryStory: 'chart/basic',
+    usage: `use termrock::widgets::Chart;
+
+// See handbook / lookbook story chart/basic.`,
+  },
+  Collapsible: {
+    description: 'Collapsible widget.',
+    primaryStory: 'collapsible/inline',
+    usage: `use termrock::widgets::Collapsible;
+
+// See handbook / lookbook story collapsible/basic.`,
+  },
+  Description: {
+    description: 'Description widget.',
+    primaryStory: 'description/kinds',
+    usage: `use termrock::widgets::Description;
+
+// See handbook / lookbook story description/basic.`,
+  },
+  DiagnosticView: {
+    description: 'DiagnosticView widget.',
+    primaryStory: 'diagnostic/list',
+    usage: `use termrock::widgets::DiagnosticView;
+
+// See handbook / lookbook story diagnostic-view/basic.`,
+  },
+  DiffReview: {
+    description: 'DiffReview widget.',
+    primaryStory: 'diff-review/hunks',
+    usage: `use termrock::widgets::DiffReview;
+
+// See handbook / lookbook story diff-review/basic.`,
+  },
+  EventStream: {
+    description: 'EventStream widget.',
+    primaryStory: 'event-stream/basic',
+    usage: `use termrock::widgets::EventStream;
+
+// See handbook / lookbook story event-stream/basic.`,
+  },
+  FieldCaption: {
+    description: 'FieldCaption widget.',
+    primaryStory: 'field-caption/basic',
+    usage: `use termrock::widgets::FieldCaption;
+
+// See handbook / lookbook story field-caption/basic.`,
+  },
+  Gauge: {
+    description: 'Gauge widget.',
+    primaryStory: 'gauge/basic',
+    usage: `use termrock::widgets::Gauge;
+
+// See handbook / lookbook story gauge/basic.`,
+  },
+  HexViewer: {
+    description: 'HexViewer widget.',
+    primaryStory: 'hex-viewer/basic',
+    usage: `use termrock::widgets::HexViewer;
+
+// See handbook / lookbook story hex-viewer/basic.`,
+  },
+  HighlightedText: {
+    description: 'HighlightedText widget.',
+    primaryStory: 'highlighted-text/basic',
+    usage: `use termrock::widgets::HighlightedText;
+
+// See handbook / lookbook story highlighted-text/basic.`,
+  },
+  Histogram: {
+    description: 'Histogram widget.',
+    primaryStory: 'histogram/basic',
+    usage: `use termrock::widgets::Histogram;
+
+// See handbook / lookbook story histogram/basic.`,
+  },
+  Icon: {
+    description: 'Icon widget.',
+    primaryStory: 'icon/browser',
+    usage: `use termrock::widgets::Icon;
+
+// See handbook / lookbook story icon/basic.`,
+  },
+  Identity: {
+    description: 'Identity widget.',
+    primaryStory: 'identity/basic',
+    usage: `use termrock::widgets::Identity;
+
+// See handbook / lookbook story identity/basic.`,
+  },
+  KeyValueTable: {
+    description: 'KeyValueTable widget.',
+    primaryStory: 'key-value-table/http',
+    usage: `use termrock::widgets::KeyValueTable;
+
+// See handbook / lookbook story key-value-table/basic.`,
+  },
+  Label: {
+    description: 'Label widget.',
+    primaryStory: 'label/basic',
+    usage: `use termrock::widgets::Label;
+
+// See handbook / lookbook story label/basic.`,
+  },
+  Link: {
+    description: 'Link widget.',
+    primaryStory: 'link/basic',
+    usage: `use termrock::widgets::Link;
+
+// See handbook / lookbook story link/basic.`,
+  },
+  LogStream: {
+    description: 'LogStream widget.',
+    primaryStory: 'log-stream/follow',
+    usage: `use termrock::widgets::LogStream;
+
+// See handbook / lookbook story log-stream/basic.`,
+  },
+  MetricRadar: {
+    description: 'MetricRadar widget.',
+    primaryStory: 'metric-radar/basic',
+    usage: `use termrock::widgets::MetricRadar;
+
+// See handbook / lookbook story metric-radar/basic.`,
+  },
+  ObjectInspector: {
+    description: 'ObjectInspector widget.',
+    primaryStory: 'object-inspector/flat',
+    usage: `use termrock::widgets::ObjectInspector;
+
+// See handbook / lookbook story object-inspector/basic.`,
+  },
+  ProgressBar: {
+    description: 'ProgressBar widget.',
+    primaryStory: 'progress-bar/basic',
+    usage: `use termrock::widgets::ProgressBar;
+
+// See handbook / lookbook story progress-bar/basic.`,
+  },
+  RangeSlider: {
+    description: 'RangeSlider widget.',
+    primaryStory: 'range-slider/basic',
+    usage: `use termrock::widgets::RangeSlider;
+
+// See handbook / lookbook story range-slider/basic.`,
+  },
+  ResizablePanelGroup: {
+    description: 'ResizablePanelGroup widget.',
+    primaryStory: 'resizable-panel-group/workbench',
+    usage: `use termrock::widgets::ResizablePanelGroup;
+
+// See handbook / lookbook story resizable-panel-group/basic.`,
+  },
+  Section: {
+    description: 'Section widget.',
+    primaryStory: 'section/quiet',
+    usage: `use termrock::widgets::Section;
+
+// See handbook / lookbook story section/basic.`,
+  },
+  SegmentedControl: {
+    description: 'SegmentedControl widget.',
+    primaryStory: 'segmented-control/basic',
+    usage: `use termrock::widgets::SegmentedControl;
+
+// See handbook / lookbook story segmented-control/basic.`,
+  },
+  Separator: {
+    description: 'Separator widget.',
+    primaryStory: 'separator/basic',
+    usage: `use termrock::widgets::Separator;
+
+// See handbook / lookbook story separator/basic.`,
+  },
+  ShortcutHint: {
+    description: 'ShortcutHint widget.',
+    primaryStory: 'shortcut-hint/footer',
+    usage: `use termrock::widgets::ShortcutHint;
+
+// See handbook / lookbook story shortcut-hint/basic.`,
+  },
+  Slider: {
+    description: 'Slider widget.',
+    primaryStory: 'slider/basic',
+    usage: `use termrock::widgets::Slider;
+
+// See handbook / lookbook story slider/basic.`,
+  },
+  Switch: {
+    description: 'Switch widget.',
+    primaryStory: 'switch/basic',
+    usage: `use termrock::widgets::Switch;
+
+// See handbook / lookbook story switch/basic.`,
+  },
+  TerminalOutput: {
+    description: 'TerminalOutput widget.',
+    primaryStory: 'terminal-output/running',
+    usage: `use termrock::widgets::TerminalOutput;
+
+// See handbook / lookbook story terminal-output/basic.`,
+  },
+  Text: {
+    description: 'Text widget.',
+    primaryStory: 'text/basic',
+    usage: `use termrock::widgets::Text;
+
+// See handbook / lookbook story text/basic.`,
+  },
+  Toggle: {
+    description: 'Toggle widget.',
+    primaryStory: 'toggle/pressed',
+    usage: `use termrock::widgets::Toggle;
+
+// See handbook / lookbook story toggle/basic.`,
+  },
+  ToggleGroup: {
+    description: 'ToggleGroup widget.',
+    primaryStory: 'toggle-group/format',
+    usage: `use termrock::widgets::ToggleGroup;
+
+// See handbook / lookbook story toggle-group/basic.`,
+  },
+  Toolbar: {
+    description: 'Toolbar widget.',
+    primaryStory: 'toolbar/basic',
+    usage: `use termrock::widgets::Toolbar;
+
+// See handbook / lookbook story toolbar/basic.`,
+  },
+  TreeTable: {
+    description: 'TreeTable widget.',
+    primaryStory: 'tree-table/process',
+    usage: `use termrock::widgets::TreeTable;
+
+// See handbook / lookbook story tree-table/basic.`,
+  },
+
 } as const satisfies Record<string, ComponentDoc>

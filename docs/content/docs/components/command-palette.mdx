@@ -16,36 +16,6 @@ Command palette
 
 ![CommandPalette — Command palette](/component-previews/command-palette-basic.svg)
 
-### `command-palette/empty`
-
-Command palette empty
-
-![CommandPalette — Command palette empty](/component-previews/command-palette-empty.svg)
-
-### `command-palette/no-result`
-
-Command palette no result
-
-![CommandPalette — Command palette no result](/component-previews/command-palette-no-result.svg)
-
-### `command-palette/loading`
-
-Command palette loading
-
-![CommandPalette — Command palette loading](/component-previews/command-palette-loading.svg)
-
-### `command-palette/fuzzy`
-
-Command palette fuzzy
-
-![CommandPalette — Command palette fuzzy](/component-previews/command-palette-fuzzy.svg)
-
-### `command-palette/nested`
-
-Command palette nested page
-
-![CommandPalette — Command palette nested page](/component-previews/command-palette-nested.svg)
-
 ### `command-palette/args`
 
 Command palette arguments
@@ -56,13 +26,43 @@ Command palette arguments
 
 Command palette ASCII
 
-![CommandPalette — Command palette ascii](/component-previews/command-palette-ascii.svg)
+![CommandPalette — Command palette ASCII](/component-previews/command-palette-ascii.svg)
+
+### `command-palette/empty`
+
+Command palette empty
+
+![CommandPalette — Command palette empty](/component-previews/command-palette-empty.svg)
+
+### `command-palette/fuzzy`
+
+Command palette fuzzy
+
+![CommandPalette — Command palette fuzzy](/component-previews/command-palette-fuzzy.svg)
+
+### `command-palette/loading`
+
+Command palette loading
+
+![CommandPalette — Command palette loading](/component-previews/command-palette-loading.svg)
 
 ### `command-palette/narrow`
 
 Narrow CommandPalette
 
 ![CommandPalette — Narrow CommandPalette](/component-previews/command-palette-narrow.svg)
+
+### `command-palette/nested`
+
+Command palette nested page
+
+![CommandPalette — Command palette nested page](/component-previews/command-palette-nested.svg)
+
+### `command-palette/no-result`
+
+Command palette no result
+
+![CommandPalette — Command palette no result](/component-previews/command-palette-no-result.svg)
 
 ### `command-palette/unicode`
 
@@ -89,14 +89,11 @@ CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | covered |
+| Mouse | caller-owned |
 | Focus | covered |
-| Async generation | covered |
-| Nested pages | covered |
-| Arguments | covered |
 | Non-color cues | covered |
 | Unicode | covered |
-| Narrow terminal | covered (fullscreen promote) |
+| Narrow terminal | covered |
 
 ## Stories
 

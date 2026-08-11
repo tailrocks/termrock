@@ -810,7 +810,7 @@ pub(crate) struct TableInteractor {
 
 impl TableInteractor {
     pub(crate) fn new() -> Self {
-        let mut state = TableState::new(Some("r1"));
+        let state = TableState::new(Some("r1"));
         Self {
             state,
             theme: RolePalette::default(),

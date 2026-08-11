@@ -7,6 +7,9 @@ description: 'Route-oriented navigation list with hierarchy, filter, and focus d
 
 ## Previews
 
+Lookbook-rendered SVGs from the same path as the TUI CLI gallery
+(`termrock-lookbook render`). These match deterministic terminal paint, not hand-drawn mockups.
+
 ### `navigation-list/basic`
 
 NavigationList
@@ -21,7 +24,6 @@ use termrock::widgets::{NavItem, NavigationList, NavigationListState};
 let items = [NavItem::new("a", "Inbox"), NavItem::new("b", "Starred")];
 let mut state = NavigationListState::new(Some("a"));
 state.set_focused(true);
-// Down moves focus; Enter sets route
 ```
 
 ## Interaction contract

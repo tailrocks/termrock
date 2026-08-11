@@ -7,17 +7,20 @@ description: 'Page navigation for remote datasets with prev/next, page numbers, 
 
 ## Previews
 
+Lookbook-rendered SVGs from the same path as the TUI CLI gallery
+(`termrock-lookbook render`). These match deterministic terminal paint, not hand-drawn mockups.
+
 ### `pagination/full`
 
 Pagination full
 
 ![Pagination — Pagination full](/component-previews/pagination-full.svg)
 
-### `pagination/unknown`
+### `pagination/jump`
 
-Pagination unknown total
+Pagination jump
 
-![Pagination — Pagination unknown total](/component-previews/pagination-unknown.svg)
+![Pagination — Pagination jump](/component-previews/pagination-jump.svg)
 
 ### `pagination/loading`
 
@@ -31,11 +34,11 @@ Pagination minimal
 
 ![Pagination — Pagination minimal](/component-previews/pagination-minimal.svg)
 
-### `pagination/jump`
+### `pagination/unknown`
 
-Pagination jump
+Pagination unknown total
 
-![Pagination — Pagination jump](/component-previews/pagination-jump.svg)
+![Pagination — Pagination unknown total](/component-previews/pagination-unknown.svg)
 
 ## Usage
 
@@ -64,7 +67,7 @@ let _ = Pagination::new(&system);
 ## Stories
 
 - `pagination/full` — Pagination full
-- `pagination/unknown` — Pagination unknown total
+- `pagination/jump` — Pagination jump
 - `pagination/loading` — Pagination loading
 - `pagination/minimal` — Pagination minimal
-- `pagination/jump` — Pagination jump
+- `pagination/unknown` — Pagination unknown total

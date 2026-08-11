@@ -28,19 +28,13 @@ Unicode ToolCard
 
 ![ToolCard — Unicode ToolCard](/component-previews/tool-card-unicode.svg)
 
-## Composition
-
-Paints through raised [`Card`](./card) chrome: status **leading** glyph + **badge**, tool name title, summary subtitle. Body shows summary (collapsed) or detail (expanded). Domain policy stays outside.
-
 ## Usage
 
 ```rust
-use termrock::{style::DesignSystem, widgets::{ToolCard, ToolStatus}};
+use termrock::{Theme, widgets::{ToolCard, ToolStatus}};
 
-let system = DesignSystem::default();
-let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &system)
-    .detail("…stdout…")
-    .expanded(true);
+let theme = Theme::default();
+let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);
 ```
 
 ## Interaction contract

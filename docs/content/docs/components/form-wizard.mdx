@@ -16,11 +16,17 @@ FormWizard
 
 ![FormWizard — FormWizard](/component-previews/blocks-form-wizard.svg)
 
-### `form-wizard/review`
+### `blocks/narrow`
 
-FormWizard review
+Narrow FormWizard
 
-![FormWizard — FormWizard review](/component-previews/form-wizard-review.svg)
+![FormWizard — Narrow FormWizard](/component-previews/blocks-narrow.svg)
+
+### `blocks/unicode`
+
+Unicode FormWizard
+
+![FormWizard — Unicode FormWizard](/component-previews/blocks-unicode.svg)
 
 ### `form-wizard/failure`
 
@@ -34,17 +40,11 @@ FormWizard resume
 
 ![FormWizard — FormWizard resume](/component-previews/form-wizard-resume.svg)
 
-### `blocks/narrow`
+### `form-wizard/review`
 
-Narrow FormWizard
+FormWizard review
 
-![FormWizard — Narrow FormWizard](/component-previews/blocks-narrow.svg)
-
-### `blocks/unicode`
-
-Unicode FormWizard
-
-![FormWizard — Unicode FormWizard](/component-previews/blocks-unicode.svg)
+![FormWizard — FormWizard review](/component-previews/form-wizard-review.svg)
 
 ## Usage
 
@@ -55,12 +55,10 @@ use termrock::widgets::{FormWizard, FormWizardState, WizardStep};
 let system = DesignSystem::default();
 let mut state = FormWizardState::with_steps([
     WizardStep::new("account", "Account"),
-    WizardStep::new("region", "Region").optional(true),
     WizardStep::new("confirm", "Confirm"),
 ]);
 state.set_focused(true);
 let _ = FormWizard::new(&system).title("Setup");
-// paint wizard; then host fields into state.body_area()
 ```
 
 ## Interaction contract
@@ -77,8 +75,8 @@ let _ = FormWizard::new(&system).title("Setup");
 ## Stories
 
 - `blocks/form-wizard` — FormWizard
-- `form-wizard/review` — FormWizard review
-- `form-wizard/failure` — FormWizard failure
-- `form-wizard/resume` — FormWizard resume
 - `blocks/narrow` — Narrow FormWizard
 - `blocks/unicode` — Unicode FormWizard
+- `form-wizard/failure` — FormWizard failure
+- `form-wizard/resume` — FormWizard resume
+- `form-wizard/review` — FormWizard review

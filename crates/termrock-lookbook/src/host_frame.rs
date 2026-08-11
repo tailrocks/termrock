@@ -211,6 +211,7 @@ impl HostFrame {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn focus_trap_open(&self) -> bool {
         self.overlays
             .contains(&OverlayId::from_static(FOCUS_TRAP_OVERLAY_ID))

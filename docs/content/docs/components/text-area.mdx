@@ -70,7 +70,8 @@ let area = TextArea::new(&system)
     .placeholder("Write…")
     .line_numbers(true)
     .soft_wrap();
-let mut state = TextAreaState::new("first line\nsecond line");
+let mut state = TextAreaState::new("first line
+second line");
 state.set_accepts_input(true);
 state.set_wrap(TextWrap::Soft);
 let valid = state.set_cursor(TextCursor { line: 1, byte: 0 });

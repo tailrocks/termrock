@@ -3,6 +3,7 @@
 
 //! Product-neutral stories rendered through TermRock's public widget API.
 
+#![allow(unused_imports, unused_mut)] // large story catalog
 use std::num::NonZeroU16;
 
 use ratatui::{
@@ -4406,6 +4407,24 @@ pub(crate) fn stories() -> Vec<Story> {
             gauge_basic,
         ),
         Story::new(
+            "metric-radar/basic",
+            "Metric radar",
+            "MetricRadar",
+            "Multi-axis metric radar (terminal-honest peer).",
+            48,
+            12,
+            metric_radar_basic,
+        ),
+        Story::new(
+            "progress-bar/basic",
+            "Progress bar",
+            "ProgressBar",
+            "Determinate progress bar.",
+            40,
+            2,
+            progress_bar_basic_story,
+        ),
+        Story::new(
             "histogram/basic",
             "Histogram",
             "Histogram",
@@ -6294,6 +6313,15 @@ pub(crate) fn stories() -> Vec<Story> {
             "Label basic",
             "Label",
             "Required label with help description.",
+            40,
+            3,
+            label_basic_story,
+        ),
+        Story::new(
+            "field-caption/basic",
+            "Field caption",
+            "FieldCaption",
+            "Label + help caption pair.",
             40,
             3,
             label_basic_story,
@@ -18076,6 +18104,34 @@ fn gauge_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             .label("cpu")
             .unit("%")
             .thresholds(&thr),
+        area,
+    );
+}
+
+fn metric_radar_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{MetricAxis, MetricRadar, MetricSeries};
+    let axes = [
+        MetricAxis::new("cpu"),
+        MetricAxis::new("mem"),
+        MetricAxis::new("io"),
+        MetricAxis::new("net"),
+    ];
+    let a = [0.8, 0.5, 0.3, 0.6];
+    let b = [0.4, 0.7, 0.5, 0.2];
+    let series = [
+        MetricSeries::new("svc-a", &a),
+        MetricSeries::new("svc-b", &b),
+    ];
+    frame.render_widget(
+        MetricRadar::new(&axes, &series, system).title("services"),
+        area,
+    );
+}
+
+fn progress_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ProgressBar, ProgressKind};
+    frame.render_widget(
+        ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("sync"),
         area,
     );
 }

@@ -543,10 +543,14 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
     ) -> VirtualGridOutcome<RowId, ColId> {
         use crate::interaction::{NavigationMove, PageMove, UiIntent};
         match intent {
-            UiIntent::Move(NavigationMove::Previous) => {
+            UiIntent::Move(NavigationMove::Previous) | UiIntent::Move(NavigationMove::Up) => {
                 self.move_cursor(-1, 0, extend, columns, rows)
             }
-            UiIntent::Move(NavigationMove::Next) => self.move_cursor(1, 0, extend, columns, rows),
+            UiIntent::Move(NavigationMove::Next) | UiIntent::Move(NavigationMove::Down) => {
+                self.move_cursor(1, 0, extend, columns, rows)
+            }
+            UiIntent::Move(NavigationMove::Left) => self.move_cursor(0, -1, extend, columns, rows),
+            UiIntent::Move(NavigationMove::Right) => self.move_cursor(0, 1, extend, columns, rows),
             UiIntent::Move(NavigationMove::First) => {
                 self.cursor_row = 0;
                 self.skip_disabled_from(rows, 1);

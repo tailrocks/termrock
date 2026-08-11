@@ -16,11 +16,11 @@ DateTimePicker date
 
 ![DateTimePicker — DateTimePicker date](/component-previews/date-time-picker-date.svg)
 
-### `date-time-picker/time`
+### `date-time-picker/narrow`
 
-DateTimePicker time
+DateTimePicker narrow
 
-![DateTimePicker — DateTimePicker time](/component-previews/date-time-picker-time.svg)
+![DateTimePicker — DateTimePicker narrow](/component-previews/date-time-picker-narrow.svg)
 
 ### `date-time-picker/range`
 
@@ -28,11 +28,11 @@ DateTimePicker range
 
 ![DateTimePicker — DateTimePicker range](/component-previews/date-time-picker-range.svg)
 
-### `date-time-picker/narrow`
+### `date-time-picker/time`
 
-DateTimePicker narrow
+DateTimePicker time
 
-![DateTimePicker — DateTimePicker narrow](/component-previews/date-time-picker-narrow.svg)
+![DateTimePicker — DateTimePicker time](/component-previews/date-time-picker-time.svg)
 
 ## Usage
 
@@ -50,11 +50,6 @@ state.set_focused(true);
 let _ = DateTimePicker::new(&system).label("Due");
 ```
 
-## When TextInput is better
-
-Prefer `TextInput` for rare ISO paste and machine stamps without browse UX.
-See handbook and `date_time_picker_guidance::WHEN_TEXT_INPUT`.
-
 ## Interaction contract
 
 | Axis | Status |
@@ -69,6 +64,6 @@ See handbook and `date_time_picker_guidance::WHEN_TEXT_INPUT`.
 ## Stories
 
 - `date-time-picker/date` — DateTimePicker date
-- `date-time-picker/time` — DateTimePicker time
-- `date-time-picker/range` — DateTimePicker range
 - `date-time-picker/narrow` — DateTimePicker narrow
+- `date-time-picker/range` — DateTimePicker range
+- `date-time-picker/time` — DateTimePicker time

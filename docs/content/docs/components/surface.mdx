@@ -28,17 +28,17 @@ Surface focused
 
 ![Surface — Surface focused](/component-previews/surface-focused.svg)
 
-### `surface/terminal-default`
-
-Surface terminal-default
-
-![Surface — Surface terminal-default](/component-previews/surface-terminal-default.svg)
-
 ### `surface/narrow`
 
 Narrow Surface
 
 ![Surface — Narrow Surface](/component-previews/surface-narrow.svg)
+
+### `surface/terminal-default`
+
+Surface terminal-default
+
+![Surface — Surface terminal-default](/component-previews/surface-terminal-default.svg)
 
 ### `surface/unicode`
 
@@ -65,8 +65,8 @@ Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDe
 | Axis | Status |
 |---|---|
 | Keyboard | not-applicable |
-| Mouse | covered (hit region via `SurfaceParts::hit`) |
-| Focus | covered (recipe `Focused` / `Role::BorderFocused`) |
+| Mouse | not-applicable |
+| Focus | not-applicable |
 | Non-color cues | covered |
 | Unicode | covered |
 | Narrow terminal | covered |
@@ -74,8 +74,8 @@ Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDe
 ## Stories
 
 - `surface/basic` — Surface raised
-- `surface/ladder` — Surface recipe ladder
 - `surface/focused` — Surface focused
-- `surface/terminal-default` — Surface terminal-default
+- `surface/ladder` — Surface recipe ladder
 - `surface/narrow` — Narrow Surface
+- `surface/terminal-default` — Surface terminal-default
 - `surface/unicode` — Unicode Surface

@@ -16,17 +16,17 @@ KeybindingRecorder idle
 
 ![KeybindingRecorder — KeybindingRecorder idle](/component-previews/keybinding-recorder-idle.svg)
 
-### `keybinding-recorder/recording`
-
-KeybindingRecorder recording
-
-![KeybindingRecorder — KeybindingRecorder recording](/component-previews/keybinding-recorder-recording.svg)
-
 ### `keybinding-recorder/conflict`
 
 KeybindingRecorder conflict
 
 ![KeybindingRecorder — KeybindingRecorder conflict](/component-previews/keybinding-recorder-conflict.svg)
+
+### `keybinding-recorder/recording`
+
+KeybindingRecorder recording
+
+![KeybindingRecorder — KeybindingRecorder recording](/component-previews/keybinding-recorder-recording.svg)
 
 ### `keybinding-recorder/reserved`
 
@@ -46,7 +46,6 @@ let system = DesignSystem::default();
 let mut state = KeybindingRecorderState::new("app.save", "Save")
     .with_chords([KeyChord::ctrl(KeyCode::Char('s'))]);
 state.set_focused(true);
-// Enter → record; Esc cancels; Enter commits sequence
 let _ = KeybindingRecorder::new(&system);
 ```
 
@@ -63,7 +62,7 @@ let _ = KeybindingRecorder::new(&system);
 
 ## Stories
 
+- `keybinding-recorder/conflict` — KeybindingRecorder conflict
 - `keybinding-recorder/idle` — KeybindingRecorder idle
 - `keybinding-recorder/recording` — KeybindingRecorder recording
-- `keybinding-recorder/conflict` — KeybindingRecorder conflict
 - `keybinding-recorder/reserved` — KeybindingRecorder reserved
