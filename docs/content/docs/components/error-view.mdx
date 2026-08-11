@@ -2,62 +2,12 @@
 title: ErrorView / ErrorState
 description: 'Structured recoverable failure — summary, details (collapsed), recovery, retry safety.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `error-view/basic` / `error-state/network`
-
-Network failure with recovery
-
-![ErrorState — network](/component-previews/error-view-basic.svg)
-
-### `error-state/validation`
-
-Validation (work preserved)
-
-![ErrorState — validation](/component-previews/error-state-validation.svg)
-
-### `error-state/permission`
-
-Permission denied
-
-![ErrorState — permission](/component-previews/error-state-permission.svg)
-
-### `error-state/details`
-
-Technical details expanded
-
-![ErrorState — details](/component-previews/error-state-details.svg)
-
-### `error-state/inline`
-
-Inline recipe
-
-![ErrorState — inline](/component-previews/error-state-inline.svg)
-
-### `error-state/dialog`
-
-Dialog recipe
-
-![ErrorState — dialog](/component-previews/error-state-dialog.svg)
-
-### `error-state/fullscreen`
-
-Full-screen crash recovery
-
-![ErrorState — fullscreen](/component-previews/error-state-fullscreen.svg)
-
-### `error-view/narrow`
-
-Narrow ErrorView
-
-![ErrorView — narrow](/component-previews/error-view-narrow.svg)
-
-### `error-view/unicode`
-
-Unicode ErrorView
-
-![ErrorView — unicode](/component-previews/error-view-unicode.svg)
+<TerminalPreview story="error-view/basic" interactive caption="ErrorView / ErrorState · error-view/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -87,15 +37,6 @@ err.paint_with_state(area, buf, &mut state);
 // ErrorView is a type alias for ErrorState
 ```
 
-## Rules
-
-1. Prefer ErrorState for hard failures; EmptyState for zero-data.
-2. Technical details stay collapsed until toggled (`d` / focus ToggleDetails).
-3. State retry safety (Safe / Unsafe / Unknown); paint the cue when retry exists.
-4. Preserve user work when possible and say so.
-5. Retry is dominant and never destructive-by-default.
-6. Host owns clipboard on `CopyDiagnostics` via `diagnostics_text()`.
-
 ## Interaction contract
 
 | Axis | Status |
@@ -109,5 +50,14 @@ err.paint_with_state(area, buf, &mut state);
 
 ## Stories
 
-- `error-view/basic`, `narrow`, `unicode`
-- `error-state/network`, `validation`, `permission`, `details`, `inline`, `dialog`, `fullscreen`
+| Story | Title | Focus |
+|---|---|---|
+| `error-view/basic` | Error view | **Primary (live preview)** |
+| `error-state/validation` | ErrorState validation | validation |
+| `error-state/permission` | ErrorState permission | permission |
+| `error-state/details` | ErrorState technical details | details |
+| `error-state/inline` | ErrorState inline | inline |
+| `error-state/dialog` | ErrorState dialog | dialog |
+| `error-state/fullscreen` | ErrorState full-screen | fullscreen |
+| `error-view/narrow` | Narrow ErrorView | narrow |
+| `error-view/unicode` | Unicode ErrorView | unicode |

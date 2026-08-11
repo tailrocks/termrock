@@ -2,20 +2,12 @@
 title: ContextMenu
 description: 'Pointer/context-key command menu at origin with nested cascade, same item model as DropdownMenu, OverlayKind::ContextMenu placement.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `context-menu/basic`
-
-ContextMenu basic
-
-![ContextMenu — basic](/component-previews/context-menu-basic.svg)
-
-### `context-menu/nested`
-
-ContextMenu nested
-
-![ContextMenu — nested](/component-previews/context-menu-nested.svg)
+<TerminalPreview story="context-menu/basic" interactive caption="ContextMenu · context-menu/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -47,5 +39,7 @@ let _ = state.open_from_context_pointer(&nodes, bounds);
 
 ## Stories
 
-- `context-menu/basic`
-- `context-menu/nested`
+| Story | Title | Focus |
+|---|---|---|
+| `context-menu/basic` | ContextMenu basic | **Primary (live preview)** |
+| `context-menu/nested` | ContextMenu nested | nested |

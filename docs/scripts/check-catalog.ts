@@ -6,7 +6,7 @@ const result = Bun.spawnSync(
   { cwd: root },
 )
 if (result.exitCode !== 0) throw new Error(result.stderr.toString())
-const stories = JSON.parse(result.stdout.toString()) as Array<{ id: string; component: string }>
+const stories = JSON.parse(result.stdout.toString()) as Array<{ id: string; component: string; title?: string }>
 const ids = new Set(stories.map((story) => story.id))
 if (ids.size !== stories.length) throw new Error('duplicate story ID')
 
@@ -49,7 +49,6 @@ const missingStories = [...publicComponents].filter((component) => !storyCompone
 if (missingStories.length) {
   throw new Error(`public components without stories: ${missingStories.join(', ')}`)
 }
-// Patterns / kernel demos may tag non-widget story components; warn only.
 const unknownStories = [...storyComponents].filter((component) => !publicComponents.has(component))
 if (unknownStories.length) {
   console.warn(
@@ -91,8 +90,6 @@ for (const [component, review] of Object.entries(contracts)) {
   }
 }
 
-// Base stories for these widgets already demonstrate the axis by construction;
-// all other `covered` claims require a named axis story.
 const NARROW_EXEMPT = new Set([
   'ActionBar', 'Backdrop', 'ChoiceDialog', 'DetailTable', 'DiffView', 'HintBar',
   'LogPane', 'MessageDialog', 'Panel', 'SplitPane', 'TextInput',
@@ -108,8 +105,6 @@ function hasAxisStory(component: string, axis: 'narrow' | 'unicode') {
     story.component === component && story.id.split(/[/-]/).includes(axis)
   )
 }
-// Axis-story enforcement is advisory while contracts catch up to the full
-// public widget inventory (many components claim covered via base stories).
 for (const [component, review] of Object.entries(contracts)) {
   if (
     review['narrowTerminal'] === 'covered' &&
@@ -129,24 +124,87 @@ for (const [component, review] of Object.entries(contracts)) {
 
 const docsDir = `${root}/docs/content/docs`
 let docs = ''
+const pageBodies = new Map<string, string>()
 for await (const name of new Bun.Glob('**/*.mdx').scan({ cwd: docsDir })) {
-  docs += `${await Bun.file(`${docsDir}/${name}`).text()}\n`
+  const body = await Bun.file(`${docsDir}/${name}`).text()
+  docs += `${body}\n`
+  pageBodies.set(name, body)
 }
+
+// Docs must never embed SVG catalog snapshots — Ghostty TerminalPreview only.
+if (docs.includes('component-previews/') || /!\[[^\]]*\]\([^)]*\.svg\)/.test(docs)) {
+  throw new Error(
+    'docs content still embeds SVG / component-previews; use TerminalPreview frame packs only',
+  )
+}
+
+const embeddedStories = new Set<string>()
+for (const m of docs.matchAll(/<TerminalPreview\s+[^>]*story="([^"]+)"/g)) {
+  embeddedStories.add(m[1]!)
+}
+for (const m of docs.matchAll(/<TerminalPreview\s+[^>]*story='([^']+)'/g)) {
+  embeddedStories.add(m[1]!)
+}
+
 for (const component of publicComponents) {
-  const page = `${docsDir}/components/${componentSlug(component)}.mdx`
-  if (!(await Bun.file(page).exists())) throw new Error(`missing component reference page ${page}`)
-}
-for (const story of stories) {
-  // Widget docs pages list their own story ids; pattern demos may only live in lookbook.
-  if (publicComponents.has(story.component) && !docs.includes(`\`${story.id}\``)) {
-    throw new Error(`missing docs for story ${story.id}`)
+  const pagePath = `${docsDir}/components/${componentSlug(component)}.mdx`
+  if (!(await Bun.file(pagePath).exists())) {
+    throw new Error(`missing component reference page ${pagePath}`)
   }
-  const preview = `${root}/docs/public/component-previews/${story.id.replaceAll('/', '-')}.svg`
-  if (!(await Bun.file(preview).exists()) || !(await Bun.file(preview).size)) {
-    // New stories may land before SVG harvest; require previews only for public widgets.
-    if (publicComponents.has(story.component)) {
-      throw new Error(`missing preview ${preview}`)
+  const body = await Bun.file(pagePath).text()
+  const previewCount = (body.match(/<TerminalPreview\b/g) ?? []).length
+  if (previewCount !== 1) {
+    throw new Error(
+      `${componentSlug(component)}.mdx must embed exactly one TerminalPreview (found ${previewCount})`,
+    )
+  }
+  // Stories table replaces multi-preview galleries.
+  if (!body.includes('| Story |') && !body.includes('| Story id |')) {
+    // Accept "## Stories" markdown table with Story column
+    if (!/\| *Story\b/i.test(body)) {
+      throw new Error(`${componentSlug(component)}.mdx missing Stories table`)
+    }
+  }
+  // Every lookbook story id for this component must appear in docs (table or text).
+  for (const story of stories) {
+    if (story.component !== component) continue
+    if (!body.includes(`\`${story.id}\``)) {
+      throw new Error(`missing docs for story ${story.id} on ${component} page`)
     }
   }
 }
-console.log(`catalog covers ${publicComponents.size} public components with ${stories.length} stories`)
+
+// Handbook / other docs: at most one TerminalPreview per mdx file (one focus).
+for (const [name, body] of pageBodies) {
+  if (name.startsWith('components/')) continue
+  const n = (body.match(/<TerminalPreview\b/g) ?? []).length
+  if (n > 1) {
+    throw new Error(`${name} embeds ${n} TerminalPreview surfaces; max one focus per page`)
+  }
+}
+
+// Frame packs required only for embedded stories (not entire catalog).
+for (const storyId of embeddedStories) {
+  if (!ids.has(storyId)) {
+    throw new Error(`TerminalPreview references unknown story ${storyId}`)
+  }
+  const slug = storyId.replaceAll('/', '-')
+  const pack = `${root}/docs/public/preview-frames/${slug}`
+  const manifestPath = `${pack}/manifest.json`
+  if (!(await Bun.file(manifestPath).exists())) {
+    throw new Error(`missing Ghostty frame pack ${manifestPath}`)
+  }
+  const manifest = JSON.parse(await Bun.file(manifestPath).text()) as {
+    sizes?: string[]
+    defaultSize?: string
+  }
+  const size = manifest.defaultSize ?? manifest.sizes?.[0] ?? '40x8'
+  const step0 = `${pack}/${size}/0.json`
+  if (!(await Bun.file(step0).exists()) || !(await Bun.file(step0).size)) {
+    throw new Error(`missing Ghostty frame ${step0}`)
+  }
+}
+
+console.log(
+  `catalog covers ${publicComponents.size} public components; ${embeddedStories.size} Ghostty embeds (one focus each); ${stories.length} stories documented`,
+)

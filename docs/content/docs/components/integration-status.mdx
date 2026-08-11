@@ -2,28 +2,12 @@
 title: IntegrationStatus
 description: 'MCP/plugin/extension health with provenance and egress language.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `integration-status/list`
-
-![IntegrationStatus — list](/component-previews/integration-status-list.svg)
-
-### `integration-status/panel`
-
-![IntegrationStatus — panel](/component-previews/integration-status-panel.svg)
-
-### `integration-status/badge`
-
-![IntegrationStatus — badge](/component-previews/integration-status-badge.svg)
-
-### `integration-status/narrow`
-
-![IntegrationStatus — narrow](/component-previews/integration-status-narrow.svg)
-
-### `integration-status/unicode`
-
-![IntegrationStatus — unicode](/component-previews/integration-status-unicode.svg)
+<TerminalPreview story="integration-status/list" interactive caption="IntegrationStatus · integration-status/list — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -57,8 +41,10 @@ match state.handle_key(key) {
 
 ## Stories
 
-- `integration-status/list`
-- `integration-status/panel`
-- `integration-status/badge`
-- `integration-status/narrow`
-- `integration-status/unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `integration-status/list` | IntegrationStatus list | **Primary (live preview)** |
+| `integration-status/panel` | IntegrationStatus panel | panel |
+| `integration-status/badge` | IntegrationStatus badge | badge |
+| `integration-status/narrow` | Narrow IntegrationStatus | narrow |
+| `integration-status/unicode` | Unicode IntegrationStatus | unicode |

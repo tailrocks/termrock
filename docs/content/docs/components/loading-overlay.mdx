@@ -2,44 +2,12 @@
 title: LoadingOverlay / BusyBoundary
 description: 'Regional loading that blocks only the affected area — modes, cancel, nested boundaries.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `loading-overlay/blocking`
-
-Blocking regional wash
-
-![LoadingOverlay — blocking](/component-previews/loading-overlay-blocking.svg)
-
-### `loading-overlay/cancellable`
-
-Cancellable operation
-
-![LoadingOverlay — cancellable](/component-previews/loading-overlay-cancellable.svg)
-
-### `loading-overlay/non-blocking`
-
-Non-blocking busy
-
-![LoadingOverlay — non-blocking](/component-previews/loading-overlay-non-blocking.svg)
-
-### `loading-overlay/optimistic`
-
-Optimistic update
-
-![LoadingOverlay — optimistic](/component-previews/loading-overlay-optimistic.svg)
-
-### `loading-overlay/stale`
-
-Stale content
-
-![LoadingOverlay — stale](/component-previews/loading-overlay-stale.svg)
-
-### `loading-overlay/nested`
-
-Nested BusyBoundary
-
-![BusyBoundary — nested](/component-previews/loading-overlay-nested.svg)
+<TerminalPreview story="loading-overlay/blocking" interactive caption="LoadingOverlay / BusyBoundary · loading-overlay/blocking — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -65,15 +33,6 @@ match busy.route_key(key) {
 }
 ```
 
-## Rules
-
-1. Block **regions**, not the whole app, when possible.
-2. Short ops (`expected_ms` &lt; 300ms): no heavy wash — light chrome only.
-3. Blocking wash waits for min-show (150ms) to avoid flash.
-4. Explain what is unavailable; preserve readable content for optimistic/stale.
-5. Cancellable: Esc / bottom-click cancel; host aborts work.
-6. Prefer `LoadingView` only when replacing the entire body; else LoadingOverlay.
-
 ## Interaction contract
 
 | Axis | Status |
@@ -87,4 +46,11 @@ match busy.route_key(key) {
 
 ## Stories
 
-- `loading-overlay/blocking`, `cancellable`, `non-blocking`, `optimistic`, `stale`, `nested`
+| Story | Title | Focus |
+|---|---|---|
+| `loading-overlay/blocking` | LoadingOverlay blocking | **Primary (live preview)** |
+| `loading-overlay/cancellable` | LoadingOverlay cancellable | cancellable |
+| `loading-overlay/non-blocking` | LoadingOverlay non-blocking | non blocking |
+| `loading-overlay/optimistic` | LoadingOverlay optimistic | optimistic |
+| `loading-overlay/stale` | LoadingOverlay stale | stale |
+| `loading-overlay/nested` | BusyBoundary nested | nested |

@@ -2,24 +2,12 @@
 title: Chip
 description: 'Selectable filter tokens with optional remove, error, and loading status.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `chip/filter`
-
-![Filter chips](/component-previews/chip-filter.svg)
-
-### `chip/error-loading`
-
-![Status](/component-previews/chip-error-loading.svg)
-
-### `token-strip/wrap`
-
-![Strip wrap](/component-previews/token-strip-wrap.svg)
-
-### `token-strip/overflow`
-
-![Overflow](/component-previews/token-strip-overflow.svg)
+<TerminalPreview story="chip/filter" interactive caption="Chip · chip/filter — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -38,14 +26,11 @@ let items = [
 let strip = TokenStrip::new(&items, &system).wrap().max_visible(6);
 ```
 
-## vs Tag / Badge
+## Stories
 
-| | Chip | Tag | Badge |
-|--|------|-----|-------|
-| Select | yes | no | optional |
-| Remove | optional | optional | no |
-| Use | filters | attachments | status labels |
-
-## Migration
-
-See `migrations/0119-v0.13.0-tag-chip.md`.
+| Story | Title | Focus |
+|---|---|---|
+| `chip/filter` | Chip filter | **Primary (live preview)** |
+| `chip/error-loading` | Chip error and loading | error loading |
+| `token-strip/wrap` | Token strip wrap | wrap |
+| `token-strip/overflow` | Token strip overflow | overflow |

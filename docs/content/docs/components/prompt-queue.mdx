@@ -2,28 +2,12 @@
 title: PromptQueue
 description: 'Editable queue of prompts waiting behind busy agent work.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `prompt-queue/compact`
-
-![PromptQueue — compact](/component-previews/prompt-queue-compact.svg)
-
-### `prompt-queue/expanded`
-
-![PromptQueue — expanded](/component-previews/prompt-queue-expanded.svg)
-
-### `prompt-queue/failed`
-
-![PromptQueue — failed](/component-previews/prompt-queue-failed.svg)
-
-### `prompt-queue/narrow`
-
-![PromptQueue — narrow](/component-previews/prompt-queue-narrow.svg)
-
-### `prompt-queue/unicode`
-
-![PromptQueue — unicode](/component-previews/prompt-queue-unicode.svg)
+<TerminalPreview story="prompt-queue/compact" interactive caption="PromptQueue · prompt-queue/compact — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -59,8 +43,10 @@ match state.handle_key(key) {
 
 ## Stories
 
-- `prompt-queue/compact`
-- `prompt-queue/expanded`
-- `prompt-queue/failed`
-- `prompt-queue/narrow`
-- `prompt-queue/unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `prompt-queue/compact` | PromptQueue compact | **Primary (live preview)** |
+| `prompt-queue/expanded` | PromptQueue expanded | expanded |
+| `prompt-queue/failed` | PromptQueue failed held | failed |
+| `prompt-queue/narrow` | Narrow PromptQueue | narrow |
+| `prompt-queue/unicode` | Unicode PromptQueue | unicode |

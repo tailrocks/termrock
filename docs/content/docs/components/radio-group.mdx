@@ -2,32 +2,12 @@
 title: RadioGroup
 description: 'Single-choice group — roving focus, FollowFocus policy, descriptions.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `radio-group/basic`
-
-![Basic](/component-previews/radio-group-basic.svg)
-
-### `radio-group/horizontal`
-
-![Horizontal](/component-previews/radio-group-horizontal.svg)
-
-### `radio-group/disabled`
-
-![Disabled](/component-previews/radio-group-disabled.svg)
-
-### `radio-group/badges`
-
-![Badges](/component-previews/radio-group-badges.svg)
-
-### `radio-group/narrow`
-
-![Narrow](/component-previews/radio-group-narrow.svg)
-
-### `radio-group/unicode`
-
-![Unicode](/component-previews/radio-group-unicode.svg)
+<TerminalPreview story="radio-group/basic" interactive caption="RadioGroup · radio-group/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -52,35 +32,13 @@ RadioGroup::new(&options, &system)
 state.set_policy(RadioSelectionPolicy::ActivateToSelect);
 ```
 
-## Selection policy
+## Stories
 
-| Policy | Movement | Activate |
-|--------|----------|----------|
-| **FollowFocus** (default) | Commits selection | Commits |
-| **ActivateToSelect** | Cursor only | Commits |
-
-Native desktop radios and Radix use FollowFocus. Prefer ActivateToSelect when
-browsing options must not change the value until confirmation.
-
-## Contract
-
-| Concern | Rule |
-|---------|------|
-| Keys | ↑↓←→ Home/End move; Space/Enter select; typeahead |
-| Disabled | Skipped; muted |
-| ASCII | `(*)` selected · `( )` idle |
-| Narrow | Horizontal → vertical under `stack_below` |
-| Outcomes | `Selected(Id)` · `CursorMoved { id }` |
-
-## Not for
-
-| Need | Use |
-|------|-----|
-| Toolbar sticky multi tools | ToggleGroup |
-| Content panels | Tabs |
-| Agent modes strip | ModeRibbon |
-| Boolean form field | Checkbox |
-
-## Migration
-
-See `migrations/0133-v0.13.0-radio-group.md`.
+| Story | Title | Focus |
+|---|---|---|
+| `radio-group/basic` | RadioGroup basic | **Primary (live preview)** |
+| `radio-group/horizontal` | RadioGroup horizontal | horizontal |
+| `radio-group/disabled` | RadioGroup disabled option | disabled |
+| `radio-group/badges` | RadioGroup badges | badges |
+| `radio-group/narrow` | Narrow RadioGroup | narrow |
+| `radio-group/unicode` | Unicode RadioGroup | unicode |

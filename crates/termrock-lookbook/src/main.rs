@@ -296,6 +296,46 @@ fn cmd_frame(
     Ok(())
 }
 
+fn public_widget_components_from_api() -> Result<std::collections::HashSet<String>, Box<dyn std::error::Error>>
+{
+    use std::collections::HashSet;
+    use std::fs;
+    // Prefer repo public-api SoT when run from workspace root.
+    let candidates = [
+        PathBuf::from("docs/api/public-api.txt"),
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/api/public-api.txt"),
+    ];
+    let mut text = None;
+    for path in candidates {
+        if let Ok(body) = fs::read_to_string(&path) {
+            text = Some(body);
+            break;
+        }
+    }
+    let Some(text) = text else {
+        return Ok(HashSet::new());
+    };
+    let mut set = HashSet::new();
+    for line in text.lines() {
+        // Match `for termrock::widgets::Foo` / `for &termrock::widgets::Foo`.
+        if let Some(idx) = line.find("termrock::widgets::") {
+            let rest = &line[idx + "termrock::widgets::".len()..];
+            let name: String = rest
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                .collect();
+            if name
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_uppercase())
+            {
+                set.insert(name);
+            }
+        }
+    }
+    Ok(set)
+}
+
 fn cmd_export_frames(
     mut args: impl Iterator<Item = std::ffi::OsString>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -304,9 +344,11 @@ fn cmd_export_frames(
         preferred_step_key, story_by_id,
     };
     use std::fs;
-    let usage = "usage: termrock-lookbook export-frames --out <dir> [--story id]*";
+    let usage =
+        "usage: termrock-lookbook export-frames --out <dir> [--story id]* | --all-public";
     let mut out_dir = None;
     let mut only: Vec<String> = Vec::new();
+    let mut all_public = false;
     while let Some(flag) = args.next() {
         if flag == OsStr::new("--out") {
             out_dir = args.next().map(PathBuf::from);
@@ -314,6 +356,8 @@ fn cmd_export_frames(
             if let Some(s) = args.next().and_then(|s| s.into_string().ok()) {
                 only.push(s);
             }
+        } else if flag == OsStr::new("--all-public") {
+            all_public = true;
         } else {
             return Err(usage.into());
         }
@@ -323,25 +367,49 @@ fn cmd_export_frames(
     };
     fs::create_dir_all(&out_dir)?;
     let theme = RolePalette::default();
-    let defaults = [
-        "list/selection",
-        "button/activation",
-        "agent-workbench/basic",
-        "tabs/status",
-        "tree/navigation",
-        "form/responsive",
-        "picker/basic",
-    ];
-    let ids: Vec<String> = if only.is_empty() {
-        defaults.iter().map(|s| (*s).to_string()).collect()
-    } else {
+    // Default: every public-widget lookbook story (docs Ghostty SoT). Override with --story.
+    let ids: Vec<String> = if !only.is_empty() {
         only
+    } else {
+        let public = public_widget_components_from_api()?;
+        let mut from_catalog: Vec<String> = stories()
+            .into_iter()
+            .filter(|s| {
+                // --all-public: every story whose component is in public-api.
+                // Default (no --story): same — docs Ghostty SoT is the full public set.
+                public.is_empty() || public.contains(s.component)
+            })
+            .map(|s| s.id.to_string())
+            .collect();
+        // Always include composite tour pack id used by handbook.
+        if !from_catalog.iter().any(|id| id == "agent-workbench/basic") {
+            from_catalog.push("agent-workbench/basic".into());
+        }
+        from_catalog.sort();
+        from_catalog.dedup();
+        if from_catalog.is_empty() {
+            return Err(
+                "export-frames: no stories resolved (pass --story or run from repo root with docs/api/public-api.txt)"
+                    .into(),
+            );
+        }
+        let _ = all_public;
+        from_catalog
     };
     use frame::{
         CELL_HEIGHT_PX, CELL_WIDTH_PX, RESPONSIVE_STORY_SIZES, pick_size_key,
         story_size_for_css_host,
     };
-    for id in ids {
+    // Compact JSON — docs host does not need pretty-print (large multi-story export).
+    fn write_frame_json(
+        path: PathBuf,
+        value: &impl serde::Serialize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        std::fs::write(path, serde_json::to_string(value)?)?;
+        Ok(())
+    }
+    let total = ids.len();
+    for (index, id) in ids.into_iter().enumerate() {
         let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
         let tour = composite_tour_stories(&id);
         let step_key = preferred_step_key(story);
@@ -371,23 +439,16 @@ fn cmd_export_frames(
                     let mut f = f;
                     f.interactive = true;
                     f.story_id = id.clone();
-                    fs::write(
-                        size_dir.join(format!("{step}.json")),
-                        serde_json::to_string_pretty(&f)?,
-                    )?;
+                    write_frame_json(size_dir.join(format!("{step}.json")), &f)?;
                 }
             } else {
                 // Prefer interactor paint for interactive stories so step 0 matches step graph.
-                let base = if let Some(key) = step_key {
-                    let _ = key;
+                let base = if step_key.is_some() {
                     paint_story_after_keys(story, &theme, Some(sc), Some(sr), &[])
                 } else {
                     paint_story_frame(story, &theme, Some(sc), Some(sr))
                 };
-                fs::write(
-                    size_dir.join("0.json"),
-                    serde_json::to_string_pretty(&base)?,
-                )?;
+                write_frame_json(size_dir.join("0.json"), &base)?;
                 if let Some(key) = step_key {
                     for step in 1..=5 {
                         let keys: Vec<PreviewKey> = (0..step)
@@ -400,10 +461,7 @@ fn cmd_export_frames(
                             })
                             .collect();
                         let f = paint_story_after_keys(story, &theme, Some(sc), Some(sr), &keys);
-                        fs::write(
-                            size_dir.join(format!("{step}.json")),
-                            serde_json::to_string_pretty(&f)?,
-                        )?;
+                        write_frame_json(size_dir.join(format!("{step}.json")), &f)?;
                     }
                 }
             }
@@ -437,10 +495,15 @@ fn cmd_export_frames(
             "stepKey": step_key,
             "tour": tour.map(|t| t.to_vec()),
         });
-        fs::write(
-            pack.join("manifest.json"),
-            serde_json::to_string_pretty(&manifest)?,
-        )?;
+        write_frame_json(pack.join("manifest.json"), &manifest)?;
+        eprintln!(
+            "[{}/{}] {} (interactive={} steps={})",
+            index + 1,
+            total,
+            pack.display(),
+            interactive,
+            steps
+        );
         println!("{}", pack.display());
     }
     Ok(())

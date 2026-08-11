@@ -26,7 +26,9 @@ lookbook story + interactor  ──paint──► ratatui Buffer
 | Host | `docs/src/components/TerminalPreview.tsx` | Ghostty chrome + canvas paint + input |
 | Assets | `docs/public/preview-frames/*` | Deterministic step graphs |
 
-SVG under `docs/public/component-previews/` remains the catalog snapshot SoT.
+**Docs catalog SoT is Ghostty frame packs only** (`docs/public/preview-frames/`).
+Component MDX must not embed SVG or `component-previews/`. Lookbook `render`
+SVG remains an optional offline tooling path, not the documentation surface.
 
 ## Export
 
@@ -34,6 +36,12 @@ SVG under `docs/public/component-previews/` remains the catalog snapshot SoT.
 cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames
 cargo run -p termrock-lookbook -- frame --story list/selection --keys ArrowDown
 ```
+
+## Docs page shape (one focus)
+
+Each component reference page embeds **exactly one** `TerminalPreview` for the
+primary lookbook story. Other stories appear in a **Stories** markdown table.
+Interactivity (keys / click / size remap) replaces the old multi-SVG gallery.
 
 ## Embed
 

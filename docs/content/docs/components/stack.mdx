@@ -2,40 +2,12 @@
 title: Stack / Inline
 description: 'Stateless vertical and horizontal packing with FlexSize, gap, align, justify, wrap, overflow policy, and responsive direction.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `stack/vertical`
-
-![Stack vertical](/component-previews/stack-vertical.svg)
-
-### `stack/inline`
-
-![Inline](/component-previews/stack-inline.svg)
-
-### `stack/wrap`
-
-![Wrap](/component-previews/stack-wrap.svg)
-
-### `stack/responsive`
-
-![Responsive](/component-previews/stack-responsive.svg)
-
-### `stack/narrow`
-
-![Narrow overflow (shrink-from-end)](/component-previews/stack-narrow.svg)
-
-### `stack/overflow-clip`
-
-![Clip-tail overflow](/component-previews/stack-overflow-clip.svg)
-
-### `stack/justify`
-
-![Space-around](/component-previews/stack-justify.svg)
-
-## Anatomy
-
-`content` (padded) · `children[]` (stable index) · `overflowed` · `content_main` · `direction`
+<TerminalPreview story="stack/vertical" interactive caption="Stack / Inline · stack/vertical — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -73,45 +45,14 @@ let row = Inline::new()
     .layout_with_cross(area, &[FlexSize::Fixed(8)], &[1]);
 ```
 
-## FlexSize
+## Stories
 
-| Spec | Main-axis claim |
-|------|-----------------|
-| `Fixed(n)` | Exact `n` (clamped under overflow) |
-| `Weight(w)` / `fill()` | Share residual after fixed/preferred |
-| `Preferred { min, preferred, max }` | Ideal clamp; may grow to max when free residual |
-| `Collapsed` | Zero main; keeps stable index |
-
-## Overflow
-
-| Policy | Behavior |
-|--------|----------|
-| `ShrinkFromEnd` (default) | From the end: `min(claim, remaining)` |
-| `ClipTail` | Keep head; tail → 0 |
-| `EqualShare` | Peel cells from the end until fit |
-
-`StackLayout::overflowed` is set when any fixed/preferred child falls below `min_main`.
-
-## Hits & semantics
-
-```rust
-let hits = layout.hit_regions(); // Vec<HitRegion<usize>>
-layout.register_semantic_group(&mut scene, "g", "stack", |i| format!("c{i}"));
-```
-
-## vs WorkSurface / Grid
-
-Use **Stack/Inline** for component-local anatomy (card body, callout lines, chip rows).  
-Use **WorkSurface/Workspace** for named multi-pane app chrome.  
-Use **Grid** for 2D tracks/spans.
-
-## Common mistakes
-
-- Nesting Stack for padding only — use `padding()` once
-- Using WorkSurface for two-line title/body — prefer Stack
-- Ignoring `overflowed` on tiny terminals
-- Expecting retained flex tree — layout is pure geometry per frame
-
-## Migration
-
-See `migrations/0104-v0.13.0-stack-inline-premium.md` (extends 0097).
+| Story | Title | Focus |
+|---|---|---|
+| `stack/vertical` | Stack vertical | **Primary (live preview)** |
+| `stack/inline` | Inline horizontal | inline |
+| `stack/wrap` | Inline wrap | wrap |
+| `stack/responsive` | Stack responsive direction | responsive |
+| `stack/narrow` | Stack narrow overflow | narrow |
+| `stack/overflow-clip` | Stack overflow clip-tail | overflow clip |
+| `stack/justify` | Inline space-around | justify |

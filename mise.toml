@@ -47,7 +47,7 @@ cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources
 cargo shear
 cargo package -p termrock --locked --allow-dirty
-cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames
 (cd docs && bun install --frozen-lockfile && bun run build)
 """
 
