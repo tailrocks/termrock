@@ -28079,6 +28079,54 @@ pub unsafe fn termrock::style::Appearance::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::Appearance
 pub fn termrock::style::Appearance::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::Appearance
+#[non_exhaustive] pub enum termrock::style::BorderShape
+pub termrock::style::BorderShape::Rounded
+pub termrock::style::BorderShape::Square
+impl core::clone::Clone for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::clone(&self) -> termrock::style::BorderShape
+impl core::cmp::Eq for termrock::style::BorderShape
+impl core::cmp::PartialEq for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::eq(&self, &termrock::style::BorderShape) -> bool
+impl core::default::Default for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::default() -> termrock::style::BorderShape
+impl core::fmt::Debug for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::BorderShape
+impl core::marker::StructuralPartialEq for termrock::style::BorderShape
+impl core::marker::Freeze for termrock::style::BorderShape
+impl core::marker::Send for termrock::style::BorderShape
+impl core::marker::Sync for termrock::style::BorderShape
+impl core::marker::Unpin for termrock::style::BorderShape
+impl core::marker::UnsafeUnpin for termrock::style::BorderShape
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::BorderShape
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::BorderShape
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::BorderShape where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::BorderShape::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::BorderShape where U: core::convert::From<T>
+pub fn termrock::style::BorderShape::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::BorderShape where U: core::convert::Into<T>
+pub type termrock::style::BorderShape::Error = core::convert::Infallible
+pub fn termrock::style::BorderShape::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::BorderShape where U: core::convert::TryFrom<T>
+pub type termrock::style::BorderShape::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::BorderShape::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::BorderShape where T: core::clone::Clone
+pub type termrock::style::BorderShape::Owned = T
+pub fn termrock::style::BorderShape::clone_into(&self, &mut T)
+pub fn termrock::style::BorderShape::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::BorderShape where T: 'static + ?core::marker::Sized
+pub fn termrock::style::BorderShape::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::BorderShape where T: ?core::marker::Sized
+pub fn termrock::style::BorderShape::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::BorderShape where T: ?core::marker::Sized
+pub fn termrock::style::BorderShape::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::BorderShape where T: core::clone::Clone
+pub unsafe fn termrock::style::BorderShape::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::BorderShape
+pub fn termrock::style::BorderShape::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::BorderShape
 #[non_exhaustive] pub enum termrock::style::ButtonRecipeVariant
 pub termrock::style::ButtonRecipeVariant::Destructive
 pub termrock::style::ButtonRecipeVariant::Link
@@ -29171,6 +29219,7 @@ impl<T> core::convert::From<T> for termrock::style::CapabilityPreviewHost
 pub fn termrock::style::CapabilityPreviewHost::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::CapabilityPreviewHost
 pub struct termrock::style::DesignSystem
+pub termrock::style::DesignSystem::border_shape: termrock::style::BorderShape
 pub termrock::style::DesignSystem::breakpoints: termrock::style::BreakpointScale
 pub termrock::style::DesignSystem::capability: termrock::style::ColorCapability
 pub termrock::style::DesignSystem::density: termrock::style::Density
@@ -29183,6 +29232,8 @@ impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::adaptive() -> Self
 pub fn termrock::style::DesignSystem::ansi() -> Self
 pub const fn termrock::style::DesignSystem::ascii(self) -> Self
+pub const fn termrock::style::DesignSystem::border_set(&self) -> ratatui_core::symbols::border::Set<'static>
+pub const fn termrock::style::DesignSystem::border_shape(self, termrock::style::BorderShape) -> Self
 pub const fn termrock::style::DesignSystem::breakpoints(self, termrock::style::BreakpointScale) -> Self
 pub fn termrock::style::DesignSystem::button_recipe(&self, termrock::style::ButtonRecipeVariant, termrock::style::ControlState) -> termrock::style::ButtonRecipe
 pub const fn termrock::style::DesignSystem::capability(self, termrock::style::ColorCapability) -> Self

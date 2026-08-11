@@ -46,8 +46,8 @@ pub use preview_host::{
 };
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
-    BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem, Elevation,
-    GlyphSet, InputRecipe, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
+    BorderShape, BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem,
+    Elevation, GlyphSet, InputRecipe, ListRowRecipe, ListRowVisualState, PanelChrome, PanelRecipe,
     SelectionChrome, SpacingScale, ThemePackage,
 };
 

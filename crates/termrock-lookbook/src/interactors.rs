@@ -10,7 +10,7 @@ use std::num::NonZeroU16;
 use termrock::{
     input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
-    style::{ColorCapability, Density, DesignSystem, RolePalette},
+    style::{BorderShape, ColorCapability, Density, DesignSystem, RolePalette},
     widgets::{
         Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
@@ -87,6 +87,74 @@ pub(crate) trait StoryInteraction {
 pub(crate) struct StaticStory {
     pub(crate) render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
     pub(crate) theme: RolePalette,
+}
+
+pub(crate) struct PanelInteractor {
+    render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
+    knobs: Vec<Knob>,
+    theme: RolePalette,
+}
+
+impl PanelInteractor {
+    pub(crate) fn new(render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem)) -> Self {
+        Self {
+            render_fn,
+            knobs: vec![Knob {
+                id: "border-shape",
+                label: "Border shape",
+                value: KnobValue::Choice(0),
+                choices: &["Square", "Rounded"],
+            }],
+            theme: RolePalette::default(),
+        }
+    }
+}
+
+impl StoryInteraction for PanelInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let shape = if matches!(self.knobs[0].value, KnobValue::Choice(1)) {
+            BorderShape::Rounded
+        } else {
+            BorderShape::Square
+        };
+        (self.render_fn)(
+            frame,
+            area,
+            &DesignSystem::from_palette(self.theme.clone()).border_shape(shape),
+        );
+    }
+
+    fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+
+    fn set_theme(&mut self, theme: RolePalette) {
+        self.theme = theme;
+    }
+
+    fn knobs(&self) -> &[Knob] {
+        &self.knobs
+    }
+
+    fn handle_knob_key(&mut self, selected: usize, key: KeyEvent) -> bool {
+        let Some(Knob {
+            value: KnobValue::Choice(index),
+            choices,
+            ..
+        }) = self.knobs.get_mut(selected)
+        else {
+            return false;
+        };
+        if !matches!(key.code, KeyCode::Left | KeyCode::Right) {
+            return false;
+        }
+        *index = usize::from(key.code == KeyCode::Right) % choices.len();
+        true
+    }
 }
 
 impl StoryInteraction for StaticStory {

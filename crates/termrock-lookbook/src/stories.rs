@@ -127,7 +127,7 @@ use termrock::{
 
 use crate::interactors::{
     ChoiceDialogInteractor, CommandPaletteInteractor, DesignInspectorInteractor, FormInteractor,
-    ListInteractor, LogPaneInteractor, PickerInteractor, PromptComposerInteractor,
+    ListInteractor, LogPaneInteractor, PanelInteractor, PickerInteractor, PromptComposerInteractor,
     SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor, TabsInteractor,
     TextAreaInteractor, ThemePickerInteractor, ToastInteractor, TranscriptInteractor,
     TreeInteractor, VirtualGridInteractor,
@@ -189,6 +189,10 @@ fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
         render_fn: render,
         theme: RolePalette::default(),
     })
+}
+
+fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PanelInteractor::new(render))
 }
 
 fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -575,7 +579,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             7,
             panel,
-        ),
+        )
+        .with_interactor(panel_interactor),
         Story::new(
             "panel/variants",
             "Panel variants",

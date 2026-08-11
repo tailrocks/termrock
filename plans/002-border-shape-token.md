@@ -70,6 +70,10 @@ or glyph).
 - `crates/termrock/src/widgets/surface.rs` (border glyphs from token)
 - `crates/termrock/src/widgets/dialog.rs` (only the `panel.block()` path if it sets borders independently — it reuses `Panel`, so likely no change)
 - `crates/termrock-lookbook/src/knobs.rs` + `stories.rs` (add a border-shape knob to the panel story)
+- `crates/termrock-lookbook/src/interactors.rs` (panel story's live knob owner)
+- `docs/api/public-api.txt` (generated public inventory required by the full gate)
+- `docs/public/preview-frames/` (generated packs affected by shared ASCII border resolution)
+- `artifacts/visual-qa/plan-002/` (required browser screenshots and review record)
 - `migrations/0262-*.md` + `MIGRATING.md`
 - `plans/README.md`
 
@@ -156,12 +160,19 @@ Two new tests (Step 3) in `panel.rs`'s existing test module (model after
 
 ## Done criteria
 
-- [ ] `mise run check` and `mise run gate` exit 0
-- [ ] `grep -n "BorderShape" crates/termrock/src/style/tokens.rs` → enum + field + builder
-- [ ] New tests pass; Square remains the default (`DesignSystem::default().border_shape == BorderShape::Square` asserted in a test)
-- [ ] `migrations/0262-*.md` exists, linked from `MIGRATING.md`
-- [ ] No out-of-scope files modified (`git status`)
-- [ ] `plans/README.md` updated
+- [x] `mise run check` and `mise run gate` exit 0
+- [x] `grep -n "BorderShape" crates/termrock/src/style/tokens.rs` → enum + field + builder
+- [x] New tests pass; Square remains the default (`DesignSystem::default().border_shape == BorderShape::Square` asserted in a test)
+- [x] `migrations/0262-*.md` exists, linked from `MIGRATING.md`
+- [x] No out-of-scope files modified (`git status`)
+- [x] `plans/README.md` updated
+
+## Visual QA
+
+- Panel / bordered Surface: **pass** — square-default hierarchy, rhythm,
+  layering, focus color, state distinction, and responsive contraction passed
+  the designer review; see
+  [`artifacts/visual-qa/plan-002/README.md`](../artifacts/visual-qa/plan-002/README.md).
 
 ## STOP conditions
 
@@ -178,3 +189,27 @@ Two new tests (Step 3) in `panel.rs`'s existing test module (model after
   reads corner glyphs from anywhere else.
 - Future `BorderShape` variants (e.g. `Heavy`) are intentionally excluded:
   weight must never communicate focus or hierarchy (repo law).
+
+## Amendments
+
+- 2026-08-12: Reframed the Surface wiring from hand-selected corner glyphs to
+  its live Ratatui `Block` border path. Options were to skip Surface (leaves
+  two chrome authorities inconsistent), hand-paint corners (duplicates
+  Ratatui), or expose one `DesignSystem::border_set()` resolver consumed by
+  Panel and Surface. The shared resolver best matches the goal, Ratatui-first
+  law, ASCII fallback, and smallest coherent blast radius.
+- 2026-08-12: Added `interactors.rs`, generated API/frame output, and visual-QA
+  artifacts to Scope. The live lookbook architecture owns mutable knobs in a
+  story interactor, while the original Scope named only knob data and story
+  registration. The added files are the minimum path to the required live
+  Square/Rounded control and mandatory browser proof.
+- 2026-08-12: Widened generated-frame Scope from `panel-focused` to all
+  affected generated packs. Live code had no claimed pre-existing ASCII Panel path;
+  enforcing the plan's explicit `+/-/|` test correctly updates every story
+  composed from Panel/Surface under ASCII capability. Options were to weaken
+  the test (contradicts accessibility intent), keep Unicode in ASCII mode
+  (violates glyph policy), or accept deterministic generated cascade. The
+  cascade is the only cross-surface-consistent resolution and contains no
+  additional handwritten widget change. The repository tracks only its
+  primary pack subset; the full gate's other reproducible packs remain
+  untracked build output.

@@ -30,7 +30,7 @@ starting, honor its STOP conditions, and update your row when done.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001 | Fill the surface ladder and expand the semantic role system | P1 | L | — | DONE |
-| 002 | Border shape theme token (`BorderShape`) | P2 | M | 001 | TODO |
+| 002 | Border shape theme token (`BorderShape`) | P2 | M | 001 | DONE |
 | 003 | Activate the spacing system (padding, gaps, dialog rhythm) | P1 | L | 001 | TODO |
 | 004 | Enforce recipes — chips, badges, tinted selection, meters | P1 | L | 001, 003 | TODO |
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | TODO |
@@ -60,6 +60,12 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 001: added generated `docs/api/public-api.txt`; the full
   gate proved the plan omitted the repository-mandated inventory refresh for
   its public `Role` additions.
+- 2026-08-12 — Plan 002: wired Surface through the same Ratatui border-set
+  resolver as Panel and added the live interactor/API/frame/QA files omitted
+  by the original Scope.
+- 2026-08-12 — Plan 002: widened frame Scope to every affected ASCII-capability
+  cascade; live Panel had no claimed ASCII border path, so the required
+  `+/-/|` contract legitimately updates composed previews repository-wide.
 
 ## Dependency notes
 

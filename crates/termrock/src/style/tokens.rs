@@ -139,6 +139,17 @@ pub enum SelectionChrome {
     Tint,
 }
 
+/// Corner-glyph family for single-line borders. Focus stays color-only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum BorderShape {
+    /// Square corners `┌┐└┘` (phosphor identity default).
+    #[default]
+    Square,
+    /// Rounded corners `╭╮╰╯` for alternate product themes.
+    Rounded,
+}
+
 /// Cell-scale spacing resolved from density (and optional overrides).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SpacingScale {
@@ -403,6 +414,8 @@ pub struct DesignSystem {
     pub spacing: SpacingScale,
     /// Default list/menu selection chrome.
     pub selection: SelectionChrome,
+    /// Single-line border corner family.
+    pub border_shape: BorderShape,
     /// Color depth used for quantize-at-edge.
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
@@ -483,6 +496,7 @@ impl DesignSystem {
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
+            border_shape: BorderShape::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
         }
@@ -527,6 +541,35 @@ impl DesignSystem {
     pub const fn selection(mut self, selection: SelectionChrome) -> Self {
         self.selection = selection;
         self
+    }
+
+    /// Overrides the single-line border corner family.
+    #[must_use]
+    pub const fn border_shape(mut self, shape: BorderShape) -> Self {
+        self.border_shape = shape;
+        self
+    }
+
+    /// Resolves the border symbols for shape and glyph capability.
+    #[must_use]
+    pub const fn border_set(&self) -> ratatui_core::symbols::border::Set<'static> {
+        use ratatui_core::symbols::border::{PLAIN, ROUNDED, Set};
+        if matches!(self.glyphs, GlyphSet::Ascii) {
+            Set {
+                top_left: "+",
+                top_right: "+",
+                bottom_left: "+",
+                bottom_right: "+",
+                vertical_left: "|",
+                vertical_right: "|",
+                horizontal_top: "-",
+                horizontal_bottom: "-",
+            }
+        } else if matches!(self.border_shape, BorderShape::Rounded) {
+            ROUNDED
+        } else {
+            PLAIN
+        }
     }
 
     /// Overrides color capability (call before quantize).

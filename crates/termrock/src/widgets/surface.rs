@@ -343,7 +343,10 @@ impl<'a> Surface<'a> {
             fill_rect(buffer, area, fill);
         }
         if let Some(border) = plan.border {
-            Block::bordered().border_style(border).render(area, buffer);
+            Block::bordered()
+                .border_style(border)
+                .border_set(self.system.border_set())
+                .render(area, buffer);
             // Re-fill content interior so border paint does not leave title gaps;
             // children own content cells.
             if let Some(fill) = plan.fill
