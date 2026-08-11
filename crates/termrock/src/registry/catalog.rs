@@ -1197,7 +1197,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             namespace: "termrock".into(),
             version: "0.13.0".into(),
             files: vec![file(
-                "crates/termrock/src/widgets/connection_manager.rs",
+                "crates/termrock/src/patterns/connection_manager.rs",
                 ContractFileRole::Primary,
             )],
             dependencies: {
@@ -1274,7 +1274,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             ],
             tests: vec!["patterns::connection_manager".into()],
             migration: Some("migrations/0239-v0.13.0-connection-manager.md".into()),
-            provenance: prov("crates/termrock/src/widgets/connection_manager.rs"),
+            provenance: prov("crates/termrock/src/patterns/connection_manager.rs"),
             source_hash: None,
             complete: true,
         },
