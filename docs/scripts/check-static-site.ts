@@ -39,12 +39,11 @@ for (const [component, storyId] of componentChecks) {
 }
 
 const components = await Bun.file(`${output}/docs/components/index.html`).text()
-const siteBase = Bun.env['GITHUB_ACTIONS'] === 'true' ? '/termrock' : ''
-if (!components.includes(`href="${siteBase}/docs/components/action-bar"`)) {
-  throw new Error('components overview link does not include the configured site base')
+if (!components.includes('href="/docs/components/action-bar"')) {
+  throw new Error('components overview link does not use the custom-domain root')
 }
-if (components.includes('/termrock/termrock/')) {
-  throw new Error('Pages base path was applied twice')
+if (components.includes('/termrock/')) {
+  throw new Error('legacy GitHub project Pages base path remains in static output')
 }
 
 console.log('static docs smoke: shell + core component reference pages OK')

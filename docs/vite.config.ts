@@ -4,10 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import mdx from 'fumadocs-mdx/vite'
 import { defineConfig } from 'vite'
 
-const pagesBuild = Bun.env['GITHUB_ACTIONS'] === 'true'
-
 export default defineConfig({
-  base: pagesBuild ? '/termrock/' : '/',
+  base: '/',
   plugins: [
     mdx(),
     tailwindcss(),
