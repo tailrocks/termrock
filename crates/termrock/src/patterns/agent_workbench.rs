@@ -25,6 +25,8 @@ use ratatui_core::{
 };
 
 use crate::{
+    // nav sample seed
+
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
         InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
@@ -1761,4 +1763,26 @@ use crate::patterns::{
             assert!(r.width >= 1 && r.height >= 1);
         }
     }
+}
+
+/// Agent workbench nav sample.
+#[must_use]
+pub fn example_agent_workbench_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
+    use crate::widgets::{NavItem, NavItemStatus};
+
+    vec![
+        NavItem::new("chat", "Chat")
+            .icon("💬")
+            .command("wb.chat"),
+        NavItem::new("plan", "Plan")
+            .icon("📋")
+            .status(NavItemStatus::Running)
+            .command("wb.plan"),
+        NavItem::new("files", "Files").icon("📁").command("wb.files"),
+        NavItem::separator("sep1"),
+        NavItem::new("sessions", "Sessions")
+            .badge("2")
+            .command("wb.sessions"),
+        NavItem::new("settings", "Settings").command("wb.settings"),
+    ]
 }

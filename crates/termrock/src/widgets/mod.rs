@@ -511,8 +511,7 @@ pub use pagination::{
 pub use sidebar::{
     SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID, SIDEBAR_RAIL_MAX_WIDTH, NavItem,
     NavItemKind, NavItemStatus, NavigationList, NavigationListOutcome, NavigationListState, Sidebar,
-    SidebarItem, SidebarOutcome, SidebarPresentation, SidebarState, example_agent_workbench_nav,
-    example_database_nav, example_sectioned_sidebar_nav, example_settings_nav, filter_nav_collapsed,
+    SidebarItem, SidebarOutcome, SidebarPresentation, SidebarState, example_sectioned_sidebar_nav, example_settings_nav, filter_nav_collapsed,
     sidebar_presentation_for_width,
 };
 pub use card::{Card, CardParts};
@@ -585,7 +584,7 @@ pub use model_mode_selectors::{
     ModelCapability, ModelOption, ModelSelector, ModelSelectorOutcome, ModelSelectorPresentation,
     ModelSelectorState, ReasoningEffort, default_agent_modes, example_model_catalog,
     filter_model_options, mode_to_indicator, model_to_indicator, models_to_select_options,
-    modes_to_workbench,
+    modes_to_ribbon,
 };
 pub use model_mode_selectors::bench as model_mode_selectors_bench;
 pub use message_thread::{
@@ -674,7 +673,7 @@ pub use split_pane::{
     SplitSide,
 };
 pub use resizable_panel_group::{
-    dashboard_panels, workbench_panels, PanelDock, PanelId, PanelLayoutPreset, PanelGroupRecipe,
+    main_end_panels, three_pane_panels, PanelDock, PanelId, PanelLayoutPreset, PanelGroupRecipe,
     PanelRect, ResizablePanelGroup, ResizablePanelGroupLayout, ResizablePanelGroupState,
     ResizablePanelOutcome, ResizablePanelSpec,
 };

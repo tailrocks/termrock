@@ -608,7 +608,7 @@ pub fn default_agent_modes() -> Vec<AgentModeOption> {
 
 /// Project modes to ModeRibbon rows.
 #[must_use]
-pub fn modes_to_workbench<'a>(
+pub fn modes_to_ribbon<'a>(
     modes: &'a [AgentModeOption],
     selected_id: Option<&str>,
 ) -> Vec<WorkbenchMode<'a, &'a str>> {
@@ -1936,7 +1936,7 @@ mod tests {
     #[test]
     fn workbench_projection() {
         let modes = default_agent_modes();
-        let rows = modes_to_workbench(&modes, Some("edit"));
+        let rows = modes_to_ribbon(&modes, Some("edit"));
         assert!(rows.iter().any(|r| r.active && r.id == "edit"));
     }
 

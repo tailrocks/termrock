@@ -1507,37 +1507,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Sidebar<'_, Id> {
 
 // ── Example projectors (Studio stories) ─────────────────────────────────────
 
-/// Database explorer sample projection.
-#[must_use]
-pub fn example_database_nav() -> Vec<NavItem<&'static str>> {
-    vec![
-        NavItem::section("conn", "Connections").icon("⬡"),
-        NavItem::new("prod", "production")
-            .depth(1)
-            .icon("●")
-            .status(NavItemStatus::Success)
-            .command("nav.db.prod"),
-        NavItem::new("staging", "staging")
-            .depth(1)
-            .icon("○")
-            .command("nav.db.staging"),
-        NavItem::section("schema", "Schema"),
-        NavItem::group("tables", "Tables")
-            .depth(1)
-            .expanded(true)
-            .has_children(true),
-        NavItem::new("users", "users")
-            .depth(2)
-            .badge("12")
-            .command("nav.db.users"),
-        NavItem::new("orders", "orders")
-            .depth(2)
-            .command("nav.db.orders"),
-        NavItem::new("disabled", "legacy")
-            .depth(2)
-            .enabled(false),
-    ]
-}
+// `example_database_nav` / `example_agent_workbench_nav` live in termrock::patterns.
 
 /// Settings nav sample.
 #[must_use]
@@ -1552,26 +1522,6 @@ pub fn example_settings_nav() -> Vec<NavItem<&'static str>> {
         NavItem::new("models", "Models").depth(1).badge("3"),
         NavItem::new("tools", "Tools").depth(1).status(NavItemStatus::Dirty),
         NavItem::new("keys", "API keys").depth(1),
-    ]
-}
-
-/// Agent workbench nav sample.
-#[must_use]
-pub fn example_agent_workbench_nav() -> Vec<NavItem<&'static str>> {
-    vec![
-        NavItem::new("chat", "Chat")
-            .icon("💬")
-            .command("wb.chat"),
-        NavItem::new("plan", "Plan")
-            .icon("📋")
-            .status(NavItemStatus::Running)
-            .command("wb.plan"),
-        NavItem::new("files", "Files").icon("📁").command("wb.files"),
-        NavItem::separator("sep1"),
-        NavItem::new("sessions", "Sessions")
-            .badge("2")
-            .command("wb.sessions"),
-        NavItem::new("settings", "Settings").command("wb.settings"),
     ]
 }
 
@@ -1990,9 +1940,8 @@ mod tests {
 
     #[test]
     fn examples_nonempty() {
-        assert!(!example_database_nav().is_empty());
         assert!(!example_settings_nav().is_empty());
-        assert!(!example_agent_workbench_nav().is_empty());
+        assert!(!example_sectioned_sidebar_nav().is_empty());
         assert!(!example_sectioned_sidebar_nav().is_empty());
         assert!(
             filter_nav_collapsed(&example_sectioned_sidebar_nav()).len()
@@ -2002,7 +1951,7 @@ mod tests {
 
     #[test]
     fn fuzz_keys() {
-        let items = example_agent_workbench_nav();
+        let items = example_sectioned_sidebar_nav();
         let mut state = SidebarState::new(Some("chat"));
         state.set_focused(true);
         let keys = [
@@ -2024,7 +1973,7 @@ mod tests {
     #[test]
     fn paint_hot_path() {
         let system = DesignSystem::default();
-        let items = example_database_nav();
+        let items = example_sectioned_sidebar_nav();
         let mut state = SidebarState::new(Some("users"));
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 16);

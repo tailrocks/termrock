@@ -58,7 +58,7 @@ pub use agent_workbench::{
     WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
     dialog_modal_rect, diff_modal_rect, empty_task_row, example_workbench_activities,
     example_workbench_tasks, permission_modal_rect, register_workbench_scene,
-    render_agent_workbench, sync_workbench_scene,
+    render_agent_workbench, sync_workbench_scene, example_agent_workbench_nav,
 };
 pub use database_workbench::{
     database_workbench_layout, database_workbench_layout_density, example_db_commands,
@@ -67,7 +67,7 @@ pub use database_workbench::{
     example_schema_entries, example_workbench_connections, large_result_row_data,
     render_database_workbench, DatabaseConnGate, DatabaseQueryTab, DatabaseRunBlockReason,
     DatabaseTxStatus, DatabaseWorkbenchDensity, DatabaseWorkbenchOutcome, DatabaseWorkbenchPane,
-    DatabaseWorkbenchState, DatabaseWorkbenchSurfaces,
+    DatabaseWorkbenchState, DatabaseWorkbenchSurfaces, example_database_nav,
 };
 pub use database_workbench::bench as database_workbench_bench;
 pub use git_workbench::{

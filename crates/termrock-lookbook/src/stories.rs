@@ -415,8 +415,6 @@ use termrock::{
         Sidebar,
         SidebarPresentation,
         SidebarState,
-        example_agent_workbench_nav,
-        example_database_nav,
         example_settings_nav,
         TreeNavigation,
         TreeNavigationState,
@@ -520,6 +518,8 @@ use termrock::{
         WorkbenchMode,
     },
     patterns::{
+        example_agent_workbench_nav,
+        example_database_nav,
         ProcessTable,
         ProcessTableState,
         ProcessRow,
@@ -12225,12 +12225,12 @@ fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        workbench_panels,
+        three_pane_panels,
         Panel,
         ResizablePanelGroup,
         ResizablePanelGroupState,
     };
-    let panels = workbench_panels();
+    let panels = three_pane_panels();
     let group = ResizablePanelGroup::new(&panels, system).workbench();
     let mut state = ResizablePanelGroupState::new();
     let layout = group.layout(area, &mut state);
@@ -12247,12 +12247,12 @@ fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        dashboard_panels,
+        main_end_panels,
         Panel,
         ResizablePanelGroup,
         ResizablePanelGroupState,
     };
-    let panels = dashboard_panels();
+    let panels = main_end_panels();
     let group = ResizablePanelGroup::new(&panels, system).dashboard();
     let mut state = ResizablePanelGroupState::new();
     let layout = group.layout(area, &mut state);
@@ -12269,12 +12269,12 @@ fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn resizable_drawers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        workbench_panels,
+        three_pane_panels,
         Panel,
         ResizablePanelGroup,
         ResizablePanelGroupState,
     };
-    let panels = workbench_panels();
+    let panels = three_pane_panels();
     let group = ResizablePanelGroup::new(&panels, system)
         .workbench()
         .drawer_threshold(90);

@@ -2251,3 +2251,37 @@ mod tests {
         }
     }
 }
+
+/// Database explorer sample projection.
+#[must_use]
+pub fn example_database_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
+    use crate::widgets::{NavItem, NavItemStatus};
+
+    vec![
+        NavItem::section("conn", "Connections").icon("⬡"),
+        NavItem::new("prod", "production")
+            .depth(1)
+            .icon("●")
+            .status(NavItemStatus::Success)
+            .command("nav.db.prod"),
+        NavItem::new("staging", "staging")
+            .depth(1)
+            .icon("○")
+            .command("nav.db.staging"),
+        NavItem::section("schema", "Schema"),
+        NavItem::group("tables", "Tables")
+            .depth(1)
+            .expanded(true)
+            .has_children(true),
+        NavItem::new("users", "users")
+            .depth(2)
+            .badge("12")
+            .command("nav.db.users"),
+        NavItem::new("orders", "orders")
+            .depth(2)
+            .command("nav.db.orders"),
+        NavItem::new("disabled", "legacy")
+            .depth(2)
+            .enabled(false),
+    ]
+}

@@ -961,9 +961,9 @@ impl StatefulWidget for ResizablePanelGroup<'_> {
     }
 }
 
-/// Workbench preset: sidebar | main | inspector.
+/// Three-pane preset: start | main | end (e.g. rail | content | inspector).
 #[must_use]
-pub fn workbench_panels() -> [ResizablePanelSpec; 3] {
+pub fn three_pane_panels() -> [ResizablePanelSpec; 3] {
     [
         ResizablePanelSpec::start("sidebar", 2, 12),
         ResizablePanelSpec::main("main", 6),
@@ -971,9 +971,9 @@ pub fn workbench_panels() -> [ResizablePanelSpec; 3] {
     ]
 }
 
-/// Dashboard-style: main | log (horizontal).
+/// Two-pane preset: main | end (e.g. content | log).
 #[must_use]
-pub fn dashboard_panels() -> [ResizablePanelSpec; 2] {
+pub fn main_end_panels() -> [ResizablePanelSpec; 2] {
     [
         ResizablePanelSpec::main("main", 3).min(20),
         ResizablePanelSpec::end("log", 1, 8).collapse_threshold(40),
@@ -1134,7 +1134,7 @@ mod tests {
     #[test]
     fn three_panel_workbench_layout() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system).workbench();
         let mut state = ResizablePanelGroupState::new();
         let layout = group.layout(Rect::new(0, 0, 100, 20), &mut state);
@@ -1159,7 +1159,7 @@ mod tests {
     #[test]
     fn tiny_area_no_overflow() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         for w in 0..20u16 {
@@ -1185,7 +1185,7 @@ mod tests {
     #[test]
     fn handle_resize_preserves_sum() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 90, 10);
@@ -1206,7 +1206,7 @@ mod tests {
     #[test]
     fn collapse_and_expand_restores() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 100, 12);
@@ -1226,7 +1226,7 @@ mod tests {
     #[test]
     fn workbench_suggests_drawers_when_narrow() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system)
             .workbench()
             .drawer_threshold(80);
@@ -1239,7 +1239,7 @@ mod tests {
     #[test]
     fn preset_roundtrip() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 100, 10);
@@ -1293,7 +1293,7 @@ mod tests {
     #[test]
     fn rapid_resize_stress() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 120, 30);
@@ -1325,7 +1325,7 @@ mod tests {
     #[test]
     fn mouse_drag_moves_handle() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system);
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 90, 10);
@@ -1367,7 +1367,7 @@ mod tests {
     #[test]
     fn layout_is_cheap() {
         let system = DesignSystem::default();
-        let panels = workbench_panels();
+        let panels = three_pane_panels();
         let group = ResizablePanelGroup::new(&panels, &system).workbench();
         let mut state = ResizablePanelGroupState::new();
         let area = Rect::new(0, 0, 100, 30);
@@ -1379,7 +1379,7 @@ mod tests {
     #[test]
     fn dashboard_two_panel() {
         let system = DesignSystem::default();
-        let panels = dashboard_panels();
+        let panels = main_end_panels();
         let group = ResizablePanelGroup::new(&panels, &system).dashboard();
         let mut state = ResizablePanelGroupState::new();
         let layout = group.layout(Rect::new(0, 0, 80, 24), &mut state);
