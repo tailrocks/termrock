@@ -40,7 +40,7 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        panel::Panel, ConnectivityPhase, PasswordInput, PasswordInputState, ReconnectingState,
+        Panel, ConnectivityPhase, PasswordInput, PasswordInputState, ReconnectingState,
         RevealPolicy,
     },
 };

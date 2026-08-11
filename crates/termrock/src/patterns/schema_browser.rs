@@ -29,9 +29,14 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        breadcrumbs::BreadcrumbItem,
-        quick_open::{QuickOpenItem, QuickOpenPreview},
-        tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
+        BreadcrumbItem,
+        QuickOpenItem,
+        QuickOpenPreview,
+        Tree,
+        TreeNode,
+        TreeNodeStatus,
+        TreeOutcome,
+        TreeState,
     },
 };
 

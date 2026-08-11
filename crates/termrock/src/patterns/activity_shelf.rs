@@ -24,10 +24,13 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        notification_center::NotificationItem,
-        semantic_status::SemanticStatus,
-        status_bar::{StatusKind, StatusRegion, StatusSlot},
-        toast::{ToastKind, ToastPriority},
+        NotificationItem,
+        SemanticStatus,
+        StatusKind,
+        StatusRegion,
+        StatusSlot,
+        ToastKind,
+        ToastPriority,
     },
 };
 

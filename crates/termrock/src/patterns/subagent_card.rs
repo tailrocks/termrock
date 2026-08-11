@@ -30,13 +30,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{ActivityKind, ActivityModel, ActivityScope},
     text::{display_cols, take_display_cols},
-    widgets::{
-        activity_shelf::ActivityKind,
-        card::Card,
-        semantic_status::SemanticStatus,
-        task_rail::{ActivityModel, ActivityScope},
-    },
+    widgets::{Card, SemanticStatus},
 };
 
 /// Overlay id for fullscreen subagent detail.

@@ -31,15 +31,12 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        agent::ToolStatus,
-        card::Card,
-        terminal_output::{
-            TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
-            TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
-            TerminalRunStatus, escape_raw_terminal, filter_terminal_lines, format_duration_ms,
-            redact_env_value,
-        },
-        tool_call_card::{ToolCall, ToolRisk, redact_tool_secrets},
+        ToolStatus,
+        Card,
+        TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
+        ToolCall,
+        ToolRisk,
+        redact_tool_secrets,
     },
 };
 

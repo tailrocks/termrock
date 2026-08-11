@@ -26,14 +26,16 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        data_table::{DataTable, DataTableNavMode, DataTableOutcome, DataTableState, DataTableToolbar},
-        data_view::{
-            ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, FilterSpec, LoadState,
-            SortSpec,
-        },
-        object_inspector::{InspectKind, InspectorField},
-        query_editor::QueryResultSummary,
+        DataTable,
+        DataTableNavMode,
+        DataTableOutcome,
+        DataTableState,
+        DataTableToolbar,
+        ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, FilterSpec, LoadState, SortSpec,
+        InspectKind,
+        InspectorField,
     },
+    patterns::QueryResultSummary,
 };
 
 // ── Cell kinds & values ─────────────────────────────────────────────────────

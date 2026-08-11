@@ -32,8 +32,8 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::panel::Panel,
-    widgets::permission::PermissionRisk,
+    widgets::Panel,
+    widgets::PermissionRisk,
 };
 
 /// Overlay id for fullscreen plan review.

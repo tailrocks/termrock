@@ -27,7 +27,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::data_view::{ColumnModel, DataColumn, DataColumnWidth, LoadState, SortSpec, VirtualWindow},
+    widgets::ColumnModel, widgets::DataColumn, widgets::DataColumnWidth, widgets::LoadState, widgets::SortSpec, widgets::VirtualWindow,
 };
 
 // ── Identity ────────────────────────────────────────────────────────────────

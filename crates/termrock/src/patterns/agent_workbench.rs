@@ -33,15 +33,18 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
+    patterns::{
+        ActivityItem, ActivityModel, ActivityShelf, ActivityShelfOutcome, ActivityShelfState,
+        PlanReview, PlanReviewState, SessionPicker, SessionPickerState, TaskRail, TaskRailOutcome,
+        TaskRailState, WorkingStateCard, WorkingStateCardState,
+    },
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        ActivityItem, ActivityModel, ActivityShelf, ActivityShelfOutcome, ActivityShelfState,
         DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon, ModeRibbonState,
-        Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState, PlanReview,
-        PlanReviewState, PromptComposer, PromptComposerOutcome, PromptComposerState, QuestionFlow,
-        QuestionFlowState, SessionPicker, SessionPickerState, StatusBar, StatusBarState, StatusSlot,
-        TaskRail, TaskRailOutcome, TaskRailState, Transcript, TranscriptBlock, TranscriptOutcome,
-        TranscriptState, WorkbenchMode, WorkingStateCard, WorkingStateCardState,
+        Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState, PromptComposer,
+        PromptComposerOutcome, PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar,
+        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome, TranscriptState,
+        WorkbenchMode,
     },
 };
 
@@ -478,7 +481,7 @@ impl AgentWorkbenchState {
         }
         if self.plan_open {
             let out = self.plan.handle_key(key);
-            if !matches!(out, crate::widgets::PlanReviewOutcome::Ignored) {
+            if !matches!(out, crate::patterns::PlanReviewOutcome::Ignored) {
                 return WorkbenchKeyOutcome::Plan;
             }
         }
@@ -491,8 +494,8 @@ impl AgentWorkbenchState {
         }
         if self.session_open {
             let out = self.session.handle_key(key);
-            if !matches!(out, crate::widgets::SessionPickerOutcome::Ignored) {
-                if matches!(out, crate::widgets::SessionPickerOutcome::Cancelled) {
+            if !matches!(out, crate::patterns::SessionPickerOutcome::Ignored) {
+                if matches!(out, crate::patterns::SessionPickerOutcome::Cancelled) {
                     let _ = self.handle_escape();
                 }
                 return WorkbenchKeyOutcome::Session;
@@ -564,7 +567,7 @@ impl AgentWorkbenchState {
             }
             Some("working") => {
                 let out = self.working.handle_key(key);
-                if matches!(out, crate::widgets::WorkingStateOutcome::Ignored) {
+                if matches!(out, crate::patterns::WorkingStateOutcome::Ignored) {
                     WorkbenchKeyOutcome::Ignored
                 } else {
                     WorkbenchKeyOutcome::Working
@@ -1126,7 +1129,7 @@ pub fn default_modes(active: &'static str) -> [WorkbenchMode<'static, &'static s
 /// Demo activity models for multi-agent / tool-running stories.
 #[must_use]
 pub fn example_workbench_activities() -> Vec<ActivityItem> {
-    use crate::widgets::ActivityKind;
+    use crate::patterns::ActivityKind;
     use crate::widgets::SemanticStatus;
     vec![
         ActivityItem::new("a1", "cargo test")
@@ -1144,7 +1147,7 @@ pub fn example_workbench_activities() -> Vec<ActivityItem> {
 /// Demo task models for TaskRail.
 #[must_use]
 pub fn example_workbench_tasks() -> Vec<ActivityModel> {
-    use crate::widgets::ActivityKind;
+    use crate::patterns::ActivityKind;
     use crate::widgets::SemanticStatus;
     vec![
         ActivityModel::new("t1", "Plan review")
@@ -1168,9 +1171,18 @@ mod tests {
     use super::*;
     use crate::input::{KeyModifiers};
     use crate::widgets::{
-        PermissionRequest, PermissionRisk, Question, QuestionOption, QuestionSet, TranscriptBlock,
-        TranscriptKind, example_plan_document, example_working_state,
-    };
+    PermissionRequest,
+    PermissionRisk,
+    Question,
+    QuestionOption,
+    QuestionSet,
+    TranscriptBlock,
+    TranscriptKind,
+};
+use crate::patterns::{
+    example_plan_document,
+    example_working_state,
+};
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 

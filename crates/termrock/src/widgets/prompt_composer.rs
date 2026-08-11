@@ -40,7 +40,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         history_picker::{HistoryEntry, HistoryKind},
-        keyboard_help::HelpEntry,
+        HelpEntry,
         Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TokenMeter,
     },
 };
@@ -332,7 +332,7 @@ pub struct ContextEstimate {
 // Elevated management UI: [`super::PromptQueue`]. Composer keeps a thin FIFO of
 // [`super::PromptQueueItem`] (re-exported as `QueuedPrompt`) for enqueue chrome.
 
-use super::prompt_queue::{PromptQueueItem, PromptQueueRef, PromptQueueStatus};
+use crate::patterns::{PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
 // ── Policy / connection ─────────────────────────────────────────────────────
 
@@ -789,14 +789,14 @@ impl PromptComposerState {
         }
     }
 
-    /// Project queue into a [`super::PromptQueueState`] for the management surface.
-    pub fn project_prompt_queue(&self, agent_busy: bool) -> super::PromptQueueState {
-        let mut st = super::PromptQueueState::new();
+    /// Project queue into a [`crate::patterns::PromptQueueState`] for the management surface.
+    pub fn project_prompt_queue(&self, agent_busy: bool) -> crate::patterns::PromptQueueState {
+        let mut st = crate::patterns::PromptQueueState::new();
         st.set_items(self.queue.clone());
         st.set_agent(if agent_busy || self.busy {
-            super::AgentBusyState::Busy
+            crate::patterns::AgentBusyState::Busy
         } else {
-            super::AgentBusyState::Idle
+            crate::patterns::AgentBusyState::Idle
         });
         st
     }

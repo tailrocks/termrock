@@ -34,19 +34,12 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{ActivityKind, ActivityModel, ActivityScope},
     text::{display_cols, take_display_cols},
     widgets::{
-        activity_shelf::ActivityKind,
-        list::{List, ListRow, ListState, RowRole},
-        notification_center::NotificationItem,
-        panel::Panel,
-        semantic_status::SemanticStatus,
-        task_rail::{ActivityModel, ActivityScope},
-        terminal_output::{
-            TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
-            TerminalRunStatus, TerminalStream, format_duration_ms,
-        },
-        toast::{ToastKind, ToastPriority},
+        format_duration_ms, List, ListRow, ListState, NotificationItem, Panel, RowRole,
+        SemanticStatus, TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
+        TerminalRunStatus, TerminalStream, ToastKind, ToastPriority,
     },
 };
 

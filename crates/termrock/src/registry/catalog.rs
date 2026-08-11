@@ -1193,7 +1193,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             description: "Reusable DB/SSH/API/service connection inventory: list, status, search, groups, recent, favorites, add/edit/test, safe secrets, reconnect, gated delete; launcher + full views; OfflineState and diagnostic projection. Protocol and persistence host-owned.".into(),
             kind: RegistryItemKind::Block,
             license: "Apache-2.0".into(),
-            module: Some("termrock::widgets::connection_manager".into()),
+            module: Some("termrock::patterns::connection_manager".into()),
             namespace: "termrock".into(),
             version: "0.13.0".into(),
             files: vec![file(
@@ -1272,7 +1272,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 "connection-manager/narrow".into(),
                 "connection-manager/unicode".into(),
             ],
-            tests: vec!["widgets::connection_manager".into()],
+            tests: vec!["patterns::connection_manager".into()],
             migration: Some("migrations/0239-v0.13.0-connection-manager.md".into()),
             provenance: prov("crates/termrock/src/widgets/connection_manager.rs"),
             source_hash: None,

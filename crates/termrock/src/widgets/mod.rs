@@ -128,33 +128,15 @@ mod key_value_table;
 mod object_inspector;
 mod timeline;
 mod checkpoint_timeline;
-mod session_picker;
-mod connection_manager;
-mod prompt_queue;
-mod agent_status_header;
-mod integration_status;
-mod working_state_card;
-mod approval_queue;
 mod event_stream;
 mod log_stream;
 mod diagnostic;
 mod terminal_output;
-mod terminal_run_card;
-mod activity_shelf;
-mod task_rail;
-mod subagent_card;
-mod background_task_panel;
 mod context_meter;
 mod question_flow;
-mod plan_review;
 mod hex_viewer;
 mod file_tree;
-mod process_table;
-mod query_editor;
-mod result_grid;
-mod schema_browser;
 mod search_results;
-mod metrics_dashboard;
 mod trace_waterfall;
 mod dependency_graph;
 mod tree_navigation;
@@ -216,23 +198,6 @@ pub use terminal_output::{
     format_duration_ms, redact_env_value,
 };
 pub use terminal_output::bench as terminal_output_bench;
-pub use terminal_run_card::{
-    TERMINAL_RUN_COMPACT_BODY_LINES, TERMINAL_RUN_ENV_CAP, TERMINAL_RUN_FULLSCREEN_OVERLAY_ID,
-    TerminalCommandPhase, TerminalRun, TerminalRunCard, TerminalRunCardOutcome,
-    TerminalRunCardState, TerminalRunEnv, TerminalRunPresentation, example_terminal_run_lines,
-    example_terminal_runs, project_terminal_run_lines, terminal_run_env_entries,
-    terminal_run_to_meta, terminal_run_to_tool_call,
-};
-pub use terminal_run_card::bench as terminal_run_card_bench;
-pub use activity_shelf::{
-    ACTIVITY_SHELF_CHIP_CAP, ACTIVITY_SHELF_CHIP_MIN_COLS, ACTIVITY_SHELF_NARROW_WIDTH,
-    ACTIVITY_SHELF_TINY_WIDTH, ActivityCounts, ActivityItem, ActivityKind, ActivityShelf,
-    ActivityShelfOrientation, ActivityShelfOutcome, ActivityShelfPlan, ActivityShelfPresentation,
-    ActivityShelfState, ActivityStatusProjection, activities_to_notifications, activity_badge_label,
-    activity_counts, activity_status_slot, activity_status_summary, activity_to_notification,
-    example_activities, plan_activity_shelf, project_activities_for_status_bar, sort_activity_items,
-};
-pub use activity_shelf::bench as activity_shelf_bench;
 pub use hex_viewer::{
     HexAsciiMode, HexEndian, HexInspectorValues, HexRegion, HexViewer, HexViewerOutcome,
     HexViewerState, HexWindow, HEX_DEFAULT_BYTES_PER_ROW, HEX_MAX_BYTES_PER_ROW,
@@ -248,35 +213,6 @@ pub use file_tree::{
     file_tree_to_quick_open_items, filter_file_tree_entries, normalize_path_display, path_segments,
 };
 pub use file_tree::bench as file_tree_bench;
-pub use process_table::{
-    ProcessKey, ProcessRow, ProcessSignal, ProcessSignalConfirm, ProcessSortKey, ProcessStatus,
-    ProcessTable, ProcessTableOutcome, ProcessTableState, ProcessViewMode, cmp_process,
-    filter_processes, filter_tree_preserve, format_cpu_pct, format_elapsed_ms, format_mem_bytes,
-    process_column_model, sort_processes_flat,
-};
-pub use process_table::bench as process_table_bench;
-pub use query_editor::{
-    QueryEditor, QueryEditorMode, QueryEditorOutcome, QueryEditorSlots, QueryEditorState,
-    QueryFocus, QueryLanguage, QueryParameter, QueryResultSummary, QueryRunStatus, SavedQuery,
-    diagnostic_summary, draft_code_frame_lines, query_editor_help_entries,
-    saved_queries_to_history, token_at_cursor,
-};
-pub use query_editor::bench as query_editor_bench;
-pub use result_grid::{
-    ResultCell, ResultCellKind, ResultColumn, ResultColumnStats, ResultExportFormat, ResultGrid,
-    ResultGridOutcome, ResultGridState, ResultQueryStatus, ResultRedaction, ResultRow,
-    RESULT_CELL_MAX_DISPLAY, RESULT_NULL_ASCII, RESULT_NULL_GLYPH, RESULT_SECRET_MASK,
-    RESULT_TRUNC_MARK, clamp_cell_display, export_result_window_tsv, format_result_cell,
-    project_result_rows, result_column_model, result_row_to_inspector_fields,
-};
-pub use result_grid::bench as result_grid_bench;
-pub use schema_browser::{
-    SchemaBrowser, SchemaBrowserEntry, SchemaBrowserOutcome, SchemaBrowserPresentation,
-    SchemaBrowserState, SchemaConnStatus, SchemaContextAction, SchemaNodeKind,
-    apply_expanded_set, expanded_ids_from_entries, filter_schema_entries,
-    schema_breadcrumbs_from_path, schema_entries_to_tree_nodes, schema_to_quick_open_items,
-};
-pub use schema_browser::bench as schema_browser_bench;
 pub use search_results::{
     SearchFlatRow, SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults,
     SearchResultsOutcome, SearchResultsState, SearchResultsStatus, collect_match_targets,
@@ -284,14 +220,6 @@ pub use search_results::{
     truncate_snippet_keep_match,
 };
 pub use search_results::bench as search_results_bench;
-pub use metrics_dashboard::{
-    METRICS_DASHBOARD_DEFAULT_REFRESH_MS, METRICS_DASHBOARD_NARROW_MAX_WIDTH, MetricAlert,
-    MetricAlertSeverity, MetricTile, MetricTileHealth, MetricViz, MetricsComparison,
-    MetricsDashboard, MetricsDashboardLayoutMode, MetricsDashboardOutcome, MetricsDashboardSlots,
-    MetricsDashboardState, MetricsFocus, MetricsTimeRange, apply_metrics_command, commands,
-    layout_metrics_dashboard, metrics_dashboard_commands,
-};
-pub use metrics_dashboard::bench as metrics_dashboard_bench;
 pub use trace_waterfall::{
     TRACE_NAME_COL_DEFAULT, TRACE_NAME_COL_MAX, TRACE_NAME_COL_MIN, TraceNavMode, TraceSpan,
     TraceSpanStatus, TraceWaterfall, TraceWaterfallOutcome, TraceWaterfallState,
@@ -311,24 +239,6 @@ pub use dependency_graph::bench as dependency_graph_bench;
 pub use agent_blocks::{
     ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode,
 };
-pub use session_picker::{
-    SESSION_PICKER_OVERLAY_ID, SESSION_PICKER_POPOVER_OVERLAY_ID, SESSION_PICKER_PROVIDER_SEARCH_MIN,
-    SESSION_PICKER_WINDOW, SessionConfirmAction, SessionEntry, SessionLoadState, SessionLocation,
-    SessionPicker, SessionPickerOutcome, SessionPickerPhase, SessionPickerPresentation,
-    SessionPickerState, SessionStatus, example_sessions, filter_sessions,
-};
-pub use session_picker::bench as session_picker_bench;
-pub use connection_manager::{
-    CONNECTION_MANAGER_LAUNCHER_OVERLAY_ID, CONNECTION_MANAGER_OVERLAY_ID,
-    CONNECTION_MANAGER_RECENT_CAP, CONNECTION_MANAGER_WINDOW, CONNECTION_SECRET_REDACTED,
-    CONNECTION_SECRET_REDACTED_ASCII, ConnectionCredentialMeta, ConnectionDiagnosticSummary,
-    ConnectionEntry, ConnectionFormDraft, ConnectionFormField, ConnectionKind, ConnectionListView,
-    ConnectionManager, ConnectionManagerOutcome, ConnectionManagerPhase,
-    ConnectionManagerPresentation, ConnectionManagerState, ConnectionStatus,
-    connection_error_diagnostic, connection_to_reconnecting_state, example_connections,
-    filter_connections,
-};
-pub use connection_manager::bench as connection_manager_bench;
 pub use question_flow::{
     QUESTION_FLOW_FULLSCREEN_OVERLAY_ID, QUESTION_FLOW_OPTION_WINDOW, Question, QuestionAnswer,
     QuestionAnswerSet, QuestionFlow, QuestionFlowOutcome, QuestionFlowPhase,
@@ -336,39 +246,6 @@ pub use question_flow::{
     QuestionSet, QuestionStepState, example_question_set, validate_question_answer,
 };
 pub use question_flow::bench as question_flow_bench;
-pub use plan_review::{
-    PLAN_REVIEW_BODY_WINDOW, PLAN_REVIEW_FULLSCREEN_OVERLAY_ID, PLAN_REVIEW_OVERLAY_ID,
-    PlanAction, PlanAffectedFile, PlanAssumption, PlanComment, PlanCommentAnchor, PlanDocument,
-    PlanFileChange, PlanReview, PlanReviewOutcome, PlanReviewPane, PlanReviewPhase,
-    PlanReviewState, PlanRiskItem, PlanSection, PlanSourceRef, PlanTask, PlanTaskStatus,
-    example_high_risk_plan, example_plan_document, remap_plan_comments,
-};
-pub use plan_review::bench as plan_review_bench;
-pub use task_rail::{
-    TASK_RAIL_COMPACT_WIDTH, TASK_RAIL_DEP_CAP, TASK_RAIL_DRAWER_OVERLAY_ID, TASK_RAIL_DRAWER_WIDTH,
-    ActivityActionKind, ActivityDependency, ActivityModel, ActivityScope, TaskRail,
-    TaskRailCounts, TaskRailOutcome, TaskRailPresentation, TaskRailRow, TaskRailState,
-    TaskRailZoom, activity_model_from_shelf, activity_models_to_shelf, build_task_rail_rows,
-    example_activity_models, filter_activity_models, project_task_rail_for_status_bar,
-    project_task_rail_list_rows, sort_activity_models, task_rail_counts, task_rail_status_slot,
-    task_rail_status_summary,
-};
-pub use task_rail::bench as task_rail_bench;
-pub use subagent_card::{
-    SUBAGENT_FULLSCREEN_OVERLAY_ID, SUBAGENT_PREVIEW_LINE_CAP, SUBAGENT_PROVENANCE_CAP,
-    SubagentAction, SubagentCard, SubagentCardOutcome, SubagentCardState, SubagentPhase,
-    SubagentPresentation, SubagentRun, example_subagent_runs, project_subagent_lines,
-    subagent_actions_for, subagent_to_activity_model,
-};
-pub use subagent_card::bench as subagent_card_bench;
-pub use background_task_panel::{
-    BACKGROUND_TASKS_OVERLAY_ID, BACKGROUND_TASK_DEFAULT_HISTORY, BACKGROUND_TASK_RAIL_WIDTH,
-    BackgroundOutputBuffer, BackgroundOutputLine, BackgroundTask, BackgroundTaskKind,
-    BackgroundTaskPanel, BackgroundTaskPanelOutcome, BackgroundTaskPanelState,
-    BackgroundTaskPresentation, BackgroundTaskStatus, background_task_to_activity,
-    background_task_to_notification, example_background_tasks,
-};
-pub use background_task_panel::bench as background_task_panel_bench;
 pub use context_meter::{
     CONTEXT_METER_DANGER_FRACTION, CONTEXT_METER_SOURCE_CAP, CONTEXT_METER_WARN_FRACTION,
     BudgetMeasure, BudgetPrecision, BudgetUnit, ContextBudget, ContextMeter,
@@ -772,45 +649,7 @@ pub use prompt_composer::{
     submit_history_to_entries,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
-pub use prompt_queue::{
-    PROMPT_QUEUE_OVERLAY_ID, PROMPT_QUEUE_SUMMARY_PREVIEW, PROMPT_QUEUE_WINDOW, AgentBusyState,
-    PromptQueue, PromptQueueItem, PromptQueueOutcome, PromptQueuePhase, PromptQueuePresentation,
-    PromptQueueRef, PromptQueueState, PromptQueueStatus, example_prompt_queue,
-    pending_queue_len, queue_item_from_composer,
-};
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
-pub use prompt_queue::PromptQueueItem as QueuedPrompt;
-pub use prompt_queue::bench as prompt_queue_bench;
-pub use agent_status_header::{
-    AGENT_STATUS_ACTION_CAP, AGENT_STATUS_HEADER_ID, AGENT_STATUS_NARROW_WIDTH, AgentConnectionStatus,
-    AgentStatusAction, AgentStatusHeader, AgentStatusHeaderOutcome, AgentStatusHeaderState,
-    AgentStatusPresentation, AgentStatusSnapshot, AgentWorkStatus, example_agent_status,
-    example_agent_status_idle,
-};
-pub use agent_status_header::bench as agent_status_header_bench;
-pub use integration_status::{
-    INTEGRATION_LIST_WINDOW, INTEGRATION_LOG_WINDOW, INTEGRATION_STATUS_OVERLAY_ID,
-    IntegrationAction, IntegrationCapability, IntegrationDetailTab, IntegrationEntry,
-    IntegrationHealth, IntegrationKind, IntegrationPermission, IntegrationProvenance,
-    IntegrationStatus, IntegrationStatusOutcome, IntegrationStatusPresentation,
-    IntegrationStatusState, example_integrations,
-};
-pub use integration_status::bench as integration_status_bench;
-pub use working_state_card::{
-    WORKING_STATE_FILE_WINDOW, WORKING_STATE_OVERLAY_ID, WorkingAction, WorkingPhase,
-    WorkingResource, WorkingState, WorkingStateCard, WorkingStateCardState, WorkingStateOutcome,
-    WorkingStatePresentation, example_working_state, example_working_waiting,
-    merge_working_into_shelf, working_state_to_shelf_items,
-};
-pub use working_state_card::bench as working_state_card_bench;
-pub use approval_queue::{
-    APPROVAL_QUEUE_DRAWER_OVERLAY_ID, APPROVAL_QUEUE_OVERLAY_ID, APPROVAL_QUEUE_WINDOW,
-    ApprovalAction, ApprovalBlocking, ApprovalItem, ApprovalKind, ApprovalQueue,
-    ApprovalQueueOutcome, ApprovalQueuePresentation, ApprovalQueueState,
-    approval_items_to_activity_models, approval_items_to_notifications, approval_queue_badge,
-    example_approval_queue,
-};
-pub use approval_queue::bench as approval_queue_bench;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

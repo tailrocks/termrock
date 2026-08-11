@@ -31,19 +31,21 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{
+        connection_to_reconnecting_state, example_connections, ConnectionEntry, ConnectionKind,
+        ConnectionManager, ConnectionManagerOutcome, ConnectionManagerPresentation,
+        ConnectionManagerState, ConnectionStatus, QueryEditor, QueryEditorOutcome,
+        QueryEditorState, QueryRunStatus, ResultCell, ResultColumn, ResultExportFormat, ResultGrid,
+        ResultGridOutcome, ResultGridState, ResultQueryStatus, ResultRow, SchemaBrowser,
+        SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus,
+    },
     text::take_display_cols,
     widgets::{
-        connection_to_reconnecting_state, example_command_catalog, example_connections,
-        example_history_entries, CommandEntry, CommandPalette, CommandPaletteOutcome,
-        CommandPaletteState, ConnectionEntry, ConnectionKind, ConnectionManager,
-        ConnectionManagerOutcome, ConnectionManagerPresentation, ConnectionManagerState,
-        ConnectionStatus, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
-        HistoryPickerState, InspectorField, ObjectInspector, ObjectInspectorOutcome,
-        ObjectInspectorState, Panel, QueryEditor, QueryEditorOutcome, QueryEditorState,
-        QueryRunStatus, ResultCell, ResultColumn, ResultExportFormat, ResultGrid,
-        ResultGridOutcome, ResultGridState, ResultQueryStatus, ResultRow, SchemaBrowser,
-        SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot,
+        example_command_catalog, example_history_entries, CommandEntry, CommandPalette,
+        CommandPaletteOutcome, CommandPaletteState, HistoryEntry, HistoryKind, HistoryPicker,
+        HistoryPickerOutcome, HistoryPickerState, InspectorField, ObjectInspector,
+        ObjectInspectorOutcome, ObjectInspectorState, Panel, StatusBar, StatusBarState,
+        StatusRegion, StatusSlot,
     },
 };
 
@@ -1739,7 +1741,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::ResultCell;
+    use crate::patterns::ResultCell;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

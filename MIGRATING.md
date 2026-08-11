@@ -270,6 +270,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0254 | `v0.13.0` | [Chart line linear/step interpolation](migrations/0254-v0.13.0-chart-line-interpolation.md) |
 | 0255 | `v0.13.0` | [SegmentedMeter pie peers](migrations/0255-v0.13.0-segmented-meter-pie.md) |
 | 0256 | `v0.13.0` | [MetricRadar multi-axis (radar peer)](migrations/0256-v0.13.0-metric-radar.md) |
+| 0257 | `v0.13.0` | [Composites move widgets→patterns](migrations/0257-v0.13.0-composites-to-patterns.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

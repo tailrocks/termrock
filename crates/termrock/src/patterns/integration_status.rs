@@ -33,7 +33,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::panel::Panel,
+    widgets::Panel,
 };
 
 /// Overlay id for full integration panel.

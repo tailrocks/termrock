@@ -31,14 +31,16 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        completion_menu::CompletionMenuState,
-        diagnostic::{
-            CodeFrame, CodeFrameLine, Diagnostic, DiagnosticSeverity, SourceLabel, SourceRange,
-            SpanStyle,
-        },
-        history_picker::{HistoryEntry, HistoryKind},
-        keyboard_help::HelpEntry,
-        text_area::{TextArea, TextAreaOutcome, TextAreaState, TextCursor, TextWrap},
+        CompletionMenuState,
+        CodeFrame, CodeFrameLine, Diagnostic, DiagnosticSeverity, SourceLabel, SourceRange, SpanStyle,
+        HistoryEntry,
+        HistoryKind,
+        HelpEntry,
+        TextArea,
+        TextAreaOutcome,
+        TextAreaState,
+        TextCursor,
+        TextWrap,
     },
 };
 

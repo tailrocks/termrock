@@ -19,133 +19,549 @@ use termrock::{
     scroll::DialogScroll,
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, ActionLink, Anchor, AnsiParseOptions, AnsiText,
-        ButtonGroup, ButtonGroupItem, ButtonGroupState,
-        RangeSlider, RangeSliderState, SegmentedControl, SegmentedControlState, SegmentedItem,
-        Slider, SliderBounds, SliderMark, SliderState, Toggle, ToggleGroup, ToggleGroupItem,
-        ToggleGroupState, ToggleState, ToggleValue,
-        AnsiTextMode, AnsiTextState, AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS,
-        Backdrop, Badge, Banner,
-        Alert, AlertState, AlertTone, BarDatum, BarSeries, Chart, ChartSeries, Gauge, HistBucket,
-        Histogram, ScaleMode, VizGlyphSet, Button, ButtonState, Callout, CalloutTone,
-        CellAlignment, Checkbox,
-        CheckboxState, CheckboxValue, ChoiceDialog, ChoiceDialogState, CodeBlock, CodeBlockState,
+        Action,
+        ActionBar,
+        ActionBarState,
+        ActionLink,
+        Anchor,
+        AnsiParseOptions,
+        AnsiText,
+        ButtonGroup,
+        ButtonGroupItem,
+        ButtonGroupState,
+        RangeSlider,
+        RangeSliderState,
+        SegmentedControl,
+        SegmentedControlState,
+        SegmentedItem,
+        Slider,
+        SliderBounds,
+        SliderMark,
+        SliderState,
+        Toggle,
+        ToggleGroup,
+        ToggleGroupItem,
+        ToggleGroupState,
+        ToggleState,
+        ToggleValue,
+        AnsiTextMode,
+        AnsiTextState,
+        AvatarFace,
+        AvatarGlyph,
+        AvatarSize,
+        BUILTIN_THEME_PRESETS,
+        Backdrop,
+        Badge,
+        Banner,
+        Alert,
+        AlertState,
+        AlertTone,
+        BarDatum,
+        BarSeries,
+        Chart,
+        ChartSeries,
+        Gauge,
+        HistBucket,
+        Histogram,
+        ScaleMode,
+        VizGlyphSet,
+        Button,
+        ButtonState,
+        Callout,
+        CalloutTone,
+        CellAlignment,
+        Checkbox,
+        CheckboxState,
+        CheckboxValue,
+        ChoiceDialog,
+        ChoiceDialogState,
+        CodeBlock,
+        CodeBlockState,
         CodeHighlight,
-        CodeHighlightKind, CodeWrap, Column, ColumnWidth,
-        CommandEntry, CommandPalette, CommandPaletteState, example_command_catalog,
-        QuickOpen, QuickOpenState, example_quick_open_files,
-        example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
-        CompletionCandidate, CompletionMenu,
-        CompletionMenuSize, CompletionMenuState, DataTable, DataTableState, DataTableToolbar,
-        TreeTable, TreeTableRow, TreeTableState,
-        DesignInspector, DesignInspectorFrame, DetailCapability, DetailRow, DetailTable,
+        CodeHighlightKind,
+        CodeWrap,
+        Column,
+        ColumnWidth,
+        CommandEntry,
+        CommandPalette,
+        CommandPaletteState,
+        example_command_catalog,
+        QuickOpen,
+        QuickOpenState,
+        example_quick_open_files,
+        example_quick_open_providers,
+        example_quick_open_symbols,
+        filter_quick_open_items,
+        CompletionCandidate,
+        CompletionMenu,
+        CompletionMenuSize,
+        CompletionMenuState,
+        DataTable,
+        DataTableState,
+        DataTableToolbar,
+        TreeTable,
+        TreeTableRow,
+        TreeTableState,
+        DesignInspector,
+        DesignInspectorFrame,
+        DetailCapability,
+        DetailRow,
+        DetailTable,
         InspectorPanel,
-        DetailTableState, Dialog, DialogRecipe, AlertDialog, AlertDialogState, AlertKind,
-        AlertScope, AlertConfirmGates, DiffHunk, DiffKind, DiffLine, DiffMode, DiffReview,
-        DiffReviewState, DiffReviewFileRow, DiffDecision, DiffReviewUnit, DiffViewState, DiffView,
-        DiffWordKind, DiffWordSpan, Drawer, EmptyState, EmptyKind, EmptyAction, EmptyDensity,
-        example_empty_table, example_empty_logs, example_empty_sessions, example_empty_projects,
-        example_empty_search, example_empty_permission,
-        ErrorView, ErrorState, ErrorKind, ErrorRecipe, Recovery, RecoveryAction, RetrySafety,
-        example_error_network, example_error_validation, example_error_permission,
-        example_error_crash, example_error_dialog, example_error_unsupported,
-        Field, Fieldset, Form, FormState,
-        FormWizard, FormWizardState, WizardStep, GridCell, GridColumn, GridRow, Heading, HeadingLevel, Hint,
-        HighlightedText, HintBar, Identity, IdentityRole, ImageMeta, ImageProtocol, ImageSurface,
-        InspectorField, JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget,
-        assign_jump_labels_from_semantics, generate_jump_labels, Kbd, KeyValueList,
-        KeyValueListState, KvEntry, KeyValueTable, KeyValueTableState, KvtField, KvtMode,
-        KvtValidation, KvLayout, KvStatus, Link, LinkState, List, MatchKind, MatchRange, MatchRanges,
-        MatchTruncate, PresenceStatus,
-        ListRow, ListState, ListDensity, ListSelectionMode, filter_list_rows,
-        VirtualList, VirtualListState, VirtualListItem, VirtualListFollow, VirtualPageStatus,
-        StickyRegion, filter_tree_with_ancestors,
-        LoadingView, LoadingOverlay, BusyBoundary, BusyBoundaryState, BusyMode,
-        example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
-        example_busy_optimistic, example_busy_stale,
-        ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
-        example_reconnecting_agent, example_auth_required, example_server_unavailable,
+        DetailTableState,
+        Dialog,
+        DialogRecipe,
+        AlertDialog,
+        AlertDialogState,
+        AlertKind,
+        AlertScope,
+        AlertConfirmGates,
+        DiffHunk,
+        DiffKind,
+        DiffLine,
+        DiffMode,
+        DiffReview,
+        DiffReviewState,
+        DiffReviewFileRow,
+        DiffDecision,
+        DiffReviewUnit,
+        DiffViewState,
+        DiffView,
+        DiffWordKind,
+        DiffWordSpan,
+        Drawer,
+        EmptyState,
+        EmptyKind,
+        EmptyAction,
+        EmptyDensity,
+        example_empty_table,
+        example_empty_logs,
+        example_empty_sessions,
+        example_empty_projects,
+        example_empty_search,
+        example_empty_permission,
+        ErrorView,
+        ErrorState,
+        ErrorKind,
+        ErrorRecipe,
+        Recovery,
+        RecoveryAction,
+        RetrySafety,
+        example_error_network,
+        example_error_validation,
+        example_error_permission,
+        example_error_crash,
+        example_error_dialog,
+        example_error_unsupported,
+        Field,
+        Fieldset,
+        Form,
+        FormState,
+        FormWizard,
+        FormWizardState,
+        WizardStep,
+        GridCell,
+        GridColumn,
+        GridRow,
+        Heading,
+        HeadingLevel,
+        Hint,
+        HighlightedText,
+        HintBar,
+        Identity,
+        IdentityRole,
+        ImageMeta,
+        ImageProtocol,
+        ImageSurface,
+        InspectorField,
+        JumpFilter,
+        JumpOverlay,
+        JumpOverlayState,
+        JumpTarget,
+        assign_jump_labels_from_semantics,
+        generate_jump_labels,
+        Kbd,
+        KeyValueList,
+        KeyValueListState,
+        KvEntry,
+        KeyValueTable,
+        KeyValueTableState,
+        KvtField,
+        KvtMode,
+        KvtValidation,
+        KvLayout,
+        KvStatus,
+        Link,
+        LinkState,
+        List,
+        MatchKind,
+        MatchRange,
+        MatchRanges,
+        MatchTruncate,
+        PresenceStatus,
+        ListRow,
+        ListState,
+        ListDensity,
+        ListSelectionMode,
+        filter_list_rows,
+        VirtualList,
+        VirtualListState,
+        VirtualListItem,
+        VirtualListFollow,
+        VirtualPageStatus,
+        StickyRegion,
+        filter_tree_with_ancestors,
+        LoadingView,
+        LoadingOverlay,
+        BusyBoundary,
+        BusyBoundaryState,
+        BusyMode,
+        example_busy_blocking,
+        example_busy_cancellable,
+        example_busy_non_blocking,
+        example_busy_optimistic,
+        example_busy_stale,
+        ReconnectingState,
+        OfflineBanner,
+        OfflineSurface,
+        ConnectivityPresentation,
+        example_reconnecting_agent,
+        example_auth_required,
+        example_server_unavailable,
         example_disconnected,
-        LogLevel, LogLine, LogPane,
+        LogLevel,
+        LogLine,
+        LogPane,
         LogPaneState,
-        LogStream, LogStreamState, EventStream, EventStreamState, StreamEvent, EventSeverity,
-        Diagnostic, DiagnosticSeverity, DiagnosticView, DiagnosticState, DiagnosticRecipe,
-        DiagnosticNote, SourceLabel, SourceRange, SpanStyle, SuggestedFix, CodeFrame, CodeFrameLine,
-        TerminalOutput, TerminalOutputState, TerminalCommandMeta, TerminalLine, TerminalRunStatus,
-        TerminalEnvEntry, TerminalOutputRecipe, TerminalPaintMode,
-        HexViewer, HexViewerState, HexWindow, HexEndian, HexAsciiMode,
-        FileTree, FileTreeState, FileTreeEntry, FileTreeKind, FileGitStatus,
-        ProcessTable, ProcessTableState, ProcessRow, ProcessKey, ProcessStatus,
-        ProcessViewMode, ProcessSignal, ProcessSignalConfirm,
-        QueryEditor, QueryEditorState, QueryEditorMode, QueryFocus, QueryLanguage,
-        QueryParameter, QueryResultSummary, QueryRunStatus,
-        ResultGrid, ResultGridState, ResultColumn, ResultRow, ResultCell, ResultQueryStatus,
-        ResultColumnStats, ResultRedaction, DataColumnWidth,
-        SchemaBrowser, SchemaBrowserState, SchemaBrowserEntry, SchemaNodeKind, SchemaConnStatus,
-        SchemaBrowserPresentation,
-        SearchResults, SearchResultsState, SearchResultGroup, SearchResultItem, SearchResultKind,
+        LogStream,
+        LogStreamState,
+        EventStream,
+        EventStreamState,
+        StreamEvent,
+        EventSeverity,
+        Diagnostic,
+        DiagnosticSeverity,
+        DiagnosticView,
+        DiagnosticState,
+        DiagnosticRecipe,
+        DiagnosticNote,
+        SourceLabel,
+        SourceRange,
+        SpanStyle,
+        SuggestedFix,
+        CodeFrame,
+        CodeFrameLine,
+        TerminalOutput,
+        TerminalOutputState,
+        TerminalCommandMeta,
+        TerminalLine,
+        TerminalRunStatus,
+        TerminalEnvEntry,
+        TerminalOutputRecipe,
+        TerminalPaintMode,
+        HexViewer,
+        HexViewerState,
+        HexWindow,
+        HexEndian,
+        HexAsciiMode,
+        FileTree,
+        FileTreeState,
+        FileTreeEntry,
+        FileTreeKind,
+        FileGitStatus,
+        DataColumnWidth,
+        SearchResults,
+        SearchResultsState,
+        SearchResultGroup,
+        SearchResultItem,
+        SearchResultKind,
         SearchResultsStatus,
-        MetricsDashboard, MetricsDashboardState, MetricTile, MetricTileHealth, MetricAlert,
-        MetricAlertSeverity, MetricViz,
-        TraceWaterfall, TraceWaterfallState, TraceSpan, TraceSpanStatus,
-        DependencyGraph, DependencyGraphState, DepNode, DepEdge, DepNodeKind, DepNodeStatus,
-        DepEdgeKind, DependencyGraphView,
-        MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
-        Menu, MenuBar, MenuBarState, MenuItem, MenuNode, MenuState, DropdownMenu,
-        DropdownMenuState, example_app_menus,
-        MessageDialog, MeterSegment, ModeRibbon, ObjectInspector, ObjectInspectorState,
-        Panel, PanelChrome, PermissionActionKind, PermissionPrompt, PermissionPromptState,
-        PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, PlanReview,
-        PlanReviewState, Popover, PopoverState, Progress, ProgressKind, PromptComposer,
-        PromptComposerState, QuestionFlow, QuestionFlowState,
-        RadioGroup, RadioOption, RadioState, RowRole, SegmentedMeter, SeparatorLine, SessionPicker,
-        SessionPickerState, Severity, Skeleton, SortDirection, Sparkline, SplitDirection, SplitPane,
-        SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusSlot, Surface, SurfaceFill,
-        SurfaceRecipe, Switch, SwitchState, Tab, TabStatus, Tabs, TabsActivation, TabsOrientation,
-        TabsPresentation, TabsState, Table, TableRow, TableState, TaskRail, TextArea, TextAreaState,
+        TraceWaterfall,
+        TraceWaterfallState,
+        TraceSpan,
+        TraceSpanStatus,
+        DependencyGraph,
+        DependencyGraphState,
+        DepNode,
+        DepEdge,
+        DepNodeKind,
+        DepNodeStatus,
+        DepEdgeKind,
+        DependencyGraphView,
+        MarkdownBlock,
+        MarkdownBlockKind,
+        MarkdownView,
+        MarkdownViewState,
+        Menu,
+        MenuBar,
+        MenuBarState,
+        MenuItem,
+        MenuNode,
+        MenuState,
+        DropdownMenu,
+        DropdownMenuState,
+        example_app_menus,
+        MessageDialog,
+        MeterSegment,
+        ModeRibbon,
+        ObjectInspector,
+        ObjectInspectorState,
+        Panel,
+        PanelChrome,
+        PermissionActionKind,
+        PermissionPrompt,
+        PermissionPromptState,
+        PermissionProvenance,
+        PermissionRequest,
+        PermissionRisk,
+        Picker,
+        PickerState,
+        Popover,
+        PopoverState,
+        Progress,
+        ProgressKind,
+        PromptComposer,
+        PromptComposerState,
+        QuestionFlow,
+        QuestionFlowState,
+        RadioGroup,
+        RadioOption,
+        RadioState,
+        RowRole,
+        SegmentedMeter,
+        SeparatorLine,
+        Severity,
+        Skeleton,
+        SortDirection,
+        Sparkline,
+        SplitDirection,
+        SplitPane,
+        SplitPaneState,
+        SplitRatio,
+        StatusBar,
+        StatusBarState,
+        StatusSlot,
+        Surface,
+        SurfaceFill,
+        SurfaceRecipe,
+        Switch,
+        SwitchState,
+        Tab,
+        TabStatus,
+        Tabs,
+        TabsActivation,
+        TabsOrientation,
+        TabsPresentation,
+        TabsState,
+        Table,
+        TableRow,
+        TableState,
+        TextArea,
+        TextAreaState,
         TextCursor,
-        TextInput, TextInputState, TextWrap, PasswordInput, PasswordInputState, PasswordStrengthHint,
-        RevealPolicy, NumberConstraints, NumberInput, NumberInputState, NumberKind,
-        SearchFilterChip, SearchInput, SearchInputState, SearchStatus,
-        PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk, PathStyle,
-        FieldToken, TokenField, TokenFieldState, TokenStatus,
-        Select, SelectOption, SelectRecipe, SelectState,
-        MultiSelect, MultiSelectState,
-        Combobox, ComboboxState, SuggestionStatus,
-        FileEntry, FileEntryKind, FilePicker, FilePickerMode, FilePickerState, FilePreview,
+        TextInput,
+        TextInputState,
+        TextWrap,
+        PasswordInput,
+        PasswordInputState,
+        PasswordStrengthHint,
+        RevealPolicy,
+        NumberConstraints,
+        NumberInput,
+        NumberInputState,
+        NumberKind,
+        SearchFilterChip,
+        SearchInput,
+        SearchInputState,
+        SearchStatus,
+        PathExpect,
+        PathFsStatus,
+        PathInput,
+        PathInputState,
+        PathRisk,
+        PathStyle,
+        FieldToken,
+        TokenField,
+        TokenFieldState,
+        TokenStatus,
+        Select,
+        SelectOption,
+        SelectRecipe,
+        SelectState,
+        MultiSelect,
+        MultiSelectState,
+        Combobox,
+        ComboboxState,
+        SuggestionStatus,
+        FileEntry,
+        FileEntryKind,
+        FilePicker,
+        FilePickerMode,
+        FilePickerState,
+        FilePreview,
         FileSortKey,
-        CivilDate, CivilDateRange, CivilTime, DateTimePicker, DateTimePickerKind,
-        DateTimePickerState, TimeDisplayFormat,
-        KeybindingRecorder, KeybindingRecorderState,
-        NavItem, NavigationList, NavigationListState, Sidebar, SidebarPresentation, SidebarState,
-        example_agent_workbench_nav, example_database_nav, example_settings_nav,
-        TreeNavigation, TreeNavigationState, example_docs_tree, example_project_tree,
-        example_schema_tree, example_settings_tree,
-        BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs, BreadcrumbsState,
-        PageTotal, Pagination, PaginationState,
-        StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperPresentation,
-        StepperState, example_onboarding_steps,
-        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction,
-        example_history_entries, filter_history_entries, history_redaction_secret,
-        KeyboardHelp, KeyboardHelpState, example_help_entries,
+        CivilDate,
+        CivilDateRange,
+        CivilTime,
+        DateTimePicker,
+        DateTimePickerKind,
+        DateTimePickerState,
+        TimeDisplayFormat,
+        KeybindingRecorder,
+        KeybindingRecorderState,
+        NavItem,
+        NavigationList,
+        NavigationListState,
+        Sidebar,
+        SidebarPresentation,
+        SidebarState,
+        example_agent_workbench_nav,
+        example_database_nav,
+        example_settings_nav,
+        TreeNavigation,
+        TreeNavigationState,
+        example_docs_tree,
+        example_project_tree,
+        example_schema_tree,
+        example_settings_tree,
+        BreadcrumbItem,
+        BreadcrumbSeparator,
+        BreadcrumbStatus,
+        Breadcrumbs,
+        BreadcrumbsState,
+        PageTotal,
+        Pagination,
+        PaginationState,
+        StepItem,
+        StepStatus,
+        Stepper,
+        StepperNavPolicy,
+        StepperOrientation,
+        StepperPresentation,
+        StepperState,
+        example_onboarding_steps,
+        HistoryEntry,
+        HistoryKind,
+        HistoryPicker,
+        HistoryPickerState,
+        HistoryRedaction,
+        example_history_entries,
+        filter_history_entries,
+        history_redaction_secret,
+        KeyboardHelp,
+        KeyboardHelpState,
+        example_help_entries,
         filter_help_entries,
-        Tooltip, TooltipContent, TooltipState, TooltipVariant,
-        FullscreenViewer, FullscreenViewerState, SemanticZoomBadge, SemanticZoomState,
-        SourceContext, ScrollAnchor, ViewerContentKind,
-        PreviewCard, PreviewCardState, PreviewCardContent, PreviewLoadState, PreviewResourceKind,
-        example_command_preview, example_file_preview, example_session_preview,
+        Tooltip,
+        TooltipContent,
+        TooltipState,
+        TooltipVariant,
+        FullscreenViewer,
+        FullscreenViewerState,
+        SemanticZoomBadge,
+        SemanticZoomState,
+        SourceContext,
+        ScrollAnchor,
+        ViewerContentKind,
+        PreviewCard,
+        PreviewCardState,
+        PreviewCardContent,
+        PreviewLoadState,
+        PreviewResourceKind,
+        example_command_preview,
+        example_file_preview,
+        example_session_preview,
         example_symbol_preview,
-        ThemePicker, ThemePickerState, ThinkingBlock, Timeline, TimelineEvent, TimelineState,
-        TimelineRecipe, TimelineStatus, CheckpointTimeline, CheckpointTimelineState, Toast,
+        ThemePicker,
+        ThemePickerState,
+        ThinkingBlock,
+        Timeline,
+        TimelineEvent,
+        TimelineState,
+        TimelineRecipe,
+        TimelineStatus,
+        CheckpointTimeline,
+        CheckpointTimelineState,
+        Toast,
         NotificationCenter,
-        NotificationCenterState, NotificationRecipe,
-        example_notifications, Spinner, SpinnerState, ActivityIndicator, ActivityPhase,
-        ProgressSteps, ProgressStepsState, ProgressStepsMode, ProgressStepsPresentation,
-        ProgressStep, ProgressStepStatus, example_build_pipeline, example_agent_plan_steps,
-        StatusIndicator, SemanticStatus, example_status_catalog,
-        TokenMeter, ToolCard, ToolStatus, Transcript, TranscriptBlock,
-        TranscriptKind, TranscriptState, Tree, TreeNode, TreeNodeStatus, TreeState, Validation,
-        Viewport, VirtualGrid, VirtualGridState, WorkbenchMode,
+        NotificationCenterState,
+        NotificationRecipe,
+        example_notifications,
+        Spinner,
+        SpinnerState,
+        ActivityIndicator,
+        ActivityPhase,
+        ProgressSteps,
+        ProgressStepsState,
+        ProgressStepsMode,
+        ProgressStepsPresentation,
+        ProgressStep,
+        ProgressStepStatus,
+        example_build_pipeline,
+        example_agent_plan_steps,
+        StatusIndicator,
+        SemanticStatus,
+        example_status_catalog,
+        TokenMeter,
+        ToolCard,
+        ToolStatus,
+        Transcript,
+        TranscriptBlock,
+        TranscriptKind,
+        TranscriptState,
+        Tree,
+        TreeNode,
+        TreeNodeStatus,
+        TreeState,
+        Validation,
+        Viewport,
+        VirtualGrid,
+        VirtualGridState,
+        WorkbenchMode,
+    },
+    patterns::{
+        ProcessTable,
+        ProcessTableState,
+        ProcessRow,
+        ProcessKey,
+        ProcessStatus,
+        ProcessViewMode,
+        ProcessSignal,
+        ProcessSignalConfirm,
+        QueryEditor,
+        QueryEditorState,
+        QueryEditorMode,
+        QueryFocus,
+        QueryLanguage,
+        QueryParameter,
+        QueryResultSummary,
+        QueryRunStatus,
+        ResultGrid,
+        ResultGridState,
+        ResultColumn,
+        ResultRow,
+        ResultCell,
+        ResultQueryStatus,
+        ResultColumnStats,
+        ResultRedaction,
+        SchemaBrowser,
+        SchemaBrowserState,
+        SchemaBrowserEntry,
+        SchemaNodeKind,
+        SchemaConnStatus,
+        SchemaBrowserPresentation,
+        MetricsDashboard,
+        MetricsDashboardState,
+        MetricTile,
+        MetricTileHealth,
+        MetricAlert,
+        MetricAlertSeverity,
+        MetricViz,
+        PlanReview,
+        PlanReviewState,
+        SessionPicker,
+        SessionPickerState,
+        TaskRail,
     },
 };
 
@@ -10019,7 +10435,10 @@ fn design_system_button_recipes_story(frame: &mut Frame<'_>, area: Rect, system:
 
 fn center_both_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::Center;
-    use termrock::widgets::{EmptyState, Panel};
+    use termrock::widgets::{
+        EmptyState,
+        Panel,
+    };
     let child = Center::new(28, 6).layout(area).child;
     let _ = Panel::new(system).title("centered").paint(child, frame.buffer_mut(), None);
     let inner = Panel::new(system).title("centered").inner(child);
@@ -10032,7 +10451,10 @@ fn center_both_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn center_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::Center;
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
     let child = Center::dialog(24, 7).layout(area).child;
     let body = Panel::new(system)
         .title("Confirm")
@@ -10125,7 +10547,11 @@ fn center_onboarding_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn center_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::Center;
-    use termrock::widgets::{Panel, PanelBody, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelBody,
+        PanelChrome,
+    };
     let child = Center::failure(40, 6).layout(area).child;
     let _ = Panel::new(system)
         .title("Failed")
@@ -10171,7 +10597,10 @@ fn section_emphasized_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn section_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Section, SectionState};
+    use termrock::widgets::{
+        Section,
+        SectionState,
+    };
     let mut state = SectionState::new();
     state.set_focused(true);
     let body = Section::new("Advanced", system)
@@ -10191,7 +10620,10 @@ fn section_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn section_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Section, SectionAction};
+    use termrock::widgets::{
+        Section,
+        SectionAction,
+    };
     let actions = [
         SectionAction::new("reset", "Reset"),
         SectionAction::new("docs", "Docs"),
@@ -10244,7 +10676,10 @@ fn section_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn section_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Section, SectionAction};
+    use termrock::widgets::{
+        Section,
+        SectionAction,
+    };
     let actions = [SectionAction::new("more", "More")];
     let _ = Section::new("Title long", system)
         .description("this drops first")
@@ -10274,7 +10709,10 @@ fn grid_columns_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 
 fn grid_span_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::{layout_grid, GridItem, GridSpec, TrackSize};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
     let spec = GridSpec::columns_fr(2)
         .gaps(1, 1)
         .rows([TrackSize::Fixed(3), TrackSize::Weight(1)]);
@@ -10509,7 +10947,10 @@ fn grid_nav_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn stack_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::{FlexSize, Stack};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
     let layout = Stack::new().gap(1).layout(
         area,
         &[FlexSize::Fixed(2), FlexSize::Weight(1), FlexSize::Fixed(2)],
@@ -10676,7 +11117,10 @@ fn stack_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelVariant};
+    use termrock::widgets::{
+        Panel,
+        PanelVariant,
+    };
     let variants = [
         PanelVariant::Bordered,
         PanelVariant::Quiet,
@@ -10708,7 +11152,10 @@ fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn panel_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelBody};
+    use termrock::widgets::{
+        Panel,
+        PanelBody,
+    };
     let _ = Panel::new(system)
         .title("Inbox")
         .body(PanelBody::Empty)
@@ -10718,7 +11165,10 @@ fn panel_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn panel_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelState};
+    use termrock::widgets::{
+        Panel,
+        PanelState,
+    };
     let mut state = PanelState::new();
     state.set_focused(true);
     let body = Panel::new(system)
@@ -10769,7 +11219,10 @@ fn card_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Card, ToolStatus};
+    use termrock::widgets::{
+        Card,
+        ToolStatus,
+    };
     let status = ToolStatus::Running;
     let body = Card::new(system)
         .title("shell")
@@ -10791,7 +11244,10 @@ fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn card_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::{FlexSize, Inline, Stack};
-    use termrock::widgets::{Card, PanelVariant};
+    use termrock::widgets::{
+        Card,
+        PanelVariant,
+    };
 
     let rows = Stack::new().gap(1).layout(
         area,
@@ -10830,7 +11286,10 @@ fn card_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn panel_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelBody};
+    use termrock::widgets::{
+        Panel,
+        PanelBody,
+    };
     let _ = Panel::new(system)
         .title("Jobs")
         .badge("sync")
@@ -10840,7 +11299,11 @@ fn panel_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn panel_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelBody, PanelAction};
+    use termrock::widgets::{
+        Panel,
+        PanelBody,
+        PanelAction,
+    };
     let actions = [PanelAction::new("retry", "Retry")];
     let _ = Panel::new(system)
         .title("Deploy")
@@ -10854,7 +11317,11 @@ fn panel_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn panel_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelAction, PanelBody};
+    use termrock::widgets::{
+        Panel,
+        PanelAction,
+        PanelBody,
+    };
     let actions = [
         PanelAction::new("retry", "Retry"),
         PanelAction::new("logs", "Logs"),
@@ -10912,7 +11379,12 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     use std::time::{Duration, Instant};
     use termrock::runtime::FrameTick;
     use termrock::style::Motion;
-    use termrock::widgets::{ProgressBar, ProgressBarState, ProgressRecipe, ProgressStatus};
+    use termrock::widgets::{
+        ProgressBar,
+        ProgressBarState,
+        ProgressRecipe,
+        ProgressStatus,
+    };
     let mut state = ProgressBarState::transfer(12_582_912, 31_457_280);
     state.set_label("Download");
     state.set_rate(Some(2_200_000.0));
@@ -10930,7 +11402,12 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn progress_multiline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ProgressBar, ProgressKind, ProgressRecipe, ProgressStatus};
+    use termrock::widgets::{
+        ProgressBar,
+        ProgressKind,
+        ProgressRecipe,
+        ProgressStatus,
+    };
     ProgressBar::new(ProgressKind::Determinate { fraction: 0.4 }, system)
         .label("Compile")
         .recipe(ProgressRecipe::MultiLine)
@@ -10940,7 +11417,11 @@ fn progress_multiline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn progress_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ProgressBar, ProgressKind, ProgressStatus};
+    use termrock::widgets::{
+        ProgressBar,
+        ProgressKind,
+        ProgressStatus,
+    };
     ProgressBar::new(ProgressKind::Determinate { fraction: 0.72 }, system)
         .label("Build")
         .status(ProgressStatus::Failed)
@@ -11027,7 +11508,11 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn accordion_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("gen", "General").content_height(2),
@@ -11054,7 +11539,11 @@ fn accordion_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn accordion_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("profile", "Profile").content_height(3),
@@ -11075,7 +11564,11 @@ fn accordion_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn accordion_logs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("build", "build.log").content_height(3),
@@ -11104,7 +11597,11 @@ fn accordion_logs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn accordion_faq_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("q1", "How do I pin a version?").content_height(3),
@@ -11125,7 +11622,11 @@ fn accordion_faq_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn accordion_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("a", "Very long settings category title").content_height(2),
@@ -11145,7 +11646,11 @@ fn accordion_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn accordion_scroll_body_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
+    use termrock::widgets::{
+        Accordion,
+        AccordionItem,
+        AccordionState,
+    };
     use ratatui::widgets::Widget as _;
     let items = [
         AccordionItem::new("long", "Long transcript").content_height(20),
@@ -11168,7 +11673,10 @@ fn accordion_scroll_body_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn collapsible_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     use ratatui::widgets::Widget as _;
     let mut state = CollapsibleState::new().initially_open(true);
     state.set_focused(true);
@@ -11181,7 +11689,10 @@ fn collapsible_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn collapsible_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     use ratatui::widgets::Widget as _;
     let mut state = CollapsibleState::new().initially_open(true);
     let body = Collapsible::new("Advanced options", system)
@@ -11195,7 +11706,10 @@ fn collapsible_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn collapsible_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     use ratatui::widgets::Widget as _;
     let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);
     let mut outer = CollapsibleState::new().initially_open(true);
@@ -11224,7 +11738,10 @@ fn collapsible_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn collapsible_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     let mut state = CollapsibleState::new();
     let _ = Collapsible::new("Locked detail", system)
         .disabled(true)
@@ -11233,7 +11750,10 @@ fn collapsible_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn collapsible_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::GlyphSet;
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     use ratatui::widgets::Widget as _;
     let ascii = system.clone().glyphs(GlyphSet::Ascii);
     let chunks = Layout::vertical([Constraint::Length(3), Constraint::Length(2)]).split(area);
@@ -11257,7 +11777,10 @@ fn collapsible_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn collapsible_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Collapsible, CollapsibleState};
+    use termrock::widgets::{
+        Collapsible,
+        CollapsibleState,
+    };
     use ratatui::widgets::Widget as _;
     let mut state = CollapsibleState::new().initially_open(true);
     let body = Collapsible::new("Very long optional detail title", system).paint(
@@ -11273,7 +11796,11 @@ fn collapsible_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn toolbar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    use termrock::widgets::{
+        Toolbar,
+        ToolbarItem,
+        ToolbarState,
+    };
     let items = [
         ToolbarItem::action("save", "Save").hint("C-s").priority(90),
         ToolbarItem::action("open", "Open").priority(50),
@@ -11292,7 +11819,11 @@ fn toolbar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn toolbar_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    use termrock::widgets::{
+        Toolbar,
+        ToolbarItem,
+        ToolbarState,
+    };
     let items = [
         ToolbarItem::action("save", "Save").priority(90),
         ToolbarItem::action("open", "Open").priority(40),
@@ -11310,7 +11841,11 @@ fn toolbar_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn toolbar_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    use termrock::widgets::{
+        Toolbar,
+        ToolbarItem,
+        ToolbarState,
+    };
     let items = [
         ToolbarItem::action("a", "Cut"),
         ToolbarItem::action("b", "Copy"),
@@ -11327,7 +11862,11 @@ fn toolbar_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn toolbar_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
+    use termrock::widgets::{
+        Toolbar,
+        ToolbarItem,
+        ToolbarState,
+    };
     let items = [
         ToolbarItem::action("save", "Save").icon("💾").priority(90),
         ToolbarItem::action("open", "Open").icon("📂").priority(50),
@@ -11686,7 +12225,10 @@ fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        workbench_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+        workbench_panels,
+        Panel,
+        ResizablePanelGroup,
+        ResizablePanelGroupState,
     };
     let panels = workbench_panels();
     let group = ResizablePanelGroup::new(&panels, system).workbench();
@@ -11705,7 +12247,10 @@ fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        dashboard_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+        dashboard_panels,
+        Panel,
+        ResizablePanelGroup,
+        ResizablePanelGroupState,
     };
     let panels = dashboard_panels();
     let group = ResizablePanelGroup::new(&panels, system).dashboard();
@@ -11724,7 +12269,10 @@ fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn resizable_drawers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        workbench_panels, Panel, ResizablePanelGroup, ResizablePanelGroupState,
+        workbench_panels,
+        Panel,
+        ResizablePanelGroup,
+        ResizablePanelGroupState,
     };
     let panels = workbench_panels();
     let group = ResizablePanelGroup::new(&panels, system)
@@ -12355,7 +12903,10 @@ fn menu_bar_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn menu_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{MenuBarMenu, MenuNode};
+    use termrock::widgets::{
+        MenuBarMenu,
+        MenuNode,
+    };
     let menus = vec![MenuBarMenu::new(
         "file",
         "File",
@@ -13177,7 +13728,10 @@ fn object_inspector_json(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn object_inspector_compare(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{InspectKind, InspectMode};
+    use termrock::widgets::{
+        InspectKind,
+        InspectMode,
+    };
     let fields = [
         InspectorField::new("host", "api.prod.example")
             .path("host")
@@ -13214,7 +13768,10 @@ fn object_inspector_lazy(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn object_inspector_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{InspectKind, InspectPresentation};
+    use termrock::widgets::{
+        InspectKind,
+        InspectPresentation,
+    };
     let fields = [
         InspectorField::container("debug", "debug", InspectKind::Object)
             .child_count(2)
@@ -15088,7 +15645,10 @@ fn table_priority(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, variant: TableVariant) {
-    use termrock::widgets::{TableBodyState, TableRecipe};
+    use termrock::widgets::{
+        TableBodyState,
+        TableRecipe,
+    };
     let tokens = system.clone().density(termrock::style::Density::default());
     let sorted = matches!(variant, TableVariant::Sorted);
     let columns = [
@@ -15316,7 +15876,10 @@ fn render_text_area(
 }
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{StatusRegion, StatusSlot};
+    use termrock::widgets::{
+        StatusRegion,
+        StatusSlot,
+    };
     let left = [StatusSlot::mode("mode", "NOR")
         .style(Style::new().reversed())
         .hover_style(Style::new().bold().reversed())];
@@ -15353,7 +15916,10 @@ fn status_bar_minimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn status_bar_transient_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{StatusSlot, TransientStatus};
+    use termrock::widgets::{
+        StatusSlot,
+        TransientStatus,
+    };
     let left = [StatusSlot::mode("mode", "NOR")];
     let right = [StatusSlot::connection("c", "ok")];
     let msg = TransientStatus::new("file saved");
@@ -15366,7 +15932,10 @@ fn status_bar_transient_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn status_bar_rich_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{StatusRegion, StatusSlot};
+    use termrock::widgets::{
+        StatusRegion,
+        StatusSlot,
+    };
     let left = [StatusSlot::mode("m", "NOR"), StatusSlot::context("p", "crates/termrock")];
     let center = [StatusSlot::focus_zone("f", "transcript")];
     let right = [
@@ -15436,7 +16005,11 @@ fn status_indicator_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn virtual_list_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelChrome, VIRTUAL_LIST_BENCH_ROWS};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+        VIRTUAL_LIST_BENCH_ROWS,
+    };
     let mut state = VirtualListState::<u64>::million_fixed();
     state.set_sticky(StickyRegion {
         leading: 1,
@@ -15516,7 +16089,11 @@ fn virtual_list_loading_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        Panel, PanelChrome, StickyRegion, Virtualizer, data_view_bench,
+        Panel,
+        PanelChrome,
+        StickyRegion,
+        Virtualizer,
+        data_view_bench,
     };
 
     let mut v = Virtualizer::fixed(1)
@@ -15587,7 +16164,11 @@ fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        Panel, PanelChrome, ScrollArea, ScrollAreaState, ScrollBarVisibility,
+        Panel,
+        PanelChrome,
+        ScrollArea,
+        ScrollAreaState,
+        ScrollBarVisibility,
     };
 
     let mut state = ScrollAreaState::new().axes(true, true);
@@ -15635,7 +16216,14 @@ fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SelectionModel, SelectionVisual};
     use termrock::style::SelectionChrome;
-    use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome, RowRole};
+    use termrock::widgets::{
+        List,
+        ListRow,
+        ListState,
+        Panel,
+        PanelChrome,
+        RowRole,
+    };
 
     let rows = [
         ListRow {
@@ -15717,7 +16305,14 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{NavigationMove, UiIntent};
-    use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome, RowRole};
+    use termrock::widgets::{
+        List,
+        ListRow,
+        ListState,
+        Panel,
+        PanelChrome,
+        RowRole,
+    };
 
     let rows = [
         ListRow {
@@ -15800,7 +16395,10 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 
 fn roving_focus_group_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{RovingEntry, RovingFocusGroup, RovingOrientation};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let entries = vec![
         RovingEntry::new("a", "Alpha"),
@@ -15845,7 +16443,10 @@ fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     use termrock::interaction::{
         FocusGraph, FocusLens, FocusNavMode, FocusNode, FocusOutcome,
     };
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let mut g = FocusGraph::new().mode(FocusNavMode::Hybrid);
     let sidebar = Rect::new(area.x, area.y.saturating_add(1), 12, area.height.saturating_sub(2));
@@ -15914,7 +16515,10 @@ fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn event_result_compose_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{EventResult, compose_bubble};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     #[derive(Clone, Copy, Debug)]
     enum DemoMsg {
@@ -15999,7 +16603,10 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let mut scene = SemanticScene::<&str, &str>::new();
     let _ = scene.register(
@@ -16075,7 +16682,10 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 fn semantic_scene_hit_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
     use termrock::widgets::{
-        JumpOverlay, Panel, PanelChrome, assign_jump_badges_from_semantics,
+        JumpOverlay,
+        Panel,
+        PanelChrome,
+        assign_jump_badges_from_semantics,
     };
     use ratatui::layout::Position;
 
@@ -16154,7 +16764,10 @@ fn semantic_scene_snapshot_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 
 fn semantic_scene_virt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let logical = 1_000_000usize;
     let visible = usize::from(area.height.saturating_sub(2)).max(1).min(20);
@@ -16291,7 +16904,10 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::registry::{official_kernel_contracts, validate_contracts};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let catalog = official_kernel_contracts();
     let report = validate_contracts(&catalog);
@@ -16417,7 +17033,11 @@ fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::{Duration, Instant};
     use termrock::runtime::{FrameClock, FrameTick, Presence, spinner_demand};
     use termrock::style::Motion;
-    use termrock::widgets::{Panel, PanelChrome, Spinner};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+        Spinner,
+    };
 
     frame.render_widget(
         Panel::new(system)
@@ -16467,7 +17087,10 @@ fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::capability::{CapabilityBoundary, CapabilityProfile, TerminalCapabilities};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     frame.render_widget(
         Panel::new(system)
@@ -16518,7 +17141,10 @@ fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn responsive_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::{ResponsiveSnapshot, ResponsiveSurface, WIDTH_LADDER};
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     frame.render_widget(
         Panel::new(system)
@@ -16554,7 +17180,10 @@ fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     use termrock::interaction::{
         DismissDecision, DismissEventId, DismissGuard, DismissPolicy, DismissableLayer,
     };
-    use termrock::widgets::{Panel, PanelChrome};
+    use termrock::widgets::{
+        Panel,
+        PanelChrome,
+    };
 
     let mut menu = DismissableLayer::new(DismissPolicy::dismissible());
     menu.set_rect(Rect::new(
@@ -17109,7 +17738,12 @@ fn toast(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ToastKind, ToastQueue, ToastSpec, ToastStack};
+    use termrock::widgets::{
+        ToastKind,
+        ToastQueue,
+        ToastSpec,
+        ToastStack,
+    };
     use std::time::{Duration, Instant};
     use termrock::runtime::FrameTick;
     let mut q = ToastQueue::new();
@@ -17144,7 +17778,12 @@ fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn toast_stack_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ToastPriority, ToastQueue, ToastSpec, ToastStack};
+    use termrock::widgets::{
+        ToastPriority,
+        ToastQueue,
+        ToastSpec,
+        ToastStack,
+    };
     use std::time::{Duration, Instant};
     use termrock::runtime::FrameTick;
     let mut q = ToastQueue::new();
@@ -17438,7 +18077,11 @@ fn connectivity_unavailable_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn connectivity_status_bar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{StatusBar, StatusBarState, StatusSlot};
+    use termrock::widgets::{
+        StatusBar,
+        StatusBarState,
+        StatusSlot,
+    };
     let s = example_reconnecting_agent();
     let content = s.status_bar_content();
     let left = [StatusSlot::mode("m", "NOR")];
@@ -17452,7 +18095,11 @@ fn connectivity_status_bar_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn connectivity_notification_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{NotificationCenter, NotificationCenterState, NotificationRecipe};
+    use termrock::widgets::{
+        NotificationCenter,
+        NotificationCenterState,
+        NotificationRecipe,
+    };
     let conn = example_reconnecting_agent();
     let mut state = NotificationCenterState::new();
     state.replace_items(vec![conn.to_notification_item("conn-1")]);
@@ -17531,7 +18178,10 @@ fn skeleton_tiny_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn skeleton_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Skeleton, SkeletonRecipe};
+    use termrock::widgets::{
+        Skeleton,
+        SkeletonRecipe,
+    };
     Skeleton::recipe(SkeletonRecipe::Rows, 4, system)
         .ascii(true)
         .paint(area, frame.buffer_mut());
@@ -17958,7 +18608,10 @@ fn code_block_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn code_block_highlights_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{CodeGutterMark, RoleTokenSyntax};
+    use termrock::widgets::{
+        CodeGutterMark,
+        RoleTokenSyntax,
+    };
     let lines = ["ok line", "error here", "ok line"];
     let marks = [CodeGutterMark::new(1, '!', Role::Danger)];
     let highs = [
@@ -18306,7 +18959,11 @@ fn timeline_checkpoint_rows(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn checkpoint_timeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_checkpoints, CheckpointTimeline, CheckpointTimelineState};
+    use termrock::widgets::{
+        example_checkpoints,
+        CheckpointTimeline,
+        CheckpointTimelineState,
+    };
     let mut state = CheckpointTimelineState::new();
     state.set_checkpoints(example_checkpoints());
     state.focused = true;
@@ -18315,7 +18972,10 @@ fn checkpoint_timeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn checkpoint_timeline_preview_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_checkpoints, CheckpointTimeline, CheckpointTimelineMode, CheckpointTimelineState,
+        example_checkpoints,
+        CheckpointTimeline,
+        CheckpointTimelineMode,
+        CheckpointTimelineState,
     };
     let mut state = CheckpointTimelineState::new();
     state.set_checkpoints(example_checkpoints());
@@ -18329,7 +18989,10 @@ fn checkpoint_timeline_preview_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn checkpoint_timeline_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_checkpoints, CheckpointConfirmAction, CheckpointTimeline, CheckpointTimelineMode,
+        example_checkpoints,
+        CheckpointConfirmAction,
+        CheckpointTimeline,
+        CheckpointTimelineMode,
         CheckpointTimelineState,
     };
     let mut state = CheckpointTimelineState::new();
@@ -18346,7 +19009,9 @@ fn checkpoint_timeline_confirm_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn checkpoint_timeline_boundaries_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_checkpoints, CheckpointTimeline, CheckpointTimelineState,
+        example_checkpoints,
+        CheckpointTimeline,
+        CheckpointTimelineState,
     };
     let mut state = CheckpointTimelineState::new();
     state.set_checkpoints(example_checkpoints());
@@ -18360,7 +19025,11 @@ fn checkpoint_timeline_boundaries_story(frame: &mut Frame<'_>, area: Rect, syste
 }
 
 fn checkpoint_timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Checkpoint, CheckpointTimeline, CheckpointTimelineState};
+    use termrock::widgets::{
+        Checkpoint,
+        CheckpointTimeline,
+        CheckpointTimelineState,
+    };
     let mut state = CheckpointTimelineState::new();
     state.set_checkpoints(vec![
         Checkpoint::new("u0", "12:00", "Inspect 🔍")
@@ -18374,7 +19043,12 @@ fn checkpoint_timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
 }
 
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
+    use termrock::widgets::{
+        ComposerChip,
+        ContextEstimate,
+        ModeIndicator,
+        ModelIndicator,
+    };
     let tokens = system
         .clone()
         .density(termrock::style::Density::Comfortable);
@@ -18397,7 +19071,10 @@ fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ModeIndicator, ModelIndicator};
+    use termrock::widgets::{
+        ModeIndicator,
+        ModelIndicator,
+    };
     let tokens = system.clone().density(termrock::style::Density::Compact);
     let mut state = PromptComposerState::new();
     state.set_busy(true);
@@ -18416,8 +19093,11 @@ fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 
 
 fn approval_queue_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    use termrock::patterns::{
+        example_approval_queue,
+        ApprovalQueue,
+        ApprovalQueuePresentation,
+        ApprovalQueueState,
     };
     let mut state = ApprovalQueueState::new();
     state.set_items(example_approval_queue());
@@ -18427,8 +19107,11 @@ fn approval_queue_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn approval_queue_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    use termrock::patterns::{
+        example_approval_queue,
+        ApprovalQueue,
+        ApprovalQueuePresentation,
+        ApprovalQueueState,
     };
     let mut state = ApprovalQueueState::new();
     state.set_items(example_approval_queue());
@@ -18438,8 +19121,11 @@ fn approval_queue_badge_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn approval_queue_drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_approval_queue, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
+    use termrock::patterns::{
+        example_approval_queue,
+        ApprovalQueue,
+        ApprovalQueuePresentation,
+        ApprovalQueueState,
     };
     let mut state = ApprovalQueueState::new();
     state.set_items(example_approval_queue());
@@ -18450,8 +19136,14 @@ fn approval_queue_drawer_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn approval_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        ApprovalItem, ApprovalKind, ApprovalQueue, ApprovalQueuePresentation, ApprovalQueueState,
         PermissionRisk,
+    };
+    use termrock::patterns::{
+        ApprovalItem,
+        ApprovalKind,
+        ApprovalQueue,
+        ApprovalQueuePresentation,
+        ApprovalQueueState,
     };
     let mut state = ApprovalQueueState::new();
     state.set_items(vec![ApprovalItem::new(
@@ -18467,8 +19159,10 @@ fn approval_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_working_state, WorkingStateCard, WorkingStateCardState,
+    use termrock::patterns::{
+        example_working_state,
+        WorkingStateCard,
+        WorkingStateCardState,
         WorkingStatePresentation,
     };
     let mut state = WorkingStateCardState::new();
@@ -18479,8 +19173,10 @@ fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn working_state_card_waiting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_working_waiting, WorkingStateCard, WorkingStateCardState,
+    use termrock::patterns::{
+        example_working_waiting,
+        WorkingStateCard,
+        WorkingStateCardState,
         WorkingStatePresentation,
     };
     let mut state = WorkingStateCardState::new();
@@ -18491,8 +19187,10 @@ fn working_state_card_waiting_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn working_state_card_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_working_state, WorkingStateCard, WorkingStateCardState,
+    use termrock::patterns::{
+        example_working_state,
+        WorkingStateCard,
+        WorkingStateCardState,
         WorkingStatePresentation,
     };
     let mut state = WorkingStateCardState::new();
@@ -18503,8 +19201,12 @@ fn working_state_card_collapsed_story(frame: &mut Frame<'_>, area: Rect, system:
 }
 
 fn working_state_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        WorkingPhase, WorkingResource, WorkingState, WorkingStateCard, WorkingStateCardState,
+    use termrock::patterns::{
+        WorkingPhase,
+        WorkingResource,
+        WorkingState,
+        WorkingStateCard,
+        WorkingStateCardState,
         WorkingStatePresentation,
     };
     let mut state = WorkingStateCardState::new();
@@ -18518,8 +19220,10 @@ fn working_state_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn integration_status_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_integrations, IntegrationStatus, IntegrationStatusPresentation,
+    use termrock::patterns::{
+        example_integrations,
+        IntegrationStatus,
+        IntegrationStatusPresentation,
         IntegrationStatusState,
     };
     let mut state = IntegrationStatusState::new();
@@ -18530,9 +19234,12 @@ fn integration_status_list_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn integration_status_panel_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_integrations, IntegrationDetailTab, IntegrationStatus,
-        IntegrationStatusPresentation, IntegrationStatusState,
+    use termrock::patterns::{
+        example_integrations,
+        IntegrationDetailTab,
+        IntegrationStatus,
+        IntegrationStatusPresentation,
+        IntegrationStatusState,
     };
     let mut state = IntegrationStatusState::new();
     state.set_entries(example_integrations());
@@ -18546,8 +19253,10 @@ fn integration_status_panel_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn integration_status_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_integrations, IntegrationStatus, IntegrationStatusPresentation,
+    use termrock::patterns::{
+        example_integrations,
+        IntegrationStatus,
+        IntegrationStatusPresentation,
         IntegrationStatusState,
     };
     let mut state = IntegrationStatusState::new();
@@ -18558,9 +19267,14 @@ fn integration_status_badge_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn integration_status_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        IntegrationEntry, IntegrationHealth, IntegrationKind, IntegrationProvenance,
-        IntegrationStatus, IntegrationStatusPresentation, IntegrationStatusState,
+    use termrock::patterns::{
+        IntegrationEntry,
+        IntegrationHealth,
+        IntegrationKind,
+        IntegrationProvenance,
+        IntegrationStatus,
+        IntegrationStatusPresentation,
+        IntegrationStatusState,
     };
     let mut state = IntegrationStatusState::new();
     state.set_entries(vec![
@@ -18574,8 +19288,11 @@ fn integration_status_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn agent_status_header_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_agent_status, AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation,
+    use termrock::patterns::{
+        example_agent_status,
+        AgentStatusHeader,
+        AgentStatusHeaderState,
+        AgentStatusPresentation,
     };
     let mut state = AgentStatusHeaderState::new();
     state.set_snapshot(example_agent_status());
@@ -18590,8 +19307,10 @@ fn agent_status_header_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn agent_status_header_idle_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_agent_status_idle, AgentStatusHeader, AgentStatusHeaderState,
+    use termrock::patterns::{
+        example_agent_status_idle,
+        AgentStatusHeader,
+        AgentStatusHeaderState,
         AgentStatusPresentation,
     };
     let mut state = AgentStatusHeaderState::new();
@@ -18603,8 +19322,11 @@ fn agent_status_header_idle_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn agent_status_header_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation, AgentStatusSnapshot,
+    use termrock::patterns::{
+        AgentStatusHeader,
+        AgentStatusHeaderState,
+        AgentStatusPresentation,
+        AgentStatusSnapshot,
         AgentWorkStatus,
     };
     let mut state = AgentStatusHeaderState::new();
@@ -18624,8 +19346,11 @@ fn agent_status_header_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
 }
 
 fn prompt_queue_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+    use termrock::patterns::{
+        example_prompt_queue,
+        AgentBusyState,
+        PromptQueue,
+        PromptQueuePresentation,
         PromptQueueState,
     };
     let mut state = PromptQueueState::new();
@@ -18637,8 +19362,11 @@ fn prompt_queue_compact_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn prompt_queue_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
+    use termrock::patterns::{
+        example_prompt_queue,
+        AgentBusyState,
+        PromptQueue,
+        PromptQueuePresentation,
         PromptQueueState,
     };
     let mut state = PromptQueueState::new();
@@ -18651,9 +19379,13 @@ fn prompt_queue_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn prompt_queue_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_prompt_queue, AgentBusyState, PromptQueue, PromptQueuePresentation,
-        PromptQueueState, PromptQueueStatus,
+    use termrock::patterns::{
+        example_prompt_queue,
+        AgentBusyState,
+        PromptQueue,
+        PromptQueuePresentation,
+        PromptQueueState,
+        PromptQueueStatus,
     };
     let mut state = PromptQueueState::new();
     state.set_items(example_prompt_queue());
@@ -18671,8 +19403,12 @@ fn prompt_queue_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn prompt_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        AgentBusyState, PromptQueue, PromptQueueItem, PromptQueuePresentation, PromptQueueRef,
+    use termrock::patterns::{
+        AgentBusyState,
+        PromptQueue,
+        PromptQueueItem,
+        PromptQueuePresentation,
+        PromptQueueRef,
         PromptQueueState,
     };
     let mut state = PromptQueueState::new();
@@ -18699,7 +19435,11 @@ fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator};
+    use termrock::widgets::{
+        ComposerChip,
+        ContextEstimate,
+        ModeIndicator,
+    };
     let tokens = system
         .clone()
         .density(termrock::style::Density::Comfortable);
@@ -18724,7 +19464,11 @@ fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ComposerConnection, ModeIndicator, ModelIndicator};
+    use termrock::widgets::{
+        ComposerConnection,
+        ModeIndicator,
+        ModelIndicator,
+    };
     let tokens = system
         .clone()
         .density(termrock::style::Density::Comfortable);
@@ -18747,7 +19491,11 @@ fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ComposerPresentation, ModeIndicator, ModelIndicator};
+    use termrock::widgets::{
+        ComposerPresentation,
+        ModeIndicator,
+        ModelIndicator,
+    };
     let tokens = system
         .clone()
         .density(termrock::style::Density::Comfortable);
@@ -18791,7 +19539,10 @@ fn button_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn button_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ButtonSize, ButtonVariant};
+    use termrock::widgets::{
+        ButtonSize,
+        ButtonVariant,
+    };
     let variants = [
         (ButtonVariant::Primary, "Primary"),
         (ButtonVariant::Secondary, "Secondary"),
@@ -18831,7 +19582,10 @@ fn button_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ButtonSize, ButtonVariant};
+    use termrock::widgets::{
+        ButtonSize,
+        ButtonVariant,
+    };
     let labels = ["Cut", "Copy", "Paste"];
     let mut x = area.x;
     for label in labels {
@@ -18859,7 +19613,10 @@ fn button_icon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn icon_button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{IconButton, IconButtonState};
+    use termrock::widgets::{
+        IconButton,
+        IconButtonState,
+    };
     let items = [("✂", "Cut"), ("⧉", "Copy"), ("📋", "Paste")];
     let ascii = [("/", "Cut"), ("c", "Copy"), ("p", "Paste")];
     let mut x = area.x;
@@ -18889,7 +19646,10 @@ fn icon_button_toolbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn icon_button_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{IconButton, IconButtonState};
+    use termrock::widgets::{
+        IconButton,
+        IconButtonState,
+    };
     let mut state = IconButtonState::new();
     // Host must not default-focus destructive
     state.activation.set_accepts_input(false);
@@ -18901,7 +19661,10 @@ fn icon_button_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn icon_button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{IconButton, IconButtonState};
+    use termrock::widgets::{
+        IconButton,
+        IconButtonState,
+    };
     let mut state = IconButtonState::new();
     state.activation.set_accepts_input(true);
     state.activation.set_loading(true);
@@ -18911,7 +19674,11 @@ fn icon_button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn icon_button_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{IconButton, IconButtonSize, IconButtonState};
+    use termrock::widgets::{
+        IconButton,
+        IconButtonSize,
+        IconButtonState,
+    };
     let chunks = Layout::horizontal([Constraint::Length(4), Constraint::Min(10)]).split(area);
     let mut state = IconButtonState::new();
     state.activation.set_accepts_input(true);
@@ -19433,7 +20200,11 @@ fn data_table_project_window(
     logical: u64,
     offset: u64,
 ) {
-    use termrock::widgets::{ColumnPin, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnPin,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::Compact);
     let mut columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", DataColumnWidth::Fixed(8))
@@ -19494,7 +20265,10 @@ fn data_table_rows_1m(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn data_table_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnPin, DataColumnWidth};
+    use termrock::widgets::{
+        ColumnPin,
+        DataColumnWidth,
+    };
     let tokens = system.clone().density(Density::Compact);
     let mut cols = Vec::new();
     cols.push(
@@ -19580,7 +20354,12 @@ fn data_table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn data_table_visidata(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        ColumnPin, DataColumn, DataColumnWidth, DataTableNavMode, LoadState, SortSpec,
+        ColumnPin,
+        DataColumn,
+        DataColumnWidth,
+        DataTableNavMode,
+        LoadState,
+        SortSpec,
     };
     let tokens = system.clone().density(Density::Compact);
     let columns = termrock::widgets::ColumnModel::new(vec![
@@ -19629,7 +20408,13 @@ fn data_table_visidata(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn data_table_range(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{CellCoord, DataColumn, DataColumnWidth, DataTableNavMode, LoadState};
+    use termrock::widgets::{
+        CellCoord,
+        DataColumn,
+        DataColumnWidth,
+        DataTableNavMode,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::Compact);
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("a", "A", DataColumnWidth::Fixed(6)),
@@ -19654,7 +20439,12 @@ fn data_table_range(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn data_table_groups(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{DataColumn, DataColumnWidth, GroupHeader, LoadState};
+    use termrock::widgets::{
+        DataColumn,
+        DataColumnWidth,
+        GroupHeader,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(12)),
@@ -19679,7 +20469,11 @@ fn data_table_groups(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn data_table_edit(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::default());
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("id", "ID", DataColumnWidth::Fixed(4)),
@@ -19916,7 +20710,10 @@ fn form_wizard_resume_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Tag, TagState};
+    use termrock::widgets::{
+        Tag,
+        TagState,
+    };
     let chunks = Layout::horizontal([Constraint::Length(18), Constraint::Min(12)]).split(area);
     let tag = Tag::removable_tag("f1", "paste-body.txt", system);
     let mut st = TagState::new();
@@ -19929,7 +20726,10 @@ fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn chip_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Chip, ChipState};
+    use termrock::widgets::{
+        Chip,
+        ChipState,
+    };
     let chunks = Layout::horizontal([
         Constraint::Length(14),
         Constraint::Length(14),
@@ -19948,7 +20748,10 @@ fn chip_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn chip_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Chip, ChipState};
+    use termrock::widgets::{
+        Chip,
+        ChipState,
+    };
     let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).split(area);
     let mut e = ChipState::new(false);
     let _ = Chip::new("err", "invalid path", system)
@@ -19962,7 +20765,11 @@ fn chip_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn token_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{TokenItem, TokenStrip, TokenStripState};
+    use termrock::widgets::{
+        TokenItem,
+        TokenStrip,
+        TokenStripState,
+    };
     let items = [
         TokenItem::chip("a", "rust").selected(true),
         TokenItem::chip("b", "filters"),
@@ -19978,7 +20785,11 @@ fn token_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn token_strip_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{TokenItem, TokenStrip, TokenStripState};
+    use termrock::widgets::{
+        TokenItem,
+        TokenStrip,
+        TokenStripState,
+    };
     let items = [
         TokenItem::chip("1", "one"),
         TokenItem::chip("2", "two"),
@@ -19992,7 +20803,11 @@ fn token_strip_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn attachment_chip_file_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{AttachmentChip, AttachmentChipState, AttachmentItem};
+    use termrock::widgets::{
+        AttachmentChip,
+        AttachmentChipState,
+        AttachmentItem,
+    };
     let item = AttachmentItem::file("f1", "main.rs")
         .bytes(4200)
         .line_count(128);
@@ -20003,7 +20818,10 @@ fn attachment_chip_file_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn attachment_chip_broken_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        AttachmentChip, AttachmentChipState, AttachmentItem, AttachmentStatus,
+        AttachmentChip,
+        AttachmentChipState,
+        AttachmentItem,
+        AttachmentStatus,
     };
     let item = AttachmentItem::file("f2", "missing/path.rs")
         .status(AttachmentStatus::Error)
@@ -20015,7 +20833,10 @@ fn attachment_chip_broken_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn attachment_chip_upload_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        AttachmentChip, AttachmentChipState, AttachmentItem, AttachmentStatus,
+        AttachmentChip,
+        AttachmentChipState,
+        AttachmentItem,
+        AttachmentStatus,
     };
     let item = AttachmentItem::image("img1", "shot.png").status(AttachmentStatus::Uploading {
         progress: 67,
@@ -20026,7 +20847,11 @@ fn attachment_chip_upload_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn paste_chip_large_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    use termrock::widgets::{
+        PasteChip,
+        PasteChipState,
+        PastePayload,
+    };
     let body = "fn main() {\n  println!(\"hello\");\n}\n".repeat(20);
     let paste = PastePayload::from_body("p1", body);
     let mut state = PasteChipState::new();
@@ -20035,7 +20860,11 @@ fn paste_chip_large_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn paste_chip_binary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    use termrock::widgets::{
+        PasteChip,
+        PasteChipState,
+        PastePayload,
+    };
     let paste = PastePayload::binary("bin1", 12_288);
     let mut state = PasteChipState::new();
     state.set_focused(true);
@@ -20043,7 +20872,11 @@ fn paste_chip_binary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn paste_chip_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{PasteChip, PasteChipState, PastePayload};
+    use termrock::widgets::{
+        PasteChip,
+        PasteChipState,
+        PastePayload,
+    };
     let paste = PastePayload::from_body(
         "p2",
         "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta\neta\ntheta\niota\n",
@@ -20058,7 +20891,11 @@ fn paste_chip_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn attachment_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        paint_attachment_strip, AttachmentItem, AttachmentStatus, PastePayload, TokenStripLayout,
+        paint_attachment_strip,
+        AttachmentItem,
+        AttachmentStatus,
+        PastePayload,
+        TokenStripLayout,
         TokenStripState,
     };
     let atts = [
@@ -20090,7 +20927,11 @@ fn attachment_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn file_mention_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{FileMention, InlineMention, InlineMentionState};
+    use termrock::widgets::{
+        FileMention,
+        InlineMention,
+        InlineMentionState,
+    };
     let a = FileMention::path("f1", "main.rs", "src/main.rs");
     let b = FileMention::symbol("s1", "run", "mod::run");
     let chunks = Layout::horizontal([Constraint::Length(20), Constraint::Min(16)]).split(area);
@@ -20102,7 +20943,11 @@ fn file_mention_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn file_mention_missing_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{FileMention, InlineMention, InlineMentionState};
+    use termrock::widgets::{
+        FileMention,
+        InlineMention,
+        InlineMentionState,
+    };
     let m = FileMention::missing("m1", "gone.rs", "old/gone.rs");
     let mut st = InlineMentionState::new();
     st.set_focused(true);
@@ -20111,7 +20956,10 @@ fn file_mention_missing_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn file_mention_ambiguous_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        FileMention, InlineMention, InlineMentionState, MentionDisambiguator,
+        FileMention,
+        InlineMention,
+        InlineMentionState,
+        MentionDisambiguator,
     };
     let m = FileMention::ambiguous(
         "u1",
@@ -20132,7 +20980,11 @@ fn file_mention_ambiguous_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn entity_mention_agent_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{EntityMention, InlineMention, InlineMentionState};
+    use termrock::widgets::{
+        EntityMention,
+        InlineMention,
+        InlineMentionState,
+    };
     let agent = EntityMention::agent("a1", "planner", "agent:planner");
     let tool = EntityMention::tool("t1", "bash", "tool:bash");
     let chunks = Layout::horizontal([Constraint::Length(22), Constraint::Min(16)]).split(area);
@@ -20144,7 +20996,12 @@ fn entity_mention_agent_tool_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn entity_mention_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{EntityMention, InlineMention, InlineMentionState, MentionValidity};
+    use termrock::widgets::{
+        EntityMention,
+        InlineMention,
+        InlineMentionState,
+        MentionValidity,
+    };
     let mut s = EntityMention::session("s1", "chat-42", "session:42");
     s.as_mut().validity = MentionValidity::Stale;
     let mut st = InlineMentionState::new();
@@ -20154,7 +21011,11 @@ fn entity_mention_stale_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn mention_draft_atomic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        FileMention, InlineMention, InlineMentionState, MentionDraft, MentionSegment,
+        FileMention,
+        InlineMention,
+        InlineMentionState,
+        MentionDraft,
+        MentionSegment,
     };
     let mut d = MentionDraft::from_text("Review ");
     d.insert_mention(FileMention::path("f", "lib.rs", "src/lib.rs").mention);
@@ -20179,7 +21040,9 @@ fn mention_draft_atomic_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn slash_command_menu_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+        example_slash_catalog,
+        SlashCommandMenu,
+        SlashCommandMenuState,
     };
     let cat = example_slash_catalog();
     let mut st = SlashCommandMenuState::new();
@@ -20190,7 +21053,10 @@ fn slash_command_menu_filter_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn slash_command_menu_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_slash_catalog, CompletionStatus, SlashCommandMenu, SlashCommandMenuState,
+        example_slash_catalog,
+        CompletionStatus,
+        SlashCommandMenu,
+        SlashCommandMenuState,
     };
     let cat = example_slash_catalog();
     let mut st = SlashCommandMenuState::new();
@@ -20203,7 +21069,11 @@ fn slash_command_menu_loading_story(frame: &mut Frame<'_>, area: Rect, system: &
 
 fn slash_command_menu_arguments_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState, SlashMenuPhase, SlashQuery,
+        example_slash_catalog,
+        SlashCommandMenu,
+        SlashCommandMenuState,
+        SlashMenuPhase,
+        SlashQuery,
     };
     let cat = example_slash_catalog();
     let mut st = SlashCommandMenuState::new();
@@ -20224,7 +21094,9 @@ fn slash_command_menu_arguments_story(frame: &mut Frame<'_>, area: Rect, system:
 
 fn slash_command_menu_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+        example_slash_catalog,
+        SlashCommandMenu,
+        SlashCommandMenuState,
     };
     let cat = example_slash_catalog();
     let mut st = SlashCommandMenuState::new();
@@ -20235,7 +21107,9 @@ fn slash_command_menu_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn slash_command_menu_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_slash_catalog, SlashCommandMenu, SlashCommandMenuState,
+        example_slash_catalog,
+        SlashCommandMenu,
+        SlashCommandMenuState,
     };
     let cat = example_slash_catalog();
     let mut st = SlashCommandMenuState::new();
@@ -20245,7 +21119,11 @@ fn slash_command_menu_disabled_story(frame: &mut Frame<'_>, area: Rect, system: 
 }
 
 fn model_selector_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_model_catalog, ModelSelector, ModelSelectorState};
+    use termrock::widgets::{
+        example_model_catalog,
+        ModelSelector,
+        ModelSelectorState,
+    };
     let cat = example_model_catalog();
     let mut st = ModelSelectorState::with_selected("smart");
     st.reasoning = termrock::widgets::ReasoningEffort::High;
@@ -20256,7 +21134,10 @@ fn model_selector_compact_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn model_selector_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_model_catalog, ModelSelector, ModelSelectorPresentation, ModelSelectorState,
+        example_model_catalog,
+        ModelSelector,
+        ModelSelectorPresentation,
+        ModelSelectorState,
     };
     let cat = example_model_catalog();
     let mut st = ModelSelectorState::with_selected("fast");
@@ -20267,7 +21148,10 @@ fn model_selector_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 
 fn model_selector_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_model_catalog, ModelSelector, ModelSelectorPresentation, ModelSelectorState,
+        example_model_catalog,
+        ModelSelector,
+        ModelSelectorPresentation,
+        ModelSelectorState,
     };
     let cat = example_model_catalog();
     let mut st = ModelSelectorState::new();
@@ -20278,7 +21162,10 @@ fn model_selector_empty_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn agent_mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        default_agent_modes, AgentModePresentation, AgentModeSelector, AgentModeSelectorState,
+        default_agent_modes,
+        AgentModePresentation,
+        AgentModeSelector,
+        AgentModeSelectorState,
     };
     let modes = default_agent_modes();
     let mut st = AgentModeSelectorState::with_selected("full-auto");
@@ -20288,7 +21175,10 @@ fn agent_mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn agent_mode_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        default_agent_modes, AgentModePresentation, AgentModeSelector, AgentModeSelectorState,
+        default_agent_modes,
+        AgentModePresentation,
+        AgentModeSelector,
+        AgentModeSelectorState,
     };
     let modes = default_agent_modes();
     let mut st = AgentModeSelectorState::with_selected("edit");
@@ -20299,7 +21189,10 @@ fn agent_mode_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn agent_mode_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        default_agent_modes, AgentModeSelector, AgentModeSelectorState, ExecutionPolicyKind,
+        default_agent_modes,
+        AgentModeSelector,
+        AgentModeSelectorState,
+        ExecutionPolicyKind,
     };
     let modes = default_agent_modes();
     let mut st = AgentModeSelectorState::with_selected("auto");
@@ -20309,7 +21202,10 @@ fn agent_mode_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        default_agent_modes, example_model_catalog, AgentModeSelectorState, ComposerSelectors,
+        default_agent_modes,
+        example_model_catalog,
+        AgentModeSelectorState,
+        ComposerSelectors,
         ModelSelectorState,
     };
     let modes = default_agent_modes();
@@ -20326,7 +21222,11 @@ fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn message_thread_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    use termrock::widgets::{
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+    };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
@@ -20335,7 +21235,11 @@ fn message_thread_basic_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn message_thread_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    use termrock::widgets::{
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+    };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
@@ -20345,7 +21249,11 @@ fn message_thread_follow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn message_thread_unread_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    use termrock::widgets::{
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+    };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
@@ -20357,7 +21265,10 @@ fn message_thread_unread_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn message_thread_compact_zoom_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_message_session, MessageThread, MessageThreadState, MessageZoom,
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+        MessageZoom,
     };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
@@ -20367,7 +21278,11 @@ fn message_thread_compact_zoom_story(frame: &mut Frame<'_>, area: Rect, system: 
 }
 
 fn message_thread_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    use termrock::widgets::{
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+    };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
@@ -20377,7 +21292,11 @@ fn message_thread_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_message_session, MessageThread, MessageThreadState};
+    use termrock::widgets::{
+        example_message_session,
+        MessageThread,
+        MessageThreadState,
+    };
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
@@ -20389,7 +21308,9 @@ fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn streaming_markdown_mid_fence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+        streaming_markdown_fixtures,
+        StreamingMarkdown,
+        StreamingMarkdownState,
     };
     let mut st = StreamingMarkdownState::new();
     st.coalesce_deltas = 1;
@@ -20402,7 +21323,9 @@ fn streaming_markdown_mid_fence_story(frame: &mut Frame<'_>, area: Rect, system:
 
 fn streaming_markdown_complete_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+        streaming_markdown_fixtures,
+        StreamingMarkdown,
+        StreamingMarkdownState,
     };
     let mut st = StreamingMarkdownState::new();
     st.coalesce_deltas = 1;
@@ -20418,7 +21341,9 @@ fn streaming_markdown_complete_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn streaming_markdown_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        streaming_markdown_fixtures, StreamingMarkdown, StreamingMarkdownState,
+        streaming_markdown_fixtures,
+        StreamingMarkdown,
+        StreamingMarkdownState,
     };
     let mut st = StreamingMarkdownState::new();
     st.coalesce_deltas = 1;
@@ -20432,7 +21357,10 @@ fn streaming_markdown_failed_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn streaming_markdown_citations_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        StreamCitation, StreamInsertion, StreamingMarkdown, StreamingMarkdownState,
+        StreamCitation,
+        StreamInsertion,
+        StreamingMarkdown,
+        StreamingMarkdownState,
     };
     let mut st = StreamingMarkdownState::new();
     st.coalesce_deltas = 1;
@@ -20445,7 +21373,10 @@ fn streaming_markdown_citations_story(frame: &mut Frame<'_>, area: Rect, system:
 }
 
 fn streaming_markdown_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{StreamingMarkdown, StreamingMarkdownState};
+    use termrock::widgets::{
+        StreamingMarkdown,
+        StreamingMarkdownState,
+    };
     let mut st = StreamingMarkdownState::new();
     st.coalesce_deltas = 1;
     st.push_delta("## Narrow\n\nA longer paragraph that wraps on small widths.\n\n```\ncode\n```\n");
@@ -20456,7 +21387,10 @@ fn streaming_markdown_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn source_citation_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_citations, DestinationDisplay, SourceCitation, SourceCitationState,
+        example_citations,
+        DestinationDisplay,
+        SourceCitation,
+        SourceCitationState,
     };
     let src = example_citations();
     let chunks = Layout::horizontal([
@@ -20477,7 +21411,11 @@ fn source_citation_inline_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn source_citation_offline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_citations, SourceCitation, SourceCitationState};
+    use termrock::widgets::{
+        example_citations,
+        SourceCitation,
+        SourceCitationState,
+    };
     let src = example_citations();
     let mut st = SourceCitationState::new();
     st.focused = true;
@@ -20488,7 +21426,11 @@ fn source_citation_offline_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn citation_list_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    use termrock::widgets::{
+        example_citations,
+        CitationList,
+        CitationListState,
+    };
     let src = example_citations();
     let mut st = CitationListState::new();
     st.expand();
@@ -20500,7 +21442,11 @@ fn citation_list_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn citation_list_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    use termrock::widgets::{
+        example_citations,
+        CitationList,
+        CitationListState,
+    };
     let src = example_citations();
     let mut st = CitationListState::new();
     CitationList::new(&src, system)
@@ -20509,7 +21455,11 @@ fn citation_list_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn citation_list_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_citations, CitationList, CitationListState};
+    use termrock::widgets::{
+        example_citations,
+        CitationList,
+        CitationListState,
+    };
     let src = example_citations();
     let mut st = CitationListState::new();
     st.expand();
@@ -20521,7 +21471,10 @@ fn citation_list_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+        example_tool_calls,
+        ToolCallCard,
+        ToolCallCardState,
+        ToolCallPresentation,
     };
     let calls = example_tool_calls();
     let call = calls
@@ -20536,7 +21489,10 @@ fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn tool_call_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+        example_tool_calls,
+        ToolCallCard,
+        ToolCallCardState,
+        ToolCallPresentation,
     };
     let calls = example_tool_calls();
     let call = calls
@@ -20551,7 +21507,10 @@ fn tool_call_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn tool_call_card_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+        example_tool_calls,
+        ToolCallCard,
+        ToolCallCardState,
+        ToolCallPresentation,
     };
     let calls = example_tool_calls();
     let call = &calls[0];
@@ -20563,7 +21522,10 @@ fn tool_call_card_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 
 fn tool_call_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+        example_tool_calls,
+        ToolCallCard,
+        ToolCallCardState,
+        ToolCallPresentation,
     };
     let calls = example_tool_calls();
     let call = calls
@@ -20578,7 +21540,10 @@ fn tool_call_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_tool_calls, ToolCallCard, ToolCallCardState, ToolCallPresentation,
+        example_tool_calls,
+        ToolCallCard,
+        ToolCallCardState,
+        ToolCallPresentation,
     };
     let calls = example_tool_calls();
     let call = &calls[0];
@@ -20591,9 +21556,12 @@ fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
-        TerminalRunCardState, TerminalRunPresentation,
+    use termrock::patterns::{
+        example_terminal_run_lines,
+        example_terminal_runs,
+        TerminalRunCard,
+        TerminalRunCardState,
+        TerminalRunPresentation,
     };
     let runs = example_terminal_runs();
     let lines = example_terminal_run_lines();
@@ -20606,8 +21574,11 @@ fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_terminal_runs, TerminalRunCard, TerminalRunCardState, TerminalRunPresentation,
+    use termrock::patterns::{
+        example_terminal_runs,
+        TerminalRunCard,
+        TerminalRunCardState,
+        TerminalRunPresentation,
     };
     let runs = example_terminal_runs();
     let run = runs.iter().find(|r| r.id == "r2").unwrap_or(&runs[1]);
@@ -20618,9 +21589,12 @@ fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system:
 }
 
 fn terminal_run_card_edited_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
-        TerminalRunCardState, TerminalRunPresentation,
+    use termrock::patterns::{
+        example_terminal_run_lines,
+        example_terminal_runs,
+        TerminalRunCard,
+        TerminalRunCardState,
+        TerminalRunPresentation,
     };
     let runs = example_terminal_runs();
     let lines = example_terminal_run_lines();
@@ -20632,9 +21606,12 @@ fn terminal_run_card_edited_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn terminal_run_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
-        TerminalRunCardState, TerminalRunPresentation,
+    use termrock::patterns::{
+        example_terminal_run_lines,
+        example_terminal_runs,
+        TerminalRunCard,
+        TerminalRunCardState,
+        TerminalRunPresentation,
     };
     let runs = example_terminal_runs();
     let lines = example_terminal_run_lines();
@@ -20646,9 +21623,12 @@ fn terminal_run_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_terminal_run_lines, example_terminal_runs, TerminalRunCard,
-        TerminalRunCardState, TerminalRunPresentation,
+    use termrock::patterns::{
+        example_terminal_run_lines,
+        example_terminal_runs,
+        TerminalRunCard,
+        TerminalRunCardState,
+        TerminalRunPresentation,
     };
     let runs = example_terminal_runs();
     let lines = example_terminal_run_lines();
@@ -20662,8 +21642,11 @@ fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn activity_shelf_statuses_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    use termrock::patterns::{
+        example_activities,
+        ActivityShelf,
+        ActivityShelfPresentation,
+        ActivityShelfState,
     };
     let items = example_activities();
     let mut st = ActivityShelfState::new();
@@ -20675,8 +21658,14 @@ fn activity_shelf_statuses_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 
 fn activity_shelf_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_activities, ActivityItem, ActivityShelf, ActivityShelfPresentation,
-        ActivityShelfState, SemanticStatus,
+        SemanticStatus,
+    };
+    use termrock::patterns::{
+        example_activities,
+        ActivityItem,
+        ActivityShelf,
+        ActivityShelfPresentation,
+        ActivityShelfState,
     };
     let mut items = example_activities();
     for i in 0..8 {
@@ -20692,8 +21681,11 @@ fn activity_shelf_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn activity_shelf_summary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    use termrock::patterns::{
+        example_activities,
+        ActivityShelf,
+        ActivityShelfPresentation,
+        ActivityShelfState,
     };
     let items = example_activities();
     let mut st = ActivityShelfState::new();
@@ -20704,8 +21696,11 @@ fn activity_shelf_summary_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn activity_shelf_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_activities, ActivityShelf, ActivityShelfPresentation, ActivityShelfState,
+    use termrock::patterns::{
+        example_activities,
+        ActivityShelf,
+        ActivityShelfPresentation,
+        ActivityShelfState,
     };
     let items = example_activities();
     let mut st = ActivityShelfState::new();
@@ -20717,8 +21712,13 @@ fn activity_shelf_badge_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn activity_shelf_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        activity_status_slot, example_activities, project_activities_for_status_bar, StatusBar,
+        StatusBar,
         StatusBarState,
+    };
+    use termrock::patterns::{
+        activity_status_slot,
+        example_activities,
+        project_activities_for_status_bar,
     };
     let items = example_activities();
     let proj = project_activities_for_status_bar(&items, true);
@@ -20828,7 +21828,10 @@ fn badge_task_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn badge_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Badge, BadgeState};
+    use termrock::widgets::{
+        Badge,
+        BadgeState,
+    };
     let chunks = Layout::horizontal([
         Constraint::Length(14),
         Constraint::Length(12),
@@ -21205,7 +22208,10 @@ fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn text_spans_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::Role;
-    use termrock::widgets::{Text, TextSpan};
+    use termrock::widgets::{
+        Text,
+        TextSpan,
+    };
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -21494,7 +22500,10 @@ fn avatar_glyph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn highlighted_text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{MatchRanges, substring_ranges};
+    use termrock::widgets::{
+        MatchRanges,
+        substring_ranges,
+    };
     let lines = [
         "src/widgets/command_palette.rs",
         "crates/termrock/src/widgets/picker.rs",
@@ -21518,7 +22527,11 @@ fn highlighted_text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn highlighted_text_selected_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{MatchKind, MatchRange, substring_ranges};
+    use termrock::widgets::{
+        MatchKind,
+        MatchRange,
+        substring_ranges,
+    };
     let src = "Open Command Palette";
     let mut ranges = substring_ranges(src, "Pal");
     // Mark first range focused if present
@@ -21547,7 +22560,11 @@ fn highlighted_text_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn highlighted_text_overlap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{MatchKind, MatchRange, MatchRanges};
+    use termrock::widgets::{
+        MatchKind,
+        MatchRange,
+        MatchRanges,
+    };
     let src = "abcdefghi";
     let prep = MatchRanges::from_ranges([
         MatchRange::soft(0, 6),
@@ -21650,7 +22667,10 @@ fn label_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn label_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{FieldCaption, Label};
+    use termrock::widgets::{
+        FieldCaption,
+        Label,
+    };
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -21895,7 +22915,11 @@ fn kbd_platform_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     use termrock::input::KeyCode;
     use termrock::keymap::KeyChord;
     use termrock::widgets::{
-        ChordFormat, Kbd, ModifierStyle, Platform, format_chord,
+        ChordFormat,
+        Kbd,
+        ModifierStyle,
+        Platform,
+        format_chord,
     };
     let chunks = Layout::vertical([
         Constraint::Length(1),
@@ -22276,7 +23300,10 @@ fn permission_prompt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn permission_nested_provenance() -> PermissionProvenance {
-    use termrock::widgets::{InitiatorKind, ProvenanceHop};
+    use termrock::widgets::{
+        InitiatorKind,
+        ProvenanceHop,
+    };
     PermissionProvenance::main_agent("run-1", "main")
         .push(ProvenanceHop::new(
             InitiatorKind::Subagent,
@@ -22366,7 +23393,11 @@ fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn plan_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_plan_document, PlanReview, PlanReviewState};
+    use termrock::patterns::{
+        example_plan_document,
+        PlanReview,
+        PlanReviewState,
+    };
     let mut state = PlanReviewState::new();
     state.open(example_plan_document());
     state.focused = true;
@@ -22374,7 +23405,11 @@ fn plan_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn plan_review_high_risk_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_high_risk_plan, PlanReview, PlanReviewState};
+    use termrock::patterns::{
+        example_high_risk_plan,
+        PlanReview,
+        PlanReviewState,
+    };
     let mut state = PlanReviewState::new();
     state.open(example_high_risk_plan());
     state.focused = true;
@@ -22382,8 +23417,11 @@ fn plan_review_high_risk_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn plan_review_diff_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_plan_document, PlanReview, PlanReviewPane, PlanReviewState,
+    use termrock::patterns::{
+        example_plan_document,
+        PlanReview,
+        PlanReviewPane,
+        PlanReviewState,
     };
     let mut state = PlanReviewState::new();
     state.open(example_plan_document());
@@ -22394,8 +23432,12 @@ fn plan_review_diff_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn plan_review_comments_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_plan_document, PlanComment, PlanCommentAnchor, PlanReview, PlanReviewPane,
+    use termrock::patterns::{
+        example_plan_document,
+        PlanComment,
+        PlanCommentAnchor,
+        PlanReview,
+        PlanReviewPane,
         PlanReviewState,
     };
     let mut state = PlanReviewState::new();
@@ -22422,7 +23464,11 @@ fn plan_review_comments_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    use termrock::widgets::{
+        example_question_set,
+        QuestionFlow,
+        QuestionFlowState,
+    };
     let mut state = QuestionFlowState::new();
     state.open_set(example_question_set());
     state.focused = true;
@@ -22431,7 +23477,11 @@ fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 fn question_flow_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_question_set, QuestionAnswer, QuestionFlow, QuestionFlowPhase, QuestionFlowState,
+        example_question_set,
+        QuestionAnswer,
+        QuestionFlow,
+        QuestionFlowPhase,
+        QuestionFlowState,
     };
     let mut state = QuestionFlowState::new();
     state.open_set(example_question_set());
@@ -22455,7 +23505,11 @@ fn question_flow_review_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn question_flow_multi_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    use termrock::widgets::{
+        example_question_set,
+        QuestionFlow,
+        QuestionFlowState,
+    };
     let mut state = QuestionFlowState::new();
     state.open_set(example_question_set());
     // jump to multi step
@@ -22467,7 +23521,11 @@ fn question_flow_multi_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn question_flow_text_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_question_set, QuestionFlow, QuestionFlowState};
+    use termrock::widgets::{
+        example_question_set,
+        QuestionFlow,
+        QuestionFlowState,
+    };
     let mut state = QuestionFlowState::new();
     state.open_set(example_question_set());
     state.step_index = 2;
@@ -22478,7 +23536,11 @@ fn question_flow_text_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_sessions, SessionPicker, SessionPickerState};
+    use termrock::patterns::{
+        example_sessions,
+        SessionPicker,
+        SessionPickerState,
+    };
     let mut state = SessionPickerState::new();
     state.set_sessions(example_sessions());
     state.focused = true;
@@ -22486,7 +23548,11 @@ fn session_picker_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn session_picker_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_sessions, SessionPicker, SessionPickerState};
+    use termrock::patterns::{
+        example_sessions,
+        SessionPicker,
+        SessionPickerState,
+    };
     let mut state = SessionPickerState::new();
     state.set_sessions(example_sessions());
     state.set_query("auth");
@@ -22495,8 +23561,11 @@ fn session_picker_search_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn session_picker_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_sessions, SessionConfirmAction, SessionPicker, SessionPickerPhase,
+    use termrock::patterns::{
+        example_sessions,
+        SessionConfirmAction,
+        SessionPicker,
+        SessionPickerPhase,
         SessionPickerState,
     };
     let mut state = SessionPickerState::new();
@@ -22509,15 +23578,20 @@ fn session_picker_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn session_picker_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{SessionPicker, SessionPickerState};
+    use termrock::patterns::{
+        SessionPicker,
+        SessionPickerState,
+    };
     let mut state = SessionPickerState::new();
     state.focused = true;
     frame.render_stateful_widget(&SessionPicker::new(system), area, &mut state);
 }
 
 fn connection_manager_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_connections, ConnectionManager, ConnectionManagerPresentation,
+    use termrock::patterns::{
+        example_connections,
+        ConnectionManager,
+        ConnectionManagerPresentation,
         ConnectionManagerState,
     };
     let mut state = ConnectionManagerState::new();
@@ -22528,8 +23602,10 @@ fn connection_manager_full_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 }
 
 fn connection_manager_launcher_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_connections, ConnectionManager, ConnectionManagerPresentation,
+    use termrock::patterns::{
+        example_connections,
+        ConnectionManager,
+        ConnectionManagerPresentation,
         ConnectionManagerState,
     };
     let mut state = ConnectionManagerState::new();
@@ -22540,15 +23616,20 @@ fn connection_manager_launcher_story(frame: &mut Frame<'_>, area: Rect, system: 
 }
 
 fn connection_manager_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ConnectionManager, ConnectionManagerState};
+    use termrock::patterns::{
+        ConnectionManager,
+        ConnectionManagerState,
+    };
     let mut state = ConnectionManagerState::new();
     state.focused = true;
     frame.render_stateful_widget(&ConnectionManager::new(system), area, &mut state);
 }
 
 fn connection_manager_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_connections, ConnectionManager, ConnectionManagerState,
+    use termrock::patterns::{
+        example_connections,
+        ConnectionManager,
+        ConnectionManagerState,
     };
     let mut state = ConnectionManagerState::new();
     state.set_connections(example_connections());
@@ -22564,8 +23645,11 @@ fn connection_manager_error_story(frame: &mut Frame<'_>, area: Rect, system: &De
 }
 
 fn connection_manager_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        ConnectionFormField, ConnectionManager, ConnectionManagerPhase, ConnectionManagerState,
+    use termrock::patterns::{
+        ConnectionFormField,
+        ConnectionManager,
+        ConnectionManagerPhase,
+        ConnectionManagerState,
     };
     let mut state = ConnectionManagerState::new();
     state.phase = ConnectionManagerPhase::Add;
@@ -22579,8 +23663,11 @@ fn connection_manager_secret_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn connection_manager_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_connections, ConnectionManager, ConnectionManagerPhase, ConnectionManagerState,
+    use termrock::patterns::{
+        example_connections,
+        ConnectionManager,
+        ConnectionManagerPhase,
+        ConnectionManagerState,
     };
     let mut state = ConnectionManagerState::new();
     state.set_connections(example_connections());
@@ -22591,7 +23678,11 @@ fn connection_manager_confirm_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    use termrock::patterns::{
+        example_activity_models,
+        TaskRail,
+        TaskRailState,
+    };
     let items = example_activity_models();
     let mut st = TaskRailState::new();
     st.focused = true;
@@ -22602,18 +23693,26 @@ fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn task_rail_input_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    use termrock::patterns::{
+        example_activity_models,
+        TaskRail,
+        TaskRailState,
+    };
     let items = example_activity_models();
     let mut st = TaskRailState::new();
     st.focused = true;
     st.list.select(Some("p1".into()));
     // expand completed for visibility of mixed statuses
-    st.collapsed.remove(&termrock::widgets::ActivityScope::Completed);
+    st.collapsed.remove(&termrock::patterns::ActivityScope::Completed);
     TaskRail::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn task_rail_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    use termrock::patterns::{
+        example_activity_models,
+        TaskRail,
+        TaskRailState,
+    };
     let items = example_activity_models();
     let mut st = TaskRailState::new();
     st.focused = true;
@@ -22623,7 +23722,11 @@ fn task_rail_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn task_rail_drawer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_activity_models, TaskRail, TaskRailState};
+    use termrock::patterns::{
+        example_activity_models,
+        TaskRail,
+        TaskRailState,
+    };
     let items = example_activity_models();
     let mut st = TaskRailState::new();
     st.focused = true;
@@ -22634,8 +23737,13 @@ fn task_rail_drawer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Des
 
 fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_activity_models, project_task_rail_for_status_bar, task_rail_status_slot, StatusBar,
+        StatusBar,
         StatusBarState,
+    };
+    use termrock::patterns::{
+        example_activity_models,
+        project_task_rail_for_status_bar,
+        task_rail_status_slot,
     };
     let items = example_activity_models();
     let proj = project_task_rail_for_status_bar(&items, true);
@@ -22646,8 +23754,11 @@ fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    use termrock::patterns::{
+        example_subagent_runs,
+        SubagentCard,
+        SubagentCardState,
+        SubagentPresentation,
     };
     let runs = example_subagent_runs();
     let run = runs.iter().find(|r| r.id == "sa1").unwrap_or(&runs[0]);
@@ -22658,8 +23769,11 @@ fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    use termrock::patterns::{
+        example_subagent_runs,
+        SubagentCard,
+        SubagentCardState,
+        SubagentPresentation,
     };
     let runs = example_subagent_runs();
     let run = runs.iter().find(|r| r.id == "sa4").unwrap_or(&runs[3]);
@@ -22670,8 +23784,11 @@ fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn subagent_card_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    use termrock::patterns::{
+        example_subagent_runs,
+        SubagentCard,
+        SubagentCardState,
+        SubagentPresentation,
     };
     let runs = example_subagent_runs();
     let run = runs.iter().find(|r| r.id == "sa2").unwrap_or(&runs[1]);
@@ -22682,8 +23799,11 @@ fn subagent_card_nested_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn subagent_card_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    use termrock::patterns::{
+        example_subagent_runs,
+        SubagentCard,
+        SubagentCardState,
+        SubagentPresentation,
     };
     let runs = example_subagent_runs();
     let mut st = SubagentCardState::new();
@@ -22695,8 +23815,11 @@ fn subagent_card_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_subagent_runs, SubagentCard, SubagentCardState, SubagentPresentation,
+    use termrock::patterns::{
+        example_subagent_runs,
+        SubagentCard,
+        SubagentCardState,
+        SubagentPresentation,
     };
     let runs = example_subagent_runs();
     let run = runs.iter().find(|r| r.id == "sa3").unwrap_or(&runs[2]);
@@ -22707,8 +23830,10 @@ fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn background_tasks_mixed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    use termrock::patterns::{
+        example_background_tasks,
+        BackgroundTaskPanel,
+        BackgroundTaskPanelState,
     };
     let tasks = example_background_tasks();
     let mut st = BackgroundTaskPanelState::new();
@@ -22718,8 +23843,10 @@ fn background_tasks_mixed_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn background_tasks_clear_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    use termrock::patterns::{
+        example_background_tasks,
+        BackgroundTaskPanel,
+        BackgroundTaskPanelState,
     };
     let tasks = example_background_tasks();
     let mut st = BackgroundTaskPanelState::new();
@@ -22729,8 +23856,10 @@ fn background_tasks_clear_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn background_tasks_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    use termrock::patterns::{
+        example_background_tasks,
+        BackgroundTaskPanel,
+        BackgroundTaskPanelState,
         BackgroundTaskPresentation,
     };
     let tasks = example_background_tasks();
@@ -22743,8 +23872,10 @@ fn background_tasks_rail_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn background_tasks_lost_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    use termrock::patterns::{
+        example_background_tasks,
+        BackgroundTaskPanel,
+        BackgroundTaskPanelState,
     };
     let tasks = example_background_tasks();
     let mut st = BackgroundTaskPanelState::new();
@@ -22754,8 +23885,10 @@ fn background_tasks_lost_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn background_tasks_dropped_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        example_background_tasks, BackgroundTaskPanel, BackgroundTaskPanelState,
+    use termrock::patterns::{
+        example_background_tasks,
+        BackgroundTaskPanel,
+        BackgroundTaskPanelState,
     };
     let tasks = example_background_tasks();
     let mut st = BackgroundTaskPanelState::new();
@@ -22766,7 +23899,10 @@ fn background_tasks_dropped_story(frame: &mut Frame<'_>, area: Rect, system: &De
 
 fn context_meter_pressure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let budgets = example_context_budgets();
     let chunks = Layout::vertical([
@@ -22787,7 +23923,10 @@ fn context_meter_pressure_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn context_meter_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let b = &example_context_budgets()[2];
     let mut st = ContextMeterState::new();
@@ -22799,7 +23938,10 @@ fn context_meter_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn context_meter_approximate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let b = &example_context_budgets()[3];
     let mut st = ContextMeterState::new();
@@ -22809,7 +23951,10 @@ fn context_meter_approximate_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn context_meter_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let b = &example_context_budgets()[1];
     let mut st = ContextMeterState::new();
@@ -22820,7 +23965,10 @@ fn context_meter_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn context_meter_mono_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let b = &example_context_budgets()[0];
     let mut st = ContextMeterState::new();
@@ -22833,7 +23981,10 @@ fn context_meter_mono_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn context_meter_bytes_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        example_context_budgets, ContextMeter, ContextMeterPresentation, ContextMeterState,
+        example_context_budgets,
+        ContextMeter,
+        ContextMeterPresentation,
+        ContextMeterState,
     };
     let b = &example_context_budgets()[4];
     let mut st = ContextMeterState::new();
@@ -22925,7 +24076,11 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 
 fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        ColumnModel, DataColumn, DataColumnWidth, LoadState, SortSpec,
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+        SortSpec,
     };
     let tokens = system.clone().density(Density::Compact);
     let columns = ColumnModel::new(vec![
@@ -22959,7 +24114,12 @@ fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn tree_table_schema(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::default());
     let columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(16)).priority(100),
@@ -22989,7 +24149,12 @@ fn tree_table_schema(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_table_tasks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::default());
     let columns = ColumnModel::new(vec![
         DataColumn::new("task", "Task", DataColumnWidth::Min(18)).priority(100),
@@ -23018,7 +24183,12 @@ fn tree_table_tasks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_table_deps(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::Compact);
     let columns = ColumnModel::new(vec![
         DataColumn::new("pkg", "Package", DataColumnWidth::Min(16)).priority(100),
@@ -23044,7 +24214,12 @@ fn tree_table_deps(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::Compact);
     let mut columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(10)).priority(100),
@@ -23069,7 +24244,12 @@ fn tree_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_table_aggregate(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
+    use termrock::widgets::{
+        ColumnModel,
+        DataColumn,
+        DataColumnWidth,
+        LoadState,
+    };
     let tokens = system.clone().density(Density::default());
     let columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
@@ -23874,7 +25054,13 @@ fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        PlanDocument, PlanReview, PlanReviewState, PlanTask, PermissionRisk,
+        PermissionRisk,
+    };
+    use termrock::patterns::{
+        PlanDocument,
+        PlanReview,
+        PlanReviewState,
+        PlanTask,
     };
     let mut state = PlanReviewState::new();
     state.open(
@@ -23897,7 +25083,11 @@ fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        Question, QuestionFlow, QuestionFlowState, QuestionOption, QuestionSet,
+        Question,
+        QuestionFlow,
+        QuestionFlowState,
+        QuestionOption,
+        QuestionSet,
     };
     let set = QuestionSet::new(
         "u1",
@@ -23918,7 +25108,12 @@ fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{SessionEntry, SessionPicker, SessionPickerState, SessionStatus};
+    use termrock::patterns::{
+        SessionEntry,
+        SessionPicker,
+        SessionPickerState,
+        SessionStatus,
+    };
     let mut state = SessionPickerState::new();
     state.set_sessions(vec![
         SessionEntry::new("s1", "Session A 🅰️")
@@ -23935,9 +25130,13 @@ fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
 }
 
 fn connection_manager_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        ConnectionEntry, ConnectionKind, ConnectionManager, ConnectionManagerState,
-        ConnectionStatus, ConnectionCredentialMeta,
+    use termrock::patterns::{
+        ConnectionEntry,
+        ConnectionKind,
+        ConnectionManager,
+        ConnectionManagerState,
+        ConnectionStatus,
+        ConnectionCredentialMeta,
     };
     let mut state = ConnectionManagerState::new();
     state.set_connections(vec![
@@ -23963,7 +25162,14 @@ fn connection_manager_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
 
 fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{
-        ActivityKind, ActivityModel, ActivityScope, SemanticStatus, TaskRail, TaskRailState,
+        SemanticStatus,
+    };
+    use termrock::patterns::{
+        ActivityKind,
+        ActivityModel,
+        ActivityScope,
+        TaskRail,
+        TaskRailState,
     };
     let items = vec![
         ActivityModel::new("u1", "Task one 📌")
@@ -24974,10 +26180,29 @@ fn paint_agent_workbench_story(
         example_workbench_activities, example_workbench_tasks, render_agent_workbench,
     };
     use termrock::widgets::{
-        DiffLine, DiffReview, ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest,
-        PermissionRisk, PlanReview, PromptComposer, PromptComposerState, SessionPicker,
-        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptKind, TranscriptState,
-        WorkingStateCard, example_plan_document, example_sessions, example_working_state,
+        DiffLine,
+        DiffReview,
+        ListRow,
+        PermissionPrompt,
+        PermissionPromptState,
+        PermissionRequest,
+        PermissionRisk,
+        PromptComposer,
+        PromptComposerState,
+        StatusBarState,
+        StatusSlot,
+        Transcript,
+        TranscriptBlock,
+        TranscriptKind,
+        TranscriptState,
+    };
+    use termrock::patterns::{
+        PlanReview,
+        SessionPicker,
+        WorkingStateCard,
+        example_plan_document,
+        example_sessions,
+        example_working_state,
     };
 
     let mut workbench = AgentWorkbenchState::new();
@@ -25203,7 +26428,7 @@ fn paint_database_workbench_story(
         DatabaseConnGate, DatabaseTxStatus, DatabaseWorkbenchDensity, DatabaseWorkbenchState,
         DatabaseWorkbenchSurfaces,
     };
-    use termrock::widgets::SchemaBrowserEntry;
+    use termrock::patterns::SchemaBrowserEntry;
 
     let mut state = DatabaseWorkbenchState::new();
     match kind {
@@ -25582,7 +26807,7 @@ fn paint_project_launcher_story(
         render_project_launcher, seed_onboarding_state, seed_stale_state, ProjectLauncherDensity,
         ProjectLauncherMode, ProjectLauncherState, ProjectLauncherSurfaces,
     };
-    use termrock::widgets::example_sessions;
+    use termrock::patterns::example_sessions;
 
     let mut state = match kind {
         ProjectLauncherStoryKind::Inline => ProjectLauncherState::inline(),
@@ -25838,7 +27063,10 @@ fn auth_entry_email_only(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn input_otp_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{InputOtp, InputOtpState};
+    use termrock::widgets::{
+        InputOtp,
+        InputOtpState,
+    };
     let mut st = InputOtpState::new(6);
     let _ = st.set_value("42");
     InputOtp::new(system)
@@ -25847,14 +27075,22 @@ fn input_otp_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn carousel_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_carousel_slides, Carousel, CarouselState};
+    use termrock::widgets::{
+        example_carousel_slides,
+        Carousel,
+        CarouselState,
+    };
     let slides = example_carousel_slides();
     let st = CarouselState::new();
     Carousel::new(&slides, system).paint(area, frame.buffer_mut(), &st);
 }
 
 fn input_group_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{example_url_input_addons, InputGroup, InputGroupState};
+    use termrock::widgets::{
+        example_url_input_addons,
+        InputGroup,
+        InputGroupState,
+    };
     let addons = example_url_input_addons();
     let mut st = InputGroupState::new();
     st.set_focused(true);
@@ -25891,7 +27127,10 @@ fn paint_settings_screen_story(
         SettingsScreenState, SettingsScreenSurfaces,
     };
     use termrock::widgets::{
-        Fieldset, KeybindingRecorderState, StatusBarState, BUILTIN_THEME_PRESETS,
+        Fieldset,
+        KeybindingRecorderState,
+        StatusBarState,
+        BUILTIN_THEME_PRESETS,
     };
 
     let mut state = SettingsScreenState::<&str>::new();
@@ -26059,7 +27298,11 @@ fn paint_setup_wizard_story(
         example_setup_summary_lines, render_setup_wizard, SetupStepKind, SetupWizardMode,
         SetupWizardState, SetupWizardSurfaces,
     };
-    use termrock::widgets::{Fieldset, WizardGate, BUILTIN_THEME_PRESETS};
+    use termrock::widgets::{
+        Fieldset,
+        WizardGate,
+        BUILTIN_THEME_PRESETS,
+    };
 
     let mut state = SetupWizardState::from_steps(example_setup_steps()).with_title("First run");
     if matches!(kind, SetupWizardStoryKind::Inline) {

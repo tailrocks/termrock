@@ -32,16 +32,14 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{
+        activity_status_summary, project_activities_for_status_bar, ActivityItem, ActivityKind,
+        ActivityStatusProjection,
+    },
     text::{display_cols, take_display_cols},
     widgets::{
-        activity_shelf::{
-            ActivityItem, ActivityKind, activity_status_summary, project_activities_for_status_bar,
-            ActivityStatusProjection,
-        },
-        list::{List, ListRow, ListState, RowRole},
-        panel::Panel,
-        semantic_status::SemanticStatus,
-        status_bar::{StatusKind, StatusRegion, StatusSlot},
+        List, ListRow, ListState, Panel, RowRole, SemanticStatus, StatusKind, StatusRegion,
+        StatusSlot,
     },
 };
 
@@ -1790,7 +1788,7 @@ mod tests {
 
     #[test]
     fn thin_list_facade_removed_from_agent_blocks() {
-        let src = include_str!("agent_blocks.rs");
+        let src = include_str!("../widgets/agent_blocks.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
         assert!(
             !body.contains("pub struct TaskRail"),

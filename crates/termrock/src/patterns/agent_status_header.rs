@@ -30,10 +30,8 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::panel::Panel,
-    widgets::status_bar::{
-        StatusBar, StatusBarRecipe, StatusBarState, StatusKind, StatusRegion, StatusSlot,
-    },
+    widgets::Panel,
+    widgets::StatusBar, widgets::StatusBarRecipe, widgets::StatusBarState, widgets::StatusKind, widgets::StatusRegion, widgets::StatusSlot,
 };
 
 /// Overlay / focus id for header chrome.

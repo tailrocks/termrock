@@ -33,13 +33,13 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::activity_shelf::ActivityKind,
-    widgets::notification_center::NotificationItem,
-    widgets::panel::Panel,
-    widgets::permission::PermissionRisk,
-    widgets::semantic_status::SemanticStatus,
-    widgets::task_rail::{ActivityModel, ActivityScope},
-    widgets::toast::{ToastKind, ToastPriority},
+    patterns::ActivityKind,
+    widgets::NotificationItem,
+    widgets::Panel,
+    widgets::PermissionRisk,
+    widgets::SemanticStatus,
+    patterns::task_rail::{ActivityModel, ActivityScope},
+    widgets::ToastKind, widgets::ToastPriority,
 };
 
 /// Overlay / drawer id.

@@ -33,13 +33,16 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{
+        example_sessions, ConnectionStatus, SessionEntry, SessionPicker, SessionPickerOutcome,
+        SessionPickerState,
+    },
     text::take_display_cols,
     widgets::{
-        example_sessions, ConnectionStatus, EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome,
-        EmptyStateState, List, ListRow, ListState, PreviewCard, PreviewCardContent, PreviewCardState,
-        PreviewLoadState, PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem,
-        QuickOpenOutcome, QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome,
-        SearchInputState, SessionEntry, SessionPicker, SessionPickerOutcome, SessionPickerState,
+        EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
+        ListState, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
+        PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
+        QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
         StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
 };

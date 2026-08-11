@@ -26,9 +26,12 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        charts::{Gauge, ScaleMode, Sparkline, VizGlyphSet},
-        command_palette::CommandEntry,
-        data_view::LoadState,
+        Gauge,
+        ScaleMode,
+        Sparkline,
+        VizGlyphSet,
+        CommandEntry,
+        LoadState,
     },
 };
 

@@ -32,15 +32,17 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
+    patterns::{
+        MetricAlert, MetricAlertSeverity, MetricTile, MetricTileHealth, MetricsDashboard,
+        MetricsDashboardOutcome, MetricsDashboardState, MetricsTimeRange,
+    },
     text::take_display_cols,
     widgets::{
         filter_log_lines, filter_stream_events, EventSeverity, EventStream, EventStreamOutcome,
         EventStreamState, InspectorField, LogLevel, LogLine, LogStream, LogStreamOutcome,
-        LogStreamState, MetricAlert, MetricAlertSeverity, MetricTile, MetricTileHealth,
-        MetricsDashboard, MetricsDashboardOutcome, MetricsDashboardState, MetricsTimeRange,
-        ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel, SearchInput,
-        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
-        StreamEvent, StreamRowKind,
+        LogStreamState, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
+        SearchInput, SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, StreamEvent, StreamRowKind,
     },
 };
 
@@ -1772,7 +1774,7 @@ mod tests {
         let tiles = example_observability_tiles();
         let alerts = example_observability_alerts();
         // Cycle time range if metrics exposes it (often `[` / `]` or arrows in toolbar)
-        st.metrics.focus = crate::widgets::MetricsFocus::Toolbar;
+        st.metrics.focus = crate::patterns::MetricsFocus::Toolbar;
         for code in [
             KeyCode::Right,
             KeyCode::Char(']'),

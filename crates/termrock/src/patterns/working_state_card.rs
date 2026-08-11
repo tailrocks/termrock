@@ -36,9 +36,9 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::activity_shelf::{ActivityItem, ActivityKind},
-    widgets::panel::Panel,
-    widgets::semantic_status::SemanticStatus,
+    patterns::activity_shelf::{ActivityItem, ActivityKind},
+    widgets::Panel,
+    widgets::SemanticStatus,
 };
 
 /// Overlay id when host promotes expanded work card.
