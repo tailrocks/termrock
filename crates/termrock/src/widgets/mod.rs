@@ -1,4 +1,14 @@
-//! Product-neutral terminal widgets with borrowed render data and stable IDs.
+//! **Generic building blocks** — product-neutral terminal widgets with borrowed
+//! render data and stable IDs.
+//!
+//! This is the default **component library** path (`termrock::widgets`). Do **not**
+//! add product-noun composites here (connection managers, login gates, workbenches,
+//! dashboards as application recipes). Those live under [`crate::patterns`] as
+//! **example assemblies** of these blocks.
+//!
+//! Agent rule: classify every new surface before implementing —
+//! [`docs/design/building-block-vs-example-composite.md`](../../../docs/design/building-block-vs-example-composite.md)
+//! and repository `Agents.md`.
 
 pub use crate::ansi_text::{
     AnsiLine, AnsiParseOptions, AnsiSegment, AnsiStream, AnsiText, AnsiTextMode, AnsiTextState,

@@ -67,21 +67,79 @@ quickly. shadcn/ui and its [open repository](https://github.com/shadcn-ui/ui)
 are design references, not an API template: terminal interaction, Ratatui,
 accessibility, and Rust ownership constraints determine TermRock's APIs.
 
-Assume a visual or interaction pattern belongs in TermRock unless it is provably
-specific to a consumer's product domain. TermRock owns reusable rendering,
-layout, styles and semantic theme roles, focus and navigation behavior, hit
-geometry, narrow-terminal behavior, Unicode safety, non-color cues, and
-domain-neutral widget state. Consumers own domain state and wording, effects,
-process policy, secrets, executor choice, and projections from product models
-into TermRock components.
+Assume a visual or interaction capability belongs **in the TermRock repo**
+unless it is provably specific to a single consumer product domain. That does
+**not** mean every recipe is a default widget: see **Building block vs example
+composite** below. TermRock owns reusable rendering, layout, styles and
+semantic theme roles, focus and navigation behavior, hit geometry,
+narrow-terminal behavior, Unicode safety, non-color cues, and domain-neutral
+widget state. Consumers own domain state and wording, effects, process policy,
+secrets, executor choice, and projections from product models into TermRock
+building blocks (or copy example composites from `patterns` and adapt).
 
-Components must be composable, product-neutral, readable, and easy to adapt.
-Give them strong defaults, stable identities where interaction needs them,
-borrowed or projected data where practical, and focused override points instead
-of consumer-specific modes. Do not add product-branded widgets, consumer
-compatibility facades, or copied neutral rendering bodies. When a capability is
-missing, extend or refactor TermRock rather than implementing a local visual
-substitute.
+**Building blocks** must be composable, product-neutral, readable, and easy to
+adapt. Give them strong defaults, stable identities where interaction needs
+them, borrowed or projected data where practical, and focused override points
+instead of consumer-specific modes. Do not add product-branded widgets,
+consumer compatibility facades, or copied neutral rendering bodies under
+`widgets`. When a **generic** capability is missing, extend `widgets` (or the
+interaction kernel). When a **product-shaped recipe** is useful as a demo,
+implement it under `patterns` by composing public building blocks—not as a
+first-class default widget.
+
+## Building block vs example composite (mandatory)
+
+**Before adding, promoting, or substantially extending any UI surface**, every
+agent and contributor **must** research and classify it. This is not optional
+guidance—it is package-boundary law.
+
+| Classification | Home | Meaning |
+|----------------|------|---------|
+| **Generic building block** | `termrock::widgets` (and kernel modules) | Product-neutral UI **part**: panel, input, button, list, table, dialog, form, chart, focus/chrome helper. Reusable without a product noun in the public model. |
+| **Example composite** | `termrock::patterns` only | Multi-widget **recipe** or product-noun assembly that shows how to use building blocks (Connection Manager, AuthEntry/login, workbench, dashboard, session picker as inventory manager, …). |
+
+### Decision checklist (run every time)
+
+1. **Name & API:** Does the public type/API encode a product domain (connection
+   inventory, login gate, git workbench, ops dashboard state, …)? → **example
+   composite**.
+2. **Composition:** Is the surface mainly assembling other public widgets
+   (panel + inputs + list + dialog) with host-owned domain data? → **example
+   composite**.
+3. **Reuse:** Would an unrelated TUI (editor, game, cloud CLI) want this as a
+   primitive without rewriting product models? If yes and the API is neutral →
+   **building block**. If only “apps like ours” want it → **example**.
+4. **Model-only types:** Thin identity/status structs shared by a primitive and
+   a recipe (e.g. queue-item identity for a composer) may live under `widgets`
+   so **widgets never depend on `patterns`**. Full management UIs still go to
+   `patterns`.
+5. **Placement:** Implement building blocks in `crates/termrock/src/widgets/`.
+   Implement composites only in `crates/termrock/src/patterns/` (or a dedicated
+   examples crate if introduced later). **Never** export a product composite as
+   a first-class `termrock::widgets` type.
+6. **Dependencies:** `patterns` may `use termrock::widgets`. **`widgets` must
+   not** `use crate::patterns` (doc links OK). No dual-path facades or
+   deprecated aliases to keep a composite on the widgets path.
+7. **Catalog / lookbook:** Registry primary file + provenance for composites
+   point at `patterns/…`. Lookbook imports blocks from `widgets`, composites
+   from `patterns`.
+8. **Breaking moves:** Document with sequential `migrations/` + `MIGRATING.md`.
+
+### Positive / negative examples
+
+| Building block (`widgets`) | Example composite (`patterns`) |
+|----------------------------|--------------------------------|
+| `Panel`, `TextInput`, `PasswordInput`, `Button`, `List`, `DataTable` | `ConnectionManager` (list + panel + password + outcomes) |
+| `Checkbox`, `Form`, `Dialog`, `Chart` / `Gauge` | `AuthEntry` / login-style gate (panel + identity + secrets + actions) |
+| `PermissionPrompt` (neutral trust chrome) | Agent/git/DB **workbench** and **dashboard** application shells |
+| `ModeRibbon` / `WorkbenchMode` row (caller labels) | Full agent workbench recipe with product panes |
+| `PromptQueueItem` (neutral FIFO identity) | `PromptQueue` management UI recipe |
+
+Full standard: [`docs/design/building-block-vs-example-composite.md`](docs/design/building-block-vs-example-composite.md).
+
+**When unsure:** default the **primitive pieces** into `widgets` and the
+**assembled product surface** into `patterns`. Do not ship “half-product”
+managers under `widgets` for convenience.
 
 ## Modern-first, pre-stable API
 

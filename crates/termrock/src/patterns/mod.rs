@@ -10,6 +10,10 @@
 //! Import building blocks from `termrock::widgets`; import these recipes from
 //! `termrock::patterns` only when you want a ready-made example composite.
 //!
+//! Classification law (agents): see repository `Agents.md` and
+//! `docs/design/building-block-vs-example-composite.md`. New product-noun
+//! recipes belong here—not under `widgets`.
+//!
 //! **Canonical shell:** [`layout_app_shell`] / [`AppShellConfig`]. Specialized
 //! helpers (`layout_agent_shell`, `layout_studio_shell`, …) are thin recipe
 //! wrappers over AppShell slots.

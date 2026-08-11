@@ -273,6 +273,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0257 | `v0.13.0` | [Composites move widgets→patterns](migrations/0257-v0.13.0-composites-to-patterns.md) |
 | 0258 | `v0.13.0` | [Widgets/patterns boundary fix](migrations/0258-v0.13.0-widgets-patterns-boundary-fix.md) |
 | 0259 | `v0.13.0` | [Neutral panel presets + example nav](migrations/0259-v0.13.0-neutral-panel-presets-and-example-nav.md) |
+| 0260 | `v0.13.0` | [Building-block classification rule](migrations/0260-v0.13.0-building-block-classification-rule.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
