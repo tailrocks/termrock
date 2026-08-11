@@ -89,6 +89,7 @@ mod primitives;
 mod progress;
 mod progress_steps;
 mod prompt_composer;
+mod prompt_queue_model;
 mod review;
 mod scroll_area;
 mod selection;
@@ -254,10 +255,9 @@ pub use context_meter::{
     format_budget_count, format_budget_percent, meter_bar,
 };
 pub use context_meter::bench as context_meter_bench;
-pub use blocks::{
-    BlockChrome, OpsDashboardOutcome, OpsDashboardState, OpsRegion, ResourceBrowserOutcome,
-    ResourceBrowserState,
-};
+pub use blocks::BlockChrome;
+// OpsDashboard/ResourceBrowser state → patterns (0257/0258).
+
 // SettingsShell elevated to `termrock::patterns::{SettingsScreenState, …}` (0237).
 pub use charts::{
     allocate_segment_widths, BarDatum, BarSeries, Chart, ChartFill, ChartInterpolation,
@@ -649,7 +649,11 @@ pub use prompt_composer::{
     submit_history_to_entries,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
+pub use prompt_queue_model::{
+    AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus,
+};
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
+pub use prompt_queue_model::PromptQueueItem as QueuedPrompt;
 pub use object_inspector::{
     InspectKind, InspectMode, InspectNodeStatus, InspectPresentation, InspectRegion,
     InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState,

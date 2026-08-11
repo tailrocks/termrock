@@ -329,10 +329,10 @@ pub struct ContextEstimate {
 }
 
 // ── Queue ───────────────────────────────────────────────────────────────────
-// Elevated management UI: [`super::PromptQueue`]. Composer keeps a thin FIFO of
-// [`super::PromptQueueItem`] (re-exported as `QueuedPrompt`) for enqueue chrome.
+// Management UI recipe: `termrock::patterns::PromptQueue`. Composer keeps a thin
+// FIFO of [`PromptQueueItem`] (also `QueuedPrompt`) for enqueue chrome.
 
-use crate::patterns::{PromptQueueItem, PromptQueueRef, PromptQueueStatus};
+use crate::widgets::{PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
 // ── Policy / connection ─────────────────────────────────────────────────────
 
@@ -789,16 +789,10 @@ impl PromptComposerState {
         }
     }
 
-    /// Project queue into a [`crate::patterns::PromptQueueState`] for the management surface.
-    pub fn project_prompt_queue(&self, agent_busy: bool) -> crate::patterns::PromptQueueState {
-        let mut st = crate::patterns::PromptQueueState::new();
-        st.set_items(self.queue.clone());
-        st.set_agent(if agent_busy || self.busy {
-            crate::patterns::AgentBusyState::Busy
-        } else {
-            crate::patterns::AgentBusyState::Idle
-        });
-        st
+    /// Clone of the FIFO queue for hosts / patterns recipes.
+    #[must_use]
+    pub fn queue_items(&self) -> Vec<PromptQueueItem> {
+        self.queue.clone()
     }
 
     /// Clears the submit queue (does not touch draft).

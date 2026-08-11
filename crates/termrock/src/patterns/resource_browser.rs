@@ -184,3 +184,88 @@ mod tests {
         );
     }
 }
+
+// ── Resource browser state machine (example composite) ───────────────────────
+
+use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    widgets::{ScrollAreaState, SidebarItem, SidebarOutcome, SidebarState},
+};
+
+// ── ResourceBrowser ─────────────────────────────────────────────────────────
+
+/// Resource browser outcomes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ResourceBrowserOutcome<Id> {
+    /// No change.
+    Ignored,
+    /// Sidebar selection.
+    Sidebar(SidebarOutcome<Id>),
+    /// Request load of selection (consumer).
+    LoadRequested(Id),
+    /// Open preview.
+    PreviewRequested(Id),
+}
+
+/// Resource browser state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResourceBrowserState<Id: Clone + PartialEq> {
+    /// Sidebar.
+    pub sidebar: SidebarState<Id>,
+    /// List scroll.
+    pub list_scroll: ScrollAreaState,
+    /// Generation for stale preview guard.
+    pub selection_generation: u64,
+}
+
+impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
+    /// Fresh.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            sidebar: SidebarState::new(None),
+            list_scroll: ScrollAreaState::new(),
+            selection_generation: 0,
+        }
+    }
+
+    /// Keys.
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        items: &[crate::widgets::SidebarItem<Id>],
+    ) -> ResourceBrowserOutcome<Id> {
+        let out = self.sidebar.handle_key(key, items);
+        match out {
+            SidebarOutcome::Selected(id) => {
+                self.selection_generation = self.selection_generation.saturating_add(1);
+                ResourceBrowserOutcome::LoadRequested(id)
+            }
+            other => ResourceBrowserOutcome::Sidebar(other),
+        }
+    }
+}
+
+impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
+#[cfg(test)]
+mod state_tests {
+    use super::*;
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::widgets::SidebarItem;
+
+    #[test]
+    fn resource_load_on_select() {
+        let mut state = ResourceBrowserState::new();
+        let items = [SidebarItem::new("a", "A")];
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
+        assert!(matches!(out, ResourceBrowserOutcome::LoadRequested("a")));
+        assert_eq!(state.selection_generation, 1);
+    }
+}

@@ -142,9 +142,13 @@ pub use auth_entry::{
     auth_entry_form_width, example_auth_aside_lines, render_auth_entry, AuthEntryField,
     AuthEntryMode, AuthEntryOutcome, AuthEntryState, AuthEntrySurfaces, AuthFieldError,
 };
-pub use ops_dashboard::{OpsDashboardLayout, OpsDashboardSlots, layout_ops_dashboard};
+pub use ops_dashboard::{
+    layout_ops_dashboard, OpsDashboardLayout, OpsDashboardOutcome, OpsDashboardSlots,
+    OpsDashboardState, OpsRegion,
+};
 pub use resource_browser::{
-    ResourceBrowserLayout, ResourceBrowserSlots, layout_resource_browser, wire_resource_preview,
+    layout_resource_browser, wire_resource_preview, ResourceBrowserLayout, ResourceBrowserOutcome,
+    ResourceBrowserSlots, ResourceBrowserState,
 };
 pub use settings_screen::{
     filter_settings_fieldsets, filter_settings_nav, layout_settings_screen,
@@ -273,6 +277,7 @@ pub use prompt_queue::{
     PROMPT_QUEUE_OVERLAY_ID, PROMPT_QUEUE_SUMMARY_PREVIEW, PROMPT_QUEUE_WINDOW, AgentBusyState,
     PromptQueue, PromptQueueItem, PromptQueueOutcome, PromptQueuePhase, PromptQueuePresentation,
     PromptQueueRef, PromptQueueState, PromptQueueStatus, example_prompt_queue,
+    project_prompt_queue_from_items,
     pending_queue_len, queue_item_from_composer,
 };
 pub use prompt_queue::PromptQueueItem as QueuedPrompt;

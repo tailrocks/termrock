@@ -5,9 +5,8 @@
 
 use termrock::input::KeyEvent;
 use termrock::style::DesignSystem;
-use termrock::widgets::{
-    BlockChrome, ColumnModel, OpsDashboardOutcome, OpsDashboardState, OpsRegion,
-};
+use termrock::patterns::{OpsDashboardOutcome, OpsDashboardState, OpsRegion};
+use termrock::widgets::{BlockChrome, ColumnModel};
 
 /// Layout hint constants (consumer maps to `layout_ops_dashboard` or local geometry).
 pub mod slots {
@@ -18,27 +17,16 @@ pub mod slots {
 }
 
 /// Drive the block: Tab cycles regions; table/log keys when focused.
-pub fn handle_key<RowId, ColId>(
+pub fn handle_key<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     state: &mut OpsDashboardState<RowId, ColId>,
     key: KeyEvent,
     visible_rows: &[RowId],
     columns: &ColumnModel<ColId>,
-) -> OpsDashboardOutcome<RowId, ColId>
-where
-    RowId: Clone + Ord,
-    ColId: Clone + PartialEq,
-{
+) -> OpsDashboardOutcome<RowId, ColId> {
     state.handle_key(key, visible_rows, columns)
 }
 
-/// Paint-time chrome handle (tokens only).
-#[must_use]
+/// Block chrome tokens.
 pub fn chrome<'a>(system: &'a DesignSystem) -> BlockChrome<'a> {
     BlockChrome::new(system)
-}
-
-/// Default region for stories.
-#[must_use]
-pub fn default_region() -> OpsRegion {
-    OpsRegion::Main
 }

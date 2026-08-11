@@ -116,3 +116,139 @@ mod tests {
         );
     }
 }
+
+// ── Ops dashboard state machine (example composite) ──────────────────────────
+
+use crate::{
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    widgets::{
+        DataTableOutcome, DataTableState, LogStreamOutcome, LogStreamState, ObjectInspectorState,
+        ColumnModel,
+    },
+};
+
+// ── OpsDashboard ────────────────────────────────────────────────────────────
+
+/// Ops dashboard outcomes (never execute domain effects).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OpsDashboardOutcome<RowId, ColId> {
+    /// No change.
+    Ignored,
+    /// Focus region changed.
+    FocusRegion(OpsRegion),
+    /// Table interaction bubbled.
+    Table(DataTableOutcome<RowId, ColId>),
+    /// Log interaction.
+    Log(LogStreamOutcome),
+    /// Request time-range change (consumer applies).
+    TimeRangeRequested,
+    /// Retry failed load (consumer).
+    RetryRequested,
+}
+
+/// Focusable regions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum OpsRegion {
+    /// Metrics strip.
+    Metrics,
+    /// Main table.
+    #[default]
+    Main,
+    /// Log stream.
+    Log,
+    /// Status.
+    Status,
+}
+
+/// Controlled ops dashboard chrome state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpsDashboardState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
+    /// Focused region.
+    pub region: OpsRegion,
+    /// Table state.
+    pub table: DataTableState<RowId, ColId>,
+    /// Log state.
+    pub log: LogStreamState,
+    /// Inspector optional.
+    pub inspector: ObjectInspectorState,
+}
+
+impl<RowId: Clone + Ord, ColId: Clone + PartialEq> Default for OpsDashboardState<RowId, ColId> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColId> {
+    /// Fresh.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            region: OpsRegion::Main,
+            table: DataTableState::new(),
+            log: LogStreamState::new(),
+            inspector: ObjectInspectorState::new(),
+        }
+    }
+
+    /// Tab cycles regions; region keys route to child.
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        visible_rows: &[RowId],
+        columns: &ColumnModel<ColId>,
+    ) -> OpsDashboardOutcome<RowId, ColId> {
+        if key.kind != KeyEventKind::Press {
+            return OpsDashboardOutcome::Ignored;
+        }
+        if key.code == KeyCode::Tab && !key.modifiers.contains(KeyModifiers::SHIFT) {
+            self.region = match self.region {
+                OpsRegion::Metrics => OpsRegion::Main,
+                OpsRegion::Main => OpsRegion::Log,
+                OpsRegion::Log => OpsRegion::Status,
+                OpsRegion::Status => OpsRegion::Metrics,
+            };
+            return OpsDashboardOutcome::FocusRegion(self.region);
+        }
+        if key.code == KeyCode::Char('r') && key.modifiers.contains(KeyModifiers::CONTROL) {
+            return OpsDashboardOutcome::RetryRequested;
+        }
+        if key.code == KeyCode::Char('t') && key.modifiers.contains(KeyModifiers::CONTROL) {
+            return OpsDashboardOutcome::TimeRangeRequested;
+        }
+        match self.region {
+            OpsRegion::Main => {
+                OpsDashboardOutcome::Table(self.table.handle_key(key, visible_rows, columns))
+            }
+            // Scroll/follow without a projected window (host may re-route with lines).
+            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key_scroll(key)),
+            _ => OpsDashboardOutcome::Ignored,
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod state_tests {
+    use super::*;
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::widgets::{ColumnModel, DataColumn, DataColumnWidth};
+
+    #[test]
+    fn ops_tab_cycles_region() {
+        let mut state = OpsDashboardState::<u64, &str>::new();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
+        let rows = [1u64];
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
+            &rows,
+            &cols,
+        );
+        assert!(matches!(
+            out,
+            OpsDashboardOutcome::FocusRegion(OpsRegion::Log)
+        ));
+    }
+}

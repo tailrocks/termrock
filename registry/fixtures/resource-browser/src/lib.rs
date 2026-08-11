@@ -1,7 +1,8 @@
 //! Source-owned ResourceBrowser block (Plan 053).
 
 use termrock::input::KeyEvent;
-use termrock::widgets::{ResourceBrowserOutcome, ResourceBrowserState, SidebarItem};
+use termrock::patterns::{ResourceBrowserOutcome, ResourceBrowserState};
+use termrock::widgets::SidebarItem;
 
 /// Route keys through sidebar; selection becomes LoadRequested.
 pub fn handle_key<Id: Clone + PartialEq>(
@@ -13,7 +14,6 @@ pub fn handle_key<Id: Clone + PartialEq>(
 }
 
 /// Stale-preview guard: compare against selection_generation.
-#[must_use]
 pub fn is_stale(state: &ResourceBrowserState<impl Clone + PartialEq>, seen_gen: u64) -> bool {
     state.selection_generation != seen_gen
 }

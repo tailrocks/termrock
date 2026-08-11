@@ -11,7 +11,7 @@
 //! **vs [`super::Picker`].** Picker is generic query+list. HistoryPicker adds
 //! pin/delete, redaction hooks, draft stash, grouping, and history-specific
 //! chrome.
-//! **vs [`super::SessionPicker`](super::SessionPicker).** SessionPicker is agent
+//! **vs [`crate::patterns::SessionPicker`].** SessionPicker is agent
 //! session lifecycle (create/resume/archive/delete); HistoryPicker is value recall.
 //! **vs CommandPalette.** Palette executes commands; HistoryPicker recalls past
 //! values into a draft.
