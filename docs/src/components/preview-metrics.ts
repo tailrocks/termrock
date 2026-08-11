@@ -120,3 +120,69 @@ export function cursorCellForStep(
 
 /** Phosphor block-cursor fill used when the preview host is focused. */
 export const CURSOR_BLOCK_RGB: [number, number, number] = [0x00, 0xff, 0x41]
+
+/**
+ * Map pointer position over the terminal canvas to a pack step index.
+ * Prefer body-row mapping (lists/tours); short wide grids (tabs) use column fraction.
+ * Pure — drives the real host path (no reimplementation in tests).
+ */
+export function stepFromPointer(
+  yCss: number,
+  xCss: number,
+  cellH: number,
+  cellW: number,
+  pad: number,
+  maxStep: number,
+  rows: number,
+  cols: number,
+  storyCols: number,
+): number {
+  const ch = Math.max(1, cellH)
+  const cw = Math.max(1, cellW)
+  const p = Math.max(0, pad | 0)
+  const max = Math.max(0, maxStep | 0)
+  const row = Math.floor(yCss / ch)
+  const col = Math.floor(xCss / cw)
+  const bodyRow = Math.max(0, row - p)
+  const bodyCol = Math.max(0, col - p)
+  let next = Math.min(max, bodyRow)
+  // Short tab strips / horizontal controls: map x across story width.
+  if (rows <= 4 && cols > 8) {
+    const sc = Math.max(1, storyCols | 0)
+    const colStep = Math.floor((bodyCol / sc) * (max + 1))
+    next = Math.min(max, Math.max(0, colStep))
+  }
+  return clampStep(next, max)
+}
+
+/**
+ * Map a vertical scrollbar track ratio in [0, 1] to a step (Ghostty-like jump).
+ * 0 → first step, 1 → last step.
+ */
+export function stepFromScrollRatio(ratio: number, maxStep: number): number {
+  const max = Math.max(0, maxStep | 0)
+  if (max === 0) return 0
+  const r = Number.isFinite(ratio) ? ratio : 0
+  const t = r <= 0 ? 0 : r >= 1 ? 1 : r
+  return clampStep(Math.round(t * max), max)
+}
+
+/**
+ * Overlay scrollbar thumb geometry in track-normalized units [0, 1].
+ * Thumb height shrinks with more steps (min 12% of track); top follows step.
+ */
+export function scrollThumbMetrics(
+  step: number,
+  maxStep: number,
+): { top: number; height: number; ratio: number } {
+  const max = Math.max(0, maxStep | 0)
+  const cur = clampStep(step, max)
+  if (max === 0) {
+    return { top: 0, height: 1, ratio: 0 }
+  }
+  const height = Math.max(0.12, 1 / (max + 1))
+  const travel = 1 - height
+  const ratio = cur / max
+  const top = ratio * travel
+  return { top, height, ratio }
+}

@@ -98,6 +98,10 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   continuation cell when it is empty (CJK/emoji grid fidelity).
 - **Single-step keys:** window-capture + React handlers share a short dedupe
   window (`shouldAcceptKeyEvent`) so one ArrowDown advances one step, not two.
+- **Overlay scrollbar (Ghostty 1.3-class):** multi-step packs show a thin right
+  track + phosphor thumb; track click and thumb drag scrub steps via
+  `stepFromScrollRatio` / `scrollThumbMetrics`. Canvas click uses pure
+  `stepFromPointer` (row for lists, column for short wide strips).
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

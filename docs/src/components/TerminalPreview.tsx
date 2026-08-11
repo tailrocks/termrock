@@ -24,8 +24,11 @@ import {
   glyphCellSpan,
   glyphDrawX,
   isLoadStillCurrent,
+  scrollThumbMetrics,
   shouldAcceptKeyEvent,
   stepDeltaFromWheel,
+  stepFromPointer,
+  stepFromScrollRatio,
   type KeyStrokeStamp,
 } from '@/components/preview-metrics'
 
@@ -41,8 +44,11 @@ export {
   glyphCellSpan,
   glyphDrawX,
   isLoadStillCurrent,
+  scrollThumbMetrics,
   shouldAcceptKeyEvent,
   stepDeltaFromWheel,
+  stepFromPointer,
+  stepFromScrollRatio,
 } from '@/components/preview-metrics'
 
 /** Cell payload from termrock-lookbook frame export (truecolor RGB). */
@@ -615,6 +621,9 @@ export function TerminalPreview({
     setFocused(true)
     if (!canInteract) return
     if (e.button !== 0) return
+    // Scrollbar track/thumb owns its own handlers.
+    const t = e.target as HTMLElement | null
+    if (t?.closest?.('[data-termrock-scrollbar]')) return
     const canvas = canvasRef.current
     if (canvas && frame) {
       const rect = canvas.getBoundingClientRect()
@@ -622,21 +631,48 @@ export function TerminalPreview({
       const scaleX = rect.width > 0 ? canvas.clientWidth / rect.width : 1
       const yCss = (e.clientY - rect.top) * scaleY
       const xCss = (e.clientX - rect.left) * scaleX
-      const row = Math.floor(yCss / cellH)
-      const col = Math.floor(xCss / cellW)
-      const bodyRow = Math.max(0, row - PAD)
-      const bodyCol = Math.max(0, col - PAD)
-      // Prefer row mapping; for short tab strips also allow col-based step.
-      let next = Math.min(maxStep, bodyRow)
-      if (frame.rows <= 4 && frame.cols > 8) {
-        const colStep = Math.floor((bodyCol / Math.max(1, frame.story_cols)) * (maxStep + 1))
-        next = Math.min(maxStep, Math.max(0, colStep))
-      }
-      goStep(next)
+      goStep(
+        stepFromPointer(
+          yCss,
+          xCss,
+          cellH,
+          cellW,
+          PAD,
+          maxStep,
+          frame.rows,
+          frame.cols,
+          frame.story_cols,
+        ),
+      )
       return
     }
     goStep(step + 1)
   }
+
+  /** Ghostty-class overlay scrollbar: track click jumps; thumb drag scrubs steps. */
+  const onScrollbarPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    hostRef.current?.focus()
+    setFocused(true)
+    if (!canInteract || maxStep <= 0) return
+    const track = e.currentTarget
+    const applyFromClientY = (clientY: number) => {
+      const rect = track.getBoundingClientRect()
+      const ratio = rect.height > 0 ? (clientY - rect.top) / rect.height : 0
+      goStep(stepFromScrollRatio(ratio, maxStep))
+    }
+    applyFromClientY(e.clientY)
+    const onMove = (ev: PointerEvent) => applyFromClientY(ev.clientY)
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const thumb = canInteract && maxStep > 0 ? scrollThumbMetrics(step, maxStep) : null
 
   const chrome: CSSProperties = {
     borderRadius: 12,
@@ -703,8 +739,8 @@ export function TerminalPreview({
 
   const hint = canInteract
     ? tour && tour.length > 1
-      ? '↑↓/wheel cycle states · j/k · click · Home/End'
-      : '↑↓/←→ · wheel · j/k · click · Home/End'
+      ? '↑↓/wheel/scroll · j/k · click · Home/End'
+      : '↑↓/←→ · wheel/scroll · j/k · click · Home/End'
     : 'read-only frame'
 
   return (
@@ -727,6 +763,8 @@ export function TerminalPreview({
           ? `${cursorCellForStep(step, PAD, frame.cols, frame.rows).x},${cursorCellForStep(step, PAD, frame.cols, frame.rows).y}`
           : ''
       }
+      data-preview-scrollbar={thumb ? 'true' : 'false'}
+      data-preview-scroll-ratio={thumb ? thumb.ratio.toFixed(4) : ''}
     >
       <div
         ref={hostRef}
@@ -813,6 +851,7 @@ export function TerminalPreview({
             justifyContent: 'center',
             alignItems: 'flex-start',
             boxSizing: 'border-box',
+            position: 'relative',
           }}
         >
           {error ? (
@@ -843,6 +882,50 @@ export function TerminalPreview({
               }}
             />
           )}
+          {/* Ghostty 1.3-class overlay scrollbar: position in multi-step packs. */}
+          {thumb ? (
+            <div
+              data-termrock-scrollbar="1"
+              role="scrollbar"
+              aria-orientation="vertical"
+              aria-valuemin={0}
+              aria-valuemax={maxStep}
+              aria-valuenow={step}
+              aria-label="Preview step scrollbar"
+              onPointerDown={onScrollbarPointerDown}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 6,
+                bottom: 16,
+                width: 8,
+                borderRadius: 999,
+                background: focused ? 'rgba(57,255,20,0.08)' : 'rgba(80,90,80,0.12)',
+                boxShadow: 'inset 0 0 0 1px rgba(57,255,20,0.12)',
+                cursor: 'pointer',
+                zIndex: 2,
+                touchAction: 'none',
+              }}
+            >
+              <div
+                data-termrock-scroll-thumb="1"
+                style={{
+                  position: 'absolute',
+                  left: 1,
+                  right: 1,
+                  top: `${thumb.top * 100}%`,
+                  height: `${thumb.height * 100}%`,
+                  minHeight: 14,
+                  borderRadius: 999,
+                  background: focused
+                    ? 'linear-gradient(180deg, #55ff66 0%, #00ff41 55%, #00c832 100%)'
+                    : 'linear-gradient(180deg, #4a6a4a 0%, #2a4a2a 100%)',
+                  boxShadow: focused ? '0 0 8px rgba(57,255,20,0.45)' : undefined,
+                  transition: 'top 80ms ease-out',
+                }}
+              />
+            </div>
+          ) : null}
         </div>
         <div style={statusBar} data-termrock-status="1">
           <span style={{ color: canInteract ? '#39ff14' : '#6a7a6a' }}>
