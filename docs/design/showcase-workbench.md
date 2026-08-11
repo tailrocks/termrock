@@ -1592,7 +1592,6 @@ No blocking open questions for S0–S2.
 - `docs/design/component-anatomy-spec.md`
 - `docs/design/semantic-interaction-architecture.md`
 - `docs/design/data-presentation.md`
-- `plans/046-agent-workbench-flagship.md`
 - Kernel: `crates/termrock/src/patterns/agent_workbench.rs`
 - Kernel: `crates/termrock/src/widgets/{prompt_composer,permission,transcript,agent,agent_blocks,review,markdown,command_palette,diff}.rs`
 - Kernel: `crates/termrock/src/interaction/{overlay_stack,scene,intent}.rs`

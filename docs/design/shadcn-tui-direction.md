@@ -1,7 +1,7 @@
 # Archived direction brief (executed)
 
 > Historical research that drove migrations `0029` and `0030` and the experience-layer
-> widgets. **Plans 001–038 were verified done and removed from `plans/`** — this file
+> widgets. Implementation plan files under `plans/` have been removed; this file
 > remains as design history. Open product work continues via new migrations only.
 
 ---
@@ -14,8 +14,8 @@
 **Breaking changes:** Explicitly allowed; quality over compatibility  
 
 This document is the durable brief from a deep landscape + codebase survey.
-It is **not** executable by itself. Promote selected items into sequential
-implementation/spike plans (`039+`) before coding.
+It is **not** executable by itself. Promote selected items into migrations
+and main-line work rather than a separate plans tree.
 
 ---
 
