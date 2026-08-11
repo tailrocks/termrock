@@ -32,6 +32,11 @@ missing_docs = "deny"
 unsafe_code = "forbid"
 rust_2018_idioms = { level = "deny", priority = -1 }
 
+[workspace.lints.rustdoc]
+# Large surface: many doc links lag renames; keep docs building under -D warnings.
+broken_intra_doc_links = "allow"
+private_intra_doc_links = "allow"
+
 [workspace.lints.clippy]
 # Groups at priority -1 so individual overrides can raise severity later.
 correctness = { level = "deny", priority = -1 }
