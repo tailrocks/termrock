@@ -409,7 +409,7 @@ pub fn resolve_export_tour(pack_story_id: &str) -> Option<Vec<&'static str>> {
     });
     // Primary first (rank 0); cap length for pack size.
     siblings.truncate(6);
-    if !siblings.iter().any(|id| *id == primary_id) {
+    if !siblings.contains(&primary_id) {
         siblings.insert(0, primary_id);
         siblings.truncate(6);
     }
