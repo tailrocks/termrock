@@ -66,4 +66,13 @@ jobs:
           restore-keys: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: cargo deny check advisories bans licenses sources
       - run: cargo tree --workspace --locked
-      - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+      # Docs SoT is Ghostty frame packs, not SVG component-previews.
+      - name: Ghostty docs frame packs
+        run: |
+          if [ -d docs/public/component-previews ]; then
+            echo 'docs/public/component-previews must not ship; use preview-frames' >&2
+            exit 1
+          fi
+          test -f docs/public/preview-frames/list-selection/manifest.json
+          test -f docs/public/preview-frames/list-selection/40x8/0.json
+          cargo run -p termrock-lookbook -- frame --story list/selection --cols 40 --rows 8 >/dev/null

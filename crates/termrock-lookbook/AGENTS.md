@@ -40,5 +40,8 @@ Each interactor is a struct implementing `StoryInteraction` that:
 2. Add a story function `fn story_<component>_<variant>` in `src/stories.rs`.
 3. Register it in `stories()` with a `Story::new(...)` entry.
 4. If interactive, add a `*Interactor` struct in `src/interactors.rs` and register in `make_interactor()`.
-5. Run `cargo run -p termrock-lookbook -- render --out docs/public/component-previews` to regenerate SVG previews.
-6. Run `cargo run -p termrock-lookbook -- check --dir docs/public/component-previews` to verify no drift.
+5. Docs use Ghostty frame packs, not SVG:  
+   `cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames --story <id>`  
+   (or full public export without `--story`). Commit packs for embedded stories only.
+6. Optional offline SVG paint check (not the docs product path):  
+   `cargo run -p termrock-lookbook -- render --out target/render-check && cargo run -p termrock-lookbook -- check --dir target/render-check`

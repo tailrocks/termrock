@@ -76,7 +76,15 @@ jobs:
         run: bun run types:check
       - working-directory: docs
         run: bun run build
-      - run: cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+      # Docs product path is Ghostty frame packs (check:catalog inside bun build).
+      # Offline lookbook SVG render remains for paint-determinism only (target/, not docs/public).
+      - name: Assert no SVG docs product tree
+        run: |
+          if [ -d docs/public/component-previews ]; then
+            echo 'docs/public/component-previews must not ship; use preview-frames + TerminalPreview' >&2
+            exit 1
+          fi
+          test -f docs/public/preview-frames/list-selection/manifest.json
       - run: rm -rf target/render-a target/render-b
       - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
       - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null
