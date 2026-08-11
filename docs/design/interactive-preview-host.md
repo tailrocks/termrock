@@ -96,6 +96,10 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   are ignored so rapid ArrowDown never rewinds the painted step.
 - **Wide glyphs:** measured advances spanning ~2 cells paint across the
   continuation cell when it is empty (CJK/emoji grid fidelity).
+- **Single-step keys:** window-capture + React handlers share a short dedupe
+  window (`shouldAcceptKeyEvent`) so one ArrowDown advances one step, not two.
+- **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
+  before the 50ms debounce applies the remap.
 
 ## Size packs
 

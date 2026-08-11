@@ -11,6 +11,7 @@ import {
   glyphCellSpan,
   glyphDrawX,
   isLoadStillCurrent,
+  shouldAcceptKeyEvent,
   stepDeltaFromWheel,
 } from '../src/components/preview-metrics'
 
@@ -50,5 +51,19 @@ assert(glyphCellSpan(0, 9) === 1, 'empty span')
 assert(isLoadStillCurrent(3, 3), 'current load')
 assert(!isLoadStillCurrent(2, 3), 'stale load rejected')
 assert(JSON.stringify(allSteps(2)) === JSON.stringify([0, 1, 2]), 'all steps')
+
+assert(shouldAcceptKeyEvent('ArrowDown', 100, null), 'first key ok')
+assert(
+  !shouldAcceptKeyEvent('ArrowDown', 110, { key: 'ArrowDown', t: 100 }),
+  'same key within window rejected',
+)
+assert(
+  shouldAcceptKeyEvent('ArrowDown', 200, { key: 'ArrowDown', t: 100 }),
+  'same key after window ok',
+)
+assert(
+  shouldAcceptKeyEvent('ArrowUp', 105, { key: 'ArrowDown', t: 100 }),
+  'different key ok',
+)
 
 console.log('preview-metrics: ok')

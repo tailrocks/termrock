@@ -80,3 +80,20 @@ export function allSteps(maxStep: number): number[] {
   for (let i = 0; i <= max; i++) out.push(i)
   return out
 }
+
+export type KeyStrokeStamp = { key: string; t: number }
+
+/**
+ * Deduplicate window-capture + React onKeyDown for the same physical keystroke.
+ * Without this, Ghostty host advances two steps per ArrowDown when focused.
+ */
+export function shouldAcceptKeyEvent(
+  key: string,
+  nowMs: number,
+  last: KeyStrokeStamp | null,
+  windowMs = 32,
+): boolean {
+  if (!key) return false
+  if (last && last.key === key && nowMs - last.t < windowMs) return false
+  return true
+}

@@ -22,7 +22,9 @@ import {
   glyphCellSpan,
   glyphDrawX,
   isLoadStillCurrent,
+  shouldAcceptKeyEvent,
   stepDeltaFromWheel,
+  type KeyStrokeStamp,
 } from '@/components/preview-metrics'
 
 export {
@@ -35,6 +37,7 @@ export {
   glyphCellSpan,
   glyphDrawX,
   isLoadStillCurrent,
+  shouldAcceptKeyEvent,
   stepDeltaFromWheel,
 } from '@/components/preview-metrics'
 
@@ -272,6 +275,7 @@ export function TerminalPreview({
   const maxStepRef = useRef(0)
   const frameCacheRef = useRef<Map<string, TerminalFrame>>(new Map())
   const loadGenRef = useRef(0)
+  const lastKeyRef = useRef<KeyStrokeStamp | null>(null)
   stepRef.current = step
   sizeKeyRef.current = sizeKey
 
@@ -415,6 +419,7 @@ export function TerminalPreview({
 
   // Real remap: host CSS size → story cols/rows → nearest exported pack → load.
   // sizeKeyRef avoids re-binding ResizeObserver on every size change.
+  // Warm the next size pack immediately so remap feels like Ghostty reflow, not fetch lag.
   useEffect(() => {
     const stage = stageRef.current
     if (!stage || !manifest) return
@@ -428,6 +433,7 @@ export function TerminalPreview({
       stage.dataset['wantStoryRows'] = String(storyRows)
       stage.dataset['sizeKey'] = nextKey
       if (nextKey !== sizeKeyRef.current) {
+        prefetchSizePack(nextKey)
         void loadFrame(nextKey, stepRef.current)
       }
     }
@@ -435,6 +441,12 @@ export function TerminalPreview({
       const entry = entries[0]
       if (!entry) return
       const { width, height } = entry.contentRect
+      // Speculative warm: if the pending size differs, start fetching before debounce fires.
+      const { storyCols, storyRows } = storySizeForCssHost(width, height, cellW, cellH)
+      const pendingKey = pickSizeKey(storyCols, storyRows, sizes)
+      if (pendingKey !== sizeKeyRef.current) {
+        prefetchSizePack(pendingKey)
+      }
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => apply(width, height), 50)
     })
@@ -445,7 +457,7 @@ export function TerminalPreview({
       ro.disconnect()
       if (timer) clearTimeout(timer)
     }
-  }, [manifest, cellW, cellH, sizes, loadFrame])
+  }, [manifest, cellW, cellH, sizes, loadFrame, prefetchSizePack])
 
   const goStep = useCallback(
     (n: number) => {
@@ -486,6 +498,13 @@ export function TerminalPreview({
       }
       const key = map[rawKey] ?? (rawKey.length === 1 ? rawKey : null)
       if (!key) return false
+      // Window capture + React bubble both see the same stroke — only advance once.
+      const now =
+        typeof performance !== 'undefined' ? performance.now() : Date.now()
+      if (!shouldAcceptKeyEvent(key, now, lastKeyRef.current)) {
+        return true // swallow duplicate without double-stepping
+      }
+      lastKeyRef.current = { key, t: now }
       if (
         key === 'ArrowDown' ||
         key === 'ArrowRight' ||
