@@ -277,6 +277,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0261 | `v0.13.0` | [Surface ladder and semantic role expansion](migrations/0261-v0.13.0-surface-ladder-and-role-expansion.md) |
 | 0262 | `v0.13.0` | [Border shape token](migrations/0262-v0.13.0-border-shape-token.md) |
 | 0263 | `v0.13.0` | [Spacing activation](migrations/0263-v0.13.0-spacing-activation.md) |
+| 0264 | `v0.13.0` | [Recipe-enforced controls, chips, tints, and meters](migrations/0264-v0.13.0-recipe-enforcement-and-chips.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -1197,7 +1197,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         | CodeHighlightKind::DiffRemove
                 )
             }) {
-                style.bg = None;
+                style = Style { bg: None, ..style };
             }
             if col >= width {
                 break;
@@ -1670,7 +1670,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
 #[must_use]
 pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
     let mut style = system.style(role);
-    style.bg = None;
+    style = Style { bg: None, ..style };
     if matches!(system.capability, crate::style::ColorCapability::Monochrome) {
         match role {
             Role::SyntaxKeyword | Role::SyntaxFunction => {

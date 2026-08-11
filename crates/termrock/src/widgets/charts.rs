@@ -237,7 +237,7 @@ impl VizGlyphSet {
     pub fn ladder(self) -> &'static [char] {
         match self {
             Self::Ascii => &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'],
-            Self::Block | Self::Auto => &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'],
+            Self::Block | Self::Auto => crate::style::BLOCK_RAMP,
             // Braille vertical density approximation (single cell heights)
             Self::Braille => &[' ', '⣀', '⣤', '⣶', '⣿'],
         }

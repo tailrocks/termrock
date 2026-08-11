@@ -1680,6 +1680,25 @@ mod tests {
     }
 
     #[test]
+    fn phosphor_selection_is_tinted_not_neon() {
+        let rows = rows();
+        let system = DesignSystem::default();
+        let mut state = ListState::new(Some("second"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let row = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        let cell = &buffer[(row.x.saturating_add(1), row.y)];
+        assert_eq!(cell.bg, system.style(Role::SelectionTint).bg.unwrap());
+        assert_ne!(cell.fg, system.style(Role::ActionFocused).fg.unwrap());
+    }
+
+    #[test]
     fn trailing_cells_align_right_and_wide_labels_truncate_first() {
         let rows = [
             ListRow {

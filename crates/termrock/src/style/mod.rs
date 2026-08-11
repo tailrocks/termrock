@@ -20,7 +20,7 @@ mod tokens;
 
 pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
-pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
+pub use glyph::{BLOCK_RAMP, Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use palette::Rgb;
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,

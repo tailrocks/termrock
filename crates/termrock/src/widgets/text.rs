@@ -520,7 +520,7 @@ impl<'a> Text<'a> {
         let mut style = self.system.style(role);
         if self.preserve_bg {
             // Drop explicit background so canvas / parent surface shows through.
-            style.bg = None;
+            style = ratatui_core::style::Style { bg: None, ..style };
         }
         match span.emphasis {
             TextEmphasis::Normal => {}

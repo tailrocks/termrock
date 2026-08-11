@@ -13,6 +13,9 @@
 use super::tokens::GlyphSet;
 use crate::text::display_cols;
 
+/// Shared vertical block ramp from empty through a full cell.
+pub const BLOCK_RAMP: &[char; 9] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+
 /// Semantic family for browsing and docs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]

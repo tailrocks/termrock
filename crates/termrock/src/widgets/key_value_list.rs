@@ -839,7 +839,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             Role::Text
         };
         let mut style = self.system.style(role);
-        style.bg = None;
+        style = ratatui_core::style::Style { bg: None, ..style };
         if entry.href.is_some() {
             style = style.add_modifier(Modifier::UNDERLINED);
         }

@@ -426,8 +426,7 @@ impl<'a> Link<'a> {
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }
-        // Dense UIs: no bg.
-        style.bg = None;
+        style = ratatui_core::style::Style { bg: None, ..style };
         style
     }
 
@@ -776,7 +775,7 @@ impl<'a> ActionLink<'a> {
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }
-        style.bg = None;
+        style = ratatui_core::style::Style { bg: None, ..style };
         buffer.set_stringn(root.x, root.y, &clipped, usize::from(root.width), style);
         let parts = LinkParts {
             root,

@@ -432,7 +432,7 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
+        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Tint)
     }
 
     /// Terminal-default background variant of the phosphor system.

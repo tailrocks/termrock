@@ -31,7 +31,7 @@ use crate::{
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
     style::{Density, DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
-    widgets::{Button, ButtonState, ButtonVariant},
+    widgets::{Button, ButtonState, ButtonVariant, Surface, SurfaceRecipe},
 };
 
 /// Width under which Full density collapses toward Inline.
@@ -484,6 +484,17 @@ impl<'a> EmptyState<'a> {
     }
 
     fn paint_full(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
+        let area = if area.width >= 24 && area.height >= 6 {
+            let frame = Center::new(area.width.min(56), area.height.min(12))
+                .layout(area)
+                .child;
+            Surface::new(self.system)
+                .recipe(SurfaceRecipe::Inset)
+                .bordered(true)
+                .paint(frame, buffer)
+        } else {
+            area
+        };
         // Build ordered rows: glyph, title, explanation, context, example, primary, secondary, shortcut
         let g = self.resolved_glyph();
         let mut rows: Vec<(String, Role, bool)> = Vec::with_capacity(8);
@@ -502,9 +513,11 @@ impl<'a> EmptyState<'a> {
         let action_rows = u16::from(self.primary.is_some()) + u16::from(self.secondary.is_some());
         let shortcut_row = u16::from(self.shortcut.is_some());
         let content_rows = rows.len() as u16;
+        let gap_rows = u16::from(rows.len() > 2 && area.height >= 8) * self.system.spacing.gap;
         let total = content_rows
             .saturating_add(action_rows)
             .saturating_add(shortcut_row)
+            .saturating_add(gap_rows)
             .max(1);
 
         let block = Center::new(area.width, total)
@@ -530,6 +543,9 @@ impl<'a> EmptyState<'a> {
                 );
             }
             idx += 1;
+            if idx == 2 {
+                idx = idx.saturating_add(usize::from(gap_rows));
+            }
         }
 
         if let Some(p) = self.primary {
@@ -923,6 +939,16 @@ mod tests {
         assert!(text.contains("Add row"), "{text}");
         assert!(text.contains("Import"), "{text}");
         assert!(text.contains("csv") || text.contains("e.g."), "{text}");
+    }
+
+    #[test]
+    fn empty_state_paints_inset_surface() {
+        let system = system();
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        EmptyState::new("No rows", &system).paint(area, &mut buffer);
+        assert_eq!(buffer[(1, 1)].bg, system.style(Role::Surface).bg.unwrap());
+        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
     }
 
     #[test]

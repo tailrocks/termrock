@@ -109,7 +109,14 @@ framed surface, not the void.
   `tag_chip.rs`, `list.rs`, `tree.rs`, `progress.rs`, `empty_state.rs`
 - `crates/termrock/src/style/tokens.rs` (recipe adjustments only if a state
   is unreachable through the current recipe shape)
+- `crates/termrock/src/style/glyph.rs`, `crates/termrock/src/style/mod.rs`, and
+  `crates/termrock/src/widgets/charts.rs` (shared block-ramp promotion required
+  by Step 4)
+- `crates/termrock/src/widgets/surface.rs` (`bordered(true)` contract repair
+  required by EmptyState framing only)
 - `crates/termrock-lookbook/src/stories.rs` (story updates)
+- `docs/api/public-api.txt`, affected `docs/public/preview-frames/`, and
+  `artifacts/visual-qa/plan-004/`
 - `migrations/0264-*.md` + `MIGRATING.md`
 - `plans/README.md`
 
@@ -248,12 +255,19 @@ expectation updates across the touched widgets' existing tests.
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` exit 0
-- [ ] `grep -rn "bg = None" crates/termrock/src/widgets/` → 0 matches
-- [ ] `grep -rn "button_recipe" crates/termrock/src/widgets/primitives.rs` → ≥1 non-test match
-- [ ] 5 new tests above exist and pass
-- [ ] `migrations/0264-*.md` exists, linked from `MIGRATING.md`
-- [ ] `plans/README.md` updated
+- [x] `mise run check` + `mise run gate` exit 0
+- [x] `grep -rn "bg = None" crates/termrock/src/widgets/` → 0 matches
+- [x] `grep -rn "button_recipe" crates/termrock/src/widgets/primitives.rs` → ≥1 non-test match
+- [x] 5 new tests above exist and pass
+- [x] `migrations/0264-*.md` exists, linked from `MIGRATING.md`
+- [x] `plans/README.md` updated
+
+## Visual QA
+
+- Button, Badge, List, Progress: **pass** in dark and paper shells.
+- EmptyState: **pass, iterated once** to bound the wide card and remove dead
+  void while retaining responsive contraction.
+- Evidence: [`artifacts/visual-qa/plan-004/README.md`](../artifacts/visual-qa/plan-004/README.md).
 
 ## STOP conditions
 
@@ -272,3 +286,32 @@ expectation updates across the touched widgets' existing tests.
   survive).
 - Plan 010's success grep (`bg = None` == 0) starts holding here — CI could
   enforce it later (deferred).
+
+## Amendments
+
+- 2026-08-12: The drift check reports `list.rs` and `empty_state.rs` changes
+  from completed Plan 003. Classified as a plan defect: this plan depends on
+  Plan 003 yet its STOP text treats the dependency's declared density and
+  spacing edits as unexpected drift. Options considered were halt, revert the
+  prerequisite, or accept the current geometry while preserving this plan's
+  recipe-only intent. Continuing from the live Plan 003 geometry best matches
+  the goal, repo cross-surface law, design SoT, and independently-green commit
+  requirement with no extra implementation scope.
+- 2026-08-12: Added `surface.rs` after live-code research showed
+  `Surface::bordered(true)` only preserved an existing recipe border and could
+  not force one, contradicting its public contract and blocking the specified
+  inset EmptyState frame. Options were local duplicate border paint, use a
+  semantically wrong interactive recipe, or repair the shared override. The
+  shared one-line fallback to `Role::Border` has the smallest coherent blast
+  radius and preserves focus-visible law.
+- 2026-08-12: Designer review constrained full EmptyState inset cards to a
+  centered 56×12 maximum measure. The first browser render stretched the
+  frame across 80×24, leaving dead void around a small message; the bounded
+  measure preserves the specified surface hierarchy while producing deliberate
+  rhythm at wide terminal sizes and leaving narrow contraction unchanged.
+- 2026-08-12: Added shared glyph/chart files plus generated public API, frame,
+  and browser evidence outputs omitted from Scope. Step 4 already mandates the
+  block-ramp move, and repo migration/catalog law plus the standing browser gate
+  require the generated cascade. Omitting them would leave duplicated glyph
+  ownership or stale public/visual contracts; including only these direct
+  outputs is the smallest coherent resolution.

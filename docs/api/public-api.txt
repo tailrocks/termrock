@@ -29823,6 +29823,7 @@ pub unsafe fn termrock::style::ThemePackage::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::ThemePackage
 pub fn termrock::style::ThemePackage::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::ThemePackage
+pub const termrock::style::BLOCK_RAMP: &[char; 9]
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color

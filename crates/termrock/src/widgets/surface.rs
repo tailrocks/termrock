@@ -287,6 +287,8 @@ impl<'a> Surface<'a> {
         let bordered = self.bordered.unwrap_or(self.recipe.default_bordered());
         if !bordered {
             plan.border = None;
+        } else if plan.border.is_none() {
+            plan.border = Some(self.system.style(Role::Border));
         }
         // No-color / monochrome: never rely on chromatic fill alone.
         if matches!(self.system.capability, ColorCapability::Monochrome)
