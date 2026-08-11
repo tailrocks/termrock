@@ -72,12 +72,12 @@
 | 52 | chart-radar-multiple | covered | multi `MetricSeries` | |
 | 53 | chart-radar-legend | covered | `.show_legend` | |
 | 54 | chart-radar-icons | partial | series markers | Registry 200; React icons N/A |
-| 55 | chart-radial-simple | covered | `Gauge` | |
-| 56 | chart-radial-label | covered | gauge label | |
-| 57 | chart-radial-grid | partial | thresholds | |
-| 58 | chart-radial-text | covered | unit/label | |
+| 55 | chart-radial-simple | covered | `BarSeries` / multi `Gauge` | Multi-category linear peer |
+| 56 | chart-radial-label | covered | bar labels / `Gauge::label` | |
+| 57 | chart-radial-grid | partial | `Gauge::thresholds` | PolarGrid N/A |
+| 58 | chart-radial-text | covered | `Gauge` unit/label | |
 | 59 | chart-radial-shape | partial | glyph fill | Custom SVG shapes N/A |
-| 60 | chart-radial-stacked | partial | segmented gauge host | |
+| 60 | chart-radial-stacked | covered | `SegmentedMeter` | Stacked part-to-whole |
 | 61 | chart-tooltip-default | covered | `selected_index` highlight | Keyboard focus peer |
 | 62 | chart-tooltip-indicator-line | partial | threshold lines | |
 | 63 | chart-tooltip-indicator-none | covered | selection only | |
@@ -91,8 +91,8 @@
 
 | Status | Count |
 |--------|------:|
-| covered | 40 |
-| partial | 21 |
+| covered | 41 |
+| partial | 20 |
 | missing | 0 |
 | N/A | 7 |
 | **Total** | **68** |
@@ -105,7 +105,7 @@
 | Line / multi-series / selection | Existing `Chart` |
 | Bar / histogram | `BarSeries` / `Histogram`; stacked + negative on BarSeries (0253) |
 | Pie proportions | `SegmentedMeter` + selection/center (0255) |
-| Radial | `Gauge` |
+| Radial progress | `Gauge` + `BarSeries` multi-category + `SegmentedMeter` stacked; polar rings **N/A** (see `shadcn-radial-charts-coverage.md`) |
 | Radar multi-metric | `MetricRadar` axes×series grouped bars (0256); polar grid **N/A** |
 | Continuous gradient | N/A |
 

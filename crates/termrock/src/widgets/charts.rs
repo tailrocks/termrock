@@ -2959,20 +2959,119 @@ mod tests {
     }
 
     #[test]
-    fn gauge_thresholds_and_tiny() {
-        let system = system();
-        let thr = [70.0, 90.0];
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 1));
-        Gauge::percent(85.0, &system)
+    fn gauge_fill_scales_with_percent() {
+        let system = system_ascii_nocolor();
+        let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
+        let empty = '-';
+        let count_fill = |buf: &Buffer, w: u16| -> usize {
+            (0..w)
+                .filter(|&x| buf[(x, 0)].symbol().contains(fill))
+                .count()
+        };
+        let area = Rect::new(0, 0, 40, 1);
+        let mut low = Buffer::empty(area);
+        Gauge::percent(25.0, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut low);
+        let mut high = Buffer::empty(area);
+        Gauge::percent(90.0, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut high);
+        let lo = count_fill(&low, 40);
+        let hi = count_fill(&high, 40);
+        assert!(
+            hi > lo,
+            "90% must fill more track cells than 25%: lo={lo} hi={hi}"
+        );
+        assert!(lo > 0, "25% must paint some fill cells");
+        // Empty remainder present on partial fill
+        let low_s: String = (0..40u16).map(|x| low[(x, 0)].symbol().to_string()).collect();
+        assert!(
+            low_s.contains(empty),
+            "partial gauge leaves empty track: {low_s:?}"
+        );
+        // Value text for 90 paints
+        let high_s: String = (0..40u16)
+            .map(|x| high[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            high_s.contains('9') || high_s.contains('0'),
+            "value text present: {high_s:?}"
+        );
+    }
+
+    #[test]
+    fn gauge_label_unit_and_threshold_ticks() {
+        let system = system_ascii_nocolor();
+        let thr = [50.0, 90.0];
+        let area = Rect::new(0, 0, 48, 1);
+        let mut buffer = Buffer::empty(area);
+        Gauge::percent(75.0, &system)
+            .glyphs(VizGlyphSet::Ascii)
             .label("cpu")
             .unit("%")
             .thresholds(&thr)
-            .render(Rect::new(0, 0, 30, 1), &mut buffer);
-        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("85") || text.contains('%') || text.contains("cpu"), "{text}");
+            .render(area, &mut buffer);
+        let text: String = (0..48u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(text.contains('c') && text.contains('p'), "label: {text:?}");
+        assert!(text.contains('%'), "unit suffix: {text:?}");
+        let tick = VizGlyphSet::Ascii.threshold_mark();
+        assert!(
+            text.contains(tick),
+            "threshold tick {tick:?} must paint on track: {text:?}"
+        );
+        // 75 is between 50 and 90 — fill and empty both exist
+        let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
+        assert!(
+            text.contains(fill),
+            "fill glyph present: {text:?}"
+        );
+    }
 
-        let mut tiny = Buffer::empty(Rect::new(0, 0, 6, 1));
-        Gauge::percent(50.0, &system).render(Rect::new(0, 0, 6, 1), &mut tiny);
+    #[test]
+    fn gauge_tiny_width_paints_value() {
+        let system = system_ascii_nocolor();
+        let area = Rect::new(0, 0, 6, 1);
+        let mut tiny = Buffer::empty(area);
+        Gauge::percent(42.0, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .label("cpu")
+            .unit("%")
+            .render(area, &mut tiny);
+        let text: String = (0..6u16)
+            .map(|x| tiny[(x, 0)].symbol().to_string())
+            .collect();
+        // Tiny path prioritizes value text (may drop track/label)
+        assert!(
+            text.chars().any(|c| c.is_ascii_digit()),
+            "tiny gauge must still show value digits: {text:?}"
+        );
+        // No panic / fully empty row
+        assert!(
+            text.chars().any(|c| !c.is_whitespace() && c != '\u{0}'),
+            "tiny gauge paints something: {text:?}"
+        );
+    }
+
+    #[test]
+    fn gauge_zero_does_not_invent_fill_mass() {
+        let system = system_ascii_nocolor();
+        let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+        Gauge::percent(0.0, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .render(area, &mut buffer);
+        let text: String = (0..32u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        let fill_n = text.chars().filter(|&c| c == fill).count();
+        assert_eq!(
+            fill_n, 0,
+            "zero value must not invent fill mass: {text:?}"
+        );
     }
 
     #[test]
