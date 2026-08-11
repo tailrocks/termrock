@@ -27,16 +27,14 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    interaction::{
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    },
-    keymap::{raw_bytes_to_chord, Conflict, KeyBinding, KeyChord, Keymap, Visibility},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    format_chord, format_sequence, ChordFormat, Kbd, Panel, PanelChrome, Platform, Validation,
+    ChordFormat, Kbd, Panel, PanelChrome, Platform, Validation, format_chord, format_sequence,
 };
 
 /// Default sequence separator in multi-chord display.
@@ -115,10 +113,7 @@ pub fn default_reserved_chords() -> Vec<(KeyChord, String)> {
             KeyChord::ctrl(KeyCode::Char('q')),
             "XON/XOFF start (software flow control)".into(),
         ),
-        (
-            KeyChord::ctrl(KeyCode::Char('\\')),
-            "often SIGQUIT".into(),
-        ),
+        (KeyChord::ctrl(KeyCode::Char('\\')), "often SIGQUIT".into()),
     ]
 }
 
@@ -342,8 +337,12 @@ impl KeybindingRecorderState {
     }
 
     /// Load occupied chords from a [`Keymap`], skipping `skip` action.
-    pub fn load_occupied_from_keymap<A>(&mut self, map: &Keymap<A>, skip: A, label: impl Fn(&A) -> String)
-    where
+    pub fn load_occupied_from_keymap<A>(
+        &mut self,
+        map: &Keymap<A>,
+        skip: A,
+        label: impl Fn(&A) -> String,
+    ) where
         A: Clone + Copy + PartialEq + 'static,
     {
         let mut occ = Vec::new();
@@ -872,11 +871,7 @@ impl<'a> KeybindingRecorder<'a> {
         if y < inner.bottom() {
             let live = state.display_live();
             let rec_mark = if state.is_recording() {
-                if self.ascii {
-                    "[REC] "
-                } else {
-                    "● "
-                }
+                if self.ascii { "[REC] " } else { "● " }
             } else {
                 ""
             };
@@ -1031,9 +1026,10 @@ impl<'a> KeybindingRecorder<'a> {
                 .state(SemanticState {
                     selected: state.focused,
                     busy: state.is_recording(),
-                    invalid: state.last_limit.as_ref().is_some_and(|l| {
-                        !matches!(l, BindingLimit::Intermediate)
-                    }),
+                    invalid: state
+                        .last_limit
+                        .as_ref()
+                        .is_some_and(|l| !matches!(l, BindingLimit::Intermediate)),
                     expanded: state.is_recording(),
                     ..Default::default()
                 }),
@@ -1195,10 +1191,7 @@ mod tests {
             KeybindingRecorderOutcome::RestoredDefault { chords }
                 if chords == [KeyChord::plain(KeyCode::Char('a'))]
         ));
-        assert!(matches!(
-            state.clear(),
-            KeybindingRecorderOutcome::Cleared
-        ));
+        assert!(matches!(state.clear(), KeybindingRecorderOutcome::Cleared));
         assert!(state.value().is_empty());
     }
 
@@ -1249,13 +1242,15 @@ mod tests {
             .with_chords([KeyChord::ctrl(KeyCode::Char('s'))])
             .with_format(ChordFormat::footer());
         let d = state.display_value();
-        assert!(d.contains('s') || d.contains('S') || d.contains("C-"), "{d}");
+        assert!(
+            d.contains('s') || d.contains('S') || d.contains("C-"),
+            "{d}"
+        );
     }
 
     #[test]
     fn sequence_multi_chord() {
-        let mut state = KeybindingRecorderState::new("gg", "Top")
-            .with_sequences(true);
+        let mut state = KeybindingRecorderState::new("gg", "Top").with_sequences(true);
         state.reserved.clear();
         state.set_focused(true);
         let _ = state.start_recording();
@@ -1308,8 +1303,8 @@ mod tests {
     #[test]
     fn paint_hot_path() {
         let system = DesignSystem::default();
-        let mut state = KeybindingRecorderState::new("a", "A")
-            .with_chords([KeyChord::alt(KeyCode::Char('x'))]);
+        let mut state =
+            KeybindingRecorderState::new("a", "A").with_chords([KeyChord::alt(KeyCode::Char('x'))]);
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);

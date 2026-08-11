@@ -23,10 +23,12 @@
 //! - Not a replacement for `Frame` / `Buffer`.
 //! - Not domain state (messages stay in the app).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 use std::hash::Hash;
 use std::time::{Duration, Instant};
 
+use crate::capability::CapabilityProfile;
 use crate::capability::{CapabilityBoundary, TerminalCapabilities};
 use crate::input::KeyEvent;
 use crate::interaction::{
@@ -34,7 +36,6 @@ use crate::interaction::{
     SemanticScene, SemanticSnapshot, UiIntent,
 };
 use crate::keymap::{KeyChord, Keymap};
-use crate::capability::CapabilityProfile;
 use crate::runtime::{FrameClock, FrameTick};
 use crate::style::DesignSystem;
 
@@ -268,8 +269,7 @@ where
     }
 }
 
-impl<Id, LayerId, Action, MapAction> fmt::Debug
-    for UiContext<'_, Id, LayerId, Action, MapAction>
+impl<Id, LayerId, Action, MapAction> fmt::Debug for UiContext<'_, Id, LayerId, Action, MapAction>
 where
     Id: Clone + Eq + Hash + fmt::Debug,
     LayerId: Clone + Eq + Hash + fmt::Debug,
@@ -439,7 +439,6 @@ where
             diagnostics: &mut self.diagnostics,
         }
     }
-
 }
 
 /// Map a physical key through optional keymap to a cloned app action.
@@ -502,9 +501,7 @@ pub mod adapters {
     {
         let outcome = ctx.handle_overlay_escape();
         match outcome {
-            OverlayOutcome::Ignored | OverlayOutcome::UnhandledEscape => {
-                RoutedEscape::Unhandled
-            }
+            OverlayOutcome::Ignored | OverlayOutcome::UnhandledEscape => RoutedEscape::Unhandled,
             other => RoutedEscape::Overlay(other),
         }
     }
@@ -580,7 +577,10 @@ mod tests {
             Duration::from_millis(16),
         );
         let ctx = host.begin_frame_at(tick);
-        assert_eq!(ctx.design().style(crate::style::Role::Accent).fg, design.style(crate::style::Role::Accent).fg);
+        assert_eq!(
+            ctx.design().style(crate::style::Role::Accent).fg,
+            design.style(crate::style::Role::Accent).fg
+        );
         assert_eq!(ctx.tick().elapsed_ms(), 100);
     }
 

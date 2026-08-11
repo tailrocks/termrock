@@ -16,15 +16,12 @@
 
 use std::collections::VecDeque;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -128,7 +125,12 @@ pub fn join_path(base: &str, relative: &str, style: PathStyle) -> String {
     if base.is_empty() {
         return rel;
     }
-    format!("{}{}{}", base, style.sep(), rel.trim_start_matches(['/', '\\']))
+    format!(
+        "{}{}{}",
+        base,
+        style.sep(),
+        rel.trim_start_matches(['/', '\\'])
+    )
 }
 
 /// Expand leading `~` / `~/` using host-provided home directory string.
@@ -990,7 +992,10 @@ impl<'a> PathInput<'a> {
         let destructive = matches!(state.risk, PathRisk::Destructive);
         let invalid = state.kind_mismatch()
             || matches!(self.validation, Validation::Invalid(_))
-            || matches!(state.fs_status, PathFsStatus::Error | PathFsStatus::Inaccessible);
+            || matches!(
+                state.fs_status,
+                PathFsStatus::Error | PathFsStatus::Inaccessible
+            );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
@@ -1045,7 +1050,12 @@ impl<'a> PathInput<'a> {
             y = y.saturating_add(1);
         }
 
-        let row = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), area.width, 1);
+        let row = Rect::new(
+            area.x,
+            y.min(area.bottom().saturating_sub(1)),
+            area.width,
+            1,
+        );
         let mut x = row.x;
         let mut right = row.right();
 
@@ -1123,7 +1133,9 @@ impl<'a> PathInput<'a> {
             status_rect = Some(Rect::new(right.saturating_add(1), row.y, sw, 1));
             let role = match state.fs_status {
                 PathFsStatus::Error | PathFsStatus::Inaccessible => Role::Danger,
-                PathFsStatus::Missing if matches!(state.expect, PathExpect::File | PathExpect::Directory) => {
+                PathFsStatus::Missing
+                    if matches!(state.expect, PathExpect::File | PathExpect::Directory) =>
+                {
                     Role::Warning
                 }
                 PathFsStatus::Pending => Role::TextMuted,
@@ -1303,14 +1315,8 @@ mod tests {
 
     #[test]
     fn separators_and_absolute() {
-        assert_eq!(
-            normalize_separators(r"a\b/c", PathStyle::Unix),
-            "a/b/c"
-        );
-        assert_eq!(
-            normalize_separators("a/b\\c", PathStyle::Windows),
-            r"a\b\c"
-        );
+        assert_eq!(normalize_separators(r"a\b/c", PathStyle::Unix), "a/b/c");
+        assert_eq!(normalize_separators("a/b\\c", PathStyle::Windows), r"a\b\c");
         assert!(is_absolute_path("/tmp"));
         assert!(is_absolute_path(r"C:\Users"));
         assert!(is_absolute_path("D:/work"));
@@ -1323,10 +1329,7 @@ mod tests {
             join_path("/home/u", "proj", PathStyle::Unix),
             "/home/u/proj"
         );
-        assert_eq!(
-            join_path("/home/u", "/abs", PathStyle::Unix),
-            "/abs"
-        );
+        assert_eq!(join_path("/home/u", "/abs", PathStyle::Unix), "/abs");
         assert_eq!(expand_tilde("~/x", Some("/home/u")), "/home/u/x");
         assert_eq!(expand_tilde("~", Some("/home/u")), "/home/u");
     }
@@ -1354,10 +1357,7 @@ mod tests {
             .with_style(PathStyle::Unix)
             .with_path("/tmp/fi");
         state.set_focused(true);
-        assert_eq!(
-            state.apply_completion("file.rs"),
-            PathInputOutcome::Changed
-        );
+        assert_eq!(state.apply_completion("file.rs"), PathInputOutcome::Changed);
         assert_eq!(state.path(), "/tmp/file.rs");
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL)),
@@ -1404,16 +1404,12 @@ mod tests {
         state.set_focused(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            PathInputOutcome::Submitted {
-                path: "/a".into()
-            }
+            PathInputOutcome::Submitted { path: "/a".into() }
         );
         state.set_path("");
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
-            PathInputOutcome::HistoryRecalled {
-                path: "/a".into()
-            }
+            PathInputOutcome::HistoryRecalled { path: "/a".into() }
         );
     }
 
@@ -1435,7 +1431,13 @@ mod tests {
         for x in 0..area.width {
             row0.push_str(buf[(x, 0)].symbol());
         }
-        assert!(row0.contains('!') || row0.contains("Target") || row0.contains('⚠') || row0.contains("destruct") || !row0.is_empty());
+        assert!(
+            row0.contains('!')
+                || row0.contains("Target")
+                || row0.contains('⚠')
+                || row0.contains("destruct")
+                || !row0.is_empty()
+        );
     }
 
     #[test]
@@ -1464,12 +1466,7 @@ mod tests {
         let system = DesignSystem::default();
         let state = PathInputState::new().with_path("/home/secret/token");
         let mut scene = SemanticScene::<&str, ()>::default();
-        PathInput::new(&system).register_semantic(
-            &mut scene,
-            "p",
-            Rect::new(0, 0, 20, 1),
-            &state,
-        );
+        PathInput::new(&system).register_semantic(&mut scene, "p", Rect::new(0, 0, 20, 1), &state);
         let node = scene.get(&"p").unwrap();
         let dump = format!("{node:?}");
         assert!(dump.contains("path"));

@@ -7,11 +7,12 @@
 //! placement planning. Consumers emit protocol bytes outside render.
 //! Built on AppShell Workbench (rail=sidebar, preview=inspector).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
 use crate::style::{CapabilityPreviewHost, Density};
 
-use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
+use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
 /// Slots for a resource browser (file manager / k8s / DB class).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -252,7 +253,6 @@ impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
         Self::new()
     }
 }
-
 
 #[cfg(test)]
 mod state_tests {

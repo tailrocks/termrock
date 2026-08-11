@@ -21,6 +21,7 @@
 //!
 //! Research: CI pipelines, installers, agent task plans.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -33,16 +34,16 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, NavigationMove,
+        NavigationMove, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_list_intent,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::timeline::{Timeline, TimelineEvent};
 use super::list::ListRow;
 use super::stepper::StepStatus;
+use super::timeline::{Timeline, TimelineEvent};
 
 /// Width under which expanded list becomes compact summary.
 pub const PROGRESS_STEPS_COMPACT_MAX_WIDTH: u16 = 36;
@@ -503,11 +504,7 @@ impl ProgressStepsState {
     }
 
     /// Keyboard (interactive only).
-    pub fn handle_key(
-        &mut self,
-        steps: &[ProgressStep],
-        key: KeyEvent,
-    ) -> ProgressStepsOutcome {
+    pub fn handle_key(&mut self, steps: &[ProgressStep], key: KeyEvent) -> ProgressStepsOutcome {
         if !matches!(self.mode, ProgressStepsMode::Interactive)
             || !self.enabled
             || !self.accepts_input
@@ -627,11 +624,7 @@ impl ProgressStepsState {
         if !list_area.contains(event.position) {
             return ProgressStepsOutcome::Ignored;
         }
-        let row = event
-            .position
-            .y
-            .saturating_sub(list_area.y)
-            / row_height.max(1);
+        let row = event.position.y.saturating_sub(list_area.y) / row_height.max(1);
         let idx = self.scroll.saturating_add(row as usize);
         if let Some(s) = steps.get(idx) {
             self.cursor = Some(s.id.clone());
@@ -683,19 +676,18 @@ impl<'a> ProgressSteps<'a> {
 
     /// Resolve presentation.
     #[must_use]
-    pub fn presentation(&self, state: &ProgressStepsState, width: u16) -> ProgressStepsPresentation {
+    pub fn presentation(
+        &self,
+        state: &ProgressStepsState,
+        width: u16,
+    ) -> ProgressStepsPresentation {
         state
             .presentation
             .unwrap_or_else(|| ProgressStepsPresentation::for_width(width))
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ProgressStepsState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ProgressStepsState) {
         if area.is_empty() {
             return;
         }
@@ -762,10 +754,7 @@ impl<'a> ProgressSteps<'a> {
                 && matches!(state.mode, ProgressStepsMode::Interactive)
                 && state.focused;
             let mark = step.status.mark(ascii);
-            let dur = step
-                .duration_ms
-                .map(format_duration_ms)
-                .unwrap_or_default();
+            let dur = step.duration_ms.map(format_duration_ms).unwrap_or_default();
             let verb = step.effective_verb();
             let line = if expanded {
                 format!("{mark} {} · {verb}", step.title)
@@ -971,8 +960,7 @@ pub fn example_build_pipeline() -> Vec<ProgressStep> {
         ProgressStep::new("test", "Test")
             .status(ProgressStepStatus::Queued)
             .detail("waiting on compile"),
-        ProgressStep::new("package", "Package")
-            .status(ProgressStepStatus::Queued),
+        ProgressStep::new("package", "Package").status(ProgressStepStatus::Queued),
     ]
 }
 
@@ -993,8 +981,7 @@ pub fn example_agent_plan_steps() -> Vec<ProgressStep> {
             .detail("error[E0308]")
             .retryable(true)
             .duration_ms(3_100),
-        ProgressStep::new("verify", "Verify")
-            .status(ProgressStepStatus::Cancelled),
+        ProgressStep::new("verify", "Verify").status(ProgressStepStatus::Cancelled),
     ]
 }
 
@@ -1028,7 +1015,10 @@ mod tests {
         let steps = example_build_pipeline();
         let line = ProgressStepsState::summary_line(&steps);
         assert!(line.contains('/'), "{line}");
-        assert!(line.contains("compil") || line.contains("running"), "{line}");
+        assert!(
+            line.contains("compil") || line.contains("running"),
+            "{line}"
+        );
         assert_eq!(
             ProgressStepsPresentation::for_width(20),
             ProgressStepsPresentation::Summary
@@ -1048,10 +1038,7 @@ mod tests {
         let steps = example_build_pipeline();
         let mut state = ProgressStepsState::new();
         assert!(matches!(
-            state.handle_key(
-                &steps,
-                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)
-            ),
+            state.handle_key(&steps, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             ProgressStepsOutcome::Ignored
         ));
     }
@@ -1096,11 +1083,7 @@ mod tests {
         let mut state = ProgressStepsState::new();
         state.set_presentation(Some(ProgressStepsPresentation::Summary));
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        ProgressSteps::new(&steps, &system).paint(
-            Rect::new(0, 0, 20, 1),
-            &mut buf,
-            &mut state,
-        );
+        ProgressSteps::new(&steps, &system).paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1137,7 +1120,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("Compile") || text.contains("●") || text.contains("○"), "{text}");
+        assert!(
+            text.contains("Compile") || text.contains("●") || text.contains("○"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1160,10 +1146,12 @@ mod tests {
             Rect::new(0, 0, 40, 10),
             &state,
         );
-        assert!(scene
-            .nodes()
-            .iter()
-            .any(|n| n.label.as_deref() == Some("progress-steps")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("progress-steps"))
+        );
     }
 
     #[test]
@@ -1207,15 +1195,13 @@ mod tests {
         let mut steps = Vec::new();
         for i in 0..40 {
             steps.push(
-                ProgressStep::new(format!("s{i}"), format!("Step {i}")).status(
-                    if i < 10 {
-                        ProgressStepStatus::Complete
-                    } else if i == 10 {
-                        ProgressStepStatus::Running
-                    } else {
-                        ProgressStepStatus::Queued
-                    },
-                ),
+                ProgressStep::new(format!("s{i}"), format!("Step {i}")).status(if i < 10 {
+                    ProgressStepStatus::Complete
+                } else if i == 10 {
+                    ProgressStepStatus::Running
+                } else {
+                    ProgressStepStatus::Queued
+                }),
             );
         }
         let mut state = ProgressStepsState::new();
@@ -1224,11 +1210,7 @@ mod tests {
         for _ in 0..100 {
             terminal
                 .draw(|f| {
-                    ProgressSteps::new(&steps, &system).paint(
-                        f.area(),
-                        f.buffer_mut(),
-                        &mut state,
-                    );
+                    ProgressSteps::new(&steps, &system).paint(f.area(), f.buffer_mut(), &mut state);
                 })
                 .unwrap();
         }
@@ -1245,9 +1227,11 @@ mod tests {
             let steps = example_build_pipeline();
             let mut state = ProgressStepsState::new();
             t.draw(|f| {
-                ProgressSteps::new(&steps, &system)
-                    .title("CI")
-                    .paint(f.area(), f.buffer_mut(), &mut state);
+                ProgressSteps::new(&steps, &system).title("CI").paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut state,
+                );
             })
             .unwrap();
             t.backend()
@@ -1276,6 +1260,9 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("[!]") || text.contains("[x]") || text.contains("Build"), "{text}");
+        assert!(
+            text.contains("[!]") || text.contains("[x]") || text.contains("Build"),
+            "{text}"
+        );
     }
 }

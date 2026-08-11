@@ -19,6 +19,7 @@
 //!
 //! Research: async UI boundaries, Textual workers, agent tool execution.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -82,7 +83,10 @@ impl BusyMode {
     /// Whether the mode blocks pointer/key delivery into the region.
     #[must_use]
     pub const fn blocks_input(self) -> bool {
-        matches!(self, Self::Blocking | Self::Cancellable | Self::StaleContent)
+        matches!(
+            self,
+            Self::Blocking | Self::Cancellable | Self::StaleContent
+        )
     }
 
     /// Whether cancel is offered.
@@ -203,7 +207,10 @@ impl BusyBoundaryState {
     #[must_use]
     pub fn nested_under(parent: &Self) -> Self {
         let mut child = Self::new();
-        child.nest_depth = parent.nest_depth.saturating_add(1).min(BUSY_BOUNDARY_MAX_NEST);
+        child.nest_depth = parent
+            .nest_depth
+            .saturating_add(1)
+            .min(BUSY_BOUNDARY_MAX_NEST);
         child
     }
 
@@ -417,8 +424,7 @@ impl BusyBoundaryState {
         if !region.contains(pos) {
             return BusyRoute::Outside;
         }
-        if self.mode.cancellable()
-            && matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left))
+        if self.mode.cancellable() && matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left))
         {
             // Click on bottom row treated as cancel zone when cancellable
             if pos.y + 1 >= region.bottom() {
@@ -838,10 +844,7 @@ mod tests {
         )
     }
 
-    fn painted(
-        area: Rect,
-        mut f: impl FnMut(Rect, &mut Buffer),
-    ) -> String {
+    fn painted(area: Rect, mut f: impl FnMut(Rect, &mut Buffer)) -> String {
         let mut buf = Buffer::empty(area);
         f(area, &mut buf);
         let mut s = String::new();
@@ -988,7 +991,10 @@ mod tests {
             );
         });
         assert!(
-            text.contains("Outer") || text.contains("Inner") || text.contains('░') || text.contains('.'),
+            text.contains("Outer")
+                || text.contains("Inner")
+                || text.contains('░')
+                || text.contains('.'),
             "{text}"
         );
     }
@@ -1001,7 +1007,10 @@ mod tests {
             b.set_stringn(a.x, a.y, "saved draft body", 16, Style::default());
             overlay.paint(a, b, &mut st, tick(50), Motion::Off);
         });
-        assert!(text.contains("saved") || text.contains("updating"), "{text}");
+        assert!(
+            text.contains("saved") || text.contains("updating"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1077,7 +1086,13 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         LoadingOverlay::new("X", &system)
             .mode(BusyMode::Blocking)
-            .paint(Rect::new(0, 0, 1, 1), &mut buf, &mut st, tick(0), Motion::Off);
+            .paint(
+                Rect::new(0, 0, 1, 1),
+                &mut buf,
+                &mut st,
+                tick(0),
+                Motion::Off,
+            );
         LoadingOverlay::new("X", &system).paint(
             Rect::new(0, 0, 0, 0),
             &mut buf,
@@ -1110,9 +1125,13 @@ mod tests {
             let h = (seed % 12) as u16 + 1;
             let area = Rect::new(0, 0, w, h);
             let mut buf = Buffer::empty(area);
-            LoadingOverlay::new("Fuzz", &system)
-                .mode(mode)
-                .paint(area, &mut buf, &mut st, tick(seed % 800), Motion::Off);
+            LoadingOverlay::new("Fuzz", &system).mode(mode).paint(
+                area,
+                &mut buf,
+                &mut st,
+                tick(seed % 800),
+                Motion::Off,
+            );
         }
     }
 

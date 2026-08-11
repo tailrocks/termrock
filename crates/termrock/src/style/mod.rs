@@ -7,6 +7,7 @@
 //! (`BOLD_WHITE`, `BOLD_GREEN`, `DIM`, `DANGER`) so callers avoid writing
 //! `crate::style::BOLD_WHITE` inline.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::style::{Color, Modifier, Style};
 
 mod appearance;
@@ -19,6 +20,7 @@ mod tokens;
 
 pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
+pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use palette::Rgb;
 use palette::{
     BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
@@ -34,7 +36,6 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
-pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
     BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ControlState, DesignSystem, Elevation,

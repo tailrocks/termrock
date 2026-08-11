@@ -37,8 +37,8 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome, TextInput,
-        TextInputOutcome, TextInputState, fuzzy_match_label,
+        HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome,
+        TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
     },
 };
 
@@ -439,7 +439,11 @@ impl<Id> HistoryEntry<Id> {
     /// Apply redaction to display when sensitive.
     #[must_use]
     pub fn with_redaction(mut self, policy: HistoryRedaction) -> Self {
-        if self.sensitive && !matches!(policy, HistoryRedaction::HostProvided | HistoryRedaction::None)
+        if self.sensitive
+            && !matches!(
+                policy,
+                HistoryRedaction::HostProvided | HistoryRedaction::None
+            )
         {
             self.display = redact_history_text(&self.value, policy);
         } else if matches!(policy, HistoryRedaction::HostProvided) {
@@ -475,7 +479,9 @@ pub fn filter_history_entries<Id: Clone>(
             fuzzy_match_label(q, &hay).map(|(score, ranges)| {
                 let mut c = e.clone();
                 // Prefer ranges on display if match there
-                c.match_ranges = fuzzy_match_label(q, &e.display).map(|(_, r)| r).or(Some(ranges));
+                c.match_ranges = fuzzy_match_label(q, &e.display)
+                    .map(|(_, r)| r)
+                    .or(Some(ranges));
                 let _ = score;
                 c
             })
@@ -858,9 +864,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                     HistoryPickerOutcome::Ignored
                 }
             }
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                self.select_cursor(visible)
-            }
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.select_cursor(visible),
             UiIntent::Cancel | UiIntent::Close => {
                 self.close();
                 HistoryPickerOutcome::Cancelled
@@ -908,19 +912,14 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     }
 
     /// Sync presentation.
-    pub fn sync_presentation_from_bounds(
-        &mut self,
-        bounds: Rect,
-    ) -> HistoryPickerOutcome<Id> {
+    pub fn sync_presentation_from_bounds(&mut self, bounds: Rect) -> HistoryPickerOutcome<Id> {
         if self.presentation_override.is_some() {
             return HistoryPickerOutcome::Ignored;
         }
         let next = history_picker_presentation_for_bounds(bounds);
         if next != self.presentation {
             self.presentation = next;
-            HistoryPickerOutcome::PresentationChanged {
-                presentation: next,
-            }
+            HistoryPickerOutcome::PresentationChanged { presentation: next }
         } else {
             HistoryPickerOutcome::Ignored
         }
@@ -1081,7 +1080,11 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         if y < bottom {
             state.query.set_focused(surface);
             let _ = TextInput::new("", self.system)
-                .placeholder(if narrow { "Filter…" } else { "Filter history" })
+                .placeholder(if narrow {
+                    "Filter…"
+                } else {
+                    "Filter history"
+                })
                 .paint(
                     Rect::new(inner.x, y, inner.width, 1),
                     buffer,
@@ -1156,12 +1159,8 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         }
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut HistoryPickerState<Id>,
-    ) where
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut HistoryPickerState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         if area.is_empty() {
@@ -1267,7 +1266,13 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             x = x.saturating_add(2);
             if !pin.is_empty() {
                 let pw = display_cols(pin) as u16;
-                buffer.set_stringn(x, y, pin, usize::from(pw), self.system.style(Role::TextMuted));
+                buffer.set_stringn(
+                    x,
+                    y,
+                    pin,
+                    usize::from(pw),
+                    self.system.style(Role::TextMuted),
+                );
                 x = x.saturating_add(pw);
             }
             let kb = format!("{kind} ");
@@ -1328,12 +1333,8 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         state.painted_rows = painted;
     }
 
-    fn paint_preview(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &HistoryPickerState<Id>,
-    ) where
+    fn paint_preview(&self, area: Rect, buffer: &mut Buffer, state: &HistoryPickerState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         if area.is_empty() {
@@ -1349,10 +1350,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         let Some(entry) = self.entries.get(state.cursor_index()) else {
             return;
         };
-        let text = entry
-            .preview
-            .as_deref()
-            .unwrap_or(entry.value.as_str());
+        let text = entry.preview.as_deref().unwrap_or(entry.value.as_str());
         let text = if entry.sensitive
             && !matches!(
                 state.redaction,
@@ -1363,7 +1361,10 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             text.to_string()
         };
         let mut y = area.y.saturating_add(1);
-        for line in text.lines().take(usize::from(area.height.saturating_sub(1))) {
+        for line in text
+            .lines()
+            .take(usize::from(area.height.saturating_sub(1)))
+        {
             if y >= area.bottom() {
                 break;
             }
@@ -1584,7 +1585,11 @@ mod tests {
         HistoryPicker::new(&vis, &system)
             .ascii(true)
             .paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             !text.contains("sk-live-secret-example-value"),
             "secret leaked: {text}"

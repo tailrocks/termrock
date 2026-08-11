@@ -12,6 +12,7 @@
 //!
 //! Research: file explorers, broot, Yazi, VS Code trees, TermRock List/VirtualList.
 
+#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -22,9 +23,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    interaction::{
-        CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent,
-    },
+    interaction::{CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent},
     scroll::max_offset,
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -600,11 +599,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         self.handle_typeahead(nodes, key)
     }
 
-    fn handle_typeahead(
-        &mut self,
-        nodes: &[TreeNode<'_, Id>],
-        key: KeyEvent,
-    ) -> TreeOutcome<Id> {
+    fn handle_typeahead(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
         if key.kind != KeyEventKind::Press {
             return TreeOutcome::Ignored;
         }
@@ -846,9 +841,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         }
         // Lazy or collapsed branch → request expand/load.
-        if node.branch
-            && (!node.expanded || matches!(node.status, TreeNodeStatus::Lazy))
-        {
+        if node.branch && (!node.expanded || matches!(node.status, TreeNodeStatus::Lazy)) {
             return TreeOutcome::Toggle(node.id.clone());
         }
         // Expanded: move to first enabled child in the flat projection.
@@ -867,9 +860,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     }
 }
 
-fn collection_items_from_nodes<Id: Clone>(
-    nodes: &[TreeNode<'_, Id>],
-) -> Vec<CollectionItem<Id>> {
+fn collection_items_from_nodes<Id: Clone>(nodes: &[TreeNode<'_, Id>]) -> Vec<CollectionItem<Id>> {
     nodes
         .iter()
         .filter(|n| n.enabled && !n.status.skips_navigation())
@@ -1047,10 +1038,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&node.id));
-            let loading = matches!(
-                node.status,
-                TreeNodeStatus::Loading | TreeNodeStatus::Lazy
-            );
+            let loading = matches!(node.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
             let recipe = self.tokens.resolve_list_row(ListRowVisualState {
                 selected,
                 focused: self.focused && selected,
@@ -1582,7 +1570,10 @@ mod tests {
         ];
         let mut state = TreeState::new(Some("a"));
         assert_eq!(
-            state.handle_key(&nodes, KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            state.handle_key(
+                &nodes,
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)
+            ),
             TreeOutcome::SelectionChanged("b")
         );
     }
@@ -1622,11 +1613,9 @@ mod tests {
 
     #[test]
     fn actions_and_filter_chrome_paint() {
-        let nodes = [
-            TreeNode::new("a", Line::from("File"), 0)
-                .actions(Line::from("…"))
-                .shortcut("f"),
-        ];
+        let nodes = [TreeNode::new("a", Line::from("File"), 0)
+            .actions(Line::from("…"))
+            .shortcut("f")];
         let tokens = DesignSystem::default();
         let mut state = TreeState::new(Some("a"));
         state.set_filter_query(Some("fi".into()));

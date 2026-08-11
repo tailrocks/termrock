@@ -317,13 +317,7 @@ impl<'a> Surface<'a> {
         let plan = self.plan();
         let has_border = plan.border.is_some();
         let border_cells: u16 = if has_border { 1 } else { 0 };
-        let inner = shrink_rect(
-            area,
-            border_cells,
-            border_cells,
-            border_cells,
-            border_cells,
-        );
+        let inner = shrink_rect(area, border_cells, border_cells, border_cells, border_cells);
         let content = shrink_rect(inner, plan.pad_x, plan.pad_y, plan.pad_x, plan.pad_y);
         let hit_full = self
             .hit_full
@@ -349,9 +343,7 @@ impl<'a> Surface<'a> {
             fill_rect(buffer, area, fill);
         }
         if let Some(border) = plan.border {
-            Block::bordered()
-                .border_style(border)
-                .render(area, buffer);
+            Block::bordered().border_style(border).render(area, buffer);
             // Re-fill content interior so border paint does not leave title gaps;
             // children own content cells.
             if let Some(fill) = plan.fill
@@ -386,12 +378,8 @@ impl Widget for Surface<'_> {
 fn shrink_rect(area: Rect, left: u16, top: u16, right: u16, bottom: u16) -> Rect {
     let x = area.x.saturating_add(left);
     let y = area.y.saturating_add(top);
-    let width = area
-        .width
-        .saturating_sub(left.saturating_add(right));
-    let height = area
-        .height
-        .saturating_sub(top.saturating_add(bottom));
+    let width = area.width.saturating_sub(left.saturating_add(right));
+    let height = area.height.saturating_sub(top.saturating_add(bottom));
     if width == 0 || height == 0 {
         Rect {
             x,
@@ -474,9 +462,7 @@ mod tests {
     #[test]
     fn canvas_uses_terminal_default_fill() {
         let system = DesignSystem::default();
-        let plan = Surface::new(&system)
-            .recipe(SurfaceRecipe::Canvas)
-            .plan();
+        let plan = Surface::new(&system).recipe(SurfaceRecipe::Canvas).plan();
         assert_eq!(plan.fill, Some(Style::default().bg(Color::Reset)));
         assert!(plan.border.is_none());
     }
@@ -487,10 +473,7 @@ mod tests {
         let focused = system.surface_recipe(SurfaceRecipe::Focused);
         let normal = system.surface_recipe(SurfaceRecipe::Interactive);
         assert_ne!(focused.border, normal.border);
-        assert_eq!(
-            focused.border,
-            Some(system.style(Role::BorderFocused))
-        );
+        assert_eq!(focused.border, Some(system.style(Role::BorderFocused)));
     }
 
     #[test]
@@ -511,7 +494,9 @@ mod tests {
     #[test]
     fn inset_hit_is_content_when_not_interactive() {
         let system = DesignSystem::default();
-        let s = Surface::new(&system).recipe(SurfaceRecipe::Inset).padding(1, 0);
+        let s = Surface::new(&system)
+            .recipe(SurfaceRecipe::Inset)
+            .padding(1, 0);
         let parts = s.layout(Rect::new(0, 0, 10, 5));
         assert!(!parts.has_border);
         assert_eq!(parts.hit, parts.content);
@@ -532,9 +517,7 @@ mod tests {
     #[test]
     fn monochrome_avoids_chromatic_fill_soup() {
         let system = DesignSystem::default().capability(ColorCapability::Monochrome);
-        let plan = Surface::new(&system)
-            .recipe(SurfaceRecipe::Raised)
-            .plan();
+        let plan = Surface::new(&system).recipe(SurfaceRecipe::Raised).plan();
         assert!(plan.fill.is_none());
         assert!(plan.border.is_some());
     }
@@ -579,7 +562,9 @@ mod tests {
         ] {
             let plan = system.surface_recipe(recipe);
             assert_eq!(plan.recipe, recipe);
-            let parts = Surface::new(&system).recipe(recipe).layout(Rect::new(0, 0, 40, 12));
+            let parts = Surface::new(&system)
+                .recipe(recipe)
+                .layout(Rect::new(0, 0, 40, 12));
             assert_eq!(parts.root.width, 40);
         }
     }

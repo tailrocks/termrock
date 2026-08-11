@@ -17,26 +17,15 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        BreadcrumbItem,
-        QuickOpenItem,
-        QuickOpenPreview,
-        Tree,
-        TreeNode,
-        TreeNodeStatus,
-        TreeOutcome,
-        TreeState,
+        BreadcrumbItem, QuickOpenItem, QuickOpenPreview, Tree, TreeNode, TreeNodeStatus,
+        TreeOutcome, TreeState,
     },
 };
 
@@ -791,9 +780,8 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
     /// Effective presentation (override or auto).
     #[must_use]
     pub fn effective_presentation(&self, area: Rect) -> SchemaBrowserPresentation {
-        self.presentation_override.unwrap_or_else(|| {
-            SchemaBrowserPresentation::for_bounds(area.width, area.height)
-        })
+        self.presentation_override
+            .unwrap_or_else(|| SchemaBrowserPresentation::for_bounds(area.width, area.height))
     }
 
     /// Record expansion for preserve set.
@@ -1097,10 +1085,7 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
         let mut h = area.height;
 
         if h > 0 {
-            let title = self
-                .title
-                .or(state.title.as_deref())
-                .unwrap_or("schema");
+            let title = self.title.or(state.title.as_deref()).unwrap_or("schema");
             let line = format!(
                 "{title} · {} · {} objs",
                 state.presentation.id(),
@@ -1260,10 +1245,7 @@ mod tests {
         // Activate lazy table
         let nodes = schema_entries_to_tree_nodes(&entries.iter().collect::<Vec<_>>(), true);
         let _ = nodes;
-        let out = state.handle_key(
-            &entries,
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-        );
+        let out = state.handle_key(&entries, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert!(
             matches!(
                 out,
@@ -1368,10 +1350,7 @@ mod tests {
         let mut state = SchemaBrowserState::new();
         state.set_accepts_input(false);
         assert!(matches!(
-            state.handle_key(
-                &entries,
-                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)
-            ),
+            state.handle_key(&entries, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             SchemaBrowserOutcome::Ignored
         ));
     }
@@ -1380,7 +1359,12 @@ mod tests {
     fn never_runs_sql() {
         let src = include_str!("schema_browser.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["sqlx::", "tokio_postgres", "rusqlite", "std::process::Command"] {
+        for forbidden in [
+            "sqlx::",
+            "tokio_postgres",
+            "rusqlite",
+            "std::process::Command",
+        ] {
             assert!(!body.contains(forbidden), "must not contain {forbidden}");
         }
     }
@@ -1389,9 +1373,7 @@ mod tests {
     fn large_catalog_filter_paint() {
         let system = DesignSystem::default();
         // static-ish names
-        let names: Vec<String> = (0..bench::OBJECT_COUNT)
-            .map(|i| format!("t{i}"))
-            .collect();
+        let names: Vec<String> = (0..bench::OBJECT_COUNT).map(|i| format!("t{i}")).collect();
         let paths: Vec<String> = names.iter().map(|n| format!("db/public/{n}")).collect();
         let entries: Vec<SchemaBrowserEntry<'_, String>> = names
             .iter()

@@ -274,7 +274,7 @@ async function lintHardcodedKeys() {
   if (hits === 0) {
     // no dense files — ok
   }
-  if (process.env.TERMROCK_LINT_KEYS === 'error' && warnings.some((w) => w.includes('hardcoded_key'))) {
+  if (process.env['TERMROCK_LINT_KEYS'] === 'error' && warnings.some((w) => w.includes('hardcoded_key'))) {
     for (const w of warnings.filter((x) => x.includes('hardcoded_key'))) {
       fail(w)
     }

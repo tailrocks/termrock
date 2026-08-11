@@ -13,12 +13,7 @@
 //!
 //! Research: Yazi, ranger, lf, broot, VS Code, lazygit file lists.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -1241,10 +1236,7 @@ mod tests {
         let e = sample();
         let mut state = FileTreeState::new();
         state.select(Some("src/widgets"));
-        let out = state.handle_key(
-            &e,
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-        );
+        let out = state.handle_key(&e, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         // Activated dir → Toggle, or LoadChildren if lazy on activate path
         assert!(matches!(
             out,
@@ -1257,14 +1249,11 @@ mod tests {
         // Explicit lazy via toggle outcome when status Lazy
         state.select(Some("src/widgets"));
         // Space or right might toggle - use Tree intent via 'l' if mapped
-        let nodes = file_entries_to_tree_nodes(
-            &filter_file_tree_entries(&e, "", false, false),
-            false,
-        );
-        let out = state.tree.handle_key(
-            &nodes,
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
-        );
+        let nodes =
+            file_entries_to_tree_nodes(&filter_file_tree_entries(&e, "", false, false), false);
+        let out = state
+            .tree
+            .handle_key(&nodes, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
         let mapped = map_tree_outcome(out, &filter_file_tree_entries(&e, "", false, false));
         assert!(matches!(
             mapped,
@@ -1325,10 +1314,7 @@ mod tests {
             FileTreeOutcome::CopyPathRequested { paths } if !paths.is_empty()
         ));
         assert!(matches!(
-            state.handle_key(
-                &e,
-                KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL)
-            ),
+            state.handle_key(&e, KeyEvent::new(KeyCode::Char('o'), KeyModifiers::CONTROL)),
             FileTreeOutcome::QuickOpenRequested
         ));
         assert!(matches!(
@@ -1367,8 +1353,15 @@ mod tests {
             .title("repo")
             .focused(true)
             .render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("main") || text.contains("src") || text.contains("repo"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("main") || text.contains("src") || text.contains("repo"),
+            "{text}"
+        );
     }
 
     #[test]

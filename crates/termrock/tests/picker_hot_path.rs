@@ -4,7 +4,7 @@ use std::{alloc::System, hint::black_box};
 
 use ratatui_core::text::Line;
 use stats_alloc::{INSTRUMENTED_SYSTEM, Region, StatsAlloc};
-use termrock::widgets::{ListRow, PickerState, RowRole};
+use termrock::widgets::{ListRow, PickerState};
 
 #[global_allocator]
 static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
@@ -15,17 +15,9 @@ fn warmed_owned_projection_reconciliation_is_allocation_free() {
     const SAMPLES: usize = 100;
 
     let rows = (0..ROW_COUNT)
-        .map(|index| ListRow {
-            id: format!("command-{index}"),
-            label: Line::from("resident command"),
-            leading: None,
-            secondary: None,
-            badge: None,
-            shortcut: None,
-            trailing: None,
-            role: RowRole::Item,
-            enabled: true,
-            loading: false,
+        .map(|index| {
+            let row = ListRow::item(format!("command-{index}"), Line::from("resident command"));
+            row
         })
         .collect::<Vec<_>>();
     let mut state = PickerState::new(Some("command-500".to_owned()));

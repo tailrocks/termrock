@@ -139,11 +139,7 @@ fn color_from_hints(env: &EnvHints) -> ColorCapability {
 impl EnvHints {
     /// Pure fixture for tests / PTY harnesses (no process env).
     #[must_use]
-    pub fn fixture(
-        term: &str,
-        colorterm: Option<&str>,
-        no_color: bool,
-    ) -> Self {
+    pub fn fixture(term: &str, colorterm: Option<&str>, no_color: bool) -> Self {
         let mut env = Self {
             term: Some(term.into()),
             colorterm: colorterm.map(str::to_owned),
@@ -237,12 +233,10 @@ mod tests {
 
     #[test]
     fn pure_fixture_no_color_is_monochrome() {
-        let report = detect_from_hints(EnvHints::fixture("xterm-256color", Some("truecolor"), true));
+        let report =
+            detect_from_hints(EnvHints::fixture("xterm-256color", Some("truecolor"), true));
         assert!(report.env.no_color);
-        assert!(matches!(
-            report.env.color,
-            ColorCapability::Monochrome
-        ));
+        assert!(matches!(report.env.color, ColorCapability::Monochrome));
         assert!(report.warnings.iter().any(|w| w.contains("NO_COLOR")));
     }
 
@@ -250,10 +244,7 @@ mod tests {
     fn pure_fixture_dumb_warns() {
         let report = detect_from_hints(EnvHints::fixture("dumb", None, false));
         assert!(report.warnings.iter().any(|w| w.contains("dumb")));
-        assert!(matches!(
-            report.env.color,
-            ColorCapability::Monochrome
-        ));
+        assert!(matches!(report.env.color, ColorCapability::Monochrome));
     }
 
     #[test]

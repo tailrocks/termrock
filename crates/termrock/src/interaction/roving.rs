@@ -235,11 +235,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         let cur = self
             .active
             .as_ref()
-            .and_then(|id| {
-                enabled
-                    .iter()
-                    .position(|&i| &entries[i].id == id)
-            })
+            .and_then(|id| enabled.iter().position(|&i| &entries[i].id == id))
             .unwrap_or(0);
         let len = enabled.len() as isize;
         let next = if self.wrap {
@@ -324,11 +320,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     /// Key routing: Home/End, orientation arrows, printable typeahead.
     ///
     /// Does not Activate — host maps Enter/Space after consulting [`Self::active`].
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        entries: &[RovingEntry<Id>],
-    ) -> RovingOutcome<Id> {
+    pub fn handle_key(&mut self, key: KeyEvent, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         if key.kind == KeyEventKind::Release || entries.is_empty() {
             return RovingOutcome::Ignored;
         }
@@ -367,11 +359,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         self.typeahead.push(ch);
         let needle = self.typeahead.to_ascii_lowercase();
         // Search from next after current, then wrap full list.
-        let start = self
-            .active_index(entries)
-            .map(|i| i + 1)
-            .unwrap_or(0)
-            % entries.len().max(1);
+        let start = self.active_index(entries).map(|i| i + 1).unwrap_or(0) % entries.len().max(1);
         let n = entries.len();
         for offset in 0..n {
             let i = (start + offset) % n;

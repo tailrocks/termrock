@@ -7,12 +7,10 @@
 //! [`CapabilityBoundary`] (or the full caps) into paint/session setup so optional
 //! features never become hidden hard dependencies.
 
+use super::CapabilityProfile;
 use super::profile::{SessionFlags, TerminalCapabilities};
 use super::set::{CapabilityKind, CapabilitySet, FallbackPolicy, fallback_policies};
-use super::CapabilityProfile;
-use crate::style::{
-    ColorCapability, DesignSystem, GlyphSet, RolePalette, quantize_palette,
-};
+use crate::style::{ColorCapability, DesignSystem, GlyphSet, RolePalette, quantize_palette};
 
 /// Progressive-enhancement contract for components (derived from a capability set).
 ///

@@ -18,6 +18,7 @@
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,7 +27,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, OverlayId, OverlayOutcome,
         OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole,
@@ -460,9 +463,7 @@ impl<Id> From<NavigationListOutcome<Id>> for SidebarOutcome<Id> {
                 Self::ExpandToggled { id, expanded }
             }
             NavigationListOutcome::FilterChanged { query } => Self::FilterChanged { query },
-            NavigationListOutcome::ContextMenuRequested { id } => {
-                Self::ContextMenuRequested { id }
-            }
+            NavigationListOutcome::ContextMenuRequested { id } => Self::ContextMenuRequested { id },
             NavigationListOutcome::CommandRequested { command, id } => {
                 Self::CommandRequested { command, id }
             }
@@ -501,7 +502,7 @@ impl<Id> NavigationListState<Id> {
     /// New list; optional initial route.
     #[must_use]
     pub fn new(route: Option<Id>) -> Self {
-        let mut collection = CollectionState::new()
+        let collection = CollectionState::new()
             .wrap(true)
             .orientation(RovingOrientation::Vertical);
         if let Some(ref id) = route {
@@ -553,9 +554,7 @@ impl<Id> NavigationListState<Id> {
         Id: Clone + PartialEq,
     {
         let focusable = focusable_items(items);
-        self.collection
-            .active_index(&focusable)
-            .unwrap_or(0)
+        self.collection.active_index(&focusable).unwrap_or(0)
     }
 
     /// Filter query.
@@ -647,11 +646,7 @@ impl<Id> NavigationListState<Id> {
     /// Collapsed section/group children are skipped for focus (via
     /// [`filter_nav_collapsed`]). Host still owns storing `expanded` on the
     /// full tree after [`NavigationListOutcome::ExpandToggled`].
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        items: &[NavItem<Id>],
-    ) -> NavigationListOutcome<Id>
+    pub fn handle_key(&mut self, key: KeyEvent, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -718,8 +713,7 @@ impl<Id> NavigationListState<Id> {
         }
 
         // Context menu (submenu-as-dropdown peer — host paints overlay)
-        if key.code == KeyCode::Char(' ')
-            && key.modifiers.contains(KeyModifiers::SHIFT)
+        if key.code == KeyCode::Char(' ') && key.modifiers.contains(KeyModifiers::SHIFT)
             || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL))
         {
             if let Some(id) = self.collection.active().cloned() {
@@ -785,10 +779,7 @@ impl<Id> NavigationListState<Id> {
             }
             UiIntent::Expand => {
                 if let Some(id) = self.collection.active().cloned() {
-                    return NavigationListOutcome::ExpandToggled {
-                        id,
-                        expanded: true,
-                    };
+                    return NavigationListOutcome::ExpandToggled { id, expanded: true };
                 }
                 NavigationListOutcome::Ignored
             }
@@ -830,9 +821,7 @@ impl<Id> NavigationListState<Id> {
                     if r.area.contains(event.position) {
                         self.focused = true;
                         self.collection.set_active(Some(r.id.clone()));
-                        return NavigationListOutcome::ContextMenuRequested {
-                            id: r.id.clone(),
-                        };
+                        return NavigationListOutcome::ContextMenuRequested { id: r.id.clone() };
                     }
                 }
             }
@@ -1002,9 +991,7 @@ impl<Id> SidebarState<Id> {
         }
         if next != self.presentation {
             self.presentation = next;
-            return SidebarOutcome::PresentationChanged {
-                presentation: next,
-            };
+            return SidebarOutcome::PresentationChanged { presentation: next };
         }
         SidebarOutcome::Ignored
     }
@@ -1048,11 +1035,7 @@ impl<Id> SidebarState<Id> {
     }
 
     /// Intent.
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        items: &[NavItem<Id>],
-    ) -> SidebarOutcome<Id>
+    pub fn handle_intent(&mut self, intent: UiIntent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -1074,11 +1057,7 @@ impl<Id> SidebarState<Id> {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        items: &[NavItem<Id>],
-    ) -> SidebarOutcome<Id>
+    pub fn handle_mouse(&mut self, event: MouseEvent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -1188,9 +1167,7 @@ impl<'a, Id> NavigationList<'a, Id> {
                 y,
                 take_display_cols(&q, usize::from(area.width)),
                 usize::from(area.width),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::BOLD),
+                self.system.style(Role::Focus).add_modifier(Modifier::BOLD),
             );
             y = y.saturating_add(1);
         }
@@ -1259,17 +1236,9 @@ impl<'a, Id> NavigationList<'a, Id> {
             };
 
             let gutter = if focus {
-                if self.ascii {
-                    ">"
-                } else {
-                    "›"
-                }
+                if self.ascii { ">" } else { "›" }
             } else if route {
-                if self.ascii {
-                    "*"
-                } else {
-                    "•"
-                }
+                if self.ascii { "*" } else { "•" }
             } else {
                 " "
             };
@@ -1286,11 +1255,7 @@ impl<'a, Id> NavigationList<'a, Id> {
                 let indent = "  ".repeat(usize::from(item.depth));
                 let chev = if item.has_children {
                     if item.expanded {
-                        if self.ascii {
-                            "v "
-                        } else {
-                            "▾ "
-                        }
+                        if self.ascii { "v " } else { "▾ " }
                     } else if self.ascii {
                         "> "
                     } else {
@@ -1514,13 +1479,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for Sidebar<'_, Id> {
 pub fn example_settings_nav() -> Vec<NavItem<&'static str>> {
     vec![
         NavItem::section("general", "General"),
-        NavItem::new("profile", "Profile").depth(1).command("settings.profile"),
+        NavItem::new("profile", "Profile")
+            .depth(1)
+            .command("settings.profile"),
         NavItem::new("appearance", "Appearance")
             .depth(1)
             .command("settings.appearance"),
         NavItem::section("agent", "Agent"),
         NavItem::new("models", "Models").depth(1).badge("3"),
-        NavItem::new("tools", "Tools").depth(1).status(NavItemStatus::Dirty),
+        NavItem::new("tools", "Tools")
+            .depth(1)
+            .status(NavItemStatus::Dirty),
         NavItem::new("keys", "API keys").depth(1),
     ]
 }
@@ -1591,10 +1560,8 @@ mod tests {
             matches!(out, SidebarOutcome::Selected(_))
                 || matches!(
                     {
-                        let _ = state.handle_key(
-                            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-                            &items,
-                        );
+                        let _ = state
+                            .handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
                         state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items)
                     },
                     SidebarOutcome::Selected("y") | SidebarOutcome::Selected("x")
@@ -1627,10 +1594,7 @@ mod tests {
         ));
         assert!(!state.is_expanded());
         assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('['), KeyModifiers::NONE),
-                &[]
-            ),
+            state.handle_key(KeyEvent::new(KeyCode::Char('['), KeyModifiers::NONE), &[]),
             SidebarOutcome::ToggleRail { expanded: true }
         ));
     }
@@ -1638,7 +1602,9 @@ mod tests {
     #[test]
     fn expand_group() {
         let items = [
-            NavItem::group("g", "Group").has_children(true).expanded(false),
+            NavItem::group("g", "Group")
+                .has_children(true)
+                .expanded(false),
             NavItem::new("child", "Child").depth(1),
         ];
         let mut state = NavigationListState::new(None);
@@ -1689,7 +1655,8 @@ mod tests {
         // Only section focusable while collapsed
         let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
         assert!(
-            matches!(out, SidebarOutcome::FocusChanged { .. }) || matches!(out, SidebarOutcome::Ignored),
+            matches!(out, SidebarOutcome::FocusChanged { .. })
+                || matches!(out, SidebarOutcome::Ignored),
             "{out:?}"
         );
         // Ensure on section
@@ -1782,7 +1749,10 @@ mod tests {
         state.set_focused(true);
         // Force active onto collapsed child (stale host state)
         state.collection.set_active(Some("hidden"));
-        let out = state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Next), &items);
+        let out = state.handle_intent(
+            UiIntent::Move(crate::interaction::NavigationMove::Next),
+            &items,
+        );
         // After reconcile + move on projected list, focus must not land on "hidden"
         match out {
             NavigationListOutcome::FocusChanged { id } => {
@@ -1805,7 +1775,11 @@ mod tests {
                 UiIntent::Move(crate::interaction::NavigationMove::Next),
                 &items,
             );
-            assert_ne!(state.focus(), Some(&"hidden"), "focus leaked to collapsed child");
+            assert_ne!(
+                state.focus(),
+                Some(&"hidden"),
+                "focus leaked to collapsed child"
+            );
         }
     }
 
@@ -1849,14 +1823,14 @@ mod tests {
 
     #[test]
     fn filter_search() {
-        let items = [
-            NavItem::new("a", "Alpha"),
-            NavItem::new("b", "Beta"),
-        ];
+        let items = [NavItem::new("a", "Alpha"), NavItem::new("b", "Beta")];
         let mut state = NavigationListState::new(None);
         state.set_focused(true);
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE), &items),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+                &items
+            ),
             NavigationListOutcome::Changed
         ));
         assert!(state.is_filter_active());
@@ -1908,10 +1882,7 @@ mod tests {
     #[test]
     fn mouse_route() {
         let system = DesignSystem::default();
-        let items = [
-            NavItem::new("a", "Alpha"),
-            NavItem::new("b", "Beta"),
-        ];
+        let items = [NavItem::new("a", "Alpha"), NavItem::new("b", "Beta")];
         let mut state = SidebarState::new(None);
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 6);
@@ -1919,12 +1890,7 @@ mod tests {
         Sidebar::new(&items, &system)
             .ascii(true)
             .paint(area, &mut buf, &mut state);
-        let hit = state
-            .nav
-            .regions
-            .iter()
-            .find(|r| r.id == "b")
-            .expect("b");
+        let hit = state.nav.regions.iter().find(|r| r.id == "b").expect("b");
         assert!(matches!(
             state.handle_mouse(
                 MouseEvent {
@@ -2001,10 +1967,7 @@ mod tests {
 
     #[test]
     fn presentation_for_width() {
-        assert_eq!(
-            sidebar_presentation_for_width(8),
-            SidebarPresentation::Rail
-        );
+        assert_eq!(sidebar_presentation_for_width(8), SidebarPresentation::Rail);
         assert_eq!(
             sidebar_presentation_for_width(24),
             SidebarPresentation::Expanded

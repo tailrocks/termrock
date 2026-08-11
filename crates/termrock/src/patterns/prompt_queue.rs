@@ -17,6 +17,7 @@
 //!
 //! Research: async chat products, agent prompt queues, task schedulers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -43,9 +44,7 @@ pub const PROMPT_QUEUE_SUMMARY_PREVIEW: usize = 28;
 // ── Domain ──────────────────────────────────────────────────────────────────
 
 // Domain model lives in widgets (PromptComposer must not depend on patterns).
-pub use crate::widgets::{
-    AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus,
-};
+pub use crate::widgets::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
 /// Project a composer FIFO + busy flags into [`PromptQueueState`] for the management surface.
 #[must_use]
@@ -63,7 +62,6 @@ pub fn project_prompt_queue_from_items(
     });
     st
 }
-
 
 // ── Presentation ────────────────────────────────────────────────────────────
 
@@ -456,8 +454,7 @@ impl PromptQueueState {
             }
             KeyCode::Delete | KeyCode::Char('d') | KeyCode::Backspace
                 if matches!(key.code, KeyCode::Delete)
-                    || (key.modifiers.is_empty()
-                        && matches!(key.code, KeyCode::Char('d'))) =>
+                    || (key.modifiers.is_empty() && matches!(key.code, KeyCode::Char('d'))) =>
             {
                 let Some(id) = self.current_id() else {
                     return PromptQueueOutcome::Ignored;
@@ -719,12 +716,7 @@ impl<'a> PromptQueue<'a> {
         }
     }
 
-    fn paint_compact(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut PromptQueueState,
-    ) {
+    fn paint_compact(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptQueueState) {
         let summary = state.compact_summary();
         if summary.is_empty() {
             return;
@@ -749,12 +741,7 @@ impl<'a> PromptQueue<'a> {
         });
     }
 
-    fn paint_expanded(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut PromptQueueState,
-    ) {
+    fn paint_expanded(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptQueueState) {
         let title = format!(
             "Prompt queue · {} · {}",
             state.agent.label(),
@@ -854,18 +841,12 @@ impl<'a> PromptQueue<'a> {
                 let att = if item.attachments.is_empty() && item.mentions.is_empty() {
                     String::new()
                 } else {
-                    format!(
-                        " [{}+{}]",
-                        item.attachments.len(),
-                        item.mentions.len()
-                    )
+                    format!(" [{}+{}]", item.attachments.len(), item.mentions.len())
                 };
                 let preview = item.preview(w.saturating_sub(12));
                 let text = format!("{mark}{st} {preview}{att}");
                 let style = if selected {
-                    self.system
-                        .style(Role::Accent)
-                        .add_modifier(Modifier::BOLD)
+                    self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
                 } else if self.colorless {
                     self.system.style(Role::Text)
                 } else {
@@ -921,12 +902,7 @@ impl<'a> PromptQueue<'a> {
         }
     }
 
-    fn paint_confirm(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut PromptQueueState,
-    ) {
+    fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptQueueState) {
         let y = area.bottom().saturating_sub(2);
         if y < area.y {
             return;
@@ -1180,10 +1156,18 @@ mod tests {
     #[test]
     fn failed_not_auto_removed() {
         let mut st = open();
-        assert!(st.items.iter().any(|i| i.status == PromptQueueStatus::Failed));
+        assert!(
+            st.items
+                .iter()
+                .any(|i| i.status == PromptQueueStatus::Failed)
+        );
         // no drain on set_agent etc
         st.set_agent(AgentBusyState::Idle);
-        assert!(st.items.iter().any(|i| i.status == PromptQueueStatus::Failed));
+        assert!(
+            st.items
+                .iter()
+                .any(|i| i.status == PromptQueueStatus::Failed)
+        );
     }
 
     #[test]
@@ -1261,9 +1245,7 @@ mod tests {
             .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
-        st.phase = PromptQueuePhase::ConfirmDelete {
-            id: "q2".into(),
-        };
+        st.phase = PromptQueuePhase::ConfirmDelete { id: "q2".into() };
         PromptQueue::new(&system).paint(area, &mut buf, &mut st);
     }
 
@@ -1315,7 +1297,10 @@ mod tests {
             position: Position { x: r.x, y: r.y },
             modifiers: KeyModifiers::NONE,
         });
-        assert!(matches!(out, PromptQueueOutcome::Selected { .. }), "{out:?} {id}");
+        assert!(
+            matches!(out, PromptQueueOutcome::Selected { .. }),
+            "{out:?} {id}"
+        );
     }
 
     #[test]

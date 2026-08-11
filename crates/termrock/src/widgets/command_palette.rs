@@ -15,6 +15,7 @@
 //!
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::VecDeque;
 
 use ratatui_core::{
@@ -379,10 +380,7 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
         return Some((0, MatchRanges::default()));
     }
     let q: Vec<char> = query.chars().map(|c| c.to_ascii_lowercase()).collect();
-    let h: Vec<(usize, char)> = haystack
-        .char_indices()
-        .map(|(i, c)| (i, c))
-        .collect();
+    let h: Vec<(usize, char)> = haystack.char_indices().map(|(i, c)| (i, c)).collect();
     if q.is_empty() {
         return Some((0, MatchRanges::default()));
     }
@@ -488,7 +486,10 @@ pub fn filter_command_entries<Id: Clone>(
 ///
 /// `map` receives the action and returns `(id, label, optional group)`.
 #[must_use]
-pub fn entries_from_keymap<A, Id, F>(keymap: &crate::keymap::Keymap<A>, mut map: F) -> Vec<CommandEntry<Id>>
+pub fn entries_from_keymap<A, Id, F>(
+    keymap: &crate::keymap::Keymap<A>,
+    mut map: F,
+) -> Vec<CommandEntry<Id>>
 where
     A: Clone + Copy + PartialEq + 'static,
     F: FnMut(&A, &crate::keymap::KeyBinding<A>) -> (Id, String, Option<String>),
@@ -765,11 +766,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Call after filtering / async apply. `generation` must match
     /// [`Self::generation`] for async replies — otherwise the update is ignored
     /// (stale-result cancellation).
-    pub fn apply_results(
-        &mut self,
-        generation: u64,
-        visible: &[CommandEntry<Id>],
-    ) -> bool {
+    pub fn apply_results(&mut self, generation: u64, visible: &[CommandEntry<Id>]) -> bool {
         if generation != self.generation {
             return false;
         }
@@ -790,7 +787,11 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     }
 
     /// Open nested page.
-    pub fn open_page(&mut self, page_id: impl Into<String>, title: impl Into<String>) -> CommandPaletteOutcome<Id> {
+    pub fn open_page(
+        &mut self,
+        page_id: impl Into<String>,
+        title: impl Into<String>,
+    ) -> CommandPaletteOutcome<Id> {
         let page_id = page_id.into();
         let title = title.into();
         self.page_stack.push((page_id.clone(), title));
@@ -1132,19 +1133,14 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     }
 
     /// Update presentation from bounds (call on open/resize).
-    pub fn sync_presentation_from_bounds(
-        &mut self,
-        bounds: Rect,
-    ) -> CommandPaletteOutcome<Id> {
+    pub fn sync_presentation_from_bounds(&mut self, bounds: Rect) -> CommandPaletteOutcome<Id> {
         if self.presentation_override.is_some() {
             return CommandPaletteOutcome::Ignored;
         }
         let next = command_palette_presentation_for_bounds(bounds);
         if next != self.presentation {
             self.presentation = next;
-            CommandPaletteOutcome::PresentationChanged {
-                presentation: next,
-            }
+            CommandPaletteOutcome::PresentationChanged { presentation: next }
         } else {
             CommandPaletteOutcome::Ignored
         }
@@ -1333,7 +1329,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             PanelChrome::Normal
         };
 
-        let title = if let Some(pt) = state.current_page_title() {
+        let title = if state.current_page_title().is_some() {
             // "Commands › Page"
             // Panel title is &'a str — use base title only; page drawn in body.
             self.title
@@ -1420,11 +1416,17 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     }
                 }
                 CommandPalettePhase::Browse => {
-                    let ph = if narrow { "Filter…" } else { "Type a command" };
+                    let ph = if narrow {
+                        "Filter…"
+                    } else {
+                        "Type a command"
+                    };
                     state.query.set_focused(surface);
-                    let _ = TextInput::new("", self.system)
-                        .placeholder(ph)
-                        .paint(field_area, buffer, &mut state.query);
+                    let _ = TextInput::new("", self.system).placeholder(ph).paint(
+                        field_area,
+                        buffer,
+                        &mut state.query,
+                    );
                 }
             }
             content.y = content.y.saturating_add(1);
@@ -1491,12 +1493,8 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
     }
 
-    fn paint_results(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CommandPaletteState<Id>,
-    ) where
+    fn paint_results(&self, area: Rect, buffer: &mut Buffer, state: &mut CommandPaletteState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         if area.is_empty() {
@@ -1549,13 +1547,22 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     area.x,
                     area.y.saturating_add(1),
                     &take_display_cols(
-                        if self.ascii { "Recent queries:" } else { "Recent queries" },
+                        if self.ascii {
+                            "Recent queries:"
+                        } else {
+                            "Recent queries"
+                        },
                         usize::from(area.width),
                     ),
                     usize::from(area.width),
                     self.system.style(Role::TextMuted),
                 );
-                for h in state.history.iter().rev().take(usize::from(area.height.saturating_sub(2))) {
+                for h in state
+                    .history
+                    .iter()
+                    .rev()
+                    .take(usize::from(area.height.saturating_sub(2)))
+                {
                     if y >= area.bottom() {
                         break;
                     }
@@ -1877,10 +1884,7 @@ mod tests {
         let mut s = focused();
         let vis = s.refilter(&catalog());
         let g0 = s.generation();
-        let out = s.handle_key(
-            KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
-            &vis,
-        );
+        let out = s.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), &vis);
         assert!(matches!(
             out,
             CommandPaletteOutcome::QueryChanged { generation, .. } if generation == g0 + 1
@@ -1894,10 +1898,7 @@ mod tests {
         let vis = s.refilter(&cat);
         let stale_gen = s.generation();
         // bump
-        let _ = s.handle_key(
-            KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
-            &vis,
-        );
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE), &vis);
         let filtered = filter_command_entries(&cat, "q", None);
         assert!(!s.apply_results(stale_gen, &filtered));
         assert!(s.apply_results(s.generation(), &filtered));
@@ -1947,16 +1948,13 @@ mod tests {
         s.collection.set_active(Some(idx));
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
-            CommandPaletteOutcome::NeedArguments { id: "goto-line", .. }
+            CommandPaletteOutcome::NeedArguments {
+                id: "goto-line",
+                ..
+            }
         ));
-        let _ = s.handle_key(
-            KeyEvent::new(KeyCode::Char('4'), KeyModifiers::NONE),
-            &vis,
-        );
-        let _ = s.handle_key(
-            KeyEvent::new(KeyCode::Char('2'), KeyModifiers::NONE),
-            &vis,
-        );
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('4'), KeyModifiers::NONE), &vis);
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('2'), KeyModifiers::NONE), &vis);
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             CommandPaletteOutcome::Activated {
@@ -1973,10 +1971,7 @@ mod tests {
         let mut s = focused();
         let cat = catalog();
         let vis = s.refilter(&cat);
-        let _ = s.handle_key(
-            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
-            &vis,
-        );
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &vis);
         assert!(!s.query_text().is_empty());
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &[]),
@@ -1998,7 +1993,11 @@ mod tests {
         CommandPalette::new("Commands", &[], &system)
             .loading_message("Loading…")
             .paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Loading") || text.contains("loading") || text.contains("..."),
             "{text}"
@@ -2009,7 +2008,11 @@ mod tests {
         // no results with query
         s.query = TextInputState::new("zzz").with_allow_empty(true);
         CommandPalette::new("Commands", &[], &system).paint(area, &mut buf2, &mut s);
-        let t2: String = buf2.content().iter().map(|c| c.symbol().to_string()).collect();
+        let t2: String = buf2
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             t2.contains("No matching") || t2.contains("∅") || t2.contains("No"),
             "{t2}"
@@ -2038,12 +2041,8 @@ mod tests {
 
         let narrow = Rect::new(0, 0, 40, 12);
         let mut stack2 = OverlayStack::<()>::new();
-        let _ = open_command_palette_overlay(
-            &mut stack2,
-            narrow,
-            CommandPaletteSize::default(),
-            None,
-        );
+        let _ =
+            open_command_palette_overlay(&mut stack2, narrow, CommandPaletteSize::default(), None);
         assert!(stack2.top().unwrap().fullscreen_promoted);
         assert_eq!(stack2.top().unwrap().rect, narrow);
     }
@@ -2097,8 +2096,15 @@ mod tests {
         let area = Rect::new(0, 0, 48, 14);
         let mut buf = Buffer::empty(area);
         CommandPalette::new("Commands", &vis, &system).paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("Toggle") || text.contains("theme") || text.contains("Theme"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Toggle") || text.contains("theme") || text.contains("Theme"),
+            "{text}"
+        );
     }
 
     #[test]

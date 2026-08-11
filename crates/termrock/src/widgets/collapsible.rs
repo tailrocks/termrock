@@ -488,12 +488,7 @@ impl<'a> Collapsible<'a> {
     }
 
     /// Paint trigger; returns content rect for host children.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CollapsibleState,
-    ) -> Rect {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut CollapsibleState) -> Rect {
         let parts = self.layout(area, state);
         state.parts = Some(parts);
         if area.is_empty() || parts.trigger.is_empty() {
@@ -537,19 +532,13 @@ impl<'a> Collapsible<'a> {
         );
 
         // Section: fill remaining trigger cells with a quiet rule when open (no extra row).
-        if matches!(self.variant, CollapsibleVariant::Section)
-            && open
-            && parts.trigger.width > 0
-        {
+        if matches!(self.variant, CollapsibleVariant::Section) && open && parts.trigger.width > 0 {
             let used = crate::text::display_cols(&t) as u16;
             if used < parts.trigger.width {
                 let rule = self.system.glyphs.rule();
                 let fill_x = parts.trigger.x.saturating_add(used);
                 let fill_w = parts.trigger.width.saturating_sub(used);
-                let pad = take_display_cols(
-                    &rule.repeat(usize::from(fill_w)),
-                    usize::from(fill_w),
-                );
+                let pad = take_display_cols(&rule.repeat(usize::from(fill_w)), usize::from(fill_w));
                 buffer.set_stringn(
                     fill_x,
                     parts.trigger.y,

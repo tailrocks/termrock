@@ -19,12 +19,7 @@
 //! layout measures only closed content rows + a one-row streaming cue so
 //! appending does not thrash unrelated block geometry.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -452,8 +447,7 @@ impl MarkdownViewState {
     /// Max scroll.
     #[must_use]
     pub fn max_scroll_y(&self) -> u16 {
-        self.total_rows
-            .saturating_sub(self.viewport_rows.max(1))
+        self.total_rows.saturating_sub(self.viewport_rows.max(1))
     }
 
     /// Clamp scroll.
@@ -654,7 +648,9 @@ impl<'a> MarkdownView<'a> {
                     .measure_height(width)
                     .max(1)
             }
-            MarkdownBlockKind::ListItem | MarkdownBlockKind::OrderedItem | MarkdownBlockKind::TaskItem => {
+            MarkdownBlockKind::ListItem
+            | MarkdownBlockKind::OrderedItem
+            | MarkdownBlockKind::TaskItem => {
                 let prefix_w = list_prefix_width(block);
                 let indent = u16::from(block.depth).saturating_mul(2);
                 let inner = width.saturating_sub(prefix_w).saturating_sub(indent).max(1);
@@ -789,20 +785,10 @@ impl<'a> MarkdownView<'a> {
                 width: area.width,
                 height: 1,
             };
-            let selected = state
-                .selection
-                .is_some_and(|(a, b)| bi >= a && bi < b)
+            let selected = state.selection.is_some_and(|(a, b)| bi >= a && bi < b)
                 || state.cursor_block == Some(bi) && state.focused;
 
-            self.paint_block_row(
-                block,
-                bi,
-                sub,
-                line,
-                buffer,
-                selected,
-                &mut links,
-            );
+            self.paint_block_row(block, bi, sub, line, buffer, selected, &mut links);
             painted = painted.saturating_add(1);
         }
 
@@ -958,7 +944,9 @@ impl<'a> MarkdownView<'a> {
             let (display, found_links) = expand_inline_markers(block.text);
             let wrapped = wrap_display_cols(&display, usize::from(area.width));
             if let Some(line) = wrapped.get(usize::from(body_sub)) {
-                let mut t = Text::new(line.as_str(), self.system).role(Role::Text).truncate();
+                let mut t = Text::new(line.as_str(), self.system)
+                    .role(Role::Text)
+                    .truncate();
                 if self.selectable {
                     t = t.copyable();
                 }
@@ -1106,17 +1094,11 @@ impl<'a> MarkdownView<'a> {
     }
 
     /// Keys: scroll, cursor, copy, link activate.
-    pub fn handle_key(
-        &self,
-        state: &mut MarkdownViewState,
-        key: KeyEvent,
-    ) -> MarkdownOutcome {
+    pub fn handle_key(&self, state: &mut MarkdownViewState, key: KeyEvent) -> MarkdownOutcome {
         if !state.focused || key.kind != KeyEventKind::Press {
             return MarkdownOutcome::Ignored;
         }
-        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C'))
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
             return MarkdownOutcome::Copy {
                 text: self.copy_text(state),
             };
@@ -1151,10 +1133,7 @@ impl<'a> MarkdownView<'a> {
             if let Some(parts) = &state.parts {
                 if !parts.links.is_empty() {
                     let n = parts.links.len();
-                    let next = state
-                        .link_index
-                        .map(|i| (i + 1) % n)
-                        .unwrap_or(0);
+                    let next = state.link_index.map(|i| (i + 1) % n).unwrap_or(0);
                     state.link_index = Some(next);
                     return MarkdownOutcome::CursorMoved {
                         block: parts.links[next].block,
@@ -1261,11 +1240,7 @@ impl<'a> MarkdownView<'a> {
     }
 
     fn reveal_block(&self, state: &mut MarkdownViewState, block_index: usize) {
-        let width = state
-            .parts
-            .as_ref()
-            .map(|p| p.root.width)
-            .unwrap_or(80);
+        let width = state.parts.as_ref().map(|p| p.root.width).unwrap_or(80);
         let start = self.block_start_row(block_index, width);
         let h = self
             .blocks
@@ -1353,11 +1328,7 @@ impl<'a> MarkdownView<'a> {
     }
 
     /// Activate a painted link by index (host / tests).
-    pub fn activate_link(
-        &self,
-        state: &MarkdownViewState,
-        index: usize,
-    ) -> MarkdownOutcome {
+    pub fn activate_link(&self, state: &MarkdownViewState, index: usize) -> MarkdownOutcome {
         let Some(parts) = &state.parts else {
             return MarkdownOutcome::Ignored;
         };
@@ -1524,9 +1495,7 @@ pub fn project_markdown(text: &str) -> Vec<MarkdownBlock<'_>> {
         }
 
         if line.is_empty() {
-            blocks.push(
-                MarkdownBlock::blank().source(SourceAnchor::line(line_no)),
-            );
+            blocks.push(MarkdownBlock::blank().source(SourceAnchor::line(line_no)));
             continue;
         }
 
@@ -1554,16 +1523,12 @@ pub fn project_markdown(text: &str) -> Vec<MarkdownBlock<'_>> {
         }
 
         if let Some((checked, rest)) = parse_task_item(line) {
-            blocks.push(
-                MarkdownBlock::task(rest, checked).source(SourceAnchor::line(line_no)),
-            );
+            blocks.push(MarkdownBlock::task(rest, checked).source(SourceAnchor::line(line_no)));
             continue;
         }
 
         if let Some((idx, rest)) = parse_ordered_item(line) {
-            blocks.push(
-                MarkdownBlock::ordered(rest, idx).source(SourceAnchor::line(line_no)),
-            );
+            blocks.push(MarkdownBlock::ordered(rest, idx).source(SourceAnchor::line(line_no)));
             continue;
         }
 
@@ -1579,7 +1544,9 @@ pub fn project_markdown(text: &str) -> Vec<MarkdownBlock<'_>> {
             continue;
         }
 
-        if (line.chars().all(|c| c == '-' || c == '─' || c == '*' || c == '_')
+        if (line
+            .chars()
+            .all(|c| c == '-' || c == '─' || c == '*' || c == '_')
             && display_cols(line) >= 3)
             || line == "***"
             || line == "___"
@@ -1672,10 +1639,7 @@ fn underline_row(buffer: &mut Buffer, area: Rect, system: &DesignSystem) {
     }
 }
 
-fn spans_to_text<'a>(
-    spans: &'a [MarkdownInline<'a>],
-    _system: &DesignSystem,
-) -> Vec<TextSpan<'a>> {
+fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) -> Vec<TextSpan<'a>> {
     spans
         .iter()
         .map(|sp| {
@@ -1803,7 +1767,9 @@ fn parse_ordered_item(line: &str) -> Option<(u32, &str)> {
         return None;
     }
     let (num, rest) = t.split_at(digits);
-    let rest = rest.strip_prefix(". ").or_else(|| rest.strip_prefix(") "))?;
+    let rest = rest
+        .strip_prefix(". ")
+        .or_else(|| rest.strip_prefix(") "))?;
     let idx = num.parse().ok()?;
     Some((idx, rest))
 }
@@ -1835,11 +1801,7 @@ fn table_display_rows(raw: &str, width: u16) -> Vec<String> {
         if !looks_like_table_row(t) {
             continue;
         }
-        let cells: Vec<&str> = t
-            .trim_matches('|')
-            .split('|')
-            .map(str::trim)
-            .collect();
+        let cells: Vec<&str> = t.trim_matches('|').split('|').map(str::trim).collect();
         if !cells.is_empty() {
             parsed.push(cells);
         }
@@ -1969,7 +1931,11 @@ fn x() {}
         let blocks = project_markdown(src);
         assert!(blocks.iter().any(|b| b.kind == MarkdownBlockKind::TaskItem));
         assert!(blocks.iter().any(|b| b.task_checked == Some(true)));
-        assert!(blocks.iter().any(|b| b.kind == MarkdownBlockKind::OrderedItem));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| b.kind == MarkdownBlockKind::OrderedItem)
+        );
         let fence = blocks
             .iter()
             .find(|b| b.kind == MarkdownBlockKind::Fence)
@@ -2020,8 +1986,12 @@ fn x() {}
         ];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 2));
         MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 24, 2), &mut buffer);
-        let r0: String = (0..24).map(|x| buffer[(x, 0)].symbol().to_owned()).collect();
-        let r1: String = (0..24).map(|x| buffer[(x, 1)].symbol().to_owned()).collect();
+        let r0: String = (0..24)
+            .map(|x| buffer[(x, 0)].symbol().to_owned())
+            .collect();
+        let r1: String = (0..24)
+            .map(|x| buffer[(x, 1)].symbol().to_owned())
+            .collect();
         assert!(r0.contains("quoted"));
         assert!(r1.contains("item"));
     }
@@ -2125,11 +2095,8 @@ fn x() {}
         let blocks = [MarkdownBlock::heading("x", HeadingLevel::H1)];
         let mut state = MarkdownViewState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let parts = MarkdownView::new(&blocks, &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            &mut state,
-        );
+        let parts =
+            MarkdownView::new(&blocks, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
         assert!(parts.root.is_empty());
     }
 

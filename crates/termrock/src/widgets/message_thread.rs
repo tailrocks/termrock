@@ -20,20 +20,14 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::DesignSystem,
     text::{display_cols, take_display_cols},
-    widgets::{
-        transcript::{
-            Transcript, TranscriptBlock, TranscriptKind, TranscriptOutcome, TranscriptState,
-        },
+    widgets::transcript::{
+        Transcript, TranscriptBlock, TranscriptKind, TranscriptOutcome, TranscriptState,
     },
 };
 
@@ -99,7 +93,10 @@ impl MessageKind {
     /// Default collapsed at Summary zoom.
     #[must_use]
     pub const fn default_collapsed_at_summary(self) -> bool {
-        matches!(self, Self::Tool | Self::Event | Self::Thinking | Self::Status)
+        matches!(
+            self,
+            Self::Tool | Self::Event | Self::Thinking | Self::Status
+        )
     }
 }
 
@@ -224,7 +221,11 @@ pub struct MessageEntry {
 impl MessageEntry {
     /// Simple entry with body lines.
     #[must_use]
-    pub fn new(id: impl Into<String>, kind: MessageKind, lines: impl IntoIterator<Item = impl Into<String>>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        kind: MessageKind,
+        lines: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
         Self {
             id: id.into(),
             kind,
@@ -376,6 +377,7 @@ impl MessageEntry {
 
 /// Owned line buffers + block metadata for one paint (host retains across frame).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub struct ProjectedThread {
     /// Owned lines per entry (parallel to blocks).
     pub line_bufs: Vec<Vec<String>>,
@@ -414,7 +416,9 @@ pub fn project_message_thread(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
-    let q = search.map(|s| s.trim().to_ascii_lowercase()).filter(|s| !s.is_empty());
+    let q = search
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty());
     let mut meta = Vec::new();
     let mut bufs = Vec::new();
     let mut last_group: Option<&str> = None;
@@ -548,7 +552,10 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         out.push(line.clone());
     }
     if e.lines.len() > body_take {
-        out.push(format!("… +{} lines · open detail", e.lines.len() - body_take));
+        out.push(format!(
+            "… +{} lines · open detail",
+            e.lines.len() - body_take
+        ));
     }
     if out.is_empty() {
         out.push(e.summary.clone().unwrap_or_else(|| "…".into()));
@@ -617,12 +624,16 @@ impl ThreadProjection {
         expanded_ids: &BTreeSet<String>,
         force_collapsed: &BTreeSet<String>,
     ) -> Self {
-        let (meta, bufs) = project_message_thread(entries, zoom, search, expanded_ids, force_collapsed);
+        let (meta, bufs) =
+            project_message_thread(entries, zoom, search, expanded_ids, force_collapsed);
         Self { meta, bufs }
     }
 
     /// Build blocks for Transcript (borrows self).
-    pub fn blocks<'a>(&'a self, line_ptrs: &'a mut Vec<Vec<&'a str>>) -> Vec<TranscriptBlock<'a, String>> {
+    pub fn blocks<'a>(
+        &'a self,
+        line_ptrs: &'a mut Vec<Vec<&'a str>>,
+    ) -> Vec<TranscriptBlock<'a, String>> {
         build_transcript_blocks(&self.meta, &self.bufs, line_ptrs)
     }
 
@@ -894,7 +905,9 @@ impl MessageThreadState {
             if let Some(id) = self.selected() {
                 if let Some(e) = entries.iter().find(|e| e.id == id) {
                     match key.code {
-                        KeyCode::Char('r') if matches!(e.kind, MessageKind::Tool | MessageKind::Error) => {
+                        KeyCode::Char('r')
+                            if matches!(e.kind, MessageKind::Tool | MessageKind::Error) =>
+                        {
                             return MessageThreadOutcome::ActionRequested {
                                 id: id.to_string(),
                                 action: "retry".into(),
@@ -1036,12 +1049,7 @@ impl<'a> MessageThread<'a> {
     }
 
     /// Paint thread. Host should call [`MessageThreadState::on_entries_len`] after appends.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut MessageThreadState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut MessageThreadState) {
         if area.is_empty() {
             return;
         }
@@ -1099,12 +1107,7 @@ impl<'a> MessageThread<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut MessageThreadState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MessageThreadState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1118,9 +1121,12 @@ pub fn example_message_session() -> Vec<MessageEntry> {
             .timestamp("12:01")
             .group("today")
             .checkpoint(true),
-        MessageEntry::assistant("a1", "Planning virtualized project-to-lines over Transcript.")
-            .actor(MessageActor::new("agent", "agent"))
-            .timestamp("12:01"),
+        MessageEntry::assistant(
+            "a1",
+            "Planning virtualized project-to-lines over Transcript.",
+        )
+        .actor(MessageActor::new("agent", "agent"))
+        .timestamp("12:01"),
         MessageEntry::tool("t1", "cargo test -p termrock")
             .actor(MessageActor::new("tool", "bash"))
             .timestamp("12:02")
@@ -1129,14 +1135,12 @@ pub fn example_message_session() -> Vec<MessageEntry> {
                 MessageAction::new("retry", "Retry").chord("r"),
                 MessageAction::new("copy", "Copy").chord("Ctrl+C"),
             ]),
-        MessageEntry::event("e1", "stream coalesced 12 chunks")
-            .timestamp("12:02"),
+        MessageEntry::event("e1", "stream coalesced 12 chunks").timestamp("12:02"),
         MessageEntry::error("err1", "preview paint failed once — retrying")
             .timestamp("12:03")
             .status_letter('E')
             .actions(vec![MessageAction::new("retry", "Retry").chord("r")]),
-        MessageEntry::status("s1", "ready · follow")
-            .timestamp("12:03"),
+        MessageEntry::status("s1", "ready · follow").timestamp("12:03"),
         MessageEntry::new(
             "a2",
             MessageKind::Assistant,
@@ -1186,8 +1190,7 @@ mod tests {
         let mut exp = BTreeSet::new();
         exp.insert("t1".into());
         let col = BTreeSet::new();
-        let (meta, bufs) =
-            project_message_thread(&entries, MessageZoom::Summary, None, &exp, &col);
+        let (meta, bufs) = project_message_thread(&entries, MessageZoom::Summary, None, &exp, &col);
         let tool = meta.iter().find(|m| m.id == "t1").unwrap();
         assert!(!tool.folded);
         assert!(!bufs[tool.line_buf_index].is_empty());

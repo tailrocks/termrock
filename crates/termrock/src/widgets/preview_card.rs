@@ -25,14 +25,10 @@
 //!
 //! Research: IDE quick previews, hover cards, Yazi previews, QuickOpen panels.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::{Duration, Instant};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -1182,8 +1178,13 @@ impl<'a> PreviewCard<'a> {
         }
 
         let footer_h = 1u16;
-        let header_h = if self.content.subtitle.is_some() { 2u16 } else { 1 };
-        let meta_h = (self.content.meta.len() as u16).min(inner.height.saturating_sub(header_h + footer_h));
+        let header_h = if self.content.subtitle.is_some() {
+            2u16
+        } else {
+            1
+        };
+        let meta_h =
+            (self.content.meta.len() as u16).min(inner.height.saturating_sub(header_h + footer_h));
         let body_h = inner
             .height
             .saturating_sub(header_h + meta_h + footer_h)
@@ -1195,11 +1196,7 @@ impl<'a> PreviewCard<'a> {
         state.slots.header = Rect::new(inner.x, y, inner.width, header_h);
         let badge = self.content.kind.badge();
         let pin_mark = if state.pinned {
-            if ascii {
-                " * "
-            } else {
-                " ● "
-            }
+            if ascii { " * " } else { " ● " }
         } else {
             ""
         };
@@ -1397,11 +1394,7 @@ pub fn example_file_preview<'a>() -> (
         PreviewMetadata::new("size", "4.2 KB"),
         PreviewMetadata::new("lang", "Rust"),
     ];
-    const BODY: &[&str] = &[
-        "pub fn main() {",
-        "    println!(\"hi\");",
-        "}",
-    ];
+    const BODY: &[&str] = &["pub fn main() {", "    println!(\"hi\");", "}"];
     let content = PreviewCardContent::title("main.rs", PreviewResourceKind::File)
         .subtitle("src/main.rs")
         .meta(META)
@@ -1441,7 +1434,10 @@ pub fn example_symbol_preview<'a>() -> (
         PreviewMetadata::new("kind", "fn"),
         PreviewMetadata::new("mod", "widgets"),
     ];
-    const BODY: &[&str] = &["pub fn paint(&self, area: Rect, …)", "FullscreenViewer chrome"];
+    const BODY: &[&str] = &[
+        "pub fn paint(&self, area: Rect, …)",
+        "FullscreenViewer chrome",
+    ];
     let content = PreviewCardContent::title("paint", PreviewResourceKind::Symbol)
         .subtitle("FullscreenViewer::paint")
         .meta(META)
@@ -1475,8 +1471,8 @@ pub fn example_session_preview<'a>() -> (
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interaction::OverlayOutcome;
     use crate::input::KeyModifiers;
+    use crate::interaction::OverlayOutcome;
 
     #[test]
     fn delay_then_show_no_focus_theft() {
@@ -1540,9 +1536,7 @@ mod tests {
         let b = state.set_selection("file-b");
         match (a, b) {
             (
-                PreviewCardOutcome::SelectionChanged {
-                    generation: g1, ..
-                },
+                PreviewCardOutcome::SelectionChanged { generation: g1, .. },
                 PreviewCardOutcome::SelectionChanged {
                     generation: g2,
                     selection_id,
@@ -1846,7 +1840,9 @@ mod tests {
         assert!(
             matches!(
                 out,
-                PreviewCardOutcome::Shown | PreviewCardOutcome::Pending | PreviewCardOutcome::Ignored
+                PreviewCardOutcome::Shown
+                    | PreviewCardOutcome::Pending
+                    | PreviewCardOutcome::Ignored
             ),
             "{out:?}"
         );

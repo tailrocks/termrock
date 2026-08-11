@@ -18,6 +18,7 @@
 //!
 //! Research: Radix menus, desktop context menus, Textual, lazygit, file managers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -704,10 +705,7 @@ impl DropdownMenuState {
     }
 
     /// Close on stack (restores opener).
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         self.close_all();
         if self.context_mode {
             dismiss_context_menu_overlays(stack)
@@ -769,10 +767,7 @@ impl DropdownMenuState {
         }
     }
 
-    fn activate_cursor<Id: Clone>(
-        &mut self,
-        root: &[MenuNode<Id>],
-    ) -> DropdownMenuOutcome<Id> {
+    fn activate_cursor<Id: Clone>(&mut self, root: &[MenuNode<Id>]) -> DropdownMenuOutcome<Id> {
         let items = match self.current_items(root) {
             Some(i) => i,
             None => return DropdownMenuOutcome::Ignored,
@@ -878,9 +873,10 @@ impl DropdownMenuState {
         let entries = Self::panel_entries(items);
         let before = frame.cursor();
         // CollectionState/roving typeahead via handle_key on synthetic char? Use roving API.
-        let out = frame
-            .collection
-            .handle_key(KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE), &entries);
+        let out = frame.collection.handle_key(
+            KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE),
+            &entries,
+        );
         self.typeahead.push(ch);
         if out.active_changed() || frame.cursor() != before {
             DropdownMenuOutcome::TypeaheadMatched
@@ -1022,7 +1018,9 @@ impl DropdownMenuState {
             self.close_all();
         } else {
             self.accepts_input = stack.top_owns_input()
-                && stack.top().is_some_and(|t| t.id.0.starts_with(root) || t.id == id);
+                && stack
+                    .top()
+                    .is_some_and(|t| t.id.0.starts_with(root) || t.id == id);
         }
     }
 }
@@ -1148,7 +1146,9 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 area = if placed.is_empty() {
                     // Fall right of previous panel.
                     Rect::new(
-                        area.right().saturating_add(1).min(bounds.right().saturating_sub(size.width)),
+                        area.right()
+                            .saturating_add(1)
+                            .min(bounds.right().saturating_sub(size.width)),
                         area.y,
                         size.width.min(bounds.width),
                         size.height.min(bounds.height),
@@ -1325,8 +1325,12 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 MenuRowKind::Checkbox { checked: false } => "  ",
                 MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
-                MenuRowKind::Radio { selected: false, .. } if self.ascii => "( ) ",
-                MenuRowKind::Radio { selected: false, .. } => "○ ",
+                MenuRowKind::Radio {
+                    selected: false, ..
+                } if self.ascii => "( ) ",
+                MenuRowKind::Radio {
+                    selected: false, ..
+                } => "○ ",
                 _ if active && self.ascii => "> ",
                 _ if active => "› ",
                 _ => "  ",
@@ -1572,7 +1576,9 @@ mod tests {
 
     fn sample_tree() -> Vec<MenuNode<&'static str>> {
         vec![
-            MenuNode::command("open", "Open").shortcut("C-o").mnemonic('O'),
+            MenuNode::command("open", "Open")
+                .shortcut("C-o")
+                .mnemonic('O'),
             MenuNode::command("save", "Save").shortcut("C-s"),
             MenuNode::separator("sep1"),
             MenuNode::checkbox("wrap", "Word wrap", true),
@@ -1834,7 +1840,11 @@ mod tests {
         let area = Rect::new(0, 0, 36, 16);
         let mut buf = Buffer::empty(area);
         DropdownMenu::new(&root, &system).paint(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         // Mnemonic paints as "(O)pen".
         assert!(
             text.contains("Open") || text.contains("(O)pen") || text.contains("pen"),
@@ -1847,7 +1857,12 @@ mod tests {
         );
         let mut scene = SemanticScene::<&str, ()>::default();
         DropdownMenu::new(&root, &system).register_semantic(&mut scene, "m", area, &state);
-        assert!(scene.nodes().iter().any(|n| n.label.as_deref() == Some("dropdown-menu")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("dropdown-menu"))
+        );
     }
 
     #[test]

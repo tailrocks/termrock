@@ -15,6 +15,7 @@
 //!
 //! Research: Zellij help, lazygit keybindings, Vim help, Textual bindings.
 
+#![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeMap;
 
 use ratatui_core::{
@@ -416,9 +417,7 @@ where
 
 /// Overlay stack layer summary entries (live stack — not hardcoded chords).
 #[must_use]
-pub fn help_entries_from_overlays<FocusId>(
-    stack: &OverlayStack<FocusId>,
-) -> Vec<HelpEntry> {
+pub fn help_entries_from_overlays<FocusId>(stack: &OverlayStack<FocusId>) -> Vec<HelpEntry> {
     let mut out = Vec::new();
     for (i, entry) in stack.entries().iter().enumerate() {
         let kind = format!("{:?}", entry.kind);
@@ -454,21 +453,13 @@ where
         if node.hidden || node.disabled || !node.focusable {
             continue;
         }
-        let label = node
-            .label
-            .clone()
-            .unwrap_or_else(|| node.id.to_string());
+        let label = node.label.clone().unwrap_or_else(|| node.id.to_string());
         if node.actions.is_empty() {
             out.push(
-                HelpEntry::new(
-                    format!("sem-{i}"),
-                    "Focus",
-                    "·",
-                    label,
-                )
-                .priority(80)
-                .source(HelpEntrySource::Semantic)
-                .zone(zone.unwrap_or("focus")),
+                HelpEntry::new(format!("sem-{i}"), "Focus", "·", label)
+                    .priority(80)
+                    .source(HelpEntrySource::Semantic)
+                    .zone(zone.unwrap_or("focus")),
             );
         } else {
             for (j, act) in node.actions.iter().enumerate() {
@@ -751,11 +742,7 @@ impl KeyboardHelpState {
     }
 
     /// Keyboard (modal primarily; footer is mostly display).
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        visible: &[HelpEntry],
-    ) -> KeyboardHelpOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, visible: &[HelpEntry]) -> KeyboardHelpOutcome {
         if !self.live() || key.kind == KeyEventKind::Release {
             return KeyboardHelpOutcome::Ignored;
         }
@@ -779,7 +766,12 @@ impl KeyboardHelpState {
 
         if matches!(
             key.code,
-            KeyCode::Down | KeyCode::Up | KeyCode::PageDown | KeyCode::PageUp | KeyCode::Home | KeyCode::End
+            KeyCode::Down
+                | KeyCode::Up
+                | KeyCode::PageDown
+                | KeyCode::PageUp
+                | KeyCode::Home
+                | KeyCode::End
         ) {
             if let Some(intent) = default_keyboard_help_intent(key) {
                 return self.handle_intent(intent, visible);
@@ -881,9 +873,7 @@ impl KeyboardHelpState {
         let next = keyboard_help_presentation_for_bounds(area);
         if next != self.presentation {
             self.presentation = next;
-            KeyboardHelpOutcome::PresentationChanged {
-                presentation: next,
-            }
+            KeyboardHelpOutcome::PresentationChanged { presentation: next }
         } else {
             KeyboardHelpOutcome::Ignored
         }
@@ -1077,8 +1067,8 @@ impl<'a> KeyboardHelp<'a> {
         }
 
         let mut y = inner.y;
-        let show_search = !matches!(state.presentation, KeyboardHelpPresentation::Tiny)
-            && inner.height >= 4;
+        let show_search =
+            !matches!(state.presentation, KeyboardHelpPresentation::Tiny) && inner.height >= 4;
 
         if show_search {
             state.query.set_focused(surface);
@@ -1115,28 +1105,23 @@ impl<'a> KeyboardHelp<'a> {
             by_cat.entry(e.category.as_str()).or_default().push((i, e));
         }
 
-        let flat: Vec<(usize, &HelpEntry)> = if matches!(state.presentation, KeyboardHelpPresentation::Tiny)
-        {
-            let c = contract_help_entries(self.entries, 6);
-            // map back indices poorly — re-enumerate contracted
-            c.iter()
-                .filter_map(|ce| {
-                    self.entries
-                        .iter()
-                        .position(|e| e.id == ce.id)
-                        .map(|i| (i, &self.entries[i]))
-                })
-                .collect()
-        } else {
-            by_cat.values().flatten().copied().collect()
-        };
+        let flat: Vec<(usize, &HelpEntry)> =
+            if matches!(state.presentation, KeyboardHelpPresentation::Tiny) {
+                let c = contract_help_entries(self.entries, 6);
+                // map back indices poorly — re-enumerate contracted
+                c.iter()
+                    .filter_map(|ce| {
+                        self.entries
+                            .iter()
+                            .position(|e| e.id == ce.id)
+                            .map(|i| (i, &self.entries[i]))
+                    })
+                    .collect()
+            } else {
+                by_cat.values().flatten().copied().collect()
+            };
 
-        state.reconcile(
-            &flat
-                .iter()
-                .map(|(_, e)| (*e).clone())
-                .collect::<Vec<_>>(),
-        );
+        state.reconcile(&flat.iter().map(|(_, e)| (*e).clone()).collect::<Vec<_>>());
 
         let cursor = state.cursor_index();
         let list_h = inner.bottom().saturating_sub(y);
@@ -1241,7 +1226,9 @@ impl<'a> KeyboardHelp<'a> {
                     self.system.style(Role::HintKey)
                 },
             );
-            let rest_x = inner.x.saturating_add(chord_w.saturating_add(1).min(inner.width));
+            let rest_x = inner
+                .x
+                .saturating_add(chord_w.saturating_add(1).min(inner.width));
             let rest_w = inner.right().saturating_sub(rest_x);
             if rest_w > 0 {
                 let rest = format!(
@@ -1476,7 +1463,11 @@ mod tests {
             )
         });
         assert!(!entries.is_empty());
-        assert!(entries.iter().all(|e| !e.chord.is_empty() || e.action.is_empty() == false));
+        assert!(
+            entries
+                .iter()
+                .all(|e| !e.chord.is_empty() || e.action.is_empty() == false)
+        );
         assert!(entries.iter().all(|e| e.source == HelpEntrySource::Keymap));
     }
 
@@ -1547,8 +1538,11 @@ mod tests {
         let sys = system();
         let e = example_help_entries(&sys);
         let f = filter_help_entries(&e, "save");
-        assert!(f.iter().all(|x| x.action.to_ascii_lowercase().contains("save")
-            || x.chord.to_ascii_lowercase().contains('s')));
+        assert!(
+            f.iter()
+                .all(|x| x.action.to_ascii_lowercase().contains("save")
+                    || x.chord.to_ascii_lowercase().contains('s'))
+        );
         let c = contract_help_entries(&e, 2);
         assert!(c.len() <= 2);
     }
@@ -1560,16 +1554,29 @@ mod tests {
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 60, 1);
         let mut buf = Buffer::empty(area);
-        KeyboardHelp::new(&e, &sys).ascii(true).paint(area, &mut buf, &mut st);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        KeyboardHelp::new(&e, &sys)
+            .ascii(true)
+            .paint(area, &mut buf, &mut st);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(!text.trim().is_empty(), "{text:?}");
 
         let mut st2 = KeyboardHelpState::modal();
         let area2 = Rect::new(0, 0, 64, 16);
         let mut buf2 = Buffer::empty(area2);
         KeyboardHelp::new(&e, &sys).paint(area2, &mut buf2, &mut st2);
-        let t2: String = buf2.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(t2.contains("Keyboard") || t2.contains("App") || t2.contains("Save"), "{t2}");
+        let t2: String = buf2
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            t2.contains("Keyboard") || t2.contains("App") || t2.contains("Save"),
+            "{t2}"
+        );
     }
 
     #[test]
@@ -1587,10 +1594,7 @@ mod tests {
     fn question_opens_modal_from_footer() {
         let mut st = KeyboardHelpState::new();
         assert!(matches!(
-            st.handle_key(
-                KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE),
-                &[]
-            ),
+            st.handle_key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE), &[]),
             KeyboardHelpOutcome::Opened
         ));
         assert!(st.is_open());
@@ -1708,7 +1712,10 @@ mod tests {
             }
             // Every keymap entry's chord must match some binding's formatted form.
             let ok = map.bindings().iter().any(|b| {
-                let g = b.glyph().map(|s| s.to_string()).unwrap_or_else(|| format_binding(b, fmt));
+                let g = b
+                    .glyph()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format_binding(b, fmt));
                 g == e.chord
             });
             assert!(ok, "stale chord {:?} for {}", e.chord, e.action);

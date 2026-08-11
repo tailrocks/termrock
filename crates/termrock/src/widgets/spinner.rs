@@ -19,27 +19,22 @@
 //!
 //! Research: terminal spinners, Textual loading, polished AI tool states.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
     style::{DesignSystem, Motion, Role},
     text::{display_cols, take_display_cols},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
 };
 
 /// Default frame period (ms) for Full motion — matches historic Spinner/Progress.
 pub const SPINNER_DEFAULT_PERIOD_MS: u64 = 80;
 /// Braille sequence (Unicode capability).
-pub const SPINNER_BRAILLE_FRAMES: &[&str] =
-    &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 /// ASCII sequence.
 pub const SPINNER_ASCII_FRAMES: &[&str] = &["|", "/", "-", "\\"];
 /// Waiting phase pulse (Unicode).
@@ -47,8 +42,7 @@ pub const SPINNER_WAITING_UNICODE: &[&str] = &["·", "•", "●", "•"];
 /// Waiting phase (ASCII).
 pub const SPINNER_WAITING_ASCII: &[&str] = &[".", "o", "O", "o"];
 /// Reconnecting uses reverse braille cadence.
-pub const SPINNER_RECONNECT_UNICODE: &[&str] =
-    &["⠏", "⠇", "⠧", "⠦", "⠴", "⠼", "⠸", "⠹", "⠙", "⠋"];
+pub const SPINNER_RECONNECT_UNICODE: &[&str] = &["⠏", "⠇", "⠧", "⠦", "⠴", "⠼", "⠸", "⠹", "⠙", "⠋"];
 
 // ── Phase / variant / glyphs ────────────────────────────────────────────────
 
@@ -469,9 +463,7 @@ impl<'a> Spinner<'a> {
         if matches!(variant, SpinnerVariant::CompactInline) || embedded {
             return true;
         }
-        self.label
-            .map(|l| !l.trim().is_empty())
-            .unwrap_or(false)
+        self.label.map(|l| !l.trim().is_empty()).unwrap_or(false)
     }
 
     /// Resolved display label (falls back to phase verb when missing but required).
@@ -662,9 +654,7 @@ impl<'a> ActivityIndicator<'a> {
             area.y,
             &take_display_cols(&line1, usize::from(area.width)),
             usize::from(area.width),
-            self.system
-                .style(self.role)
-                .add_modifier(Modifier::BOLD),
+            self.system.style(self.role).add_modifier(Modifier::BOLD),
         );
         if let Some(detail) = self.detail {
             if area.height > 1 {
@@ -725,11 +715,7 @@ impl<'a> ActivityIndicator<'a> {
 impl Widget for &Spinner<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         // Static fallback when host has no tick in Widget path.
-        let tick = FrameTick::manual(
-            std::time::Instant::now(),
-            Duration::ZERO,
-            Duration::ZERO,
-        );
+        let tick = FrameTick::manual(std::time::Instant::now(), Duration::ZERO, Duration::ZERO);
         self.render(area, buffer, tick, Motion::Off);
     }
 }
@@ -870,8 +856,12 @@ mod tests {
         // may or may not differ depending on step; at least valid ascii set
         assert!(SPINNER_ASCII_FRAMES.contains(&a) || a == "o");
         let _ = b;
-        assert!(!state.animation_demand(tick_at(0), Motion::Reduced).needs_redraw
-            || !Motion::Reduced.animate_spinners());
+        assert!(
+            !state
+                .animation_demand(tick_at(0), Motion::Reduced)
+                .needs_redraw
+                || !Motion::Reduced.animate_spinners()
+        );
     }
 
     #[test]
@@ -891,7 +881,12 @@ mod tests {
         let active = SpinnerState::new();
         let tick = tick_at(0);
         assert!(active.animation_demand(tick, Motion::Full).needs_redraw);
-        assert!(active.animation_demand(tick, Motion::Full).next_deadline.is_some());
+        assert!(
+            active
+                .animation_demand(tick, Motion::Full)
+                .next_deadline
+                .is_some()
+        );
         // Motion Off → no demand even if active
         assert!(!active.animation_demand(tick, Motion::Off).needs_redraw);
         // Inactive → idle
@@ -914,10 +909,12 @@ mod tests {
             Rect::new(0, 0, 12, 1),
             &state,
         );
-        assert!(scene
-            .nodes()
-            .iter()
-            .any(|n| n.label.as_deref() == Some("spinner") && n.state.busy));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("spinner") && n.state.busy)
+        );
     }
 
     #[test]

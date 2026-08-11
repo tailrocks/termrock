@@ -20,11 +20,7 @@
 
 use std::collections::BTreeMap;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{
@@ -365,7 +361,11 @@ impl CitationSource {
     #[must_use]
     pub fn inline_label(&self, show_title: bool) -> String {
         if show_title && !self.title.is_empty() {
-            format!("[{}:{}]", self.index_label.trim_matches(|c| c == '[' || c == ']'), self.title)
+            format!(
+                "[{}:{}]",
+                self.index_label.trim_matches(|c| c == '[' || c == ']'),
+                self.title
+            )
         } else if self.index_label.starts_with('[') {
             self.index_label.clone()
         } else {
@@ -714,23 +714,19 @@ impl<'a> SourceCitation<'a> {
     /// Natural width.
     #[must_use]
     pub fn measure_width(&self) -> u16 {
-        u16::try_from(display_cols(&self.decorated())).unwrap_or(1).max(1)
+        u16::try_from(display_cols(&self.decorated()))
+            .unwrap_or(1)
+            .max(1)
     }
 
     /// Whether open is allowed under current flags.
     #[must_use]
     pub fn can_open(&self) -> bool {
-        effective_availability(self.source, self.offline).can_open()
-            && !self.source.sensitive
+        effective_availability(self.source, self.offline).can_open() && !self.source.sensitive
     }
 
     /// Paint inline citation.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SourceCitationState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SourceCitationState) {
         if area.is_empty() {
             return;
         }
@@ -744,9 +740,13 @@ impl<'a> SourceCitation<'a> {
                 .style(Role::Link)
                 .add_modifier(Modifier::UNDERLINED | Modifier::BOLD)
         } else if state.visited {
-            self.system.style(Role::TextMuted).add_modifier(Modifier::UNDERLINED)
+            self.system
+                .style(Role::TextMuted)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
-            self.system.style(Role::Link).add_modifier(Modifier::UNDERLINED)
+            self.system
+                .style(Role::Link)
+                .add_modifier(Modifier::UNDERLINED)
         };
         buffer.set_stringn(
             area.x,
@@ -771,8 +771,8 @@ impl<'a> SourceCitation<'a> {
             KeyCode::Char('p') => SourceCitationOutcome::PreviewRequested {
                 id: self.source.id.clone(),
             },
-            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL)
-                || key.modifiers.is_empty() =>
+            KeyCode::Char('c')
+                if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.is_empty() =>
             {
                 SourceCitationOutcome::CopyRequested {
                     id: self.source.id.clone(),
@@ -827,13 +827,9 @@ impl<'a> SourceCitation<'a> {
             external: self.source.external,
         }
     }
-
 }
 
-fn effective_availability(
-    source: &CitationSource,
-    offline: bool,
-) -> CitationAvailability {
+fn effective_availability(source: &CitationSource, offline: bool) -> CitationAvailability {
     if offline && source.external {
         return CitationAvailability::Offline;
     }
@@ -946,11 +942,7 @@ impl CitationListState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        sources: &[CitationSource],
-    ) -> CitationListOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, sources: &[CitationSource]) -> CitationListOutcome {
         if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
             return CitationListOutcome::Ignored;
         }
@@ -1059,9 +1051,7 @@ impl CitationListState {
                         );
                     }
                     return CitationListOutcome::Citation(
-                        SourceCitationOutcome::PreviewRequested {
-                            id: src.id.clone(),
-                        },
+                        SourceCitationOutcome::PreviewRequested { id: src.id.clone() },
                     );
                 }
             }
@@ -1111,11 +1101,7 @@ impl<'a> CitationList<'a> {
         let n = self.sources.len();
         let groups = group_citations(self.sources);
         let mark = if state.expanded {
-            if self.ascii {
-                "v"
-            } else {
-                "▾"
-            }
+            if self.ascii { "v" } else { "▾" }
         } else if self.ascii {
             ">"
         } else {
@@ -1130,12 +1116,7 @@ impl<'a> CitationList<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CitationListState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut CitationListState) {
         state.row_hits.clear();
         if area.is_empty() {
             return;
@@ -1170,29 +1151,17 @@ impl<'a> CitationList<'a> {
             };
             let selected = state.focused && i == state.cursor;
             let mark = if selected {
-                if self.ascii {
-                    "*"
-                } else {
-                    "›"
-                }
+                if self.ascii { "*" } else { "›" }
             } else {
                 " "
             };
             let g = src.kind.glyph(self.ascii);
-            let mut line = format!(
-                "{mark}{} {} {}",
-                src.inline_label(false),
-                g,
-                src.title
-            );
+            let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
             // always show dest for external / no_hyperlink / sensitive
             let show_dest = src.external
                 || src.sensitive
                 || state.no_hyperlink
-                || matches!(
-                    self.show_dest_policy(),
-                    DestinationDisplay::Always
-                );
+                || matches!(self.show_dest_policy(), DestinationDisplay::Always);
             let _ = show_dest;
             if src.external || src.sensitive || state.no_hyperlink {
                 line.push(' ');
@@ -1236,12 +1205,7 @@ impl<'a> CitationList<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CitationListState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut CitationListState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1250,16 +1214,35 @@ impl<'a> CitationList<'a> {
 #[must_use]
 pub fn example_citations() -> Vec<CitationSource> {
     vec![
-        CitationSource::file("c1", "1", "message_thread.rs", "crates/termrock/src/widgets/message_thread.rs")
-            .range(SourceAnchor::range(10, 40))
-            .provenance(CitationProvenance::default().confidence(92).provenance("rag"))
-            .preview("project-to-lines over Transcript"),
-        CitationSource::url("c2", "2", "Glow docs", "https://github.com/charmbracelet/glow")
-            .kind(CitationSourceType::Docs)
-            .provenance(CitationProvenance::default().confidence(70)),
-        CitationSource::url("c3", "3", "Glow mirror", "https://github.com/charmbracelet/glow")
-            .kind(CitationSourceType::Docs)
-            .group_key("https://github.com/charmbracelet/glow"),
+        CitationSource::file(
+            "c1",
+            "1",
+            "message_thread.rs",
+            "crates/termrock/src/widgets/message_thread.rs",
+        )
+        .range(SourceAnchor::range(10, 40))
+        .provenance(
+            CitationProvenance::default()
+                .confidence(92)
+                .provenance("rag"),
+        )
+        .preview("project-to-lines over Transcript"),
+        CitationSource::url(
+            "c2",
+            "2",
+            "Glow docs",
+            "https://github.com/charmbracelet/glow",
+        )
+        .kind(CitationSourceType::Docs)
+        .provenance(CitationProvenance::default().confidence(70)),
+        CitationSource::url(
+            "c3",
+            "3",
+            "Glow mirror",
+            "https://github.com/charmbracelet/glow",
+        )
+        .kind(CitationSourceType::Docs)
+        .group_key("https://github.com/charmbracelet/glow"),
         CitationSource::file("c4", "4", "secret.env", "/home/user/secret.env")
             .sensitive(true)
             .availability(CitationAvailability::Restricted),
@@ -1334,14 +1317,8 @@ mod tests {
         let src = example_citations();
         let mut st = CitationListState::new();
         st.expand();
-        let out = st.handle_key(
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-            &src,
-        );
-        assert!(matches!(
-            out,
-            CitationListOutcome::SelectionChanged { .. }
-        ));
+        let out = st.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &src);
+        assert!(matches!(out, CitationListOutcome::SelectionChanged { .. }));
         let out = st.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE), &src);
         assert!(matches!(
             out,
@@ -1398,9 +1375,11 @@ mod tests {
         assert!(!list.row_hits.is_empty());
         let mut ist = SourceCitationState::new();
         ist.focused = true;
-        SourceCitation::new(&src[0], &system)
-            .ascii(true)
-            .paint(Rect::new(0, 0, 20, 1), &mut buf, &mut ist);
+        SourceCitation::new(&src[0], &system).ascii(true).paint(
+            Rect::new(0, 0, 20, 1),
+            &mut buf,
+            &mut ist,
+        );
     }
 
     #[test]

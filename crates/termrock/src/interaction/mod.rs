@@ -1,5 +1,6 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 
+#![allow(unused_imports)] // test-only imports retained
 mod collection;
 mod dismissable;
 mod event_result;
@@ -19,8 +20,8 @@ pub use dismissable::{
     DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack, evaluate_outside_top,
 };
 pub use event_result::{
-    EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
-    from_consumed_flag,
+    EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble,
+    compose_capture, from_consumed_flag,
 };
 pub use focus_graph::{
     FocusDebugSnapshot, FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode, FocusOutcome,
@@ -44,7 +45,6 @@ pub use intent::{
     default_inspector_intent, default_list_intent, default_log_stream_intent, default_menu_intent,
     default_permission_intent, default_prompt_composer_intent, default_table_intent,
     default_text_area_intent, default_transcript_intent, default_tree_intent,
-
 };
 pub use keymap_bridge::dispatch_keymap_action;
 pub(crate) use modal::ModalStack;

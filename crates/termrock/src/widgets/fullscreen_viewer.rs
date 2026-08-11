@@ -23,12 +23,7 @@
 //! Research: Grok Build fullscreen overlays, file previews, IDE inspectors,
 //! terminal pagers.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -410,10 +405,7 @@ pub fn open_fullscreen_viewer_overlay<FocusId: Clone>(
 ) -> OverlayOutcome<FocusId> {
     stack.open(
         bounds,
-        crate::interaction::OverlaySpec::fullscreen(
-            FULLSCREEN_VIEWER_OVERLAY_ID,
-            opener_focus,
-        ),
+        crate::interaction::OverlaySpec::fullscreen(FULLSCREEN_VIEWER_OVERLAY_ID, opener_focus),
     )
 }
 
@@ -517,10 +509,7 @@ impl<Id> SemanticZoomState<Id> {
 
 impl<Id: Clone> SemanticZoomState<Id> {
     /// Promote from compact/detail with a frozen source snapshot.
-    pub fn promote(
-        &mut self,
-        ctx: SourceContext<Id>,
-    ) -> FullscreenViewerOutcome<Id> {
+    pub fn promote(&mut self, ctx: SourceContext<Id>) -> FullscreenViewerOutcome<Id> {
         self.source = Some(ctx);
         let prev = self.level;
         self.level = self.level.promote();
@@ -528,13 +517,9 @@ impl<Id: Clone> SemanticZoomState<Id> {
             return FullscreenViewerOutcome::Ignored;
         }
         if self.level.is_fullscreen() {
-            FullscreenViewerOutcome::Opened {
-                level: self.level,
-            }
+            FullscreenViewerOutcome::Opened { level: self.level }
         } else {
-            FullscreenViewerOutcome::Promoted {
-                level: self.level,
-            }
+            FullscreenViewerOutcome::Promoted { level: self.level }
         }
     }
 
@@ -586,10 +571,7 @@ impl<Id: Clone> SemanticZoomState<Id> {
     }
 
     /// Jump to fullscreen from any level.
-    pub fn enter_fullscreen(
-        &mut self,
-        ctx: SourceContext<Id>,
-    ) -> FullscreenViewerOutcome<Id> {
+    pub fn enter_fullscreen(&mut self, ctx: SourceContext<Id>) -> FullscreenViewerOutcome<Id> {
         self.source = Some(ctx);
         self.level = ZoomLevel::Fullscreen;
         FullscreenViewerOutcome::Opened {
@@ -838,8 +820,7 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
         if !self.open || !self.accepts_input {
             return FullscreenViewerOutcome::Ignored;
         }
-        let nested = self.nested_child_hint
-            || stack.is_some_and(fullscreen_viewer_has_nested_top);
+        let nested = self.nested_child_hint || stack.is_some_and(fullscreen_viewer_has_nested_top);
         if nested {
             return FullscreenViewerOutcome::NestedEscape;
         }
@@ -894,16 +875,10 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
 
         // Global chrome shortcuts (when not typing in search)
         if !self.search_open || !matches!(self.chrome_focus, ViewerChromeFocus::Search) {
-            if matches!(key.code, KeyCode::Char('/'))
-                && is_press
-                && key.modifiers.is_empty()
-            {
+            if matches!(key.code, KeyCode::Char('/')) && is_press && key.modifiers.is_empty() {
                 return self.toggle_search();
             }
-            if matches!(key.code, KeyCode::Char('?'))
-                && is_press
-                && key.modifiers.is_empty()
-            {
+            if matches!(key.code, KeyCode::Char('?')) && is_press && key.modifiers.is_empty() {
                 self.help_open = !self.help_open;
                 return FullscreenViewerOutcome::HelpToggled {
                     open: self.help_open,
@@ -1041,11 +1016,7 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
             .position(|b| *b == self.chrome_focus)
             .unwrap_or(4);
         let next = if reverse {
-            if idx == 0 {
-                bands.len() - 1
-            } else {
-                idx - 1
-            }
+            if idx == 0 { bands.len() - 1 } else { idx - 1 }
         } else {
             (idx + 1) % bands.len()
         };
@@ -1097,9 +1068,9 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
         self.nested_child_hint = fullscreen_viewer_has_nested_top(stack);
         if on {
             self.accepts_input = stack.top_owns_input()
-                && stack
-                    .top()
-                    .is_some_and(|t| t.id == id || t.id.0.starts_with(FULLSCREEN_VIEWER_NESTED_PREFIX));
+                && stack.top().is_some_and(|t| {
+                    t.id == id || t.id.0.starts_with(FULLSCREEN_VIEWER_NESTED_PREFIX)
+                });
         }
     }
 }
@@ -1258,17 +1229,15 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             &title,
             usize::from(inner.width).saturating_sub(display_cols(close)),
         );
+        buffer.set_stringn(inner.x, y, &t, usize::from(inner.width), title_style);
+        let cx = inner.right().saturating_sub(display_cols(close) as u16);
         buffer.set_stringn(
-            inner.x,
+            cx,
             y,
-            &t,
-            usize::from(inner.width),
-            title_style,
+            close,
+            display_cols(close),
+            self.system.style(Role::TextMuted),
         );
-        let cx = inner
-            .right()
-            .saturating_sub(display_cols(close) as u16);
-        buffer.set_stringn(cx, y, close, display_cols(close), self.system.style(Role::TextMuted));
         y = y.saturating_add(1);
 
         // Breadcrumbs
@@ -1278,7 +1247,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 let sep = if self.ascii { " > " } else { " › " };
                 let path = src.path_labels.join(sep);
                 let style = if matches!(state.chrome_focus, ViewerChromeFocus::Breadcrumbs) {
-                    self.system.style(Role::Text).add_modifier(Modifier::UNDERLINED)
+                    self.system
+                        .style(Role::Text)
+                        .add_modifier(Modifier::UNDERLINED)
                 } else {
                     self.system.style(Role::TextMuted)
                 };
@@ -1318,7 +1289,13 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 };
-                buffer.set_stringn(x, y, &label, usize::from(w.min(inner.right().saturating_sub(x))), style);
+                buffer.set_stringn(
+                    x,
+                    y,
+                    &label,
+                    usize::from(w.min(inner.right().saturating_sub(x))),
+                    style,
+                );
                 state.action_regions.push(HitRegion {
                     id: a.id.clone(),
                     area: Rect::new(x, y, w.min(inner.right().saturating_sub(x)), 1),
@@ -1364,7 +1341,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             FULLSCREEN_VIEWER_HINT
         };
         let style = if matches!(state.chrome_focus, ViewerChromeFocus::Help) {
-            self.system.style(Role::Text).add_modifier(Modifier::UNDERLINED)
+            self.system
+                .style(Role::Text)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
             self.system.style(Role::TextMuted)
         };
@@ -1502,8 +1481,8 @@ impl<'a> SemanticZoomBadge<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
     use crate::input::KeyModifiers;
+    use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
 
     fn ctx(id: &'static str) -> SourceContext<&'static str> {
         SourceContext::new(id)
@@ -1533,7 +1512,10 @@ mod tests {
             }
         ));
         assert_eq!(z.source().unwrap().scroll.line, 42);
-        assert_eq!(z.source().unwrap().scroll.stable_id.as_deref(), Some("line-42"));
+        assert_eq!(
+            z.source().unwrap().scroll.stable_id.as_deref(),
+            Some("line-42")
+        );
 
         let out = z.demote();
         match out {
@@ -1654,13 +1636,22 @@ mod tests {
         let _ = state.enter_fullscreen(ctx("x"), "t");
         let actions: [Action<'_, &str>; 0] = [];
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE), &actions),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+                &actions
+            ),
             FullscreenViewerOutcome::SearchChanged { open: true, .. }
         ));
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &actions);
+        let _ = state.handle_key(
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+            &actions,
+        );
         assert_eq!(state.search_query(), "a");
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE), &actions),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE),
+                &actions
+            ),
             FullscreenViewerOutcome::HelpToggled { open: true }
                 | FullscreenViewerOutcome::SearchChanged { .. }
                 | FullscreenViewerOutcome::Ignored
@@ -1707,16 +1698,17 @@ mod tests {
         }];
         let mut state = FullscreenViewerState::new();
         state.zoom.set_content_kind(ViewerContentKind::Diff);
-        let _ = state.enter_fullscreen(
-            ctx("hunk-1").path(["diff", "a.rs"]),
-            "a.rs",
-        );
+        let _ = state.enter_fullscreen(ctx("hunk-1").path(["diff", "a.rs"]), "a.rs");
         let area = Rect::new(0, 0, 60, 20);
         let mut buf = Buffer::empty(area);
         FullscreenViewer::new(&system, &actions).paint(area, &mut buf, &mut state);
         assert!(!state.slots.body.is_empty());
         assert_eq!(state.body_area(), state.slots.body);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("a.rs") || text.contains("diff"), "{text}");
         // Host paints into body without copying state
         let body = state.body_area();

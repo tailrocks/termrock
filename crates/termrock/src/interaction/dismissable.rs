@@ -351,7 +351,11 @@ impl DismissableLayer {
     }
 
     /// Escape / Cancel.
-    pub fn on_escape(&mut self, guard: &mut DismissGuard, event: DismissEventId) -> DismissDecision {
+    pub fn on_escape(
+        &mut self,
+        guard: &mut DismissGuard,
+        event: DismissEventId,
+    ) -> DismissDecision {
         if !guard.begin(event) {
             return DismissDecision::None;
         }
@@ -634,14 +638,11 @@ mod tests {
 
     #[test]
     fn trap_on_top_protects_layers_beneath() {
-        let mut stack = [
-            menu_layer(Rect::new(0, 0, 80, 24)),
-            {
-                let mut a = DismissableLayer::new(DismissPolicy::critical());
-                a.set_rect(Rect::new(20, 5, 40, 10));
-                a
-            },
-        ];
+        let mut stack = [menu_layer(Rect::new(0, 0, 80, 24)), {
+            let mut a = DismissableLayer::new(DismissPolicy::critical());
+            a.set_rect(Rect::new(20, 5, 40, 10));
+            a
+        }];
         let mut g = DismissGuard::new();
         let hit = evaluate_escape_stack(
             &mut stack,
@@ -698,8 +699,6 @@ mod tests {
     fn explicit_always_dismisses_on_default_policy() {
         let mut l = menu_layer(Rect::new(0, 0, 5, 5));
         let mut g = DismissGuard::new();
-        assert!(l
-            .on_explicit(&mut g, DismissEventId(9))
-            .should_dismiss());
+        assert!(l.on_explicit(&mut g, DismissEventId(9)).should_dismiss());
     }
 }

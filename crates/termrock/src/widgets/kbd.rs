@@ -14,14 +14,10 @@
 //!
 //! References: shadcn Kbd, editor shortcut UIs, Textual bindings, Zellij help.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::borrow::Cow;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyModifiers};
 use crate::keymap::{KeyBinding, KeyChord, Keymap, chord_glyph};
@@ -569,13 +565,7 @@ impl<'a> Kbd<'a> {
         }
         // Quiet: no bg on keycaps for dense footers.
         style.bg = None;
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            style,
-        );
+        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
     }
 }
 
@@ -789,13 +779,7 @@ impl<'a> ShortcutHint<'a> {
                 };
                 let key = take_display_cols(&key, usize::from(area.width));
                 let kw = display_cols(&key) as u16;
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    &key,
-                    usize::from(area.width),
-                    key_style,
-                );
+                buffer.set_stringn(area.x, area.y, &key, usize::from(area.width), key_style);
                 if show_cmd {
                     let x = area.x.saturating_add(kw).saturating_add(1);
                     if x < area.right() {
@@ -810,13 +794,7 @@ impl<'a> ShortcutHint<'a> {
                 if show_cmd {
                     let cmd = take_display_cols(self.command.as_ref(), usize::from(area.width));
                     let cw = display_cols(&cmd) as u16;
-                    buffer.set_stringn(
-                        area.x,
-                        area.y,
-                        &cmd,
-                        usize::from(area.width),
-                        text_style,
-                    );
+                    buffer.set_stringn(area.x, area.y, &cmd, usize::from(area.width), text_style);
                     let x = area.x.saturating_add(cw).saturating_add(2);
                     if x < area.right() {
                         buffer.set_stringn(x.saturating_sub(1), area.y, " ", 1, sep_style);
@@ -826,13 +804,7 @@ impl<'a> ShortcutHint<'a> {
                     }
                 } else {
                     let key = take_display_cols(self.chord.as_ref(), usize::from(area.width));
-                    buffer.set_stringn(
-                        area.x,
-                        area.y,
-                        &key,
-                        usize::from(area.width),
-                        key_style,
-                    );
+                    buffer.set_stringn(area.x, area.y, &key, usize::from(area.width), key_style);
                 }
             }
         }
@@ -856,11 +828,7 @@ impl Widget for ShortcutHint<'_> {
 impl<'a> Kbd<'a> {
     /// Format a [`KeyChord`] into a short display label (writes into `buf`).
     #[must_use]
-    pub fn from_chord_buf(
-        chord: KeyChord,
-        buf: &'a mut String,
-        tokens: &'a DesignSystem,
-    ) -> Self {
+    pub fn from_chord_buf(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignSystem) -> Self {
         let fmt = ChordFormat::from_glyphs(tokens.glyphs);
         *buf = format_chord(chord, fmt);
         Self {

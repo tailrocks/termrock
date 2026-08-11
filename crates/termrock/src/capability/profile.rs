@@ -421,11 +421,7 @@ impl TerminalCapabilities {
         overrides: CapabilityOverrides,
     ) -> Self {
         use super::detect::detect_from_hints;
-        resolve_from_detection(
-            detect_from_hints(hints),
-            preferred_profile,
-            overrides,
-        )
+        resolve_from_detection(detect_from_hints(hints), preferred_profile, overrides)
     }
 
     /// Progressive-enhancement boundary for widgets.
@@ -559,11 +555,8 @@ mod tests {
     #[test]
     fn no_color_fixture_forces_monochrome() {
         use super::super::detect::{EnvHints, detect_from_hints};
-        let detection = detect_from_hints(EnvHints::fixture(
-            "xterm-256color",
-            Some("truecolor"),
-            true,
-        ));
+        let detection =
+            detect_from_hints(EnvHints::fixture("xterm-256color", Some("truecolor"), true));
         let caps = resolve_from_detection(
             detection,
             Some(CapabilityProfile::Modern),

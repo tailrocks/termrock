@@ -18,12 +18,8 @@
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -226,7 +222,8 @@ impl<'a, Id> Tag<'a, Id> {
     /// Measure natural width.
     #[must_use]
     pub fn measure_width(&self) -> u16 {
-        u16::try_from(display_cols(&self.decorated_body())).unwrap_or(1)
+        u16::try_from(display_cols(&self.decorated_body()))
+            .unwrap_or(1)
             .saturating_add(if self.removable {
                 // gap + remove glyph
                 1 + u16::try_from(display_cols(remove_glyph(self.system))).unwrap_or(1)
@@ -314,14 +311,14 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         }
         full.push(']');
         let clipped = take_display_cols(&full, usize::from(area.width));
-        let style = token_style(self.system, self.status, state.focused, false, self.disabled);
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            style,
+        let style = token_style(
+            self.system,
+            self.status,
+            state.focused,
+            false,
+            self.disabled,
         );
+        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
         // Geometry: approximate body vs remove from measured widths.
         let open_w = 1u16; // [
         let body_w = u16::try_from(display_cols(&body_s)).unwrap_or(0);
@@ -330,7 +327,9 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         } else {
             0
         };
-        let used = u16::try_from(display_cols(&clipped)).unwrap_or(0).min(area.width);
+        let used = u16::try_from(display_cols(&clipped))
+            .unwrap_or(0)
+            .min(area.width);
         let body = Rect {
             x: area.x.saturating_add(open_w),
             y: area.y,
@@ -358,10 +357,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             }
         };
         // Highlight remove part when focused there.
-        if state.focused
-            && matches!(state.part, TokenPart::Remove)
-            && remove.width > 0
-        {
+        if state.focused && matches!(state.part, TokenPart::Remove) && remove.width > 0 {
             let st = self
                 .system
                 .style(Role::Danger)
@@ -815,14 +811,10 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             state.selected,
             self.disabled,
         );
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            style,
-        );
-        let used = u16::try_from(display_cols(&clipped)).unwrap_or(0).min(area.width);
+        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
+        let used = u16::try_from(display_cols(&clipped))
+            .unwrap_or(0)
+            .min(area.width);
         let open_w = 1u16;
         let inner_w = u16::try_from(display_cols(&inner)).unwrap_or(0);
         let rem_w = if self.is_removable() {
@@ -1223,12 +1215,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
     }
 
     /// Paint strip; fills state regions / overflow.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TokenStripState<Id>,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TokenStripState<Id>) {
         state.regions.clear();
         state.overflow_region = None;
         state.overflow_ids.clear();
@@ -1283,7 +1270,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             if abs_x + i32::from(w) < 0 {
                 continue;
             }
-            let draw_x = area.x.saturating_add(u16::try_from(abs_x.max(0)).unwrap_or(0));
+            let draw_x = area
+                .x
+                .saturating_add(u16::try_from(abs_x.max(0)).unwrap_or(0));
             if draw_x >= budget_right {
                 break;
             }

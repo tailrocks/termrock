@@ -17,6 +17,7 @@
 //! [`super::CodeFrame`] and feed plain text via
 //! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -703,12 +704,7 @@ impl<'a> ErrorState<'a> {
     }
 
     /// Paint with disclosure/focus state.
-    pub fn paint_with_state(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ErrorStateState,
-    ) {
+    pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
         if area.is_empty() {
             return;
         }
@@ -775,10 +771,7 @@ impl<'a> ErrorState<'a> {
         }
         // Work preserved cue
         if self.recovery.work_preserved {
-            let note = self
-                .recovery
-                .work_note
-                .unwrap_or("Your work was preserved");
+            let note = self.recovery.work_note.unwrap_or("Your work was preserved");
             rows.push((format!("✓ {note}"), Role::Success, false));
         }
         // Retry safety line when retry present
@@ -925,9 +918,7 @@ impl<'a> ErrorState<'a> {
             .min(usize::from(area.width)) as u16;
         let x = center_line_x(area, measure.max(1));
         let hit = Rect::new(x, area.y, measure.max(1), 1);
-        btn_state
-            .activation
-            .set_accepts_input(focused || primary);
+        btn_state.activation.set_accepts_input(focused || primary);
         let _ = btn.paint(hit, buffer, btn_state);
     }
 
@@ -951,11 +942,7 @@ impl<'a> ErrorState<'a> {
     /// Diagnostics text for copy (host clipboard).
     #[must_use]
     pub fn diagnostics_text(&self) -> String {
-        let mut s = format!(
-            "error kind={} summary={}",
-            self.kind.id(),
-            self.summary
-        );
+        let mut s = format!("error kind={} summary={}", self.kind.id(), self.summary);
         if let Some(ex) = self.explanation {
             s.push_str(&format!("\nexplanation={ex}"));
         }
@@ -974,17 +961,12 @@ impl<'a> ErrorState<'a> {
     }
 
     /// Keyboard handling.
-    pub fn handle_key(
-        &self,
-        key: KeyEvent,
-        state: &mut ErrorStateState,
-    ) -> ErrorStateOutcome {
+    pub fn handle_key(&self, key: KeyEvent, state: &mut ErrorStateState) -> ErrorStateOutcome {
         if key.kind != KeyEventKind::Press {
             return ErrorStateOutcome::Ignored;
         }
         // Toggle details
-        if matches!(key.code, KeyCode::Char('d') | KeyCode::Char('D')) && self.technical.is_some()
-        {
+        if matches!(key.code, KeyCode::Char('d') | KeyCode::Char('D')) && self.technical.is_some() {
             state.toggle_details();
             return ErrorStateOutcome::ToggleDetails;
         }
@@ -1400,8 +1382,14 @@ mod tests {
         let e = example_error_network(&system);
         assert_eq!(e.retry_safety(), RetrySafety::Safe);
         let text = painted(Rect::new(0, 0, 50, 14), |a, b| e.paint(a, b));
-        assert!(text.contains("retry safe") || text.contains("Retry"), "{text}");
-        assert!(text.contains("Draft") || text.contains("preserved") || text.contains("✓"), "{text}");
+        assert!(
+            text.contains("retry safe") || text.contains("Retry"),
+            "{text}"
+        );
+        assert!(
+            text.contains("Draft") || text.contains("preserved") || text.contains("✓"),
+            "{text}"
+        );
 
         let mut st = ErrorStateState::new();
         st.focus_retry();
@@ -1459,12 +1447,18 @@ mod tests {
         let dialog = painted(Rect::new(0, 0, 48, 12), |a, b| {
             example_error_dialog(&system).paint(a, b);
         });
-        assert!(dialog.contains("Request") || dialog.contains("failed"), "{dialog}");
+        assert!(
+            dialog.contains("Request") || dialog.contains("failed"),
+            "{dialog}"
+        );
 
         let full = painted(Rect::new(0, 0, 60, 16), |a, b| {
             example_error_crash(&system).paint(a, b);
         });
-        assert!(full.contains("Unexpected") || full.contains("error"), "{full}");
+        assert!(
+            full.contains("Unexpected") || full.contains("error"),
+            "{full}"
+        );
     }
 
     #[test]

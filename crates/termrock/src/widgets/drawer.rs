@@ -21,6 +21,7 @@
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -29,7 +30,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
@@ -183,12 +186,15 @@ impl DrawerPresentation {
 
 /// Choose presentation from bounds and preferred depth.
 #[must_use]
-pub fn drawer_presentation_for(bounds: Rect, edge: DrawerEdge, preferred_depth: u16) -> DrawerPresentation {
+pub fn drawer_presentation_for(
+    bounds: Rect,
+    edge: DrawerEdge,
+    preferred_depth: u16,
+) -> DrawerPresentation {
     if bounds.is_empty() {
         return DrawerPresentation::Expanded;
     }
-    if bounds.width <= DRAWER_FULLSCREEN_MAX_WIDTH
-        || bounds.height <= DRAWER_FULLSCREEN_MAX_HEIGHT
+    if bounds.width <= DRAWER_FULLSCREEN_MAX_WIDTH || bounds.height <= DRAWER_FULLSCREEN_MAX_HEIGHT
     {
         return DrawerPresentation::Fullscreen;
     }
@@ -206,7 +212,12 @@ pub fn drawer_presentation_for(bounds: Rect, edge: DrawerEdge, preferred_depth: 
 /// Places a drawer for edge + size (uses Drawer policy placement).
 #[must_use]
 pub fn place_drawer(bounds: Rect, size: OverlaySize) -> Rect {
-    place_drawer_on_edge(bounds, DrawerEdge::Right, size, DrawerPresentation::Expanded)
+    place_drawer_on_edge(
+        bounds,
+        DrawerEdge::Right,
+        size,
+        DrawerPresentation::Expanded,
+    )
 }
 
 /// Place on a specific edge with presentation.
@@ -636,9 +647,9 @@ impl DrawerState {
         if !self.enabled {
             return DrawerOutcome::Ignored;
         }
-        let presentation = self.presentation_override.unwrap_or_else(|| {
-            drawer_presentation_for(bounds, self.edge, self.depth)
-        });
+        let presentation = self
+            .presentation_override
+            .unwrap_or_else(|| drawer_presentation_for(bounds, self.edge, self.depth));
         self.presentation = presentation;
         self.open = true;
         self.focused = true;
@@ -662,7 +673,9 @@ impl DrawerState {
         self.open = on;
         if on {
             self.accepts_input = stack.top_owns_input()
-                && stack.top().is_some_and(|t| &t.id == id || t.id.0.starts_with(&id.0));
+                && stack
+                    .top()
+                    .is_some_and(|t| &t.id == id || t.id.0.starts_with(&id.0));
             if let Some(top) = stack.top() {
                 if top.id == *id || top.id.0.starts_with(DRAWER_OVERLAY_ID) {
                     if self.edge.is_horizontal() {
@@ -686,9 +699,7 @@ impl DrawerState {
         let next = drawer_presentation_for(bounds, self.edge, self.depth);
         if next != self.presentation {
             self.presentation = next;
-            DrawerOutcome::PresentationChanged {
-                presentation: next,
-            }
+            DrawerOutcome::PresentationChanged { presentation: next }
         } else {
             DrawerOutcome::Ignored
         }
@@ -716,10 +727,7 @@ impl DrawerState {
     }
 
     /// Close on stack.
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         let _ = self.request_close();
         dismiss_drawer_overlay(stack)
     }
@@ -745,10 +753,9 @@ impl DrawerState {
             } else {
                 2
             };
-            let next = (i32::from(self.depth) + i32::from(delta)).clamp(
-                i32::from(self.min_depth),
-                i32::from(self.max_depth),
-            ) as u16;
+            let next = (i32::from(self.depth) + i32::from(delta))
+                .clamp(i32::from(self.min_depth), i32::from(self.max_depth))
+                as u16;
             if next != self.depth {
                 self.depth = next;
                 return DrawerOutcome::Resized { depth: self.depth };
@@ -775,7 +782,9 @@ impl DrawerState {
         }
         let handle = self.slots.handle;
         match event.kind {
-            MouseEventKind::Down(MouseButton::Left) if !handle.is_empty() && handle.contains(event.position) => {
+            MouseEventKind::Down(MouseButton::Left)
+                if !handle.is_empty() && handle.contains(event.position) =>
+            {
                 self.resizing = true;
                 self.resize_anchor = Some(if self.edge.is_horizontal() {
                     event.position.x
@@ -789,15 +798,9 @@ impl DrawerState {
                     return DrawerOutcome::Ignored;
                 };
                 let (pos, grow_positive) = if self.edge.is_horizontal() {
-                    (
-                        event.position.x,
-                        matches!(self.edge, DrawerEdge::Left),
-                    )
+                    (event.position.x, matches!(self.edge, DrawerEdge::Left))
                 } else {
-                    (
-                        event.position.y,
-                        matches!(self.edge, DrawerEdge::Top),
-                    )
+                    (event.position.y, matches!(self.edge, DrawerEdge::Top))
                 };
                 let delta = if grow_positive {
                     i32::from(pos).saturating_sub(i32::from(anchor))
@@ -958,11 +961,7 @@ impl<'a> Drawer<'a> {
         };
         state.slots.handle = handle;
         let handle_glyph = if no_motion {
-            if state.edge.is_horizontal() {
-                "|"
-            } else {
-                "="
-            }
+            if state.edge.is_horizontal() { "|" } else { "=" }
         } else if state.edge.is_horizontal() {
             "│"
         } else {
@@ -1050,21 +1049,25 @@ impl<'a> Drawer<'a> {
             inner = Rect {
                 x: inner.x.saturating_add(1),
                 y: inner.y.saturating_add(1),
-                width: inner.width.saturating_sub(if matches!(state.edge, DrawerEdge::Left | DrawerEdge::Right) {
-                    1
-                } else {
-                    2
-                }),
-                height: inner.height.saturating_sub(if matches!(state.edge, DrawerEdge::Top | DrawerEdge::Bottom) {
-                    1
-                } else {
-                    2
-                }),
+                width: inner.width.saturating_sub(
+                    if matches!(state.edge, DrawerEdge::Left | DrawerEdge::Right) {
+                        1
+                    } else {
+                        2
+                    },
+                ),
+                height: inner.height.saturating_sub(
+                    if matches!(state.edge, DrawerEdge::Top | DrawerEdge::Bottom) {
+                        1
+                    } else {
+                        2
+                    },
+                ),
             };
         }
 
-        if state.handle_only || matches!(state.presentation, DrawerPresentation::Compact)
-            && inner.width <= 4
+        if state.handle_only
+            || matches!(state.presentation, DrawerPresentation::Compact) && inner.width <= 4
         {
             // Compact: title only in remaining
             state.slots.header = inner;
@@ -1093,9 +1096,7 @@ impl<'a> Drawer<'a> {
 
         let header_h = state.header_rows.min(inner.height);
         let footer_h = if state.footer_rows > 0 {
-            state
-                .footer_rows
-                .min(inner.height.saturating_sub(header_h))
+            state.footer_rows.min(inner.height.saturating_sub(header_h))
         } else {
             0
         };
@@ -1241,12 +1242,8 @@ mod tests {
         assert_eq!(right.x, 80 - 28);
         assert_eq!(right.height, 24);
 
-        let left = place_drawer_on_edge(
-            bounds,
-            DrawerEdge::Left,
-            size,
-            DrawerPresentation::Expanded,
-        );
+        let left =
+            place_drawer_on_edge(bounds, DrawerEdge::Left, size, DrawerPresentation::Expanded);
         assert_eq!(left.x, 0);
         assert_eq!(left.width, 28);
     }
@@ -1267,8 +1264,12 @@ mod tests {
         assert_eq!(top.height, 8);
         assert_eq!(top.width, 80);
 
-        let bottom =
-            place_drawer_on_edge(bounds, DrawerEdge::Bottom, size, DrawerPresentation::Expanded);
+        let bottom = place_drawer_on_edge(
+            bounds,
+            DrawerEdge::Bottom,
+            size,
+            DrawerPresentation::Expanded,
+        );
         assert_eq!(bottom.y, 24 - 8);
         assert_eq!(bottom.height, 8);
     }
@@ -1342,7 +1343,8 @@ mod tests {
             max_width: 30,
             max_height: 0,
         };
-        let _ = open_drawer_nested_overlay(&mut stack, bounds, size, DrawerEdge::Right, Some("root"));
+        let _ =
+            open_drawer_nested_overlay(&mut stack, bounds, size, DrawerEdge::Right, Some("root"));
         assert_eq!(stack.entries().len(), 2);
         let _ = dismiss_drawer_overlay(&mut stack);
         assert!(stack.is_empty());
@@ -1360,9 +1362,7 @@ mod tests {
         let _ = state.open_on_stack(&mut stack, bounds, None);
         let top = stack.top().unwrap();
         assert!(
-            top.kind == OverlayKind::Fullscreen
-                || top.fullscreen_promoted
-                || top.rect == bounds
+            top.kind == OverlayKind::Fullscreen || top.fullscreen_promoted || top.rect == bounds
         );
     }
 
@@ -1414,7 +1414,11 @@ mod tests {
         assert_eq!(state.slots.footer.height, 1);
         assert!(state.slots.body.height >= 1);
         assert!(!state.slots.handle.is_empty());
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("Inspector"), "{text}");
     }
 
@@ -1444,7 +1448,11 @@ mod tests {
         Drawer::new("Rail", &system)
             .ascii(true)
             .paint(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains('|') || text.contains("Rail"), "{text}");
     }
 
@@ -1515,9 +1523,11 @@ mod tests {
         for _ in 0..200 {
             terminal
                 .draw(|f| {
-                    Drawer::new("Filters", &system)
-                        .footer(Some("esc"))
-                        .paint(f.area(), f.buffer_mut(), &mut state);
+                    Drawer::new("Filters", &system).footer(Some("esc")).paint(
+                        f.area(),
+                        f.buffer_mut(),
+                        &mut state,
+                    );
                 })
                 .unwrap();
         }
@@ -1569,7 +1579,11 @@ mod tests {
         let area = Rect::new(0, 0, 20, 8);
         let mut buf = Buffer::empty(area);
         Widget::render(&Drawer::new("Settings", &system), area, &mut buf);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("Settings"), "{text}");
     }
 
@@ -1585,6 +1599,14 @@ mod tests {
             max_height: 0,
         };
         let r = place_drawer(bounds, size);
-        assert_eq!(r, place_drawer_on_edge(bounds, DrawerEdge::Right, size, DrawerPresentation::Expanded));
+        assert_eq!(
+            r,
+            place_drawer_on_edge(
+                bounds,
+                DrawerEdge::Right,
+                size,
+                DrawerPresentation::Expanded
+            )
+        );
     }
 }

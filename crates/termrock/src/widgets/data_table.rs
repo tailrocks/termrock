@@ -390,7 +390,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             return DataTableOutcome::NavModeChanged(self.nav_mode);
         }
 
-        if is_press && matches!(key.code, KeyCode::Char('f') | KeyCode::Char('F'))
+        if is_press
+            && matches!(key.code, KeyCode::Char('f') | KeyCode::Char('F'))
             && key.modifiers.contains(KeyModifiers::CONTROL)
         {
             return DataTableOutcome::FullscreenRequested;
@@ -531,9 +532,9 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     where
         ColId: Clone,
     {
-        let col_id = self.cursor_column_id(columns).or_else(|| {
-            columns.visible().next().map(|(_, c)| c.id.clone())
-        });
+        let col_id = self
+            .cursor_column_id(columns)
+            .or_else(|| columns.visible().next().map(|(_, c)| c.id.clone()));
         let Some(col) = col_id else {
             return DataTableOutcome::Ignored;
         };
@@ -759,12 +760,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 self.cursor_row = visible_rows.len().saturating_sub(1);
                 DataTableOutcome::CursorMoved
             }
-            UiIntent::Move(NavigationMove::Left) => {
-                self.move_horizontal(visible_rows, columns, -1)
-            }
-            UiIntent::Move(NavigationMove::Right) => {
-                self.move_horizontal(visible_rows, columns, 1)
-            }
+            UiIntent::Move(NavigationMove::Left) => self.move_horizontal(visible_rows, columns, -1),
+            UiIntent::Move(NavigationMove::Right) => self.move_horizontal(visible_rows, columns, 1),
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(step) {
@@ -991,10 +988,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
     }
 
-    fn hit_cell(
-        &self,
-        position: Position,
-    ) -> Option<DataTableCellRegion<RowId, ColId>>
+    fn hit_cell(&self, position: Position) -> Option<DataTableCellRegion<RowId, ColId>>
     where
         RowId: Clone,
         ColId: Clone,
@@ -1096,12 +1090,8 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     }
 
     /// Paint O(visible) rows only.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut DataTableState<RowId, ColId>,
-    ) where
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DataTableState<RowId, ColId>)
+    where
         ColId: Clone,
     {
         state.header_regions.clear();
@@ -1136,8 +1126,10 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
 
         let col_budget = area.width.saturating_sub(GUTTER_W);
         state.viewport_width = col_budget;
-        self.columns
-            .resolve_paint_widths(col_budget.saturating_add(state.h_offset), &mut state.paint_widths);
+        self.columns.resolve_paint_widths(
+            col_budget.saturating_add(state.h_offset),
+            &mut state.paint_widths,
+        );
         // Pin bookkeeping
         let mut pin_start = 0usize;
         let mut pin_end = 0usize;
@@ -1155,9 +1147,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             .iter()
             .map(|(_, w)| *w)
             .fold(0u16, u16::saturating_add)
-            .saturating_add(
-                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
-            );
+            .saturating_add(u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0));
         let max_h = state.content_width.saturating_sub(col_budget);
         state.h_offset = state.h_offset.min(max_h);
 
@@ -1321,7 +1311,10 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         "▸ "
     };
     let line = format!("{mark}{} ({})", group.label, group.count);
-    let style = table.system.style(Role::TextStrong).add_modifier(Modifier::BOLD);
+    let style = table
+        .system
+        .style(Role::TextStrong)
+        .add_modifier(Modifier::BOLD);
     buffer.set_stringn(
         area.x,
         y,

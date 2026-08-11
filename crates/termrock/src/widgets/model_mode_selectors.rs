@@ -20,10 +20,7 @@
 //! **vs [`Select`](crate::widgets::Select).** Select is a form field. These
 //! selectors are composer/status chrome with metadata rows and consequence cues.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{
@@ -536,7 +533,11 @@ impl AgentModeOption {
 
     /// Custom mode.
     #[must_use]
-    pub fn custom(id: impl Into<String>, label: impl Into<String>, short: impl Into<String>) -> Self {
+    pub fn custom(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        short: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             kind: AgentModeKind::Custom,
@@ -906,11 +907,7 @@ impl ModelSelectorState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        options: &[ModelOption],
-    ) -> ModelSelectorOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, options: &[ModelOption]) -> ModelSelectorOutcome {
         if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
             return ModelSelectorOutcome::Ignored;
         }
@@ -1161,20 +1158,12 @@ impl<'a> ModelSelector<'a> {
                     }
                     let selected = state.highlight.as_deref() == Some(o.id.as_str());
                     let mark = if selected {
-                        if self.ascii {
-                            "*"
-                        } else {
-                            "›"
-                        }
+                        if self.ascii { "*" } else { "›" }
                     } else {
                         " "
                     };
                     let warn = if o.warning.is_some() || !o.availability.is_selectable() {
-                        if self.ascii {
-                            "!"
-                        } else {
-                            "⚠"
-                        }
+                        if self.ascii { "!" } else { "⚠" }
                     } else {
                         ""
                     };
@@ -1233,12 +1222,7 @@ impl<'a> ModelSelector<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ModelSelectorState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ModelSelectorState) {
         let _ = self.paint(area, buffer, state);
     }
 }
@@ -1403,11 +1387,7 @@ impl AgentModeSelectorState {
             .and_then(|id| enabled.iter().position(|m| &m.id == id))
             .unwrap_or(0);
         let next = if delta < 0 {
-            if cur == 0 {
-                enabled.len() - 1
-            } else {
-                cur - 1
-            }
+            if cur == 0 { enabled.len() - 1 } else { cur - 1 }
         } else {
             (cur + 1) % enabled.len()
         };
@@ -1658,11 +1638,7 @@ impl<'a> AgentModeSelector<'a> {
                     }
                     let selected = state.highlight.as_deref() == Some(m.id.as_str());
                     let mark = if selected {
-                        if self.ascii {
-                            "*"
-                        } else {
-                            "›"
-                        }
+                        if self.ascii { "*" } else { "›" }
                     } else {
                         " "
                     };
@@ -1712,12 +1688,7 @@ impl<'a> AgentModeSelector<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut AgentModeSelectorState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut AgentModeSelectorState) {
         let _ = self.paint(area, buffer, state);
     }
 }
@@ -1895,7 +1866,10 @@ mod tests {
     #[test]
     fn mode_fullauto_needs_confirm_and_warning() {
         let modes = default_agent_modes();
-        let full = modes.iter().find(|m| m.kind == AgentModeKind::FullAuto).unwrap();
+        let full = modes
+            .iter()
+            .find(|m| m.kind == AgentModeKind::FullAuto)
+            .unwrap();
         assert!(full.needs_warning_role());
         let mut st = AgentModeSelectorState::with_selected("edit");
         st.presentation = AgentModePresentation::Menu;
@@ -1955,9 +1929,7 @@ mod tests {
         let mut as_ = AgentModeSelectorState::with_selected("full-auto");
         let area = Rect::new(0, 0, 48, 1);
         let mut buf = Buffer::empty(area);
-        ComposerSelectors::new(&modes, &models, &system).paint_compact(
-            area, &mut buf, &as_, &ms,
-        );
+        ComposerSelectors::new(&modes, &models, &system).paint_compact(area, &mut buf, &as_, &ms);
         // expanded paints
         ms.open();
         as_.open_menu();

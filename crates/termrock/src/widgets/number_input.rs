@@ -13,18 +13,15 @@
 //!
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use super::{SliderBounds, TextInput, TextInputOutcome, TextInputState, Validation};
 
@@ -138,10 +135,7 @@ impl NumberConstraints {
     #[must_use]
     pub fn clamp_snap(self, value: f64) -> f64 {
         if !value.is_finite() {
-            return self
-                .min
-                .or(self.max)
-                .unwrap_or(0.0);
+            return self.min.or(self.max).unwrap_or(0.0);
         }
         let mut v = value;
         if let Some(min) = self.min {
@@ -573,9 +567,7 @@ impl NumberInputState {
         self.value = Some(next);
         self.editing = false;
         self.sync_draft_from_value();
-        NumberInputOutcome::ValueChanged {
-            value: self.value,
-        }
+        NumberInputOutcome::ValueChanged { value: self.value }
     }
 
     /// Increment.
@@ -648,14 +640,10 @@ impl NumberInputState {
         match key.code {
             KeyCode::Enter => {
                 if self.commit_draft() {
-                    return NumberInputOutcome::Submitted {
-                        value: self.value,
-                    };
+                    return NumberInputOutcome::Submitted { value: self.value };
                 }
                 if self.can_commit() {
-                    return NumberInputOutcome::Submitted {
-                        value: self.value,
-                    };
+                    return NumberInputOutcome::Submitted { value: self.value };
                 }
                 NumberInputOutcome::Ignored
             }
@@ -699,13 +687,9 @@ impl NumberInputState {
                     }
                     TextInputOutcome::Submitted(_) => {
                         if self.commit_draft() {
-                            NumberInputOutcome::Submitted {
-                                value: self.value,
-                            }
+                            NumberInputOutcome::Submitted { value: self.value }
                         } else if self.can_commit() {
-                            NumberInputOutcome::Submitted {
-                                value: self.value,
-                            }
+                            NumberInputOutcome::Submitted { value: self.value }
                         } else {
                             NumberInputOutcome::Ignored
                         }
@@ -737,9 +721,7 @@ impl NumberInputState {
         match intent {
             UiIntent::Submit | UiIntent::Activate => {
                 if self.commit_draft() || self.can_commit() {
-                    NumberInputOutcome::Submitted {
-                        value: self.value,
-                    }
+                    NumberInputOutcome::Submitted { value: self.value }
                 } else {
                     NumberInputOutcome::Ignored
                 }
@@ -888,9 +870,9 @@ fn parse_number_text(kind: NumberKind, text: &str) -> NumberParse {
         }
         None => {
             // Still typing exponent-like junk → invalid
-            if t.chars().all(|c| {
-                c.is_ascii_digit() || matches!(c, '+' | '-' | '.')
-            }) {
+            if t.chars()
+                .all(|c| c.is_ascii_digit() || matches!(c, '+' | '-' | '.'))
+            {
                 NumberParse::Intermediate
             } else {
                 NumberParse::Invalid
@@ -901,11 +883,7 @@ fn parse_number_text(kind: NumberKind, text: &str) -> NumberParse {
 
 fn parse_finite(text: &str) -> Option<f64> {
     let n: f64 = text.parse().ok()?;
-    if n.is_finite() {
-        Some(n)
-    } else {
-        None
-    }
+    if n.is_finite() { Some(n) } else { None }
 }
 
 fn is_allowed_char(kind: NumberKind, c: char, draft: &str) -> bool {
@@ -1074,7 +1052,12 @@ impl<'a> NumberInput<'a> {
             y = y.saturating_add(1);
         }
 
-        let row = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), area.width, 1);
+        let row = Rect::new(
+            area.x,
+            y.min(area.bottom().saturating_sub(1)),
+            area.width,
+            1,
+        );
         let mut x = row.x;
         let mut right = row.right();
         let mut dec = None;
@@ -1317,17 +1300,29 @@ mod tests {
         let mut state = NumberInputState::new()
             .with_constraints(NumberConstraints::bounded(0.0, 10.0, 2.0))
             .with_value(4.0);
-        assert_eq!(state.increment(), NumberInputOutcome::ValueChanged { value: Some(6.0) });
-        assert_eq!(state.increment(), NumberInputOutcome::ValueChanged { value: Some(8.0) });
-        assert_eq!(state.increment(), NumberInputOutcome::ValueChanged { value: Some(10.0) });
+        assert_eq!(
+            state.increment(),
+            NumberInputOutcome::ValueChanged { value: Some(6.0) }
+        );
+        assert_eq!(
+            state.increment(),
+            NumberInputOutcome::ValueChanged { value: Some(8.0) }
+        );
+        assert_eq!(
+            state.increment(),
+            NumberInputOutcome::ValueChanged { value: Some(10.0) }
+        );
         assert_eq!(state.increment(), NumberInputOutcome::Ignored);
-        assert_eq!(state.decrement(), NumberInputOutcome::ValueChanged { value: Some(8.0) });
+        assert_eq!(
+            state.decrement(),
+            NumberInputOutcome::ValueChanged { value: Some(8.0) }
+        );
     }
 
     #[test]
     fn overflow_clamps_to_max() {
-        let mut state = NumberInputState::new()
-            .with_constraints(NumberConstraints::bounded(0.0, 100.0, 1.0));
+        let mut state =
+            NumberInputState::new().with_constraints(NumberConstraints::bounded(0.0, 100.0, 1.0));
         state.set_value(Some(1e308));
         assert_eq!(state.value(), Some(100.0));
     }

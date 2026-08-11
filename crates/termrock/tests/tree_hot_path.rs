@@ -32,6 +32,8 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
             expanded: id % 14 == 0,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         })
         .collect::<Vec<_>>();
     let tree = Tree::new(&nodes, &tokens);

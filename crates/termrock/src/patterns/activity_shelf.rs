@@ -11,11 +11,8 @@
 //!
 //! Research: agent activity indicators, build queues, IDE background tasks.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{
@@ -24,12 +21,7 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        NotificationItem,
-        SemanticStatus,
-        StatusKind,
-        StatusRegion,
-        StatusSlot,
-        ToastKind,
+        NotificationItem, SemanticStatus, StatusKind, StatusRegion, StatusSlot, ToastKind,
         ToastPriority,
     },
 };
@@ -364,11 +356,7 @@ pub fn activity_status_summary(items: &[ActivityItem], ascii: bool) -> String {
         parts.push(format!("{} active", c.total));
     }
     let g = if c.action_required > 0 || c.blocked > 0 {
-        if ascii {
-            "!"
-        } else {
-            "⚠"
-        }
+        if ascii { "!" } else { "⚠" }
     } else if ascii {
         ">"
     } else {
@@ -385,11 +373,7 @@ pub fn activity_badge_label(items: &[ActivityItem], ascii: bool) -> String {
         return if ascii { ".".into() } else { "·".into() };
     }
     let g = if c.action_required > 0 || c.blocked > 0 {
-        if ascii {
-            "!"
-        } else {
-            "!"
-        }
+        if ascii { "!" } else { "!" }
     } else if ascii {
         "*"
     } else {
@@ -548,7 +532,10 @@ pub struct ActivityStatusProjection {
 
 /// Project activities → StatusBar slot content.
 #[must_use]
-pub fn project_activities_for_status_bar(items: &[ActivityItem], ascii: bool) -> ActivityStatusProjection {
+pub fn project_activities_for_status_bar(
+    items: &[ActivityItem],
+    ascii: bool,
+) -> ActivityStatusProjection {
     let c = activity_counts(items);
     let priority = if c.action_required > 0 {
         95
@@ -727,11 +714,7 @@ impl ActivityShelfState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        items: &[ActivityItem],
-    ) -> ActivityShelfOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, items: &[ActivityItem]) -> ActivityShelfOutcome {
         if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
             return ActivityShelfOutcome::Ignored;
         }
@@ -758,9 +741,7 @@ impl ActivityShelfState {
                     id: sorted[self.selected].id.clone(),
                 }
             }
-            KeyCode::Down | KeyCode::Char('j')
-                if !horizontal || key.code == KeyCode::Down =>
-            {
+            KeyCode::Down | KeyCode::Char('j') if !horizontal || key.code == KeyCode::Down => {
                 self.selected = (self.selected + 1) % sorted.len();
                 ActivityShelfOutcome::Selected {
                     id: sorted[self.selected].id.clone(),
@@ -877,12 +858,7 @@ impl<'a> ActivityShelf<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ActivityShelfState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ActivityShelfState) {
         state.hits.clear();
         state.overflow_hit = Rect::default();
         if area.is_empty() {
@@ -965,7 +941,9 @@ impl<'a> ActivityShelf<'a> {
                 continue;
             };
             let label = item.chip_label(ascii, icons, max_c);
-            let w = (display_cols(&label) as u16).saturating_add(2).max(ACTIVITY_SHELF_CHIP_MIN_COLS);
+            let w = (display_cols(&label) as u16)
+                .saturating_add(2)
+                .max(ACTIVITY_SHELF_CHIP_MIN_COLS);
             if vertical {
                 if y >= area.bottom() {
                     break;
@@ -1053,12 +1031,7 @@ impl<'a> ActivityShelf<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ActivityShelfState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ActivityShelfState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1180,7 +1153,10 @@ mod tests {
         let items = example_activities();
         let s = sort_activity_items(&items);
         assert_eq!(s[0].id, "a1"); // action_required
-        assert!(s.iter().position(|i| i.id == "a3").unwrap() < s.iter().position(|i| i.id == "a4").unwrap());
+        assert!(
+            s.iter().position(|i| i.id == "a3").unwrap()
+                < s.iter().position(|i| i.id == "a4").unwrap()
+        );
     }
 
     #[test]
@@ -1217,7 +1193,10 @@ mod tests {
             let _ = st.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &items);
         }
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &items),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
+                &items
+            ),
             ActivityShelfOutcome::Dismissed { .. }
         ));
     }
@@ -1227,7 +1206,10 @@ mod tests {
         let items = example_activities();
         let mut st = ActivityShelfState::new();
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE), &items),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE),
+                &items
+            ),
             ActivityShelfOutcome::OverflowOpen
         ));
         assert!(st.overflow_open);

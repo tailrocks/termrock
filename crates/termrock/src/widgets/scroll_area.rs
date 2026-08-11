@@ -9,13 +9,15 @@
 //! available; this module owns **policy**: follow/pause, anchors, chaining,
 //! visible ranges, and new-content indication.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     perf::{
-        FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind, pause_follow_on_user_scroll,
+        FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind,
+        pause_follow_on_user_scroll,
     },
     scroll::{ScrollAxis, apply_delta_u16, max_offset},
     style::{DesignSystem, Role},
@@ -604,22 +606,16 @@ impl ScrollAreaState {
             vertical: self.axis_y,
             horizontal: self.axis_x,
         };
-        let Some(delta) = mouse_scroll_delta_with_step(
-            event.kind,
-            event.modifiers,
-            axes,
-            self.wheel_step_x,
-        ) else {
+        let Some(delta) =
+            mouse_scroll_delta_with_step(event.kind, event.modifiers, axes, self.wheel_step_x)
+        else {
             return ScrollOutcome::Ignored;
         };
         let (dy, dx) = match delta {
             ScrollDelta {
                 axis: ScrollAxis::Vertical,
                 amount,
-            } => (
-                isize::from(amount) * self.wheel_step_y as isize,
-                0,
-            ),
+            } => (isize::from(amount) * self.wheel_step_y as isize, 0),
             ScrollDelta {
                 axis: ScrollAxis::Horizontal,
                 amount,
@@ -748,7 +744,10 @@ impl<'a> ScrollArea<'a> {
                     travel.saturating_mul(state.offset_y as usize) / max_off
                 };
                 for dy in 0..thumb_h {
-                    let y = area.y.saturating_add(thumb_y as u16).saturating_add(dy as u16);
+                    let y = area
+                        .y
+                        .saturating_add(thumb_y as u16)
+                        .saturating_add(dy as u16);
                     if y < area.y.saturating_add(bar_h) {
                         buffer[(x, y)].set_char('█').set_style(thumb);
                     }
@@ -781,7 +780,10 @@ impl<'a> ScrollArea<'a> {
                     travel.saturating_mul(state.offset_x as usize) / max_off
                 };
                 for dx in 0..thumb_w {
-                    let x = area.x.saturating_add(thumb_x as u16).saturating_add(dx as u16);
+                    let x = area
+                        .x
+                        .saturating_add(thumb_x as u16)
+                        .saturating_add(dx as u16);
                     if x < area.x.saturating_add(bar_w) {
                         buffer[(x, y)].set_char('█').set_style(thumb);
                     }
@@ -791,12 +793,7 @@ impl<'a> ScrollArea<'a> {
     }
 
     /// Paint new-content indicator (non-color: `↓ N new` with Role::Warning).
-    pub fn render_new_content(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &ScrollAreaState,
-    ) {
+    pub fn render_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if !self.show_new_content || !state.indicator.visible || area.height == 0 {
             return;
         }
@@ -820,9 +817,15 @@ mod tests {
         let mut s = ScrollAreaState::new();
         s.set_content_size(10, 100);
         s.set_viewport(10, 10);
-        assert_eq!(s.handle_key(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)), ScrollOutcome::Scrolled);
+        assert_eq!(
+            s.handle_key(KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
+            ScrollOutcome::Scrolled
+        );
         assert_eq!(s.offset_y(), 10);
-        assert_eq!(s.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)), ScrollOutcome::Scrolled);
+        assert_eq!(
+            s.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)),
+            ScrollOutcome::Scrolled
+        );
         assert_eq!(s.offset_y(), 90);
         s.follow_tail();
         assert!(s.is_following());
@@ -892,13 +895,7 @@ mod tests {
         s.set_content_size(10, 200);
         s.set_viewport(10, 10);
         let a = ScrollAnchor::content_id("msg-42");
-        s.apply_anchor(&a, |id| {
-            if id == "msg-42" {
-                Some(77)
-            } else {
-                None
-            }
-        });
+        s.apply_anchor(&a, |id| if id == "msg-42" { Some(77) } else { None });
         assert_eq!(s.offset_y(), 77);
     }
 

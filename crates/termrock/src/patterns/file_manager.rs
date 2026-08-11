@@ -33,13 +33,13 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        breadcrumbs_from_path, file_tree_to_quick_open_items, normalize_path_display, AlertDialog,
-        AlertDialogOutcome, AlertDialogState, AlertKind, AlertScope, BreadcrumbItem, Breadcrumbs,
-        BreadcrumbsOutcome, BreadcrumbsState, FileTree, FileTreeEntry, FileTreeOutcome,
-        FileTreeState, List, ListRow, ListState, PreviewCard, PreviewCardContent, PreviewCardState,
-        PreviewLoadState, PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem,
-        QuickOpenOutcome, QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome,
-        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertScope, BreadcrumbItem,
+        Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, FileTree, FileTreeEntry,
+        FileTreeOutcome, FileTreeState, List, ListRow, ListState, PreviewCard, PreviewCardContent,
+        PreviewCardState, PreviewLoadState, PreviewMetadata, PreviewResourceKind, QuickOpen,
+        QuickOpenItem, QuickOpenOutcome, QuickOpenProvider, QuickOpenState, SearchInput,
+        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        breadcrumbs_from_path, file_tree_to_quick_open_items, normalize_path_display,
     },
 };
 
@@ -613,9 +613,8 @@ impl FileManagerState {
     /// Effective density.
     #[must_use]
     pub fn effective_density(&self) -> FileManagerDensity {
-        self.density.unwrap_or_else(|| {
-            FileManagerDensity::for_width(self.last_area_width.unwrap_or(120))
-        })
+        self.density
+            .unwrap_or_else(|| FileManagerDensity::for_width(self.last_area_width.unwrap_or(120)))
     }
 
     /// Visible focusable panes for density.
@@ -660,7 +659,8 @@ impl FileManagerState {
         let f = self.focus;
         self.search.set_focused(f == "search");
         self.breadcrumbs.set_focused(f == "breadcrumbs");
-        self.tree.set_accepts_input(f == "tree" && !self.dialog_blocks_tree());
+        self.tree
+            .set_accepts_input(f == "tree" && !self.dialog_blocks_tree());
         self.preview.set_focus_within(f == "preview");
         let qo = matches!(self.dialog, FileManagerDialog::QuickOpen);
         self.quick_open.set_accepts_input(qo);
@@ -698,13 +698,12 @@ impl FileManagerState {
         if visible.is_empty() {
             return FileManagerOutcome::Ignored;
         }
-        let cur = visible.iter().position(|p| p.id() == self.focus).unwrap_or(0);
+        let cur = visible
+            .iter()
+            .position(|p| p.id() == self.focus)
+            .unwrap_or(0);
         let next = if reverse {
-            if cur == 0 {
-                visible.len() - 1
-            } else {
-                cur - 1
-            }
+            if cur == 0 { visible.len() - 1 } else { cur - 1 }
         } else {
             (cur + 1) % visible.len()
         };
@@ -984,7 +983,9 @@ impl FileManagerState {
                     return FileManagerOutcome::QuickOpenClosed;
                 }
                 let providers = default_quick_open_providers();
-                let out = self.quick_open.handle_key(key, &providers, quick_open_items);
+                let out = self
+                    .quick_open
+                    .handle_key(key, &providers, quick_open_items);
                 return match out {
                     QuickOpenOutcome::Ignored => FileManagerOutcome::Ignored,
                     QuickOpenOutcome::Activated { id, .. } => {
@@ -1196,9 +1197,7 @@ impl FileManagerState {
             FileTreeOutcome::RenameRequested { id, from, to } => {
                 FileManagerOutcome::RenameRequested { id, from, to }
             }
-            FileTreeOutcome::DeleteRequested { ids } => {
-                FileManagerOutcome::DeleteRequested { ids }
-            }
+            FileTreeOutcome::DeleteRequested { ids } => FileManagerOutcome::DeleteRequested { ids },
             FileTreeOutcome::ConfirmRequired(conf) => {
                 let paths: Vec<String> = conf
                     .ids
@@ -1287,7 +1286,10 @@ impl FileManagerState {
                 if let Some(id) = self.queue.selected().cloned() {
                     return FileManagerOutcome::OpRetry { op_id: id };
                 }
-                if let Some(op) = ops.iter().find(|o| matches!(o.status, FileOpStatus::Failed)) {
+                if let Some(op) = ops
+                    .iter()
+                    .find(|o| matches!(o.status, FileOpStatus::Failed))
+                {
                     return FileManagerOutcome::OpRetry {
                         op_id: op.id.clone(),
                     };
@@ -1320,7 +1322,12 @@ pub const FILE_MANAGER_SEARCH_HEIGHT: u16 = 3;
 /// Width-derived layout.
 #[must_use]
 pub fn file_manager_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    file_manager_layout_density(area, state, FileManagerDensity::for_width(area.width), false)
+    file_manager_layout_density(
+        area,
+        state,
+        FileManagerDensity::for_width(area.width),
+        false,
+    )
 }
 
 /// Explicit density layout.
@@ -1517,8 +1524,7 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let panes =
-        file_manager_layout_density(area, &state.workspace, density, state.drawer_open);
+    let panes = file_manager_layout_density(area, &state.workspace, density, state.drawer_open);
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
@@ -1545,14 +1551,18 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
             };
             let inner = panel.paint(r, buffer);
             if !inner.is_empty() {
-                SearchInput::new(system)
-                    .placeholder("filter files…")
-                    .paint(inner, buffer, &mut state.search);
+                SearchInput::new(system).placeholder("filter files…").paint(
+                    inner,
+                    buffer,
+                    &mut state.search,
+                );
             }
         } else if !r.is_empty() {
-            SearchInput::new(system)
-                .placeholder("filter files…")
-                .paint(r, buffer, &mut state.search);
+            SearchInput::new(system).placeholder("filter files…").paint(
+                r,
+                buffer,
+                &mut state.search,
+            );
         }
     }
 
@@ -1623,7 +1633,8 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
             .filter(|o| matches!(o.status, FileOpStatus::Failed | FileOpStatus::Conflict))
             .count();
         if running > 0 || failed > 0 {
-            state.status.transient = Some(format!("ops running={running} failed/conflict={failed}"));
+            state.status.transient =
+                Some(format!("ops running={running} failed/conflict={failed}"));
         } else if !state.clipboard.is_empty() {
             state.status.transient = Some(format!(
                 "{} {} path(s) · v paste",
@@ -1654,8 +1665,11 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
             let qo = quick_open_rect(area);
             if !qo.is_empty() {
                 let providers = default_quick_open_providers();
-                QuickOpen::new(&providers, quick_open_items, system)
-                    .paint(qo, buffer, &mut state.quick_open);
+                QuickOpen::new(&providers, quick_open_items, system).paint(
+                    qo,
+                    buffer,
+                    &mut state.quick_open,
+                );
             }
         }
         FileManagerDialog::None => {}
@@ -1723,13 +1737,11 @@ pub fn example_file_entries() -> Vec<FileTreeEntry<'static, String>> {
         FileTreeEntry::file("README.md".into(), "README.md", "README.md", 0)
             .file_type("md")
             .size(2048),
-        FileTreeEntry::file("Cargo.toml".into(), "Cargo.toml", "Cargo.toml", 0)
-            .file_type("toml"),
+        FileTreeEntry::file("Cargo.toml".into(), "Cargo.toml", "Cargo.toml", 0).file_type("toml"),
         FileTreeEntry::file(".gitignore".into(), ".gitignore", ".gitignore", 0)
             .hidden(true)
             .file_type("git"),
-        FileTreeEntry::file("sample.txt".into(), "sample.txt", "sample.txt", 0)
-            .file_type("txt"),
+        FileTreeEntry::file("sample.txt".into(), "sample.txt", "sample.txt", 0).file_type("txt"),
     ]
 }
 
@@ -1777,7 +1789,11 @@ pub fn example_empty_ops() -> Vec<FileOpItem> {
 
 /// Preview for README.
 #[must_use]
-pub fn example_file_preview() -> (PreviewCardContent<'static>, &'static [&'static str], &'static [PreviewMetadata<'static>]) {
+pub fn example_file_preview() -> (
+    PreviewCardContent<'static>,
+    &'static [&'static str],
+    &'static [PreviewMetadata<'static>],
+) {
     const BODY: &[&str] = &[
         "# TermRock",
         "",
@@ -1995,11 +2011,7 @@ mod tests {
             .as_ref()
             .map(|d| d.name.clone())
             .expect("draft must remain open while typing");
-        assert_eq!(
-            after,
-            format!("{before}x"),
-            "draft must receive char x"
-        );
+        assert_eq!(after, format!("{before}x"), "draft must receive char x");
         let out = st.handle_key(press(KeyCode::Enter), &entries, &ops, &[]);
         assert!(
             matches!(
@@ -2022,16 +2034,15 @@ mod tests {
 
         let out = st.handle_key(press(KeyCode::Char('n')), &entries, &ops, &[]);
         assert!(
-            matches!(
-                out,
-                FileManagerOutcome::NewRequested {
-                    kind: "file",
-                    ..
-                }
-            ),
+            matches!(out, FileManagerOutcome::NewRequested { kind: "file", .. }),
             "got {out:?}"
         );
-        let out = st.handle_key(press_mod(KeyCode::Char('N'), KeyModifiers::SHIFT), &entries, &ops, &[]);
+        let out = st.handle_key(
+            press_mod(KeyCode::Char('N'), KeyModifiers::SHIFT),
+            &entries,
+            &ops,
+            &[],
+        );
         // Shift+N may arrive as Char('N') with shift or just 'N'
         let out = if matches!(out, FileManagerOutcome::Ignored) {
             st.handle_key(press(KeyCode::Char('N')), &entries, &ops, &[])
@@ -2039,13 +2050,7 @@ mod tests {
             out
         };
         assert!(
-            matches!(
-                out,
-                FileManagerOutcome::NewRequested {
-                    kind: "dir",
-                    ..
-                }
-            ),
+            matches!(out, FileManagerOutcome::NewRequested { kind: "dir", .. }),
             "got {out:?}"
         );
     }
@@ -2078,8 +2083,7 @@ mod tests {
             matches!(
                 out,
                 FileManagerOutcome::ConflictResolved {
-                    resolution: FileConflictResolution::Overwrite
-                        | FileConflictResolution::Skip,
+                    resolution: FileConflictResolution::Overwrite | FileConflictResolution::Skip,
                     ..
                 }
             ),
@@ -2307,7 +2311,9 @@ mod tests {
         let owned = burst_file_entries(bench::BURST_ENTRIES);
         let entries: Vec<FileTreeEntry<'_, String>> = owned
             .iter()
-            .map(|(id, name, path)| FileTreeEntry::file(id.clone(), name.as_str(), path.as_str(), 0))
+            .map(|(id, name, path)| {
+                FileTreeEntry::file(id.clone(), name.as_str(), path.as_str(), 0)
+            })
             .collect();
         let ops = example_file_ops();
         let area = Rect::new(0, 0, bench::VIEWPORT.0, bench::VIEWPORT.1);
@@ -2347,8 +2353,19 @@ mod tests {
             .find(|s| s.id == "keys")
             .map(|s| s.content)
             .unwrap_or("");
-        for chord in ["y yank", "x cut", "v paste", "d del", "r ren", "n new", "p preview"] {
-            assert!(keys.contains(chord), "missing keyboard path {chord} in {keys}");
+        for chord in [
+            "y yank",
+            "x cut",
+            "v paste",
+            "d del",
+            "r ren",
+            "n new",
+            "p preview",
+        ] {
+            assert!(
+                keys.contains(chord),
+                "missing keyboard path {chord} in {keys}"
+            );
         }
     }
 }

@@ -390,7 +390,10 @@ pub fn compose_capture<M, FocusId>(
 
 /// Converts a legacy ignored/handled pair into [`EventResult`].
 #[must_use]
-pub fn from_consumed_flag<M, FocusId>(consumed: bool, message: Option<M>) -> EventResult<M, FocusId> {
+pub fn from_consumed_flag<M, FocusId>(
+    consumed: bool,
+    message: Option<M>,
+) -> EventResult<M, FocusId> {
     if !consumed && message.is_none() {
         return EventResult::ignored();
     }

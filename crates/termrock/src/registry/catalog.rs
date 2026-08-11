@@ -4,9 +4,9 @@
 //! Official kernel inventory contracts (embedded catalog).
 
 use super::contract::{
-    AnatomyPartRef, CapabilityRequirements, ComponentContract, ContractDependencies, ContractFile,
-    ContractFileRole, KernelRequirement, OutcomeRef, Provenance, RegistryItemKind, SemanticRoleRef,
-    VariantRef, CONTRACT_SCHEMA,
+    AnatomyPartRef, CONTRACT_SCHEMA, CapabilityRequirements, ComponentContract,
+    ContractDependencies, ContractFile, ContractFileRole, KernelRequirement, OutcomeRef,
+    Provenance, RegistryItemKind, SemanticRoleRef, VariantRef,
 };
 
 fn prov(path: &str) -> Provenance {
@@ -43,12 +43,7 @@ fn kernel_dep() -> ContractDependencies {
 
 fn caps_basic() -> CapabilityRequirements {
     CapabilityRequirements {
-        color: vec![
-            "truecolor".into(),
-            "256".into(),
-            "16".into(),
-            "mono".into(),
-        ],
+        color: vec!["truecolor".into(), "256".into(), "16".into(), "mono".into()],
         glyphs: vec!["unicode".into(), "ascii".into()],
         responsive_surface: None,
         min_width: Some(8),
@@ -2147,9 +2142,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
 /// Lookup by id in the official kernel catalog.
 #[must_use]
 pub fn official_contract(id: &str) -> Option<ComponentContract> {
-    official_kernel_contracts()
-        .into_iter()
-        .find(|c| c.id == id)
+    official_kernel_contracts().into_iter().find(|c| c.id == id)
 }
 
 /// All official ids.
@@ -2160,4 +2153,3 @@ pub fn official_ids() -> Vec<String> {
         .map(|c| c.id)
         .collect()
 }
-

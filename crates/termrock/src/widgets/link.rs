@@ -17,12 +17,7 @@
 //!
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -421,9 +416,7 @@ impl<'a> Link<'a> {
             self.system.style(Role::LinkHover)
         } else if state.visited {
             // Visited: muted link — use Link with DIM.
-            self.system
-                .style(Role::Link)
-                .add_modifier(Modifier::DIM)
+            self.system.style(Role::Link).add_modifier(Modifier::DIM)
         } else {
             self.system.style(Role::Link)
         };
@@ -541,10 +534,7 @@ impl<'a> Link<'a> {
         if parts.root.is_empty() {
             return parts;
         }
-        let text = take_display_cols(
-            &self.decorated(state),
-            usize::from(parts.root.width),
-        );
+        let text = take_display_cols(&self.decorated(state), usize::from(parts.root.width));
         let style = self.style(state);
         buffer.set_stringn(
             parts.root.x,
@@ -565,9 +555,7 @@ impl<'a> Link<'a> {
             return self.handle_intent(state, intent);
         }
         // 'c' copy destination when focused (common CLI help convention)
-        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C'))
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
             return LinkOutcome::Copy {
                 text: self.copy_text(),
             };
@@ -789,13 +777,7 @@ impl<'a> ActionLink<'a> {
             style = style.add_modifier(Modifier::BOLD);
         }
         style.bg = None;
-        buffer.set_stringn(
-            root.x,
-            root.y,
-            &clipped,
-            usize::from(root.width),
-            style,
-        );
+        buffer.set_stringn(root.x, root.y, &clipped, usize::from(root.width), style);
         let parts = LinkParts {
             root,
             label: root,
@@ -811,9 +793,9 @@ impl<'a> ActionLink<'a> {
         if state.disabled || !state.focused || key.kind != KeyEventKind::Press {
             return ActionLinkOutcome::Ignored;
         }
-        if default_button_intent(key).is_some_and(|i| {
-            matches!(i, UiIntent::Activate | UiIntent::Submit)
-        }) {
+        if default_button_intent(key)
+            .is_some_and(|i| matches!(i, UiIntent::Activate | UiIntent::Submit))
+        {
             return ActionLinkOutcome::Activated;
         }
         ActionLinkOutcome::Ignored
@@ -1095,7 +1077,11 @@ mod tests {
     #[test]
     fn narrow_truncates_without_panic() {
         let system = DesignSystem::default();
-        let link = Link::url("documentation", "https://example.invalid/long/path", &system);
+        let link = Link::url(
+            "documentation",
+            "https://example.invalid/long/path",
+            &system,
+        );
         let mut state = LinkState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 12, 1));
         let parts = link.paint(Rect::new(0, 0, 8, 1), &mut buf, &mut state);

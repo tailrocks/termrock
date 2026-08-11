@@ -1362,7 +1362,10 @@ pub fn dialog_stack_actions(width: u16, height: u16) -> bool {
     let class = ResponsiveSurface::Dialog.classify(width, height);
     class.anatomy.line_mode
         || !class.anatomy.secondary_actions
-        || width < ResponsiveSurface::Dialog.policy().collapse_actions_max_width
+        || width
+            < ResponsiveSurface::Dialog
+                .policy()
+                .collapse_actions_max_width
 }
 
 /// Tabs: show status glyphs while important chrome survives (not line-mode only).

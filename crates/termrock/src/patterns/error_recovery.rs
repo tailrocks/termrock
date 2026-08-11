@@ -36,9 +36,9 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        history_redaction_secret, redact_history_text, ErrorKind, ErrorRecipe, ErrorState,
-        ErrorStateOutcome, ErrorStateState, List, ListRow, ListState, Recovery, RecoveryAction,
-        RetrySafety, StatusBar, StatusBarState, StatusSlot,
+        ErrorKind, ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, List, ListRow,
+        ListState, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState, StatusSlot,
+        history_redaction_secret, redact_history_text,
     },
 };
 
@@ -422,11 +422,13 @@ fn find_assignment_key(lower_line: &str, key: &str) -> Option<usize> {
 fn redact_assignment_at(line: &str, key_pos: usize, key_len: usize) -> String {
     let after_key = key_pos + key_len;
     let rest = line.get(after_key..).unwrap_or("");
-    let ws_len = rest
-        .chars()
-        .take_while(|c| *c == ' ' || *c == '\t')
-        .count();
-    let after_ws = after_key + rest.chars().take(ws_len).map(|c| c.len_utf8()).sum::<usize>();
+    let ws_len = rest.chars().take_while(|c| *c == ' ' || *c == '\t').count();
+    let after_ws = after_key
+        + rest
+            .chars()
+            .take(ws_len)
+            .map(|c| c.len_utf8())
+            .sum::<usize>();
     let sep_and_value = line.get(after_ws..).unwrap_or("");
     let sep_len = sep_and_value
         .chars()
@@ -661,9 +663,8 @@ impl ErrorRecoveryState {
     /// Effective density.
     #[must_use]
     pub fn effective_density(&self) -> ErrorRecoveryDensity {
-        self.density.unwrap_or_else(|| {
-            ErrorRecoveryDensity::for_width(self.last_area_width.unwrap_or(100))
-        })
+        self.density
+            .unwrap_or_else(|| ErrorRecoveryDensity::for_width(self.last_area_width.unwrap_or(100)))
     }
 
     /// Active action set for mode.
@@ -733,13 +734,12 @@ impl ErrorRecoveryState {
         if visible.is_empty() {
             return ErrorRecoveryOutcome::Ignored;
         }
-        let cur = visible.iter().position(|p| p.id() == self.focus).unwrap_or(0);
+        let cur = visible
+            .iter()
+            .position(|p| p.id() == self.focus)
+            .unwrap_or(0);
         let next = if reverse {
-            if cur == 0 {
-                visible.len() - 1
-            } else {
-                cur - 1
-            }
+            if cur == 0 { visible.len() - 1 } else { cur - 1 }
         } else {
             (cur + 1) % visible.len()
         };
@@ -1146,11 +1146,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint error recovery / crash report surface.
-pub fn render_error_recovery(
-    buffer: &mut Buffer,
-    area: Rect,
-    surfaces: ErrorRecoverySurfaces<'_>,
-) {
+pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRecoverySurfaces<'_>) {
     let ErrorRecoverySurfaces {
         system,
         state,
@@ -1164,8 +1160,7 @@ pub fn render_error_recovery(
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let panes =
-        error_recovery_layout_density(area, &state.workspace, density, state.mode);
+    let panes = error_recovery_layout_density(area, &state.workspace, density, state.mode);
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
 
@@ -1422,7 +1417,10 @@ mod tests {
         st.focus = "actions";
 
         let out = st.handle_key(press(KeyCode::Char('r')), &snap);
-        assert!(matches!(out, ErrorRecoveryOutcome::RestartRequested), "{out:?}");
+        assert!(
+            matches!(out, ErrorRecoveryOutcome::RestartRequested),
+            "{out:?}"
+        );
 
         let out = st.handle_key(press(KeyCode::Char('s')), &snap);
         assert!(
@@ -1660,10 +1658,7 @@ mod tests {
                 doctor: None,
             },
         );
-        assert!(st
-            .last_panes()
-            .iter()
-            .any(|p| p.id.0.as_str() == "summary"));
+        assert!(st.last_panes().iter().any(|p| p.id.0.as_str() == "summary"));
         // redacted cache filled for diagnostics
         assert!(st.redacted_cache.is_some());
         let report = st.redacted_cache.as_deref().unwrap_or("");
@@ -1681,10 +1676,11 @@ mod tests {
                 doctor: None,
             },
         );
-        assert!(!st
-            .last_panes()
-            .iter()
-            .any(|p| p.id.0.as_str() == "diagnostics" && !p.collapsed && p.area.height > 0));
+        assert!(
+            !st.last_panes()
+                .iter()
+                .any(|p| p.id.0.as_str() == "diagnostics" && !p.collapsed && p.area.height > 0)
+        );
     }
 
     #[test]

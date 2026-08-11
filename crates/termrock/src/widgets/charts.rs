@@ -15,12 +15,8 @@
 //! Research: btop, bottom, gping, Ratatui charts, shadcn Recharts demos (area/
 //! bar/line/pie/radar peers), observability dashboards.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+#![allow(unused_imports)] // test-only imports retained
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     style::{DesignSystem, GlyphSet, Role, RolePalette},
@@ -127,7 +123,9 @@ pub fn resolve_domain(mode: ScaleMode, values: impl Iterator<Item = f64>) -> Sca
                 log: false,
             }
         }
-        ScaleMode::Log { fixed: Some((min, max)) } => {
+        ScaleMode::Log {
+            fixed: Some((min, max)),
+        } => {
             let min = if min > 0.0 && min.is_finite() {
                 min
             } else {
@@ -464,7 +462,10 @@ impl Widget for &Sparkline<'_> {
                 self.system
                     .style(Role::TextStrong)
                     .add_modifier(Modifier::BOLD)
-            } else if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+            } else if matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            ) {
                 // no-color: density only
                 self.system.style(Role::Text)
             } else {
@@ -956,7 +957,6 @@ impl Widget for &Chart<'_> {
                     continue;
                 }
                 for col in 0..width {
-                    let index = col * samples.len() / width.max(1);
                     let (row_top, row_bot) = match self.fill {
                         ChartFill::Area => {
                             let sample = self.interpolation.sample_at(samples, col, width);
@@ -1307,7 +1307,10 @@ impl Widget for &Gauge<'_> {
         let empty = empty_ch
             .to_string()
             .repeat(usize::from(track_w.saturating_sub(filled)));
-        let style = if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+        let style = if matches!(
+            self.system.capability,
+            crate::style::ColorCapability::Monochrome
+        ) {
             self.system.style(Role::TextStrong)
         } else {
             self.system.style(role)
@@ -1327,7 +1330,8 @@ impl Widget for &Gauge<'_> {
         // threshold tick in track
         for thr in self.thresholds {
             if let Some(tf) = domain.normalize(*thr) {
-                let col = ((f64::from(track_w.saturating_sub(1)) * tf).round() as u16).min(track_w.saturating_sub(1));
+                let col = ((f64::from(track_w.saturating_sub(1)) * tf).round() as u16)
+                    .min(track_w.saturating_sub(1));
                 buffer.set_stringn(
                     x.saturating_add(col),
                     area.y,
@@ -1493,16 +1497,18 @@ impl Widget for &Histogram<'_> {
             let col_w = usize::from(area.width) / n.max(1);
             for (i, bucket) in self.buckets.iter().take(n).enumerate() {
                 let frac = domain.normalize(bucket.count).unwrap_or(0.0);
-                let bar_h = ((f64::from(h.saturating_sub(1)) * frac).round() as u16).min(h.saturating_sub(1));
-                let x = area
-                    .x
-                    .saturating_add((i * col_w.max(1)) as u16);
+                let bar_h = ((f64::from(h.saturating_sub(1)) * frac).round() as u16)
+                    .min(h.saturating_sub(1));
+                let x = area.x.saturating_add((i * col_w.max(1)) as u16);
                 let selected = self.selected == Some(i);
                 let style = if selected {
                     self.system
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD)
-                } else if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
                     self.system.style(Role::Text)
                 } else {
                     self.system.style(Role::ChartSeries1)
@@ -1557,13 +1563,7 @@ impl Widget for &Histogram<'_> {
             for (row, bucket) in self.buckets.iter().take(rows).enumerate() {
                 let py = y.saturating_add(row as u16);
                 let lab = take_display_cols(bucket.label, label_w);
-                buffer.set_stringn(
-                    area.x,
-                    py,
-                    lab,
-                    label_w,
-                    self.system.style(Role::TextMuted),
-                );
+                buffer.set_stringn(area.x, py, lab, label_w, self.system.style(Role::TextMuted));
                 let track_x = area.x.saturating_add(label_w as u16);
                 let track_w = area.width.saturating_sub(label_w as u16);
                 if track_w == 0 {
@@ -1576,7 +1576,10 @@ impl Widget for &Histogram<'_> {
                     self.system
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD)
-                } else if matches!(self.system.capability, crate::style::ColorCapability::Monochrome) {
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
                     self.system.style(Role::Text)
                 } else {
                     self.system.style(Role::ChartSeries2)
@@ -1758,9 +1761,11 @@ impl Widget for &BarSeries<'_> {
         // Zero column for bipolar (fraction 0 of domain)
         let zero_frac = domain.normalize(0.0).unwrap_or(0.0);
         let bipolar = !self.pre_normalized
-            && self.bars.iter().take(rows).any(|b| {
-                !b.is_stacked() && b.fraction.is_finite() && b.fraction < 0.0
-            });
+            && self
+                .bars
+                .iter()
+                .take(rows)
+                .any(|b| !b.is_stacked() && b.fraction.is_finite() && b.fraction < 0.0);
 
         for (row, bar) in self.bars.iter().take(rows).enumerate() {
             let y = area.y.saturating_add(row as u16);
@@ -1824,8 +1829,11 @@ impl Widget for &BarSeries<'_> {
                             (v / sum) * total_f
                         }
                     };
-                    let mut seg_w =
-                        ((f64::from(track_w) * frac).round() as u16).max(if v > 0.0 { 1 } else { 0 });
+                    let mut seg_w = ((f64::from(track_w) * frac).round() as u16).max(if v > 0.0 {
+                        1
+                    } else {
+                        0
+                    });
                     if painted + seg_w > track_w {
                         seg_w = track_w.saturating_sub(painted);
                     }
@@ -1945,7 +1953,9 @@ impl Widget for &BarSeries<'_> {
                 if value >= 0.0 {
                     let start = z.min(vcol);
                     let end = z.max(vcol);
-                    let w = end.saturating_sub(start).max(if value > 0.0 { 1 } else { 0 });
+                    let w = end
+                        .saturating_sub(start)
+                        .max(if value > 0.0 { 1 } else { 0 });
                     if w > 0 {
                         buffer.set_stringn(
                             track_x.saturating_add(start),
@@ -2030,13 +2040,7 @@ pub fn allocate_segment_widths(weights: &[f64], total_cols: u16) -> Vec<u16> {
     }
     let sum: f64 = weights
         .iter()
-        .map(|w| {
-            if w.is_finite() && *w > 0.0 {
-                *w
-            } else {
-                0.0
-            }
-        })
+        .map(|w| if w.is_finite() && *w > 0.0 { *w } else { 0.0 })
         .sum();
     if sum <= 0.0 {
         return out;
@@ -2144,11 +2148,7 @@ impl Widget for &SegmentedMeter<'_> {
             '█'
         };
 
-        let weights: Vec<f64> = self
-            .segments
-            .iter()
-            .map(|s| s.effective_weight())
-            .collect();
+        let weights: Vec<f64> = self.segments.iter().map(|s| s.effective_weight()).collect();
         let positive = weights.iter().filter(|w| **w > 0.0).count();
         let gap_cols = if self.separators && positive > 1 {
             (positive - 1) as u16
@@ -2171,13 +2171,7 @@ impl Widget for &SegmentedMeter<'_> {
             }
             if self.separators && painted_positive > 0 {
                 // 1-col separator
-                buffer.set_stringn(
-                    x,
-                    bar_y,
-                    " ",
-                    1,
-                    self.system.style(Role::TextDisabled),
-                );
+                buffer.set_stringn(x, bar_y, " ", 1, self.system.style(Role::TextDisabled));
                 x = x.saturating_add(1);
             }
             painted_positive += 1;
@@ -2232,9 +2226,7 @@ impl Widget for &SegmentedMeter<'_> {
                 };
                 let t = take_display_cols(text, usize::from(area.width));
                 let tw = display_cols(&t) as u16;
-                let cx = area
-                    .x
-                    .saturating_add(area.width.saturating_sub(tw) / 2);
+                let cx = area.x.saturating_add(area.width.saturating_sub(tw) / 2);
                 buffer.set_stringn(
                     cx,
                     cy,
@@ -2474,9 +2466,7 @@ impl Widget for &MetricRadar<'_> {
             if label_w > 0 {
                 buffer.set_stringn(area.x, py, lab, label_w, lab_style);
             }
-            let track_x = area
-                .x
-                .saturating_add(u16::try_from(label_w).unwrap_or(0));
+            let track_x = area.x.saturating_add(u16::try_from(label_w).unwrap_or(0));
 
             for (si, series) in self.series.iter().enumerate() {
                 let bx = track_x.saturating_add(si as u16 * (bar_w + gap));
@@ -2593,12 +2583,18 @@ mod tests {
         assert_eq!(d.normalize(2.0), Some(0.5));
 
         let d = resolve_domain(
-            ScaleMode::Fixed { min: 0.0, max: 100.0 },
+            ScaleMode::Fixed {
+                min: 0.0,
+                max: 100.0,
+            },
             std::iter::empty(),
         );
         assert_eq!(d.normalize(50.0), Some(0.5));
 
-        let d = resolve_domain(ScaleMode::Log { fixed: None }, [1.0, 10.0, 100.0].into_iter());
+        let d = resolve_domain(
+            ScaleMode::Log { fixed: None },
+            [1.0, 10.0, 100.0].into_iter(),
+        );
         assert!(d.log);
         let mid = d.normalize(10.0).unwrap();
         assert!((mid - 0.5).abs() < 0.01);
@@ -2709,10 +2705,7 @@ mod tests {
             plain_s, sel_s,
             "selected_index must change chart paint vs unselected"
         );
-        assert!(
-            sel_s.contains('X'),
-            "ASCII selection highlight X: {sel_s}"
-        );
+        assert!(sel_s.contains('X'), "ASCII selection highlight X: {sel_s}");
         assert!(
             !plain_s.contains('X'),
             "unselected chart must not paint X highlight: {plain_s}"
@@ -2768,10 +2761,7 @@ mod tests {
         // Distinct paths: a rises then falls; b falls then rises — both markers on plot
         let a = [1.0, 2.0, 4.0, 2.0, 1.0];
         let b = [4.0, 2.0, 1.0, 2.0, 4.0];
-        let series = [
-            ChartSeries::new("cpu", &a),
-            ChartSeries::new("mem", &b),
-        ];
+        let series = [ChartSeries::new("cpu", &a), ChartSeries::new("mem", &b)];
         let area = Rect::new(0, 0, 40, 8);
         let mut buffer = Buffer::empty(area);
         Chart::new(&series, &system)
@@ -2782,8 +2772,15 @@ mod tests {
             .selected_series(0)
             .selected_index(2)
             .render(area, &mut buffer);
-        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("cpu") && text.contains("mem"), "legend labels: {text}");
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("cpu") && text.contains("mem"),
+            "legend labels: {text}"
+        );
         assert!(text.contains("host"), "title: {text}");
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
@@ -2860,10 +2857,7 @@ mod tests {
             "need plot occupancy step={step_rows:?} lin={lin_rows:?}"
         );
         // Distinct paths: row sequences must differ for at least one column
-        let differ = step_rows
-            .iter()
-            .zip(lin_rows.iter())
-            .any(|(a, b)| a != b);
+        let differ = step_rows.iter().zip(lin_rows.iter()).any(|(a, b)| a != b);
         assert!(
             differ,
             "step and linear must differ in row occupancy: step={step_rows:?} lin={lin_rows:?}"
@@ -2893,11 +2887,12 @@ mod tests {
             .render(area, &mut buffer);
         let miss = VizGlyphSet::Ascii.missing_mark();
         let mark = VizGlyphSet::Ascii.series_marker(0);
-        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(
-            text.contains(mark),
-            "finite samples still paint: {text}"
-        );
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(text.contains(mark), "finite samples still paint: {text}");
         // Missing may paint miss glyph or skip; finite markers must remain
         let finite = text.chars().filter(|&c| c == mark).count();
         assert!(finite >= 2, "need multiple finite outline points: {text}");
@@ -2952,21 +2947,29 @@ mod tests {
         // Equal constant series: total=2 at every index → domain [0, 2]
         let a = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
         let b = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
-        let series = [
-            ChartSeries::new("a", &a),
-            ChartSeries::new("b", &b),
-        ];
+        let series = [ChartSeries::new("a", &a), ChartSeries::new("b", &b)];
         // Domain for stacked must include baseline 0 and max sum 2
         let mut domain_vals = vec![0.0];
         for i in 0..a.len() {
             domain_vals.push(a[i] + b[i]);
         }
         let d = resolve_domain(ScaleMode::Auto, domain_vals.into_iter());
-        assert!((d.min - 0.0).abs() < 1e-9, "stacked domain min must be 0, got {}", d.min);
-        assert!((d.max - 2.0).abs() < 1e-9, "stacked domain max must be sum, got {}", d.max);
+        assert!(
+            (d.min - 0.0).abs() < 1e-9,
+            "stacked domain min must be 0, got {}",
+            d.min
+        );
+        assert!(
+            (d.max - 2.0).abs() < 1e-9,
+            "stacked domain max must be sum, got {}",
+            d.max
+        );
         // Mid stack (cum=1) maps to ~0.5, not clamped to floor
         let mid = d.normalize(1.0).unwrap();
-        assert!((mid - 0.5).abs() < 0.05, "cum=1 should be mid domain, got {mid}");
+        assert!(
+            (mid - 0.5).abs() < 0.05,
+            "cum=1 should be mid domain, got {mid}"
+        );
 
         let area = Rect::new(0, 0, 24, 8);
         let mut buffer = Buffer::empty(area);
@@ -2995,12 +2998,15 @@ mod tests {
                 fill_cells += 1;
             }
         }
-        assert!(has0, "series 0 outline marker {mark0:?} missing after stacked paint");
-        assert!(has1, "series 1 outline marker {mark1:?} missing after stacked paint");
         assert!(
-            fill_cells > 0,
-            "stacked area must paint band fill glyphs"
+            has0,
+            "series 0 outline marker {mark0:?} missing after stacked paint"
         );
+        assert!(
+            has1,
+            "series 1 outline marker {mark1:?} missing after stacked paint"
+        );
+        assert!(fill_cells > 0, "stacked area must paint band fill glyphs");
         // Series 0 band sits lower: count outline markers on bottom half vs top half
         let mut mark0_bottom = 0usize;
         let mut mark1_top = 0usize;
@@ -3056,8 +3062,15 @@ mod tests {
         Chart::new(&series, &system)
             .glyphs(VizGlyphSet::Ascii)
             .render(Rect::new(0, 0, 24, 5), &mut buffer);
-        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains('*') || text.contains('X') || text.contains('.'), "{text}");
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('*') || text.contains('X') || text.contains('.'),
+            "{text}"
+        );
     }
 
     #[test]
@@ -3087,7 +3100,9 @@ mod tests {
         );
         assert!(lo > 0, "25% must paint some fill cells");
         // Empty remainder present on partial fill
-        let low_s: String = (0..40u16).map(|x| low[(x, 0)].symbol().to_string()).collect();
+        let low_s: String = (0..40u16)
+            .map(|x| low[(x, 0)].symbol().to_string())
+            .collect();
         assert!(
             low_s.contains(empty),
             "partial gauge leaves empty track: {low_s:?}"
@@ -3126,10 +3141,7 @@ mod tests {
         );
         // 75 is between 50 and 90 — fill and empty both exist
         let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
-        assert!(
-            text.contains(fill),
-            "fill glyph present: {text:?}"
-        );
+        assert!(text.contains(fill), "fill glyph present: {text:?}");
     }
 
     #[test]
@@ -3170,10 +3182,7 @@ mod tests {
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
         let fill_n = text.chars().filter(|&c| c == fill).count();
-        assert_eq!(
-            fill_n, 0,
-            "zero value must not invent fill mass: {text:?}"
-        );
+        assert_eq!(fill_n, 0, "zero value must not invent fill mass: {text:?}");
     }
 
     #[test]
@@ -3215,7 +3224,9 @@ mod tests {
         // Equal weights → equal half occupancy of distinct markers
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
-        let row: String = (0..10u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let row: String = (0..10u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
         let c0 = row.chars().filter(|&c| c == m0).count();
         let c1 = row.chars().filter(|&c| c == m1).count();
         assert_eq!(c0 + c1, 10, "full track painted: {row:?}");
@@ -3226,7 +3237,11 @@ mod tests {
     fn allocate_segment_widths_zero_weight_no_mass() {
         let w = allocate_segment_widths(&[1.0, 0.0, 1.0], 10);
         assert_eq!(w[1], 0, "zero weight must get 0 cols: {w:?}");
-        assert_eq!(w[0] + w[1] + w[2], 10, "positive segments fill track: {w:?}");
+        assert_eq!(
+            w[0] + w[1] + w[2],
+            10,
+            "positive segments fill track: {w:?}"
+        );
         assert!(w[0] > 0 && w[2] > 0);
     }
 
@@ -3248,7 +3263,9 @@ mod tests {
             .glyphs(VizGlyphSet::Ascii)
             .selected(1)
             .render(area, &mut selected);
-        let plain_s: String = (0..20u16).map(|x| plain[(x, 0)].symbol().to_string()).collect();
+        let plain_s: String = (0..20u16)
+            .map(|x| plain[(x, 0)].symbol().to_string())
+            .collect();
         let sel_s: String = (0..20u16)
             .map(|x| selected[(x, 0)].symbol().to_string())
             .collect();
@@ -3282,12 +3299,13 @@ mod tests {
             .separators(true)
             .center("42%")
             .render(area, &mut buffer);
-        let row0: String = (0..16u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
-        let row1: String = (0..16u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
-        assert!(
-            row0.contains(' '),
-            "separators insert gap: {row0:?}"
-        );
+        let row0: String = (0..16u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        let row1: String = (0..16u16)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(row0.contains(' '), "separators insert gap: {row0:?}");
         assert!(
             row1.contains('4') && row1.contains('2'),
             "center caption on second row: {row1:?}"
@@ -3308,16 +3326,18 @@ mod tests {
             .glyphs(VizGlyphSet::Ascii)
             .render(area, &mut buffer);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
-        let row: String = (0..12u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let row: String = (0..12u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
         // Zero-weight segment index 1 must not paint its marker (no invented mass)
         let m1_count = row.chars().filter(|&c| c == m1).count();
-        assert_eq!(
-            m1_count, 0,
-            "zero-weight segment must not paint: {row:?}"
-        );
+        assert_eq!(m1_count, 0, "zero-weight segment must not paint: {row:?}");
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m2 = VizGlyphSet::Ascii.series_marker(2);
-        assert!(row.contains(m0) && row.contains(m2), "positive segments paint: {row:?}");
+        assert!(
+            row.contains(m0) && row.contains(m2),
+            "positive segments paint: {row:?}"
+        );
     }
 
     #[test]
@@ -3342,12 +3362,16 @@ mod tests {
             .show_legend(true)
             .render(area, &mut buffer);
 
-        let row0: String = (0..40u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let row0: String = (0..40u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
         assert!(
             row0.contains('m') && row0.contains('e'),
             "title on first row: {row0:?}"
         );
-        let row1: String = (0..40u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        let row1: String = (0..40u16)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
         // Monochrome uses series_marker glyphs for fill (not color)
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
@@ -3432,10 +3456,7 @@ mod tests {
             sel_a.contains('X'),
             "selected series+axis uses X on ascii: {sel_a:?}"
         );
-        assert_ne!(
-            plain_a, sel_a,
-            "selection must change paint vs unselected"
-        );
+        assert_ne!(plain_a, sel_a, "selection must change paint vs unselected");
     }
 
     #[test]
@@ -3444,10 +3465,7 @@ mod tests {
         let axes = [MetricAxis::new("m")];
         let s0 = [100.0];
         let s1 = [50.0];
-        let series = [
-            MetricSeries::new("a", &s0),
-            MetricSeries::new("b", &s1),
-        ];
+        let series = [MetricSeries::new("a", &s0), MetricSeries::new("b", &s1)];
         // Wide enough for label + two bar slots
         let area = Rect::new(0, 0, 36, 3);
         let mut buffer = Buffer::empty(area);
@@ -3485,10 +3503,7 @@ mod tests {
     #[test]
     fn bar_series_scale_and_ascii() {
         let system = system_ascii_nocolor();
-        let bars = [
-            BarDatum::value("a", 10.0),
-            BarDatum::value("b", 20.0),
-        ];
+        let bars = [BarDatum::value("a", 10.0), BarDatum::value("b", 20.0)];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 2));
         BarSeries::new(&bars, &system)
             .scale(ScaleMode::Auto)
@@ -3527,7 +3542,9 @@ mod tests {
         // No-color stack uses series_marker per segment — must see at least two markers
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
-        let row0: String = (0..32u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        let row0: String = (0..32u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
         assert!(
             row0.contains(m0) && row0.contains(m1),
             "stacked segments must paint distinct markers: {row0:?}"
@@ -3552,7 +3569,11 @@ mod tests {
         ];
         // Domain with 0 baseline
         let d = resolve_domain(ScaleMode::Auto, [0.0, -5.0, 10.0].into_iter());
-        assert!(d.min < 0.0 && d.max > 0.0, "domain should be bipolar {:?}", d);
+        assert!(
+            d.min < 0.0 && d.max > 0.0,
+            "domain should be bipolar {:?}",
+            d
+        );
         let z = d.normalize(0.0).unwrap();
         assert!(z > 0.2 && z < 0.8, "zero should be interior, got {z}");
 
@@ -3565,8 +3586,12 @@ mod tests {
         let fill = *VizGlyphSet::Ascii.ladder().last().unwrap_or(&'#');
         let neg = '=';
         // Skip label columns: "loss"/"gain"/"zero" + pad ≤12; track starts after labels
-        let loss: String = (0..40u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
-        let gain: String = (0..40u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        let loss: String = (0..40u16)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        let gain: String = (0..40u16)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
         // Must paint actual negative fill glyph — zero tick alone is not enough
         assert!(
             loss.contains(neg),

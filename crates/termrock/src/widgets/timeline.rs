@@ -12,6 +12,7 @@
 //!
 //! Research: Git history, CI timelines, observability tools, agent session views.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -584,9 +585,7 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
                     if q.is_empty() {
                         self.filter = None;
                     }
-                    return TimelineOutcome::FilterChanged(
-                        self.filter.clone().unwrap_or_default(),
-                    );
+                    return TimelineOutcome::FilterChanged(self.filter.clone().unwrap_or_default());
                 }
                 KeyCode::Char(c) if !c.is_control() && c != '/' => {
                     q.push(c);
@@ -661,12 +660,8 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         }
         self.cursor = self.cursor.min(view.len() - 1);
         match intent {
-            UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => {
-                self.move_by(view, 1)
-            }
-            UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => {
-                self.move_by(view, -1)
-            }
+            UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => self.move_by(view, 1),
+            UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => self.move_by(view, -1),
             UiIntent::Move(NavigationMove::First) => {
                 self.following = false;
                 self.cursor = 0;
@@ -716,11 +711,7 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         }
     }
 
-    fn move_by(
-        &mut self,
-        view: &[&TimelineEvent<'_, Id>],
-        delta: isize,
-    ) -> TimelineOutcome<Id> {
+    fn move_by(&mut self, view: &[&TimelineEvent<'_, Id>], delta: isize) -> TimelineOutcome<Id> {
         let focusable: Vec<usize> = view
             .iter()
             .enumerate()
@@ -917,12 +908,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
     }
 
     /// Stateful paint.
-    pub fn render_stateful(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TimelineState<Id>,
-    ) {
+    pub fn render_stateful(&self, area: Rect, buffer: &mut Buffer, state: &mut TimelineState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -984,7 +970,9 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             let marker = event.status.marker(event.active || selected, ascii);
             let mut style = if colorless {
                 if selected || cursor {
-                    self.system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
+                    self.system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }
@@ -1097,11 +1085,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                         }
                     }
                     if matches!(event.kind, TimelineRowKind::Checkpoint) {
-                        parts.push(if ascii {
-                            "[ckpt]".into()
-                        } else {
-                            "◆".into()
-                        });
+                        parts.push(if ascii { "[ckpt]".into() } else { "◆".into() });
                     }
                     parts.join("  ")
                 }
@@ -1259,10 +1243,7 @@ mod tests {
         state.cursor = 3; // checkpoint
         let view = filter_timeline_events(&events, "");
         let out = state.handle_intent(UiIntent::Activate, &view);
-        assert!(matches!(
-            out,
-            TimelineOutcome::RestoreRequested("c1")
-        ));
+        assert!(matches!(out, TimelineOutcome::RestoreRequested("c1")));
         let out = state.handle_key(
             KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
             &events,
@@ -1298,8 +1279,15 @@ mod tests {
             let mut buf = Buffer::empty(area);
             t.render_stateful(area, &mut buf, &mut state);
             assert!(!state.regions.is_empty() || recipe == TimelineRecipe::Rail);
-            let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-            assert!(text.contains("deploy") || text.contains("tests") || text.contains("Today"), "{text}");
+            let text: String = buf
+                .content()
+                .iter()
+                .map(|c| c.symbol().to_string())
+                .collect();
+            assert!(
+                text.contains("deploy") || text.contains("tests") || text.contains("Today"),
+                "{text}"
+            );
         }
     }
 
@@ -1313,8 +1301,15 @@ mod tests {
         let area = Rect::new(0, 0, 40, 4);
         let mut buf = Buffer::empty(area);
         Widget::render(&Timeline::new(&events, &system), area, &mut buf);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("Started") || text.contains("Running"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Started") || text.contains("Running"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1328,10 +1323,17 @@ mod tests {
         let area = Rect::new(0, 0, 56, 8);
         let mut buf = Buffer::empty(area);
         t.render_stateful(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         // Status letters appear in detailed colorless mode
         assert!(
-            text.contains('S') || text.contains('R') || text.contains('F') || text.contains("deploy"),
+            text.contains('S')
+                || text.contains('R')
+                || text.contains('F')
+                || text.contains("deploy"),
             "{text}"
         );
     }

@@ -10,10 +10,10 @@ mod time;
 #[cfg(feature = "crossterm")]
 mod runner;
 
-#[cfg(feature = "crossterm")]
-pub use runner::{RunOptions, run};
 pub use motion::{
     AnimationDemand, Presence, PresenceChange, PresencePhase, earliest_deadline, min_deadline,
     pulse_fraction, spinner_demand, spinner_step,
 };
+#[cfg(feature = "crossterm")]
+pub use runner::{RunOptions, run};
 pub use time::{FrameClock, FrameTick};

@@ -15,27 +15,18 @@
 //!
 //! Research: database clients, VisiData, TablePlus, SQL terminal tools.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    patterns::QueryResultSummary,
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        DataTable,
-        DataTableNavMode,
-        DataTableOutcome,
-        DataTableState,
-        DataTableToolbar,
-        ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, FilterSpec, LoadState, SortSpec,
-        InspectKind,
-        InspectorField,
+        ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataTable,
+        DataTableNavMode, DataTableOutcome, DataTableState, DataTableToolbar, FilterSpec,
+        InspectKind, InspectorField, LoadState, SortSpec,
     },
-    patterns::QueryResultSummary,
 };
 
 // ── Cell kinds & values ─────────────────────────────────────────────────────
@@ -587,7 +578,11 @@ pub const RESULT_TRUNC_MARK: &str = "…";
 
 /// Format a cell for grid display under redaction policy.
 #[must_use]
-pub fn format_result_cell(cell: &ResultCell<'_>, redaction: ResultRedaction, ascii: bool) -> String {
+pub fn format_result_cell(
+    cell: &ResultCell<'_>,
+    redaction: ResultRedaction,
+    ascii: bool,
+) -> String {
     if cell.secret || matches!(cell.kind, ResultCellKind::Secret) {
         if matches!(redaction, ResultRedaction::RevealSecrets) {
             return with_trunc(cell.text, cell.truncated);
@@ -727,9 +722,7 @@ pub fn result_row_to_inspector_fields<'a>(
             // InspectorField needs &'a str for value — we only have owned display.
             // Host should prefer raw cell.text when not redacted; we expose key/path only
             // when text is already borrowed.
-            let value = if cell.secret
-                && !matches!(redaction, ResultRedaction::RevealSecrets)
-            {
+            let value = if cell.secret && !matches!(redaction, ResultRedaction::RevealSecrets) {
                 RESULT_SECRET_MASK
             } else if matches!(cell.kind, ResultCellKind::Null) {
                 if ascii {
@@ -744,8 +737,8 @@ pub fn result_row_to_inspector_fields<'a>(
                 cell.text
             };
             let _ = display;
-            let mut f = InspectorField::new(col.id.as_str(), value)
-                .kind(cell.kind.to_inspect_kind());
+            let mut f =
+                InspectorField::new(col.id.as_str(), value).kind(cell.kind.to_inspect_kind());
             if let Some(t) = col.type_name.as_deref() {
                 f = f.type_label(t);
             }
@@ -1122,11 +1115,7 @@ impl ResultGridState {
         map_table_outcome(out)
     }
 
-    fn inspect_cursor(
-        &self,
-        row_ids: &[u64],
-        columns: &ColumnModel<String>,
-    ) -> ResultGridOutcome {
+    fn inspect_cursor(&self, row_ids: &[u64], columns: &ColumnModel<String>) -> ResultGridOutcome {
         let Some(row) = row_ids.get(self.table.cursor_row).copied() else {
             return ResultGridOutcome::Ignored;
         };
@@ -1182,10 +1171,9 @@ fn map_table_outcome(out: DataTableOutcome<u64, String>) -> ResultGridOutcome {
         DataTableOutcome::ExpandToggled(_) | DataTableOutcome::GroupToggled(_) => {
             ResultGridOutcome::CursorMoved
         }
-        DataTableOutcome::ContextMenu { row, column } => ResultGridOutcome::ContextMenu {
-            row,
-            column,
-        },
+        DataTableOutcome::ContextMenu { row, column } => {
+            ResultGridOutcome::ContextMenu { row, column }
+        }
         DataTableOutcome::EditStarted { row, column } => {
             let Some(column) = column else {
                 return ResultGridOutcome::Ignored;
@@ -1280,7 +1268,9 @@ impl<'a> ResultGrid<'a> {
         let ascii = self.ascii || state.ascii;
         state.table.ascii = ascii;
         state.table.colorless = state.colorless;
-        state.table.set_accepts_input(self.focused && state.accepts_input);
+        state
+            .table
+            .set_accepts_input(self.focused && state.accepts_input);
 
         let mut y = area.y;
         let mut h = area.height;
@@ -1290,7 +1280,9 @@ impl<'a> ResultGrid<'a> {
             let title = self.title.or(state.title.as_deref()).unwrap_or("results");
             let line = format!(
                 "{title} · {}",
-                state.status.summary_line(self.columns.len(), self.rows.len())
+                state
+                    .status
+                    .summary_line(self.columns.len(), self.rows.len())
             );
             state.last_status_line = line.clone();
             let style = match &state.status {
@@ -1317,7 +1309,10 @@ impl<'a> ResultGrid<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&format!("stats {}", st.summary_line()), usize::from(area.width)),
+                take_display_cols(
+                    &format!("stats {}", st.summary_line()),
+                    usize::from(area.width),
+                ),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1379,7 +1374,6 @@ impl<'a> ResultGrid<'a> {
             .toolbar(&toolbar)
             .focused(self.focused && state.accepts_input)
             .render(body, buffer, &mut state.table);
-
     }
 }
 
@@ -1468,13 +1462,16 @@ mod tests {
 
     #[test]
     fn format_null_secret_binary() {
-        assert!(format_result_cell(&ResultCell::null(), ResultRedaction::Safe, true).contains("NULL"));
+        assert!(
+            format_result_cell(&ResultCell::null(), ResultRedaction::Safe, true).contains("NULL")
+        );
         assert_eq!(
             format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe, false),
             RESULT_SECRET_MASK
         );
         assert!(
-            format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe, false).contains("99")
+            format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe, false)
+                .contains("99")
         );
         assert_eq!(
             format_result_cell(
@@ -1610,7 +1607,10 @@ mod tests {
         )]);
         let row_ids: [u64; 0] = [];
         let out = state.handle_key(
-            KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL | KeyModifiers::SHIFT),
+            KeyEvent::new(
+                KeyCode::Char('u'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
             &model,
             &row_ids,
         );
@@ -1640,8 +1640,7 @@ mod tests {
     #[test]
     fn inspector_bridge() {
         let (cols, rows) = sample_rows();
-        let fields =
-            result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe, true);
+        let fields = result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe, true);
         assert_eq!(fields.len(), cols.len());
         assert!(fields.iter().any(|f| f.secret));
     }
@@ -1657,7 +1656,12 @@ mod tests {
         let id_strs: Vec<String> = (0..bench::PAGE_ROWS).map(|i| i.to_string()).collect();
         let val_strs: Vec<String> = (0..bench::PAGE_ROWS).map(|i| format!("v{i}")).collect();
         let cell_pairs: Vec<[ResultCell<'_>; 2]> = (0..bench::PAGE_ROWS)
-            .map(|i| [ResultCell::integer(&id_strs[i]), ResultCell::text(&val_strs[i])])
+            .map(|i| {
+                [
+                    ResultCell::integer(&id_strs[i]),
+                    ResultCell::text(&val_strs[i]),
+                ]
+            })
             .collect();
         let rows: Vec<ResultRow<'_>> = cell_pairs
             .iter()
@@ -1683,7 +1687,12 @@ mod tests {
     fn never_runs_queries() {
         let src = include_str!("result_grid.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["sqlx::", "tokio_postgres", "rusqlite", "std::process::Command"] {
+        for forbidden in [
+            "sqlx::",
+            "tokio_postgres",
+            "rusqlite",
+            "std::process::Command",
+        ] {
             assert!(!body.contains(forbidden), "must not contain {forbidden}");
         }
     }

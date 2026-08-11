@@ -101,13 +101,19 @@ impl PromptQueueStatus {
     /// Whether user can reorder this row.
     #[must_use]
     pub const fn can_reorder(self) -> bool {
-        matches!(self, Self::Queued | Self::Blocked | Self::Failed | Self::Cancelled)
+        matches!(
+            self,
+            Self::Queued | Self::Blocked | Self::Failed | Self::Cancelled
+        )
     }
 
     /// Whether entry can be sent next.
     #[must_use]
     pub const fn can_send(self) -> bool {
-        matches!(self, Self::Queued | Self::Failed | Self::Blocked | Self::Cancelled)
+        matches!(
+            self,
+            Self::Queued | Self::Failed | Self::Blocked | Self::Cancelled
+        )
     }
 }
 
@@ -125,11 +131,7 @@ pub struct PromptQueueRef {
 impl PromptQueueRef {
     /// Construct.
     #[must_use]
-    pub fn new(
-        id: impl Into<String>,
-        kind: impl Into<String>,
-        label: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, kind: impl Into<String>, label: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             kind: kind.into(),
@@ -332,4 +334,3 @@ impl AgentBusyState {
         !matches!(self, Self::Idle)
     }
 }
-

@@ -12,15 +12,15 @@
         "visual_states": {
           "status": "covered",
           "evidence": {
-            "stories": ["approval-card/basic"],
-            "snapshots": ["docs/public/component-previews/approval-card-basic.svg"]
+            "stories": ["permission-prompt/basic"],
+            "snapshots": ["docs/public/component-previews/permission-prompt-basic.svg"]
           }
         },
         "keyboard": {
           "status": "covered",
           "evidence": {
             "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
-            "stories": ["approval-card/basic"]
+            "stories": ["permission-prompt/basic"]
           }
         },
         "mouse": {
@@ -33,7 +33,7 @@
           "status": "covered",
           "evidence": {
             "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
-            "stories": ["approval-card/basic"],
+            "stories": ["permission-prompt/basic"],
             "notes": "selection is the focus affordance; default Deny"
           }
         },
@@ -66,27 +66,29 @@
         "responsive": {
           "status": "covered",
           "evidence": {
-            "stories": ["approval-card/narrow"],
-            "snapshots": ["docs/public/component-previews/approval-card-narrow.svg"]
+            "stories": ["permission-prompt/narrow"],
+            "snapshots": ["docs/public/component-previews/permission-prompt-narrow.svg"]
           }
         },
         "tiny_terminal": {
-          "status": "covered",
+          "status": "partial",
+          "reason": "narrow story covers contraction; dedicated tiny matrix pending",
           "evidence": {
-            "stories": ["approval-card/tiny"],
-            "snapshots": ["docs/public/component-previews/approval-card-tiny.svg"]
+            "stories": ["permission-prompt/narrow"],
+            "snapshots": ["docs/public/component-previews/permission-prompt-narrow.svg"]
           }
         },
         "unicode": {
           "status": "covered",
           "evidence": {
-            "stories": ["approval-card/unicode"]
+            "stories": ["permission-prompt/unicode"],
+            "snapshots": ["docs/public/component-previews/permission-prompt-unicode.svg"]
           }
         },
         "cjk": {
           "status": "partial",
           "reason": "unicode story present; dedicated CJK matrix pending",
-          "evidence": { "stories": ["approval-card/unicode"] }
+          "evidence": { "stories": ["permission-prompt/unicode"] }
         },
         "combining": {
           "status": "missing",
@@ -95,7 +97,7 @@
         "emoji": {
           "status": "partial",
           "reason": "risk glyphs; emoji labels not matrixed",
-          "evidence": { "stories": ["approval-card/basic"] }
+          "evidence": { "stories": ["permission-prompt/basic"] }
         },
         "ascii_fallback": {
           "status": "partial",
@@ -105,7 +107,7 @@
         "no_color": {
           "status": "covered",
           "evidence": {
-            "stories": ["approval-card/basic"],
+            "stories": ["permission-prompt/basic"],
             "tests": ["agent::tests::approval_default_enter_confirms_deny_never_allow"],
             "notes": "decision labels + default Deny selection not color-alone"
           }
@@ -113,7 +115,7 @@
         "color_ladder": {
           "status": "partial",
           "reason": "truecolor default; capability matrix pending",
-          "evidence": { "stories": ["approval-card/basic"] }
+          "evidence": { "stories": ["permission-prompt/basic"] }
         },
         "streaming": {
           "status": "not_applicable",
@@ -132,17 +134,10 @@
         "panic_safety": {
           "status": "covered",
           "evidence": {
-            "tests": ["agent::tests::approval_selected_visible_at_every_non_empty_width"]
+            "tests": ["agent::tests::approval_selected_visible_at_every_non_empty_width"],
+            "notes": "paint clamps selection; no unwrap on empty decision set in host path"
           }
         }
-      },
-      "lints": {
-        "color_only_state": "pass",
-        "invisible_keyboard_focus": "pass",
-        "mouse_without_keyboard": "pass",
-        "hardcoded_key_handling": "waived",
-        "missing_ascii_fallback": "pass",
-        "zero_area_panic": "pass"
       }
     }
   ]

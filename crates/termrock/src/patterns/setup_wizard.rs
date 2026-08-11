@@ -13,6 +13,7 @@
 //! Research: CLI installers, Huh, cloud auth flows, native onboarding
 //! (experience references — not marketing splash screens).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -24,10 +25,10 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        EmptyKind, EmptyState, Field, Fieldset, Form, FormOutcome, FormState, FormWizard,
-        FormWizardOutcome, FormWizardState, KeybindingRecorderState, PermissionPrompt,
-        PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome, ThemePickerState,
-        ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep, BUILTIN_THEME_PRESETS,
+        BUILTIN_THEME_PRESETS, EmptyKind, EmptyState, Field, Fieldset, Form, FormOutcome,
+        FormState, FormWizard, FormWizardOutcome, FormWizardState, KeybindingRecorderState,
+        PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome,
+        ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep,
     },
 };
 
@@ -288,7 +289,11 @@ impl SetupWizardState {
     pub fn new(step_count: usize) -> Self {
         let steps: Vec<SetupStep> = (0..step_count.max(1))
             .map(|i| {
-                SetupStep::new(format!("step-{i}"), format!("Step {}", i + 1), SetupStepKind::Custom)
+                SetupStep::new(
+                    format!("step-{i}"),
+                    format!("Step {}", i + 1),
+                    SetupStepKind::Custom,
+                )
             })
             .collect();
         Self::from_steps(steps)
@@ -748,13 +753,12 @@ fn paint_capability_list(
         system.style(Role::TextStrong),
     );
     let mut y = area.y.saturating_add(1);
-    for line in lines.iter().take(usize::from(area.height.saturating_sub(1))) {
+    for line in lines
+        .iter()
+        .take(usize::from(area.height.saturating_sub(1)))
+    {
         let mark = if line.problem {
-            if ascii {
-                "[!]"
-            } else {
-                "✗"
-            }
+            if ascii { "[!]" } else { "✗" }
         } else if ascii {
             "[x]"
         } else {
@@ -808,7 +812,10 @@ fn paint_summary(
         system.style(Role::TextStrong),
     );
     let mut y = area.y.saturating_add(1);
-    for line in lines.iter().take(usize::from(area.height.saturating_sub(1))) {
+    for line in lines
+        .iter()
+        .take(usize::from(area.height.saturating_sub(1)))
+    {
         let row = format!("· {line}");
         buffer.set_stringn(
             area.x,
@@ -858,12 +865,10 @@ fn paint_body_hint(
 #[must_use]
 pub fn example_setup_steps() -> Vec<SetupStep> {
     vec![
-        SetupStep::new("welcome", "Welcome", SetupStepKind::Welcome)
-            .description("Start setup"),
+        SetupStep::new("welcome", "Welcome", SetupStepKind::Welcome).description("Start setup"),
         SetupStep::new("caps", "Terminal", SetupStepKind::Capability)
             .description("Capability check"),
-        SetupStep::new("account", "Account", SetupStepKind::Account)
-            .description("Identity"),
+        SetupStep::new("account", "Account", SetupStepKind::Account).description("Identity"),
         SetupStep::new("connection", "Connection", SetupStepKind::Connection)
             .description("Endpoint")
             .optional(true),
@@ -1078,7 +1083,11 @@ mod tests {
                 permission: None,
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Welcome")
                 || text.contains("setup")
@@ -1164,7 +1173,11 @@ mod tests {
                 permission: None,
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Recovery") || text.contains("retry") || text.contains("network"),
             "{text}"
@@ -1205,10 +1218,7 @@ mod tests {
         let src = include_str!("setup_wizard.rs");
         assert!(src.contains("public"));
         assert!(src.contains("host-owned") || src.contains("Host owns"));
-        let forbidden = [
-            format!("{}::process", "std"),
-            format!("{}::new", "Command"),
-        ];
+        let forbidden = [format!("{}::process", "std"), format!("{}::new", "Command")];
         for f in &forbidden {
             assert!(!src.contains(f.as_str()), "{f}");
         }

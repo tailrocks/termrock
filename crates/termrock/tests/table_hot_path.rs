@@ -22,12 +22,8 @@ fn warmed_large_table_paints_only_the_viewport_without_allocating() {
             .alignment(CellAlignment::Right)
             .sortable(None),
         Column::new(1, "Name", ColumnWidth::Fill(NonZeroU16::new(2).unwrap())).sortable(None),
-        Column::new(
-            2,
-            "State",
-            ColumnWidth::Fill(NonZeroU16::new(1).unwrap()),
-        )
-        .alignment(CellAlignment::Center),
+        Column::new(2, "State", ColumnWidth::Fill(NonZeroU16::new(1).unwrap()))
+            .alignment(CellAlignment::Center),
     ];
     let cells = (0..ROW_COUNT)
         .map(|_| {

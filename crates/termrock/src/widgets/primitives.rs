@@ -7,6 +7,7 @@
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -213,7 +214,6 @@ impl ActivationState {
                 KeyEventKind::Repeat | KeyEventKind::Release => {
                     return ActivationOutcome::Ignored;
                 }
-                _ => {}
             }
         }
         if key.kind == KeyEventKind::Release || key.kind == KeyEventKind::Repeat {
@@ -819,18 +819,11 @@ impl Button<'_> {
         let root = Rect {
             x: area.x,
             y: area.y,
-            width: if self.full_width {
-                area.width
-            } else {
-                paint_w
-            },
+            width: if self.full_width { area.width } else { paint_w },
             height: 1.min(area.height),
         };
         state.region = Some(root);
-        ButtonParts {
-            root,
-            label: root,
-        }
+        ButtonParts { root, label: root }
     }
 
     /// Paint (compat name).
@@ -1085,10 +1078,7 @@ impl<'a> IconButton<'a> {
     #[must_use]
     pub fn preferred_visual_width(&self) -> u16 {
         let face = display_cols(self.face_glyph());
-        let badge = self
-            .badge
-            .map(|b| display_cols(b).min(2))
-            .unwrap_or(0);
+        let badge = self.badge.map(|b| display_cols(b).min(2)).unwrap_or(0);
         // Badge overlays corner; visual footprint stays max(face, 2) when badge
         let w = if badge > 0 {
             face.max(2).max(badge)
@@ -1255,24 +1245,22 @@ impl<'a> IconButton<'a> {
                 self.system.glyphs.resolve(Glyph::Loading).text.to_string()
             }
         } else if !a11y_ok {
-            if mono {
-                "!".into()
-            } else {
-                "⚠".into()
-            }
+            if mono { "!".into() } else { "⚠".into() }
         } else {
             self.paint_face(face_budget)
         };
         let face_w = u16::try_from(display_cols(&face).max(1)).unwrap_or(1);
 
         // Hit width: max(area, min hit, visual) but paint only face_w centered
-        let hit_w = area
-            .width
-            .min(ICON_BUTTON_MIN_HIT.max(face_w).max(if self.badge.is_some() {
-                face_w.saturating_add(1)
-            } else {
-                face_w
-            }));
+        let hit_w = area.width.min(
+            ICON_BUTTON_MIN_HIT
+                .max(face_w)
+                .max(if self.badge.is_some() {
+                    face_w.saturating_add(1)
+                } else {
+                    face_w
+                }),
+        );
         let hit = Rect {
             x: area.x,
             y: area.y,
@@ -1328,13 +1316,7 @@ impl<'a> IconButton<'a> {
             style = style.add_modifier(Modifier::BOLD);
         }
 
-        buffer.set_stringn(
-            visual.x,
-            visual.y,
-            &face,
-            usize::from(visual.width),
-            style,
-        );
+        buffer.set_stringn(visual.x, visual.y, &face, usize::from(visual.width), style);
 
         // Badge: top-right of hit (overlay last cell)
         let mut badge_rect = Rect::default();
@@ -1615,9 +1597,7 @@ mod tests {
             .as_link()
             .colorless(true)
             .paint(area, &mut buf, &mut state);
-        let text: String = (0..12)
-            .map(|x| buf[(x, 0)].symbol().to_string())
-            .collect();
+        let text: String = (0..12).map(|x| buf[(x, 0)].symbol().to_string()).collect();
         assert!(text.contains("docs"), "{text}");
         assert!(!text.trim_start().starts_with('['), "{text}");
     }

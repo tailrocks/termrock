@@ -64,10 +64,6 @@ const REQUIRED_PATTERN_EXPORTS = [
   'example_database_nav',
 ] as const
 
-function read(path: string): string {
-  return Bun.file(path).text() as unknown as string
-}
-
 async function main() {
   const wmod = await Bun.file(widgetsMod).text()
   const pmod = await Bun.file(patternsMod).text()

@@ -9,11 +9,8 @@
 //!
 //! Research: shadcn Carousel, terminal wizards, slide decks in TUI.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -351,10 +348,8 @@ impl<'a> Carousel<'a> {
 #[must_use]
 pub fn example_carousel_slides() -> Vec<CarouselSlide> {
     vec![
-        CarouselSlide::new("s1", "Welcome")
-            .body(["TermRock carousel", "Keyboard: ← → or h l"]),
-        CarouselSlide::new("s2", "Compose")
-            .body(["Build high-class TUI", "from public widgets"]),
+        CarouselSlide::new("s1", "Welcome").body(["TermRock carousel", "Keyboard: ← → or h l"]),
+        CarouselSlide::new("s2", "Compose").body(["Build high-class TUI", "from public widgets"]),
         CarouselSlide::new("s3", "Ship")
             .body(["Stories · tests · migrations", "Ratatui paint engine"]),
     ]

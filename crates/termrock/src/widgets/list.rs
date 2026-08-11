@@ -11,6 +11,7 @@
 //!
 //! Research: lazygit, Yazi, Textual ListView, shadcn command items.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -314,10 +315,7 @@ impl<'a, Id> ListRow<'a, Id> {
         ComposedRow {
             id: (),
             leading: self.leading.clone(),
-            primary: self
-                .custom
-                .clone()
-                .unwrap_or_else(|| self.label.clone()),
+            primary: self.custom.clone().unwrap_or_else(|| self.label.clone()),
             secondary: self.secondary.clone(),
             badge: self
                 .badge
@@ -789,38 +787,14 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         }
     }
 
-    fn select_relative(&mut self, rows: &[ListRow<'_, Id>], direction: isize) -> Outcome<Id> {
-        let items = collection_items_from_rows(rows);
-        if self.collection.move_by(&items, direction).active_changed() {
-            Outcome::Changed
-        } else {
-            Outcome::Ignored
-        }
-    }
-
-    fn select_edge(&mut self, rows: &[ListRow<'_, Id>], end: bool) -> Outcome<Id> {
-        let items = collection_items_from_rows(rows);
-        let out = if end {
-            self.collection.move_last(&items)
-        } else {
-            self.collection.move_first(&items)
-        };
-        if out.active_changed() {
-            Outcome::Changed
-        } else {
-            Outcome::Ignored
-        }
-    }
-
     #[must_use]
     /// Returns the semantic action associated with the supplied stable identity.
     pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.collection
             .active()
             .and_then(|selected| {
-                rows.iter().find(|row| {
-                    row.enabled && row.role.is_navigable() && &row.id == selected
-                })
+                rows.iter()
+                    .find(|row| row.enabled && row.role.is_navigable() && &row.id == selected)
             })
             .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
     }
@@ -995,7 +969,12 @@ impl ListState<usize> {
             self.collection.set_active(None);
             return false;
         }
-        let current = self.collection.active().copied().unwrap_or(0).min(count - 1);
+        let current = self
+            .collection
+            .active()
+            .copied()
+            .unwrap_or(0)
+            .min(count - 1);
         let next = if direction.is_negative() {
             if current == 0 { count - 1 } else { current - 1 }
         } else if current + 1 >= count {
@@ -1013,7 +992,12 @@ impl ListState<usize> {
             self.collection.set_active(None);
             return false;
         }
-        let current = self.collection.active().copied().unwrap_or(0).min(count - 1);
+        let current = self
+            .collection
+            .active()
+            .copied()
+            .unwrap_or(0)
+            .min(count - 1);
         let next = if delta.is_negative() {
             current.saturating_sub(delta.unsigned_abs())
         } else {
@@ -1026,9 +1010,7 @@ impl ListState<usize> {
     /// Borrow the selected item from an index-addressed collection.
     #[must_use]
     pub fn selected_item<'a, T>(&self, items: &'a [T]) -> Option<&'a T> {
-        self.collection
-            .active()
-            .and_then(|index| items.get(*index))
+        self.collection.active().and_then(|index| items.get(*index))
     }
 }
 
@@ -1147,11 +1129,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 viewport_height,
             );
         } else {
-            state.collection.set_viewport(
-                state.collection.offset(),
-                viewport_height,
-                total,
-            );
+            state
+                .collection
+                .set_viewport(state.collection.offset(), viewport_height, total);
             let _ = state.collection.reconcile(&items);
         }
         ensure_list_active_visible(state, self.rows, viewport_height);
@@ -1269,187 +1249,188 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     // Custom body replaces composed primary cluster.
                     if let Some(custom) = row.custom.as_ref() {
                         buffer.set_line(content_x, rect.y, custom, content_w);
-                        buffer.set_style(
-                            Rect::new(content_x, rect.y, content_w, 1),
-                            style,
-                        );
+                        buffer.set_style(Rect::new(content_x, rect.y, content_w, 1), style);
                     } else {
-                    let badge = row
-                        .badge
-                        .as_ref()
-                        .or(row.status.as_ref())
-                        .or(row.trailing.as_ref());
-                    let mut budget = content_w.saturating_sub(1);
-                    let shortcut_need = row
-                        .shortcut
-                        .map(|s| {
-                            u16::try_from(crate::text::display_cols(s))
-                                .unwrap_or(u16::MAX)
-                                .saturating_add(1)
-                        })
-                        .unwrap_or(0);
-                    let actions_need = row
-                        .actions
-                        .as_ref()
-                        .map(|a| {
-                            u16::try_from(a.width())
-                                .unwrap_or(u16::MAX)
-                                .saturating_add(1)
-                        })
-                        .unwrap_or(0);
-                    // Drop order: shortcut → actions → badge/status → secondary → leading → primary.
-                    let show_shortcut =
-                        row.shortcut.is_some() && content_w >= 12 && budget >= shortcut_need + 2;
-                    if show_shortcut {
-                        budget = budget.saturating_sub(shortcut_need);
-                    }
-                    let show_actions =
-                        row.actions.is_some() && content_w >= 14 && budget >= actions_need + 2;
-                    if show_actions {
-                        budget = budget.saturating_sub(actions_need);
-                    }
-                    let badge_need = badge
-                        .map(|b| {
-                            u16::try_from(b.width())
-                                .unwrap_or(u16::MAX)
-                                .saturating_add(1)
-                        })
-                        .unwrap_or(0);
-                    let show_badge = badge.is_some() && content_w >= 8 && budget > badge_need;
-                    if show_badge {
-                        budget = budget.saturating_sub(badge_need);
-                    }
-                    let secondary_need = row
-                        .secondary
-                        .as_ref()
-                        .map(|s| {
-                            u16::try_from(s.width())
-                                .unwrap_or(u16::MAX)
-                                .saturating_add(1)
-                        })
-                        .unwrap_or(0);
-                    // Compact: inline secondary when budget allows; Comfortable: below.
-                    let show_secondary = row.secondary.is_some()
-                        && !secondary_below
-                        && budget >= secondary_need;
-                    if show_secondary {
-                        budget = budget.saturating_sub(secondary_need);
-                    }
-                    let leading_need = if recipe.loading {
-                        u16::try_from(crate::text::display_cols(recipe.loading_glyph))
-                            .unwrap_or(1)
-                            .saturating_add(1)
-                    } else {
-                        row.leading
+                        let badge = row
+                            .badge
                             .as_ref()
-                            .map(|l| {
-                                u16::try_from(l.width())
+                            .or(row.status.as_ref())
+                            .or(row.trailing.as_ref());
+                        let mut budget = content_w.saturating_sub(1);
+                        let shortcut_need = row
+                            .shortcut
+                            .map(|s| {
+                                u16::try_from(crate::text::display_cols(s))
                                     .unwrap_or(u16::MAX)
                                     .saturating_add(1)
                             })
-                            .unwrap_or(0)
-                    };
-                    let show_leading =
-                        (recipe.loading || row.leading.is_some()) && budget >= leading_need;
-
-                    let mut x = content_x;
-                    let right = rect.right();
-                    if show_leading {
-                        if recipe.loading {
-                            let lw = u16::try_from(crate::text::display_cols(recipe.loading_glyph))
+                            .unwrap_or(0);
+                        let actions_need = row
+                            .actions
+                            .as_ref()
+                            .map(|a| {
+                                u16::try_from(a.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(1)
+                            })
+                            .unwrap_or(0);
+                        // Drop order: shortcut → actions → badge/status → secondary → leading → primary.
+                        let show_shortcut = row.shortcut.is_some()
+                            && content_w >= 12
+                            && budget >= shortcut_need + 2;
+                        if show_shortcut {
+                            budget = budget.saturating_sub(shortcut_need);
+                        }
+                        let show_actions =
+                            row.actions.is_some() && content_w >= 14 && budget >= actions_need + 2;
+                        if show_actions {
+                            budget = budget.saturating_sub(actions_need);
+                        }
+                        let badge_need = badge
+                            .map(|b| {
+                                u16::try_from(b.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(1)
+                            })
+                            .unwrap_or(0);
+                        let show_badge = badge.is_some() && content_w >= 8 && budget > badge_need;
+                        if show_badge {
+                            budget = budget.saturating_sub(badge_need);
+                        }
+                        let secondary_need = row
+                            .secondary
+                            .as_ref()
+                            .map(|s| {
+                                u16::try_from(s.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(1)
+                            })
+                            .unwrap_or(0);
+                        // Compact: inline secondary when budget allows; Comfortable: below.
+                        let show_secondary =
+                            row.secondary.is_some() && !secondary_below && budget >= secondary_need;
+                        if show_secondary {
+                            budget = budget.saturating_sub(secondary_need);
+                        }
+                        let leading_need = if recipe.loading {
+                            u16::try_from(crate::text::display_cols(recipe.loading_glyph))
                                 .unwrap_or(1)
-                                .min(right.saturating_sub(x));
-                            if lw > 0 {
-                                buffer.set_stringn(
-                                    x,
-                                    rect.y,
-                                    recipe.loading_glyph,
-                                    usize::from(lw),
-                                    recipe.secondary,
+                                .saturating_add(1)
+                        } else {
+                            row.leading
+                                .as_ref()
+                                .map(|l| {
+                                    u16::try_from(l.width())
+                                        .unwrap_or(u16::MAX)
+                                        .saturating_add(1)
+                                })
+                                .unwrap_or(0)
+                        };
+                        let show_leading =
+                            (recipe.loading || row.leading.is_some()) && budget >= leading_need;
+
+                        let mut x = content_x;
+                        let right = rect.right();
+                        if show_leading {
+                            if recipe.loading {
+                                let lw =
+                                    u16::try_from(crate::text::display_cols(recipe.loading_glyph))
+                                        .unwrap_or(1)
+                                        .min(right.saturating_sub(x));
+                                if lw > 0 {
+                                    buffer.set_stringn(
+                                        x,
+                                        rect.y,
+                                        recipe.loading_glyph,
+                                        usize::from(lw),
+                                        recipe.secondary,
+                                    );
+                                    x = x.saturating_add(lw).saturating_add(1);
+                                }
+                            } else if let Some(lead) = row.leading.as_ref() {
+                                let lw = u16::try_from(lead.width())
+                                    .unwrap_or(u16::MAX)
+                                    .min(right.saturating_sub(x));
+                                if lw > 0 {
+                                    buffer.set_line(x, rect.y, lead, lw);
+                                    buffer.set_style(Rect::new(x, rect.y, lw, 1), style);
+                                    x = x.saturating_add(lw).saturating_add(1);
+                                }
+                            }
+                        }
+                        let reserve = if show_badge { badge_need } else { 0 }
+                            .saturating_add(if show_shortcut { shortcut_need } else { 0 });
+                        let mid_end = right.saturating_sub(reserve);
+                        let primary_budget = mid_end.saturating_sub(x);
+                        if primary_budget > 0 {
+                            buffer.set_line(x, rect.y, &row.label, primary_budget);
+                            let primary_w = u16::try_from(row.label.width())
+                                .unwrap_or(u16::MAX)
+                                .min(primary_budget);
+                            buffer.set_style(
+                                Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
+                                style,
+                            );
+                            if recipe.show_focus_underline && primary_w > 0 {
+                                buffer.set_style(
+                                    Rect::new(x, rect.y, primary_w, 1),
+                                    recipe.focus.add_modifier(Modifier::UNDERLINED),
                                 );
-                                x = x.saturating_add(lw).saturating_add(1);
                             }
-                        } else if let Some(lead) = row.leading.as_ref() {
-                            let lw = u16::try_from(lead.width())
+                            x = x.saturating_add(primary_w);
+                        }
+                        if show_secondary && let Some(sec) = row.secondary.as_ref() {
+                            let avail = mid_end.saturating_sub(x);
+                            if avail > 2 {
+                                x = x.saturating_add(1);
+                                let sw = u16::try_from(sec.width())
+                                    .unwrap_or(u16::MAX)
+                                    .min(mid_end.saturating_sub(x));
+                                if sw > 0 {
+                                    buffer.set_line(x, rect.y, sec, sw);
+                                    buffer.set_style(Rect::new(x, rect.y, sw, 1), recipe.secondary);
+                                }
+                            }
+                        }
+                        let mut cursor = right;
+                        if show_shortcut && let Some(sc) = row.shortcut {
+                            let w = u16::try_from(crate::text::display_cols(sc))
                                 .unwrap_or(u16::MAX)
-                                .min(right.saturating_sub(x));
-                            if lw > 0 {
-                                buffer.set_line(x, rect.y, lead, lw);
-                                buffer.set_style(Rect::new(x, rect.y, lw, 1), style);
-                                x = x.saturating_add(lw).saturating_add(1);
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_stringn(
+                                    cursor,
+                                    rect.y,
+                                    sc,
+                                    usize::from(w),
+                                    recipe.shortcut,
+                                );
                             }
                         }
-                    }
-                    let reserve = if show_badge { badge_need } else { 0 }
-                        .saturating_add(if show_shortcut { shortcut_need } else { 0 });
-                    let mid_end = right.saturating_sub(reserve);
-                    let primary_budget = mid_end.saturating_sub(x);
-                    if primary_budget > 0 {
-                        buffer.set_line(x, rect.y, &row.label, primary_budget);
-                        let primary_w = u16::try_from(row.label.width())
-                            .unwrap_or(u16::MAX)
-                            .min(primary_budget);
-                        buffer.set_style(
-                            Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
-                            style,
-                        );
-                        if recipe.show_focus_underline && primary_w > 0 {
-                            buffer.set_style(
-                                Rect::new(x, rect.y, primary_w, 1),
-                                recipe.focus.add_modifier(Modifier::UNDERLINED),
-                            );
-                        }
-                        x = x.saturating_add(primary_w);
-                    }
-                    if show_secondary && let Some(sec) = row.secondary.as_ref() {
-                        let avail = mid_end.saturating_sub(x);
-                        if avail > 2 {
-                            x = x.saturating_add(1);
-                            let sw = u16::try_from(sec.width())
+                        if show_actions && let Some(act) = row.actions.as_ref() {
+                            let w = u16::try_from(act.width())
                                 .unwrap_or(u16::MAX)
-                                .min(mid_end.saturating_sub(x));
-                            if sw > 0 {
-                                buffer.set_line(x, rect.y, sec, sw);
-                                buffer.set_style(Rect::new(x, rect.y, sw, 1), recipe.secondary);
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_line(cursor, rect.y, act, w);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.shortcut);
                             }
                         }
-                    }
-                    let mut cursor = right;
-                    if show_shortcut && let Some(sc) = row.shortcut {
-                        let w = u16::try_from(crate::text::display_cols(sc))
-                            .unwrap_or(u16::MAX)
-                            .min(cursor.saturating_sub(content_x));
-                        if w > 0 {
-                            cursor = cursor.saturating_sub(w);
-                            buffer.set_stringn(cursor, rect.y, sc, usize::from(w), recipe.shortcut);
-                        }
-                    }
-                    if show_actions && let Some(act) = row.actions.as_ref() {
-                        let w = u16::try_from(act.width())
-                            .unwrap_or(u16::MAX)
-                            .min(cursor.saturating_sub(content_x));
-                        if w > 0 {
-                            cursor = cursor.saturating_sub(w);
-                            buffer.set_line(cursor, rect.y, act, w);
-                            buffer.set_style(
-                                Rect::new(cursor, rect.y, w, 1),
-                                recipe.shortcut,
-                            );
-                        }
-                    }
-                    if show_badge && let Some(b) = badge {
-                        let w = u16::try_from(b.width())
-                            .unwrap_or(u16::MAX)
-                            .min(cursor.saturating_sub(content_x));
-                        if w > 0 {
-                            if show_shortcut || show_actions {
-                                cursor = cursor.saturating_sub(1);
+                        if show_badge && let Some(b) = badge {
+                            let w = u16::try_from(b.width())
+                                .unwrap_or(u16::MAX)
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                if show_shortcut || show_actions {
+                                    cursor = cursor.saturating_sub(1);
+                                }
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_line(cursor, rect.y, b, w);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
                             }
-                            cursor = cursor.saturating_sub(w);
-                            buffer.set_line(cursor, rect.y, b, w);
-                            buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
                         }
-                    }
                     } // end non-custom
                 }
                 // Comfortable: secondary on next line
@@ -1588,9 +1569,7 @@ fn ensure_list_active_visible<Id: Clone + PartialEq>(
     } else if index >= offset.saturating_add(vp) {
         offset = index.saturating_add(1).saturating_sub(vp);
     }
-    state
-        .collection
-        .set_viewport(offset, vp, rows.len());
+    state.collection.set_viewport(offset, vp, rows.len());
 }
 
 #[cfg(test)]
@@ -2111,7 +2090,10 @@ mod tests {
                 painted.push_str(buffer[(x, y)].symbol());
             }
         }
-        assert!(painted.contains("Title") || painted.contains("meta"), "{painted}");
+        assert!(
+            painted.contains("Title") || painted.contains("meta"),
+            "{painted}"
+        );
     }
 
     #[test]
@@ -2134,7 +2116,10 @@ mod tests {
                 painted.push_str(buffer[(x, y)].symbol());
             }
         }
-        assert!(painted.contains("CUSTOM") || painted.contains("Job"), "{painted}");
+        assert!(
+            painted.contains("CUSTOM") || painted.contains("Job"),
+            "{painted}"
+        );
     }
 
     #[test]

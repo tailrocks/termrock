@@ -21,6 +21,7 @@
 //! Research: LSP completion UIs, prompt-toolkit, terminal editors, Grok Build
 //! prompt completion.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -29,7 +30,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
         OverlaySpec, OverlayStack, PageMove, SemanticNode, SemanticRole, SemanticScene,
@@ -329,8 +332,7 @@ pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
         return None;
     }
     let is_press = key.kind == KeyEventKind::Press;
-    if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT)
-    {
+    if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }
     match key.code {
@@ -391,15 +393,7 @@ pub fn open_completion_overlay<FocusId: Clone>(
     preferred: CompletionMenuSize,
     opener_focus: Option<FocusId>,
 ) -> OverlayOutcome<FocusId> {
-    open_completion_configured(
-        stack,
-        bounds,
-        anchor,
-        preferred,
-        opener_focus,
-        None,
-        None,
-    )
+    open_completion_configured(stack, bounds, anchor, preferred, opener_focus, None, None)
 }
 
 /// Full open with optional presentation / id override.
@@ -412,8 +406,7 @@ pub fn open_completion_configured<FocusId: Clone>(
     force_presentation: Option<CompletionPresentation>,
     id_override: Option<String>,
 ) -> OverlayOutcome<FocusId> {
-    let presentation =
-        force_presentation.unwrap_or_else(|| completion_presentation_for(bounds));
+    let presentation = force_presentation.unwrap_or_else(|| completion_presentation_for(bounds));
     let id = OverlayId(id_override.unwrap_or_else(|| COMPLETION_OVERLAY_ID.to_string()));
     let size = OverlaySize::from(preferred);
     let spec = match presentation {
@@ -425,9 +418,7 @@ pub fn open_completion_configured<FocusId: Clone>(
             };
             OverlaySpec::fullscreen(id, opener_focus).with_policy(policy)
         }
-        CompletionPresentation::Anchored => {
-            OverlaySpec::completion(id, anchor, size, opener_focus)
-        }
+        CompletionPresentation::Anchored => OverlaySpec::completion(id, anchor, size, opener_focus),
     };
     stack.open(bounds, spec)
 }
@@ -637,9 +628,7 @@ impl<Id> CompletionMenuState<Id> {
         let next = completion_presentation_for(bounds);
         if next != self.presentation {
             self.presentation = next;
-            CompletionMenuOutcome::PresentationChanged {
-                presentation: next,
-            }
+            CompletionMenuOutcome::PresentationChanged { presentation: next }
         } else {
             CompletionMenuOutcome::Ignored
         }
@@ -940,10 +929,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
     }
 
     /// Close on stack.
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         self.set_open(false);
         dismiss_completion_overlay(stack)
     }
@@ -1097,12 +1083,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         let menu = if let Some(forced) = self.force_area {
             forced
         } else {
-            place_completion_with_presentation(
-                self.bounds,
-                self.anchor,
-                preferred,
-                presentation,
-            )
+            place_completion_with_presentation(self.bounds, self.anchor, preferred, presentation)
         };
         state.painted = menu;
         state.slots.root = menu;
@@ -1176,7 +1157,11 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         }
         // Corner markers
         if menu.width >= 2 && menu.height >= 1 {
-            let (tl, tr) = if self.ascii { ("+", "+") } else { ("┌", "┐") };
+            let (tl, tr) = if self.ascii {
+                ("+", "+")
+            } else {
+                ("┌", "┐")
+            };
             if let Some(cell) = buffer.cell_mut((menu.x, menu.y)) {
                 cell.set_symbol(tl);
                 cell.set_style(border);
@@ -1198,9 +1183,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             paint_status_line(self, buffer, state);
             return;
         }
-        if self.candidates.is_empty()
-            || matches!(state.status, CompletionStatus::Empty)
-        {
+        if self.candidates.is_empty() || matches!(state.status, CompletionStatus::Empty) {
             let msg = if state.empty_message.is_empty() {
                 self.empty_message
             } else {
@@ -1242,7 +1225,8 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             // Group header when group changes
             if let Some(g) = candidate.group {
                 if last_group != Some(g) {
-                    let header = take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
+                    let header =
+                        take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
                     buffer.set_stringn(
                         list_body.x.saturating_add(1),
                         y,
@@ -1364,13 +1348,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             if docs_area.width >= 1 {
                 let sep = if self.ascii { "|" } else { "│" };
                 for yy in docs_area.y..docs_area.bottom() {
-                    buffer.set_stringn(
-                        docs_area.x,
-                        yy,
-                        sep,
-                        1,
-                        self.system.style(Role::Border),
-                    );
+                    buffer.set_stringn(docs_area.x, yy, sep, 1, self.system.style(Role::Border));
                 }
             }
             let docs_inner = Rect {
@@ -1698,11 +1676,11 @@ mod tests {
         let mut state = CompletionMenuState::new(Some("foo"));
         state.set_commit_characters("().");
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('('), KeyModifiers::NONE), &items),
-            CompletionMenuOutcome::CommitWithChar {
-                id: "foo",
-                ch: '('
-            }
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('('), KeyModifiers::NONE),
+                &items
+            ),
+            CompletionMenuOutcome::CommitWithChar { id: "foo", ch: '(' }
         ));
     }
 
@@ -1789,8 +1767,15 @@ mod tests {
                 height: 8,
             })
             .paint(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("SELECT") || text.contains("Keywords"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("SELECT") || text.contains("Keywords"),
+            "{text}"
+        );
         assert!(!state.slots().list.is_empty());
     }
 
@@ -1810,7 +1795,10 @@ mod tests {
             Rect::new(1, 1, 1, 1),
         )
         .register_semantic(&mut scene, "cm", Rect::new(0, 0, 20, 5), &state);
-        let node = scene.nodes().iter().find(|n| n.label.as_deref() == Some("completion-menu"));
+        let node = scene
+            .nodes()
+            .iter()
+            .find(|n| n.label.as_deref() == Some("completion-menu"));
         assert!(node.is_some());
         assert!(!node.unwrap().focusable);
     }
@@ -1860,13 +1848,11 @@ mod tests {
         for _ in 0..150 {
             terminal
                 .draw(|f| {
-                    CompletionMenu::new(
-                        &items,
-                        &system,
+                    CompletionMenu::new(&items, &system, f.area(), Rect::new(2, 2, 1, 1)).paint(
                         f.area(),
-                        Rect::new(2, 2, 1, 1),
-                    )
-                    .paint(f.area(), f.buffer_mut(), &mut state);
+                        f.buffer_mut(),
+                        &mut state,
+                    );
                 })
                 .unwrap();
         }
@@ -1885,8 +1871,11 @@ mod tests {
         let mut s1 = CompletionMenuState::new(Some("a"));
         let mut t1 = Terminal::new(TestBackend::new(32, 8)).unwrap();
         t1.draw(|f| {
-            CompletionMenu::new(&items, &system, f.area(), Rect::new(1, 1, 1, 1))
-                .paint(f.area(), f.buffer_mut(), &mut s1);
+            CompletionMenu::new(&items, &system, f.area(), Rect::new(1, 1, 1, 1)).paint(
+                f.area(),
+                f.buffer_mut(),
+                &mut s1,
+            );
         })
         .unwrap();
         let text1: String = t1
@@ -1899,8 +1888,11 @@ mod tests {
         let mut s2 = CompletionMenuState::new(Some("a"));
         let mut t2 = Terminal::new(TestBackend::new(32, 8)).unwrap();
         t2.draw(|f| {
-            CompletionMenu::new(&items, &system, f.area(), Rect::new(1, 1, 1, 1))
-                .paint(f.area(), f.buffer_mut(), &mut s2);
+            CompletionMenu::new(&items, &system, f.area(), Rect::new(1, 1, 1, 1)).paint(
+                f.area(),
+                f.buffer_mut(),
+                &mut s2,
+            );
         })
         .unwrap();
         let text2: String = t2

@@ -17,6 +17,7 @@
 //!
 //! Research: inspector panels, HTTP clients, cloud consoles, TermRock DetailTable.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -589,7 +590,11 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
 
     /// Display value with redaction.
     #[must_use]
-    pub fn display_value(&self, field: &KvtField<'a, Id>, state: &KeyValueTableState<Id>) -> String {
+    pub fn display_value(
+        &self,
+        field: &KvtField<'a, Id>,
+        state: &KeyValueTableState<Id>,
+    ) -> String {
         if field.secret && !state.is_revealed(&field.id) {
             return if self.system.glyphs.is_ascii() {
                 "********".into()
@@ -783,10 +788,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             }
         }
 
-        if is_press
-            && matches!(key.code, KeyCode::Char('r' | 'R'))
-            && key.modifiers.is_empty()
-        {
+        if is_press && matches!(key.code, KeyCode::Char('r' | 'R')) && key.modifiers.is_empty() {
             if let Some(id) = state.cursor.clone() {
                 if let Some(f) = self.fields.iter().find(|f| f.id == id) {
                     if f.secret {
@@ -984,11 +986,13 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                 }
             }
             MouseEventKind::Down(MouseButton::Left) => {
-                if let Some(r) = state.regions.iter().find(|r| r.area.contains(event.position)) {
+                if let Some(r) = state
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                {
                     let id = r.id.clone();
-                    if state.cursor.as_ref() == Some(&id)
-                        && r.value_area.contains(event.position)
-                    {
+                    if state.cursor.as_ref() == Some(&id) && r.value_area.contains(event.position) {
                         if let Some(f) = self.fields.iter().find(|f| f.id == id) {
                             if let Some(href) = f.href {
                                 return KeyValueTableOutcome::ActivateLink {
@@ -1015,12 +1019,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     }
 
     /// Paint O(viewport) display rows.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut KeyValueTableState<Id>,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyValueTableState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -1101,12 +1100,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         let (show_type, show_source) = self.show_meta_cols(body.width, paint_layout);
         let compare = matches!(state.mode, KvtMode::Compare);
         let view = self.filtered(state);
-        let key_w = self.key_col_w(
-            &view
-                .iter()
-                .map(|f| (*f).clone())
-                .collect::<Vec<_>>(),
-        );
+        let key_w = self.key_col_w(&view.iter().map(|f| (*f).clone()).collect::<Vec<_>>());
 
         // Build display row map
         let mut row_map: Vec<(usize, u16)> = Vec::new();
@@ -1480,7 +1474,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     );
                     x = x.saturating_add(SOURCE_W + 1);
                 }
-                let mut remain = area.right().saturating_sub(x);
+                let remain = area.right().saturating_sub(x);
                 if compare {
                     let half = remain / 2;
                     let body = if let Some(ann) = field.annotation {
@@ -1544,7 +1538,14 @@ fn st_role(status: KvStatus) -> Role {
     }
 }
 
-fn paint_line(buffer: &mut Buffer, x: u16, y: u16, width: u16, text: &str, style: ratatui_core::style::Style) {
+fn paint_line(
+    buffer: &mut Buffer,
+    x: u16,
+    y: u16,
+    width: u16,
+    text: &str,
+    style: ratatui_core::style::Style,
+) {
     if width == 0 {
         return;
     }
@@ -1604,10 +1605,7 @@ mod tests {
         let fields = sample();
         let table = KeyValueTable::new(&fields, &system);
         let mut state = KeyValueTableState::new().with_cursor("method");
-        let out = table.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-        );
+        let out = table.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         assert!(matches!(out, KeyValueTableOutcome::Selected("auth")));
         let out = table.handle_key(
             &mut state,
@@ -1670,11 +1668,9 @@ mod tests {
     #[test]
     fn compare_mode_toggle() {
         let system = DesignSystem::default();
-        let fields = [
-            KvtField::pair("a", "host", "a.example")
-                .compare("b.example")
-                .copyable(),
-        ];
+        let fields = [KvtField::pair("a", "host", "a.example")
+            .compare("b.example")
+            .copyable()];
         let table = KeyValueTable::new(&fields, &system);
         let mut state = KeyValueTableState::new().with_cursor("a");
         let out = table.handle_key(
@@ -1716,7 +1712,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("method") || text.contains("Request"), "{text}");
+        assert!(
+            text.contains("method") || text.contains("Request"),
+            "{text}"
+        );
         assert!(
             text.contains("••••")
                 || text.contains("****")
@@ -1746,7 +1745,10 @@ mod tests {
         );
         let view = table.filtered(&state);
         let keys: Vec<_> = view.iter().map(|f| f.key).collect();
-        assert!(keys.iter().any(|k| k.contains("authorization") || *k == "Request"));
+        assert!(
+            keys.iter()
+                .any(|k| k.contains("authorization") || *k == "Request")
+        );
     }
 
     #[test]

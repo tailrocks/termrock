@@ -16,6 +16,7 @@
 //!
 //! Research: prompt-toolkit, Reedline, Textual Input, terminal line editors.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,8 +27,12 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{
+        EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -698,21 +703,13 @@ impl TextInputState {
             }
             KeyCode::Backspace => self.edit(EditAction::Backspace),
             KeyCode::Delete => self.edit(EditAction::Delete),
-            KeyCode::Left if ctrl || alt => {
-                self.edit(EditAction::WordLeft { select: shift })
-            }
-            KeyCode::Right if ctrl || alt => {
-                self.edit(EditAction::WordRight { select: shift })
-            }
+            KeyCode::Left if ctrl || alt => self.edit(EditAction::WordLeft { select: shift }),
+            KeyCode::Right if ctrl || alt => self.edit(EditAction::WordRight { select: shift }),
             KeyCode::Left => self.edit(EditAction::MoveLeft { select: shift }),
             KeyCode::Right => self.edit(EditAction::MoveRight { select: shift }),
             KeyCode::Home => self.edit(EditAction::Home { select: shift }),
             KeyCode::End => self.edit(EditAction::End { select: shift }),
-            KeyCode::Char(character)
-                if !ctrl
-                    && !alt
-                    && !character.is_control() =>
-            {
+            KeyCode::Char(character) if !ctrl && !alt && !character.is_control() => {
                 self.edit(EditAction::Insert(character))
             }
             _ => TextInputOutcome::Ignored,
@@ -807,11 +804,7 @@ impl TextInputState {
     }
 
     /// Mouse: click places cursor; drag selects.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        field_area: Rect,
-    ) -> TextInputOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent, field_area: Rect) -> TextInputOutcome {
         if !self.enabled || field_area.is_empty() {
             return TextInputOutcome::Ignored;
         }
@@ -994,10 +987,7 @@ impl<'a> TextInput<'a> {
         if !self.secret {
             return value.to_owned();
         }
-        value
-            .graphemes(true)
-            .map(|_| self.secret_mask)
-            .collect()
+        value.graphemes(true).map(|_| self.secret_mask).collect()
     }
 
     /// Paint (preferred over StatefulWidget when parts needed).
@@ -1038,7 +1028,12 @@ impl<'a> TextInput<'a> {
             y = y.saturating_add(1);
         }
 
-        let field_row = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), area.width, 1);
+        let field_row = Rect::new(
+            area.x,
+            y.min(area.bottom().saturating_sub(1)),
+            area.width,
+            1,
+        );
         let mut x = field_row.x;
         let mut prefix_rect = None;
         let mut suffix_rect = None;
@@ -1108,21 +1103,18 @@ impl<'a> TextInput<'a> {
         } else {
             input_style
         };
-        buffer.set_stringn(
-            field.x,
-            field.y,
-            &painted,
-            field_w,
-            text_style,
-        );
+        buffer.set_stringn(field.x, field.y, &painted, field_w, text_style);
 
         // Selection reverse
         if let Some((a, b)) = state.selection_range() {
             let a = a.max(state.viewport);
             if b > a {
                 let start_col = UnicodeWidthStr::width(&state.value[state.viewport..a]);
-                let end_col = UnicodeWidthStr::width(&state.value[state.viewport..b.min(state.value.len())]);
-                let sx = field.x.saturating_add(u16::try_from(start_col).unwrap_or(0));
+                let end_col =
+                    UnicodeWidthStr::width(&state.value[state.viewport..b.min(state.value.len())]);
+                let sx = field
+                    .x
+                    .saturating_add(u16::try_from(start_col).unwrap_or(0));
                 let ex = field
                     .x
                     .saturating_add(u16::try_from(end_col).unwrap_or(0))
@@ -1138,8 +1130,9 @@ impl<'a> TextInput<'a> {
             }
         }
 
-        let cursor_column =
-            UnicodeWidthStr::width(&state.value[state.viewport..state.cursor.min(state.value.len())]);
+        let cursor_column = UnicodeWidthStr::width(
+            &state.value[state.viewport..state.cursor.min(state.value.len())],
+        );
         let cursor_x = field
             .x
             .saturating_add(u16::try_from(cursor_column).unwrap_or(u16::MAX))
@@ -1147,7 +1140,9 @@ impl<'a> TextInput<'a> {
         let cursor_rect = if state.focused && state.enabled {
             buffer.set_style(
                 Rect::new(cursor_x, field.y, 1, 1),
-                self.system.style(Role::Focus).add_modifier(Modifier::REVERSED),
+                self.system
+                    .style(Role::Focus)
+                    .add_modifier(Modifier::REVERSED),
             );
             Some(Rect::new(cursor_x, field.y, 1, 1))
         } else {
@@ -1166,13 +1161,7 @@ impl<'a> TextInput<'a> {
             }
         }
         if let Some(cr) = clear_rect {
-            buffer.set_stringn(
-                cr.x,
-                cr.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            buffer.set_stringn(cr.x, cr.y, "×", 1, self.system.style(Role::TextMuted));
         }
         if state.loading {
             let g = self.system.glyphs.loading();
@@ -1214,11 +1203,7 @@ impl<'a> TextInput<'a> {
     }
 
     /// Clear hit test helper.
-    pub fn handle_mouse(
-        &self,
-        state: &mut TextInputState,
-        event: MouseEvent,
-    ) -> TextInputOutcome {
+    pub fn handle_mouse(&self, state: &mut TextInputState, event: MouseEvent) -> TextInputOutcome {
         let Some(parts) = state.parts.clone() else {
             return TextInputOutcome::Ignored;
         };
@@ -1270,8 +1255,7 @@ impl<'a> TextInput<'a> {
                 .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
-                    invalid: !state.is_valid()
-                        || matches!(self.validation, Validation::Invalid(_)),
+                    invalid: !state.is_valid() || matches!(self.validation, Validation::Invalid(_)),
                     busy: state.loading,
                     ..Default::default()
                 }),
@@ -1419,28 +1403,19 @@ mod tests {
         let mut state = TextInputState::new("hello");
         state.set_cursor_byte(0);
         let _ = state.apply(EditAction::End { select: true });
-        let out = state.handle_key(KeyEvent::new(
-            KeyCode::Char('c'),
-            KeyModifiers::CONTROL,
-        ));
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
         assert!(matches!(
             out,
             TextInputOutcome::ClipboardCopy { ref text } if text == "hello"
         ));
-        let out = state.handle_key(KeyEvent::new(
-            KeyCode::Char('v'),
-            KeyModifiers::CONTROL,
-        ));
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('v'), KeyModifiers::CONTROL));
         assert_eq!(out, TextInputOutcome::ClipboardPasteRequest);
     }
 
     #[test]
     fn paste_strips_newlines_and_controls() {
         let mut state = TextInputState::new("").with_allow_empty(true);
-        assert_eq!(
-            state.insert_str("ab\ncd\x01ef"),
-            TextInputOutcome::Changed
-        );
+        assert_eq!(state.insert_str("ab\ncd\x01ef"), TextInputOutcome::Changed);
         assert_eq!(state.value(), "ab");
     }
 
@@ -1554,9 +1529,7 @@ mod tests {
         );
         let _ = state.apply(EditAction::End { select: false });
         assert!(matches!(
-            state.handle_intent(UiIntent::Move(
-                crate::interaction::NavigationMove::Left
-            )),
+            state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Left)),
             TextInputOutcome::Changed | TextInputOutcome::Ignored
         ));
     }

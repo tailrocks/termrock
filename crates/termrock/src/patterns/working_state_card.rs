@@ -23,6 +23,7 @@
 //!
 //! Research: agent status surfaces with privacy-preserving reasoning summaries.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -34,9 +35,9 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
+    patterns::activity_shelf::{ActivityItem, ActivityKind},
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    patterns::activity_shelf::{ActivityItem, ActivityKind},
     widgets::Panel,
     widgets::SemanticStatus,
 };
@@ -212,11 +213,7 @@ pub struct WorkingState {
 impl WorkingState {
     /// Running work with public summary.
     #[must_use]
-    pub fn new(
-        id: impl Into<String>,
-        phase: WorkingPhase,
-        summary: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, phase: WorkingPhase, summary: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             phase,
@@ -306,10 +303,7 @@ impl WorkingState {
             parts.push(format!("Waiting: {w}"));
         }
         if !self.resources.is_empty() {
-            parts.push(format!(
-                "{} resources",
-                self.resources.len()
-            ));
+            parts.push(format!("{} resources", self.resources.len()));
         }
         parts.join(". ")
     }
@@ -565,12 +559,12 @@ impl WorkingStateCardState {
                     self.expand();
                     WorkingStateOutcome::Expanded
                 }
-                KeyCode::Char('c') if work.can_cancel => WorkingStateOutcome::CancelRequested {
-                    id: work_id,
-                },
-                KeyCode::Char('i') if work.can_inspect => WorkingStateOutcome::InspectRequested {
-                    id: work_id,
-                },
+                KeyCode::Char('c') if work.can_cancel => {
+                    WorkingStateOutcome::CancelRequested { id: work_id }
+                }
+                KeyCode::Char('i') if work.can_inspect => {
+                    WorkingStateOutcome::InspectRequested { id: work_id }
+                }
                 KeyCode::Char('y') => WorkingStateOutcome::Ignored,
                 _ => WorkingStateOutcome::Ignored,
             };
@@ -616,9 +610,7 @@ impl WorkingStateCardState {
                 WorkingStateOutcome::Ignored
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                if !work.resources.is_empty()
-                    && self.resource_cursor + 1 < work.resources.len()
-                {
+                if !work.resources.is_empty() && self.resource_cursor + 1 < work.resources.len() {
                     self.resource_cursor += 1;
                     if let Some(r) = work.resources.get(self.resource_cursor) {
                         return WorkingStateOutcome::ResourceSelected {
@@ -759,12 +751,7 @@ impl<'a> WorkingStateCard<'a> {
     ///
     /// When collapsed, paints a single non-invasive line; host should also
     /// feed [`WorkingStateCardState::to_activity_item`] into ActivityShelf.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut WorkingStateCardState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut WorkingStateCardState) {
         state.action_hits.clear();
         state.resource_hits.clear();
         state.header_hit = None;
@@ -1004,13 +991,9 @@ impl<'a> WorkingStateCard<'a> {
                 }
                 let style = if focused {
                     if matches!(action, WorkingAction::Cancel) {
-                        self.system
-                            .style(Role::Danger)
-                            .add_modifier(Modifier::BOLD)
+                        self.system.style(Role::Danger).add_modifier(Modifier::BOLD)
                     } else {
-                        self.system
-                            .style(Role::Accent)
-                            .add_modifier(Modifier::BOLD)
+                        self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
                     }
                 } else {
                     self.system.style(Role::TextMuted)
@@ -1070,19 +1053,15 @@ pub fn merge_working_into_shelf(items: &mut Vec<ActivityItem>, work: &WorkingSta
 /// Demo: editing with public summary (not CoT).
 #[must_use]
 pub fn example_working_state() -> WorkingState {
-    WorkingState::new(
-        "w1",
-        WorkingPhase::Editing,
-        "Updating auth module exports",
-    )
-    .elapsed("24s")
-    .progress(40)
-    .next_action("run tests")
-    .actor("agent")
-    .resources(vec![
-        WorkingResource::new("f1", "src/auth/mod.rs").role("write"),
-        WorkingResource::new("f2", "src/auth/token.rs").role("read"),
-    ])
+    WorkingState::new("w1", WorkingPhase::Editing, "Updating auth module exports")
+        .elapsed("24s")
+        .progress(40)
+        .next_action("run tests")
+        .actor("agent")
+        .resources(vec![
+            WorkingResource::new("f1", "src/auth/mod.rs").role("write"),
+            WorkingResource::new("f2", "src/auth/token.rs").role("read"),
+        ])
 }
 
 /// Waiting on user (permission) — public reason only.
@@ -1254,10 +1233,7 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(
-            !text.to_ascii_lowercase().contains("thinking"),
-            "{text}"
-        );
+        assert!(!text.to_ascii_lowercase().contains("thinking"), "{text}");
     }
 
     #[test]

@@ -22,24 +22,20 @@
 use std::collections::VecDeque;
 
 use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    text::Line,
-    widgets::StatefulWidget,
+    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
 };
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{ActivityKind, ActivityModel, ActivityScope},
+    style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        format_duration_ms, List, ListRow, ListState, NotificationItem, Panel, RowRole,
-        SemanticStatus, TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, TerminalStream, ToastKind, ToastPriority,
+        List, ListRow, ListState, NotificationItem, Panel, RowRole, SemanticStatus, TerminalLine,
+        TerminalOutput, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TerminalStream,
+        ToastKind, ToastPriority, format_duration_ms,
     },
 };
 
@@ -220,10 +216,7 @@ impl BackgroundTaskStatus {
     /// Completed for clear-completed?
     #[must_use]
     pub const fn is_terminal(self) -> bool {
-        matches!(
-            self,
-            Self::Succeeded | Self::Failed | Self::Stopped
-        )
+        matches!(self, Self::Succeeded | Self::Failed | Self::Stopped)
     }
 
     /// Map toward TerminalRunStatus for detail pane.
@@ -364,7 +357,10 @@ impl BackgroundOutputBuffer {
         Some(if ascii {
             format!("[{} lines dropped]", self.dropped)
         } else {
-            format!("⚠ {} lines dropped (history cap {})", self.dropped, self.max_lines)
+            format!(
+                "⚠ {} lines dropped (history cap {})",
+                self.dropped, self.max_lines
+            )
         })
     }
 
@@ -581,8 +577,10 @@ pub fn background_task_to_activity(task: &BackgroundTask) -> ActivityModel {
     if let Some(c) = &task.command {
         m = m.detail(c.clone());
     }
-    if matches!(task.status, BackgroundTaskStatus::Lost | BackgroundTaskStatus::Reconnecting)
-    {
+    if matches!(
+        task.status,
+        BackgroundTaskStatus::Lost | BackgroundTaskStatus::Reconnecting
+    ) {
         m = m.blocked(true).waiting_reason(task.status.label());
     }
     m
@@ -809,8 +807,7 @@ impl BackgroundTaskPanelState {
         let vis = self.visible_tasks(tasks);
         vis.into_iter()
             .map(|t| {
-                let mut row =
-                    ListRow::item(t.id.clone(), Line::from(t.row_label(ascii)));
+                let mut row = ListRow::item(t.id.clone(), Line::from(t.row_label(ascii)));
                 let meta = t.meta_line();
                 if !meta.is_empty() {
                     row.secondary = Some(Line::from(meta));
@@ -874,23 +871,17 @@ impl BackgroundTaskPanelState {
             }
             KeyCode::Char('x') | KeyCode::Delete => {
                 if let Some(id) = self.selected_id() {
-                    return BackgroundTaskPanelOutcome::StopRequested {
-                        id: id.to_string(),
-                    };
+                    return BackgroundTaskPanelOutcome::StopRequested { id: id.to_string() };
                 }
             }
             KeyCode::Char('r') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_id() {
-                    return BackgroundTaskPanelOutcome::RestartRequested {
-                        id: id.to_string(),
-                    };
+                    return BackgroundTaskPanelOutcome::RestartRequested { id: id.to_string() };
                 }
             }
             KeyCode::Char('d') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_id() {
-                    return BackgroundTaskPanelOutcome::DetachRequested {
-                        id: id.to_string(),
-                    };
+                    return BackgroundTaskPanelOutcome::DetachRequested { id: id.to_string() };
                 }
             }
             KeyCode::Char('f') if key.modifiers.is_empty() => {
@@ -962,8 +953,7 @@ impl BackgroundTaskPanelState {
                             | KeyCode::Down
                     ) && matches!(
                         self.presentation,
-                        BackgroundTaskPresentation::Pane
-                            | BackgroundTaskPresentation::Fullscreen
+                        BackgroundTaskPresentation::Pane | BackgroundTaskPresentation::Fullscreen
                     ) {
                         // Prefer list navigation already handled; if list empty use output
                         if rows.is_empty() {
@@ -1109,12 +1099,7 @@ impl<'a> BackgroundTaskPanel<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut BackgroundTaskPanelState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
         if area.is_empty() || !state.open {
             return;
         }
@@ -1125,8 +1110,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         }
         let ascii = self.ascii || self.colorless;
 
-        if matches!(state.presentation, BackgroundTaskPresentation::CompactRail)
-            || area.height <= 3
+        if matches!(state.presentation, BackgroundTaskPresentation::CompactRail) || area.height <= 3
         {
             self.paint_rail(area, buffer, state, ascii);
             return;
@@ -1234,9 +1218,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(emphasis);
+        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
         let inner = panel.inner(area);
         use ratatui_core::widgets::Widget;
         Widget::render(&panel, area, buffer);
@@ -1325,14 +1307,13 @@ impl<'a> BackgroundTaskPanel<'a> {
             BackgroundTaskStatus::Lost | BackgroundTaskStatus::Reconnecting
         ) && y < max_y
         {
-            let note = task
-                .status_note
-                .as_deref()
-                .unwrap_or(if matches!(task.status, BackgroundTaskStatus::Lost) {
+            let note = task.status_note.as_deref().unwrap_or(
+                if matches!(task.status, BackgroundTaskStatus::Lost) {
                     "process lost — restart or clear"
                 } else {
                     "reconnecting…"
-                });
+                },
+            );
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1372,7 +1353,9 @@ impl<'a> BackgroundTaskPanel<'a> {
         state.output.ascii = ascii;
         state.output.colorless = self.colorless;
         if state.output.is_following() {
-            state.output.on_append(term_lines.len() as u16, out_area.height.max(1));
+            state
+                .output
+                .on_append(term_lines.len() as u16, out_area.height.max(1));
         }
         TerminalOutput::new(&meta, &term_lines, self.system)
             .focused(state.focused)
@@ -1384,12 +1367,7 @@ impl<'a> BackgroundTaskPanel<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut BackgroundTaskPanelState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1489,7 +1467,10 @@ mod tests {
     fn bounded_output_drops_oldest() {
         let mut buf = BackgroundOutputBuffer::new(3);
         for i in 0..5 {
-            buf.append(BackgroundOutputLine::stdout(format!("{i}"), format!("L{i}")));
+            buf.append(BackgroundOutputLine::stdout(
+                format!("{i}"),
+                format!("L{i}"),
+            ));
         }
         assert_eq!(buf.len(), 3);
         assert_eq!(buf.dropped, 2);
@@ -1582,9 +1563,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         BackgroundTaskPanel::new(&tasks, &system).paint(area, &mut buf, &mut st);
         st.force_presentation = Some(BackgroundTaskPresentation::CompactRail);
-        BackgroundTaskPanel::new(&tasks, &system)
-            .ascii(true)
-            .paint(Rect::new(0, 0, 24, 12), &mut buf, &mut st);
+        BackgroundTaskPanel::new(&tasks, &system).ascii(true).paint(
+            Rect::new(0, 0, 24, 12),
+            &mut buf,
+            &mut st,
+        );
     }
 
     #[test]
@@ -1593,7 +1576,10 @@ mod tests {
         let mut st = BackgroundTaskPanelState::new();
         assert!(st.output.is_following());
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE), &tasks),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
+                &tasks
+            ),
             BackgroundTaskPanelOutcome::FollowChanged { following: false }
         ));
     }

@@ -285,7 +285,12 @@ pub enum TruncateMode {
 /// Truncate to `max_cols` using `ellipsis` (display width counted). Empty if
 /// `max_cols` is zero.
 #[must_use]
-pub fn truncate_display_cols(s: &str, max_cols: usize, mode: TruncateMode, ellipsis: &str) -> String {
+pub fn truncate_display_cols(
+    s: &str,
+    max_cols: usize,
+    mode: TruncateMode,
+    ellipsis: &str,
+) -> String {
     if max_cols == 0 {
         return String::new();
     }

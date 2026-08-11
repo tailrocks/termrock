@@ -267,10 +267,9 @@ impl<'a> Card<'a> {
             && card.body.height > 1
             && !state.is_some_and(|s| s.collapsed)
         {
-            let stacked = Stack::new().gap(0).layout(
-                card.body,
-                &[FlexSize::Fixed(1), FlexSize::Weight(1)],
-            );
+            let stacked = Stack::new()
+                .gap(0)
+                .layout(card.body, &[FlexSize::Fixed(1), FlexSize::Weight(1)]);
             card.description = stacked.get(0);
             card.body = stacked.get(1).unwrap_or(card.body);
             card.clip = card.body;

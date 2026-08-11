@@ -358,7 +358,10 @@ impl Glyph {
     /// Glyphs in a group.
     #[must_use]
     pub fn in_group(group: GlyphGroup) -> impl Iterator<Item = Self> {
-        Self::ALL.iter().copied().filter(move |g| g.group() == group)
+        Self::ALL
+            .iter()
+            .copied()
+            .filter(move |g| g.group() == group)
     }
 
     /// Resolve cells + width for a glyph set / profile.
@@ -455,9 +458,12 @@ impl Glyph {
 
     const fn enhanced_cols(self) -> u16 {
         match self {
-            Self::File | Self::Folder | Self::FolderOpen | Self::Search | Self::Warning | Self::Info => {
-                2
-            }
+            Self::File
+            | Self::Folder
+            | Self::FolderOpen
+            | Self::Search
+            | Self::Warning
+            | Self::Info => 2,
             Self::CheckOn | Self::CheckOff | Self::CheckMixed => 1,
             Self::Loading | Self::Ellipsis => 1,
             _ => 1,
@@ -484,7 +490,9 @@ impl GlyphResolved {
     /// Measured display columns (grapheme-safe).
     #[must_use]
     pub fn display_width(&self) -> u16 {
-        u16::try_from(display_cols(self.text)).unwrap_or(self.cols).max(1)
+        u16::try_from(display_cols(self.text))
+            .unwrap_or(self.cols)
+            .max(1)
     }
 
     /// Pad / clip text to `width` columns (left-aligned).

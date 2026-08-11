@@ -15,14 +15,10 @@
 //!
 //! Research: Rich Progress, indicatif, btop bars, download/build TUIs.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::{Duration, Instant};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -32,8 +28,7 @@ use crate::{
 };
 
 /// Default indeterminate braille frames (preserved).
-pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] =
-    ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
+pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
 /// ASCII indeterminate frames.
 pub const PROGRESS_ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
 /// Min track cells when percentage is shown or reserved.
@@ -528,20 +523,14 @@ impl ProgressBarState {
                 format_bytes(self.value as u64),
                 format_bytes(self.total as u64)
             )),
-            ProgressUnit::Items => Some(format!(
-                "{}/{}",
-                self.value as u64, self.total as u64
-            )),
+            ProgressUnit::Items => Some(format!("{}/{}", self.value as u64, self.total as u64)),
             ProgressUnit::Custom => {
                 let u = if self.unit_label.is_empty() {
                     ""
                 } else {
                     self.unit_label.as_str()
                 };
-                Some(format!(
-                    "{:.0}/{:.0}{u}",
-                    self.value, self.total
-                ))
+                Some(format!("{:.0}/{:.0}{u}", self.value, self.total))
             }
         }
     }
@@ -765,7 +754,11 @@ impl<'a> ProgressBar<'a> {
             Some(state.label.as_str())
         };
         let meta = state.meta_line();
-        let meta_ref = if meta.is_empty() { None } else { Some(meta.as_str()) };
+        let meta_ref = if meta.is_empty() {
+            None
+        } else {
+            Some(meta.as_str())
+        };
         let phase = if state.phase.is_empty() {
             None
         } else {
@@ -802,7 +795,11 @@ impl<'a> ProgressBar<'a> {
         match self.recipe {
             ProgressRecipe::MultiLine => self.paint_multiline(area, buffer),
             ProgressRecipe::Compact | ProgressRecipe::Detailed => {
-                self.paint_row(area, buffer, matches!(self.recipe, ProgressRecipe::Detailed));
+                self.paint_row(
+                    area,
+                    buffer,
+                    matches!(self.recipe, ProgressRecipe::Detailed),
+                );
             }
         }
     }
@@ -849,13 +846,7 @@ impl<'a> ProgressBar<'a> {
         self.paint_kind(area, buffer, self.label, detailed);
     }
 
-    fn paint_kind(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        label: Option<&str>,
-        detailed: bool,
-    ) {
+    fn paint_kind(&self, area: Rect, buffer: &mut Buffer, label: Option<&str>, detailed: bool) {
         match self.kind {
             ProgressKind::Determinate { fraction } => {
                 render_determinate(
@@ -990,7 +981,11 @@ fn render_determinate(
                 let mw = u16::try_from(display_cols(m))
                     .unwrap_or(u16::MAX)
                     .min(area.width / 3)
-                    .min(right_limit.saturating_sub(area.x).saturating_sub(MIN_TRACK_WIDTH + 4));
+                    .min(
+                        right_limit
+                            .saturating_sub(area.x)
+                            .saturating_sub(MIN_TRACK_WIDTH + 4),
+                    );
                 if mw > 0 {
                     let mx = right_limit.saturating_sub(mw);
                     buffer.set_stringn(
@@ -1062,9 +1057,7 @@ fn render_indeterminate(
     }
     let frames = if ascii {
         // Prefer ASCII spinner when host asked for ASCII paint.
-        if frames.len() == DEFAULT_PROGRESS_FRAMES.len()
-            || frames.is_empty()
-        {
+        if frames.len() == DEFAULT_PROGRESS_FRAMES.len() || frames.is_empty() {
             &PROGRESS_ASCII_FRAMES[..]
         } else {
             frames
@@ -1099,11 +1092,7 @@ fn render_indeterminate(
                     track_x.saturating_add(c),
                     area.y,
                     if on { fill } else { empty },
-                    system.style(if on {
-                        status.role()
-                    } else {
-                        Role::TextMuted
-                    }),
+                    system.style(if on { status.role() } else { Role::TextMuted }),
                 );
             }
             // label after? put label at end if fits - skip if track used
@@ -1354,7 +1343,10 @@ mod tests {
             .status(ProgressStatus::Running)
             .paint(area, &mut buf);
         let text: String = rendered(&buf);
-        assert!(text.contains("Download") || text.contains("12M") || text.contains('%'), "{text}");
+        assert!(
+            text.contains("Download") || text.contains("12M") || text.contains('%'),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1413,10 +1405,12 @@ mod tests {
         ProgressBar::new(ProgressKind::Determinate { fraction: 0.2 }, &system)
             .label("x")
             .register_semantic(&mut scene, "p", Rect::new(0, 0, 20, 1));
-        assert!(scene
-            .nodes()
-            .iter()
-            .any(|n| n.label.as_deref() == Some("progress-bar")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("progress-bar"))
+        );
     }
 
     #[test]

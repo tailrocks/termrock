@@ -15,6 +15,7 @@
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -23,10 +24,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -417,7 +418,10 @@ impl FormWizardState {
     /// Gate for current step.
     #[must_use]
     pub fn current_gate(&self) -> WizardGate {
-        self.gates.get(self.index).copied().unwrap_or(WizardGate::Valid)
+        self.gates
+            .get(self.index)
+            .copied()
+            .unwrap_or(WizardGate::Valid)
     }
 
     /// Statuses for stepper.
@@ -635,9 +639,7 @@ impl FormWizardState {
                         };
                     }
                     WizardGate::Pending => {
-                        return FormWizardOutcome::BlockedPending {
-                            step: self.index,
-                        };
+                        return FormWizardOutcome::BlockedPending { step: self.index };
                     }
                     WizardGate::Valid => {}
                 }
@@ -674,9 +676,7 @@ impl FormWizardState {
                 self.phase = WizardPhase::Step;
                 self.failure_message = None;
                 self.rebuild_statuses();
-                FormWizardOutcome::RetryRequested {
-                    step: self.index,
-                }
+                FormWizardOutcome::RetryRequested { step: self.index }
             }
             WizardPhase::Review => {
                 self.phase = WizardPhase::Step;
@@ -747,10 +747,7 @@ impl FormWizardState {
             // only completed, skipped, current, or previous
             let allowed = index <= self.index
                 || self.statuses.get(index).is_some_and(|s| {
-                    matches!(
-                        s,
-                        WizardStepStatus::Complete | WizardStepStatus::Skipped
-                    )
+                    matches!(s, WizardStepStatus::Complete | WizardStepStatus::Skipped)
                 });
             if !allowed && index > self.index {
                 // allow only if all prior complete/skipped
@@ -758,8 +755,7 @@ impl FormWizardState {
                     matches!(
                         self.statuses.get(i),
                         Some(WizardStepStatus::Complete | WizardStepStatus::Skipped)
-                    ) || i == self.index
-                        && self.current_gate().allows_advance()
+                    ) || i == self.index && self.current_gate().allows_advance()
                 });
                 if !prior_ok {
                     return FormWizardOutcome::Ignored;
@@ -826,7 +822,7 @@ impl FormWizardState {
             WizardPhase::Step => match key.code {
                 KeyCode::Right | KeyCode::Char('n') | KeyCode::Char('N') => {
                     let out = self.next();
-                    // Host should also focus first field — emit as secondary via Changed? 
+                    // Host should also focus first field — emit as secondary via Changed?
                     // We return StepChanged; host calls request_focus_field.
                     out
                 }
@@ -995,14 +991,11 @@ impl<'a> FormWizard<'a> {
                         WizardPhase::Step => state
                             .current_step()
                             .map(|s| {
-                                format!(
-                                    "{}/{} {}",
-                                    state.index + 1,
-                                    state.steps.len(),
-                                    s.title
-                                )
+                                format!("{}/{} {}", state.index + 1, state.steps.len(), s.title)
                             })
-                            .unwrap_or_else(|| format!("{}/{}", state.index + 1, state.steps.len())),
+                            .unwrap_or_else(|| {
+                                format!("{}/{}", state.index + 1, state.steps.len())
+                            }),
                     };
                     buffer.set_stringn(
                         inner.x,
@@ -1208,43 +1201,42 @@ impl<'a> FormWizard<'a> {
 
         // Cancel far left-ish already have back; cancel on far right start
         // Next / Finish / Retry on right
-        let next_label = match state.phase {
-            WizardPhase::Failed => {
-                if self.ascii {
-                    "Retry"
-                } else {
-                    "Retry ↵"
+        let next_label =
+            match state.phase {
+                WizardPhase::Failed => {
+                    if self.ascii {
+                        "Retry"
+                    } else {
+                        "Retry ↵"
+                    }
                 }
-            }
-            WizardPhase::Review => {
-                if self.ascii {
-                    "Finish"
-                } else {
-                    "Finish ↵"
+                WizardPhase::Review => {
+                    if self.ascii {
+                        "Finish"
+                    } else {
+                        "Finish ↵"
+                    }
                 }
-            }
-            WizardPhase::Step if state.index + 1 >= state.steps.len() && !state.review_enabled => {
-                if self.ascii {
-                    "Finish"
-                } else {
-                    "Finish ↵"
+                WizardPhase::Step
+                    if state.index + 1 >= state.steps.len() && !state.review_enabled =>
+                {
+                    if self.ascii { "Finish" } else { "Finish ↵" }
                 }
-            }
-            WizardPhase::Step if state.index + 1 >= state.steps.len() => {
-                if self.ascii {
-                    "Review"
-                } else {
-                    "Review →"
+                WizardPhase::Step if state.index + 1 >= state.steps.len() => {
+                    if self.ascii {
+                        "Review"
+                    } else {
+                        "Review →"
+                    }
                 }
-            }
-            WizardPhase::Step => {
-                if self.ascii {
-                    "Next"
-                } else {
-                    "Next →"
+                WizardPhase::Step => {
+                    if self.ascii {
+                        "Next"
+                    } else {
+                        "Next →"
+                    }
                 }
-            }
-        };
+            };
         let nw = display_cols(next_label) as u16;
         let nx = area.right().saturating_sub(nw).saturating_sub(1);
         let nr = Rect::new(nx.max(x), area.y, nw, 1);
@@ -1257,9 +1249,7 @@ impl<'a> FormWizard<'a> {
             nr.y,
             next_label,
             usize::from(nr.width),
-            self.system
-                .style(next_style)
-                .add_modifier(Modifier::BOLD),
+            self.system.style(next_style).add_modifier(Modifier::BOLD),
         );
         state.nav_next = nr;
 
@@ -1448,10 +1438,7 @@ mod tests {
             panic!("expected async");
         };
         assert_eq!(w.current_gate(), WizardGate::Pending);
-        assert!(matches!(
-            w.next(),
-            FormWizardOutcome::BlockedPending { .. }
-        ));
+        assert!(matches!(w.next(), FormWizardOutcome::BlockedPending { .. }));
         assert!(!w.apply_async_result(0, WizardGate::Valid));
         assert!(w.apply_async_result(generation, WizardGate::Valid));
         assert!(matches!(w.next(), FormWizardOutcome::StepChanged { .. }));

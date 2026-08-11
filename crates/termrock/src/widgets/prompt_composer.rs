@@ -39,9 +39,9 @@ use crate::{
     style::{Density, DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
+        HelpEntry, Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
+        TokenMeter,
         history_picker::{HistoryEntry, HistoryKind},
-        HelpEntry,
-        Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TokenMeter,
     },
 };
 
@@ -207,9 +207,7 @@ pub fn paste_to_composer_chip(paste: &crate::widgets::PastePayload) -> ComposerC
 
 /// Best-effort upgrade of a composer chip into an attachment (non-paste).
 #[must_use]
-pub fn composer_chip_to_attachment(
-    chip: &ComposerChip,
-) -> Option<crate::widgets::AttachmentItem> {
+pub fn composer_chip_to_attachment(chip: &ComposerChip) -> Option<crate::widgets::AttachmentItem> {
     use crate::widgets::{AttachmentItem, AttachmentStatus, AttachmentType};
     let kind = match chip.kind {
         ChipKind::File => AttachmentType::File,
@@ -1501,8 +1499,7 @@ impl PromptComposerState {
             }
             TextAreaOutcome::Ignored => PromptComposerOutcome::Ignored,
             TextAreaOutcome::Cancelled => PromptComposerOutcome::DismissRequest,
-            TextAreaOutcome::ClipboardCopy { text }
-            | TextAreaOutcome::ClipboardCut { text } => {
+            TextAreaOutcome::ClipboardCopy { text } | TextAreaOutcome::ClipboardCut { text } => {
                 PromptComposerOutcome::SelectionCopied { text }
             }
             TextAreaOutcome::ClipboardPasteRequest
@@ -1699,12 +1696,7 @@ pub fn prompt_composer_help_entries() -> Vec<HelpEntry> {
             "Ctrl+C",
             "Soft interrupt when busy (draft kept)",
         ),
-        HelpEntry::new(
-            "cancel",
-            "Agent",
-            "Ctrl+U",
-            "Hard cancel / stop when busy",
-        ),
+        HelpEntry::new("cancel", "Agent", "Ctrl+U", "Hard cancel / stop when busy"),
         HelpEntry::new("external", "Edit", "Ctrl+E", "Open external editor"),
         HelpEntry::new("attach", "Prompt", "Ctrl+Shift+O", "Request file attach"),
         HelpEntry::new(
@@ -1731,7 +1723,12 @@ pub fn prompt_composer_help_entries() -> Vec<HelpEntry> {
             "/ · @ · #",
             "Slash / file / symbol completion trigger",
         ),
-        HelpEntry::new("esc", "Nav", "Esc", "Close completion → fullscreen → dismiss"),
+        HelpEntry::new(
+            "esc",
+            "Nav",
+            "Esc",
+            "Close completion → fullscreen → dismiss",
+        ),
     ]
 }
 
@@ -1744,8 +1741,8 @@ pub fn submit_history_to_entries(history: &[String]) -> Vec<HistoryEntry<String>
         .enumerate()
         .map(|(rank, text)| {
             let preview: String = text.chars().take(80).collect();
-            let mut e = HistoryEntry::new(format!("h-{rank}"), text.clone())
-                .kind(HistoryKind::Prompt);
+            let mut e =
+                HistoryEntry::new(format!("h-{rank}"), text.clone()).kind(HistoryKind::Prompt);
             e.display = if text.chars().count() > 80 {
                 format!("{preview}…")
             } else {

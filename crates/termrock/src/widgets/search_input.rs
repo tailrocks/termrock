@@ -21,15 +21,12 @@
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     runtime::FrameTick,
     style::{DesignSystem, Role},
@@ -822,7 +819,12 @@ impl<'a> SearchInput<'a> {
             y = y.saturating_add(1);
         }
 
-        let row = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), area.width, 1);
+        let row = Rect::new(
+            area.x,
+            y.min(area.bottom().saturating_sub(1)),
+            area.width,
+            1,
+        );
         let mut x = row.x;
         let mut right = row.right();
         let mut chip_rects = Vec::new();
@@ -830,13 +832,7 @@ impl<'a> SearchInput<'a> {
         // Leading icon (contracts before query)
         if self.show_leading_icon && row.width > 4 {
             let icon = if self.ascii { "/" } else { "⌕" };
-            buffer.set_stringn(
-                x,
-                row.y,
-                icon,
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            buffer.set_stringn(x, row.y, icon, 1, self.system.style(Role::TextMuted));
             x = x.saturating_add(2);
         }
 
@@ -942,7 +938,7 @@ impl<'a> SearchInput<'a> {
         parts
     }
 
-    fn status_label(&self, state: &SearchInputState) -> String {
+    fn status_label(&self, _state: &SearchInputState) -> String {
         if let Some(msg) = self.status_message {
             if matches!(self.status, SearchStatus::Error) {
                 return take_display_cols(msg, 12);
@@ -1111,9 +1107,7 @@ mod tests {
         state.set_focused(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            SearchInputOutcome::Submitted {
-                query: "x".into()
-            }
+            SearchInputOutcome::Submitted { query: "x".into() }
         );
         assert_eq!(state.history().next(), Some("x"));
         assert!(state.clear());
@@ -1171,9 +1165,7 @@ mod tests {
                 },
                 &chips,
             ),
-            SearchInputOutcome::FilterChipActivated {
-                id: "lang".into()
-            }
+            SearchInputOutcome::FilterChipActivated { id: "lang".into() }
         );
     }
 

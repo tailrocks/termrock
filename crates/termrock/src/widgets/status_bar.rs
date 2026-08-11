@@ -12,6 +12,7 @@
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -549,11 +550,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
         }
     }
 
-    fn placements(
-        &self,
-        area: Rect,
-        state: Option<&StatusBarState<Id>>,
-    ) -> Vec<Placement<Id>> {
+    fn placements(&self, area: Rect, state: Option<&StatusBarState<Id>>) -> Vec<Placement<Id>> {
         if area.is_empty() {
             return Vec::new();
         }
@@ -1115,7 +1112,10 @@ mod tests {
     #[test]
     fn layout_is_cheap() {
         let system = DesignSystem::default();
-        let left = [StatusSlot::mode("m", "NOR"), StatusSlot::context("c", "path")];
+        let left = [
+            StatusSlot::mode("m", "NOR"),
+            StatusSlot::context("c", "path"),
+        ];
         let center = [StatusSlot::focus_zone("f", "main")];
         let right = [
             StatusSlot::selection("s", "3 sel"),

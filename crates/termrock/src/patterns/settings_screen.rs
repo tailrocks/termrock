@@ -16,6 +16,7 @@
 //! Migrates thin [`SettingsShellState`](crate::widgets::SettingsShellState)
 //! surface (0056) into this elevated composition (**0237**).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -26,12 +27,12 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        any_dirty, collect_errors, example_settings_nav, Field, FieldStatus, Fieldset, Form,
-        FormOutcome, FormState, KeybindingRecorder, KeybindingRecorderOutcome,
-        KeybindingRecorderState, KeyboardHelp, KeyboardHelpState, NavItem, Panel, SearchInput,
-        SearchInputOutcome, SearchInputState, Sidebar, SidebarOutcome, SidebarPresentation,
-        SidebarState, StatusBar, StatusBarState, StatusSlot, ThemePicker, ThemePickerOutcome,
-        ThemePickerState, ThemePreset, BUILTIN_THEME_PRESETS,
+        BUILTIN_THEME_PRESETS, Field, FieldStatus, Fieldset, Form, FormOutcome, FormState,
+        KeybindingRecorder, KeybindingRecorderOutcome, KeybindingRecorderState, KeyboardHelp,
+        KeyboardHelpState, NavItem, Panel, SearchInput, SearchInputOutcome, SearchInputState,
+        Sidebar, SidebarOutcome, SidebarPresentation, SidebarState, StatusBar, StatusBarState,
+        StatusSlot, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset, any_dirty,
+        collect_errors, example_settings_nav,
     },
 };
 
@@ -266,18 +267,14 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
     }
 
     /// Cycle focus region (Tab / BackTab).
-    pub fn cycle_region(&mut self, reverse: bool) -> SettingsScreenOutcome<SectionId, &'static str> {
+    pub fn cycle_region(
+        &mut self,
+        reverse: bool,
+    ) -> SettingsScreenOutcome<SectionId, &'static str> {
         let order = SettingsRegion::focus_order();
-        let idx = order
-            .iter()
-            .position(|r| *r == self.region)
-            .unwrap_or(0);
+        let idx = order.iter().position(|r| *r == self.region).unwrap_or(0);
         let next = if reverse {
-            if idx == 0 {
-                order.len() - 1
-            } else {
-                idx - 1
-            }
+            if idx == 0 { order.len() - 1 } else { idx - 1 }
         } else {
             (idx + 1) % order.len()
         };
@@ -287,14 +284,15 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
     }
 
     fn sync_region_focus_flags(&mut self) {
-        self.search.set_focused(self.region == SettingsRegion::Search);
-        self.sidebar
-            .set_focused(self.region == SettingsRegion::Nav);
+        self.search
+            .set_focused(self.region == SettingsRegion::Search);
+        self.sidebar.set_focused(self.region == SettingsRegion::Nav);
         self.sidebar
             .set_accepts_input(self.region == SettingsRegion::Nav);
-        self.keybinding
-            .set_focused(self.region == SettingsRegion::Body
-                && matches!(self.body_mode, SettingsBodyMode::Keybinding));
+        self.keybinding.set_focused(
+            self.region == SettingsRegion::Body
+                && matches!(self.body_mode, SettingsBodyMode::Keybinding),
+        );
     }
 
     /// Project dirty / conflict / restart from host fieldsets.
@@ -589,25 +587,36 @@ pub fn layout_settings_screen(
         height: body_h,
     };
 
-    let drawer = if drawer_open && matches!(density, SettingsDensity::Narrow | SettingsDensity::Tiny)
-    {
-        let w = (area.width * 2 / 3).clamp(18, 36).min(area.width.saturating_sub(2));
-        Some(Rect {
-            x: area.x,
-            y: area.y,
-            width: w,
-            height: area.height.saturating_sub(footer_h),
-        })
-    } else {
-        None
-    };
+    let drawer =
+        if drawer_open && matches!(density, SettingsDensity::Narrow | SettingsDensity::Tiny) {
+            let w = (area.width * 2 / 3)
+                .clamp(18, 36)
+                .min(area.width.saturating_sub(2));
+            Some(Rect {
+                x: area.x,
+                y: area.y,
+                width: w,
+                height: area.height.saturating_sub(footer_h),
+            })
+        } else {
+            None
+        };
 
     let help = if help_open {
-        let w = (area.width * 3 / 4).clamp(24, 60).min(area.width.saturating_sub(2));
-        let h = (area.height * 2 / 3).clamp(8, 20).min(area.height.saturating_sub(2));
+        let w = (area.width * 3 / 4)
+            .clamp(24, 60)
+            .min(area.width.saturating_sub(2));
+        let h = (area.height * 2 / 3)
+            .clamp(8, 20)
+            .min(area.height.saturating_sub(2));
         let x = area.x.saturating_add(area.width.saturating_sub(w) / 2);
         let y = area.y.saturating_add(area.height.saturating_sub(h) / 4);
-        Some(Rect { x, y, width: w, height: h })
+        Some(Rect {
+            x,
+            y,
+            width: w,
+            height: h,
+        })
     } else {
         None
     };
@@ -682,7 +691,9 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
     );
 
     state.sync_region_focus_flags();
-    let _ = state.sidebar.apply_width(slots.nav.map(|r| r.width).unwrap_or(area.width));
+    let _ = state
+        .sidebar
+        .apply_width(slots.nav.map(|r| r.width).unwrap_or(area.width));
 
     // Nav (inline)
     if let Some(nav_area) = slots.nav {
@@ -734,13 +745,13 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
     if !slots.body.is_empty() {
         match state.body_mode {
             SettingsBodyMode::Form => {
-                let panel = Panel::new(system)
-                    .title(section_title)
-                    .emphasis(if state.region == SettingsRegion::Body {
+                let panel = Panel::new(system).title(section_title).emphasis(
+                    if state.region == SettingsRegion::Body {
                         PanelChrome::Focused
                     } else {
                         PanelChrome::Normal
-                    });
+                    },
+                );
                 let inner = panel.inner(slots.body);
                 Widget::render(&panel, slots.body, buffer);
                 if !inner.is_empty() && !fieldsets.is_empty() {
@@ -764,12 +775,20 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
                 );
             }
             SettingsBodyMode::Keybinding => {
-                KeybindingRecorder::new(system)
-                    .ascii(state.ascii)
-                    .paint(slots.body, buffer, &mut state.keybinding);
+                KeybindingRecorder::new(system).ascii(state.ascii).paint(
+                    slots.body,
+                    buffer,
+                    &mut state.keybinding,
+                );
             }
             SettingsBodyMode::NoResults => {
-                paint_no_results(buffer, slots.body, system, state.search.query(), state.ascii);
+                paint_no_results(
+                    buffer,
+                    slots.body,
+                    system,
+                    state.search.query(),
+                    state.ascii,
+                );
             }
         }
     }
@@ -778,11 +797,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
     if !slots.footer.is_empty() {
         if status_slots.is_empty() {
             let dirty = if state.dirty { "modified" } else { "clean" };
-            let save = if state.dirty {
-                "Ctrl+S save"
-            } else {
-                "Ctrl+S"
-            };
+            let save = if state.dirty { "Ctrl+S save" } else { "Ctrl+S" };
             let text = format!("{dirty} · {save} · ? help · r reset");
             buffer.set_stringn(
                 slots.footer.x,
@@ -810,9 +825,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
         Widget::render(&panel, drawer, buffer);
         if !inner.is_empty() {
             state.sidebar.set_focused(true);
-            state
-                .sidebar
-                .set_presentation(SidebarPresentation::Drawer);
+            state.sidebar.set_presentation(SidebarPresentation::Drawer);
             Sidebar::new(nav, system)
                 .title("Settings")
                 .ascii(state.ascii)
@@ -856,7 +869,10 @@ fn paint_no_results(
         buffer.set_stringn(
             area.x,
             area.y.saturating_add(1),
-            crate::text::take_display_cols("/ focus search · Esc clear drawer", usize::from(area.width)),
+            crate::text::take_display_cols(
+                "/ focus search · Esc clear drawer",
+                usize::from(area.width),
+            ),
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -1010,6 +1026,7 @@ pub fn example_settings_profile_fields() -> [Field<'static, &'static str>; 2] {
 
 /// Demo fieldsets for Studio stories.
 #[must_use]
+#[allow(dead_code)]
 pub fn example_settings_fieldsets() -> Vec<Fieldset<'static, &'static str>> {
     let appearance = example_settings_appearance_fields();
     // Leak-free: stories build fieldsets locally. Here return empty template via statics.
@@ -1028,7 +1045,12 @@ pub fn example_settings_help_entries() -> Vec<crate::widgets::HelpEntry> {
         HelpEntry::new("reset-section", "General", "Ctrl+R", "Reset section"),
         HelpEntry::new("reset-field", "General", "Alt+R", "Reset field"),
         HelpEntry::new("drawer", "Navigation", "Ctrl+B", "Toggle category drawer"),
-        HelpEntry::new("cycle", "Navigation", "Tab", "Cycle search / nav / body / footer"),
+        HelpEntry::new(
+            "cycle",
+            "Navigation",
+            "Tab",
+            "Cycle search / nav / body / footer",
+        ),
         HelpEntry::new("help", "General", "?", "Toggle this help"),
         HelpEntry::new("search", "Navigation", "/", "Focus search"),
     ]
@@ -1058,7 +1080,10 @@ mod tests {
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 
-    fn appearance_sets() -> (Vec<Field<'static, &'static str>>, Vec<Fieldset<'static, &'static str>>) {
+    fn appearance_sets() -> (
+        Vec<Field<'static, &'static str>>,
+        Vec<Fieldset<'static, &'static str>>,
+    ) {
         let fields = example_settings_appearance_fields().to_vec();
         // Fieldset needs slice — use leaked static for tests via owned then reference carefully
         // Simpler: stack arrays in each test.
@@ -1177,9 +1202,11 @@ mod tests {
     fn filter_nav_and_matches() {
         let nav = example_settings_categories();
         let filtered = filter_settings_nav(&nav, "appear");
-        assert!(filtered
-            .iter()
-            .any(|i| i.label.contains("Appearance") || i.id == "appearance"));
+        assert!(
+            filtered
+                .iter()
+                .any(|i| i.label.contains("Appearance") || i.id == "appearance")
+        );
         let fields = example_settings_appearance_fields();
         let sets = [Fieldset::new("Appearance", &fields)];
         assert!(settings_query_matches(&sets, "theme"));
@@ -1229,7 +1256,11 @@ mod tests {
                 section_title: "Appearance",
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Appearance")
                 || text.contains("Theme")
@@ -1301,7 +1332,11 @@ mod tests {
                 section_title: "Search",
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("No results") || text.contains("zzzz") || text.contains("empty"));
     }
 
@@ -1351,10 +1386,7 @@ mod tests {
         let src = include_str!("settings_screen.rs");
         assert!(src.contains("public"));
         assert!(src.contains("host-owned") || src.contains("Host owns"));
-        let forbidden = [
-            format!("{}::process", "std"),
-            format!("{}::new", "Command"),
-        ];
+        let forbidden = [format!("{}::process", "std"), format!("{}::new", "Command")];
         for f in &forbidden {
             assert!(!src.contains(f.as_str()), "{f}");
         }

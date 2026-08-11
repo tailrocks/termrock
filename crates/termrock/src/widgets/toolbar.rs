@@ -15,6 +15,8 @@
 //! Behavioral references: desktop toolbars, Radix Toolbar (roving), adapted to
 //! terminal cells and [`UiIntent`].
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -324,10 +326,7 @@ impl<Id: Clone + PartialEq> ToolbarState<Id> {
         for &i in visible {
             let item = &items[i];
             if item.is_interactive() {
-                out.push(
-                    RovingEntry::new(item.id.clone(), item.label.to_string())
-                        .enabled(true),
-                );
+                out.push(RovingEntry::new(item.id.clone(), item.label.to_string()).enabled(true));
             }
         }
         if has_overflow {
@@ -465,9 +464,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         // Host should construct ToolbarState::horizontal/vertical to match orientation.
         match state.roving.handle_key(key, &entries) {
             RovingOutcome::Ignored => ToolbarOutcome::Ignored,
-            RovingOutcome::ActiveChanged { from, to } => {
-                ToolbarOutcome::CursorMoved { from, to }
-            }
+            RovingOutcome::ActiveChanged { from, to } => ToolbarOutcome::CursorMoved { from, to },
         }
     }
 
@@ -827,7 +824,10 @@ fn item_main_size<Id>(
         ToolbarItemKind::Toggle { .. } => 2,
         _ => 0,
     };
-    inner.saturating_add(pad).saturating_add(toggle_extra).max(1)
+    inner
+        .saturating_add(pad)
+        .saturating_add(toggle_extra)
+        .max(1)
 }
 
 fn format_label<Id>(
@@ -1028,8 +1028,16 @@ fn paint_item<Id: Clone + PartialEq>(
         } else {
             bar.system.glyphs.rule()
         };
-        let w = if horizontal { 1.min(slot.width) } else { slot.width };
-        let h = if horizontal { slot.height } else { 1.min(slot.height) };
+        let w = if horizontal {
+            1.min(slot.width)
+        } else {
+            slot.width
+        };
+        let h = if horizontal {
+            slot.height
+        } else {
+            1.min(slot.height)
+        };
         let rect = Rect {
             x: slot.x,
             y: slot.y,
@@ -1037,13 +1045,7 @@ fn paint_item<Id: Clone + PartialEq>(
             height: h,
         };
         if horizontal {
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                glyph,
-                1,
-                bar.system.style(Role::Border),
-            );
+            buffer.set_stringn(rect.x, rect.y, glyph, 1, bar.system.style(Role::Border));
         } else {
             let line: String = std::iter::repeat_n(glyph, usize::from(rect.width)).collect();
             buffer.set_stringn(
@@ -1087,13 +1089,7 @@ fn paint_item<Id: Clone + PartialEq>(
         bar.system.style(Role::Text)
     };
     let clipped = take_display_cols(&label, usize::from(rect.width));
-    buffer.set_stringn(
-        rect.x,
-        rect.y,
-        &clipped,
-        usize::from(rect.width),
-        style,
-    );
+    buffer.set_stringn(rect.x, rect.y, &clipped, usize::from(rect.width), style);
     if item.is_interactive() {
         state.regions.push(HitRegion {
             id: item.id.clone(),
@@ -1277,10 +1273,7 @@ mod tests {
         );
         assert!(matches!(
             out,
-            ToolbarOutcome::CursorMoved {
-                to: Some("b"),
-                ..
-            }
+            ToolbarOutcome::CursorMoved { to: Some("b"), .. }
         ));
     }
 
@@ -1334,10 +1327,7 @@ mod tests {
     #[test]
     fn vertical_paints() {
         let system = DesignSystem::default();
-        let items = [
-            ToolbarItem::action("a", "A"),
-            ToolbarItem::action("b", "B"),
-        ];
+        let items = [ToolbarItem::action("a", "A"), ToolbarItem::action("b", "B")];
         let tb = Toolbar::new(&items, &system).vertical().compact();
         let mut state = ToolbarState::vertical();
         let area = Rect::new(0, 0, 8, 4);

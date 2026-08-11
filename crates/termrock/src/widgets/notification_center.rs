@@ -19,17 +19,15 @@
 //!
 //! Research: desktop notification centers, CI dashboards, task histories.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         NavigationMove, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_list_intent,
@@ -628,11 +626,7 @@ impl NotificationCenterState {
 
     /// Toggle.
     pub fn toggle(&mut self) -> NotificationCenterOutcome {
-        if self.open {
-            self.close()
-        } else {
-            self.open()
-        }
+        if self.open { self.close() } else { self.open() }
     }
 
     /// Set filter.
@@ -787,9 +781,7 @@ impl NotificationCenterState {
         if let Some(it) = self.items.iter_mut().find(|i| i.id == id) {
             if it.unread {
                 it.unread = false;
-                return NotificationCenterOutcome::MarkedRead {
-                    id: id.to_string(),
-                };
+                return NotificationCenterOutcome::MarkedRead { id: id.to_string() };
             }
         }
         NotificationCenterOutcome::Ignored
@@ -828,9 +820,7 @@ impl NotificationCenterState {
             self.cursor = None;
             self.ensure_cursor();
         }
-        NotificationCenterOutcome::Dismissed {
-            id: id.to_string(),
-        }
+        NotificationCenterOutcome::Dismissed { id: id.to_string() }
     }
 
     /// Clear matching filter (or all when filter is All / scope false).
@@ -1131,12 +1121,7 @@ impl<'a> NotificationCenter<'a> {
     }
 
     /// Paint when open.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut NotificationCenterState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut NotificationCenterState) {
         state.slots = NotificationCenterSlots::empty();
         if area.is_empty() || !state.open {
             return;
@@ -1148,12 +1133,7 @@ impl<'a> NotificationCenter<'a> {
             NotificationRecipe::Drawer => {
                 // Right strip within area
                 let w = DRAWER_DEFAULT_WIDTH.min(area.width).max(20).min(area.width);
-                Rect::new(
-                    area.right().saturating_sub(w),
-                    area.y,
-                    w,
-                    area.height,
-                )
+                Rect::new(area.right().saturating_sub(w), area.y, w, area.height)
             }
         };
         if panel.is_empty() {
@@ -1197,13 +1177,7 @@ impl<'a> NotificationCenter<'a> {
             );
             if panel.width > 2 {
                 let hz = h.repeat(usize::from(panel.width.saturating_sub(2)));
-                buffer.set_stringn(
-                    panel.x + 1,
-                    panel.y,
-                    &hz,
-                    usize::from(panel.width - 2),
-                    bs,
-                );
+                buffer.set_stringn(panel.x + 1, panel.y, &hz, usize::from(panel.width - 2), bs);
                 buffer.set_stringn(
                     panel.x + 1,
                     panel.bottom().saturating_sub(1),
@@ -1320,12 +1294,7 @@ impl<'a> NotificationCenter<'a> {
                 self.system.style(Role::TextMuted),
             );
         } else {
-            for (row, &item_idx) in indices
-                .iter()
-                .skip(state.scroll)
-                .take(page)
-                .enumerate()
-            {
+            for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
                 let Some(item) = state.items.get(item_idx) else {
                     continue;
                 };
@@ -1340,11 +1309,7 @@ impl<'a> NotificationCenter<'a> {
                     item.kind.glyph_unicode()
                 };
                 let unread_mark = if item.unread {
-                    if ascii {
-                        "*"
-                    } else {
-                        "●"
-                    }
+                    if ascii { "*" } else { "●" }
                 } else {
                     " "
                 };
@@ -1543,7 +1508,10 @@ mod tests {
         assert_eq!(q.missed_len(), 1);
         let mut center = NotificationCenterState::new();
         let out = center.ingest_from_toast_queue(&mut q, 50);
-        assert!(matches!(out, NotificationCenterOutcome::Ingested { count: 1 }));
+        assert!(matches!(
+            out,
+            NotificationCenterOutcome::Ingested { count: 1 }
+        ));
         assert_eq!(q.missed_len(), 0);
         assert_eq!(center.items().len(), 1);
         assert_eq!(center.unread_count(), 1);
@@ -1558,7 +1526,10 @@ mod tests {
         let out = s.ingest_item(
             NotificationItem::new("b", "log line 2", ToastKind::Info).dedup_key("job-log"),
         );
-        assert!(matches!(out, NotificationCenterOutcome::Deduplicated { .. }));
+        assert!(matches!(
+            out,
+            NotificationCenterOutcome::Deduplicated { .. }
+        ));
         assert_eq!(s.items().len(), 1);
         assert_eq!(s.items()[0].coalesce_count, 2);
         assert_eq!(s.items()[0].message, "log line 2");
@@ -1631,7 +1602,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("Notifications") || text.contains("unread"), "{text}");
+        assert!(
+            text.contains("Notifications") || text.contains("unread"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1667,10 +1641,12 @@ mod tests {
             Rect::new(0, 0, 40, 20),
             &s,
         );
-        assert!(scene
-            .nodes()
-            .iter()
-            .any(|n| n.label.as_deref() == Some("notification-center")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("notification-center"))
+        );
     }
 
     #[test]

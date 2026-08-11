@@ -10,6 +10,7 @@
 //!
 //! Research: tui-textarea, prompt-toolkit, terminal editors, agent composers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -18,7 +19,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+        MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{Density, DesignSystem, Role, RolePalette},
     text::{display_cols, display_cols_slice_into, take_display_cols},
@@ -684,9 +688,7 @@ impl TextAreaState {
                     return TextAreaOutcome::Changed;
                 }
                 KeyCode::Char('c' | 'C') => {
-                    let text = self
-                        .selected_text()
-                        .unwrap_or_else(|| self.text());
+                    let text = self.selected_text().unwrap_or_else(|| self.text());
                     if text.is_empty() {
                         return TextAreaOutcome::Ignored;
                     }
@@ -714,9 +716,7 @@ impl TextAreaState {
         }
 
         // Word motion
-        if (ctrl || alt)
-            && matches!(key.code, KeyCode::Left | KeyCode::Right)
-        {
+        if (ctrl || alt) && matches!(key.code, KeyCode::Left | KeyCode::Right) {
             self.begin_select(shift);
             let changed = match key.code {
                 KeyCode::Left => self.word_left(),
@@ -821,9 +821,7 @@ impl TextAreaState {
             }
             return self.finish_edit(true);
         }
-        if matches!(key.code, KeyCode::BackTab)
-            || (matches!(key.code, KeyCode::Tab) && shift)
-        {
+        if matches!(key.code, KeyCode::BackTab) || (matches!(key.code, KeyCode::Tab) && shift) {
             return self.outdent_line();
         }
 
@@ -836,7 +834,8 @@ impl TextAreaState {
         }
 
         // Selection + Backspace/Delete: only remove selection.
-        if matches!(key.code, KeyCode::Backspace | KeyCode::Delete) && self.selection_range().is_some()
+        if matches!(key.code, KeyCode::Backspace | KeyCode::Delete)
+            && self.selection_range().is_some()
         {
             self.push_undo();
             if self.delete_selection() {
@@ -926,7 +925,11 @@ impl TextAreaState {
             line.remove(0);
             1
         } else if line.starts_with(' ') {
-            let n = line.chars().take_while(|c| *c == ' ').take(indent.len()).count();
+            let n = line
+                .chars()
+                .take_while(|c| *c == ' ')
+                .take(indent.len())
+                .count();
             line.drain(..n);
             n
         } else {
@@ -1358,7 +1361,9 @@ impl TextAreaState {
         let first = usize::from(self.scroll.offset_y());
         match self.wrap {
             TextWrap::None => {
-                let line = first.saturating_add(row).min(self.lines.len().saturating_sub(1));
+                let line = first
+                    .saturating_add(row)
+                    .min(self.lines.len().saturating_sub(1));
                 let abs_col = col.saturating_add(usize::from(self.scroll.offset_x()));
                 let byte = edit_core::byte_at_display_column(&self.lines[line], abs_col);
                 Some(TextCursor { line, byte })
@@ -1578,7 +1583,10 @@ impl StatefulWidget for &TextArea<'_> {
                 if line_no > state.lines.len() && matches!(state.wrap, TextWrap::None) {
                     break;
                 }
-                let label = format!("{line_no:>width$}", width = usize::from(gutter.saturating_sub(1)));
+                let label = format!(
+                    "{line_no:>width$}",
+                    width = usize::from(gutter.saturating_sub(1))
+                );
                 buffer.set_stringn(
                     inner.x,
                     body.y.saturating_add(u16::try_from(row).unwrap_or(0)),
@@ -1599,8 +1607,11 @@ impl StatefulWidget for &TextArea<'_> {
         match state.wrap {
             TextWrap::None => {
                 let last = (first + state.viewport_height).min(state.lines.len());
-                for (painted, (line_idx, line)) in
-                    state.lines[first..last].iter().enumerate().map(|(i, l)| (first + i, l)).enumerate()
+                for (painted, (line_idx, line)) in state.lines[first..last]
+                    .iter()
+                    .enumerate()
+                    .map(|(i, l)| (first + i, l))
+                    .enumerate()
                 {
                     let _ = line_idx;
                     display_cols_slice_into(
@@ -1661,7 +1672,9 @@ impl StatefulWidget for &TextArea<'_> {
                             .style(Role::TextStrong)
                             .add_modifier(Modifier::REVERSED)
                     } else {
-                        self.system.style(Role::Focus).add_modifier(Modifier::REVERSED)
+                        self.system
+                            .style(Role::Focus)
+                            .add_modifier(Modifier::REVERSED)
                     };
                     buffer.set_style(Rect::new(x, y, 1, 1), caret);
                 }
@@ -1724,15 +1737,16 @@ impl StatefulWidget for &TextArea<'_> {
                         let line = &state.lines[state.cursor.line];
                         let col = display_cols(&line[..state.cursor.byte.min(line.len())]);
                         let x_off = col % w;
-                        let y = body.y
-                            + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
+                        let y = body.y + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
                         let x = body
                             .x
                             .saturating_add(u16::try_from(x_off).unwrap_or(0))
                             .min(body.right().saturating_sub(1));
                         buffer.set_style(
                             Rect::new(x, y, 1, 1),
-                            self.system.style(Role::Focus).add_modifier(Modifier::REVERSED),
+                            self.system
+                                .style(Role::Focus)
+                                .add_modifier(Modifier::REVERSED),
                         );
                     }
                 }
@@ -1746,8 +1760,7 @@ impl StatefulWidget for &TextArea<'_> {
                 state.vertical_scrollbar = Some(Rect::new(body.right(), inner.y, 1, body.height));
             }
             if show_horizontal && inner.height > 0 {
-                state.horizontal_scrollbar =
-                    Some(Rect::new(body.x, body.bottom(), body.width, 1));
+                state.horizontal_scrollbar = Some(Rect::new(body.x, body.bottom(), body.width, 1));
             }
         }
     }
@@ -2222,10 +2235,7 @@ mod tests {
         state.viewport_width = 24;
         state.viewport_height = 6;
         state.sync_scroll_metrics();
-        assert!(state.set_cursor(TextCursor {
-            line: 30,
-            byte: 0
-        }));
+        assert!(state.set_cursor(TextCursor { line: 30, byte: 0 }));
         state.reveal();
         let y = state.scroll.offset_y() as usize;
         assert!(y <= 30);
@@ -2360,15 +2370,11 @@ mod tests {
         state.select_all();
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)),
-            TextAreaOutcome::ClipboardCopy {
-                text: "abc".into()
-            }
+            TextAreaOutcome::ClipboardCopy { text: "abc".into() }
         );
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::CONTROL)),
-            TextAreaOutcome::ClipboardCut {
-                text: "abc".into()
-            }
+            TextAreaOutcome::ClipboardCut { text: "abc".into() }
         );
         assert_eq!(state.text(), "");
         assert_eq!(

@@ -15,11 +15,7 @@
 //! Research: shadcn Skeleton, terminal loading placeholders — no gratuitous
 //! web shimmer mimicry.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -119,9 +115,7 @@ impl SkeletonShape {
     pub fn height(self) -> u16 {
         match self {
             Self::TextLine { .. } | Self::Row { .. } => 1,
-            Self::Card { header, body_lines } => {
-                u16::from(header) + body_lines.max(1)
-            }
+            Self::Card { header, body_lines } => u16::from(header) + body_lines.max(1),
             Self::Table { rows, .. } => rows.max(1),
             Self::Custom { height, .. } => height.max(1),
         }
@@ -351,10 +345,7 @@ impl SkeletonState {
     /// Whether host should schedule redraw for pulse.
     #[must_use]
     pub fn should_tick(&self, motion: Motion) -> bool {
-        self.shimmer
-            && self.visible
-            && self.active
-            && matches!(motion, Motion::Full)
+        self.shimmer && self.visible && self.active && matches!(motion, Motion::Full)
     }
 
     /// Animation demand — **idle by default**.
@@ -473,11 +464,17 @@ impl<'a> Skeleton<'a> {
 
     /// Paint static (default path).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
-        self.paint_with_state(area, buffer, &SkeletonState::new(), FrameTick::manual(
-            std::time::Instant::now(),
-            std::time::Duration::ZERO,
-            std::time::Duration::ZERO,
-        ), Motion::Off);
+        self.paint_with_state(
+            area,
+            buffer,
+            &SkeletonState::new(),
+            FrameTick::manual(
+                std::time::Instant::now(),
+                std::time::Duration::ZERO,
+                std::time::Duration::ZERO,
+            ),
+            Motion::Off,
+        );
     }
 
     /// Paint with optional shimmer state.
@@ -549,10 +546,7 @@ impl<'a> Skeleton<'a> {
         if area.is_empty() || !state.visible {
             return;
         }
-        let recipe = self
-            .recipe
-            .map(|(r, _)| r.id())
-            .unwrap_or("custom");
+        let recipe = self.recipe.map(|(r, _)| r.id()).unwrap_or("custom");
         let desc = format!(
             "skeleton recipe={recipe} h={} shimmer={} shapes={}",
             self.measure_height(),
@@ -588,14 +582,7 @@ fn paint_shape(
         | SkeletonShape::Row { indent, width_pct } => {
             if area.height > 0 {
                 paint_bar(
-                    area.x,
-                    area.y,
-                    area.width,
-                    indent,
-                    width_pct,
-                    buffer,
-                    fill_ch,
-                    style,
+                    area.x, area.y, area.width, indent, width_pct, buffer, fill_ch, style,
                 );
             }
             area.y.saturating_add(1).min(area.bottom())
@@ -626,7 +613,9 @@ fn paint_shape(
                     break;
                 }
                 let gap = 1u16;
-                let usable = area.width.saturating_sub(gap.saturating_mul(cols.saturating_sub(1)));
+                let usable = area
+                    .width
+                    .saturating_sub(gap.saturating_mul(cols.saturating_sub(1)));
                 let col_w = (usable / cols).max(1);
                 let mut x = area.x;
                 for c in 0..cols {
@@ -664,13 +653,11 @@ fn paint_shape(
                     break;
                 }
                 let max_w = area.width.saturating_sub(indent.min(area.width));
-                let w = if width == 0 {
-                    max_w
-                } else {
-                    width.min(max_w)
-                };
+                let w = if width == 0 { max_w } else { width.min(max_w) };
                 if w > 0 {
-                    let x = area.x.saturating_add(indent.min(area.width.saturating_sub(1)));
+                    let x = area
+                        .x
+                        .saturating_add(indent.min(area.width.saturating_sub(1)));
                     let fill = fill_ch.repeat(usize::from(w));
                     buffer.set_stringn(x, y, &fill, usize::from(w), style);
                 }
@@ -714,10 +701,6 @@ impl Widget for &Skeleton<'_> {
 }
 
 impl Widget for Skeleton<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
     fn render(self, area: Rect, buffer: &mut Buffer) {
         <&Self as Widget>::render(&self, area, buffer);
     }
@@ -794,11 +777,7 @@ mod tests {
     fn shimmer_only_full_motion() {
         let mut state = SkeletonState::new();
         state.set_shimmer(true);
-        let tick = FrameTick::manual(
-            Instant::now(),
-            Duration::from_millis(800),
-            Duration::ZERO,
-        );
+        let tick = FrameTick::manual(Instant::now(), Duration::from_millis(800), Duration::ZERO);
         assert!(state.should_tick(Motion::Full));
         assert!(!state.should_tick(Motion::Reduced));
         assert!(!state.should_tick(Motion::Off));
@@ -843,10 +822,12 @@ mod tests {
             Rect::new(0, 0, 20, 4),
             &state,
         );
-        assert!(scene
-            .nodes()
-            .iter()
-            .any(|n| n.label.as_deref() == Some("skeleton")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("skeleton"))
+        );
     }
 
     #[test]

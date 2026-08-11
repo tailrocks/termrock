@@ -13,12 +13,8 @@
 //!
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -427,7 +423,9 @@ impl<'a> Badge<'a> {
     /// Display columns needed (untruncated).
     #[must_use]
     pub fn measure_width(&self, state: Option<&BadgeState>) -> u16 {
-        u16::try_from(display_cols(&self.decorated(state))).unwrap_or(1).max(1)
+        u16::try_from(display_cols(&self.decorated(state)))
+            .unwrap_or(1)
+            .max(1)
     }
 
     /// Plain text for copy / a11y (includes meaning for status variants).
@@ -484,7 +482,9 @@ impl<'a> Badge<'a> {
             budget = budget.min(usize::from(self.max_cols));
         }
         text = take_display_cols(&text, budget);
-        let w = u16::try_from(display_cols(&text)).unwrap_or(0).min(area.width);
+        let w = u16::try_from(display_cols(&text))
+            .unwrap_or(0)
+            .min(area.width);
         BadgeParts {
             root: area,
             content: Rect {
@@ -524,22 +524,12 @@ impl<'a> Badge<'a> {
         if matches!(self.fill, BadgeFill::Soft) && !parts.content.is_empty() {
             buffer.set_style(parts.content, style);
         }
-        buffer.set_stringn(
-            parts.content.x,
-            parts.content.y,
-            &text,
-            budget,
-            style,
-        );
+        buffer.set_stringn(parts.content.x, parts.content.y, &text, budget, style);
         parts
     }
 
     /// Key path — only when interactive and not disabled.
-    pub fn handle_key(
-        &self,
-        state: &mut BadgeState,
-        key: KeyEvent,
-    ) -> BadgeOutcome {
+    pub fn handle_key(&self, state: &mut BadgeState, key: KeyEvent) -> BadgeOutcome {
         if !self.interactive || self.disabled || !state.focused || key.kind != KeyEventKind::Press {
             return BadgeOutcome::Ignored;
         }

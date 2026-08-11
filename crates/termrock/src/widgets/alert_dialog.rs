@@ -22,6 +22,7 @@
 //! Research: Radix AlertDialog, database drop/truncate UX, cloud consoles,
 //! permission surfaces.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -212,28 +213,37 @@ impl AlertScope {
     /// Example: permanent delete.
     #[must_use]
     pub fn example_delete() -> Self {
-        Self::new("prod-db.customers", "Drops the table and all dependent indexes.")
-            .scope_detail("≈ 1.2M rows · 4.8 GB")
-            .safer_alternative("Export a dump, then soft-delete with a retention policy.")
-            .reversibility(AlertReversibility::Irreversible)
+        Self::new(
+            "prod-db.customers",
+            "Drops the table and all dependent indexes.",
+        )
+        .scope_detail("≈ 1.2M rows · 4.8 GB")
+        .safer_alternative("Export a dump, then soft-delete with a retention policy.")
+        .reversibility(AlertReversibility::Irreversible)
     }
 
     /// Example: overwrite.
     #[must_use]
     pub fn example_overwrite() -> Self {
-        Self::new("config/prod.toml", "Replaces the file on disk with staged content.")
-            .scope_detail("1 file · previous version lost if no VCS")
-            .safer_alternative("Commit or copy the file before overwriting.")
-            .reversibility(AlertReversibility::Recoverable)
+        Self::new(
+            "config/prod.toml",
+            "Replaces the file on disk with staged content.",
+        )
+        .scope_detail("1 file · previous version lost if no VCS")
+        .safer_alternative("Commit or copy the file before overwriting.")
+        .reversibility(AlertReversibility::Recoverable)
     }
 
     /// Example: terminate process.
     #[must_use]
     pub fn example_terminate() -> Self {
-        Self::new("worker-7 (pid 44102)", "Sends SIGTERM then SIGKILL after grace.")
-            .scope_detail("in-flight jobs will fail")
-            .safer_alternative("Drain the worker and wait for idle.")
-            .reversibility(AlertReversibility::Irreversible)
+        Self::new(
+            "worker-7 (pid 44102)",
+            "Sends SIGTERM then SIGKILL after grace.",
+        )
+        .scope_detail("in-flight jobs will fail")
+        .safer_alternative("Drain the worker and wait for idle.")
+        .reversibility(AlertReversibility::Irreversible)
     }
 
     /// Example: data egress.
@@ -406,11 +416,7 @@ impl<Id> AlertDialogState<Id> {
     }
 
     /// Override action labels.
-    pub fn set_action_labels(
-        &mut self,
-        confirm: impl Into<String>,
-        cancel: impl Into<String>,
-    ) {
+    pub fn set_action_labels(&mut self, confirm: impl Into<String>, cancel: impl Into<String>) {
         self.confirm_label = confirm.into();
         self.cancel_label = cancel.into();
     }
@@ -578,10 +584,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
     }
 
     /// Dismiss alert overlay (only after action — host may call).
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         self.dialog.set_open(false);
         stack.dismiss(&OverlayId::from_static(ALERT_DIALOG_OVERLAY_ID))
     }
@@ -655,9 +658,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
         match intent {
             UiIntent::Cancel | UiIntent::Close => self.handle_escape(),
             UiIntent::Activate | UiIntent::Submit | UiIntent::Open => self.activate_focused(),
-            UiIntent::Move(NavigationMove::Previous | NavigationMove::Left) => {
-                self.move_action(-1)
-            }
+            UiIntent::Move(NavigationMove::Previous | NavigationMove::Left) => self.move_action(-1),
             UiIntent::Move(NavigationMove::Next | NavigationMove::Right) => self.move_action(1),
             UiIntent::Move(NavigationMove::First) => {
                 self.focus_safe();
@@ -665,8 +666,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
             }
             UiIntent::Move(NavigationMove::Last) => {
                 if self.confirm_enabled() {
-                    self.dialog
-                        .set_action_cursor(Some(self.confirm_id.clone()));
+                    self.dialog.set_action_cursor(Some(self.confirm_id.clone()));
                     AlertDialogOutcome::FocusMoved
                 } else {
                     AlertDialogOutcome::ConfirmBlocked
@@ -1011,7 +1011,10 @@ fn build_body_text<Id>(state: &AlertDialogState<Id>, ascii: bool) -> Text<'stati
     if let Some(d) = &state.scope.scope_detail {
         lines.push(format!("{bullet} Scope: {d}"));
     }
-    lines.push(format!("{bullet} Consequence: {}", state.scope.consequences));
+    lines.push(format!(
+        "{bullet} Consequence: {}",
+        state.scope.consequences
+    ));
     lines.push(format!(
         "{bullet} Reversibility: {}",
         state.scope.reversibility.label()
@@ -1054,11 +1057,7 @@ fn paint_typed_field(
     let y = body.bottom().saturating_sub(1);
     let prefix = if ascii { "> " } else { "› " };
     let mark = if ok {
-        if ascii {
-            "[ok] "
-        } else {
-            "✓ "
-        }
+        if ascii { "[ok] " } else { "✓ " }
     } else {
         "  "
     };
@@ -1290,7 +1289,11 @@ mod tests {
         let area = Rect::new(0, 0, 56, 16);
         let mut buf = Buffer::empty(area);
         AlertDialog::new(&system).paint(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Target") || text.contains("prod-db") || text.contains("Delete"),
             "{text}"

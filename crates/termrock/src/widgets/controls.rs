@@ -7,6 +7,7 @@
 //! Prefer [`crate::widgets::Toggle`] for sticky toolbar tools and
 //! [`Switch`] for settings On/Off.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -467,16 +468,27 @@ impl<'a, Id> Checkbox<'a, Id> {
             return self.system.style(Role::Danger);
         }
         if state.focused {
-            return self.system.style(Role::Focus).add_modifier(Modifier::UNDERLINED);
+            return self
+                .system
+                .style(Role::Focus)
+                .add_modifier(Modifier::UNDERLINED);
         }
         if state.hovered {
-            return self.system.style(Role::Text).add_modifier(Modifier::UNDERLINED);
+            return self
+                .system
+                .style(Role::Text)
+                .add_modifier(Modifier::UNDERLINED);
         }
         self.system.style(Role::Text)
     }
 
     /// Paint checkbox. Prefer this over [`StatefulWidget::render`].
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckboxState) -> CheckboxParts {
+    pub fn paint(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut CheckboxState,
+    ) -> CheckboxParts {
         state.region = None;
         state.parts = None;
         if area.is_empty() {
@@ -546,7 +558,7 @@ impl<'a, Id> Checkbox<'a, Id> {
         } else {
             1.min(area.height)
         };
-        let root = Rect::new(area.x, area.y, root_w, root_h);
+        let _root = Rect::new(area.x, area.y, root_w, root_h);
         // Hit prefers painted content width when single-line without full stretch
         let hit_w = if description_area.is_some() {
             root_w
@@ -1032,7 +1044,10 @@ impl<'a, Id> RadioGroup<'a, Id> {
             return if selected { "(*)" } else { "( )" };
         }
         if selected {
-            self.system.glyphs.resolve(crate::style::Glyph::RadioOn).text
+            self.system
+                .glyphs
+                .resolve(crate::style::Glyph::RadioOn)
+                .text
         } else {
             self.system
                 .glyphs
@@ -1245,9 +1260,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             }
         }
 
-        let root_h = area
-            .height
-            .min(y.saturating_sub(area.y).max(1));
+        let root_h = area.height.min(y.saturating_sub(area.y).max(1));
         let parts = RadioGroupParts {
             root: Rect::new(area.x, area.y, area.width, root_h.min(area.height)),
             legend: legend_rect,
@@ -1289,7 +1302,10 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             return s;
         }
         if hovered {
-            return self.system.style(Role::Text).add_modifier(Modifier::UNDERLINED);
+            return self
+                .system
+                .style(Role::Text)
+                .add_modifier(Modifier::UNDERLINED);
         }
         self.system.style(Role::Text)
     }
@@ -1408,11 +1424,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
     }
 
     /// Intent path.
-    pub fn handle_intent(
-        &self,
-        state: &mut RadioState<Id>,
-        intent: UiIntent,
-    ) -> RadioOutcome<Id> {
+    pub fn handle_intent(&self, state: &mut RadioState<Id>, intent: UiIntent) -> RadioOutcome<Id> {
         if !state.enabled || self.options.is_empty() {
             return RadioOutcome::Ignored;
         }
@@ -1439,11 +1451,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
     }
 
     /// Mouse: click option → select + focus.
-    pub fn handle_mouse(
-        &self,
-        state: &mut RadioState<Id>,
-        event: MouseEvent,
-    ) -> RadioOutcome<Id> {
+    pub fn handle_mouse(&self, state: &mut RadioState<Id>, event: MouseEvent) -> RadioOutcome<Id> {
         if !state.enabled {
             return RadioOutcome::Ignored;
         }
@@ -2109,13 +2117,7 @@ impl<'a, Id> Switch<'a, Id> {
                 // [ON ] Label
                 let track = Rect::new(area.x, area.y, track_w, 1.min(area.height));
                 let face_t = take_display_cols(&face, usize::from(track_w));
-                buffer.set_stringn(
-                    track.x,
-                    track.y,
-                    &face_t,
-                    usize::from(track_w),
-                    track_style,
-                );
+                buffer.set_stringn(track.x, track.y, &face_t, usize::from(track_w), track_style);
                 let mut label_area = None;
                 let lx = area.x.saturating_add(track_w).saturating_add(1);
                 if lx < area.right() && !self.label.is_empty() {
@@ -2128,14 +2130,24 @@ impl<'a, Id> Switch<'a, Id> {
                 let content_w = track_w
                     .saturating_add(if label_area.is_some() { 1 } else { 0 })
                     .saturating_add(label_area.map(|r| r.width).unwrap_or(0));
-                let root = Rect::new(area.x, area.y, content_w.min(area.width).max(1), 1.min(area.height));
+                let root = Rect::new(
+                    area.x,
+                    area.y,
+                    content_w.min(area.width).max(1),
+                    1.min(area.height),
+                );
                 (track, label_area, None, root)
             }
             SwitchRecipe::SettingsRow => {
                 // Label .......... [ON ]
                 //   description
                 let track_x = area.right().saturating_sub(track_w);
-                let track = Rect::new(track_x.max(area.x), area.y, track_w.min(area.width), 1.min(area.height));
+                let track = Rect::new(
+                    track_x.max(area.x),
+                    area.y,
+                    track_w.min(area.width),
+                    1.min(area.height),
+                );
                 let face_t = take_display_cols(&face, usize::from(track.width));
                 buffer.set_stringn(
                     track.x,
@@ -2148,13 +2160,7 @@ impl<'a, Id> Switch<'a, Id> {
                 let label_max = track.x.saturating_sub(area.x).saturating_sub(1);
                 if label_max > 0 && !self.label.is_empty() {
                     let text = take_display_cols(self.label, usize::from(label_max));
-                    buffer.set_stringn(
-                        area.x,
-                        area.y,
-                        &text,
-                        usize::from(label_max),
-                        label_style,
-                    );
+                    buffer.set_stringn(area.x, area.y, &text, usize::from(label_max), label_style);
                     let used = display_cols(&text).min(usize::from(label_max)) as u16;
                     label_area = Some(Rect::new(area.x, area.y, used, 1));
                 }
@@ -2174,7 +2180,13 @@ impl<'a, Id> Switch<'a, Id> {
                     } else {
                         self.system.style(Role::TextMuted)
                     };
-                    buffer.set_stringn(area.x.saturating_add(1), dy, &text, usize::from(dw), dstyle);
+                    buffer.set_stringn(
+                        area.x.saturating_add(1),
+                        dy,
+                        &text,
+                        usize::from(dw),
+                        dstyle,
+                    );
                     description_area = Some(Rect::new(
                         area.x.saturating_add(1),
                         dy,
@@ -2381,9 +2393,7 @@ mod tests {
         let mut buf2 = Buffer::empty(Rect::new(0, 0, 20, 1));
         let _ = cb.paint(Rect::new(0, 0, 20, 1), &mut buf2, &mut state);
         assert_eq!(
-            buf2.cell((1, 0))
-                .map(|c| c.symbol().to_string())
-                .as_deref(),
+            buf2.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
             Some("-")
         );
     }
@@ -2519,7 +2529,8 @@ mod tests {
     #[test]
     fn radio_activate_to_select_policy() {
         let opts = ["a", "b", "c"];
-        let mut state = RadioState::new(Some("a")).policy_mode(RadioSelectionPolicy::ActivateToSelect);
+        let mut state =
+            RadioState::new(Some("a")).policy_mode(RadioSelectionPolicy::ActivateToSelect);
         let out = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &opts);
         assert_eq!(state.active(), Some(&"b"));
         assert_eq!(state.selected(), Some(&"a"));
@@ -2614,10 +2625,7 @@ mod tests {
         state.set_surface_focused(true);
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
         let _ = g.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
-        let out = g.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-        );
+        let out = g.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         // Skips disabled b → c
         assert_eq!(out, RadioOutcome::Selected("c"));
     }
@@ -2649,10 +2657,7 @@ mod tests {
     #[test]
     fn radio_semantic_and_hot_path() {
         let system = DesignSystem::default();
-        let options = [
-            RadioOption::new("a", "A"),
-            RadioOption::new("b", "B"),
-        ];
+        let options = [RadioOption::new("a", "A"), RadioOption::new("b", "B")];
         let g = RadioGroup::new(&options, &system).legend("Mode");
         let mut state = RadioState::new(Some("a"));
         state.set_surface_focused(true);
@@ -2727,7 +2732,10 @@ mod tests {
         );
         assert!(matches!(
             out,
-            SwitchOutcome::ValueChanged { id: "dark", on: true }
+            SwitchOutcome::ValueChanged {
+                id: "dark",
+                on: true
+            }
         ));
     }
 
@@ -2743,7 +2751,11 @@ mod tests {
             y: parts.root.y,
         };
         let outside = Position {
-            x: parts.root.x.saturating_add(parts.root.width).saturating_add(2),
+            x: parts
+                .root
+                .x
+                .saturating_add(parts.root.width)
+                .saturating_add(2),
             y: parts.root.y,
         };
         let _ = sw.handle_mouse(
@@ -2789,9 +2801,7 @@ mod tests {
         // Track at trailing edge shows ON
         let tx = parts.track.x;
         assert_eq!(
-            buf.cell((tx, 0))
-                .map(|c| c.symbol().to_string())
-                .as_deref(),
+            buf.cell((tx, 0)).map(|c| c.symbol().to_string()).as_deref(),
             Some("[")
         );
     }

@@ -17,13 +17,12 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
@@ -302,12 +301,7 @@ pub fn format_trace_offset_ms(ms: u64) -> String {
 /// Trace total duration from spans (max end).
 #[must_use]
 pub fn trace_total_ms(spans: &[TraceSpan<'_>]) -> u64 {
-    spans
-        .iter()
-        .map(|s| s.end_ms())
-        .max()
-        .unwrap_or(0)
-        .max(1)
+    spans.iter().map(|s| s.end_ms()).max().unwrap_or(0).max(1)
 }
 
 /// Map time range to bar columns within `bar_w`.
@@ -344,10 +338,7 @@ pub fn span_bar_cols(
 
 /// Filter spans by query (name/service/kind/error) keeping ancestors.
 #[must_use]
-pub fn filter_trace_spans<'a>(
-    spans: &'a [TraceSpan<'a>],
-    query: &str,
-) -> Vec<&'a TraceSpan<'a>> {
+pub fn filter_trace_spans<'a>(spans: &'a [TraceSpan<'a>], query: &str) -> Vec<&'a TraceSpan<'a>> {
     let q = query.trim().to_ascii_lowercase();
     if q.is_empty() {
         return spans.iter().collect();
@@ -386,11 +377,7 @@ pub fn filter_trace_spans<'a>(
 /// Filter critical-path only (still keep ancestors of critical spans).
 #[must_use]
 pub fn filter_critical_path<'a>(spans: &'a [TraceSpan<'a>]) -> Vec<&'a TraceSpan<'a>> {
-    let crit: BTreeSet<&str> = spans
-        .iter()
-        .filter(|s| s.critical)
-        .map(|s| s.id)
-        .collect();
+    let crit: BTreeSet<&str> = spans.iter().filter(|s| s.critical).map(|s| s.id).collect();
     if crit.is_empty() {
         return spans.iter().collect();
     }
@@ -421,8 +408,7 @@ pub fn span_to_timeline_event<'a>(
     when: &'a str,
     duration: &'a str,
 ) -> TimelineEvent<'a, &'a str> {
-    let mut ev = TimelineEvent::with_id(span.id, when, span.name)
-        .status(span.status.to_timeline());
+    let mut ev = TimelineEvent::with_id(span.id, when, span.name).status(span.status.to_timeline());
     if !span.service.is_empty() {
         ev = ev.actor(span.service);
     }
@@ -641,9 +627,7 @@ impl TraceWaterfallState {
 
     /// Zoom in (halve duration, keep selection in view if possible).
     pub fn zoom_in(&mut self, focus_ms: Option<u64>) -> TraceWaterfallOutcome {
-        let focus = focus_ms.unwrap_or_else(|| {
-            self.time_start_ms + self.time_duration_ms / 2
-        });
+        let focus = focus_ms.unwrap_or_else(|| self.time_start_ms + self.time_duration_ms / 2);
         self.time_duration_ms = (self.time_duration_ms / 2).max(1);
         self.time_start_ms = focus.saturating_sub(self.time_duration_ms / 2);
         self.clamp_time();
@@ -681,11 +665,7 @@ impl TraceWaterfallState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        spans: &[TraceSpan<'_>],
-        key: KeyEvent,
-    ) -> TraceWaterfallOutcome {
+    pub fn handle_key(&mut self, spans: &[TraceSpan<'_>], key: KeyEvent) -> TraceWaterfallOutcome {
         if !self.accepts_input || key.kind != KeyEventKind::Press {
             return TraceWaterfallOutcome::Ignored;
         }
@@ -1114,10 +1094,7 @@ impl<'a> TraceWaterfall<'a> {
         state.window.clamp();
 
         if visible.is_empty() {
-            let msg = state
-                .empty_message
-                .as_deref()
-                .unwrap_or("(no spans)");
+            let msg = state.empty_message.as_deref().unwrap_or("(no spans)");
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1260,13 +1237,7 @@ impl<'a> TraceWaterfall<'a> {
                         if x >= area.right() {
                             break;
                         }
-                        buffer.set_stringn(
-                            x,
-                            py,
-                            fill,
-                            1,
-                            self.system.style(bar_role),
-                        );
+                        buffer.set_stringn(x, py, fill, 1, self.system.style(bar_role));
                     }
                     state.bar_regions.push((
                         span.id.to_string(),
@@ -1402,7 +1373,12 @@ mod tests {
         assert!(v.iter().any(|s| s.id == "db"));
         assert!(v.iter().any(|s| s.id == "root")); // ancestor
         let c = filter_critical_path(&spans);
-        assert!(c.iter().all(|s| s.critical || s.id == "root" || s.id == "db" || s.id == "render" || s.id == "db.row" || true));
+        assert!(c.iter().all(|s| s.critical
+            || s.id == "root"
+            || s.id == "db"
+            || s.id == "render"
+            || s.id == "db.row"
+            || true));
     }
 
     #[test]

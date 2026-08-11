@@ -583,27 +583,15 @@ impl<'a> Text<'a> {
         match self.overflow {
             TextOverflow::Wrap => self.layout_wrap(&expanded, plain, w, h),
             TextOverflow::Clip => self.layout_single_line(&expanded, plain, w, h, None),
-            TextOverflow::Truncate => self.layout_single_line(
-                &expanded,
-                plain,
-                w,
-                h,
-                Some(TruncateMode::End),
-            ),
-            TextOverflow::TruncateStart => self.layout_single_line(
-                &expanded,
-                plain,
-                w,
-                h,
-                Some(TruncateMode::Start),
-            ),
-            TextOverflow::TruncateMiddle => self.layout_single_line(
-                &expanded,
-                plain,
-                w,
-                h,
-                Some(TruncateMode::Middle),
-            ),
+            TextOverflow::Truncate => {
+                self.layout_single_line(&expanded, plain, w, h, Some(TruncateMode::End))
+            }
+            TextOverflow::TruncateStart => {
+                self.layout_single_line(&expanded, plain, w, h, Some(TruncateMode::Start))
+            }
+            TextOverflow::TruncateMiddle => {
+                self.layout_single_line(&expanded, plain, w, h, Some(TruncateMode::Middle))
+            }
         }
     }
 
@@ -700,12 +688,7 @@ impl<'a> Text<'a> {
                 if g.is_empty() {
                     continue;
                 }
-                stream.push((
-                    g.to_string(),
-                    *style,
-                    annotation.clone(),
-                    *highlight,
-                ));
+                stream.push((g.to_string(), *style, annotation.clone(), *highlight));
             }
         }
 
@@ -733,14 +716,15 @@ impl<'a> Text<'a> {
             });
         };
 
-        let flush_line = |lines: &mut Vec<TextLine>, segs: &mut Vec<TextSegment>, width: &mut usize| {
-            let w = segs.iter().map(|s| display_cols(&s.text)).sum();
-            *width = 0;
-            lines.push(TextLine {
-                segments: std::mem::take(segs),
-                width: w,
-            });
-        };
+        let flush_line =
+            |lines: &mut Vec<TextLine>, segs: &mut Vec<TextSegment>, width: &mut usize| {
+                let w = segs.iter().map(|s| display_cols(&s.text)).sum();
+                *width = 0;
+                lines.push(TextLine {
+                    segments: std::mem::take(segs),
+                    width: w,
+                });
+            };
 
         for (g, style, ann, hl) in stream {
             let gw = display_cols(&g);
@@ -780,10 +764,8 @@ impl<'a> Text<'a> {
                 cur_style = None;
             }
             // Same style run merge
-            let same = cur_style == Some(style)
-                && cur_ann == ann
-                && cur_hl == hl
-                && !cur_text.is_empty();
+            let same =
+                cur_style == Some(style) && cur_ann == ann && cur_hl == hl && !cur_text.is_empty();
             if !same && !cur_text.is_empty() {
                 flush_run(
                     &mut cur_segs,
@@ -933,7 +915,9 @@ mod tests {
             [
                 TextSpan::new("ok").role(Role::Success).strong(),
                 TextSpan::new(" · ").dim(),
-                TextSpan::new("cached").role(Role::TextMuted).annotation("meta"),
+                TextSpan::new("cached")
+                    .role(Role::TextMuted)
+                    .annotation("meta"),
             ],
             &system,
         );

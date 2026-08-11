@@ -18,16 +18,20 @@
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::ColumnModel, widgets::DataColumn, widgets::DataColumnWidth, widgets::LoadState, widgets::SortSpec, widgets::VirtualWindow,
+    widgets::ColumnModel,
+    widgets::DataColumn,
+    widgets::DataColumnWidth,
+    widgets::LoadState,
+    widgets::SortSpec,
+    widgets::VirtualWindow,
 };
 
 // ── Identity ────────────────────────────────────────────────────────────────
@@ -464,24 +468,22 @@ pub fn format_elapsed_ms(ms: u64) -> String {
 
 /// Compare two rows by sort key.
 #[must_use]
-pub fn cmp_process(a: &ProcessRow<'_>, b: &ProcessRow<'_>, key: ProcessSortKey, asc: bool) -> Ordering {
+pub fn cmp_process(
+    a: &ProcessRow<'_>,
+    b: &ProcessRow<'_>,
+    key: ProcessSortKey,
+    asc: bool,
+) -> Ordering {
     let ord = match key {
         ProcessSortKey::Pid => a.key.pid.cmp(&b.key.pid),
-        ProcessSortKey::Cpu => a
-            .cpu_pct
-            .partial_cmp(&b.cpu_pct)
-            .unwrap_or(Ordering::Equal),
+        ProcessSortKey::Cpu => a.cpu_pct.partial_cmp(&b.cpu_pct).unwrap_or(Ordering::Equal),
         ProcessSortKey::Memory => a.mem_bytes.cmp(&b.mem_bytes),
         ProcessSortKey::Elapsed => a.elapsed_ms.cmp(&b.elapsed_ms),
         ProcessSortKey::Command => a.command.cmp(b.command),
         ProcessSortKey::User => a.user.cmp(b.user),
         ProcessSortKey::Status => a.status.cmp(&b.status),
     };
-    if asc {
-        ord
-    } else {
-        ord.reverse()
-    }
+    if asc { ord } else { ord.reverse() }
 }
 
 /// Filter rows by search query (command/user/pid) and optional user/status.
@@ -1023,10 +1025,7 @@ impl ProcessTableState {
         }
 
         // Tree expand/collapse
-        if is_press
-            && matches!(self.view_mode, ProcessViewMode::Tree)
-            && key.modifiers.is_empty()
-        {
+        if is_press && matches!(self.view_mode, ProcessViewMode::Tree) && key.modifiers.is_empty() {
             match key.code {
                 KeyCode::Left | KeyCode::Char('h') => {
                     if let Some(k) = self.selected
@@ -1505,10 +1504,7 @@ mod tests {
         let rows = sample();
         let mut state = ProcessTableState::new();
         state.select(Some(ProcessKey::new(1902, 500)));
-        let out = state.handle_key(
-            &rows,
-            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
-        );
+        let out = state.handle_key(&rows, KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
         assert!(matches!(out, ProcessTableOutcome::ConfirmRequired(_)));
         assert!(matches!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
@@ -1524,10 +1520,7 @@ mod tests {
         let rows = sample();
         let mut state = ProcessTableState::new();
         state.select(Some(ProcessKey::new(1888, 400)));
-        let out = state.handle_key(
-            &rows,
-            KeyEvent::new(KeyCode::Char('K'), KeyModifiers::NONE),
-        );
+        let out = state.handle_key(&rows, KeyEvent::new(KeyCode::Char('K'), KeyModifiers::NONE));
         assert!(matches!(
             out,
             ProcessTableOutcome::ConfirmRequired(c) if c.signal == ProcessSignal::Kill
@@ -1544,24 +1537,15 @@ mod tests {
             ProcessTableOutcome::SelectionChanged(_)
         ));
         assert!(matches!(
-            state.handle_key(
-                &rows,
-                KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE)
-            ),
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE)),
             ProcessTableOutcome::SortChanged { .. }
         ));
         assert!(matches!(
-            state.handle_key(
-                &rows,
-                KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE)
-            ),
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE)),
             ProcessTableOutcome::ViewModeChanged(ProcessViewMode::Tree)
         ));
         assert!(matches!(
-            state.handle_key(
-                &rows,
-                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)
-            ),
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
             ProcessTableOutcome::RefreshRequested
         ));
     }
@@ -1670,7 +1654,12 @@ mod tests {
         // Guard: production body must not spawn/kill.
         let src = include_str!("process_table.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["libc::kill", "nix::sys::signal", "Command::new", "std::process::Command"] {
+        for forbidden in [
+            "libc::kill",
+            "nix::sys::signal",
+            "Command::new",
+            "std::process::Command",
+        ] {
             assert!(
                 !body.contains(forbidden),
                 "process_table must not contain {forbidden}"
@@ -1683,10 +1672,7 @@ mod tests {
         let rows = sample();
         let mut state = ProcessTableState::new();
         state.select(Some(ProcessKey::new(1902, 500)));
-        let _ = state.handle_key(
-            &rows,
-            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
-        );
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
         assert!(matches!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             ProcessTableOutcome::ConfirmCancelled

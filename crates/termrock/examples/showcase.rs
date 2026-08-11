@@ -9,7 +9,6 @@ use std::{io, time::Duration};
 use crossterm::event;
 use ratatui_core::{
     layout::Rect,
-    style::Style,
     terminal::Terminal,
     text::{Line, Span},
 };
@@ -186,20 +185,10 @@ fn render_tabs(
     state: &mut TabsState<&'static str>,
 ) {
     let tabs = [
-        Tab {
-            id: "components",
-            label: "Components",
-            glyph: Some(Span::styled("●", system.style(Role::Accent))),
-            active: true,
-            enabled: true,
-        },
-        Tab {
-            id: "events",
-            label: "Events",
-            glyph: None,
-            active: false,
-            enabled: true,
-        },
+        Tab::new("components", "Components")
+            .glyph(Span::styled("●", system.style(Role::Accent)))
+            .active(true),
+        Tab::new("events", "Events"),
     ];
     frame.render_stateful_widget(Tabs::new(&tabs, system), area, state);
 }
@@ -216,11 +205,10 @@ fn render_status(
         .kind(StatusKind::Connection)
         .style(system.style(Role::Success))
         .hover_style(system.style(Role::LinkHover))];
-    let right = [StatusSlot::new(
-        "theme",
-        if phosphor { " phosphor " } else { " slate " },
-    )
-    .priority(10)
-    .region(StatusRegion::Right)];
+    let right = [
+        StatusSlot::new("theme", if phosphor { " phosphor " } else { " slate " })
+            .priority(10)
+            .region(StatusRegion::Right),
+    ];
     frame.render_stateful_widget(StatusBar::new(&left, &right, system), area, state);
 }

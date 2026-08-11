@@ -17,6 +17,7 @@
 //! Research: Amp sessions, OpenCode sessions, Grok Build picker, project launchers.
 //! Outcomes are **requests only** — no persistence, network, or draft mutation.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -764,9 +765,7 @@ impl SessionPickerState {
 
     fn select_cursor(&mut self) -> SessionPickerOutcome {
         if let Some(s) = self.current() {
-            SessionPickerOutcome::Selected {
-                id: s.id.clone(),
-            }
+            SessionPickerOutcome::Selected { id: s.id.clone() }
         } else {
             SessionPickerOutcome::Ignored
         }
@@ -811,9 +810,7 @@ impl SessionPickerState {
     }
 
     fn emit_confirm(&mut self) -> SessionPickerOutcome {
-        let action = self
-            .confirm_action
-            .unwrap_or(SessionConfirmAction::Delete);
+        let action = self.confirm_action.unwrap_or(SessionConfirmAction::Delete);
         let Some(id) = self.current_id() else {
             return SessionPickerOutcome::Ignored;
         };
@@ -870,9 +867,7 @@ impl SessionPickerState {
                 if !s.enabled {
                     return SessionPickerOutcome::Ignored;
                 }
-                SessionPickerOutcome::Opened {
-                    id: s.id.clone(),
-                }
+                SessionPickerOutcome::Opened { id: s.id.clone() }
             }
             KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.phase = SessionPickerPhase::Create;
@@ -905,9 +900,7 @@ impl SessionPickerState {
                 self.refilter();
                 SessionPickerOutcome::PinToggled { id, pinned }
             }
-            KeyCode::Char('a')
-                if key.modifiers.is_empty() && self.query.is_empty() =>
-            {
+            KeyCode::Char('a') if key.modifiers.is_empty() && self.query.is_empty() => {
                 self.open_confirm(SessionConfirmAction::Archive)
             }
             KeyCode::Delete => self.open_confirm(SessionConfirmAction::Delete),
@@ -997,9 +990,7 @@ impl SessionPickerState {
 
     fn query_changed(&self) -> SessionPickerOutcome {
         let provider_search = self.query.len() >= SESSION_PICKER_PROVIDER_SEARCH_MIN
-            && self
-                .total_count
-                .is_some_and(|t| t > SESSION_PICKER_WINDOW);
+            && self.total_count.is_some_and(|t| t > SESSION_PICKER_WINDOW);
         SessionPickerOutcome::QueryChanged {
             query: self.query.clone(),
             provider_search,
@@ -1130,9 +1121,7 @@ impl SessionPickerState {
             if already {
                 if let Some(s) = self.current() {
                     if s.enabled {
-                        return SessionPickerOutcome::Opened {
-                            id: s.id.clone(),
-                        };
+                        return SessionPickerOutcome::Opened { id: s.id.clone() };
                     }
                 }
             }
@@ -1204,9 +1193,7 @@ impl<'a> SessionPicker<'a> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system)
-            .title(title)
-            .emphasis(emphasis);
+        let panel = Panel::new(self.system).title(title).emphasis(emphasis);
         let inner = panel.inner(area);
         use ratatui_core::widgets::Widget;
         Widget::render(&panel, area, buffer);
@@ -1259,8 +1246,10 @@ impl<'a> SessionPicker<'a> {
         }
 
         // Load / error
-        if matches!(state.load_state, SessionLoadState::Loading | SessionLoadState::Searching)
-            && y < max_y
+        if matches!(
+            state.load_state,
+            SessionLoadState::Loading | SessionLoadState::Searching
+        ) && y < max_y
         {
             let m = if matches!(state.load_state, SessionLoadState::Searching) {
                 "searching…"
@@ -1359,12 +1348,7 @@ impl<'a> SessionPicker<'a> {
         }
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SessionPickerState,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut SessionPickerState) {
         if area.is_empty() {
             return;
         }
@@ -1431,9 +1415,7 @@ impl<'a> SessionPicker<'a> {
             let style = if !s.enabled {
                 self.system.style(Role::TextMuted)
             } else if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if s.action_required && !self.colorless {
                 self.system.style(Role::Warning)
             } else if !self.colorless {
@@ -1484,12 +1466,7 @@ impl<'a> SessionPicker<'a> {
         }
     }
 
-    fn paint_preview(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &SessionPickerState,
-    ) {
+    fn paint_preview(&self, area: Rect, buffer: &mut Buffer, state: &SessionPickerState) {
         if area.is_empty() {
             return;
         }
@@ -1515,11 +1492,7 @@ impl<'a> SessionPicker<'a> {
                 v.push((format!("branch {b}"), Role::TextMuted));
             }
             v.push((
-                format!(
-                    "status {} · {}",
-                    s.status.id(),
-                    s.location.label()
-                ),
+                format!("status {} · {}", s.status.id(), s.location.label()),
                 s.status.role(),
             ));
             if let Some(m) = s.model.as_ref() {
@@ -1562,20 +1535,13 @@ impl<'a> SessionPicker<'a> {
         }
     }
 
-    fn paint_confirm(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SessionPickerState,
-    ) {
+    fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut SessionPickerState) {
         let y = area.bottom().saturating_sub(2);
         if y < area.y {
             return;
         }
         let w = usize::from(area.width);
-        let action = state
-            .confirm_action
-            .unwrap_or(SessionConfirmAction::Delete);
+        let action = state.confirm_action.unwrap_or(SessionConfirmAction::Delete);
         let title = state
             .current()
             .map(|s| s.title.as_str())
@@ -1584,7 +1550,12 @@ impl<'a> SessionPicker<'a> {
             area.x,
             y,
             take_display_cols(
-                &format!("! {} “{}” — {}", action.label(), title, action.consequence()),
+                &format!(
+                    "! {} “{}” — {}",
+                    action.label(),
+                    title,
+                    action.consequence()
+                ),
                 w,
             ),
             w,
@@ -1658,10 +1629,7 @@ impl StatefulWidget for SessionPicker<'_> {
 /// Filter sessions by query (case-insensitive).
 #[must_use]
 pub fn filter_sessions<'a>(sessions: &'a [SessionEntry], query: &str) -> Vec<&'a SessionEntry> {
-    sessions
-        .iter()
-        .filter(|s| s.matches_query(query))
-        .collect()
+    sessions.iter().filter(|s| s.matches_query(query)).collect()
 }
 
 // ── Examples ────────────────────────────────────────────────────────────────
@@ -2094,7 +2062,10 @@ mod tests {
             position: Position { x: r.x, y: r.y },
             modifiers: KeyModifiers::NONE,
         });
-        assert!(matches!(out, SessionPickerOutcome::Opened { .. }), "{out:?}");
+        assert!(
+            matches!(out, SessionPickerOutcome::Opened { .. }),
+            "{out:?}"
+        );
     }
 
     #[test]

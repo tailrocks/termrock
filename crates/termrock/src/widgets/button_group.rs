@@ -17,6 +17,7 @@
 //!
 //! Research: shadcn button groups, desktop dialog action bars, terminal prompt rows.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -619,8 +620,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                     }
                     let item = &self.items[idx];
                     let rect = Rect::new(area.x, y, area.width, 1);
-                    let focused = state.surface_focused
-                        && state.cursor.as_ref() == Some(&item.id);
+                    let focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
                     let hovered = state.hovered.as_ref() == Some(&item.id);
                     self.paint_face(item, rect, buffer, focused, hovered);
                     item_parts.push(ButtonGroupItemParts {
@@ -656,15 +656,12 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                     }
                     first = false;
                     let item = &self.items[idx];
-                    let w = self
-                        .item_width(item)
-                        .min(area.right().saturating_sub(x));
+                    let w = self.item_width(item).min(area.right().saturating_sub(x));
                     if w == 0 {
                         break;
                     }
                     let rect = Rect::new(x, area.y, w, 1.min(area.height));
-                    let focused =
-                        state.surface_focused && state.cursor.as_ref() == Some(&item.id);
+                    let focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
                     let hovered = state.hovered.as_ref() == Some(&item.id);
                     self.paint_face(item, rect, buffer, focused, hovered);
                     item_parts.push(ButtonGroupItemParts {
@@ -706,13 +703,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                         style = style.add_modifier(Modifier::BOLD);
                         style.bg = None;
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
-                        buffer.set_stringn(
-                            rect.x,
-                            rect.y,
-                            &label,
-                            usize::from(tw),
-                            style,
-                        );
+                        buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);
                     }
                 }
@@ -926,14 +917,10 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                     state.cursor = Some(it.id.clone());
                     if let Some(item) = self.item_by_id(&it.id) {
                         if item.can_activate() {
-                            return ButtonGroupOutcome::Activated {
-                                id: it.id.clone(),
-                            };
+                            return ButtonGroupOutcome::Activated { id: it.id.clone() };
                         }
                     }
-                    return ButtonGroupOutcome::CursorMoved {
-                        id: it.id.clone(),
-                    };
+                    return ButtonGroupOutcome::CursorMoved { id: it.id.clone() };
                 }
                 ButtonGroupOutcome::Ignored
             }
@@ -1082,10 +1069,7 @@ mod tests {
             &mut state,
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
         );
-        assert!(matches!(
-            out,
-            ButtonGroupOutcome::Activated { id: "save" }
-        ));
+        assert!(matches!(out, ButtonGroupOutcome::Activated { id: "save" }));
     }
 
     #[test]
@@ -1152,10 +1136,7 @@ mod tests {
                 modifiers: KeyModifiers::NONE,
             },
         );
-        assert!(matches!(
-            out,
-            ButtonGroupOutcome::Activated { id: "b" }
-        ));
+        assert!(matches!(out, ButtonGroupOutcome::Activated { id: "b" }));
     }
 
     #[test]
@@ -1247,10 +1228,7 @@ mod tests {
             &mut state,
             KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE),
         );
-        assert!(!matches!(
-            out,
-            ButtonGroupOutcome::Activated { id: "save" }
-        ));
+        assert!(!matches!(out, ButtonGroupOutcome::Activated { id: "save" }));
     }
 
     #[test]

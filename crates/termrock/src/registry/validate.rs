@@ -3,7 +3,7 @@
 
 //! Contract validation (design lint + structural CI).
 
-use super::contract::{ComponentContract, ContractFileRole, RegistryItemKind, CONTRACT_SCHEMA};
+use super::contract::{CONTRACT_SCHEMA, ComponentContract, ContractFileRole, RegistryItemKind};
 
 /// Severity of a validation issue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -111,12 +111,7 @@ pub fn validate_contract(c: &ComponentContract) -> ValidationReport {
         );
     }
     if c.id.trim().is_empty() {
-        r.push(
-            ContractIssueLevel::Error,
-            id,
-            "id",
-            "id must be non-empty",
-        );
+        r.push(ContractIssueLevel::Error, id, "id", "id must be non-empty");
     }
     if c.id.contains('/') || c.id.contains('\\') {
         r.push(
@@ -159,12 +154,7 @@ pub fn validate_contract(c: &ComponentContract) -> ValidationReport {
         );
     }
     if c.version.trim().is_empty() {
-        r.push(
-            ContractIssueLevel::Error,
-            id,
-            "version",
-            "version required",
-        );
+        r.push(ContractIssueLevel::Error, id, "version", "version required");
     }
     if c.provenance.origin.trim().is_empty() || c.provenance.path.trim().is_empty() {
         r.push(

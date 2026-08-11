@@ -15,6 +15,7 @@
 //! Research: Vim easymotion, browser keyboard nav extensions, Posting jump,
 //! accessibility focus inspectors.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -23,10 +24,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticNode, SemanticRole,
-        SemanticScene, UiIntent,
+        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticNode,
+        SemanticRole, SemanticScene, UiIntent,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -330,10 +333,7 @@ pub struct JumpCandidate<Id> {
 
 // ── Scene collection ────────────────────────────────────────────────────────
 
-fn node_depth<Id: PartialEq, Action>(
-    scene: &SemanticScene<Id, Action>,
-    id: &Id,
-) -> u8 {
+fn node_depth<Id: PartialEq, Action>(scene: &SemanticScene<Id, Action>, id: &Id) -> u8 {
     let mut depth = 0u8;
     let mut cur = scene.nodes().iter().find(|n| &n.id == id);
     while let Some(n) = cur {
@@ -401,10 +401,7 @@ where
                 continue;
             }
         }
-        let display_label = node
-            .label
-            .clone()
-            .unwrap_or_else(|| node.id.to_string());
+        let display_label = node.label.clone().unwrap_or_else(|| node.id.to_string());
         if let Some(lc) = &filter.label_contains {
             if !display_label
                 .to_ascii_lowercase()
@@ -569,18 +566,12 @@ impl JumpOverlayState {
 
     /// Targets matching current prefix (for paint).
     #[must_use]
-    pub fn matching<'a, Id>(
-        &self,
-        targets: &'a [JumpTarget<Id>],
-    ) -> Vec<&'a JumpTarget<Id>> {
+    pub fn matching<'a, Id>(&self, targets: &'a [JumpTarget<Id>]) -> Vec<&'a JumpTarget<Id>> {
         if self.prefix.is_empty() {
             return targets.iter().collect();
         }
         let p = self.prefix.as_str();
-        targets
-            .iter()
-            .filter(|t| t.keys.starts_with(p))
-            .collect()
+        targets.iter().filter(|t| t.keys.starts_with(p)).collect()
     }
 
     /// Handles a key while jump mode is open.
@@ -708,9 +699,7 @@ impl JumpOverlayState {
         targets: &[JumpTarget<Id>],
     ) -> JumpOutcome<Id> {
         match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                self.handle_click(event.position, targets)
-            }
+            MouseEventKind::Down(MouseButton::Left) => self.handle_click(event.position, targets),
             _ => JumpOutcome::Ignored,
         }
     }
@@ -858,10 +847,7 @@ pub fn jump_status_line(state: &JumpOverlayState, target_count: usize, ascii: bo
     if state.prefix().is_empty() {
         format!("{mark}: {target_count} targets · type letter · esc")
     } else {
-        format!(
-            "{mark}: [{}] · esc clear",
-            state.prefix()
-        )
+        format!("{mark}: [{}] · esc clear", state.prefix())
     }
 }
 
@@ -1027,9 +1013,7 @@ mod tests {
     fn jump_targets_from_semantic_scene() {
         let mut scene = SemanticScene::<&str>::new();
         scene
-            .register(
-                SemanticNode::control("a", Rect::new(0, 0, 2, 1)).role(SemanticRole::Button),
-            )
+            .register(SemanticNode::control("a", Rect::new(0, 0, 2, 1)).role(SemanticRole::Button))
             .unwrap();
         scene
             .register(
@@ -1133,7 +1117,11 @@ mod tests {
             .ascii(true)
             .colorless(true)
             .render(area, &mut buf);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains('[') || text.contains(first), "{text}");
     }
 

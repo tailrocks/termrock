@@ -80,10 +80,7 @@ impl<'a> TokenSyntax<'a> {
     /// Token syntax with optional language + keywords.
     #[must_use]
     pub const fn new(language: Option<&'a str>, keywords: &'a [&'a str]) -> Self {
-        Self {
-            language,
-            keywords,
-        }
+        Self { language, keywords }
     }
 
     /// Common Rust-ish keyword set for demos / fences.
@@ -830,16 +827,17 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if let Some(c) = state.cursor_line {
             return self.copy_range(c, c.saturating_add(1));
         }
-        self.copy_range(self.line_base, self.line_base.saturating_add(self.lines.len()))
+        self.copy_range(
+            self.line_base,
+            self.line_base.saturating_add(self.lines.len()),
+        )
     }
 
     fn gutter_width(&self, body_rows: u16, first: usize) -> u16 {
         if !self.show_line_numbers {
             return 0;
         }
-        let last = first
-            .saturating_add(usize::from(body_rows))
-            .max(1);
+        let last = first.saturating_add(usize::from(body_rows)).max(1);
         let display_last = self
             .meta
             .start_line_number
@@ -1048,10 +1046,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 let mark_w = u16::from(mark.is_some());
                 let num_w = parts.gutter.width.saturating_sub(mark_w);
                 if num_w > 0 {
-                    let display_n = self
-                        .meta
-                        .start_line_number
-                        .saturating_add(abs);
+                    let display_n = self.meta.start_line_number.saturating_add(abs);
                     let number = format!(
                         "{:>width$}",
                         display_n,
@@ -1059,7 +1054,10 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     );
                     let mut nstyle = self.system.style(Role::TextDisabled);
                     if state.cursor_line == Some(abs) {
-                        nstyle = self.system.style(Role::TextMuted).add_modifier(Modifier::BOLD);
+                        nstyle = self
+                            .system
+                            .style(Role::TextMuted)
+                            .add_modifier(Modifier::BOLD);
                     }
                     buffer.set_stringn(
                         parts.gutter.x,
@@ -1123,8 +1121,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             }
             visible = visible.saturating_add(1);
             abs = abs.saturating_add(1);
-            if abs >= self.line_base.saturating_add(self.lines.len())
-                && abs >= self.document_len()
+            if abs >= self.line_base.saturating_add(self.lines.len()) && abs >= self.document_len()
             {
                 break;
             }
@@ -1192,10 +1189,14 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             }
             style = self.line_style_overlay(style, kinds, mono);
             // Dense code: no accidental bg from Text role unless selection.
-            if !kinds
-                .iter()
-                .any(|k| matches!(k, CodeHighlightKind::Selection | CodeHighlightKind::DiffAdd | CodeHighlightKind::DiffRemove))
-            {
+            if !kinds.iter().any(|k| {
+                matches!(
+                    k,
+                    CodeHighlightKind::Selection
+                        | CodeHighlightKind::DiffAdd
+                        | CodeHighlightKind::DiffRemove
+                )
+            }) {
                 style.bg = None;
             }
             if col >= width {
@@ -1206,32 +1207,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let used = u16::try_from(display_cols(&clipped))
                 .unwrap_or(0)
                 .min(width.saturating_sub(col));
-            buffer.set_stringn(
-                x.saturating_add(col),
-                y,
-                &clipped,
-                remaining,
-                style,
-            );
+            buffer.set_stringn(x.saturating_add(col), y, &clipped, remaining, style);
             col = col.saturating_add(used);
         }
         let _ = abs_line;
     }
 
     /// Key handling (scroll / cursor / copy / activate).
-    pub fn handle_key(
-        &self,
-        state: &mut CodeBlockState,
-        key: KeyEvent,
-    ) -> CodeBlockOutcome {
+    pub fn handle_key(&self, state: &mut CodeBlockState, key: KeyEvent) -> CodeBlockOutcome {
         if !state.focused || key.kind != KeyEventKind::Press {
             return CodeBlockOutcome::Ignored;
         }
         let doc = self.document_len();
         // Copy
-        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C'))
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
             return CodeBlockOutcome::Copy {
                 text: self.copy_text(state),
             };
@@ -1359,11 +1348,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     }
 
     /// Mouse: wheel scroll, click select line.
-    pub fn handle_mouse(
-        &self,
-        state: &mut CodeBlockState,
-        event: MouseEvent,
-    ) -> CodeBlockOutcome {
+    pub fn handle_mouse(&self, state: &mut CodeBlockState, event: MouseEvent) -> CodeBlockOutcome {
         let Some(parts) = state.parts.clone() else {
             return CodeBlockOutcome::Ignored;
         };
@@ -1520,7 +1505,6 @@ fn take_display_cols_from(s: &str, skip: usize) -> String {
         if used + w > skip {
             // Mid-wide skip — start after this grapheme
             start = idx + g.len();
-            used += w;
             break;
         }
         used += w;
@@ -1615,7 +1599,8 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
         if bytes[i].is_ascii_digit() {
             let start = i;
             i += 1;
-            while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'.')
+            while i < bytes.len()
+                && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'.')
             {
                 i += 1;
             }
@@ -1633,7 +1618,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
                 i += 1;
             }
             let word = &line[start..i];
-            let style = if keywords.iter().any(|k| *k == word) {
+            let style = if keywords.contains(&word) {
                 Style::default()
                     .fg(ratatui_core::style::Color::Cyan)
                     .add_modifier(Modifier::BOLD)
@@ -1686,10 +1671,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
 pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
     let mut style = system.style(role);
     style.bg = None;
-    if matches!(
-        system.capability,
-        crate::style::ColorCapability::Monochrome
-    ) {
+    if matches!(system.capability, crate::style::ColorCapability::Monochrome) {
         match role {
             Role::SyntaxKeyword | Role::SyntaxFunction => {
                 style = style.add_modifier(Modifier::BOLD);
@@ -1856,14 +1838,10 @@ mod tests {
         state.set_focused(true);
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
         let _ = block.paint(Rect::new(0, 0, 20, 3), &mut buf, &mut state);
-        let out = block.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-        );
+        let out = block.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         assert!(matches!(
             out,
-            CodeBlockOutcome::CursorMoved { line: 1 }
-                | CodeBlockOutcome::Scrolled { .. }
+            CodeBlockOutcome::CursorMoved { line: 1 } | CodeBlockOutcome::Scrolled { .. }
         ));
         state.selection = Some((1, 3));
         let text = block.copy_text(&state);
@@ -1881,9 +1859,11 @@ mod tests {
         let lines = ["partial"];
         let mut state = CodeBlockState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
-        let parts = CodeBlock::new(&lines, &system)
-            .streaming(true)
-            .paint(Rect::new(0, 0, 20, 3), &mut buf, &mut state);
+        let parts = CodeBlock::new(&lines, &system).streaming(true).paint(
+            Rect::new(0, 0, 20, 3),
+            &mut buf,
+            &mut state,
+        );
         assert!(parts.streaming);
     }
 
@@ -1913,9 +1893,7 @@ mod tests {
 
     #[test]
     fn no_color_still_paints() {
-        let system = DesignSystem::default()
-            .glyphs(GlyphSet::Ascii)
-            .no_color();
+        let system = DesignSystem::default().glyphs(GlyphSet::Ascii).no_color();
         assert_eq!(system.capability, ColorCapability::Monochrome);
         let lines = ["fn x() {}"];
         let hi = RoleTokenSyntax::rust(&system);
@@ -1958,9 +1936,11 @@ mod tests {
         let lines = ["abcdefghijklmnopqrstuvwxyz"];
         let mut state = CodeBlockState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 10, 5));
-        let parts = CodeBlock::new(&lines, &system)
-            .wrap(CodeWrap::Wrap)
-            .paint(Rect::new(0, 0, 10, 5), &mut buf, &mut state);
+        let parts = CodeBlock::new(&lines, &system).wrap(CodeWrap::Wrap).paint(
+            Rect::new(0, 0, 10, 5),
+            &mut buf,
+            &mut state,
+        );
         assert_eq!(parts.visible_lines, 1);
         // more than one body row used for wrap
         let row1: String = (0..10).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
@@ -1975,11 +1955,8 @@ mod tests {
         let lines = ["x"];
         let mut state = CodeBlockState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let parts = CodeBlock::new(&lines, &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            &mut state,
-        );
+        let parts =
+            CodeBlock::new(&lines, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
         assert!(parts.root.is_empty());
     }
 
@@ -2014,9 +1991,11 @@ mod tests {
         let lines = ["// 文档 🔗", "fn 你好() {}"];
         let mut state = CodeBlockState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 3));
-        let _ = CodeBlock::new(&lines, &system)
-            .line_numbers(true)
-            .paint(Rect::new(0, 0, 40, 3), &mut buf, &mut state);
+        let _ = CodeBlock::new(&lines, &system).line_numbers(true).paint(
+            Rect::new(0, 0, 40, 3),
+            &mut buf,
+            &mut state,
+        );
         let row: String = (0..40).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
         assert!(row.contains('文') || row.contains('/'), "{row}");
     }

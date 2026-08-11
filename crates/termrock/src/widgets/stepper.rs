@@ -16,6 +16,7 @@
 //!
 //! Research: shadcn-style steppers, installers, CI pipeline views.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -109,6 +110,7 @@ impl StepStatus {
 }
 
 /// Alias used by FormWizard historically (`Upcoming` = [`StepStatus::Future`]).
+#[allow(dead_code)]
 pub type WizardStepStatus = StepStatus;
 
 /// One step definition (host-projected; values stay outside).
@@ -162,6 +164,7 @@ impl StepItem {
 }
 
 /// FormWizard-compatible name.
+#[allow(dead_code)]
 pub type WizardStep = StepItem;
 
 /// Layout orientation.
@@ -259,7 +262,8 @@ pub fn stepper_presentation_for_bounds(
             }
         }
         StepperOrientation::Vertical => {
-            if bounds.width <= STEPPER_NARROW_MAX_WIDTH || bounds.height <= STEPPER_COMPACT_MAX_HEIGHT
+            if bounds.width <= STEPPER_NARROW_MAX_WIDTH
+                || bounds.height <= STEPPER_COMPACT_MAX_HEIGHT
             {
                 StepperPresentation::Numeric
             } else if bounds.width <= STEPPER_COMPACT_MAX_WIDTH {
@@ -371,7 +375,11 @@ impl StepperState {
             if self.current >= n {
                 self.current = n - 1;
             }
-            if self.statuses.iter().all(|s| matches!(s, StepStatus::Future)) {
+            if self
+                .statuses
+                .iter()
+                .all(|s| matches!(s, StepStatus::Future))
+            {
                 self.statuses[self.current] = StepStatus::Current;
             }
         } else {
@@ -716,9 +724,7 @@ impl StepperState {
             if !matches!(next, StepperPresentation::Menu) {
                 self.menu_open = false;
             }
-            StepperOutcome::PresentationChanged {
-                presentation: next,
-            }
+            StepperOutcome::PresentationChanged { presentation: next }
         } else {
             StepperOutcome::Ignored
         }
@@ -734,10 +740,7 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 
 /// Default intent map.
 #[must_use]
-pub fn default_stepper_intent(
-    key: KeyEvent,
-    orientation: StepperOrientation,
-) -> Option<UiIntent> {
+pub fn default_stepper_intent(key: KeyEvent, orientation: StepperOrientation) -> Option<UiIntent> {
     if key.kind == KeyEventKind::Release {
         return None;
     }
@@ -833,16 +836,19 @@ impl<'a> Stepper<'a> {
             StepperPresentation::Menu => self.paint_menu(area, buffer, state),
             StepperPresentation::Expanded | StepperPresentation::Compact => {
                 match state.orientation {
-                    StepperOrientation::Horizontal => {
-                        self.paint_horizontal(area, buffer, state)
-                    }
+                    StepperOrientation::Horizontal => self.paint_horizontal(area, buffer, state),
                     StepperOrientation::Vertical => self.paint_vertical(area, buffer, state),
                 }
             }
         }
     }
 
-    fn style_for(&self, status: StepStatus, active_cursor: bool, focused: bool) -> ratatui_core::style::Style {
+    fn style_for(
+        &self,
+        status: StepStatus,
+        active_cursor: bool,
+        focused: bool,
+    ) -> ratatui_core::style::Style {
         if self.colorless {
             return match status {
                 StepStatus::Current if focused => self
@@ -952,7 +958,10 @@ impl<'a> Stepper<'a> {
                 if y >= area.bottom() {
                     break;
                 }
-                let d = format!("    {}", take_display_cols(desc, usize::from(area.width.saturating_sub(4))));
+                let d = format!(
+                    "    {}",
+                    take_display_cols(desc, usize::from(area.width.saturating_sub(4)))
+                );
                 buffer.set_stringn(
                     area.x,
                     y,
@@ -965,13 +974,7 @@ impl<'a> Stepper<'a> {
             // connector
             if i + 1 < self.items.len() && !compact && y < area.bottom() {
                 let conn = if self.ascii { " |" } else { " │" };
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    conn,
-                    2,
-                    self.system.style(Role::Border),
-                );
+                buffer.set_stringn(area.x, y, conn, 2, self.system.style(Role::Border));
                 y = y.saturating_add(1);
             }
         }
@@ -1003,10 +1006,9 @@ impl<'a> Stepper<'a> {
             usize::from(area.width),
             style,
         );
-        state.hits.push((
-            state.current,
-            Rect::new(area.x, area.y, area.width, 1),
-        ));
+        state
+            .hits
+            .push((state.current, Rect::new(area.x, area.y, area.width, 1)));
     }
 
     fn paint_menu(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
@@ -1179,10 +1181,7 @@ mod tests {
     fn linear_blocks_future_jump() {
         let items = steps();
         let mut s = focused_linear(items.len());
-        assert!(matches!(
-            s.activate(2, &items),
-            StepperOutcome::Ignored
-        ));
+        assert!(matches!(s.activate(2, &items), StepperOutcome::Ignored));
         s.set_current(1, items.len(), false);
         s.set_status(0, StepStatus::Complete);
         assert!(matches!(
@@ -1214,24 +1213,15 @@ mod tests {
     #[test]
     fn presentation_width() {
         assert_eq!(
-            stepper_presentation_for_bounds(
-                Rect::new(0, 0, 20, 5),
-                StepperOrientation::Horizontal
-            ),
+            stepper_presentation_for_bounds(Rect::new(0, 0, 20, 5), StepperOrientation::Horizontal),
             StepperPresentation::Menu
         );
         assert_eq!(
-            stepper_presentation_for_bounds(
-                Rect::new(0, 0, 40, 5),
-                StepperOrientation::Horizontal
-            ),
+            stepper_presentation_for_bounds(Rect::new(0, 0, 40, 5), StepperOrientation::Horizontal),
             StepperPresentation::Compact
         );
         assert_eq!(
-            stepper_presentation_for_bounds(
-                Rect::new(0, 0, 80, 5),
-                StepperOrientation::Horizontal
-            ),
+            stepper_presentation_for_bounds(Rect::new(0, 0, 80, 5), StepperOrientation::Horizontal),
             StepperPresentation::Expanded
         );
     }
@@ -1259,7 +1249,10 @@ mod tests {
         let mut s = focused_linear(items.len()).policy(StepperNavPolicy::Host);
         s.set_focused(true);
         assert!(matches!(
-            s.handle_key(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE), &items),
+            s.handle_key(
+                KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE),
+                &items
+            ),
             StepperOutcome::StepActivated { index: 2, .. }
         ));
     }
@@ -1273,9 +1266,18 @@ mod tests {
         s.set_current(1, items.len(), true);
         let area = Rect::new(0, 0, 72, 3);
         let mut buf = Buffer::empty(area);
-        Stepper::new(&items, &system).ascii(true).paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("Account") || text.contains("[x]") || text.contains("Region"), "{text}");
+        Stepper::new(&items, &system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut s);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Account") || text.contains("[x]") || text.contains("Region"),
+            "{text}"
+        );
 
         let mut s2 = focused_linear(items.len());
         s2.set_orientation(StepperOrientation::Vertical);
@@ -1284,7 +1286,11 @@ mod tests {
         Stepper::new(&items, &system)
             .ascii(true)
             .paint(area2, &mut buf2, &mut s2);
-        let t2: String = buf2.content().iter().map(|c| c.symbol().to_string()).collect();
+        let t2: String = buf2
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(t2.contains("Account") || t2.contains("[>]"), "{t2}");
     }
 
@@ -1300,7 +1306,11 @@ mod tests {
             .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("[!]"), "{text}");
     }
 

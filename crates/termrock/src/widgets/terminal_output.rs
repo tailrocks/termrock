@@ -21,14 +21,10 @@
 //!
 //! Research: Grok Build, Amp, OpenCode, terminal emulators, CI command logs.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     ansi_text::{AnsiLine, AnsiText, AnsiTextMode},
@@ -712,10 +708,7 @@ impl TerminalOutputState {
                 KeyCode::Char('f' | 'F') if key.modifiers.is_empty() => {
                     return self.toggle_follow(&view);
                 }
-                KeyCode::Char('c')
-                    if key.modifiers.is_empty()
-                        && meta.status.can_cancel() =>
-                {
+                KeyCode::Char('c') if key.modifiers.is_empty() && meta.status.can_cancel() => {
                     return TerminalOutputOutcome::CancelRequested;
                 }
                 KeyCode::Char('c' | 'C')
@@ -723,11 +716,7 @@ impl TerminalOutputState {
                         || (key.modifiers.is_empty() && !meta.status.can_cancel()) =>
                 {
                     // Copy output (C-c always; bare c when not cancellable)
-                    let text = view
-                        .iter()
-                        .map(|l| l.text)
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                    let text = view.iter().map(|l| l.text).collect::<Vec<_>>().join("\n");
                     return TerminalOutputOutcome::CopyOutput { text };
                 }
                 KeyCode::Char('y' | 'Y') if key.modifiers.is_empty() => {
@@ -735,9 +724,7 @@ impl TerminalOutputState {
                         text: meta.command.to_string(),
                     };
                 }
-                KeyCode::Char('r' | 'R')
-                    if key.modifiers.is_empty() && meta.status.can_retry() =>
-                {
+                KeyCode::Char('r' | 'R') if key.modifiers.is_empty() && meta.status.can_retry() => {
                     return TerminalOutputOutcome::RetryRequested;
                 }
                 KeyCode::Char('d' | 'D')
@@ -1153,10 +1140,7 @@ impl<'a> TerminalOutput<'a> {
             }
         };
         let chip_h = u16::from(area.height >= header_h.saturating_add(2));
-        let body_h = area
-            .height
-            .saturating_sub(header_h + chip_h)
-            .max(1);
+        let body_h = area.height.saturating_sub(header_h + chip_h).max(1);
 
         let total = view.len().min(u16::MAX as usize) as u16;
         state.sync_metrics(total, body_h);
@@ -1303,19 +1287,13 @@ fn paint_header(
         .exit_code
         .map(|c| format!(" exit={c}"))
         .unwrap_or_default();
-    let sig = meta
-        .signal
-        .map(|s| format!(" {s}"))
-        .unwrap_or_default();
+    let sig = meta.signal.map(|s| format!(" {s}")).unwrap_or_default();
     let dur = meta
         .duration_ms
         .map(format_duration_ms)
         .map(|d| format!(" {d}"))
         .unwrap_or_default();
-    let pid = meta
-        .pid
-        .map(|p| format!(" pid={p}"))
-        .unwrap_or_default();
+    let pid = meta.pid.map(|p| format!(" pid={p}")).unwrap_or_default();
 
     let head = if tiny {
         format!("{g} {badge}{exit}")
@@ -1446,11 +1424,7 @@ fn paint_line(
     } else {
         " "
     };
-    let prefix = if tiny {
-        ""
-    } else {
-        line.stream.prefix(ascii)
-    };
+    let prefix = if tiny { "" } else { line.stream.prefix(ascii) };
 
     let style = if colorless {
         if cursor {
@@ -1711,15 +1685,25 @@ mod tests {
         let area = Rect::new(0, 0, 64, 14);
         let mut buf = Buffer::empty(area);
         (&view).render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("cargo") || text.contains("run") || text.contains("follow"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("cargo") || text.contains("run") || text.contains("follow"),
+            "{text}"
+        );
         assert!(!state.regions.is_empty() || text.contains("plain"));
 
         state.recipe = TerminalOutputRecipe::Compact;
         (&view).render(area, &mut buf, &mut state);
         state.recipe = TerminalOutputRecipe::Fullscreen;
         state.show_env = true;
-        let env = [TerminalEnvEntry::secret("TOKEN"), TerminalEnvEntry::new("PATH", "/bin")];
+        let env = [
+            TerminalEnvEntry::secret("TOKEN"),
+            TerminalEnvEntry::new("PATH", "/bin"),
+        ];
         let meta2 = TerminalCommandMeta::new("echo hi")
             .cwd("/tmp")
             .env(&env)
@@ -1854,7 +1838,14 @@ mod tests {
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
         view.render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("wait") || text.contains("pending") || text.contains('∅'), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("wait") || text.contains("pending") || text.contains('∅'),
+            "{text}"
+        );
     }
 }

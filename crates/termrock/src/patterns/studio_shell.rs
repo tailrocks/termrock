@@ -12,7 +12,7 @@ use ratatui_core::layout::Rect;
 use crate::layout::{RegionId, RegionSize, SurfaceAxis, WorkSurface};
 use crate::style::Density;
 
-use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
+use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
 /// Studio shell regions for one frame.
 #[derive(Debug, Clone, PartialEq, Eq)]

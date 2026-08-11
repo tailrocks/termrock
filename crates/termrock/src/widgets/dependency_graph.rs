@@ -18,13 +18,12 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
@@ -391,13 +390,22 @@ pub fn choose_dependency_view(
     force_tree: bool,
 ) -> (DependencyGraphView, Option<GraphUnreadableReason>) {
     if force_tree {
-        return (DependencyGraphView::Tree, Some(GraphUnreadableReason::Forced));
+        return (
+            DependencyGraphView::Tree,
+            Some(GraphUnreadableReason::Forced),
+        );
     }
-    if matches!(preferred, DependencyGraphView::Tree | DependencyGraphView::List) {
+    if matches!(
+        preferred,
+        DependencyGraphView::Tree | DependencyGraphView::List
+    ) {
         return (preferred, None);
     }
     if width <= DEP_GRAPH_NARROW_MAX_WIDTH {
-        return (DependencyGraphView::Tree, Some(GraphUnreadableReason::Narrow));
+        return (
+            DependencyGraphView::Tree,
+            Some(GraphUnreadableReason::Narrow),
+        );
     }
     if node_count > DEP_GRAPH_AUTO_TREE_NODES {
         return (
@@ -561,10 +569,7 @@ pub fn layout_content_size(layout: &[DepLayoutNode]) -> (u16, u16) {
 
 /// Filter nodes by query (label/id/group/kind).
 #[must_use]
-pub fn filter_dep_nodes<'a>(
-    nodes: &'a [DepNode<'a>],
-    query: &str,
-) -> Vec<&'a DepNode<'a>> {
+pub fn filter_dep_nodes<'a>(nodes: &'a [DepNode<'a>], query: &str) -> Vec<&'a DepNode<'a>> {
     let q = query.trim().to_ascii_lowercase();
     if q.is_empty() {
         return nodes.iter().collect();
@@ -617,7 +622,7 @@ pub fn project_dep_tree_rows(
         if !id_set.contains(e.from) || !id_set.contains(e.to) {
             continue;
         }
-        // tree: from depends on to → child edge from → to as nested under from? 
+        // tree: from depends on to → child edge from → to as nested under from?
         // Convention: edge A→B means A depends on B, so B is child of A in tree view
         // (expand A shows deps).
         children.entry(e.from).or_default().push(e.to);
@@ -965,7 +970,9 @@ impl DependencyGraphState {
                         y: self.pan_y,
                     };
                 }
-                KeyCode::Up | KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                KeyCode::Up | KeyCode::Char('k')
+                    if key.modifiers.contains(KeyModifiers::CONTROL) =>
+                {
                     self.pan_y = self.pan_y.saturating_sub(2);
                     return DependencyGraphOutcome::Panned {
                         x: self.pan_x,
@@ -1026,9 +1033,11 @@ impl DependencyGraphState {
                 DependencyGraphOutcome::SelectionChanged { id }
             }
             KeyCode::Enter | KeyCode::Char('i') if key.modifiers.is_empty() => {
-                if let Some(id) = self.selected.clone().or_else(|| {
-                    filtered.get(self.cursor).map(|n| n.id.to_string())
-                }) {
+                if let Some(id) = self
+                    .selected
+                    .clone()
+                    .or_else(|| filtered.get(self.cursor).map(|n| n.id.to_string()))
+                {
                     DependencyGraphOutcome::DetailsRequested { id }
                 } else {
                     DependencyGraphOutcome::Ignored
@@ -1285,8 +1294,7 @@ fn paint_graph(
         return;
     }
     let layout = layout_dependency_layers(nodes, edges);
-    let by_id: BTreeMap<&str, &DepLayoutNode> =
-        layout.iter().map(|n| (n.id.as_str(), n)).collect();
+    let by_id: BTreeMap<&str, &DepLayoutNode> = layout.iter().map(|n| (n.id.as_str(), n)).collect();
     let node_by: BTreeMap<&str, &DepNode<'_>> = nodes.iter().map(|n| (n.id, n)).collect();
 
     // Draw edges first (under nodes)
@@ -1302,9 +1310,13 @@ fn paint_graph(
             continue;
         };
         // center of cells relative to pan
-        let ax = a.x.saturating_add(DEP_GRAPH_CELL_W / 2).saturating_sub(state.pan_x);
+        let ax =
+            a.x.saturating_add(DEP_GRAPH_CELL_W / 2)
+                .saturating_sub(state.pan_x);
         let ay = a.y.saturating_add(1).saturating_sub(state.pan_y);
-        let bx = b.x.saturating_add(DEP_GRAPH_CELL_W / 2).saturating_sub(state.pan_x);
+        let bx =
+            b.x.saturating_add(DEP_GRAPH_CELL_W / 2)
+                .saturating_sub(state.pan_x);
         let by = b.y.saturating_add(1).saturating_sub(state.pan_y);
         // simple L connector
         let x0 = area.x.saturating_add(ax.min(bx));
@@ -1404,17 +1416,12 @@ fn paint_graph(
     }
 }
 
-fn put_sym(
-    buffer: &mut Buffer,
-    x: u16,
-    y: u16,
-    sym: &str,
-    style: ratatui_core::style::Style,
-) {
+fn put_sym(buffer: &mut Buffer, x: u16, y: u16, sym: &str, style: ratatui_core::style::Style) {
     if let Some(cell) = buffer.cell_mut((x, y)) {
         // don't overwrite node labels heavily — only empty-ish
         let cur = cell.symbol();
-        if cur == " " || cur.is_empty() || cur == "─" || cur == "-" || cur == "│" || cur == "|" {
+        if cur == " " || cur.is_empty() || cur == "─" || cur == "-" || cur == "│" || cur == "|"
+        {
             cell.set_symbol(sym);
             cell.set_style(style);
         }
@@ -1482,7 +1489,9 @@ fn paint_list_or_tree(
     );
     y = y.saturating_add(1);
 
-    let start = state.cursor.saturating_sub(usize::from(area.height.saturating_sub(2)) / 2);
+    let start = state
+        .cursor
+        .saturating_sub(usize::from(area.height.saturating_sub(2)) / 2);
     for (i, m) in meta.iter().enumerate().skip(start) {
         if y >= area.bottom() {
             break;
@@ -1559,7 +1568,9 @@ mod tests {
 
     fn sample() -> (Vec<DepNode<'static>>, Vec<DepEdge<'static>>) {
         let nodes = vec![
-            DepNode::new("app", "app").kind(DepNodeKind::Package).detail("0.1.0"),
+            DepNode::new("app", "app")
+                .kind(DepNodeKind::Package)
+                .detail("0.1.0"),
             DepNode::new("termrock", "termrock")
                 .kind(DepNodeKind::Package)
                 .detail("0.11"),
@@ -1706,7 +1717,9 @@ mod tests {
     fn moderate_graph_bench() {
         let system = DesignSystem::default();
         let ids: Vec<String> = (0..bench::NODE_COUNT).map(|i| format!("n{i}")).collect();
-        let labels: Vec<String> = (0..bench::NODE_COUNT).map(|i| format!("node-{i}")).collect();
+        let labels: Vec<String> = (0..bench::NODE_COUNT)
+            .map(|i| format!("node-{i}"))
+            .collect();
         let nodes: Vec<DepNode<'_>> = (0..bench::NODE_COUNT)
             .map(|i| {
                 DepNode::new(&ids[i], &labels[i]).kind(if i % 3 == 0 {

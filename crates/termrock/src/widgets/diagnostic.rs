@@ -22,12 +22,7 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -811,7 +806,7 @@ impl<'a> CodeFrame<'a> {
             let underline: String = row.iter().collect();
             let u_style = if self.colorless {
                 self.system.style(Role::TextStrong)
-            } else if row_styles.iter().any(|s| *s == SpanStyle::Primary) {
+            } else if row_styles.contains(&SpanStyle::Primary) {
                 self.system.style(Role::Danger)
             } else {
                 self.system.style(Role::Warning)
@@ -846,7 +841,10 @@ impl<'a> CodeFrame<'a> {
                     buffer.set_stringn(
                         area.x.saturating_add(indent.min(width.saturating_sub(1))),
                         y,
-                        take_display_cols(&msg, usize::from(width.saturating_sub(indent.min(width)))),
+                        take_display_cols(
+                            &msg,
+                            usize::from(width.saturating_sub(indent.min(width))),
+                        ),
                         usize::from(width.saturating_sub(indent.min(width))),
                         if self.colorless {
                             self.system.style(Role::TextMuted)
@@ -887,7 +885,10 @@ impl SpanStyle {
 fn cols_on_line(range: SourceRange, line: u32, line_len: usize) -> (u32, u32) {
     let len = line_len as u32;
     if range.start_line == range.end_line {
-        return (range.start_col.max(1), range.end_col.max(range.start_col + 1));
+        return (
+            range.start_col.max(1),
+            range.end_col.max(range.start_col + 1),
+        );
     }
     if line == range.start_line {
         return (range.start_col.max(1), len.saturating_add(1).max(2));
@@ -1079,11 +1080,7 @@ impl DiagnosticState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        items: &[Diagnostic<'_>],
-    ) -> DiagnosticOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, items: &[Diagnostic<'_>]) -> DiagnosticOutcome {
         if !self.accepts_input || key.kind == KeyEventKind::Release {
             return DiagnosticOutcome::Ignored;
         }
@@ -1191,9 +1188,7 @@ impl DiagnosticState {
                     self.cursor += 1;
                     self.fix_cursor = 0;
                     self.ensure_cursor_visible(len);
-                    return DiagnosticOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiagnosticOutcome::CursorMoved { index: self.cursor };
                 }
                 if self.scroll.scroll_by(1, 0).is_scrolled() {
                     return DiagnosticOutcome::Scrolled {
@@ -1207,9 +1202,7 @@ impl DiagnosticState {
                     self.cursor -= 1;
                     self.fix_cursor = 0;
                     self.ensure_cursor_visible(len);
-                    return DiagnosticOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiagnosticOutcome::CursorMoved { index: self.cursor };
                 }
                 if self.scroll.scroll_by(-1, 0).is_scrolled() {
                     return DiagnosticOutcome::Scrolled {
@@ -1226,9 +1219,7 @@ impl DiagnosticState {
             UiIntent::Move(NavigationMove::Last) => {
                 self.cursor = len - 1;
                 self.ensure_cursor_visible(len);
-                DiagnosticOutcome::CursorMoved {
-                    index: self.cursor,
-                }
+                DiagnosticOutcome::CursorMoved { index: self.cursor }
             }
             UiIntent::Page(PageMove::Forward) => {
                 let step = i32::from(self.body_rows.max(1));
@@ -1292,13 +1283,9 @@ impl DiagnosticState {
                 {
                     self.cursor = r.index;
                     if event.modifiers.contains(KeyModifiers::CONTROL) {
-                        return DiagnosticOutcome::Activated {
-                            id: r.id.clone(),
-                        };
+                        return DiagnosticOutcome::Activated { id: r.id.clone() };
                     }
-                    return DiagnosticOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiagnosticOutcome::CursorMoved { index: self.cursor };
                 }
                 DiagnosticOutcome::Ignored
             }
@@ -1390,7 +1377,12 @@ impl<'a> DiagnosticView<'a> {
         let ascii = self.ascii || state.ascii;
         let colorless = self.colorless || state.colorless;
         let recipe = match state.recipe {
-            DiagnosticRecipe::List if matches!(self.recipe, DiagnosticRecipe::Full | DiagnosticRecipe::Inline) => {
+            DiagnosticRecipe::List
+                if matches!(
+                    self.recipe,
+                    DiagnosticRecipe::Full | DiagnosticRecipe::Inline
+                ) =>
+            {
                 self.recipe
             }
             _ if !matches!(self.recipe, DiagnosticRecipe::List) => self.recipe,
@@ -1457,8 +1449,8 @@ impl<'a> DiagnosticView<'a> {
                         break;
                     }
                     let cursor = i == state.cursor;
-                    let expanded = state.is_expanded(d.id)
-                        || matches!(recipe, DiagnosticRecipe::Full);
+                    let expanded =
+                        state.is_expanded(d.id) || matches!(recipe, DiagnosticRecipe::Full);
                     let row0 = py;
                     py = paint_list_item(
                         buffer,
@@ -1934,9 +1926,22 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let used = frame.render(area, &mut buf);
         assert!(used >= 3);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("main") || text.contains('^') || text.contains("E0308") || text.contains("foo"), "{text}");
-        assert!(text.contains('^') || text.contains('-') || text.contains('─'), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("main")
+                || text.contains('^')
+                || text.contains("E0308")
+                || text.contains("foo"),
+            "{text}"
+        );
+        assert!(
+            text.contains('^') || text.contains('-') || text.contains('─'),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1959,9 +1964,7 @@ mod tests {
 
     #[test]
     fn list_nav_copy_fix() {
-        let labels = [
-            SourceLabel::primary(SourceRange::line_span(2, 5, 12)).label("expected"),
-        ];
+        let labels = [SourceLabel::primary(SourceRange::line_span(2, 5, 12)).label("expected")];
         let fixes = [SuggestedFix::new("f1", "annotate").replacement("i32")];
         let items = [
             Diagnostic::new("d1", DiagnosticSeverity::Error, "bad")
@@ -1972,10 +1975,7 @@ mod tests {
         ];
         let mut state = DiagnosticState::new();
         assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-                &items
-            ),
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items),
             DiagnosticOutcome::CursorMoved { index: 1 }
         ));
         assert!(matches!(
@@ -2018,14 +2018,17 @@ mod tests {
         let mut s2 = DiagnosticState::new();
         DiagnosticView::new(&items, &system)
             .recipe(DiagnosticRecipe::Inline)
-            .render(Rect::new(0, 0, 40, 1), &mut Buffer::empty(Rect::new(0, 0, 40, 1)), &mut s2);
+            .render(
+                Rect::new(0, 0, 40, 1),
+                &mut Buffer::empty(Rect::new(0, 0, 40, 1)),
+                &mut s2,
+            );
     }
 
     #[test]
     fn codeblock_bridge() {
         let labels = [SourceLabel::primary(SourceRange::line_span(2, 3, 8))];
-        let items = [Diagnostic::new("d", DiagnosticSeverity::Warning, "w")
-            .labels(&labels)];
+        let items = [Diagnostic::new("d", DiagnosticSeverity::Warning, "w").labels(&labels)];
         let highs = diagnostics_to_highlights(&items);
         assert!(!highs.is_empty());
         assert_eq!(highs[0].line, 1);
@@ -2108,7 +2111,14 @@ mod tests {
         let area = Rect::new(0, 0, 40, 3);
         let mut buf = Buffer::empty(area);
         view.render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("empty") || text.contains('∅') || text.contains('['), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("empty") || text.contains('∅') || text.contains('['),
+            "{text}"
+        );
     }
 }

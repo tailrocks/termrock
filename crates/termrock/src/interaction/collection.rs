@@ -225,7 +225,9 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         if self.viewport_len == 0 {
             self.viewport_len = items.len();
         }
-        let max = self.total_len.saturating_sub(self.viewport_len.min(self.total_len));
+        let max = self
+            .total_len
+            .saturating_sub(self.viewport_len.min(self.total_len));
         self.offset = self.offset.min(max);
         let entries = Self::to_roving_entries(items);
         self.roving.reconcile(&entries).into()
@@ -249,11 +251,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     }
 
     /// Moves active by `steps` among enabled items in the projection.
-    pub fn move_by(
-        &mut self,
-        items: &[CollectionItem<Id>],
-        steps: isize,
-    ) -> CollectionOutcome<Id> {
+    pub fn move_by(&mut self, items: &[CollectionItem<Id>], steps: isize) -> CollectionOutcome<Id> {
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.move_by(&entries, steps).into();
         if out.active_changed() {
@@ -307,7 +305,9 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         if self.viewport_len == 0 || self.total_len == 0 {
             return CollectionOutcome::Ignored;
         }
-        let max = self.total_len.saturating_sub(self.viewport_len.min(self.total_len));
+        let max = self
+            .total_len
+            .saturating_sub(self.viewport_len.min(self.total_len));
         let before = self.offset;
         if delta.is_negative() {
             self.offset = self.offset.saturating_sub(delta.unsigned_abs());

@@ -22,10 +22,7 @@
 //! / plain lines for [`MessageThread`](crate::widgets::MessageThread). Host
 //! owns network; TermRock owns buffer split, provisional parse, paint.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyEvent, MouseEvent},
@@ -278,8 +275,7 @@ impl StreamingMarkdownState {
         }
         self.pending.push_str(delta);
         self.pending_deltas = self.pending_deltas.saturating_add(1);
-        if self.pending_deltas >= self.coalesce_deltas
-            || self.pending.len() >= self.coalesce_chars
+        if self.pending_deltas >= self.coalesce_deltas || self.pending.len() >= self.coalesce_chars
         {
             self.apply_pending();
         }
@@ -523,11 +519,7 @@ impl StreamingMarkdownState {
     }
 
     /// Keys → markdown view (scroll/select/copy).
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        view: &MarkdownView<'_>,
-    ) -> MarkdownOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
         if !self.accepts_input {
             return MarkdownOutcome::Ignored;
         }
@@ -535,11 +527,7 @@ impl StreamingMarkdownState {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        view: &MarkdownView<'_>,
-    ) -> MarkdownOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
         if !self.accepts_input {
             return MarkdownOutcome::Ignored;
         }
@@ -701,7 +689,11 @@ fn strip_fence_open(line: &str) -> Option<&str> {
         trimmed.strip_prefix("~~~")?
     };
     // not a close fence (only ticks)
-    if rest.chars().all(|c| c == '`' || c == '~' || c.is_whitespace()) && rest.trim().is_empty() {
+    if rest
+        .chars()
+        .all(|c| c == '`' || c == '~' || c.is_whitespace())
+        && rest.trim().is_empty()
+    {
         return None;
     }
     Some(rest.trim())
@@ -784,12 +776,7 @@ impl<'a> StreamingMarkdown<'a> {
     }
 
     /// Paint streaming document.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut StreamingMarkdownState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut StreamingMarkdownState) {
         if area.is_empty() {
             return;
         }
@@ -835,10 +822,7 @@ impl<'a> StreamingMarkdown<'a> {
         view.paint(area, buffer, &mut state.view);
 
         // caret / failed strip
-        if state.show_caret
-            && matches!(state.phase, StreamPhase::Streaming)
-            && area.height > 0
-        {
+        if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
             let cue = if self.ascii { "|" } else { "▌" };
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
@@ -865,12 +849,7 @@ impl<'a> StreamingMarkdown<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut StreamingMarkdownState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut StreamingMarkdownState) {
         self.paint(area, buffer, state);
     }
 }
@@ -995,7 +974,10 @@ mod tests {
         // incomplete projection
         let lines = st.plain_lines();
         assert!(
-            lines.iter().any(|l| l.contains("println") || l.contains("```") || l.contains("…") || l.contains("▌")),
+            lines.iter().any(|l| l.contains("println")
+                || l.contains("```")
+                || l.contains("…")
+                || l.contains("▌")),
             "{lines:?}"
         );
         st.push_delta(fixtures::mid_fence_close());

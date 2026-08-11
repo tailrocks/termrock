@@ -27,6 +27,8 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: "loading",
@@ -41,6 +43,8 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: "leaf",
@@ -55,6 +59,8 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
     ]
 }
@@ -173,6 +179,8 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: 1,
@@ -187,6 +195,8 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Error,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: 2,
@@ -201,6 +211,8 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
     ];
     let tree = Tree::new(&rows, &tokens);
@@ -237,6 +249,8 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         })
         .collect::<Vec<_>>();
     let tree = Tree::new(&rows, &tokens);
@@ -315,6 +329,8 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: 1,
@@ -329,6 +345,8 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: 2,
@@ -343,6 +361,8 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Error,
+            actions: None,
+            parent: None,
         },
     ];
     let tree = Tree::new(&rows, &tokens);
@@ -395,6 +415,8 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Ready,
+        actions: None,
+        parent: None,
     }];
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some(0));
@@ -444,6 +466,8 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         expanded: false,
         enabled: false,
         status: TreeNodeStatus::Loading,
+        actions: None,
+        parent: None,
     }];
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::default();
@@ -483,6 +507,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
         TreeNode {
             id: 1,
@@ -497,6 +523,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            actions: None,
+            parent: None,
         },
     ];
     let tree = Tree::new(&rows, &tokens);
@@ -533,6 +561,8 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Ready,
+        actions: None,
+        parent: None,
     }];
     let mut state = TreeState::default();
     // Disclosure glyph + content: badge contracts; wide emoji never splits.
@@ -561,6 +591,8 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Loading,
+        actions: None,
+        parent: None,
     }];
     let combined_area = Rect::new(0, 0, 20, 1);
     let mut combined = Buffer::empty(combined_area);

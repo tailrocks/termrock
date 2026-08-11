@@ -12,6 +12,7 @@
 //!
 //! Research: remote IDEs, database clients, SSH tools, collaborative agents.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -627,15 +628,11 @@ impl ReconnectingState {
     /// Notification center item (dedup by target+phase).
     #[must_use]
     pub fn to_notification_item(&self, id: impl Into<String>) -> NotificationItem {
-        let mut item = NotificationItem::new(
-            id,
-            self.banner_line(false),
-            self.phase.toast_kind(),
-        )
-        .title(format!("Connection · {}", self.target))
-        .source("connectivity")
-        .group("connectivity")
-        .dedup_key(format!("conn:{}:{}", self.target, self.phase.id()));
+        let mut item = NotificationItem::new(id, self.banner_line(false), self.phase.toast_kind())
+            .title(format!("Connection · {}", self.target))
+            .source("connectivity")
+            .group("connectivity")
+            .dedup_key(format!("conn:{}:{}", self.target, self.phase.id()));
         item.priority = match self.phase {
             ConnectivityPhase::ServerUnavailable | ConnectivityPhase::AuthRequired => {
                 ToastPriority::High
@@ -647,9 +644,9 @@ impl ReconnectingState {
         };
         item.created_at_secs = self.now_secs;
         if matches!(self.phase, ConnectivityPhase::Reconnecting) {
-            let pct = self.max_attempts.map(|m| {
-                ((self.attempt.min(m) as u16 * 100) / m.max(1) as u16).min(99) as u8
-            });
+            let pct = self
+                .max_attempts
+                .map(|m| ((self.attempt.min(m) as u16 * 100) / m.max(1) as u16).min(99) as u8);
             item.progress = pct;
         }
         if matches!(
@@ -680,8 +677,7 @@ impl ReconnectingState {
     /// Whether full surface should paint.
     #[must_use]
     pub fn should_show_full(&self) -> bool {
-        self.phase.is_offline_like()
-            && matches!(self.presentation, ConnectivityPresentation::Full)
+        self.phase.is_offline_like() && matches!(self.presentation, ConnectivityPresentation::Full)
     }
 
     /// Keyboard handling for banner/full actions.
@@ -772,11 +768,7 @@ impl ReconnectingState {
     }
 
     /// Pointer: bottom action band on full; whole banner click = retry.
-    pub fn handle_mouse(
-        &mut self,
-        mouse: MouseEvent,
-        area: Rect,
-    ) -> ConnectivityOutcome {
+    pub fn handle_mouse(&mut self, mouse: MouseEvent, area: Rect) -> ConnectivityOutcome {
         if area.is_empty()
             || !self.phase.is_offline_like()
             || !matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left))
@@ -833,13 +825,7 @@ impl<'a> OfflineBanner<'a> {
             .style(self.state.phase.role())
             .add_modifier(Modifier::BOLD);
         let clipped = take_display_cols(&line, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            style,
-        );
+        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
     }
 
     /// Semantic.
@@ -1017,8 +1003,7 @@ impl<'a> OfflineSurface<'a> {
 
         // Actions
         if let Some(r) = stack.get(idx) {
-            let (label, primary_focus) = if matches!(state.phase, ConnectivityPhase::AuthRequired)
-            {
+            let (label, primary_focus) = if matches!(state.phase, ConnectivityPhase::AuthRequired) {
                 ("Sign in", ConnectivityFocus::Authenticate)
             } else {
                 ("Retry now", ConnectivityFocus::Retry)
@@ -1165,8 +1150,7 @@ impl OfflineChrome {
         if !state.phase.is_offline_like() {
             return;
         }
-        if state.should_show_full()
-            || matches!(state.presentation, ConnectivityPresentation::Full)
+        if state.should_show_full() || matches!(state.presentation, ConnectivityPresentation::Full)
         {
             OfflineSurface::new(system).paint(area, buffer, state);
         } else if state.should_show_banner() {
@@ -1310,7 +1294,10 @@ mod tests {
         let text = painted(Rect::new(0, 0, 48, 1), |a, b| {
             OfflineBanner::new(&s, &system).paint(a, b);
         });
-        assert!(text.contains("offline") || text.contains("collab"), "{text}");
+        assert!(
+            text.contains("offline") || text.contains("collab"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1344,7 +1331,10 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("queued") || text.contains("query"), "{text}");
-        assert!(text.contains("preserved") || text.contains("drafts"), "{text}");
+        assert!(
+            text.contains("preserved") || text.contains("drafts"),
+            "{text}"
+        );
         assert!(text.contains("Retry") || text.contains("offline"), "{text}");
     }
 
@@ -1408,11 +1398,7 @@ mod tests {
         let system = system();
         let s = example_reconnecting_agent();
         let mut scene = SemanticScene::<&str, ()>::default();
-        OfflineBanner::new(&s, &system).register_semantic(
-            &mut scene,
-            "b",
-            Rect::new(0, 0, 40, 1),
-        );
+        OfflineBanner::new(&s, &system).register_semantic(&mut scene, "b", Rect::new(0, 0, 40, 1));
         assert!(
             scene
                 .nodes()

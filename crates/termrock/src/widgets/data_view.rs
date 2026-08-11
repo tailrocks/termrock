@@ -513,7 +513,8 @@ impl<Id: PartialEq> ColumnModel<Id> {
                 let share = if n + 1 == fill_positions.len() {
                     remaining.saturating_sub(distributed).max(1)
                 } else {
-                    let s = ((u64::from(remaining) * u64::from(weight)) / u64::from(total_w)) as u16;
+                    let s =
+                        ((u64::from(remaining) * u64::from(weight)) / u64::from(total_w)) as u16;
                     s.max(1)
                 };
                 bases[pos].1 = share;
@@ -573,9 +574,7 @@ impl<RowId: Ord> Default for SelectionModel<RowId> {
             mode: SelectionMode::None,
             focus_row: 0,
             focus_col: 0,
-            rows: crate::interaction::SelectionModel::new(
-                crate::interaction::SelectionKind::None,
-            ),
+            rows: crate::interaction::SelectionModel::new(crate::interaction::SelectionKind::None),
             cells: crate::interaction::CellSelectionModel::new(),
         }
     }
@@ -609,9 +608,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn cell() -> Self {
         Self {
             mode: SelectionMode::Cell,
-            rows: crate::interaction::SelectionModel::new(
-                crate::interaction::SelectionKind::None,
-            ),
+            rows: crate::interaction::SelectionModel::new(crate::interaction::SelectionKind::None),
             cells: crate::interaction::CellSelectionModel::single(),
             ..Self::default()
         }
@@ -622,9 +619,7 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn cell_range() -> Self {
         Self {
             mode: SelectionMode::CellRange,
-            rows: crate::interaction::SelectionModel::new(
-                crate::interaction::SelectionKind::None,
-            ),
+            rows: crate::interaction::SelectionModel::new(crate::interaction::SelectionKind::None),
             cells: crate::interaction::CellSelectionModel::range(),
             ..Self::default()
         }

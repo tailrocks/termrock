@@ -15,14 +15,15 @@ use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
 pub use center::{
-    center_block_y, center_line_x, centered_rect, layout_center, Center, CenterAxis, CenterLayout,
-    CenterSpec,
+    Center, CenterAxis, CenterLayout, CenterSpec, center_block_y, center_line_x, centered_rect,
+    layout_center,
 };
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use grid::{
-    auto_flow_items, dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
-    grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns, settings_grid_template,
-    Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize,
+    Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize, auto_flow_items,
+    dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
+    grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns,
+    settings_grid_template,
 };
 pub use responsive::{
     AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
@@ -32,9 +33,9 @@ pub use responsive::{
     table_row_shows_optional, tabs_show_status_glyphs,
 };
 pub use stack::{
-    direction_for_width, layout_stack, layout_stack_into, layout_stack_into_cross,
-    layout_stack_with_cross, Align, FlexSize, Inline, Justify, OverflowPolicy, Stack,
-    StackDirection, StackLayout, StackSpec,
+    Align, FlexSize, Inline, Justify, OverflowPolicy, Stack, StackDirection, StackLayout,
+    StackSpec, direction_for_width, layout_stack, layout_stack_into, layout_stack_into_cross,
+    layout_stack_with_cross,
 };
 pub use work_surface::{RegionId, RegionLayout, RegionSize, RegionSpec, SurfaceAxis, WorkSurface};
 pub use workspace::{
@@ -87,13 +88,15 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
         .clamp(spec.min_height, spec.max_height.max(spec.min_height))
         .min(available_height.max(spec.min_height));
     match spec.placement {
-        Placement::Centered => Center::new(width, height)
-            .max(width, height)
-            .min(spec.min_width.min(width), spec.min_height.min(height))
-            .margin(spec.horizontal_margin / 2, spec.vertical_margin / 2)
-            .safe_margin(true)
-            .layout(outer)
-            .child,
+        Placement::Centered => {
+            Center::new(width, height)
+                .max(width, height)
+                .min(spec.min_width.min(width), spec.min_height.min(height))
+                .margin(spec.horizontal_margin / 2, spec.vertical_margin / 2)
+                .safe_margin(true)
+                .layout(outer)
+                .child
+        }
         Placement::Top => {
             // Horizontal center only; top-aligned (onboarding banners, etc.).
             let child = Center::new(width, height)

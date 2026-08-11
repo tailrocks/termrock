@@ -20,6 +20,7 @@
 //! Research: Grok Build extension/MCP views, editor extension managers,
 //! service health panels.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -836,11 +837,12 @@ impl IntegrationStatusState {
             IntegrationAction::Details => IntegrationStatusOutcome::DetailsRequested { id },
             IntegrationAction::Logs => IntegrationStatusOutcome::LogsRequested { id },
             IntegrationAction::Permission => {
-                let permission_id = e.permissions.iter().find(|p| !p.granted).map(|p| p.id.clone());
-                IntegrationStatusOutcome::PermissionRequested {
-                    id,
-                    permission_id,
-                }
+                let permission_id = e
+                    .permissions
+                    .iter()
+                    .find(|p| !p.granted)
+                    .map(|p| p.id.clone());
+                IntegrationStatusOutcome::PermissionRequested { id, permission_id }
             }
             IntegrationAction::Update => IntegrationStatusOutcome::UpdateRequested { id },
         }
@@ -1037,12 +1039,7 @@ impl<'a> IntegrationStatus<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut IntegrationStatusState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
         state.row_hits.clear();
         state.action_hits.clear();
         if area.is_empty() {
@@ -1055,12 +1052,7 @@ impl<'a> IntegrationStatus<'a> {
         }
     }
 
-    fn paint_badge(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &IntegrationStatusState,
-    ) {
+    fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &IntegrationStatusState) {
         let w = usize::from(area.width);
         let (text, role) = if let Some(e) = state.current() {
             let g = e.health.glyph(self.ascii);
@@ -1084,12 +1076,7 @@ impl<'a> IntegrationStatus<'a> {
         );
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut IntegrationStatusState,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
         let panel = Panel::new(self.system)
             .title("Integrations")
             .emphasis(if state.focused {
@@ -1147,9 +1134,7 @@ impl<'a> IntegrationStatus<'a> {
                 e.health.label()
             );
             let style = if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if self.colorless {
                 self.system.style(Role::Text)
             } else {
@@ -1173,12 +1158,7 @@ impl<'a> IntegrationStatus<'a> {
         self.paint_actions(inner.x, fy, w, buffer, state);
     }
 
-    fn paint_panel(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut IntegrationStatusState,
-    ) {
+    fn paint_panel(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
         let title = state
             .current()
             .map(|e| format!("{} · {}", e.kind.label(), e.name))
@@ -1265,7 +1245,11 @@ impl<'a> IntegrationStatus<'a> {
         match state.tab {
             IntegrationDetailTab::Overview => {
                 let lines = [
-                    format!("status: {} {}", e.health.glyph(self.ascii), e.health.label()),
+                    format!(
+                        "status: {} {}",
+                        e.health.glyph(self.ascii),
+                        e.health.label()
+                    ),
                     e.summary.clone().unwrap_or_default(),
                     e.last_error
                         .as_ref()
@@ -1424,9 +1408,7 @@ impl<'a> IntegrationStatus<'a> {
                 break;
             }
             let style = if focused {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::TextMuted)
             };
@@ -1500,11 +1482,10 @@ pub fn example_integrations() -> Vec<IntegrationEntry> {
             .logs(["awaiting permission"]),
         IntegrationEntry::new("plug-lint", "lint-helper", IntegrationKind::Plugin)
             .health(IntegrationHealth::Degraded)
-            .provenance(IntegrationProvenance::third_party(
-                "acme",
-                "https://plugins.example/lint",
-                "2.0.0",
-            ).trust_note("unsigned package — review before enable"))
+            .provenance(
+                IntegrationProvenance::third_party("acme", "https://plugins.example/lint", "2.0.0")
+                    .trust_note("unsigned package — review before enable"),
+            )
             .summary("Partial: rules pack failed to load")
             .last_error("ruleset v3 missing")
             .capabilities(vec![IntegrationCapability::new("lint/run", "Run linter")])
@@ -1652,11 +1633,7 @@ mod tests {
     #[test]
     fn update_request() {
         let mut st = open();
-        let i = st
-            .entries
-            .iter()
-            .position(|e| e.id == "tool-fmt")
-            .unwrap();
+        let i = st.entries.iter().position(|e| e.id == "tool-fmt").unwrap();
         st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('u')));
         assert!(matches!(
@@ -1772,10 +1749,10 @@ mod tests {
             position: Position { x: r.x, y: r.y },
             modifiers: KeyModifiers::NONE,
         });
-        assert!(matches!(
-            out,
-            IntegrationStatusOutcome::Selected { .. }
-        ), "{out:?} {id}");
+        assert!(
+            matches!(out, IntegrationStatusOutcome::Selected { .. }),
+            "{out:?} {id}"
+        );
     }
 
     #[test]

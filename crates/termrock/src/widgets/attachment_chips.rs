@@ -21,13 +21,12 @@
 //! - Strip: [`attachment_token_items`] + [`TokenStrip`]
 //! - Bridges: convert to/from composer chips in `prompt_composer` (avoids cycle)
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::tag_chip::{
@@ -585,7 +584,11 @@ impl PastePayload {
 /// Semantic summary — **never** includes paste body.
 #[must_use]
 pub fn paste_semantic_summary(paste: &PastePayload) -> String {
-    let kind = if paste.binary { "binary-paste" } else { "paste" };
+    let kind = if paste.binary {
+        "binary-paste"
+    } else {
+        "paste"
+    };
     let mut s = format!(
         "{kind} {} bytes {} lines {}",
         paste.bytes,
@@ -617,6 +620,7 @@ pub fn paste_preview_from(body: &str) -> String {
 
 /// Safe strip label buffer pair (host must retain until paint ends).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub struct AttachmentStripLabels {
     /// Parallel labels for attachments then pastes.
     pub labels: Vec<String>,
@@ -633,7 +637,10 @@ pub fn attachment_token_items<'a>(
     let mut out = Vec::with_capacity(attachments.len() + pastes.len());
     let mut i = 0usize;
     for a in attachments {
-        let label = label_bufs.get(i).map(String::as_str).unwrap_or(a.name.as_str());
+        let label = label_bufs
+            .get(i)
+            .map(String::as_str)
+            .unwrap_or(a.name.as_str());
         i = i.saturating_add(1);
         out.push(
             TokenItem::tag(a.id.as_str(), label)
@@ -670,7 +677,7 @@ pub fn fill_attachment_strip_labels(
         labels.push(a.display_label(ascii));
     }
     for p in pastes {
-        let exp = expanded_paste_ids.iter().any(|id| *id == p.id.as_str());
+        let exp = expanded_paste_ids.contains(&p.id.as_str());
         labels.push(p.display_label(ascii, exp));
     }
     labels
@@ -1001,12 +1008,7 @@ impl<'a> PasteChip<'a> {
     }
 
     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut PasteChipState,
-    ) -> TokenParts {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut PasteChipState) -> TokenParts {
         let label = self.paste.display_label(self.ascii, state.expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
@@ -1108,11 +1110,7 @@ impl<'a> PasteChip<'a> {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &self,
-        state: &mut PasteChipState,
-        event: MouseEvent,
-    ) -> PasteChipOutcome {
+    pub fn handle_mouse(&self, state: &mut PasteChipState, event: MouseEvent) -> PasteChipOutcome {
         let label = self.paste.display_label(self.ascii, state.expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
@@ -1206,7 +1204,9 @@ pub fn paint_attachment_strip(
 pub fn map_strip_outcome(out: TokenStripOutcome<String>) -> AttachmentStripEvent {
     match out {
         TokenStripOutcome::Ignored => AttachmentStripEvent::Ignored,
-        TokenStripOutcome::CursorMoved { from, to } => AttachmentStripEvent::CursorMoved { from, to },
+        TokenStripOutcome::CursorMoved { from, to } => {
+            AttachmentStripEvent::CursorMoved { from, to }
+        }
         TokenStripOutcome::Remove(id) => AttachmentStripEvent::Removed { id },
         TokenStripOutcome::Activated(id) => AttachmentStripEvent::Activated { id },
         TokenStripOutcome::OverflowActivated => AttachmentStripEvent::OverflowActivated,
@@ -1339,7 +1339,10 @@ mod tests {
         state.tag.set_focused(true);
         let chip = PasteChip::new(&p, &system);
         assert!(matches!(
-            chip.handle_key(&mut state, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            chip.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
+            ),
             PasteChipOutcome::Expanded { .. }
         ));
         assert!(state.expanded);
@@ -1403,9 +1406,8 @@ mod tests {
 
     #[test]
     fn upload_progress_in_label() {
-        let item = AttachmentItem::file("u1", "big.bin").status(AttachmentStatus::Uploading {
-            progress: 42,
-        });
+        let item = AttachmentItem::file("u1", "big.bin")
+            .status(AttachmentStatus::Uploading { progress: 42 });
         let label = item.display_label(true);
         assert!(label.contains("42%"), "{label}");
         assert_eq!(item.status.token_status(), TokenStatus::Loading);

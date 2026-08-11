@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
@@ -19,13 +20,13 @@ use termrock::{
     style::{Density, DesignSystem, Role, RolePalette},
     widgets::{
         Action, ActionBar, ActionBarState, ActivationOutcome, Anchor, Button, ButtonState,
-        CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth, CommandPalette,
-        CommandPaletteOutcome, CommandPaletteSize, CommandPaletteState, Dialog, DialogSize,
-        InitiatorKind, List, ListRow, ListState, ModeIndicator, ModelIndicator, PermissionAction,
-        PermissionOutcome, PermissionPromptState, PermissionProvenance, PermissionRequest,
-        PermissionRisk, PromptComposer, PromptComposerOutcome, PromptComposerState, ProvenanceHop,
-        Severity, Table, TableRow, TableState, Toast, VirtualWindow, data_view_bench,
-        place_command_palette, place_dialog,
+        CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth, CommandEntry,
+        CommandPalette, CommandPaletteOutcome, CommandPaletteSize, CommandPaletteState, Dialog,
+        DialogSize, InitiatorKind, List, ListRow, ListState, ModeIndicator, ModelIndicator,
+        PermissionAction, PermissionOutcome, PermissionPromptState, PermissionProvenance,
+        PermissionRequest, PermissionRisk, PromptComposer, PromptComposerOutcome,
+        PromptComposerState, ProvenanceHop, Severity, Table, TableRow, TableState, Toast,
+        VirtualWindow, data_view_bench, place_command_palette, place_dialog,
     },
 };
 
@@ -157,17 +158,20 @@ fn handbook_dialog_examples() {
 #[test]
 fn handbook_command_palette_example() {
     let tokens = DesignSystem::default();
-    let rows = [ListRow::item("quit", Line::from("Quit"))];
-    let palette = CommandPalette::new("Commands", &rows, &tokens);
+    let entries = [CommandEntry::new("quit", "Quit")];
+    let palette = CommandPalette::new("Commands", &entries, &tokens);
     let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
     assert!(rect.width > 0);
     let mut state = CommandPaletteState::new(Some("quit"));
     let outcome = CommandPalette::handle_key(
         &mut state,
         KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-        &rows,
+        &entries,
     );
-    assert!(matches!(outcome, CommandPaletteOutcome::Activated("quit")));
+    assert!(matches!(
+        outcome,
+        CommandPaletteOutcome::Activated { id: "quit", .. }
+    ));
     let _ = palette;
 }
 

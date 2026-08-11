@@ -16,14 +16,10 @@
 //!
 //! Research: hex editors, xxd, binary-analysis tools.
 
+#![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -250,11 +246,7 @@ pub fn auto_bytes_per_row(width: u16, offset_w: u8) -> u8 {
 /// Inclusive selection range normalized (start <= end).
 #[must_use]
 pub fn normalize_range(a: u64, b: u64) -> (u64, u64) {
-    if a <= b {
-        (a, b)
-    } else {
-        (b, a)
-    }
+    if a <= b { (a, b) } else { (b, a) }
 }
 
 /// Whether absolute offset is inside inclusive selection.
@@ -355,11 +347,7 @@ pub fn inspect_at(window: &HexWindow<'_>, offset: u64, endian: HexEndian) -> Hex
             return None;
         }
         let s = window.slice_abs(offset, end);
-        if s.len() < n {
-            None
-        } else {
-            Some(s.to_vec())
-        }
+        if s.len() < n { None } else { Some(s.to_vec()) }
     };
 
     if let Some(bytes) = take(2) {
@@ -396,15 +384,14 @@ pub fn inspect_at(window: &HexWindow<'_>, offset: u64, endian: HexEndian) -> Hex
 /// Format inspector as one status line.
 #[must_use]
 pub fn format_inspector_line(v: &HexInspectorValues, ascii: bool) -> String {
-    let end = if ascii {
-        v.endian.id()
-    } else {
-        v.endian.id()
-    };
+    let end = if ascii { v.endian.id() } else { v.endian.id() };
     let mut parts = vec![format!("@{offset:X}", offset = v.offset)];
     if let Some(b) = v.u8 {
         parts.push(format!("u8={b}"));
-        parts.push(format!("'{ch}'", ch = interpret_byte(b, HexAsciiMode::Ascii)));
+        parts.push(format!(
+            "'{ch}'",
+            ch = interpret_byte(b, HexAsciiMode::Ascii)
+        ));
     }
     if let Some(n) = v.u16 {
         parts.push(format!("u16={n}"));
@@ -697,7 +684,8 @@ impl HexViewerState {
         let start = u64::from(self.scroll.offset_y());
         let end = start.saturating_add(u64::from(self.body_rows));
         if row < start {
-            self.scroll.set_offset_y_quiet(row.min(u64::from(u16::MAX)) as u16);
+            self.scroll
+                .set_offset_y_quiet(row.min(u64::from(u16::MAX)) as u16);
         } else if row >= end {
             let next = row
                 .saturating_add(1)
@@ -730,11 +718,7 @@ impl HexViewerState {
     }
 
     /// Keys. Host must re-project window when [`HexViewerOutcome::PageNeeded`].
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        window: &HexWindow<'_>,
-    ) -> HexViewerOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, window: &HexWindow<'_>) -> HexViewerOutcome {
         if !self.accepts_input || key.kind == KeyEventKind::Release {
             return HexViewerOutcome::Ignored;
         }
@@ -793,8 +777,7 @@ impl HexViewerState {
                 }
                 KeyCode::Char('n') if key.modifiers.is_empty() => {
                     if let Some(ref n) = self.search_needle {
-                        if let Some(hit) =
-                            find_in_window(window, n, self.cursor.saturating_add(1))
+                        if let Some(hit) = find_in_window(window, n, self.cursor.saturating_add(1))
                         {
                             self.cursor = hit;
                             self.ensure_cursor_row_visible();
@@ -961,11 +944,7 @@ impl HexViewerState {
     }
 
     /// Intent routing.
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        window: &HexWindow<'_>,
-    ) -> HexViewerOutcome {
+    pub fn handle_intent(&mut self, intent: UiIntent, window: &HexWindow<'_>) -> HexViewerOutcome {
         if !self.accepts_input {
             return HexViewerOutcome::Ignored;
         }
@@ -1027,9 +1006,17 @@ impl HexViewerState {
     }
 
     fn export_range(&self, window: &HexWindow<'_>) -> HexViewerOutcome {
-        let (start, end) = self.selection().unwrap_or((0, window.total_len.saturating_sub(1)));
+        let (start, end) = self
+            .selection()
+            .unwrap_or((0, window.total_len.saturating_sub(1)));
         let end_excl = end.saturating_add(1).min(window.total_len);
-        let text = format_hex_dump(window, start, end_excl, self.effective_bpr.max(1), self.offset_w);
+        let text = format_hex_dump(
+            window,
+            start,
+            end_excl,
+            self.effective_bpr.max(1),
+            self.offset_w,
+        );
         HexViewerOutcome::Export {
             start,
             end: end_excl,
@@ -1038,11 +1025,7 @@ impl HexViewerState {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        window: &HexWindow<'_>,
-    ) -> HexViewerOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent, window: &HexWindow<'_>) -> HexViewerOutcome {
         if !self.accepts_input {
             return HexViewerOutcome::Ignored;
         }
@@ -1358,8 +1341,8 @@ fn paint_hex_row(
     let mut s = String::new();
 
     // Bookmark / cursor gutter (non-color)
-    let cursor_in_row = state.cursor >= row_off
-        && state.cursor < row_off.saturating_add(u64::from(bpr));
+    let cursor_in_row =
+        state.cursor >= row_off && state.cursor < row_off.saturating_add(u64::from(bpr));
     let bm = (0..bpr).any(|i| state.bookmarks.contains(&(row_off + u64::from(i))));
     if cursor_in_row && surface {
         s.push(if ascii { '>' } else { '›' });
@@ -1374,9 +1357,7 @@ fn paint_hex_row(
         s.push_str("  ");
     }
 
-    let row_end = row_off
-        .saturating_add(u64::from(bpr))
-        .min(window.total_len);
+    let _row_end = row_off.saturating_add(u64::from(bpr)).min(window.total_len);
     let mut ascii_col = String::new();
 
     for i in 0..bpr {
@@ -1587,7 +1568,10 @@ mod tests {
         let win = HexWindow::new(0, &data, data.len() as u64);
         let hit = find_in_window(&win, b"Hello", 0);
         assert!(hit.is_some());
-        assert_eq!(&data[hit.unwrap() as usize..hit.unwrap() as usize + 5], b"Hello");
+        assert_eq!(
+            &data[hit.unwrap() as usize..hit.unwrap() as usize + 5],
+            b"Hello"
+        );
     }
 
     #[test]
@@ -1657,7 +1641,8 @@ mod tests {
         let out2 = state.handle_key(KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE), &win);
         let _ = out2;
         if state.cursor >= win.end_offset() {
-            let out3 = state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &win);
+            let out3 =
+                state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &win);
             // bookmark still works; PageNeeded on ignored path at end of handle_key
             let _ = out3;
         }
@@ -1674,8 +1659,15 @@ mod tests {
         let area = Rect::new(0, 0, 72, 16);
         let mut buf = Buffer::empty(area);
         view.render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains('0') || text.contains('H') || text.contains('|'), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('0') || text.contains('H') || text.contains('|'),
+            "{text}"
+        );
         assert!(!state.regions.is_empty());
 
         let tiny = Rect::new(0, 0, 18, 6);

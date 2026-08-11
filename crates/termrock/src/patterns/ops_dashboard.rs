@@ -10,7 +10,7 @@ use ratatui_core::layout::Rect;
 
 use crate::style::Density;
 
-use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
+use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
 /// Slots for an ops-style dashboard.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -122,8 +122,8 @@ mod tests {
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     widgets::{
-        DataTableOutcome, DataTableState, LogStreamOutcome, LogStreamState, ObjectInspectorState,
-        ColumnModel,
+        ColumnModel, DataTableOutcome, DataTableState, LogStreamOutcome, LogStreamState,
+        ObjectInspectorState,
     },
 };
 
@@ -228,7 +228,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
         }
     }
 }
-
 
 #[cfg(test)]
 mod state_tests {

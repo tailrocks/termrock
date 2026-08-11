@@ -18,6 +18,7 @@
 //!
 //! References: Radix Accordion, mutual collapsibles, settings/help TUIs.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
@@ -180,10 +181,7 @@ impl<Id> AccordionParts<Id> {
     where
         Id: PartialEq,
     {
-        self.items
-            .iter()
-            .find(|i| &i.id == id)
-            .map(|i| i.content)
+        self.items.iter().find(|i| &i.id == id).map(|i| i.content)
     }
 }
 
@@ -313,17 +311,11 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
     fn roving_entries(items: &[AccordionItem<'_, Id>]) -> Vec<RovingEntry<Id>> {
         items
             .iter()
-            .map(|i| {
-                RovingEntry::new(i.id.clone(), i.trigger.to_string()).enabled(!i.disabled)
-            })
+            .map(|i| RovingEntry::new(i.id.clone(), i.trigger.to_string()).enabled(!i.disabled))
             .collect()
     }
 
-    fn resolved_open(
-        &self,
-        id: &Id,
-        controlled: Option<&[Id]>,
-    ) -> bool {
+    fn resolved_open(&self, id: &Id, controlled: Option<&[Id]>) -> bool {
         controlled
             .map(|ids| ids.iter().any(|x| x == id))
             .unwrap_or_else(|| self.is_open(id))
@@ -383,12 +375,7 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
                     if currently && self.open.len() == 1 {
                         return AccordionOutcome::Ignored;
                     }
-                    let closed: Vec<Id> = self
-                        .open
-                        .iter()
-                        .filter(|x| *x != &id)
-                        .cloned()
-                        .collect();
+                    let closed: Vec<Id> = self.open.iter().filter(|x| *x != &id).cloned().collect();
                     self.open.clear();
                     self.open.push(id.clone());
                     if closed.is_empty() {
@@ -712,10 +699,9 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
             if band.trigger.is_empty() {
                 continue;
             }
-            let focused = state.surface_focused
-                && state.roving.active().is_some_and(|a| a == &item.id);
-            let mut col_state = CollapsibleState::new()
-                .initially_open(band.open);
+            let focused =
+                state.surface_focused && state.roving.active().is_some_and(|a| a == &item.id);
+            let mut col_state = CollapsibleState::new().initially_open(band.open);
             col_state.set_focused(focused);
 
             let col = Collapsible::new(item.trigger, self.system)
@@ -782,9 +768,7 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
 
         match state.roving.handle_key(key, &entries) {
             RovingOutcome::Ignored => AccordionOutcome::Ignored,
-            RovingOutcome::ActiveChanged { from, to } => {
-                AccordionOutcome::CursorMoved { from, to }
-            }
+            RovingOutcome::ActiveChanged { from, to } => AccordionOutcome::CursorMoved { from, to },
         }
     }
 
@@ -801,9 +785,7 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
         let entries = AccordionState::roving_entries(self.items);
         let _ = state.roving.reconcile(&entries);
         match intent {
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                self.activate_cursor(state)
-            }
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.activate_cursor(state),
             UiIntent::Expand => self.set_cursor_open(state, true),
             UiIntent::Collapse => self.set_cursor_open(state, false),
             other => match state.roving.handle_intent(other, &entries) {
@@ -871,11 +853,7 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
         state.toggle_id(id, self.mode, self.controlled_open)
     }
 
-    fn set_cursor_open(
-        &self,
-        state: &mut AccordionState<Id>,
-        open: bool,
-    ) -> AccordionOutcome<Id> {
+    fn set_cursor_open(&self, state: &mut AccordionState<Id>, open: bool) -> AccordionOutcome<Id> {
         let Some(id) = state.roving.active().cloned() else {
             return AccordionOutcome::Ignored;
         };
@@ -910,8 +888,8 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
             if band.trigger.is_empty() {
                 continue;
             }
-            let on_cursor = state.surface_focused
-                && state.roving.active().is_some_and(|a| a == &item.id);
+            let on_cursor =
+                state.surface_focused && state.roving.active().is_some_and(|a| a == &item.id);
             let _ = scene.register(
                 SemanticNode::control(item.id.clone(), band.trigger)
                     .role(SemanticRole::Button)
@@ -1014,28 +992,16 @@ mod tests {
         let mut state = AccordionState::new();
         state.set_surface_focused(true);
         state.set_cursor(Some("b"));
-        let out = acc.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Home, KeyModifiers::NONE),
-        );
+        let out = acc.handle_key(&mut state, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
         assert!(matches!(
             out,
-            AccordionOutcome::CursorMoved {
-                to: Some("a"),
-                ..
-            }
+            AccordionOutcome::CursorMoved { to: Some("a"), .. }
         ));
-        let out = acc.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::End, KeyModifiers::NONE),
-        );
+        let out = acc.handle_key(&mut state, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
         // End skips disabled → last enabled is "c"
         assert!(matches!(
             out,
-            AccordionOutcome::CursorMoved {
-                to: Some("c"),
-                ..
-            }
+            AccordionOutcome::CursorMoved { to: Some("c"), .. }
         ));
     }
 
@@ -1053,10 +1019,7 @@ mod tests {
         );
         assert!(matches!(
             out,
-            AccordionOutcome::CursorMoved {
-                to: Some("b"),
-                ..
-            }
+            AccordionOutcome::CursorMoved { to: Some("b"), .. }
         ));
     }
 
@@ -1133,11 +1096,8 @@ mod tests {
             AccordionItem::new("z", "Zeta"),
             AccordionItem::new("b", "Beta"),
         ];
-        let _ = Accordion::section(&more, &system).paint(
-            Rect::new(0, 0, 40, 12),
-            &mut buf,
-            &mut state,
-        );
+        let _ =
+            Accordion::section(&more, &system).paint(Rect::new(0, 0, 40, 12), &mut buf, &mut state);
         assert_eq!(state.cursor(), Some(&"b"));
     }
 

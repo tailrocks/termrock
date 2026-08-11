@@ -16,6 +16,7 @@
 //!
 //! Research: shadcn Pagination, database clients, API result browsers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -24,7 +25,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -212,8 +215,7 @@ pub enum PaginationOutcome {
 /// - Page size is a product control (10 / 25 / 50 / 100).
 pub mod guidance {
     /// Handbook / Studio string.
-    pub const WHEN_VIRTUALIZE: &str =
-        "Prefer Virtualizer/lists when data is local or continuously windowed; \
+    pub const WHEN_VIRTUALIZE: &str = "Prefer Virtualizer/lists when data is local or continuously windowed; \
          Pagination when the host must request discrete remote pages.";
 }
 
@@ -350,7 +352,8 @@ impl PaginationState {
     /// Whether last is enabled.
     #[must_use]
     pub fn can_last(&self) -> bool {
-        self.page_count().is_some_and(|n| self.enabled && !self.loading && self.page < n)
+        self.page_count()
+            .is_some_and(|n| self.enabled && !self.loading && self.page < n)
     }
 
     /// Presentation.
@@ -588,9 +591,7 @@ impl PaginationState {
         }
 
         match key.code {
-            KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('p')
-                if key.modifiers.is_empty() =>
-            {
+            KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('p') if key.modifiers.is_empty() => {
                 // move part or prev
                 if matches!(self.part, PaginationPart::Prev | PaginationPart::First) {
                     self.prev()
@@ -816,7 +817,10 @@ impl PaginationState {
         let mut end = start.saturating_add(max_buttons as u32).saturating_sub(1);
         if end > total_pages {
             end = total_pages;
-            start = end.saturating_sub(max_buttons as u32).saturating_add(1).max(1);
+            start = end
+                .saturating_sub(max_buttons as u32)
+                .saturating_add(1)
+                .max(1);
         }
         (start..=end).collect()
     }
@@ -932,11 +936,7 @@ impl<'a> Pagination<'a> {
         };
 
         let loading = if state.loading {
-            if self.ascii {
-                " ..."
-            } else {
-                " …"
-            }
+            if self.ascii { " ..." } else { " …" }
         } else {
             ""
         };
@@ -1143,8 +1143,7 @@ impl<'a> Pagination<'a> {
                     let avail = area.right().saturating_sub(x);
                     if avail > 0 {
                         let w = w.min(avail);
-                        let style = if state.focused && matches!(state.part, PaginationPart::Jump)
-                        {
+                        let style = if state.focused && matches!(state.part, PaginationPart::Jump) {
                             self.system
                                 .style(Role::Focus)
                                 .add_modifier(Modifier::REVERSED)
@@ -1248,7 +1247,9 @@ mod tests {
                 }
             }
         ));
-        assert!(matches!(s.prev(), PaginationOutcome::PageRequested { request } if request.page == 1));
+        assert!(
+            matches!(s.prev(), PaginationOutcome::PageRequested { request } if request.page == 1)
+        );
         assert!(matches!(s.first(), PaginationOutcome::Ignored)); // already 1 after prev
         s.set_page(2);
         assert!(matches!(
@@ -1284,13 +1285,17 @@ mod tests {
 
     #[test]
     fn page_size_cycle() {
-        let mut s = PaginationState::new(3, 25, PageTotal::Known(200)).with_page_sizes([10, 25, 50]);
+        let mut s =
+            PaginationState::new(3, 25, PageTotal::Known(200)).with_page_sizes([10, 25, 50]);
         s.set_focused(true);
         assert!(matches!(
             s.cycle_page_size(),
             PaginationOutcome::PageSizeChanged {
                 page_size: 50,
-                request: PageRequest { page: 1, page_size: 50 }
+                request: PageRequest {
+                    page: 1,
+                    page_size: 50
+                }
             }
         ));
     }
@@ -1362,7 +1367,10 @@ mod tests {
             .paint(area, &mut buf, &mut state);
         assert!(!state.hits.is_empty());
         // click next if present
-        if let Some((_, rect)) = state.hits.iter().find(|(p, _)| matches!(p, PaginationPart::Next))
+        if let Some((_, rect)) = state
+            .hits
+            .iter()
+            .find(|(p, _)| matches!(p, PaginationPart::Next))
         {
             assert!(matches!(
                 state.handle_mouse(MouseEvent {

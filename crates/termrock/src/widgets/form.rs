@@ -27,7 +27,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{HitRegion, PageMove, UiIntent},
-    layout::{form_grid_template, ResponsiveSurface},
+    layout::{ResponsiveSurface, form_grid_template},
     scroll::max_offset,
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -482,9 +482,7 @@ impl<Id> FormState<Id> {
 
 /// First invalid enabled field id (source order).
 #[must_use]
-pub fn first_invalid_id<'a, Id: Clone>(
-    fieldsets: &'a [Fieldset<'_, Id>],
-) -> Option<&'a Id> {
+pub fn first_invalid_id<'a, Id: Clone>(fieldsets: &'a [Fieldset<'_, Id>]) -> Option<&'a Id> {
     fieldsets
         .iter()
         .flat_map(|fs| fs.fields.iter())
@@ -554,7 +552,10 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         // Form-level chords before default form intent
         if key.kind == KeyEventKind::Press {
             if key.modifiers.contains(KeyModifiers::CONTROL)
-                && matches!(key.code, KeyCode::Enter | KeyCode::Char('s') | KeyCode::Char('S'))
+                && matches!(
+                    key.code,
+                    KeyCode::Enter | KeyCode::Char('s') | KeyCode::Char('S')
+                )
             {
                 return FormOutcome::SubmitRequested;
             }
@@ -755,8 +756,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
             0
         };
 
-        let (initial_columns, body_height) =
-            dimensions(self.fieldsets, area.width, self.layout);
+        let (initial_columns, body_height) = dimensions(self.fieldsets, area.width, self.layout);
         let content_height = body_height.saturating_add(summary_rows);
         let show_scrollbar = content_height > usize::from(area.height) && area.width > 1;
         let content_area = Rect {
@@ -799,9 +799,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 content_y,
                 content_area.x,
                 "Errors",
-                self.system
-                    .style(Role::Danger)
-                    .add_modifier(Modifier::BOLD),
+                self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
             );
             content_y = content_y.saturating_add(1);
             for (label, msg) in errors.iter().take(3) {
@@ -995,11 +993,7 @@ fn columns_for(width: u16, layout: FormLayout) -> u8 {
     }
 }
 
-fn dimensions<Id>(
-    fieldsets: &[Fieldset<'_, Id>],
-    width: u16,
-    layout: FormLayout,
-) -> (u8, usize) {
+fn dimensions<Id>(fieldsets: &[Fieldset<'_, Id>], width: u16, layout: FormLayout) -> (u8, usize) {
     let columns = columns_for(width, layout);
     let header = layout.section_header_height();
     let field_h = layout.field_row_height();
@@ -1099,7 +1093,14 @@ fn paint_field<Id: Clone>(
     } else if field.dirty {
         label = label.tone(LabelTone::Default);
     }
-    let label_row = visible_rect(viewport, offset, content_y, 1, field_area.x, field_area.width);
+    let label_row = visible_rect(
+        viewport,
+        offset,
+        content_y,
+        1,
+        field_area.x,
+        field_area.width,
+    );
     if let Some(row) = label_row {
         // Inline layout: label left portion
         let label_width = if matches!(layout, FormLayout::Inline) && row.width >= 20 {
@@ -1139,9 +1140,7 @@ fn paint_field<Id: Clone>(
         } else {
             field_area.x
         };
-        let value_width = field_area
-            .width
-            .saturating_sub(if focused { 2 } else { 0 });
+        let value_width = field_area.width.saturating_sub(if focused { 2 } else { 0 });
         let text = take_display_cols(field.value, usize::from(value_width));
         paint_string(
             buffer,

@@ -11,8 +11,8 @@
 use ratatui_core::layout::Rect;
 
 use crate::layout::{
-    AdaptiveAnatomy, RegionId, RegionSize, RegionSpec, ResponsiveSurface, SurfaceAxis, ViewportClass,
-    WorkSurface,
+    AdaptiveAnatomy, RegionId, RegionSize, RegionSpec, ResponsiveSurface, SurfaceAxis,
+    ViewportClass, WorkSurface,
 };
 use crate::style::Density;
 
@@ -282,7 +282,10 @@ pub fn layout_app_shell(area: Rect, mut config: AppShellConfig) -> AppShellSlots
     let mut drawer_zones = Vec::new();
     let mut show_sidebar = config.sidebar_width > 0
         && anatomy.multi_pane
-        && !matches!(config.recipe, AppShellRecipe::Minimal | AppShellRecipe::Dashboard);
+        && !matches!(
+            config.recipe,
+            AppShellRecipe::Minimal | AppShellRecipe::Dashboard
+        );
     let mut show_inspector = config.inspector_width > 0
         && anatomy.multi_pane
         && matches!(config.recipe, AppShellRecipe::Workbench);
@@ -308,14 +311,18 @@ pub fn layout_app_shell(area: Rect, mut config: AppShellConfig) -> AppShellSlots
     // Offline/disconnected: prefer compact density.
     if matches!(
         lifecycle,
-        AppShellLifecycle::Offline | AppShellLifecycle::Disconnected | AppShellLifecycle::Connecting
+        AppShellLifecycle::Offline
+            | AppShellLifecycle::Disconnected
+            | AppShellLifecycle::Connecting
     ) {
         config.density = Density::Compact;
     }
 
     match config.recipe {
         AppShellRecipe::Minimal => layout_minimal(area, config, anatomy, lifecycle, drawer_zones),
-        AppShellRecipe::Dashboard => layout_dashboard(area, config, anatomy, lifecycle, drawer_zones),
+        AppShellRecipe::Dashboard => {
+            layout_dashboard(area, config, anatomy, lifecycle, drawer_zones)
+        }
         AppShellRecipe::MasterDetail => {
             layout_master_detail(area, config, anatomy, lifecycle, drawer_zones, show_sidebar)
         }
@@ -335,11 +342,7 @@ fn empty_opt() -> Option<Rect> {
     None
 }
 
-fn split_vertical(
-    area: Rect,
-    density: Density,
-    parts: &[(RegionId, RegionSize)],
-) -> Vec<Rect> {
+fn split_vertical(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
     let regions: Vec<RegionSpec> = parts
         .iter()
         .map(|(id, size)| RegionSpec {
@@ -357,11 +360,7 @@ fn split_vertical(
         .collect()
 }
 
-fn split_horizontal(
-    area: Rect,
-    density: Density,
-    parts: &[(RegionId, RegionSize)],
-) -> Vec<Rect> {
+fn split_horizontal(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
     let regions: Vec<RegionSpec> = parts
         .iter()
         .map(|(id, size)| RegionSpec {
@@ -389,25 +388,15 @@ fn layout_minimal(
     let footer_h = config.footer_height.min(area.height);
     let parts = if footer_h > 0 {
         vec![
-            (
-                RegionId::from_static("main"),
-                RegionSize::Weight(1),
-            ),
-            (
-                RegionId::from_static("footer"),
-                RegionSize::Fixed(footer_h),
-            ),
+            (RegionId::from_static("main"), RegionSize::Weight(1)),
+            (RegionId::from_static("footer"), RegionSize::Fixed(footer_h)),
         ]
     } else {
         vec![(RegionId::from_static("main"), RegionSize::Weight(1))]
     };
     let rows = split_vertical(area, config.density, &parts);
     let main = rows[0];
-    let footer = if footer_h > 0 {
-        Some(rows[1])
-    } else {
-        None
-    };
+    let footer = if footer_h > 0 { Some(rows[1]) } else { None };
     let mut focus_order = vec![AppShellZone::Main];
     if footer.is_some() {
         focus_order.push(AppShellZone::Footer);
@@ -456,10 +445,7 @@ fn layout_dashboard(
 
     let mut parts = Vec::new();
     if header_h > 0 {
-        parts.push((
-            RegionId::from_static("header"),
-            RegionSize::Fixed(header_h),
-        ));
+        parts.push((RegionId::from_static("header"), RegionSize::Fixed(header_h)));
     }
     if metrics_h > 0 {
         parts.push((
@@ -474,10 +460,7 @@ fn layout_dashboard(
             RegionSize::Fixed(log_h.max(1)),
         ));
     }
-    parts.push((
-        RegionId::from_static("footer"),
-        RegionSize::Fixed(footer_h),
-    ));
+    parts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
 
     let rows = split_vertical(area, config.density, &parts);
     let mut i = 0;
@@ -554,17 +537,11 @@ fn layout_master_detail(
     // Outer vertical: header / body / footer
     let mut vparts = Vec::new();
     if header_h > 0 {
-        vparts.push((
-            RegionId::from_static("header"),
-            RegionSize::Fixed(header_h),
-        ));
+        vparts.push((RegionId::from_static("header"), RegionSize::Fixed(header_h)));
     }
     vparts.push((RegionId::from_static("body"), RegionSize::Weight(1)));
     if footer_h > 0 {
-        vparts.push((
-            RegionId::from_static("footer"),
-            RegionSize::Fixed(footer_h),
-        ));
+        vparts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
     }
     let vrows = split_vertical(area, config.density, &vparts);
     let mut vi = 0;
@@ -577,11 +554,7 @@ fn layout_master_detail(
     };
     let body = vrows[vi];
     vi += 1;
-    let footer = if footer_h > 0 {
-        Some(vrows[vi])
-    } else {
-        None
-    };
+    let footer = if footer_h > 0 { Some(vrows[vi]) } else { None };
 
     let (sidebar, main) = if show_sidebar
         && config.sidebar_width > 0
@@ -653,10 +626,7 @@ fn layout_workbench(
 
     let mut vparts = Vec::new();
     if header_h > 0 {
-        vparts.push((
-            RegionId::from_static("header"),
-            RegionSize::Fixed(header_h),
-        ));
+        vparts.push((RegionId::from_static("header"), RegionSize::Fixed(header_h)));
     }
     vparts.push((RegionId::from_static("body"), RegionSize::Weight(1)));
     if command_h > 0 {
@@ -666,10 +636,7 @@ fn layout_workbench(
         ));
     }
     if footer_h > 0 {
-        vparts.push((
-            RegionId::from_static("footer"),
-            RegionSize::Fixed(footer_h),
-        ));
+        vparts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
     }
     let vrows = split_vertical(area, config.density, &vparts);
     let mut vi = 0;
@@ -689,15 +656,10 @@ fn layout_workbench(
     } else {
         None
     };
-    let footer = if footer_h > 0 {
-        Some(vrows[vi])
-    } else {
-        None
-    };
+    let footer = if footer_h > 0 { Some(vrows[vi]) } else { None };
 
     // Horizontal: sidebar | main | inspector
-    let mut place_sidebar =
-        show_sidebar && body.width > config.sidebar_width.saturating_add(12);
+    let place_sidebar = show_sidebar && body.width > config.sidebar_width.saturating_add(12);
     let mut place_inspector =
         show_inspector && body.width > config.inspector_width.saturating_add(40);
     if place_sidebar
@@ -791,10 +753,7 @@ mod tests {
 
     #[test]
     fn workbench_wide_has_sidebar_and_inspector() {
-        let slots = layout_app_shell(
-            Rect::new(0, 0, 160, 40),
-            AppShellConfig::workbench(),
-        );
+        let slots = layout_app_shell(Rect::new(0, 0, 160, 40), AppShellConfig::workbench());
         assert!(slots.sidebar.is_some());
         assert!(slots.inspector.is_some());
         assert!(slots.header.is_some());
@@ -806,10 +765,7 @@ mod tests {
 
     #[test]
     fn workbench_narrow_collapses_panes() {
-        let slots = layout_app_shell(
-            Rect::new(0, 0, 50, 24),
-            AppShellConfig::workbench(),
-        );
+        let slots = layout_app_shell(Rect::new(0, 0, 50, 24), AppShellConfig::workbench());
         // Mid width: single-pane or drawer — sidebar/inspector may be gone.
         assert!(slots.main.width > 0);
         assert!(slots.main.height > 0);
@@ -820,10 +776,7 @@ mod tests {
 
     #[test]
     fn tiny_forces_line_mode_main() {
-        let slots = layout_app_shell(
-            Rect::new(0, 0, 18, 5),
-            AppShellConfig::workbench(),
-        );
+        let slots = layout_app_shell(Rect::new(0, 0, 18, 5), AppShellConfig::workbench());
         assert!(matches!(
             slots.lifecycle,
             AppShellLifecycle::Tiny | AppShellLifecycle::Disconnected
@@ -835,10 +788,7 @@ mod tests {
 
     #[test]
     fn dashboard_fills_height() {
-        let slots = layout_app_shell(
-            Rect::new(0, 0, 100, 30),
-            AppShellConfig::dashboard(),
-        );
+        let slots = layout_app_shell(Rect::new(0, 0, 100, 30), AppShellConfig::dashboard());
         assert!(slots.metrics.is_some());
         assert!(slots.log.is_some());
         assert_eq!(slots.log, slots.inspector);
@@ -856,30 +806,20 @@ mod tests {
 
     #[test]
     fn master_detail_hides_sidebar_when_collapsed() {
-        let wide = layout_app_shell(
-            Rect::new(0, 0, 120, 30),
-            AppShellConfig::master_detail(),
-        );
+        let wide = layout_app_shell(Rect::new(0, 0, 120, 30), AppShellConfig::master_detail());
         assert!(wide.sidebar.is_some());
-        let narrow = layout_app_shell(
-            Rect::new(0, 0, 30, 20),
-            AppShellConfig::master_detail(),
-        );
+        let narrow = layout_app_shell(Rect::new(0, 0, 30, 20), AppShellConfig::master_detail());
         assert!(narrow.main.width > 0 && narrow.main.height > 0);
         if !narrow.anatomy.multi_pane {
             assert!(
-                narrow.sidebar.is_none()
-                    || narrow.drawer_zones.contains(&AppShellZone::Sidebar)
+                narrow.sidebar.is_none() || narrow.drawer_zones.contains(&AppShellZone::Sidebar)
             );
         }
     }
 
     #[test]
     fn focus_order_only_visible_zones() {
-        let slots = layout_app_shell(
-            Rect::new(0, 0, 160, 40),
-            AppShellConfig::workbench(),
-        );
+        let slots = layout_app_shell(Rect::new(0, 0, 160, 40), AppShellConfig::workbench());
         for z in &slots.focus_order {
             assert!(slots.zone(*z).is_some(), "missing rect for {z:?}");
         }
@@ -946,7 +886,10 @@ mod tests {
         assert!(slots.header.is_none());
         assert!(slots.sidebar.is_none());
         assert_eq!(slots.main.height + slots.footer.unwrap().height, 12);
-        assert_eq!(slots.focus_order, vec![AppShellZone::Main, AppShellZone::Footer]);
+        assert_eq!(
+            slots.focus_order,
+            vec![AppShellZone::Main, AppShellZone::Footer]
+        );
     }
 
     #[test]

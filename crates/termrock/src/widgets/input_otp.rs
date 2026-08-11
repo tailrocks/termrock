@@ -12,11 +12,7 @@
 //!
 //! Research: shadcn Input OTP, CLI pin prompts, 2FA terminal flows.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -395,7 +391,13 @@ impl<'a> InputOtp<'a> {
             let ch = match slot {
                 Some(c) if state.masked => '•',
                 Some(c) => *c,
-                None => if self.ascii { '_' } else { '·' },
+                None => {
+                    if self.ascii {
+                        '_'
+                    } else {
+                        '·'
+                    }
+                }
             };
             let focused_slot = state.focused && i == state.cursor;
             let style = if focused_slot {
@@ -447,7 +449,10 @@ mod tests {
     #[test]
     fn reject_non_digit_in_digits_mode() {
         let mut st = InputOtpState::new(6);
-        assert!(matches!(st.handle_key(press('a')), InputOtpOutcome::Ignored));
+        assert!(matches!(
+            st.handle_key(press('a')),
+            InputOtpOutcome::Ignored
+        ));
         assert_eq!(st.filled(), 0);
     }
 
@@ -515,6 +520,8 @@ mod tests {
         let _ = st.set_value("12");
         let area = Rect::new(0, 0, 20, 2);
         let mut buf = Buffer::empty(area);
-        InputOtp::new(&system).label("Code").paint(area, &mut buf, &st);
+        InputOtp::new(&system)
+            .label("Code")
+            .paint(area, &mut buf, &st);
     }
 }

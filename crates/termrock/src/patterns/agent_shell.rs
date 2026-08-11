@@ -10,7 +10,7 @@ use ratatui_core::layout::Rect;
 
 use crate::style::Density;
 
-use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe};
+use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
 /// Named slots produced by [`layout_agent_shell`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +74,10 @@ pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlo
         let h = config.prompt_height.max(1).min(shell.main.height);
         Rect {
             x: shell.main.x,
-            y: shell.main.y.saturating_add(shell.main.height.saturating_sub(h)),
+            y: shell
+                .main
+                .y
+                .saturating_add(shell.main.height.saturating_sub(h)),
             width: shell.main.width,
             height: h,
         }

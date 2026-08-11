@@ -13,8 +13,7 @@ use termrock::{
     style::{ColorCapability, Density, DesignSystem, RolePalette},
     widgets::{
         Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
-        CommandPalette, CommandPaletteState, example_command_catalog, ComposerChip,
-        ContextEstimate, DesignInspector,
+        CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
         DesignInspectorFrame, Fieldset, Form, FormOutcome, FormState, InspectorPanel, List,
         ListState, LogPane, LogPaneState, ModeIndicator, ModelIndicator, Picker, PickerOutcome,
         PickerState, PromptComposer, PromptComposerOutcome, PromptComposerState, Severity,
@@ -22,7 +21,7 @@ use termrock::{
         TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea, TextAreaOutcome,
         TextAreaState, TextInput, TextInputOutcome, TextInputState, ThemePicker, ThemePickerState,
         Toast, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNode,
-        TreeOutcome, TreeState, VirtualGridState,
+        TreeOutcome, TreeState, VirtualGridState, example_command_catalog,
     },
 };
 
@@ -966,8 +965,8 @@ impl StoryInteraction for DesignInspectorInteractor {
             layers: &layers,
             recipes: &recipes,
             selection_chrome: "gutter",
-        semantics: &[],
-        focus_graph: &[],
+            semantics: &[],
+            focus_graph: &[],
         };
         frame.render_widget(
             DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))

@@ -31,6 +31,7 @@
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -414,10 +415,7 @@ impl<'a> Toggle<'a> {
     /// Whether icon-only contract is safe.
     #[must_use]
     pub fn has_accessible_label(&self) -> bool {
-        !self.label.is_empty()
-            || self
-                .accessible_label
-                .is_some_and(|a| !a.is_empty())
+        !self.label.is_empty() || self.accessible_label.is_some_and(|a| !a.is_empty())
     }
 
     fn face_inner(&self) -> String {
@@ -550,9 +548,7 @@ impl<'a> Toggle<'a> {
         }
         match event.kind {
             MouseEventKind::Moved | MouseEventKind::Drag(_) => {
-                state.hovered = state
-                    .region
-                    .is_some_and(|r| r.contains(event.position));
+                state.hovered = state.region.is_some_and(|r| r.contains(event.position));
                 ToggleOutcome::Ignored
             }
             MouseEventKind::Down(MouseButton::Left) => {
@@ -1111,9 +1107,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                     }
                     first = false;
                     let item = &self.items[idx];
-                    let w = self
-                        .item_width(item)
-                        .min(area.right().saturating_sub(x));
+                    let w = self.item_width(item).min(area.right().saturating_sub(x));
                     if w == 0 {
                         break;
                     }
@@ -1196,11 +1190,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         let _ = t.paint(area, buffer, &mut ts);
     }
 
-    fn activate_item(
-        &self,
-        state: &ToggleGroupState<Id>,
-        id: Id,
-    ) -> ToggleGroupOutcome<Id> {
+    fn activate_item(&self, state: &ToggleGroupState<Id>, id: Id) -> ToggleGroupOutcome<Id> {
         let Some(item) = self.item_by_id(&id) else {
             return ToggleGroupOutcome::Ignored;
         };
@@ -1471,10 +1461,7 @@ mod tests {
     fn value_activate_cycles() {
         assert_eq!(ToggleValue::Unpressed.activate(), ToggleValue::Pressed);
         assert_eq!(ToggleValue::Pressed.activate(), ToggleValue::Unpressed);
-        assert_eq!(
-            ToggleValue::Indeterminate.activate(),
-            ToggleValue::Pressed
-        );
+        assert_eq!(ToggleValue::Indeterminate.activate(), ToggleValue::Pressed);
     }
 
     #[test]
@@ -1515,9 +1502,7 @@ mod tests {
         let system = DesignSystem::default();
         let bad = Toggle::new("", &system).icon("B");
         assert!(!bad.has_accessible_label());
-        let good = Toggle::new("", &system)
-            .icon("B")
-            .accessible_label("Bold");
+        let good = Toggle::new("", &system).icon("B").accessible_label("Bold");
         assert!(good.has_accessible_label());
         let mut state = ToggleState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 1));
@@ -1739,7 +1724,10 @@ mod tests {
             ToggleGroupItem::new("i", "I"),
             ToggleGroupItem::new("u", "U"),
         ];
-        let g = ToggleGroup::new(&items, &system).multiple().connected().compact();
+        let g = ToggleGroup::new(&items, &system)
+            .multiple()
+            .connected()
+            .compact();
         let mut state = ToggleGroupState::new();
         state.set_surface_focused(true);
         let area = Rect::new(0, 0, 24, 1);

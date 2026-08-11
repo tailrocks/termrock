@@ -12,6 +12,7 @@
 //!
 //! References: Radix/shadcn Label, accessible form labeling, terminal settings.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState};
@@ -905,8 +906,7 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
         Action: Clone,
     {
         let parts = self.layout(area);
-        self.label
-            .register_semantic(scene, label_id, parts.label);
+        self.label.register_semantic(scene, label_id, parts.label);
         if let (Some(d), Some(did)) = (&self.description, description_id)
             && parts.description.height > 0
         {

@@ -17,6 +17,7 @@
 //!
 //! Research: Grok Build plan approval, code review workflows, document annotation.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
 
 use ratatui_core::{
@@ -214,11 +215,7 @@ pub struct PlanRiskItem {
 impl PlanRiskItem {
     /// Construct.
     #[must_use]
-    pub fn new(
-        id: impl Into<String>,
-        text: impl Into<String>,
-        severity: PermissionRisk,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, text: impl Into<String>, severity: PermissionRisk) -> Self {
         Self {
             id: id.into(),
             text: text.into(),
@@ -444,9 +441,7 @@ impl PlanDocument {
     /// Whether Approve is allowed (non-empty plan content).
     #[must_use]
     pub fn can_approve(&self) -> bool {
-        !self.markdown_body.trim().is_empty()
-            || !self.tasks.is_empty()
-            || !self.sections.is_empty()
+        !self.markdown_body.trim().is_empty() || !self.tasks.is_empty() || !self.sections.is_empty()
     }
 }
 
@@ -546,15 +541,9 @@ impl PlanComment {
 /// comments; line anchors keep only when the line still exists (clamped range);
 /// otherwise mark orphan with `preserved = false`.
 #[must_use]
-pub fn remap_plan_comments(
-    comments: &[PlanComment],
-    plan: &PlanDocument,
-) -> Vec<PlanComment> {
-    let section_ids: BTreeMap<&str, ()> = plan
-        .sections
-        .iter()
-        .map(|s| (s.id.as_str(), ()))
-        .collect();
+pub fn remap_plan_comments(comments: &[PlanComment], plan: &PlanDocument) -> Vec<PlanComment> {
+    let section_ids: BTreeMap<&str, ()> =
+        plan.sections.iter().map(|s| (s.id.as_str(), ())).collect();
     let task_ids: BTreeMap<&str, ()> = plan.tasks.iter().map(|t| (t.id.as_str(), ())).collect();
     let file_paths: BTreeMap<&str, ()> = plan
         .affected_files
@@ -1103,10 +1092,7 @@ impl PlanReviewState {
 
     fn cycle_pane(&mut self, delta: isize) -> PlanReviewOutcome {
         let panes = PlanReviewPane::cycle();
-        let idx = panes
-            .iter()
-            .position(|p| *p == self.pane)
-            .unwrap_or(0);
+        let idx = panes.iter().position(|p| *p == self.pane).unwrap_or(0);
         let n = panes.len() as isize;
         let next = (idx as isize + delta).rem_euclid(n) as usize;
         self.pane = panes[next];
@@ -1181,7 +1167,7 @@ impl PlanReviewState {
         match self.phase {
             PlanReviewPhase::Feedback => return self.handle_text_phase(key, TextTarget::Feedback),
             PlanReviewPhase::Conditions => {
-                return self.handle_text_phase(key, TextTarget::Conditions)
+                return self.handle_text_phase(key, TextTarget::Conditions);
             }
             PlanReviewPhase::Comment => return self.handle_text_phase(key, TextTarget::Comment),
             PlanReviewPhase::Review => {}
@@ -1192,9 +1178,7 @@ impl PlanReviewState {
             KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => self.cycle_pane(-1),
             KeyCode::Tab => self.cycle_pane(1),
             KeyCode::Left | KeyCode::Char('h') => self.move_action(-1),
-            KeyCode::Right | KeyCode::Char('l')
-                if !key.modifiers.contains(KeyModifiers::SHIFT) =>
-            {
+            KeyCode::Right | KeyCode::Char('l') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.move_action(1)
             }
             KeyCode::Enter => self.confirm_action(),
@@ -1220,7 +1204,9 @@ impl PlanReviewState {
                 PlanReviewOutcome::Ignored
             }
             KeyCode::Char('c') => {
-                if self.available_actions().contains(&PlanAction::ApproveWithConditions)
+                if self
+                    .available_actions()
+                    .contains(&PlanAction::ApproveWithConditions)
                 {
                     self.action_cursor = PlanAction::ApproveWithConditions;
                     PlanReviewOutcome::ActionFocused(PlanAction::ApproveWithConditions)
@@ -1235,10 +1221,7 @@ impl PlanReviewState {
                 PlanReviewOutcome::PhaseChanged(PlanReviewPhase::Comment)
             }
             KeyCode::Char('d') => {
-                let has_prev = self
-                    .plan
-                    .as_ref()
-                    .is_some_and(|p| p.previous.is_some());
+                let has_prev = self.plan.as_ref().is_some_and(|p| p.previous.is_some());
                 if !has_prev {
                     return PlanReviewOutcome::Ignored;
                 }
@@ -1261,7 +1244,11 @@ impl PlanReviewState {
                     return PlanReviewOutcome::Ignored;
                 }
                 let down = key.code == KeyCode::Char('J');
-                let lines = self.plan.as_ref().map(PlanDocument::line_count).unwrap_or(0);
+                let lines = self
+                    .plan
+                    .as_ref()
+                    .map(PlanDocument::line_count)
+                    .unwrap_or(0);
                 if lines == 0 {
                     return PlanReviewOutcome::Ignored;
                 }
@@ -1321,7 +1308,11 @@ impl PlanReviewState {
     fn nav_content(&mut self, down: bool) -> PlanReviewOutcome {
         match self.pane {
             PlanReviewPane::Document => {
-                let lines = self.plan.as_ref().map(PlanDocument::line_count).unwrap_or(0);
+                let lines = self
+                    .plan
+                    .as_ref()
+                    .map(PlanDocument::line_count)
+                    .unwrap_or(0);
                 if lines == 0 {
                     return PlanReviewOutcome::Ignored;
                 }
@@ -1369,11 +1360,7 @@ impl PlanReviewState {
                 let mut sel = self.selected_file;
                 self.nav_list(len, &mut sel, down);
                 self.selected_file = sel;
-                if let Some(f) = self
-                    .plan
-                    .as_ref()
-                    .and_then(|p| p.affected_files.get(sel))
-                {
+                if let Some(f) = self.plan.as_ref().and_then(|p| p.affected_files.get(sel)) {
                     PlanReviewOutcome::FileSelected {
                         path: f.path.clone(),
                     }
@@ -1583,7 +1570,11 @@ impl<'a> PlanReview<'a> {
             use ratatui_core::widgets::Widget;
             Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
-                let m = if self.ascii { "[ ] no plan" } else { "∅ no plan" };
+                let m = if self.ascii {
+                    "[ ] no plan"
+                } else {
+                    "∅ no plan"
+                };
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
@@ -1596,12 +1587,7 @@ impl<'a> PlanReview<'a> {
         };
 
         let risk = plan.risk;
-        let title = format!(
-            "Plan v{} · {} · {}",
-            plan.version,
-            plan.title,
-            risk.label()
-        );
+        let title = format!("Plan v{} · {} · {}", plan.version, plan.title, risk.label());
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1632,13 +1618,7 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(risk.role())
                 };
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(sum, w),
-                    w,
-                    style,
-                );
+                buffer.set_stringn(inner.x, y, take_display_cols(sum, w), w, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1705,13 +1685,7 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(
-                inner.x,
-                cons_y,
-                take_display_cols(&line, w),
-                w,
-                style,
-            );
+            buffer.set_stringn(inner.x, cons_y, take_display_cols(&line, w), w, style);
         }
 
         state.plan = Some(plan);
@@ -1744,9 +1718,7 @@ impl<'a> PlanReview<'a> {
                 break;
             }
             let style = if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::TextMuted)
             };
@@ -1797,9 +1769,7 @@ impl<'a> PlanReview<'a> {
             };
             let text = format!("{mark}{i:>3}│{line}");
             let style = if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
@@ -2208,13 +2178,9 @@ impl<'a> PlanReview<'a> {
             }
             let style = if focused {
                 if action.grants() {
-                    self.system
-                        .style(Role::Danger)
-                        .add_modifier(Modifier::BOLD)
+                    self.system.style(Role::Danger).add_modifier(Modifier::BOLD)
                 } else {
-                    self.system
-                        .style(Role::Accent)
-                        .add_modifier(Modifier::BOLD)
+                    self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
                 }
             } else if action.grants() {
                 self.system.style(Role::Warning)
@@ -2295,8 +2261,9 @@ Preserves existing API surface.
             PlanAffectedFile::new("src/auth/mod.rs", PlanFileChange::Modify),
             PlanAffectedFile::new("src/legacy_auth.rs", PlanFileChange::Delete),
         ])
-        .source_refs(vec![PlanSourceRef::new("s1", "ADR-12 Auth")
-            .location("docs/adr/12.md:14")])
+        .source_refs(vec![
+            PlanSourceRef::new("s1", "ADR-12 Auth").location("docs/adr/12.md:14"),
+        ])
         .previous(
             PlanDocument::new(
                 "plan-auth",
@@ -2363,11 +2330,7 @@ mod tests {
             PermissionRisk::Critical,
         ] {
             let focus = PlanAction::default_for_risk(risk);
-            assert!(
-                !focus.grants(),
-                "risk {risk:?} default {:?} grants",
-                focus
-            );
+            assert!(!focus.grants(), "risk {risk:?} default {:?} grants", focus);
         }
     }
 
@@ -2553,7 +2516,9 @@ mod tests {
         assert!(!st.plan.as_ref().unwrap().can_approve());
         let _ = st.handle_key(press(KeyCode::Char('a')));
         // Approve not available
-        assert!(!st.action_cursor().grants() || !st.available_actions().contains(&PlanAction::Approve));
+        assert!(
+            !st.action_cursor().grants() || !st.available_actions().contains(&PlanAction::Approve)
+        );
         st.action_cursor = PlanAction::Approve;
         st.clamp_action_cursor();
         assert!(!st.action_cursor().grants());
@@ -2630,7 +2595,10 @@ mod tests {
             PlanReview::new(&system).paint(area, &mut buf, &mut st);
             assert!(st.is_open(), "paint restores plan after pane {:?}", pane);
         }
-        PlanReview::new(&system).ascii(true).colorless(true).paint(area, &mut buf, &mut st);
+        PlanReview::new(&system)
+            .ascii(true)
+            .colorless(true)
+            .paint(area, &mut buf, &mut st);
         assert!(st.is_open());
     }
 

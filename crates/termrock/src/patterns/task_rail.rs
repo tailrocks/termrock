@@ -17,25 +17,22 @@
 //! Research: Grok Build tasks pane, Amp sessions, OpenCode agents, CI lists,
 //! Zellij panes.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    text::Line,
-    widgets::StatefulWidget,
+    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
 };
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{
-        activity_status_summary, project_activities_for_status_bar, ActivityItem, ActivityKind,
-        ActivityStatusProjection,
+        ActivityItem, ActivityKind, ActivityStatusProjection, activity_status_summary,
+        project_activities_for_status_bar,
     },
+    style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         List, ListRow, ListState, Panel, RowRole, SemanticStatus, StatusKind, StatusRegion,
@@ -714,7 +711,11 @@ pub fn build_task_rail_rows(
             if emitted.contains(item.id.as_str()) {
                 continue;
             }
-            if item.parent_id.as_ref().is_some_and(|p| ids.contains(p.as_str())) {
+            if item
+                .parent_id
+                .as_ref()
+                .is_some_and(|p| ids.contains(p.as_str()))
+            {
                 continue; // emit under parent
             }
             emit_tree(&mut rows, &mut emitted, item, &group, 0);
@@ -737,7 +738,10 @@ fn emit_tree<'a>(
         id: item.id.clone(),
         depth,
     });
-    for child in group.iter().filter(|c| c.parent_id.as_deref() == Some(item.id.as_str())) {
+    for child in group
+        .iter()
+        .filter(|c| c.parent_id.as_deref() == Some(item.id.as_str()))
+    {
         emit_tree(rows, emitted, child, group, depth.saturating_add(1));
     }
 }
@@ -759,11 +763,7 @@ pub fn project_task_rail_list_rows(
                 collapsed,
             } => {
                 let mark = if *collapsed {
-                    if ascii {
-                        ">"
-                    } else {
-                        "▸"
-                    }
+                    if ascii { ">" } else { "▸" }
                 } else if ascii {
                     "v"
                 } else {
@@ -811,7 +811,8 @@ pub fn project_task_rail_list_rows(
                             sec.push_str(" · ");
                         }
                         sec.push_str("deps:");
-                        for (i, dep) in item.dependencies.iter().take(TASK_RAIL_DEP_CAP).enumerate() {
+                        for (i, dep) in item.dependencies.iter().take(TASK_RAIL_DEP_CAP).enumerate()
+                        {
                             if i > 0 {
                                 sec.push(',');
                             }
@@ -1046,7 +1047,10 @@ impl TaskRailState {
     /// Selected activity id (skips group headers).
     #[must_use]
     pub fn selected_activity_id(&self) -> Option<&str> {
-        self.list.selected().map(String::as_str).filter(|id| !id.starts_with("g:"))
+        self.list
+            .selected()
+            .map(String::as_str)
+            .filter(|id| !id.starts_with("g:"))
     }
 
     fn rebuild_rows(&mut self, items: &[ActivityModel]) -> Vec<ListRow<'static, String>> {
@@ -1061,11 +1065,7 @@ impl TaskRailState {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        items: &[ActivityModel],
-    ) -> TaskRailOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, items: &[ActivityModel]) -> TaskRailOutcome {
         if !self.accepts_input || key.kind != KeyEventKind::Press {
             return TaskRailOutcome::Ignored;
         }
@@ -1107,9 +1107,7 @@ impl TaskRailState {
                     query: self.filter.clone(),
                 };
             }
-            KeyCode::Char('c')
-                if key.modifiers.contains(KeyModifiers::CONTROL) =>
-            {
+            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.filter.clear();
                 self.filter_mode = false;
                 return TaskRailOutcome::FilterChanged {
@@ -1158,37 +1156,27 @@ impl TaskRailState {
             }
             KeyCode::Char('x') | KeyCode::Delete => {
                 if let Some(id) = self.selected_activity_id() {
-                    return TaskRailOutcome::CancelTask {
-                        id: id.to_string(),
-                    };
+                    return TaskRailOutcome::CancelTask { id: id.to_string() };
                 }
             }
             KeyCode::Char('r') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_activity_id() {
-                    return TaskRailOutcome::RetryTask {
-                        id: id.to_string(),
-                    };
+                    return TaskRailOutcome::RetryTask { id: id.to_string() };
                 }
             }
             KeyCode::Char('t') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_activity_id() {
-                    return TaskRailOutcome::FocusTranscript {
-                        id: id.to_string(),
-                    };
+                    return TaskRailOutcome::FocusTranscript { id: id.to_string() };
                 }
             }
             KeyCode::Char('d') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_activity_id() {
-                    return TaskRailOutcome::InspectDeps {
-                        id: id.to_string(),
-                    };
+                    return TaskRailOutcome::InspectDeps { id: id.to_string() };
                 }
             }
             KeyCode::Char('f') if key.modifiers.is_empty() => {
                 if let Some(id) = self.selected_activity_id() {
-                    return TaskRailOutcome::Promote {
-                        id: id.to_string(),
-                    };
+                    return TaskRailOutcome::Promote { id: id.to_string() };
                 }
                 return TaskRailOutcome::PreferDrawer;
             }
@@ -1259,11 +1247,7 @@ impl TaskRailState {
     }
 
     /// Mouse via list hits after paint (call after `paint` so regions exist).
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        _items: &[ActivityModel],
-    ) -> TaskRailOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent, _items: &[ActivityModel]) -> TaskRailOutcome {
         if !self.accepts_input || event.kind != MouseEventKind::Down(MouseButton::Left) {
             return TaskRailOutcome::Ignored;
         }
@@ -1353,12 +1337,7 @@ impl<'a> TaskRail<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TaskRailState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TaskRailState) {
         if area.is_empty() {
             return;
         }
@@ -1370,9 +1349,7 @@ impl<'a> TaskRail<'a> {
         }
 
         // Status-summary only: one line
-        if matches!(state.recommended, TaskRailPresentation::StatusSummary)
-            && area.height <= 1
-        {
+        if matches!(state.recommended, TaskRailPresentation::StatusSummary) && area.height <= 1 {
             let s = task_rail_status_summary(self.items, self.ascii);
             buffer.set_stringn(
                 area.x,
@@ -1459,12 +1436,7 @@ impl<'a> TaskRail<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TaskRailState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TaskRailState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1637,16 +1609,28 @@ mod tests {
         let items = example_activity_models();
         let mut st = TaskRailState::new();
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE), &items),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+                &items
+            ),
             TaskRailOutcome::FilterChanged { .. }
         ));
         assert!(st.filter_mode);
-        let _ = st.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE), &items);
-        let _ = st.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &items);
+        let _ = st.handle_key(
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+            &items,
+        );
+        let _ = st.handle_key(
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+            &items,
+        );
         assert!(st.filter.contains('c') || st.filter.contains('a'));
         st.filter_mode = false;
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE), &items),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE),
+                &items
+            ),
             TaskRailOutcome::ZoomChanged { .. }
         ));
     }
@@ -1677,7 +1661,11 @@ mod tests {
         assert!(shelf.iter().any(|i| i.action_required));
         let p = project_task_rail_for_status_bar(&items, true);
         assert!(p.priority >= 90);
-        assert!(p.summary.contains("action") || p.summary.contains("input") || p.summary.contains("run"));
+        assert!(
+            p.summary.contains("action")
+                || p.summary.contains("input")
+                || p.summary.contains("run")
+        );
         let slot = task_rail_status_slot("tasks", &p, false);
         assert!(!slot.content.is_empty());
     }
@@ -1711,7 +1699,9 @@ mod tests {
         let mut st = TaskRailState::new();
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
-        TaskRail::new(&items, &system).title("Tasks").paint(area, &mut buf, &mut st);
+        TaskRail::new(&items, &system)
+            .title("Tasks")
+            .paint(area, &mut buf, &mut st);
         assert!(!st.last_rows.is_empty());
         let narrow = Rect::new(0, 0, 14, 12);
         TaskRail::new(&items, &system)
@@ -1724,7 +1714,13 @@ mod tests {
     fn never_process_pty() {
         let src = include_str!("task_rail.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for f in ["std::process", "Command::new", "portable_pty", "openai", "anthropic"] {
+        for f in [
+            "std::process",
+            "Command::new",
+            "portable_pty",
+            "openai",
+            "anthropic",
+        ] {
             assert!(!body.contains(f), "{f}");
         }
     }

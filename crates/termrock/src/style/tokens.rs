@@ -375,7 +375,11 @@ impl ThemePackage {
             Self::new("slate", "Slate", DesignSystem::slate()),
             Self::new("paper", "Paper", DesignSystem::paper()),
             Self::new("ansi", "ANSI 16", DesignSystem::ansi()),
-            Self::new("high-contrast", "High Contrast", DesignSystem::high_contrast()),
+            Self::new(
+                "high-contrast",
+                "High Contrast",
+                DesignSystem::high_contrast(),
+            ),
             Self::new("adaptive", "Terminal Adaptive", DesignSystem::adaptive()),
         ]
     }
@@ -603,11 +607,7 @@ impl DesignSystem {
 
     /// Button part×state recipe (no hard-coded RGB).
     #[must_use]
-    pub fn button_recipe(
-        &self,
-        variant: ButtonRecipeVariant,
-        state: ControlState,
-    ) -> ButtonRecipe {
+    pub fn button_recipe(&self, variant: ButtonRecipeVariant, state: ControlState) -> ButtonRecipe {
         let disabled = matches!(state, ControlState::Disabled | ControlState::Loading);
         let base_role = match variant {
             ButtonRecipeVariant::Primary => Role::ActionFocused,
@@ -622,7 +622,9 @@ impl DesignSystem {
         let mut border = self.style(Role::Border);
         let mut bordered = matches!(
             variant,
-            ButtonRecipeVariant::Outline | ButtonRecipeVariant::Primary | ButtonRecipeVariant::Destructive
+            ButtonRecipeVariant::Outline
+                | ButtonRecipeVariant::Primary
+                | ButtonRecipeVariant::Destructive
         );
 
         if matches!(variant, ButtonRecipeVariant::Primary) {
@@ -634,13 +636,19 @@ impl DesignSystem {
             fill = self.style(Role::Danger);
             border = self.style(Role::Danger);
         }
-        if matches!(variant, ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link) {
+        if matches!(
+            variant,
+            ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link
+        ) {
             bordered = false;
         }
         match state {
             ControlState::Focused => {
                 border = self.style(Role::BorderFocused);
-                if !matches!(variant, ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link) {
+                if !matches!(
+                    variant,
+                    ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link
+                ) {
                     bordered = true;
                 }
                 label = label.add_modifier(Modifier::BOLD);
@@ -866,19 +874,27 @@ mod tests {
         assert_ne!(phosphor.style(Role::Accent), slate.style(Role::Accent));
         assert_ne!(paper.style(Role::Text).fg, phosphor.style(Role::Text).fg);
         assert_eq!(ansi.capability, ColorCapability::Ansi16);
-        assert!(hc.style(Role::TextStrong).add_modifier.contains(Modifier::BOLD));
+        assert!(
+            hc.style(Role::TextStrong)
+                .add_modifier
+                .contains(Modifier::BOLD)
+        );
     }
 
     #[test]
     fn with_role_and_merge_partial_package() {
         let base = DesignSystem::phosphor();
-        let patched = base
-            .clone()
-            .with_role(Role::Accent, Style::new().fg(ratatui_core::style::Color::Cyan));
+        let patched = base.clone().with_role(
+            Role::Accent,
+            Style::new().fg(ratatui_core::style::Color::Cyan),
+        );
         assert_ne!(base.style(Role::Accent), patched.style(Role::Accent));
         let package = RolePalette::from_fn(|_| Style::new()); // empty → no change
         let merged = base.merge(&package);
-        assert_eq!(merged.style(Role::Text), DesignSystem::phosphor().style(Role::Text));
+        assert_eq!(
+            merged.style(Role::Text),
+            DesignSystem::phosphor().style(Role::Text)
+        );
     }
 
     #[test]

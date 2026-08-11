@@ -17,6 +17,7 @@
 //!
 //! Research: Grok Build headers, OpenCode, Amp, IDE workspace headers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -31,7 +32,12 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::Panel,
-    widgets::StatusBar, widgets::StatusBarRecipe, widgets::StatusBarState, widgets::StatusKind, widgets::StatusRegion, widgets::StatusSlot,
+    widgets::StatusBar,
+    widgets::StatusBarRecipe,
+    widgets::StatusBarState,
+    widgets::StatusKind,
+    widgets::StatusRegion,
+    widgets::StatusSlot,
 };
 
 /// Overlay / focus id for header chrome.
@@ -278,12 +284,7 @@ impl AgentStatusAction {
     /// Default action strip (sessions · model · tasks · help).
     #[must_use]
     pub fn default_strip() -> &'static [AgentStatusAction] {
-        &[
-            Self::Sessions,
-            Self::Model,
-            Self::Tasks,
-            Self::Help,
-        ]
+        &[Self::Sessions, Self::Model, Self::Tasks, Self::Help]
     }
 }
 
@@ -606,9 +607,7 @@ impl AgentStatusHeaderState {
     /// Custom actions.
     pub fn set_actions(&mut self, actions: Vec<AgentStatusAction>) {
         self.actions = actions;
-        self.action_cursor = self
-            .action_cursor
-            .min(self.actions.len().saturating_sub(1));
+        self.action_cursor = self.action_cursor.min(self.actions.len().saturating_sub(1));
     }
 
     fn current_action(&self) -> Option<AgentStatusAction> {
@@ -878,12 +877,7 @@ impl<'a> AgentStatusHeader<'a> {
     }
 
     /// Paint (auto-contracts when `auto_contract` and narrow).
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut AgentStatusHeaderState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut AgentStatusHeaderState) {
         state.action_hits.clear();
         if area.is_empty() {
             return;
@@ -925,12 +919,7 @@ impl<'a> AgentStatusHeader<'a> {
         StatefulWidget::render(&bar, area, buffer, &mut sb_state);
     }
 
-    fn paint_header(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut AgentStatusHeaderState,
-    ) {
+    fn paint_header(&self, area: Rect, buffer: &mut Buffer, state: &mut AgentStatusHeaderState) {
         let snap = &state.snapshot;
         let title = {
             let mut parts = Vec::new();
@@ -968,7 +957,7 @@ impl<'a> AgentStatusHeader<'a> {
         }
 
         let mut y = inner.y;
-        let w = usize::from(inner.width);
+        let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
         // Row 1: actionable first
@@ -1049,13 +1038,7 @@ impl<'a> AgentStatusHeader<'a> {
                     }
                     break;
                 }
-                buffer.set_stringn(
-                    x,
-                    y,
-                    &piece,
-                    usize::from(tw),
-                    self.system.style(*role),
-                );
+                buffer.set_stringn(x, y, &piece, usize::from(tw), self.system.style(*role));
                 x = x.saturating_add(tw);
             }
             y = y.saturating_add(1);
@@ -1083,9 +1066,7 @@ impl<'a> AgentStatusHeader<'a> {
                     break;
                 }
                 let style = if focused {
-                    self.system
-                        .style(Role::Accent)
-                        .add_modifier(Modifier::BOLD)
+                    self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::TextMuted)
                 };

@@ -54,8 +54,11 @@ pub fn strip_str(input: &str) -> String {
 ///
 /// Escape sequences never appear in span content (injection-safe for paint).
 pub fn styled_spans(input: &str, default_style: Style) -> Vec<Span<'static>> {
-    parse_to_line(input, &AnsiParseOptions::default().with_default_style(default_style))
-        .to_spans()
+    parse_to_line(
+        input,
+        &AnsiParseOptions::default().with_default_style(default_style),
+    )
+    .to_spans()
 }
 
 /// Parses ANSI SGR text into one owned line for append-time ingestion.
@@ -232,11 +235,7 @@ impl AnsiLine {
     pub fn hyperlinks(&self) -> Vec<(String, String)> {
         self.segments
             .iter()
-            .filter_map(|s| {
-                s.href
-                    .as_ref()
-                    .map(|u| (s.text.clone(), u.clone()))
-            })
+            .filter_map(|s| s.href.as_ref().map(|u| (s.text.clone(), u.clone())))
             .collect()
     }
 
@@ -577,13 +576,7 @@ impl Perform for CellPerformer<'_> {
         }
     }
 
-    fn csi_dispatch(
-        &mut self,
-        params: &Params,
-        _intermediates: &[u8],
-        _ignore: bool,
-        action: u8,
-    ) {
+    fn csi_dispatch(&mut self, params: &Params, _intermediates: &[u8], _ignore: bool, action: u8) {
         if action != b'm' {
             // Other CSI (cursor moves, erase) — intentionally ignored for
             // safety inside embedded surfaces (no host terminal side effects).
@@ -789,11 +782,7 @@ fn hyperlink_uri_allowed(url: &str) -> bool {
 }
 
 fn starts_with_ignore_ascii_case(hay: &[u8], prefix: &[u8]) -> bool {
-    hay.len() >= prefix.len()
-        && hay[..prefix.len()]
-            .iter()
-            .zip(prefix)
-            .all(|(a, b)| a.to_ascii_lowercase() == b.to_ascii_lowercase())
+    hay.len() >= prefix.len() && hay[..prefix.len()].eq_ignore_ascii_case(prefix)
 }
 
 fn cells_to_line(cells: &[LineCell], options: &AnsiParseOptions) -> AnsiLine {
@@ -806,23 +795,21 @@ fn cells_to_line(cells: &[LineCell], options: &AnsiParseOptions) -> AnsiLine {
     let mut cur_style = cells[0].style;
     let mut cur_href = cells[0].href.clone();
 
-    let flush = |text: &mut String,
-                 style: Style,
-                 href: &Option<String>,
-                 segs: &mut Vec<AnsiSegment>| {
-        if text.is_empty() {
-            return;
-        }
-        let mut t = std::mem::take(text);
-        if options.expand_tabs {
-            t = expand_tabs(&t, usize::from(options.tab_width.max(1)));
-        }
-        segs.push(AnsiSegment {
-            text: t,
-            style,
-            href: href.clone(),
-        });
-    };
+    let flush =
+        |text: &mut String, style: Style, href: &Option<String>, segs: &mut Vec<AnsiSegment>| {
+            if text.is_empty() {
+                return;
+            }
+            let mut t = std::mem::take(text);
+            if options.expand_tabs {
+                t = expand_tabs(&t, usize::from(options.tab_width.max(1)));
+            }
+            segs.push(AnsiSegment {
+                text: t,
+                style,
+                href: href.clone(),
+            });
+        };
 
     for cell in cells {
         plain.push(cell.ch);
@@ -872,7 +859,7 @@ fn incomplete_escape(seq: &[u8]) -> bool {
     // OSC: ESC ]
     if seq[1] == b']' {
         // complete on BEL or ST (ESC \)
-        if seq.iter().any(|&b| b == 0x07) {
+        if seq.contains(&0x07) {
             return false;
         }
         if seq.windows(2).any(|w| w == [0x1b, b'\\']) {
@@ -1024,12 +1011,7 @@ impl<'a> AnsiText<'a> {
     }
 
     /// Paint with scroll state.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut AnsiTextState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut AnsiTextState) {
         if area.is_empty() {
             return;
         }

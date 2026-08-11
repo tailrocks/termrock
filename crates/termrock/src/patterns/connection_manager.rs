@@ -24,6 +24,7 @@
 //!
 //! Research: TablePlus, SSH managers, cloud CLIs, service dashboards.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
 use ratatui_core::{
@@ -40,7 +41,7 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        Panel, ConnectivityPhase, PasswordInput, PasswordInputState, ReconnectingState,
+        ConnectivityPhase, Panel, PasswordInput, PasswordInputState, ReconnectingState,
         RevealPolicy,
     },
 };
@@ -1081,7 +1082,8 @@ impl ConnectionManagerState {
     /// Seed secret for tests only (production: user entry).
     #[cfg(test)]
     pub fn test_set_secret(&mut self, secret: impl Into<String>) {
-        self.secret = PasswordInputState::with_secret(secret).with_reveal_policy(RevealPolicy::Never);
+        self.secret =
+            PasswordInputState::with_secret(secret).with_reveal_policy(RevealPolicy::Never);
         self.secret.set_focused(false);
     }
 
@@ -1169,9 +1171,7 @@ impl ConnectionManagerState {
 
     fn select_cursor(&mut self) -> ConnectionManagerOutcome {
         if let Some(c) = self.current() {
-            ConnectionManagerOutcome::Selected {
-                id: c.id.clone(),
-            }
+            ConnectionManagerOutcome::Selected { id: c.id.clone() }
         } else {
             ConnectionManagerOutcome::Ignored
         }
@@ -1330,13 +1330,9 @@ impl ConnectionManagerState {
                 if !c.enabled {
                     return ConnectionManagerOutcome::Ignored;
                 }
-                ConnectionManagerOutcome::ConnectRequested {
-                    id: c.id.clone(),
-                }
+                ConnectionManagerOutcome::ConnectRequested { id: c.id.clone() }
             }
-            KeyCode::Char('t')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('t') if key.modifiers.is_empty() && !self.search_mode => {
                 let Some(c) = self.current() else {
                     return ConnectionManagerOutcome::Ignored;
                 };
@@ -1347,32 +1343,20 @@ impl ConnectionManagerState {
                 self.phase = ConnectionManagerPhase::TestBusy;
                 ConnectionManagerOutcome::TestRequested { id }
             }
-            KeyCode::Char('r')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('r') if key.modifiers.is_empty() && !self.search_mode => {
                 let Some(c) = self.current() else {
                     return ConnectionManagerOutcome::Ignored;
                 };
                 if !c.enabled || !c.status.can_reconnect() {
                     return ConnectionManagerOutcome::Ignored;
                 }
-                ConnectionManagerOutcome::ReconnectRequested {
-                    id: c.id.clone(),
-                }
+                ConnectionManagerOutcome::ReconnectRequested { id: c.id.clone() }
             }
-            KeyCode::Char('n')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
-                self.begin_add()
-            }
-            KeyCode::Char('e')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('n') if key.modifiers.is_empty() && !self.search_mode => self.begin_add(),
+            KeyCode::Char('e') if key.modifiers.is_empty() && !self.search_mode => {
                 self.begin_edit()
             }
-            KeyCode::Char('f')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('f') if key.modifiers.is_empty() && !self.search_mode => {
                 let Some((id, fav)) = self.current().map(|c| (c.id.clone(), !c.favorite)) else {
                     return ConnectionManagerOutcome::Ignored;
                 };
@@ -1382,49 +1366,40 @@ impl ConnectionManagerState {
                     }
                 }
                 self.refilter();
-                ConnectionManagerOutcome::FavoriteToggled {
-                    id,
-                    favorite: fav,
-                }
+                ConnectionManagerOutcome::FavoriteToggled { id, favorite: fav }
             }
-            KeyCode::Char('F') if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode => {
+            KeyCode::Char('F')
+                if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode =>
+            {
                 self.presentation = ConnectionManagerPresentation::Full;
                 ConnectionManagerOutcome::FullRequested
             }
-            KeyCode::Char('L') if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode => {
+            KeyCode::Char('L')
+                if key.modifiers.contains(KeyModifiers::SHIFT) && !self.search_mode =>
+            {
                 self.presentation = ConnectionManagerPresentation::Launcher;
                 ConnectionManagerOutcome::LauncherRequested
             }
             KeyCode::Delete if !self.search_mode => self.open_confirm_delete(),
-            KeyCode::Char('d')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('d') if key.modifiers.is_empty() && !self.search_mode => {
                 self.open_confirm_delete()
             }
-            KeyCode::Char('1')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('1') if key.modifiers.is_empty() && !self.search_mode => {
                 self.list_view = ConnectionListView::All;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::All)
             }
-            KeyCode::Char('2')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('2') if key.modifiers.is_empty() && !self.search_mode => {
                 self.list_view = ConnectionListView::Favorites;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::Favorites)
             }
-            KeyCode::Char('3')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('3') if key.modifiers.is_empty() && !self.search_mode => {
                 self.list_view = ConnectionListView::Recent;
                 self.refilter();
                 ConnectionManagerOutcome::ViewChanged(ConnectionListView::Recent)
             }
-            KeyCode::Char('g')
-                if key.modifiers.is_empty() && !self.search_mode =>
-            {
+            KeyCode::Char('g') if key.modifiers.is_empty() && !self.search_mode => {
                 let groups = self.groups();
                 if groups.is_empty() {
                     return ConnectionManagerOutcome::Ignored;
@@ -1657,9 +1632,7 @@ impl ConnectionManagerState {
             if already {
                 if let Some(c) = self.current() {
                     if c.enabled {
-                        return ConnectionManagerOutcome::ConnectRequested {
-                            id: c.id.clone(),
-                        };
+                        return ConnectionManagerOutcome::ConnectRequested { id: c.id.clone() };
                     }
                 }
             }
@@ -1674,10 +1647,7 @@ impl ConnectionManagerState {
 /// Build [`ReconnectingState`] for a connection (host paints Offline chrome).
 #[must_use]
 pub fn connection_to_reconnecting_state(entry: &ConnectionEntry) -> ReconnectingState {
-    let target = format!(
-        "{} ({}) · {}",
-        entry.name, entry.environment, entry.target
-    );
+    let target = format!("{} ({}) · {}", entry.name, entry.environment, entry.target);
     let mut st = ReconnectingState::new(target);
     match entry.status {
         ConnectionStatus::Connected => {
@@ -1701,9 +1671,7 @@ pub fn connection_to_reconnecting_state(entry: &ConnectionEntry) -> Reconnecting
 
 /// Project connection error into a diagnostic summary (no raw secrets).
 #[must_use]
-pub fn connection_error_diagnostic(
-    entry: &ConnectionEntry,
-) -> Option<ConnectionDiagnosticSummary> {
+pub fn connection_error_diagnostic(entry: &ConnectionEntry) -> Option<ConnectionDiagnosticSummary> {
     let msg = entry.last_error.as_ref()?;
     // Never include credential secrets — last_error is host display text.
     Some(ConnectionDiagnosticSummary {
@@ -1774,11 +1742,7 @@ impl<'a> ConnectionManager<'a> {
     }
 
     fn role(&self, r: Role) -> Role {
-        if self.colorless {
-            Role::Text
-        } else {
-            r
-        }
+        if self.colorless { Role::Text } else { r }
     }
 
     /// Paint.
@@ -1798,9 +1762,7 @@ impl<'a> ConnectionManager<'a> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system)
-            .title(title)
-            .emphasis(emphasis);
+        let panel = Panel::new(self.system).title(title).emphasis(emphasis);
         let inner = panel.inner(area);
         use ratatui_core::widgets::Widget;
         Widget::render(&panel, area, buffer);
@@ -1886,13 +1848,9 @@ impl<'a> ConnectionManager<'a> {
             }
             ConnectionManagerPhase::Browse | ConnectionManagerPhase::ConfirmDelete => {
                 if !content.is_empty() {
-                    let launcher = matches!(
-                        state.presentation,
-                        ConnectionManagerPresentation::Launcher
-                    );
-                    let show_detail = self.show_detail
-                        && !launcher
-                        && content.width >= 52;
+                    let launcher =
+                        matches!(state.presentation, ConnectionManagerPresentation::Launcher);
+                    let show_detail = self.show_detail && !launcher && content.width >= 52;
                     let (list_area, detail_area) = if show_detail {
                         let lw = (content.width * 6 / 10).max(24);
                         (
@@ -1942,12 +1900,7 @@ impl<'a> ConnectionManager<'a> {
         }
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ConnectionManagerState,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ConnectionManagerState) {
         if area.is_empty() {
             return;
         }
@@ -2063,12 +2016,7 @@ impl<'a> ConnectionManager<'a> {
         }
     }
 
-    fn paint_detail(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &ConnectionManagerState,
-    ) {
+    fn paint_detail(&self, area: Rect, buffer: &mut Buffer, state: &ConnectionManagerState) {
         if area.is_empty() {
             return;
         }
@@ -2090,20 +2038,13 @@ impl<'a> ConnectionManager<'a> {
             let mut v = vec![
                 (c.name.clone(), Role::Accent),
                 (
-                    format!(
-                        "{} · {}",
-                        c.kind.label(),
-                        c.protocol_label
-                    ),
+                    format!("{} · {}", c.kind.label(), c.protocol_label),
                     Role::TextMuted,
                 ),
                 (format!("target  {}", c.target), Role::Text),
                 (format!("env     {}", c.environment), Role::Text),
                 (
-                    format!(
-                        "group   {}",
-                        c.group.as_deref().unwrap_or("—")
-                    ),
+                    format!("group   {}", c.group.as_deref().unwrap_or("—")),
                     Role::TextMuted,
                 ),
                 (
@@ -2128,10 +2069,7 @@ impl<'a> ConnectionManager<'a> {
             if let Some(err) = &c.last_error {
                 v.push((format!("error   {err}"), Role::Danger));
                 if let Some(d) = connection_error_diagnostic(c) {
-                    v.push((
-                        format!("diag    {} · {}", d.id, d.source),
-                        Role::Danger,
-                    ));
+                    v.push((format!("diag    {} · {}", d.id, d.source), Role::Danger));
                 }
             }
             v
@@ -2152,12 +2090,7 @@ impl<'a> ConnectionManager<'a> {
         }
     }
 
-    fn paint_form(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ConnectionManagerState,
-    ) {
+    fn paint_form(&self, area: Rect, buffer: &mut Buffer, state: &mut ConnectionManagerState) {
         if area.is_empty() {
             return;
         }
@@ -2259,12 +2192,7 @@ impl<'a> ConnectionManager<'a> {
         }
     }
 
-    fn paint_confirm(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ConnectionManagerState,
-    ) {
+    fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut ConnectionManagerState) {
         let y = area.bottom().saturating_sub(2);
         if y < area.y {
             return;
@@ -2473,10 +2401,11 @@ mod tests {
         let mut st = open();
         st.set_query("POSTGRES");
         assert!(st.filtered_len() >= 1);
-        assert!(st
-            .filtered_indices()
-            .iter()
-            .any(|&i| st.connections[i].protocol_label == "postgres"));
+        assert!(
+            st.filtered_indices()
+                .iter()
+                .any(|&i| st.connections[i].protocol_label == "postgres")
+        );
     }
 
     #[test]
@@ -2484,10 +2413,11 @@ mod tests {
         let mut st = open();
         st.set_list_view(ConnectionListView::Favorites);
         assert!(st.filtered_len() >= 1);
-        assert!(st
-            .filtered_indices()
-            .iter()
-            .all(|&i| st.connections[i].favorite));
+        assert!(
+            st.filtered_indices()
+                .iter()
+                .all(|&i| st.connections[i].favorite)
+        );
     }
 
     #[test]
@@ -2510,10 +2440,11 @@ mod tests {
         let mut st = open();
         st.set_list_view(ConnectionListView::Group("databases".into()));
         assert!(st.filtered_len() >= 1);
-        assert!(st
-            .filtered_indices()
-            .iter()
-            .all(|&i| st.connections[i].group.as_deref() == Some("databases")));
+        assert!(
+            st.filtered_indices()
+                .iter()
+                .all(|&i| st.connections[i].group.as_deref() == Some("databases"))
+        );
     }
 
     #[test]
@@ -2574,10 +2505,7 @@ mod tests {
         assert!(!st.confirm_proceed_focused);
         // Enter on Cancel default → cancelled, not delete
         let out = st.handle_key(press(KeyCode::Enter));
-        assert!(matches!(
-            out,
-            ConnectionManagerOutcome::ConfirmCancelled
-        ));
+        assert!(matches!(out, ConnectionManagerOutcome::ConfirmCancelled));
         // never DeleteRequested
     }
 
@@ -2920,7 +2848,12 @@ mod tests {
             assert!(!body.contains(f), "forbidden I/O surface: {f}");
         }
         // Boundary documented
-        assert!(body.contains("host owns") || body.contains("Host owns") || body.contains("host-owned") || body.contains("requests only"));
+        assert!(
+            body.contains("host owns")
+                || body.contains("Host owns")
+                || body.contains("host-owned")
+                || body.contains("requests only")
+        );
         assert!(body.contains("ReconnectingState"));
         assert!(body.contains("Launcher") || body.contains("launcher"));
     }
@@ -3006,14 +2939,8 @@ mod tests {
             .group("データベース")
             .favorite(true)
             .credential(ConnectionCredentialMeta::present("パスワード")),
-            ConnectionEntry::new(
-                "u2",
-                "堡垒机",
-                ConnectionKind::Ssh,
-                "ssh",
-                "堡垒:22",
-            )
-            .environment("运维"),
+            ConnectionEntry::new("u2", "堡垒机", ConnectionKind::Ssh, "ssh", "堡垒:22")
+                .environment("运维"),
         ]);
         let area = Rect::new(0, 0, 48, 14);
         let mut buf = Buffer::empty(area);

@@ -20,6 +20,7 @@
 //! Research: agent approval flows, code review queues, security request
 //! dashboards.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -31,15 +32,16 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
+    patterns::ActivityKind,
+    patterns::task_rail::{ActivityModel, ActivityScope},
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    patterns::ActivityKind,
     widgets::NotificationItem,
     widgets::Panel,
     widgets::PermissionRisk,
     widgets::SemanticStatus,
-    patterns::task_rail::{ActivityModel, ActivityScope},
-    widgets::ToastKind, widgets::ToastPriority,
+    widgets::ToastKind,
+    widgets::ToastPriority,
 };
 
 /// Overlay / drawer id.
@@ -776,8 +778,7 @@ impl ApprovalQueueState {
         };
         if !item.allows_quick_approve() {
             return ApprovalQueueOutcome::BulkApproveDenied {
-                reason: "high-risk or permission items require Open — not one-click approve"
-                    .into(),
+                reason: "high-risk or permission items require Open — not one-click approve".into(),
                 blocked: 1,
             };
         }
@@ -858,10 +859,7 @@ impl ApprovalQueueState {
             }
         } else {
             self.multi.push(id.clone());
-            ApprovalQueueOutcome::SelectionToggled {
-                id,
-                selected: true,
-            }
+            ApprovalQueueOutcome::SelectionToggled { id, selected: true }
         }
     }
 
@@ -955,12 +953,7 @@ impl<'a> ApprovalQueue<'a> {
         }
     }
 
-    fn paint_badge(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &ApprovalQueueState,
-    ) {
+    fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &ApprovalQueueState) {
         let w = usize::from(area.width);
         let label = state.badge_label();
         let role = if state.high_risk_count() > 0 {
@@ -977,16 +970,12 @@ impl<'a> ApprovalQueue<'a> {
             area.y,
             take_display_cols(&text, w),
             w,
-            self.system.style(if self.colorless { Role::Text } else { role }),
+            self.system
+                .style(if self.colorless { Role::Text } else { role }),
         );
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ApprovalQueueState,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ApprovalQueueState) {
         let title = match state.presentation {
             ApprovalQueuePresentation::Drawer => "Approvals · drawer",
             _ => "Approvals",
@@ -1078,9 +1067,7 @@ impl<'a> ApprovalQueue<'a> {
                 item.summary
             );
             let style = if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if item.risk.is_destructive() && !self.colorless {
                 self.system.style(Role::Danger)
             } else if self.colorless {
@@ -1140,11 +1127,7 @@ impl<'a> ApprovalQueue<'a> {
                     inner.x,
                     py,
                     take_display_cols(
-                        &format!(
-                            "{} · {} · {safe}",
-                            item.blocking.label(),
-                            item.risk.label()
-                        ),
+                        &format!("{} · {} · {safe}", item.blocking.label(), item.risk.label()),
                         w,
                     ),
                     w,
@@ -1177,8 +1160,8 @@ impl<'a> ApprovalQueue<'a> {
         for (i, action) in actions.iter().enumerate() {
             let focused = i == state.action_cursor;
             let label = action.label();
-            let disabled_look =
-                matches!(action, ApprovalAction::Approve) && !state.current().is_some_and(|c| c.allows_quick_approve());
+            let disabled_look = matches!(action, ApprovalAction::Approve)
+                && !state.current().is_some_and(|c| c.allows_quick_approve());
             let text = if focused {
                 format!("[{label}]")
             } else {
@@ -1189,9 +1172,7 @@ impl<'a> ApprovalQueue<'a> {
                 break;
             }
             let style = if focused {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if disabled_look {
                 self.system.style(Role::TextMuted)
             } else {
@@ -1241,8 +1222,10 @@ pub fn approval_items_to_notifications(
         .map(|i| {
             let kind = if i.risk.is_destructive() {
                 ToastKind::Error
-            } else if matches!(i.blocking, ApprovalBlocking::HardGate | ApprovalBlocking::Blocking)
-            {
+            } else if matches!(
+                i.blocking,
+                ApprovalBlocking::HardGate | ApprovalBlocking::Blocking
+            ) {
                 ToastKind::Warning
             } else {
                 ToastKind::Info
@@ -1252,12 +1235,9 @@ pub fn approval_items_to_notifications(
             } else {
                 ToastPriority::Normal
             };
-            let mut n = NotificationItem::new(
-                format!("approval:{}", i.id),
-                i.summary.clone(),
-                kind,
-            )
-            .title(format!("{} · {}", i.kind.label(), i.risk.label()));
+            let mut n =
+                NotificationItem::new(format!("approval:{}", i.id), i.summary.clone(), kind)
+                    .title(format!("{} · {}", i.kind.label(), i.risk.label()));
             n.priority = priority;
             n.source = i.actor.clone();
             n.group_id = Some("approvals".into());
@@ -1270,11 +1250,7 @@ pub fn approval_items_to_notifications(
             if i.allows_quick_approve() {
                 n.actions.push(("approve".into(), "Approve".into()));
             }
-            n.announcement = format!(
-                "Pending {}: {}",
-                i.kind.label(),
-                i.summary
-            );
+            n.announcement = format!("Pending {}: {}", i.kind.label(), i.summary);
             n
         })
         .collect()
@@ -1494,7 +1470,11 @@ mod tests {
     fn y_unbound() {
         let mut st = open();
         // even on low risk
-        let i = st.view.iter().position(|&ii| st.items[ii].id == "p2").unwrap();
+        let i = st
+            .view
+            .iter()
+            .position(|&ii| st.items[ii].id == "p2")
+            .unwrap();
         st.cursor = i;
         assert!(matches!(
             st.handle_key(press(KeyCode::Char('y'))),
@@ -1626,20 +1606,25 @@ mod tests {
             position: Position { x: r.x, y: r.y },
             modifiers: KeyModifiers::NONE,
         });
-        assert!(matches!(out, ApprovalQueueOutcome::Selected { .. }), "{out:?} {id}");
+        assert!(
+            matches!(out, ApprovalQueueOutcome::Selected { .. }),
+            "{out:?} {id}"
+        );
     }
 
     #[test]
     fn unicode() {
         let system = DesignSystem::default();
         let mut st = ApprovalQueueState::new();
-        st.set_items(vec![ApprovalItem::new(
-            "u",
-            ApprovalKind::Question,
-            "続行しますか？",
-            PermissionRisk::Low,
-        )
-        .actor("エージェント")]);
+        st.set_items(vec![
+            ApprovalItem::new(
+                "u",
+                ApprovalKind::Question,
+                "続行しますか？",
+                PermissionRisk::Low,
+            )
+            .actor("エージェント"),
+        ]);
         let area = Rect::new(0, 0, 40, 8);
         let mut buf = Buffer::empty(area);
         ApprovalQueue::new(&system).paint(area, &mut buf, &mut st);
@@ -1648,15 +1633,16 @@ mod tests {
     #[test]
     fn space_toggles_multi() {
         let mut st = open();
-        let i = st.view.iter().position(|&ii| st.items[ii].id == "p2").unwrap();
+        let i = st
+            .view
+            .iter()
+            .position(|&ii| st.items[ii].id == "p2")
+            .unwrap();
         st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char(' ')));
         assert!(matches!(
             out,
-            ApprovalQueueOutcome::SelectionToggled {
-                selected: true,
-                ..
-            }
+            ApprovalQueueOutcome::SelectionToggled { selected: true, .. }
         ));
         assert!(st.multi.contains(&"p2".into()));
     }

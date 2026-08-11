@@ -18,6 +18,7 @@
 //!
 //! Research: lazygit, GitUI, delta, IDE source-control panels.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -33,14 +34,14 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        example_checkpoints, example_help_entries, Checkpoint, CheckpointTimeline,
-        CheckpointTimelineOutcome, CheckpointTimelineState, Diagnostic, DiagnosticSeverity,
-        DiagnosticState, DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow,
-        DiffReviewOutcome, DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus,
-        FileTree, FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
-        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
-        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
-        TerminalRunStatus,
+        Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
+        Diagnostic, DiagnosticSeverity, DiagnosticState, DiagnosticView, DiffHunk, DiffLine,
+        DiffReview, DiffReviewFileRow, DiffReviewOutcome, DiffReviewState, DiffReviewUnit,
+        DiffReviewUnitKind, FileGitStatus, FileTree, FileTreeEntry, FileTreeOutcome, FileTreeState,
+        HelpEntry, KeyboardHelp, KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, TerminalCommandMeta, TerminalLine,
+        TerminalOutput, TerminalOutputState, TerminalRunStatus, example_checkpoints,
+        example_help_entries,
     },
 };
 
@@ -286,7 +287,10 @@ impl GitDestructiveKind {
     pub fn consequence(&self) -> String {
         match self {
             Self::Discard { paths } => {
-                format!("discard local changes for {} path(s) (host executes)", paths.len())
+                format!(
+                    "discard local changes for {} path(s) (host executes)",
+                    paths.len()
+                )
             }
             Self::ResetHard { target } => {
                 format!("reset hard to {target} (host executes; irreversible)")
@@ -592,7 +596,7 @@ impl GitWorkbenchState {
     /// Clamp focus to visible panes.
     pub fn clamp_focus_to_density(&mut self, density: GitWorkbenchDensity) {
         let order = self.focus_order_for(density);
-        if !order.iter().any(|id| *id == self.focus) {
+        if !order.contains(&self.focus) {
             self.focus = order.first().copied().unwrap_or("diff");
             self.apply_focus_gates();
         }
@@ -805,7 +809,10 @@ impl GitWorkbenchState {
             {
                 // Ctrl+R always refresh; plain r only when not in typing panes
                 if key.modifiers.contains(KeyModifiers::CONTROL)
-                    || matches!(self.focus, "history" | "branches" | "output" | "diagnostics")
+                    || matches!(
+                        self.focus,
+                        "history" | "branches" | "output" | "diagnostics"
+                    )
                 {
                     return GitWorkbenchOutcome::RefreshRequested;
                 }
@@ -1005,8 +1012,11 @@ impl GitWorkbenchState {
             StatusSlot::connection("repo", status).priority(10),
             StatusSlot::mode("branch", "branch").priority(20),
             StatusSlot::focus_zone("focus", self.focus).priority(40),
-            StatusSlot::shortcut("keys", "? help · t stage · T unstage · x discard · C-f full · tab")
-                .priority(90),
+            StatusSlot::shortcut(
+                "keys",
+                "? help · t stage · T unstage · x discard · C-f full · tab",
+            )
+            .priority(90),
         ];
         if matches!(self.repo_status, GitRepoStatus::Conflict) {
             slots.insert(
@@ -1201,7 +1211,9 @@ fn centered_modal(area: Rect) -> Rect {
     let width = (area.width * 3 / 5).clamp(28, area.width.saturating_sub(2).max(1));
     let height = (area.height / 2).clamp(8, area.height.saturating_sub(2).max(1));
     let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area.y.saturating_add(area.height.saturating_sub(height) / 4);
+    let y = area
+        .y
+        .saturating_add(area.height.saturating_sub(height) / 4);
     Rect {
         x,
         y,
@@ -1252,13 +1264,11 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
 
     if let Some(r) = pane_area(&panes, "files") {
         let focused = state.focus == "files";
-        let panel = Panel::new(system)
-            .title("Files")
-            .emphasis(if focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
+        let panel = Panel::new(system).title("Files").emphasis(if focused {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::Normal
+        });
         let inner = panel.inner(r);
         Widget::render(&panel, r, buffer);
         state.files.ascii = state.ascii;
@@ -1353,13 +1363,11 @@ fn paint_branch_list(
         return;
     }
     let focused = state.focus == "branches";
-    let panel = Panel::new(system)
-        .title("Branches")
-        .emphasis(if focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+    let panel = Panel::new(system).title("Branches").emphasis(if focused {
+        PanelChrome::Focused
+    } else {
+        PanelChrome::Normal
+    });
     let inner = panel.inner(area);
     Widget::render(&panel, area, buffer);
     if inner.is_empty() {
@@ -1385,11 +1393,7 @@ fn paint_branch_list(
             (a, be) => format!(" ↑{a}↓{be}"),
         };
         let line = format!("{sel}{cur}{}{track}", b.name);
-        let mut style = system.style(if b.current {
-            Role::Accent
-        } else {
-            Role::Text
-        });
+        let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
         if i == state.branch_cursor && focused {
             style = style.add_modifier(Modifier::REVERSED | Modifier::BOLD);
         }
@@ -1478,8 +1482,7 @@ pub fn example_git_files() -> Vec<FileTreeEntry<'static, &'static str>> {
             .parent("src")
             .file_type("rs")
             .git(FileGitStatus::Conflict),
-        FileTreeEntry::file("README.md", "README.md", "README.md", 0)
-            .git(FileGitStatus::Untracked),
+        FileTreeEntry::file("README.md", "README.md", "README.md", 0).git(FileGitStatus::Untracked),
         FileTreeEntry::file("gone.rs", "gone.rs", "gone.rs", 0).git(FileGitStatus::Deleted),
     ]
 }
@@ -1500,7 +1503,8 @@ pub fn example_conflict_files() -> Vec<FileTreeEntry<'static, &'static str>> {
 #[must_use]
 pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
     vec![
-        DiffLine::file_header("fh0", "diff --git a/src/main.rs b/src/main.rs").file_id("src/main.rs"),
+        DiffLine::file_header("fh0", "diff --git a/src/main.rs b/src/main.rs")
+            .file_id("src/main.rs"),
         DiffLine::hunk_header("hh0", "@@ -1,3 +1,4 @@")
             .hunk_id("h0")
             .file_id("src/main.rs"),
@@ -1582,13 +1586,9 @@ pub fn example_conflict_diagnostics() -> Vec<Diagnostic<'static>> {
         .code("CONFLICT")
         .source("git")
         .file("src/auth.rs"),
-        Diagnostic::new(
-            "c2",
-            DiagnosticSeverity::Error,
-            "both modified: Cargo.lock",
-        )
-        .source("git")
-        .file("Cargo.lock"),
+        Diagnostic::new("c2", DiagnosticSeverity::Error, "both modified: Cargo.lock")
+            .source("git")
+            .file("Cargo.lock"),
     ]
 }
 
@@ -1617,18 +1617,10 @@ pub fn example_git_terminal_lines() -> Vec<TerminalLine<'static>> {
 #[must_use]
 pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
     let mut e = example_help_entries(system);
-    e.push(
-        HelpEntry::new("stage", "Git", "t", "Stage selection (DiffReview)").priority(15),
-    );
-    e.push(
-        HelpEntry::new("unstage", "Git", "T", "Unstage selection").priority(15),
-    );
-    e.push(
-        HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16),
-    );
-    e.push(
-        HelpEntry::new("full", "Git", "C-f", "Fullscreen diff").priority(17),
-    );
+    e.push(HelpEntry::new("stage", "Git", "t", "Stage selection (DiffReview)").priority(15));
+    e.push(HelpEntry::new("unstage", "Git", "T", "Unstage selection").priority(15));
+    e.push(HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16));
+    e.push(HelpEntry::new("full", "Git", "C-f", "Fullscreen diff").priority(17));
     e
 }
 
@@ -1694,20 +1686,14 @@ mod tests {
         hunks: &[DiffHunk],
         files: &[DiffReviewFileRow<'_>],
     ) -> GitWorkbenchOutcome {
-        st.handle_key(
-            key,
-            &[],
-            hunks,
-            lines,
-            files,
-            &[],
-            &[],
-            &[],
-            &meta_empty(),
-        )
+        st.handle_key(key, &[], hunks, lines, files, &[], &[], &[], &meta_empty())
     }
 
-    fn hk_help(st: &mut GitWorkbenchState, key: KeyEvent, help: &[HelpEntry]) -> GitWorkbenchOutcome {
+    fn hk_help(
+        st: &mut GitWorkbenchState,
+        key: KeyEvent,
+        help: &[HelpEntry],
+    ) -> GitWorkbenchOutcome {
         st.handle_key(key, &[], &[], &[], &[], help, &[], &[], &meta_empty())
     }
 
@@ -1897,7 +1883,9 @@ mod tests {
             GitWorkbenchOutcome::StageRequested { units } => {
                 assert!(!units.is_empty(), "stage must target units");
                 assert!(
-                    units.iter().any(|u| u.key().contains("h0") || u.key().contains("hunk")),
+                    units
+                        .iter()
+                        .any(|u| u.key().contains("h0") || u.key().contains("hunk")),
                     "expected hunk unit ids, got {:?}",
                     units.iter().map(|u| u.key()).collect::<Vec<_>>()
                 );
@@ -1929,7 +1917,9 @@ mod tests {
             true,
         );
         assert!(
-            panes.iter().any(|p| p.id.0 == "diagnostics" && !p.collapsed && p.area.height > 0),
+            panes
+                .iter()
+                .any(|p| p.id.0 == "diagnostics" && !p.collapsed && p.area.height > 0),
             "conflict layout must allocate diagnostics: {:?}",
             panes.iter().map(|p| p.id.0.as_str()).collect::<Vec<_>>()
         );
@@ -2050,10 +2040,7 @@ mod tests {
         st.focus = "files";
         // Opening confirm is not DiscardRequested
         let out = st.open_discard_confirm(vec!["a".into()]);
-        assert!(!matches!(
-            out,
-            GitWorkbenchOutcome::DiscardRequested { .. }
-        ));
+        assert!(!matches!(out, GitWorkbenchOutcome::DiscardRequested { .. }));
     }
 
     #[test]
@@ -2199,10 +2186,7 @@ mod tests {
             );
         }
         let elapsed = start.elapsed();
-        assert!(
-            elapsed.as_secs() < 5,
-            "paint too slow: {elapsed:?}"
-        );
+        assert!(elapsed.as_secs() < 5, "paint too slow: {elapsed:?}");
     }
 
     #[test]
@@ -2215,7 +2199,10 @@ mod tests {
         st.help_open = false;
         let _ = st.help.close_modal();
         let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help);
-        assert!(matches!(out, GitWorkbenchOutcome::RefreshRequested), "{out:?}");
+        assert!(
+            matches!(out, GitWorkbenchOutcome::RefreshRequested),
+            "{out:?}"
+        );
     }
 
     #[test]
@@ -2231,10 +2218,7 @@ mod tests {
             assert!(!s.id().is_empty());
         }
         assert!(!DiffReviewUnit::hunk("h").key().is_empty());
-        assert_eq!(
-            DiffReviewUnitKind::File,
-            DiffReviewUnit::file("a").kind
-        );
+        assert_eq!(DiffReviewUnitKind::File, DiffReviewUnit::file("a").kind);
     }
 
     #[test]

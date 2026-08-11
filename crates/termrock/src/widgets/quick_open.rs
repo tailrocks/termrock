@@ -247,10 +247,16 @@ pub struct ParsedQuickOpenQuery {
 pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
     let raw_owned = raw.to_string();
     let trimmed = raw.trim_start();
-    if let Some(rest) = trimmed.strip_prefix('@').or_else(|| trimmed.strip_prefix('#')) {
+    if let Some(rest) = trimmed
+        .strip_prefix('@')
+        .or_else(|| trimmed.strip_prefix('#'))
+    {
         let mut parts = rest.splitn(2, char::is_whitespace);
         if let Some(id) = parts.next() {
-            if !id.is_empty() && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+            if !id.is_empty()
+                && id
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
             {
                 let filter = parts.next().unwrap_or("").trim_start().to_string();
                 return ParsedQuickOpenQuery {
@@ -753,14 +759,15 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.generation
     }
 
-    fn active_provider<'a>(&self, providers: &'a [QuickOpenProvider]) -> Option<&'a QuickOpenProvider> {
+    fn active_provider<'a>(
+        &self,
+        providers: &'a [QuickOpenProvider],
+    ) -> Option<&'a QuickOpenProvider> {
         providers.get(self.provider_index)
     }
 
     fn save_memory(&mut self, provider_id: &str, visible: &[QuickOpenItem<Id>]) {
-        let selected_label = visible
-            .get(self.cursor_index())
-            .map(|i| i.label.clone());
+        let selected_label = visible.get(self.cursor_index()).map(|i| i.label.clone());
         self.memory.insert(
             provider_id.to_string(),
             ProviderMemory {
@@ -835,11 +842,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             .collect();
         let _ = self.collection.reconcile(&entries);
         // Prefer remembered label when present for this generation's provider.
-        if let Some(mem) = self
-            .memory
-            .values()
-            .find(|m| m.selected_label.is_some())
-        {
+        if let Some(mem) = self.memory.values().find(|m| m.selected_label.is_some()) {
             if let Some(label) = &mem.selected_label {
                 if let Some(idx) = visible.iter().position(|it| &it.label == label) {
                     self.collection.set_active(Some(idx));
@@ -973,9 +976,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             };
             self.presentation = next;
             self.presentation_override = Some(next);
-            return QuickOpenOutcome::PresentationChanged {
-                presentation: next,
-            };
+            return QuickOpenOutcome::PresentationChanged { presentation: next };
         }
 
         // Esc cancel
@@ -1026,11 +1027,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         }
 
         if key.code == KeyCode::Tab && !ctrl {
-            return self.handle_intent(
-                UiIntent::Move(NavigationMove::Next),
-                providers,
-                visible,
-            );
+            return self.handle_intent(UiIntent::Move(NavigationMove::Next), providers, visible);
         }
         if key.code == KeyCode::BackTab {
             return self.handle_intent(
@@ -1135,10 +1132,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                         return QuickOpenOutcome::StreamMore { request: req };
                     }
                     // Preview
-                    if let (Some(p), Some(item)) = (
-                        self.active_provider(providers),
-                        visible.get(cur),
-                    ) {
+                    if let (Some(p), Some(item)) =
+                        (self.active_provider(providers), visible.get(cur))
+                    {
                         if p.supports_preview && self.show_preview {
                             return QuickOpenOutcome::PreviewRequested {
                                 provider_id: p.id.clone(),
@@ -1194,11 +1190,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             MouseEventKind::ScrollDown => {
                 self.handle_intent(UiIntent::Move(NavigationMove::Next), providers, visible)
             }
-            MouseEventKind::ScrollUp => self.handle_intent(
-                UiIntent::Move(NavigationMove::Previous),
-                providers,
-                visible,
-            ),
+            MouseEventKind::ScrollUp => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), providers, visible)
+            }
             MouseEventKind::Moved => {
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
@@ -1220,9 +1214,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         let next = quick_open_presentation_for_bounds(bounds);
         if next != self.presentation {
             self.presentation = next;
-            QuickOpenOutcome::PresentationChanged {
-                presentation: next,
-            }
+            QuickOpenOutcome::PresentationChanged { presentation: next }
         } else {
             QuickOpenOutcome::Ignored
         }
@@ -1309,9 +1301,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             focused: true,
             ascii: false,
             colorless: false,
-            footer_hint: Some(
-                "↑↓ open · enter · @provider · ctrl+n/p switch · ctrl+j jump · esc",
-            ),
+            footer_hint: Some("↑↓ open · enter · @provider · ctrl+n/p switch · ctrl+j jump · esc"),
             empty_message: "Type to search resources",
             no_result_message: "No matching resources",
             loading_message: "Searching…",
@@ -1510,12 +1500,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             if let Some(hint) = self.footer_hint {
                 let mut line = hint.to_string();
                 if let Some(t) = state.total_hint {
-                    line = format!(
-                        "{}  ·  {}/{}",
-                        hint,
-                        self.items.len(),
-                        t
-                    );
+                    line = format!("{}  ·  {}/{}", hint, self.items.len(), t);
                 } else if state.loading {
                     line = format!("{}  ·  streaming…", hint);
                 }
@@ -1545,7 +1530,11 @@ impl<'a, Id> QuickOpen<'a, Id> {
             }
             let label = if compact {
                 p.glyph.clone().unwrap_or_else(|| {
-                    p.label.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "?".into())
+                    p.label
+                        .chars()
+                        .next()
+                        .map(|c| c.to_string())
+                        .unwrap_or_else(|| "?".into())
                 })
             } else {
                 p.label.clone()
@@ -1585,12 +1574,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
     }
 
-    fn paint_results(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut QuickOpenState<Id>,
-    ) where
+    fn paint_results(&self, area: Rect, buffer: &mut Buffer, state: &mut QuickOpenState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         if area.is_empty() {
@@ -1619,10 +1604,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             let (glyph, msg) = if state.query_text().is_empty() {
                 (if self.ascii { "[ ]" } else { "∅" }, self.empty_message)
             } else {
-                (
-                    if self.ascii { "[x]" } else { "∅" },
-                    self.no_result_message,
-                )
+                (if self.ascii { "[x]" } else { "∅" }, self.no_result_message)
             };
             let line = format!("{glyph} {msg}");
             buffer.set_stringn(
@@ -1748,12 +1730,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
         state.painted_rows = painted;
     }
 
-    fn paint_preview(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &QuickOpenState<Id>,
-    ) where
+    fn paint_preview(&self, area: Rect, buffer: &mut Buffer, state: &QuickOpenState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         if area.is_empty() {
@@ -1927,7 +1905,11 @@ pub fn example_quick_open_files() -> Vec<QuickOpenItem<&'static str>> {
         QuickOpenItem::new("lib", "lib.rs")
             .detail("src/lib.rs")
             .kind("rs")
-            .preview(QuickOpenPreview::text(["//! crate root", "", "pub mod widgets;"])),
+            .preview(QuickOpenPreview::text([
+                "//! crate root",
+                "",
+                "pub mod widgets;",
+            ])),
         QuickOpenItem::new("quick", "quick_open.rs")
             .detail("src/widgets/quick_open.rs")
             .kind("rs")
@@ -2094,12 +2076,8 @@ mod tests {
     fn overlay_fullscreen_and_restore() {
         let bounds = Rect::new(0, 0, 80, 24);
         let mut stack = OverlayStack::<&'static str>::new();
-        let out = open_quick_open_overlay(
-            &mut stack,
-            bounds,
-            QuickOpenSize::default(),
-            Some("editor"),
-        );
+        let out =
+            open_quick_open_overlay(&mut stack, bounds, QuickOpenSize::default(), Some("editor"));
         assert!(matches!(out, OverlayOutcome::Opened { .. }));
         assert!(matches!(
             stack.handle_escape(),
@@ -2172,8 +2150,15 @@ mod tests {
         let area = Rect::new(0, 0, 72, 18);
         let mut buf = Buffer::empty(area);
         QuickOpen::new(&p, &items, &system).paint(area, &mut buf, &mut s);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("Files") || text.contains("main") || text.contains("Quick"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Files") || text.contains("main") || text.contains("Quick"),
+            "{text}"
+        );
     }
 
     #[test]

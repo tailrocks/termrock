@@ -18,10 +18,7 @@
 //! Research: shadcn signup-01…04, login-01…05, CLI login prompts, cloud auth
 //! TUI gates.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -425,10 +422,7 @@ impl AuthEntryState {
         if order.is_empty() {
             return AuthEntryOutcome::Ignored;
         }
-        let cur = order
-            .iter()
-            .position(|f| *f == self.focus)
-            .unwrap_or(0);
+        let cur = order.iter().position(|f| *f == self.focus).unwrap_or(0);
         let n = order.len() as isize;
         let next = (cur as isize + delta).rem_euclid(n) as usize;
         self.focus = order[next];
@@ -924,7 +918,12 @@ mod tests {
         for c in s.chars() {
             let out = st.handle_key(press(c));
             assert!(
-                matches!(out, AuthEntryOutcome::FieldChanged { field: AuthEntryField::Password }),
+                matches!(
+                    out,
+                    AuthEntryOutcome::FieldChanged {
+                        field: AuthEntryField::Password
+                    }
+                ),
                 "password key {c:?} → {out:?}"
             );
         }
@@ -936,7 +935,12 @@ mod tests {
         for c in s.chars() {
             let out = st.handle_key(press(c));
             assert!(
-                matches!(out, AuthEntryOutcome::FieldChanged { field: AuthEntryField::Confirm }),
+                matches!(
+                    out,
+                    AuthEntryOutcome::FieldChanged {
+                        field: AuthEntryField::Confirm
+                    }
+                ),
                 "confirm key {c:?} → {out:?}"
             );
         }
@@ -948,7 +952,12 @@ mod tests {
         assert_eq!(st.focus(), AuthEntryField::Identity);
         let out = st.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         assert!(
-            matches!(out, AuthEntryOutcome::FocusMoved { field: AuthEntryField::Password }),
+            matches!(
+                out,
+                AuthEntryOutcome::FocusMoved {
+                    field: AuthEntryField::Password
+                }
+            ),
             "{out:?}"
         );
         let _ = st.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
@@ -957,7 +966,12 @@ mod tests {
         assert_eq!(st.focus(), AuthEntryField::Terms);
         let out = st.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         assert!(
-            matches!(out, AuthEntryOutcome::FocusMoved { field: AuthEntryField::Identity }),
+            matches!(
+                out,
+                AuthEntryOutcome::FocusMoved {
+                    field: AuthEntryField::Identity
+                }
+            ),
             "{out:?}"
         );
     }
@@ -1155,11 +1169,7 @@ mod tests {
         type_identity(&mut st, "a@b.c");
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        render_auth_entry(
-            &mut buf,
-            area,
-            AuthEntrySurfaces::english(&system, &mut st),
-        );
+        render_auth_entry(&mut buf, area, AuthEntrySurfaces::english(&system, &mut st));
         let mut sample = String::new();
         for y in 0..3 {
             for x in 0..16 {
@@ -1187,8 +1197,7 @@ mod tests {
                 assert!(
                     errors
                         .iter()
-                        .any(|e| e.field == AuthEntryField::Confirm
-                            && e.message.contains("match")),
+                        .any(|e| e.field == AuthEntryField::Confirm && e.message.contains("match")),
                     "{errors:?}"
                 );
             }

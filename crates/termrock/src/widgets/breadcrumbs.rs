@@ -18,6 +18,7 @@
 //!
 //! Research: desktop breadcrumbs, terminal file managers, shadcn Breadcrumb.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,10 +27,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{
-        HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
+    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -246,14 +247,9 @@ pub enum BreadcrumbsOutcome<Id> {
 #[derive(Debug, Clone)]
 enum PaintSlot<Id> {
     /// Real item at source index.
-    Item {
-        index: usize,
-        id: Id,
-    },
+    Item { index: usize, id: Id },
     /// Ellipsis standing for middle range.
-    Ellipsis {
-        hidden: Vec<Id>,
-    },
+    Ellipsis { hidden: Vec<Id> },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -503,9 +499,7 @@ impl BreadcrumbsState {
                 self.focus_index = items.len().saturating_sub(1);
                 BreadcrumbsOutcome::Changed
             }
-            KeyCode::Enter | KeyCode::Char(' ') if key.modifiers.is_empty() => {
-                self.activate(items)
-            }
+            KeyCode::Enter | KeyCode::Char(' ') if key.modifiers.is_empty() => self.activate(items),
             KeyCode::Esc => {
                 if self.overflow_open {
                     self.overflow_open = false;
@@ -527,8 +521,8 @@ impl BreadcrumbsState {
         delta: i32,
         items: &[BreadcrumbItem<Id>],
     ) -> BreadcrumbsOutcome<Id> {
-        let collapsed = matches!(self.presentation, BreadcrumbsPresentation::Collapsed)
-            && items.len() > 3;
+        let collapsed =
+            matches!(self.presentation, BreadcrumbsPresentation::Collapsed) && items.len() > 3;
         if collapsed {
             // slots: first | ellipsis | last  — 3 focus positions
             let slot = if self.focus_on_ellipsis {
@@ -568,7 +562,10 @@ impl BreadcrumbsState {
             && matches!(self.presentation, BreadcrumbsPresentation::Collapsed)
             && items.len() > 3
         {
-            let ids: Vec<Id> = items[1..items.len() - 1].iter().map(|i| i.id.clone()).collect();
+            let ids: Vec<Id> = items[1..items.len() - 1]
+                .iter()
+                .map(|i| i.id.clone())
+                .collect();
             self.overflow_open = true;
             return BreadcrumbsOutcome::OpenOverflow { ids };
         }
@@ -838,18 +835,13 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                 PaintSlot::Item { index, id } => {
                     let item = &self.items[*index];
                     let is_current = *index == current_idx || item.current;
-                    let is_focus = state.focused
-                        && !state.focus_on_ellipsis
-                        && state.focus_index == *index;
+                    let is_focus =
+                        state.focused && !state.focus_on_ellipsis && state.focus_index == *index;
                     let mut label = item.label.clone();
                     if let Some(m) = item.status.mark(self.ascii) {
                         label = format!("{m}{label}");
                     }
-                    let max_w = if collapse {
-                        12usize
-                    } else {
-                        24
-                    };
+                    let max_w = if collapse { 12usize } else { 24 };
                     let shown = take_display_cols(&label, max_w);
                     let w = display_cols(&shown) as u16;
                     let avail = area.right().saturating_sub(x);
@@ -881,13 +873,7 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     } else {
                         style
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        &shown,
-                        usize::from(rect.width),
-                        style,
-                    );
+                    buffer.set_stringn(rect.x, rect.y, &shown, usize::from(rect.width), style);
                     hits.push((
                         BreadcrumbHit::Item {
                             index: *index,
@@ -913,13 +899,7 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     } else {
                         self.system.style(Role::TextMuted)
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        ellipsis,
-                        usize::from(rect.width),
-                        style,
-                    );
+                    buffer.set_stringn(rect.x, rect.y, ellipsis, usize::from(rect.width), style);
                     hits.push((
                         BreadcrumbHit::Ellipsis {
                             hidden: hidden.clone(),
@@ -998,9 +978,7 @@ pub fn crumbs_from_labels(labels: &[&str]) -> Vec<BreadcrumbItem<String>> {
     labels
         .iter()
         .enumerate()
-        .map(|(i, l)| {
-            BreadcrumbItem::new((*l).to_owned(), *l).current(i + 1 == n)
-        })
+        .map(|(i, l)| BreadcrumbItem::new((*l).to_owned(), *l).current(i + 1 == n))
         .collect()
 }
 
@@ -1046,9 +1024,18 @@ mod tests {
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), BreadcrumbsPresentation::Collapsed);
         // first and last present
-        assert!(hits.iter().any(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 0, .. })));
-        assert!(hits.iter().any(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 3, .. })));
-        assert!(hits.iter().any(|(h, _)| matches!(h, BreadcrumbHit::Ellipsis { .. })));
+        assert!(
+            hits.iter()
+                .any(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 0, .. }))
+        );
+        assert!(
+            hits.iter()
+                .any(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 3, .. }))
+        );
+        assert!(
+            hits.iter()
+                .any(|(h, _)| matches!(h, BreadcrumbHit::Ellipsis { .. }))
+        );
     }
 
     #[test]

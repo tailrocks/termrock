@@ -19,10 +19,7 @@
 //!
 //! Research: agent CLIs, CI command cards, terminal output panes.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{
@@ -31,12 +28,10 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        ToolStatus,
-        Card,
-        TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
-        ToolCall,
-        ToolRisk,
-        redact_tool_secrets,
+        Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
+        TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
+        TerminalRunStatus, ToolCall, ToolRisk, ToolStatus, escape_raw_terminal,
+        filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
     },
 };
 
@@ -701,48 +696,36 @@ impl TerminalRunCardState {
             TerminalRunPresentation::Compact => {
                 self.presentation = TerminalRunPresentation::Expanded;
                 self.output.recipe = TerminalOutputRecipe::Pane;
-                TerminalRunCardOutcome::Expanded {
-                    id: id.to_string(),
-                }
+                TerminalRunCardOutcome::Expanded { id: id.to_string() }
             }
             TerminalRunPresentation::Expanded | TerminalRunPresentation::Fullscreen => {
                 self.presentation = TerminalRunPresentation::Compact;
                 self.output.recipe = TerminalOutputRecipe::Compact;
-                TerminalRunCardOutcome::Collapsed {
-                    id: id.to_string(),
-                }
+                TerminalRunCardOutcome::Collapsed { id: id.to_string() }
             }
         }
     }
 
-    fn map_output(
-        &self,
-        id: &str,
-        out: TerminalOutputOutcome,
-    ) -> TerminalRunCardOutcome {
+    fn map_output(&self, id: &str, out: TerminalOutputOutcome) -> TerminalRunCardOutcome {
         match out {
             TerminalOutputOutcome::Ignored => TerminalRunCardOutcome::Ignored,
             TerminalOutputOutcome::Scrolled { offset } => TerminalRunCardOutcome::Scrolled {
                 id: id.to_string(),
                 offset,
             },
-            TerminalOutputOutcome::Follow => TerminalRunCardOutcome::Follow {
-                id: id.to_string(),
-            },
+            TerminalOutputOutcome::Follow => TerminalRunCardOutcome::Follow { id: id.to_string() },
             TerminalOutputOutcome::Detach => TerminalRunCardOutcome::ScrollDetached {
                 id: id.to_string(),
                 offset: self.output.offset(),
             },
-            TerminalOutputOutcome::CancelRequested => TerminalRunCardOutcome::StopRequested {
-                id: id.to_string(),
-            },
-            TerminalOutputOutcome::RetryRequested => TerminalRunCardOutcome::RetryRequested {
-                id: id.to_string(),
-            },
+            TerminalOutputOutcome::CancelRequested => {
+                TerminalRunCardOutcome::StopRequested { id: id.to_string() }
+            }
+            TerminalOutputOutcome::RetryRequested => {
+                TerminalRunCardOutcome::RetryRequested { id: id.to_string() }
+            }
             TerminalOutputOutcome::DetachProcessRequested => {
-                TerminalRunCardOutcome::DetachRequested {
-                    id: id.to_string(),
-                }
+                TerminalRunCardOutcome::DetachRequested { id: id.to_string() }
             }
             TerminalOutputOutcome::CopyOutput { text } => TerminalRunCardOutcome::CopyOutput {
                 id: id.to_string(),
@@ -795,28 +778,20 @@ impl TerminalRunCardState {
                 // compact: f = fullscreen; expanded: f = follow (substrate)
                 self.presentation = TerminalRunPresentation::Fullscreen;
                 self.output.recipe = TerminalOutputRecipe::Fullscreen;
-                return TerminalRunCardOutcome::FullscreenRequested {
-                    id: run.id.clone(),
-                };
+                return TerminalRunCardOutcome::FullscreenRequested { id: run.id.clone() };
             }
             KeyCode::Char('F') if key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.presentation = TerminalRunPresentation::Fullscreen;
                 self.output.recipe = TerminalOutputRecipe::Fullscreen;
-                return TerminalRunCardOutcome::FullscreenRequested {
-                    id: run.id.clone(),
-                };
+                return TerminalRunCardOutcome::FullscreenRequested { id: run.id.clone() };
             }
             KeyCode::Char('p') if run.status.needs_permission() => {
-                return TerminalRunCardOutcome::PermissionFocus {
-                    id: run.id.clone(),
-                };
+                return TerminalRunCardOutcome::PermissionFocus { id: run.id.clone() };
             }
             KeyCode::Esc if matches!(self.presentation, TerminalRunPresentation::Fullscreen) => {
                 self.presentation = TerminalRunPresentation::Expanded;
                 self.output.recipe = TerminalOutputRecipe::Pane;
-                return TerminalRunCardOutcome::Expanded {
-                    id: run.id.clone(),
-                };
+                return TerminalRunCardOutcome::Expanded { id: run.id.clone() };
             }
             _ => {}
         }
@@ -896,12 +871,7 @@ impl<'a> TerminalRunCard<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TerminalRunCardState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalRunCardState) {
         if area.is_empty() {
             return;
         }
@@ -911,7 +881,9 @@ impl<'a> TerminalRunCard<'a> {
         state.output.ascii = ascii;
         state.output.colorless = colorless;
         state.output.recipe = state.presentation.to_recipe();
-        state.output.set_accepts_input(state.accepts_input && state.focused);
+        state
+            .output
+            .set_accepts_input(state.accepts_input && state.focused);
 
         let phase = run.phase();
         let mut title = take_display_cols(run.display_command(), 40);
@@ -934,9 +906,9 @@ impl<'a> TerminalRunCard<'a> {
         }
 
         let emphasis = match run.status {
-            TerminalRunStatus::Failed | TerminalRunStatus::Signaled | TerminalRunStatus::TimedOut => {
-                PanelChrome::Danger
-            }
+            TerminalRunStatus::Failed
+            | TerminalRunStatus::Signaled
+            | TerminalRunStatus::TimedOut => PanelChrome::Danger,
             TerminalRunStatus::Running | TerminalRunStatus::WaitingPermission => {
                 PanelChrome::Focused
             }
@@ -1095,12 +1067,7 @@ impl<'a> TerminalRunCard<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TerminalRunCardState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalRunCardState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1186,7 +1153,10 @@ mod tests {
         assert_eq!(x.phase(), TerminalCommandPhase::Executed);
         let edit = TerminalRun::new("r", "echo a").execute("echo b");
         assert_eq!(edit.phase(), TerminalCommandPhase::EditedApproval);
-        assert_ne!(edit.proposed_command, edit.executed_command.as_deref().unwrap());
+        assert_ne!(
+            edit.proposed_command,
+            edit.executed_command.as_deref().unwrap()
+        );
     }
 
     #[test]

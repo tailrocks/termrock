@@ -19,6 +19,7 @@
 //! Glyphs always respect [`GlyphSet`] (ASCII fallbacks). Color is optional;
 //! no-color themes still paint glyph contrast via roles when available.
 
+#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::style::{Density, DesignSystem, GlyphSet, Role, SpacingScale};
@@ -298,13 +299,7 @@ fn paint_horizontal(sep: Separator<'_>, area: Rect, buffer: &mut Buffer) {
     }
 
     let line: String = std::iter::repeat_n(glyph, usize::from(band.width)).collect();
-    buffer.set_stringn(
-        band.x,
-        band.y,
-        &line,
-        usize::from(band.width),
-        style,
-    );
+    buffer.set_stringn(band.x, band.y, &line, usize::from(band.width), style);
 }
 
 fn paint_vertical(sep: Separator<'_>, area: Rect, buffer: &mut Buffer) {
@@ -379,10 +374,7 @@ fn horizontal_rule_row(sep: Separator<'_>, area: Rect) -> Rect {
     }
     let want_band = matches!(sep.variant, SeparatorVariant::SectionBreak)
         || matches!(sep.thickness, SeparatorThickness::Band);
-    let pad = sep
-        .spacing
-        .map(|s| s.pad_y.max(1))
-        .unwrap_or(1);
+    let pad = sep.spacing.map(|s| s.pad_y.max(1)).unwrap_or(1);
     if want_band && area.height >= pad.saturating_mul(2).saturating_add(1) {
         // pad + rule + pad (spacing recipe)
         Rect {
@@ -413,10 +405,7 @@ fn vertical_rule_col(sep: Separator<'_>, area: Rect) -> Rect {
     }
     let want_band = matches!(sep.variant, SeparatorVariant::SectionBreak)
         || matches!(sep.thickness, SeparatorThickness::Band);
-    let pad = sep
-        .spacing
-        .map(|s| s.pad_x.max(1))
-        .unwrap_or(1);
+    let pad = sep.spacing.map(|s| s.pad_x.max(1)).unwrap_or(1);
     if want_band && area.width >= pad.saturating_mul(2).saturating_add(1) {
         Rect {
             x: area.x.saturating_add(pad),
@@ -547,7 +536,10 @@ mod tests {
                         sep = sep.label("OR");
                     }
                     sep.paint(area, &mut buf);
-                    Separator::vertical(&system).variant(v).label("x").paint(area, &mut buf);
+                    Separator::vertical(&system)
+                        .variant(v)
+                        .label("x")
+                        .paint(area, &mut buf);
                 }
             }
         }
@@ -628,7 +620,11 @@ mod tests {
     fn legacy_alias_and_widget() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 4, 1));
-        Widget::render(&SeparatorLine::horizontal(&system), Rect::new(0, 0, 4, 1), &mut buf);
+        Widget::render(
+            &SeparatorLine::horizontal(&system),
+            Rect::new(0, 0, 4, 1),
+            &mut buf,
+        );
         assert!(!buf[(0, 0)].symbol().is_empty());
     }
 

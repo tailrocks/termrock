@@ -462,7 +462,8 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
     /// [`Self::reconcile_retain`] when off-window selection must survive.
     pub fn reconcile(&mut self, still_valid: &[Id]) -> SelectionDelta<Id> {
         let before = self.selected.len();
-        self.selected.retain(|id| still_valid.iter().any(|v| v == id));
+        self.selected
+            .retain(|id| still_valid.iter().any(|v| v == id));
         if let Some(a) = &self.anchor
             && !still_valid.iter().any(|v| v == a)
         {
@@ -783,17 +784,11 @@ mod tests {
         let mut m = SelectionModel::multiple();
         assert!(matches!(
             m.toggle(&"beta"),
-            SelectionDelta::Toggled {
-                selected: true,
-                ..
-            }
+            SelectionDelta::Toggled { selected: true, .. }
         ));
         assert!(matches!(
             m.toggle(&"alpha"),
-            SelectionDelta::Toggled {
-                selected: true,
-                ..
-            }
+            SelectionDelta::Toggled { selected: true, .. }
         ));
         assert_eq!(m.checked(), ["beta", "alpha"]);
         assert!(matches!(

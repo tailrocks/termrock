@@ -799,10 +799,7 @@ impl<Id> DialogState<Id> {
     }
 
     /// Dismiss stack entry (opener restore).
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         self.open = false;
         dismiss_dialog_overlay(stack)
     }
@@ -821,11 +818,7 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
     }
 
     /// Keyboard via [`default_dialog_intent`].
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        actions: &[Action<'_, Id>],
-    ) -> DialogOutcome<Id> {
+    pub fn handle_key(&mut self, key: KeyEvent, actions: &[Action<'_, Id>]) -> DialogOutcome<Id> {
         if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
             return DialogOutcome::Ignored;
         }
@@ -852,13 +845,17 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 self.handle_activate(actions, false)
             }
-            UiIntent::Move(NavigationMove::Previous) if self.focus_zone == DialogFocusZone::Actions => {
+            UiIntent::Move(NavigationMove::Previous)
+                if self.focus_zone == DialogFocusZone::Actions =>
+            {
                 self.move_action(actions, -1)
             }
             UiIntent::Move(NavigationMove::Next) if self.focus_zone == DialogFocusZone::Actions => {
                 self.move_action(actions, 1)
             }
-            UiIntent::Move(NavigationMove::First) if self.focus_zone == DialogFocusZone::Actions => {
+            UiIntent::Move(NavigationMove::First)
+                if self.focus_zone == DialogFocusZone::Actions =>
+            {
                 self.jump_action(actions, true)
             }
             UiIntent::Move(NavigationMove::Last) if self.focus_zone == DialogFocusZone::Actions => {
@@ -879,9 +876,7 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
                 self.focus_zone = DialogFocusZone::Actions;
                 DialogOutcome::FocusMoved
             }
-            UiIntent::Move(NavigationMove::Left)
-                if self.focus_zone == DialogFocusZone::Actions =>
-            {
+            UiIntent::Move(NavigationMove::Left) if self.focus_zone == DialogFocusZone::Actions => {
                 self.focus_zone = DialogFocusZone::Body;
                 DialogOutcome::FocusMoved
             }
@@ -1262,8 +1257,10 @@ impl<'a> Dialog<'a> {
         state.slots.root = area;
         Clear.render(area, buffer);
 
-        let emphasis = if matches!(state.focus_zone, DialogFocusZone::Actions | DialogFocusZone::Body)
-        {
+        let emphasis = if matches!(
+            state.focus_zone,
+            DialogFocusZone::Actions | DialogFocusZone::Body
+        ) {
             // Modal owns interaction: focused border
             match self.resolved_emphasis() {
                 PanelChrome::Danger => PanelChrome::Danger,
@@ -1541,9 +1538,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
             return self.handle_intent(actions, intent);
         }
         // Fallback dialog intent (body scroll etc.)
-        self.dialog
-            .handle_key(key, actions)
-            .into_outcome()
+        self.dialog.handle_key(key, actions).into_outcome()
     }
 
     /// Semantic intent routing for footer actions.
@@ -1561,10 +1556,9 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
                     self.dialog.open = false;
                     Outcome::Cancelled
                 }
-                DialogClosePolicy::ConfirmOnly | DialogClosePolicy::Locked => self
-                    .dialog
-                    .handle_intent(intent, actions)
-                    .into_outcome(),
+                DialogClosePolicy::ConfirmOnly | DialogClosePolicy::Locked => {
+                    self.dialog.handle_intent(intent, actions).into_outcome()
+                }
             };
         }
         // Ensure action zone for classic choice intents
@@ -1923,9 +1917,7 @@ mod backdrop_tests {
         // open_dialog_configured may use fullscreen kind on tiny bounds
         let top = stack.top().unwrap();
         assert!(
-            top.fullscreen_promoted
-                || top.kind == OverlayKind::Fullscreen
-                || top.rect == bounds
+            top.fullscreen_promoted || top.kind == OverlayKind::Fullscreen || top.rect == bounds
         );
     }
 
@@ -2268,7 +2260,11 @@ mod backdrop_tests {
         let area = Rect::new(0, 0, 50, 12);
         let mut buf = Buffer::empty(area);
         dialog.paint(area, &mut buf, &mut state, 1);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("Title") || text.contains("Body"), "{text}");
         assert!(!state.slots.body.is_empty());
     }
@@ -2280,7 +2276,12 @@ mod backdrop_tests {
         let state = DialogState::<()>::new();
         let mut scene = SemanticScene::<&str, ()>::default();
         dialog.register_semantic(&mut scene, "d", Rect::new(0, 0, 20, 8), &state);
-        assert!(scene.nodes().iter().any(|n| n.label.as_deref() == Some("dialog")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("dialog"))
+        );
     }
 
     #[test]

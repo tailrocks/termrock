@@ -20,27 +20,17 @@
 //! Research: TablePlus-like query editors, database TUIs, Grafana query
 //! workflows, terminal editors.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::StatefulWidget,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        CompletionMenuState,
-        CodeFrame, CodeFrameLine, Diagnostic, DiagnosticSeverity, SourceLabel, SourceRange, SpanStyle,
-        HistoryEntry,
-        HistoryKind,
-        HelpEntry,
-        TextArea,
-        TextAreaOutcome,
-        TextAreaState,
-        TextCursor,
-        TextWrap,
+        CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
+        HistoryEntry, HistoryKind, SourceLabel, SourceRange, SpanStyle, TextArea, TextAreaOutcome,
+        TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -630,9 +620,8 @@ impl QueryEditorState {
 
     /// Sync TextArea accepts_input from focus + gate.
     fn sync_editor_input(&mut self) {
-        let on = self.accepts_input
-            && matches!(self.focus, QueryFocus::Editor)
-            && !self.completion_open;
+        let on =
+            self.accepts_input && matches!(self.focus, QueryFocus::Editor) && !self.completion_open;
         self.editor.set_accepts_input(on);
     }
 
@@ -941,9 +930,7 @@ impl QueryEditorState {
             TextAreaOutcome::ClipboardCopy { text } => QueryEditorOutcome::ClipboardCopy { text },
             TextAreaOutcome::ClipboardCut { text } => QueryEditorOutcome::ClipboardCopy { text },
             TextAreaOutcome::ClipboardPasteRequest => QueryEditorOutcome::ClipboardPasteRequest,
-            TextAreaOutcome::ExternalEditorRequested => {
-                QueryEditorOutcome::ExternalEditorRequested
-            }
+            TextAreaOutcome::ExternalEditorRequested => QueryEditorOutcome::ExternalEditorRequested,
             TextAreaOutcome::FullscreenRequested => self.set_mode(QueryEditorMode::Fullscreen),
         }
     }
@@ -958,8 +945,7 @@ impl QueryEditorState {
         }
         match key.code {
             KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => {
-                self.diagnostic_cursor =
-                    (self.diagnostic_cursor + 1).min(diagnostics.len() - 1);
+                self.diagnostic_cursor = (self.diagnostic_cursor + 1).min(diagnostics.len() - 1);
                 QueryEditorOutcome::Changed
             }
             KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => {
@@ -1063,7 +1049,11 @@ pub fn token_at_cursor(editor: &TextAreaState) -> (String, TextCursor) {
     let start = before
         .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
         .map(|i| {
-            let ch = before[i..].chars().next().map(|c| c.len_utf8()).unwrap_or(1);
+            let ch = before[i..]
+                .chars()
+                .next()
+                .map(|c| c.len_utf8())
+                .unwrap_or(1);
             i + ch
         })
         .unwrap_or(0);
@@ -1085,14 +1075,24 @@ pub fn draft_code_frame_lines(editor: &TextAreaState) -> Vec<CodeFrameLine<'_>> 
 #[must_use]
 pub fn query_editor_help_entries() -> Vec<HelpEntry> {
     vec![
-        HelpEntry::new("run", "Query", "Ctrl+R / Ctrl+Enter", "Run query / selection"),
+        HelpEntry::new(
+            "run",
+            "Query",
+            "Ctrl+R / Ctrl+Enter",
+            "Run query / selection",
+        ),
         HelpEntry::new("stop", "Query", "Ctrl+Shift+S", "Stop run"),
         HelpEntry::new("format", "Query", "Ctrl+F", "Format request"),
         HelpEntry::new("save", "Query", "Ctrl+S", "Save query request"),
         HelpEntry::new("history", "Query", "Ctrl+H", "Open history"),
         HelpEntry::new("saved", "Query", "Ctrl+Shift+O", "Open saved queries"),
         HelpEntry::new("complete", "Edit", "Ctrl+Space", "Completion"),
-        HelpEntry::new("focus", "Nav", "Ctrl+J", "Cycle editor/results/diagnostics/params"),
+        HelpEntry::new(
+            "focus",
+            "Nav",
+            "Ctrl+J",
+            "Cycle editor/results/diagnostics/params",
+        ),
         HelpEntry::new("help", "Help", "Ctrl+?", "Keyboard help"),
         HelpEntry::new("fullscreen", "View", "Ctrl+Shift+F", "Fullscreen editor"),
         HelpEntry::new("mode", "View", "Ctrl+M", "Cycle compact/normal/fullscreen"),
@@ -1125,12 +1125,11 @@ pub fn diagnostic_summary(diagnostics: &[Diagnostic<'_>]) -> String {
     }
     let mut e = 0u32;
     let mut w = 0u32;
-    let mut o = 0u32;
     for d in diagnostics {
         match d.severity {
             DiagnosticSeverity::Error => e += 1,
             DiagnosticSeverity::Warning => w += 1,
-            _ => o += 1,
+            _ => {}
         }
     }
     format!("E{e} W{w} · {} total", diagnostics.len())
@@ -1211,10 +1210,7 @@ impl<'a> QueryEditor<'a> {
                 width: area.width,
                 height: 1,
             };
-            let title = self
-                .title
-                .or(state.title.as_deref())
-                .unwrap_or("Query");
+            let title = self.title.or(state.title.as_deref()).unwrap_or("Query");
             let run = match &state.run {
                 QueryRunStatus::Idle => "idle",
                 QueryRunStatus::Running { .. } => "running…",
@@ -1320,7 +1316,8 @@ impl<'a> QueryEditor<'a> {
                 let body = remaining.saturating_sub(footer_h + diag_h);
                 let pct = u16::from(state.editor_percent.clamp(20, 80));
                 let editor_h = body.saturating_mul(pct) / 100;
-                body.saturating_sub(editor_h.max(2)).min(body.saturating_sub(2))
+                body.saturating_sub(editor_h.max(2))
+                    .min(body.saturating_sub(2))
             }
         };
 
@@ -1394,9 +1391,11 @@ impl<'a> QueryEditor<'a> {
                 },
             );
             if diag_h > 1
-                && let Some(d) = self
-                    .diagnostics
-                    .get(state.diagnostic_cursor.min(self.diagnostics.len().saturating_sub(1)))
+                && let Some(d) = self.diagnostics.get(
+                    state
+                        .diagnostic_cursor
+                        .min(self.diagnostics.len().saturating_sub(1)),
+                )
             {
                 let msg = format!(
                     "  {}{} {}",
@@ -1447,7 +1446,11 @@ impl<'a> QueryEditor<'a> {
                         "  {} cols · {} rows{}",
                         state.results.columns.unwrap_or(0),
                         state.results.rows.unwrap_or(0),
-                        if state.results.has_more { " · more…" } else { "" }
+                        if state.results.has_more {
+                            " · more…"
+                        } else {
+                            ""
+                        }
                     )
                 } else {
                     "  (awaiting host result projection)".into()
@@ -1692,11 +1695,7 @@ mod tests {
             QueryParameter::new("limit", "100").type_hint("int"),
             QueryParameter::new("token", "secret").secret(),
         ]);
-        state.set_results(
-            QueryResultSummary::new("ok")
-                .rows(3)
-                .columns(2),
-        );
+        state.set_results(QueryResultSummary::new("ok").rows(3).columns(2));
         let diags = [sample_diag()];
         let area = Rect::new(0, 0, 72, 20);
         let mut buf = Buffer::empty(area);
@@ -1799,10 +1798,7 @@ mod tests {
         let mut state = QueryEditorState::with_text("select\nfrom t");
         let _ = state.set_focus(QueryFocus::Diagnostics);
         let diags = [sample_diag()];
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            &diags,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &diags);
         assert!(matches!(
             out,
             QueryEditorOutcome::JumpToDiagnostic { id } if id == "d1"

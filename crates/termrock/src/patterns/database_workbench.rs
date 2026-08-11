@@ -30,22 +30,21 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{
-        connection_to_reconnecting_state, example_connections, ConnectionEntry, ConnectionKind,
-        ConnectionManager, ConnectionManagerOutcome, ConnectionManagerPresentation,
-        ConnectionManagerState, ConnectionStatus, QueryEditor, QueryEditorOutcome,
-        QueryEditorState, QueryRunStatus, ResultCell, ResultColumn, ResultExportFormat, ResultGrid,
-        ResultGridOutcome, ResultGridState, ResultQueryStatus, ResultRow, SchemaBrowser,
-        SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus,
+        ConnectionEntry, ConnectionKind, ConnectionManager, ConnectionManagerOutcome,
+        ConnectionManagerPresentation, ConnectionManagerState, ConnectionStatus, QueryEditor,
+        QueryEditorOutcome, QueryEditorState, QueryRunStatus, ResultCell, ResultColumn,
+        ResultExportFormat, ResultGrid, ResultGridOutcome, ResultGridState, ResultQueryStatus,
+        ResultRow, SchemaBrowser, SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus,
+        connection_to_reconnecting_state, example_connections,
     },
+    style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        example_command_catalog, example_history_entries, CommandEntry, CommandPalette,
-        CommandPaletteOutcome, CommandPaletteState, HistoryEntry, HistoryKind, HistoryPicker,
-        HistoryPickerOutcome, HistoryPickerState, InspectorField, ObjectInspector,
-        ObjectInspectorOutcome, ObjectInspectorState, Panel, StatusBar, StatusBarState,
-        StatusRegion, StatusSlot,
+        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteState, HistoryEntry,
+        HistoryKind, HistoryPicker, HistoryPickerOutcome, HistoryPickerState, InspectorField,
+        ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, example_command_catalog, example_history_entries,
     },
 };
 
@@ -551,7 +550,7 @@ impl DatabaseWorkbenchState {
     /// Clamp `focus` to panes visible at the given density.
     pub fn clamp_focus_to_density(&mut self, density: DatabaseWorkbenchDensity) {
         let order = self.focus_order_for(density);
-        if !order.iter().any(|id| *id == self.focus) {
+        if !order.contains(&self.focus) {
             self.focus = order.first().copied().unwrap_or("query");
             self.apply_focus_gates();
         }
@@ -1162,11 +1161,7 @@ impl DatabaseWorkbenchState {
 /// Layout with width-derived density.
 #[must_use]
 pub fn database_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    database_workbench_layout_density(
-        area,
-        state,
-        DatabaseWorkbenchDensity::for_width(area.width),
-    )
+    database_workbench_layout_density(area, state, DatabaseWorkbenchDensity::for_width(area.width))
 }
 
 /// Layout with explicit density.
@@ -1315,7 +1310,9 @@ fn centered_modal(area: Rect) -> Rect {
     let width = (area.width * 3 / 5).clamp(24, area.width.saturating_sub(2).max(1));
     let height = (area.height / 2).clamp(8, area.height.saturating_sub(2).max(1));
     let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area.y.saturating_add(area.height.saturating_sub(height) / 4);
+    let y = area
+        .y
+        .saturating_add(area.height.saturating_sub(height) / 4);
     Rect {
         x,
         y,
@@ -1347,7 +1344,11 @@ pub struct DatabaseWorkbenchSurfaces<'a> {
 }
 
 /// Paint composed database workbench (public child widgets only).
-pub fn render_database_workbench(buffer: &mut Buffer, area: Rect, surfaces: DatabaseWorkbenchSurfaces<'_>) {
+pub fn render_database_workbench(
+    buffer: &mut Buffer,
+    area: Rect,
+    surfaces: DatabaseWorkbenchSurfaces<'_>,
+) {
     let DatabaseWorkbenchSurfaces {
         system,
         state,
@@ -1565,8 +1566,13 @@ pub fn example_schema_entries() -> Vec<SchemaBrowserEntry<'static, &'static str>
         SchemaBrowserEntry::table("tbl_orders", "orders", "prod/app/public/orders", 3)
             .parent("sch")
             .secondary("≈80k rows"),
-        SchemaBrowserEntry::view("v_active", "active_users", "prod/app/public/active_users", 3)
-            .parent("sch"),
+        SchemaBrowserEntry::view(
+            "v_active",
+            "active_users",
+            "prod/app/public/active_users",
+            3,
+        )
+        .parent("sch"),
     ]
 }
 
@@ -1578,7 +1584,9 @@ pub fn example_result_columns() -> Vec<ResultColumn> {
             .type_name("bigint")
             .not_null()
             .priority(0),
-        ResultColumn::new("email", "email").type_name("text").priority(1),
+        ResultColumn::new("email", "email")
+            .type_name("text")
+            .priority(1),
         ResultColumn::new("active", "active")
             .type_name("bool")
             .priority(2),
@@ -2120,10 +2128,7 @@ mod tests {
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenPalette));
         assert!(st.palette_open());
         let out = st.handle_key(press(KeyCode::Esc), &[], &hist, &cmds, 0, &[]);
-        assert!(matches!(
-            out,
-            DatabaseWorkbenchOutcome::Palette { .. }
-        ));
+        assert!(matches!(out, DatabaseWorkbenchOutcome::Palette { .. }));
         assert!(!st.palette_open());
 
         let out = st.handle_key(ctrl(KeyCode::Char('h')), &[], &hist, &cmds, 0, &[]);
@@ -2280,8 +2285,6 @@ pub fn example_database_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
         NavItem::new("orders", "orders")
             .depth(2)
             .command("nav.db.orders"),
-        NavItem::new("disabled", "legacy")
-            .depth(2)
-            .enabled(false),
+        NavItem::new("disabled", "legacy").depth(2).enabled(false),
     ]
 }

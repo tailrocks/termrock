@@ -14,6 +14,7 @@
 //!
 //! Behavioral references: desktop workbench panes, Zellij pane management.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -421,13 +422,7 @@ impl ResizablePanelGroupState {
             // Initial sizes deferred to layout with real available; store weights as placeholders.
             self.sizes = specs
                 .iter()
-                .map(|s| {
-                    if total_w == 0 {
-                        1
-                    } else {
-                        s.weight.max(1)
-                    }
-                })
+                .map(|s| if total_w == 0 { 1 } else { s.weight.max(1) })
                 .collect();
             self.collapsed = vec![false; n];
             self.remembered = self.sizes.clone();
@@ -567,9 +562,7 @@ impl<'a> ResizablePanelGroup<'a> {
         // Visible panels: not collapsed and not drawer-suggested (drawers leave in-flow).
         let drawer_set = &state.drawer_ids;
         let mut visible_idx: Vec<usize> = (0..n)
-            .filter(|&i| {
-                !state.collapsed[i] && !drawer_set.iter().any(|d| d == &self.panels[i].id)
-            })
+            .filter(|&i| !state.collapsed[i] && !drawer_set.iter().any(|d| d == &self.panels[i].id))
             .collect();
 
         // At least one main must remain in-flow.
@@ -728,8 +721,8 @@ impl<'a> ResizablePanelGroup<'a> {
         let handles = self.panels.len().saturating_sub(1) as u16;
         let available = outer.saturating_sub(handles);
         for (i, bp) in preset.sizes_bp.iter().enumerate() {
-            let size = ((u32::from(available) * u32::from(*bp) + RATIO_SCALE / 2) / RATIO_SCALE)
-                as u16;
+            let size =
+                ((u32::from(available) * u32::from(*bp) + RATIO_SCALE / 2) / RATIO_SCALE) as u16;
             state.sizes[i] = size;
             state.collapsed[i] = preset.collapsed.get(i).copied().unwrap_or(false);
             if !state.collapsed[i] {
@@ -789,16 +782,12 @@ impl<'a> ResizablePanelGroup<'a> {
             SplitDirection::Horizontal => area.width,
             SplitDirection::Vertical => area.height,
         };
-        let available = outer.saturating_sub(state.layout.handles.len() as u16).max(1);
+        let available = outer
+            .saturating_sub(state.layout.handles.len() as u16)
+            .max(1);
         let cell_delta = ((i32::from(available) * delta) / i32::from(RATIO_SCALE as u16)).max(1)
             * delta.signum();
-        if move_handle(
-            &mut state.sizes,
-            left_i,
-            right_i,
-            cell_delta,
-            self.panels,
-        ) {
+        if move_handle(&mut state.sizes, left_i, right_i, cell_delta, self.panels) {
             let _ = self.layout(area, state);
             ResizablePanelOutcome::Resized {
                 handle: Some(handle),
@@ -932,13 +921,7 @@ impl<'a> ResizablePanelGroup<'a> {
                 SplitDirection::Vertical => {
                     let line: String =
                         std::iter::repeat_n(glyph, usize::from(handle.width)).collect();
-                    buffer.set_stringn(
-                        handle.x,
-                        handle.y,
-                        &line,
-                        usize::from(handle.width),
-                        style,
-                    );
+                    buffer.set_stringn(handle.x, handle.y, &line, usize::from(handle.width), style);
                 }
             }
         }
@@ -998,7 +981,9 @@ fn visible_indices(state: &ResizablePanelGroupState, panels: &[ResizablePanelSpe
                 .panels
                 .iter()
                 .find(|p| p.id == panels[i].id)
-                .is_some_and(|p| !p.collapsed && !p.drawer && (p.area.width > 0 || p.area.height > 0))
+                .is_some_and(|p| {
+                    !p.collapsed && !p.drawer && (p.area.width > 0 || p.area.height > 0)
+                })
         })
         .collect()
 }
@@ -1042,8 +1027,7 @@ fn redistribute(
             if vi + 1 == visible.len() {
                 sizes[i] = available.saturating_sub(used);
             } else {
-                let share =
-                    ((u32::from(available) * u32::from(sizes[i]) + sum / 2) / sum) as u16;
+                let share = ((u32::from(available) * u32::from(sizes[i]) + sum / 2) / sum) as u16;
                 sizes[i] = share;
                 used = used.saturating_add(share);
             }
@@ -1090,11 +1074,10 @@ fn move_handle(
     let min_r = specs[right].min;
     let max_l = specs[left].max.unwrap_or(pair.saturating_sub(min_r));
     let max_r = specs[right].max.unwrap_or(pair.saturating_sub(min_l));
-    let new_l = (sizes[left] as i32 + delta_cells)
-        .clamp(
-            i32::from(min_l),
-            i32::from(max_l.min(pair.saturating_sub(min_r))),
-        ) as u16;
+    let new_l = (sizes[left] as i32 + delta_cells).clamp(
+        i32::from(min_l),
+        i32::from(max_l.min(pair.saturating_sub(min_r))),
+    ) as u16;
     let new_r = pair.saturating_sub(new_l);
     if new_r < min_r || new_r > max_r {
         return false;
@@ -1197,7 +1180,10 @@ mod tests {
             KeyEvent::new(KeyCode::Right, crate::input::KeyModifiers::NONE),
             area,
         );
-        assert!(matches!(out, ResizablePanelOutcome::Resized { .. }) || matches!(out, ResizablePanelOutcome::Ignored));
+        assert!(
+            matches!(out, ResizablePanelOutcome::Resized { .. })
+                || matches!(out, ResizablePanelOutcome::Ignored)
+        );
         let after: u16 = state.sizes.iter().sum();
         // sum of visible sizes stable within handle redistribution
         assert_eq!(before, after);
@@ -1337,15 +1323,15 @@ mod tests {
             &mut state,
             MouseEvent {
                 kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: h.x,
-                    y: h.y,
-                },
+                position: Position { x: h.x, y: h.y },
                 modifiers: crate::input::KeyModifiers::NONE,
             },
             area,
         );
-        assert!(matches!(out, ResizablePanelOutcome::HandleFocused { handle: 0 }));
+        assert!(matches!(
+            out,
+            ResizablePanelOutcome::HandleFocused { handle: 0 }
+        ));
         let out = group.handle_mouse(
             &mut state,
             MouseEvent {

@@ -174,7 +174,11 @@ impl SectionState {
     }
 
     /// Key path with [`EventResult`].
-    pub fn handle_key_result(&mut self, key: KeyEvent, collapsible: bool) -> EventResult<SectionOutcome> {
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        collapsible: bool,
+    ) -> EventResult<SectionOutcome> {
         match self.handle_key(key, collapsible) {
             SectionOutcome::Ignored => EventResult::ignored(),
             other => EventResult::emit(other),
@@ -364,8 +368,7 @@ impl<'a> Section<'a> {
         let pad = self.left_pad();
         let content = shrink_left(area, pad);
         let collapsed = state.is_some_and(|s| s.collapsed && self.collapsible);
-        let show_actions =
-            Self::actions_visible(area.width) && !self.actions.is_empty();
+        let show_actions = Self::actions_visible(area.width) && !self.actions.is_empty();
         let show_desc = !collapsed
             && self.description.is_some()
             && Self::description_visible(area.width)
@@ -494,13 +497,16 @@ impl<'a> Section<'a> {
         if area.is_empty() {
             return area;
         }
-        let collapsed = state.as_ref().is_some_and(|s| s.collapsed && self.collapsible);
+        let collapsed = state
+            .as_ref()
+            .is_some_and(|s| s.collapsed && self.collapsible);
         let focused = state.as_ref().is_some_and(|s| s.focused);
         let parts = self.layout(area, state.as_ref().map(|s| &**s));
 
         let title_style = match (focused && self.collapsible, self.variant, self.depth) {
             (true, _, _) => self.system.style(Role::TextStrong),
-            (_, SectionVariant::Emphasized, 0) => self.system
+            (_, SectionVariant::Emphasized, 0) => self
+                .system
                 .style(Role::TextStrong)
                 .add_modifier(ratatui_core::style::Modifier::BOLD),
             (_, _, d) if d > 0 => self.system.style(Role::TextMuted),
@@ -689,10 +695,7 @@ mod tests {
     fn collapsible_toggle() {
         let mut state = SectionState::new();
         state.set_focused(true);
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            true,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), true);
         assert!(matches!(
             out,
             SectionOutcome::ToggleCollapsed { collapsed: true }
@@ -704,10 +707,7 @@ mod tests {
     fn non_collapsible_ignores_keys() {
         let mut state = SectionState::new();
         state.set_focused(true);
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            false,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), false);
         assert_eq!(out, SectionOutcome::Ignored);
     }
 

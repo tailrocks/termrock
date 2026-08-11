@@ -14,6 +14,7 @@
 //!
 //! Research: modern multi-selects, Huh, terminal fuzzy pickers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -22,7 +23,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -330,10 +333,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             .collect()
     }
 
-    fn filtered_items(
-        options: &[SelectOption<Id>],
-        query: &str,
-    ) -> Vec<CollectionItem<Id>> {
+    fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
         if query.trim().is_empty() {
             return Self::collection_items(options);
         }
@@ -341,9 +341,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         let q = query.trim().to_ascii_lowercase();
         options
             .iter()
-            .filter(|o| {
-                o.is_option() && o.label.to_ascii_lowercase().contains(&q)
-            })
+            .filter(|o| o.is_option() && o.label.to_ascii_lowercase().contains(&q))
             .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
@@ -367,11 +365,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     }
 
     /// Open list.
-    pub fn open(
-        &mut self,
-        bounds: Rect,
-        options: &[SelectOption<Id>],
-    ) -> MultiSelectOutcome<Id> {
+    pub fn open(&mut self, bounds: Rect, options: &[SelectOption<Id>]) -> MultiSelectOutcome<Id> {
         if !self.enabled {
             return MultiSelectOutcome::Ignored;
         }
@@ -456,11 +450,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     }
 
     /// Apply range check from anchor to `to` (inclusive among navigable ids).
-    fn apply_range(
-        &mut self,
-        options: &[SelectOption<Id>],
-        to: &Id,
-    ) -> MultiSelectOutcome<Id> {
+    fn apply_range(&mut self, options: &[SelectOption<Id>], to: &Id) -> MultiSelectOutcome<Id> {
         let nav = Self::navigable_ids(options, self.search.value());
         let Some(anchor) = self.range_anchor.clone() else {
             self.range_anchor = Some(to.clone());
@@ -531,9 +521,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             return MultiSelectOutcome::Ignored;
         }
         match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
-                if key.modifiers.is_empty() =>
-            {
+            KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down if key.modifiers.is_empty() => {
                 self.open(bounds, options)
             }
             KeyCode::Backspace | KeyCode::Delete
@@ -828,12 +816,7 @@ impl<'a, Id> MultiSelect<'a, Id> {
 
 impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
     /// Paint trigger + optional open list (stacked in `area` when open).
-    pub fn paint_stacked(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut MultiSelectState<Id>,
-    ) {
+    pub fn paint_stacked(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
         if !state.is_open() {
             self.paint_trigger_only(area, buffer, state);
             return;
@@ -932,11 +915,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         let mut right = trigger.right();
 
         // clear
-        if self.show_clear
-            && state.enabled
-            && !checked.is_empty()
-            && trigger.width > 6
-        {
+        if self.show_clear && state.enabled && !checked.is_empty() && trigger.width > 6 {
             right = right.saturating_sub(2);
             state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
             buffer.set_stringn(
@@ -949,11 +928,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         }
 
         let chev = if self.ascii {
-            if state.is_open() {
-                "^"
-            } else {
-                "v"
-            }
+            if state.is_open() { "^" } else { "v" }
         } else if state.is_open() {
             "▴"
         } else {
@@ -1020,12 +995,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         }
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut MultiSelectState<Id>,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
         let panel = Panel::new(self.system).emphasis(if state.focused {
             PanelChrome::Focused
         } else {
@@ -1152,11 +1122,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_on = state.selection.is_checked(&opt.id);
                     let mark = if self.ascii {
-                        if is_on {
-                            "[x]"
-                        } else {
-                            "[ ]"
-                        }
+                        if is_on { "[x]" } else { "[ ]" }
                     } else if is_on {
                         "[✓]"
                     } else {
@@ -1194,7 +1160,6 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 }
             }
         }
-
     }
 
     /// Semantic for trigger.
@@ -1367,7 +1332,11 @@ mod tests {
         let bounds = Rect::new(0, 0, 80, 24);
         let _ = state.open(bounds, &options);
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &options, bounds),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &options,
+                bounds
+            ),
             MultiSelectOutcome::Closed
         );
         assert!(state.is_checked(&"rs"));
@@ -1428,7 +1397,9 @@ mod tests {
         for x in 0..area.width {
             row.push_str(buf[(x, 1.min(area.height - 1))].symbol());
         }
-        assert!(row.contains('+') || row.contains('[') || row.contains('R') || !row.trim().is_empty());
+        assert!(
+            row.contains('+') || row.contains('[') || row.contains('R') || !row.trim().is_empty()
+        );
     }
 
     #[test]

@@ -125,11 +125,7 @@ impl<'a> Icon<'a> {
             };
         }
         let r = self.resolved();
-        let g_w = r
-            .display_width()
-            .max(self.min_width)
-            .min(area.width)
-            .max(1);
+        let g_w = r.display_width().max(self.min_width).min(area.width).max(1);
         let glyph = Rect {
             x: area.x,
             y: area.y,

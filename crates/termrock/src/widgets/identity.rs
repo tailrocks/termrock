@@ -18,12 +18,7 @@
 //!
 //! Research: chat identity systems and agent TUIs, adapted to terminals.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -441,7 +436,10 @@ impl<'a> AvatarGlyph<'a> {
     pub fn face_text(&self) -> String {
         let cols = usize::from(self.body_cols());
         let ascii = self.system.glyphs.is_ascii()
-            || matches!(self.system.capability, crate::style::ColorCapability::Monochrome);
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            );
         let raw = match self.face {
             AvatarFace::Initials => {
                 let init = self
@@ -507,10 +505,7 @@ impl<'a> AvatarGlyph<'a> {
     #[must_use]
     pub fn plain(&self) -> String {
         let face = self.face_text().trim().to_string();
-        let mut s = format!(
-            "avatar {face} ({})",
-            self.role.id()
-        );
+        let mut s = format!("avatar {face} ({})", self.role.id());
         if self.presence != PresenceStatus::None {
             s.push(' ');
             s.push_str(self.presence.meaning());
@@ -531,19 +526,17 @@ impl<'a> AvatarGlyph<'a> {
             width: body_w,
             height: 1.min(area.height),
         };
-        let presence = if self.presence != PresenceStatus::None
-            && area.width > body_w
-            && area.height > 0
-        {
-            Rect {
-                x: area.x.saturating_add(body_w),
-                y: area.y,
-                width: 1,
-                height: 1,
-            }
-        } else {
-            Rect::default()
-        };
+        let presence =
+            if self.presence != PresenceStatus::None && area.width > body_w && area.height > 0 {
+                Rect {
+                    x: area.x.saturating_add(body_w),
+                    y: area.y,
+                    width: 1,
+                    height: 1,
+                }
+            } else {
+                Rect::default()
+            };
         let root_w = face.width.saturating_add(presence.width).min(area.width);
         AvatarGlyphParts {
             root: Rect {
@@ -583,10 +576,7 @@ impl<'a> AvatarGlyph<'a> {
             style,
         );
         if parts.presence.width > 0 {
-            if let Some(ch) = self
-                .presence
-                .glyph_char(self.system.glyphs.is_ascii())
-            {
+            if let Some(ch) = self.presence.glyph_char(self.system.glyphs.is_ascii()) {
                 let mut ps = self.system.style(self.presence.role());
                 ps.bg = None;
                 if matches!(
@@ -603,13 +593,7 @@ impl<'a> AvatarGlyph<'a> {
                         _ => ps.add_modifier(Modifier::DIM),
                     };
                 }
-                buffer.set_stringn(
-                    parts.presence.x,
-                    parts.presence.y,
-                    ch,
-                    1,
-                    ps,
-                );
+                buffer.set_stringn(parts.presence.x, parts.presence.y, ch, 1, ps);
             }
         }
         parts
@@ -823,9 +807,7 @@ impl<'a> Identity<'a> {
         w = w.saturating_add(u16::try_from(display_cols(self.name)).unwrap_or(1));
         if self.show_badge {
             w = w.saturating_add(2);
-            w = w.saturating_add(
-                u16::try_from(display_cols(self.role.badge_label())).unwrap_or(1),
-            );
+            w = w.saturating_add(u16::try_from(display_cols(self.role.badge_label())).unwrap_or(1));
         }
         w.max(1)
     }
@@ -849,10 +831,7 @@ impl<'a> Identity<'a> {
             };
             x = x.saturating_add(aw).saturating_add(1);
         }
-        let rest = area
-            .width
-            .saturating_sub(x.saturating_sub(area.x))
-            .max(0);
+        let rest = area.width.saturating_sub(x.saturating_sub(area.x)).max(0);
         let badge_w = if self.show_badge {
             let bl = self.role.badge_label();
             u16::try_from(display_cols(bl).saturating_add(2)).unwrap_or(4)
@@ -863,11 +842,7 @@ impl<'a> Identity<'a> {
         let name = Rect {
             x,
             y,
-            width: name_budget.min(
-                u16::try_from(display_cols(self.name))
-                    .unwrap_or(1)
-                    .max(1),
-            ),
+            width: name_budget.min(u16::try_from(display_cols(self.name)).unwrap_or(1).max(1)),
             height: 1.min(area.height),
         };
         // secondary shares same row after name when space, else omitted
@@ -892,10 +867,7 @@ impl<'a> Identity<'a> {
         };
         let badge = if self.show_badge && badge_w > 0 {
             Rect {
-                x: area
-                    .x
-                    .saturating_add(area.width)
-                    .saturating_sub(badge_w),
+                x: area.x.saturating_add(area.width).saturating_sub(badge_w),
                 y,
                 width: badge_w.min(area.width),
                 height: 1.min(area.height),
@@ -1063,9 +1035,7 @@ mod tests {
     #[test]
     fn identity_compact_hides_secondary_in_plain() {
         let system = DesignSystem::default();
-        let id = Identity::new("Bot", &system)
-            .secondary("gpt")
-            .compact();
+        let id = Identity::new("Bot", &system).secondary("gpt").compact();
         let p = id.plain();
         assert!(p.contains("Bot"));
         // secondary omitted when compact
@@ -1105,6 +1075,14 @@ mod tests {
             .initials("xy")
             .size(AvatarSize::Normal);
         let t = a.face_text();
-        assert!(t.starts_with('X') || t.contains('X') || t.contains('Y') || t.starts_with("XY") || t.starts_with("xy") || t.to_uppercase().contains('X'), "{t}");
+        assert!(
+            t.starts_with('X')
+                || t.contains('X')
+                || t.contains('Y')
+                || t.starts_with("XY")
+                || t.starts_with("xy")
+                || t.to_uppercase().contains('X'),
+            "{t}"
+        );
     }
 }

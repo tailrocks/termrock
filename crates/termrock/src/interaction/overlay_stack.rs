@@ -782,9 +782,7 @@ impl<FocusId> OverlayStack<FocusId> {
             bounds: Rect::new(0, 0, 0, 0),
             dismiss_guard: DismissGuard::new(),
             dismiss_event_seq: 0,
-            top_dismiss: DismissableLayer::new(
-                crate::interaction::DismissPolicy::dismissible(),
-            ),
+            top_dismiss: DismissableLayer::new(crate::interaction::DismissPolicy::dismissible()),
         }
     }
 
@@ -797,18 +795,16 @@ impl<FocusId> OverlayStack<FocusId> {
     fn sync_top_dismiss(&mut self) {
         match self.entries.last() {
             Some(top) => {
-                self.top_dismiss.set_policy(
-                    crate::interaction::DismissPolicy::from_layer_pair(
+                self.top_dismiss
+                    .set_policy(crate::interaction::DismissPolicy::from_layer_pair(
                         top.policy.esc,
                         top.policy.outside,
-                    ),
-                );
+                    ));
                 self.top_dismiss.set_rect(top.rect);
             }
             None => {
-                self.top_dismiss = DismissableLayer::new(
-                    crate::interaction::DismissPolicy::dismissible(),
-                );
+                self.top_dismiss =
+                    DismissableLayer::new(crate::interaction::DismissPolicy::dismissible());
                 self.top_dismiss.reset_gesture();
             }
         }
@@ -971,24 +967,15 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
     }
 
     /// Enqueue a modal (alias of [`OpenMode::Queue`]).
-    pub fn enqueue(
-        &mut self,
-        bounds: Rect,
-        spec: OverlaySpec<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
+    pub fn enqueue(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
         self.open_with(bounds, spec, OpenMode::Queue)
     }
 
-    fn push_entry(
-        &mut self,
-        bounds: Rect,
-        spec: OverlaySpec<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
+    fn push_entry(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
         let policy = spec
             .policy
             .unwrap_or_else(|| OverlayPolicy::for_kind(spec.kind));
-        let placement =
-            resolve_placement(bounds, spec.anchor, spec.size, policy, spec.kind);
+        let placement = resolve_placement(bounds, spec.anchor, spec.size, policy, spec.kind);
         let id = spec.id.clone();
         // Replace same id if re-opened via Stack.
         self.entries.retain(|e| e.id != spec.id);
@@ -1075,9 +1062,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         let Some(top) = self.entries.last_mut() else {
             return OverlayOutcome::Ignored;
         };
-        if !top.fullscreen_promoted
-            && !matches!(top.kind, OverlayKind::Fullscreen)
-        {
+        if !top.fullscreen_promoted && !matches!(top.kind, OverlayKind::Fullscreen) {
             return OverlayOutcome::Ignored;
         }
         // Explicit Fullscreen kind cannot demote.
@@ -1091,8 +1076,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         if matches!(top.policy.prefer, PlacementPrefer::Fullscreen) {
             top.policy.prefer = OverlayPolicy::for_kind(top.kind).prefer;
         }
-        let placement =
-            resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
+        let placement = resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
         top.rect = placement.rect;
         top.fullscreen_promoted = placement.fullscreen_promoted;
         let id = top.id.clone();
@@ -1115,8 +1099,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             let placement =
                 resolve_placement(bounds, entry.anchor, entry.size, entry.policy, entry.kind);
             entry.rect = placement.rect;
-            entry.fullscreen_promoted =
-                placement.fullscreen_promoted || entry.fullscreen_promoted;
+            entry.fullscreen_promoted = placement.fullscreen_promoted || entry.fullscreen_promoted;
         }
         self.sync_top_dismiss();
     }
@@ -1150,9 +1133,9 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         }
         self.sync_top_dismiss();
         let event = self.next_dismiss_event();
-        let decision =
-            self.top_dismiss
-                .on_outside_click(position, &mut self.dismiss_guard, event);
+        let decision = self
+            .top_dismiss
+            .on_outside_click(position, &mut self.dismiss_guard, event);
         match decision {
             DismissDecision::Dismiss { .. } => {
                 let id = self.entries.last().expect("non-empty").id.clone();
@@ -1796,13 +1779,23 @@ mod tests {
         );
         stack.open(
             bounds,
-            OverlaySpec::menu("mid", Rect::new(10, 10, 1, 1), OverlaySize::menu(12, 4), None)
-                .with_parent("root"),
+            OverlaySpec::menu(
+                "mid",
+                Rect::new(10, 10, 1, 1),
+                OverlaySize::menu(12, 4),
+                None,
+            )
+            .with_parent("root"),
         );
         stack.open(
             bounds,
-            OverlaySpec::menu("leaf", Rect::new(12, 12, 1, 1), OverlaySize::menu(10, 3), None)
-                .with_parent("mid"),
+            OverlaySpec::menu(
+                "leaf",
+                Rect::new(12, 12, 1, 1),
+                OverlaySize::menu(10, 3),
+                None,
+            )
+            .with_parent("mid"),
         );
         assert_eq!(stack.entries().len(), 3);
         let _ = stack.dismiss(&OverlayId::from_static("root"));
@@ -2379,10 +2372,7 @@ mod tests {
             OverlaySpec::alert_dialog("a", OverlaySize::dialog(20, 6), None),
         );
         let _ = stack.handle_pointer_down(outside);
-        assert_eq!(
-            stack.handle_pointer_up(outside),
-            OverlayOutcome::Ignored
-        );
+        assert_eq!(stack.handle_pointer_up(outside), OverlayOutcome::Ignored);
         assert_eq!(stack.entries().len(), 1);
     }
 

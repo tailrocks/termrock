@@ -19,10 +19,7 @@
 //! **Ownership.** Host executes tools / cancels processes. Outcomes are requests
 //! only.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{
@@ -30,10 +27,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::{
-        agent::ToolStatus,
-        card::Card,
-    },
+    widgets::{agent::ToolStatus, card::Card},
 };
 
 /// Overlay id for fullscreen tool detail.
@@ -529,15 +523,11 @@ impl ToolCallCardState {
         match self.presentation {
             ToolCallPresentation::Compact => {
                 self.presentation = ToolCallPresentation::Expanded;
-                ToolCallCardOutcome::Expanded {
-                    id: id.to_string(),
-                }
+                ToolCallCardOutcome::Expanded { id: id.to_string() }
             }
             ToolCallPresentation::Expanded | ToolCallPresentation::Fullscreen => {
                 self.presentation = ToolCallPresentation::Compact;
-                ToolCallCardOutcome::Collapsed {
-                    id: id.to_string(),
-                }
+                ToolCallCardOutcome::Collapsed { id: id.to_string() }
             }
         }
     }
@@ -549,9 +539,7 @@ impl ToolCallCardState {
         }
         match key.code {
             KeyCode::Enter | KeyCode::Char(' ') => self.toggle_expand(&call.id),
-            KeyCode::Char('c')
-                if key.modifiers.is_empty() && call.status.can_cancel() =>
-            {
+            KeyCode::Char('c') if key.modifiers.is_empty() && call.status.can_cancel() => {
                 ToolCallCardOutcome::CancelRequested {
                     id: call.id.clone(),
                 }
@@ -565,9 +553,7 @@ impl ToolCallCardState {
             KeyCode::Char('l') if call.has_log => ToolCallCardOutcome::OpenLog {
                 id: call.id.clone(),
             },
-            KeyCode::Char('p')
-                if matches!(call.status, ToolStatus::WaitingPermission) =>
-            {
+            KeyCode::Char('p') if matches!(call.status, ToolStatus::WaitingPermission) => {
                 ToolCallCardOutcome::PermissionFocus {
                     id: call.id.clone(),
                 }
@@ -684,7 +670,11 @@ pub fn project_tool_call_lines(call: &ToolCall, expanded: bool, ascii: bool) -> 
     }
     if expanded {
         if let Some(a) = &call.args_detail {
-            for (i, l) in redact_tool_secrets(a).lines().take(TOOL_CALL_EXPAND_LINE_CAP).enumerate() {
+            for (i, l) in redact_tool_secrets(a)
+                .lines()
+                .take(TOOL_CALL_EXPAND_LINE_CAP)
+                .enumerate()
+            {
                 if i == 0 {
                     lines.push(format!("  {l}"));
                 } else {
@@ -748,12 +738,7 @@ impl<'a> ToolCallCard<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ToolCallCardState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
         state.action_hits.clear();
         if area.is_empty() {
             return;
@@ -828,7 +813,10 @@ impl<'a> ToolCallCard<'a> {
                 } else {
                     String::new()
                 },
-                take_display_cols(&redact_tool_secrets(&call.args_summary), usize::from(body.width))
+                take_display_cols(
+                    &redact_tool_secrets(&call.args_summary),
+                    usize::from(body.width)
+                )
             )
         } else {
             take_display_cols(
@@ -843,13 +831,7 @@ impl<'a> ToolCallCard<'a> {
         } else {
             self.system.style(call.status.role())
         };
-        buffer.set_stringn(
-            body.x,
-            y,
-            &line1,
-            usize::from(body.width),
-            style,
-        );
+        buffer.set_stringn(body.x, y, &line1, usize::from(body.width), style);
         y = y.saturating_add(1);
 
         if state.is_expanded() && y < max_y {
@@ -940,12 +922,7 @@ impl<'a> ToolCallCard<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ToolCallCardState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1046,8 +1023,7 @@ mod tests {
 
     #[test]
     fn copy_args_redacted() {
-        let call = ToolCall::new("t", "bash", "x")
-            .args_detail("password=hunter2 ok");
+        let call = ToolCall::new("t", "bash", "x").args_detail("password=hunter2 ok");
         let mut st = ToolCallCardState::new();
         let out = st.handle_key(
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL),
@@ -1101,7 +1077,9 @@ mod tests {
         let area = Rect::new(0, 0, 48, 8);
         let mut buf = Buffer::empty(area);
         for s in statuses {
-            let call = ToolCall::new("t", "tool", "verb").status(s).args_summary("args");
+            let call = ToolCall::new("t", "tool", "verb")
+                .status(s)
+                .args_summary("args");
             let mut st = ToolCallCardState::new();
             st.presentation = ToolCallPresentation::Expanded;
             ToolCallCard::new(&call, &system).paint(area, &mut buf, &mut st);
@@ -1123,8 +1101,19 @@ mod tests {
     fn never_provider_protocol() {
         let src = include_str!("tool_call_card.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["openai", "anthropic", "mcp::", "reqwest::", "std::process::Command"] {
-            assert!(!body.to_ascii_lowercase().contains(&forbidden.to_ascii_lowercase()) || forbidden == "mcp::");
+        for forbidden in [
+            "openai",
+            "anthropic",
+            "mcp::",
+            "reqwest::",
+            "std::process::Command",
+        ] {
+            assert!(
+                !body
+                    .to_ascii_lowercase()
+                    .contains(&forbidden.to_ascii_lowercase())
+                    || forbidden == "mcp::"
+            );
             if forbidden != "mcp::" {
                 assert!(!body.contains(forbidden), "{forbidden}");
             }
@@ -1146,7 +1135,10 @@ mod tests {
         let call = ToolCall::new("t", "bash", "x").status(ToolStatus::Running);
         let mut st = ToolCallCardState::new();
         let out = st.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE), &call);
-        assert!(matches!(out, ToolCallCardOutcome::FullscreenRequested { .. }));
+        assert!(matches!(
+            out,
+            ToolCallCardOutcome::FullscreenRequested { .. }
+        ));
         assert_eq!(st.presentation, ToolCallPresentation::Fullscreen);
         let out = st.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &call);
         assert!(matches!(out, ToolCallCardOutcome::Expanded { .. }));

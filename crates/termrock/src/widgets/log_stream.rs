@@ -24,11 +24,7 @@
 use std::collections::BTreeSet;
 
 use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    text::Line,
-    widgets::StatefulWidget,
+    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
 };
 
 use crate::{
@@ -632,11 +628,7 @@ impl LogStreamState {
             && key.modifiers.contains(KeyModifiers::CONTROL)
         {
             let view = self.filtered(lines);
-            let text = view
-                .iter()
-                .map(|l| l.text)
-                .collect::<Vec<_>>()
-                .join("\n");
+            let text = view.iter().map(|l| l.text).collect::<Vec<_>>().join("\n");
             return LogStreamOutcome::Export { text };
         }
 
@@ -673,11 +665,7 @@ impl LogStreamState {
     }
 
     /// Intent routing (optionally with lines for selection).
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        lines: &[LogLine<'_>],
-    ) -> LogStreamOutcome {
+    pub fn handle_intent(&mut self, intent: UiIntent, lines: &[LogLine<'_>]) -> LogStreamOutcome {
         if !self.accepts_input {
             return LogStreamOutcome::Ignored;
         }
@@ -847,11 +835,7 @@ impl LogStreamState {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        lines: &[LogLine<'_>],
-    ) -> LogStreamOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent, lines: &[LogLine<'_>]) -> LogStreamOutcome {
         if !self.accepts_input {
             return LogStreamOutcome::Ignored;
         }
@@ -1026,9 +1010,7 @@ impl<'a> LogStream<'a> {
         // Content width for h-scroll
         state.content_width = view
             .iter()
-            .map(|l| {
-                u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX)
-            })
+            .map(|l| u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX))
             .max()
             .unwrap_or(0)
             .saturating_add(40);
@@ -1135,12 +1117,12 @@ impl<'a> LogStream<'a> {
 
                 let style = if colorless {
                     if selected || cursor {
-                        self.system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
+                        self.system
+                            .style(Role::TextStrong)
+                            .add_modifier(Modifier::BOLD)
                     } else {
                         match line.level {
-                            LogLevel::Trace | LogLevel::Debug => {
-                                self.system.style(Role::TextMuted)
-                            }
+                            LogLevel::Trace | LogLevel::Debug => self.system.style(Role::TextMuted),
                             _ => self.system.style(Role::Text),
                         }
                     }
@@ -1218,7 +1200,10 @@ impl<'a> LogStream<'a> {
                 } else {
                     let skip = usize::from(state.h_offset);
                     let chars: String = body.chars().skip(skip).collect();
-                    vec![take_display_cols(&chars, usize::from(area.width.saturating_sub(1))).to_string()]
+                    vec![
+                        take_display_cols(&chars, usize::from(area.width.saturating_sub(1)))
+                            .to_string(),
+                    ]
                 };
 
                 let row0 = py;
@@ -1351,11 +1336,7 @@ pub fn log_lines_from_plain<'a>(
     text_buf.clear();
     for (i, line) in owned.iter().enumerate() {
         id_buf.push(i.to_string());
-        let t: String = line
-            .spans
-            .iter()
-            .map(|s| s.content.as_ref())
-            .collect();
+        let t: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
         text_buf.push(t);
     }
     id_buf
@@ -1387,12 +1368,18 @@ mod tests {
 
     fn sample() -> Vec<LogLine<'static>> {
         vec![
-            LogLine::new("1", LogLevel::Info, "boot").timestamp("12:00:00").source("main"),
+            LogLine::new("1", LogLevel::Info, "boot")
+                .timestamp("12:00:00")
+                .source("main"),
             LogLine::new("2", LogLevel::Debug, "load 東京").timestamp("12:00:01"),
-            LogLine::new("3", LogLevel::Warn, "retry").timestamp("12:00:02").source("net"),
+            LogLine::new("3", LogLevel::Warn, "retry")
+                .timestamp("12:00:02")
+                .source("net"),
             LogLine::new("4", LogLevel::Error, "fail 🧪").timestamp("12:00:03"),
             LogLine::new("5", LogLevel::Info, "ready").timestamp("12:00:04"),
-            LogLine::new("6", LogLevel::Trace, "tick").timestamp("12:00:05").batch_count(8),
+            LogLine::new("6", LogLevel::Trace, "tick")
+                .timestamp("12:00:05")
+                .batch_count(8),
         ]
     }
 
@@ -1401,10 +1388,7 @@ mod tests {
         let mut state = LogStreamState::new();
         state.on_append(100, 10);
         assert!(state.is_following());
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE),
-            &[],
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE), &[]);
         assert!(matches!(out, LogStreamOutcome::Detach));
         assert!(!state.is_following());
     }
@@ -1421,11 +1405,17 @@ mod tests {
             LogStreamOutcome::Follow
         ));
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE), &lines),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
+                &lines
+            ),
             LogStreamOutcome::Detach
         ));
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE), &lines),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE),
+                &lines
+            ),
             LogStreamOutcome::Follow
         ));
     }
@@ -1483,7 +1473,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         stream.render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("boot") || text.contains("ready"), "{text}");
     }
 
@@ -1498,8 +1492,15 @@ mod tests {
         let area = Rect::new(0, 0, 60, 8);
         let mut buf = Buffer::empty(area);
         stream.render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("drop") || text.contains("42") || text.contains("follow"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("drop") || text.contains("42") || text.contains("follow"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1555,11 +1556,7 @@ mod tests {
     #[test]
     fn fuzz_filter_levels() {
         let lines = sample();
-        for floor in [
-            LogLevel::Trace,
-            LogLevel::Info,
-            LogLevel::Error,
-        ] {
+        for floor in [LogLevel::Trace, LogLevel::Info, LogLevel::Error] {
             let v = filter_log_lines(&lines, "", floor);
             assert!(v.iter().all(|l| l.level >= floor));
         }
@@ -1612,10 +1609,7 @@ mod tests {
 
     #[test]
     fn log_lines_from_plain_bridge() {
-        let owned = vec![
-            Line::from("hello"),
-            Line::from("world 東京"),
-        ];
+        let owned = vec![Line::from("hello"), Line::from("world 東京")];
         let mut ids = Vec::new();
         let mut texts = Vec::new();
         let lines = log_lines_from_plain(&owned, &mut ids, &mut texts);

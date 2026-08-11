@@ -20,17 +20,15 @@
 //!
 //! Research: multi-agent products, Grok Build subagents, orchestration UIs.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{ActivityKind, ActivityModel, ActivityScope},
+    style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{Card, SemanticStatus},
 };
@@ -355,7 +353,10 @@ impl SubagentRun {
     #[must_use]
     pub fn can_detach(&self) -> bool {
         matches!(self.phase(), SubagentPhase::Live)
-            && matches!(self.status, SemanticStatus::Running | SemanticStatus::Waiting)
+            && matches!(
+                self.status,
+                SemanticStatus::Running | SemanticStatus::Waiting
+            )
     }
 
     /// Header line.
@@ -452,14 +453,14 @@ pub fn subagent_to_activity_model(run: &SubagentRun) -> ActivityModel {
     if let Some(p) = run.progress {
         m = m.progress(p);
     }
-    if let Some(s) = run
-        .latest_summary
-        .as_ref()
-        .or(run.result_summary.as_ref())
-    {
+    if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
         m = m.detail(s.clone());
     }
-    if let Some(w) = run.latest_summary.as_ref().filter(|_| run.phase() == SubagentPhase::Live) {
+    if let Some(w) = run
+        .latest_summary
+        .as_ref()
+        .filter(|_| run.phase() == SubagentPhase::Live)
+    {
         // waiting reason-ish from summary when waiting
         if matches!(run.status, SemanticStatus::Waiting) {
             m = m.waiting_reason(w.clone());
@@ -504,11 +505,7 @@ pub fn project_subagent_lines(run: &SubagentRun, expanded: bool, ascii: bool) ->
                 lines.push(format!("  result: {r}"));
             }
         }
-    } else if let Some(s) = run
-        .latest_summary
-        .as_ref()
-        .or(run.result_summary.as_ref())
-    {
+    } else if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
         lines.push(format!("  → {s}"));
     }
     lines
@@ -668,15 +665,11 @@ impl SubagentCardState {
         match self.presentation {
             SubagentPresentation::CompactRow => {
                 self.presentation = SubagentPresentation::Card;
-                SubagentCardOutcome::Expanded {
-                    id: id.to_string(),
-                }
+                SubagentCardOutcome::Expanded { id: id.to_string() }
             }
             SubagentPresentation::Card | SubagentPresentation::Fullscreen => {
                 self.presentation = SubagentPresentation::CompactRow;
-                SubagentCardOutcome::Collapsed {
-                    id: id.to_string(),
-                }
+                SubagentCardOutcome::Collapsed { id: id.to_string() }
             }
         }
     }
@@ -694,45 +687,31 @@ impl SubagentCardState {
             KeyCode::Char('s')
                 if key.modifiers.is_empty() && matches!(run.phase(), SubagentPhase::Live) =>
             {
-                SubagentCardOutcome::SteerRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::SteerRequested { id: run.id.clone() }
             }
             KeyCode::Char('m')
                 if key.modifiers.is_empty() && matches!(run.phase(), SubagentPhase::Live) =>
             {
-                SubagentCardOutcome::MessageRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::MessageRequested { id: run.id.clone() }
             }
-            KeyCode::Char('i') if key.modifiers.is_empty() => SubagentCardOutcome::InspectRequested {
-                id: run.id.clone(),
-            },
+            KeyCode::Char('i') if key.modifiers.is_empty() => {
+                SubagentCardOutcome::InspectRequested { id: run.id.clone() }
+            }
             KeyCode::Char('c') if key.modifiers.is_empty() && run.can_cancel() => {
-                SubagentCardOutcome::CancelRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::CancelRequested { id: run.id.clone() }
             }
             KeyCode::Char('r') if key.modifiers.is_empty() && run.can_retry() => {
-                SubagentCardOutcome::RetryRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::RetryRequested { id: run.id.clone() }
             }
             KeyCode::Char('d') if key.modifiers.is_empty() && run.can_detach() => {
-                SubagentCardOutcome::DetachRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::DetachRequested { id: run.id.clone() }
             }
             KeyCode::Char('p') if key.modifiers.is_empty() && run.can_promote() => {
-                SubagentCardOutcome::PromoteResult {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::PromoteResult { id: run.id.clone() }
             }
             KeyCode::Char('f') if key.modifiers.is_empty() => {
                 self.presentation = SubagentPresentation::Fullscreen;
-                SubagentCardOutcome::FullscreenRequested {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::FullscreenRequested { id: run.id.clone() }
             }
             KeyCode::Char('u')
                 if key.modifiers.is_empty()
@@ -753,9 +732,7 @@ impl SubagentCardState {
             }
             KeyCode::Esc if matches!(self.presentation, SubagentPresentation::Fullscreen) => {
                 self.presentation = SubagentPresentation::Card;
-                SubagentCardOutcome::Expanded {
-                    id: run.id.clone(),
-                }
+                SubagentCardOutcome::Expanded { id: run.id.clone() }
             }
             _ => SubagentCardOutcome::Ignored,
         }
@@ -770,32 +747,30 @@ impl SubagentCardState {
             if rect.contains(event.position) {
                 return match act {
                     SubagentAction::ToggleExpand => self.toggle_expand(&run.id),
-                    SubagentAction::Steer => SubagentCardOutcome::SteerRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::Message => SubagentCardOutcome::MessageRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::Inspect => SubagentCardOutcome::InspectRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::Cancel => SubagentCardOutcome::CancelRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::Retry => SubagentCardOutcome::RetryRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::Detach => SubagentCardOutcome::DetachRequested {
-                        id: run.id.clone(),
-                    },
-                    SubagentAction::PromoteResult => SubagentCardOutcome::PromoteResult {
-                        id: run.id.clone(),
-                    },
+                    SubagentAction::Steer => {
+                        SubagentCardOutcome::SteerRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::Message => {
+                        SubagentCardOutcome::MessageRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::Inspect => {
+                        SubagentCardOutcome::InspectRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::Cancel => {
+                        SubagentCardOutcome::CancelRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::Retry => {
+                        SubagentCardOutcome::RetryRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::Detach => {
+                        SubagentCardOutcome::DetachRequested { id: run.id.clone() }
+                    }
+                    SubagentAction::PromoteResult => {
+                        SubagentCardOutcome::PromoteResult { id: run.id.clone() }
+                    }
                     SubagentAction::Fullscreen => {
                         self.presentation = SubagentPresentation::Fullscreen;
-                        SubagentCardOutcome::FullscreenRequested {
-                            id: run.id.clone(),
-                        }
+                        SubagentCardOutcome::FullscreenRequested { id: run.id.clone() }
                     }
                     SubagentAction::OpenParent => SubagentCardOutcome::OpenParent {
                         parent_id: run.parent_id.clone(),
@@ -849,12 +824,7 @@ impl<'a> SubagentCard<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SubagentCardState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
         state.action_hits.clear();
         if area.is_empty() {
             return;
@@ -1102,11 +1072,7 @@ impl<'a> SubagentCard<'a> {
         let line = run.header_line(ascii);
         let indent = "  ".repeat(usize::from(run.depth.min(4)));
         let mut text = format!("{indent}{line}");
-        if let Some(s) = run
-            .latest_summary
-            .as_ref()
-            .or(run.result_summary.as_ref())
-        {
+        if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
             text.push_str(" · ");
             text.push_str(&take_display_cols(s, 24));
         }
@@ -1133,12 +1099,7 @@ impl<'a> SubagentCard<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SubagentCardState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
         self.paint(area, buffer, state);
     }
 }

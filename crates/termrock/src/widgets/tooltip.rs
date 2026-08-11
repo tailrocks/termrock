@@ -17,12 +17,7 @@
 
 use std::time::{Duration, Instant};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{
@@ -464,11 +459,7 @@ impl TooltipState {
     /// FrameTick-driven advance (canonical).
     ///
     /// Under [`Motion::Reduced`] / [`Motion::Off`], show delay is zero.
-    pub fn advance(
-        &mut self,
-        tick: FrameTick,
-        motion: Motion,
-    ) -> TooltipOutcome {
+    pub fn advance(&mut self, tick: FrameTick, motion: Motion) -> TooltipOutcome {
         if self.disabled {
             self.force_hide();
             return TooltipOutcome::Disabled;
@@ -772,16 +763,26 @@ mod tests {
         ));
         assert!(!state.is_visible());
         let out = state.tick_hover(250, true);
-        assert!(state.is_visible(), "expected visible after delay, got {out:?}");
-        assert!(matches!(out, TooltipOutcome::Shown | TooltipOutcome::Ignored));
+        assert!(
+            state.is_visible(),
+            "expected visible after delay, got {out:?}"
+        );
+        assert!(matches!(
+            out,
+            TooltipOutcome::Shown | TooltipOutcome::Ignored
+        ));
         let out = state.tick_hover(0, false);
         assert!(!state.is_visible());
-        assert!(matches!(out, TooltipOutcome::Hidden | TooltipOutcome::Ignored));
+        assert!(matches!(
+            out,
+            TooltipOutcome::Hidden | TooltipOutcome::Ignored
+        ));
     }
 
     #[test]
     fn focus_trigger_without_pointer() {
-        let mut state = TooltipState::with_delay(Duration::from_millis(100)).trigger(TooltipTrigger::Focus);
+        let mut state =
+            TooltipState::with_delay(Duration::from_millis(100)).trigger(TooltipTrigger::Focus);
         state.set_focus_within(true);
         let origin = Instant::now();
         let tick0 = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
@@ -797,8 +798,7 @@ mod tests {
 
     #[test]
     fn pointer_only_ignores_focus() {
-        let mut state =
-            TooltipState::with_delay(Duration::ZERO).trigger(TooltipTrigger::Pointer);
+        let mut state = TooltipState::with_delay(Duration::ZERO).trigger(TooltipTrigger::Pointer);
         state.set_focus_within(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
         let _ = state.advance(tick, Motion::Full);
@@ -854,7 +854,11 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buf = Buffer::empty(area);
         tip.paint(area, &mut buf, &state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(!text.contains("only on hover"), "essential leaked: {text}");
     }
 
@@ -869,12 +873,18 @@ mod tests {
         let area = Rect::new(0, 0, 24, 2);
         let mut buf = Buffer::empty(area);
         Tooltip::new("Save file", &system).paint(area, &mut buf, &state);
-        let t: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let t: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(t.contains("Save"), "{t}");
 
         let mut buf2 = Buffer::empty(area);
         Tooltip::content(
-            TooltipContent::plain("Save").shortcut("C-s").essential_elsewhere(true),
+            TooltipContent::plain("Save")
+                .shortcut("C-s")
+                .essential_elsewhere(true),
             &system,
         )
         .shortcut()
@@ -890,7 +900,11 @@ mod tests {
         )
         .rich()
         .paint(Rect::new(0, 0, 28, 2), &mut buf3, &state);
-        let t3: String = buf3.content().iter().map(|c| c.symbol().to_string()).collect();
+        let t3: String = buf3
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(t3.contains("Save") || t3.contains("Writes"), "{t3}");
     }
 
@@ -906,13 +920,7 @@ mod tests {
         let bounds = Rect::new(0, 0, 80, 24);
         let anchor = Rect::new(10, 10, 8, 1);
         let mut stack = OverlayStack::<()>::new();
-        let tip = open_tooltip_overlay(
-            &mut stack,
-            bounds,
-            anchor,
-            OverlaySize::menu(16, 1),
-            None,
-        );
+        let tip = open_tooltip_overlay(&mut stack, bounds, anchor, OverlaySize::menu(16, 1), None);
         assert!(matches!(tip, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::Tooltip);
         assert!(!stack.top_owns_input());

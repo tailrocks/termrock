@@ -17,21 +17,17 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
         data_view::{LoadState, VirtualWindow},
-        highlighted_text::{
-            HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate,
-        },
+        highlighted_text::{HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate},
         quick_open::{QuickOpenItem, QuickOpenPreview},
     },
 };
@@ -181,9 +177,7 @@ impl SearchResultsStatus {
     pub fn summary_line(&self, visible: usize) -> String {
         match self {
             Self::Idle => "type to search".into(),
-            Self::Loading { message } => message
-                .clone()
-                .unwrap_or_else(|| "searching…".into()),
+            Self::Loading { message } => message.clone().unwrap_or_else(|| "searching…".into()),
             Self::Partial { resident, total } => match total {
                 Some(t) => format!("streaming {resident}/{t} · showing {visible}"),
                 None => format!("streaming {resident}+ · showing {visible}"),
@@ -192,9 +186,7 @@ impl SearchResultsStatus {
                 Some(t) => format!("{t} results · showing {visible}"),
                 None => format!("{visible} results"),
             },
-            Self::Empty { message } => message
-                .clone()
-                .unwrap_or_else(|| "no matches".into()),
+            Self::Empty { message } => message.clone().unwrap_or_else(|| "no matches".into()),
             Self::Error { message, .. } => format!("error · {message}"),
             Self::Stale { generation } => format!("stale gen {generation} · refresh"),
             Self::Cancelled => "cancelled".into(),
@@ -447,18 +439,10 @@ pub fn flatten_search_results<'a>(
 pub fn collect_match_targets(items: &[SearchResultItem<'_>]) -> Vec<(usize, bool)> {
     let mut out = Vec::new();
     for (i, item) in items.iter().enumerate() {
-        if item
-            .title_matches
-            .map(|m| !m.is_empty())
-            .unwrap_or(false)
-        {
+        if item.title_matches.map(|m| !m.is_empty()).unwrap_or(false) {
             out.push((i, false));
         }
-        if item
-            .snippet_matches
-            .map(|m| !m.is_empty())
-            .unwrap_or(false)
-        {
+        if item.snippet_matches.map(|m| !m.is_empty()).unwrap_or(false) {
             out.push((i, true));
         }
     }
@@ -508,14 +492,11 @@ pub fn keep_first_match_slice(source: &str, matches: &[MatchRange], max_cols: us
 
 /// Project items to QuickOpen.
 #[must_use]
-pub fn search_results_to_quick_open(
-    items: &[SearchResultItem<'_>],
-) -> Vec<QuickOpenItem<String>> {
+pub fn search_results_to_quick_open(items: &[SearchResultItem<'_>]) -> Vec<QuickOpenItem<String>> {
     items
         .iter()
         .map(|it| {
-            let mut item = QuickOpenItem::new(it.id.to_string(), it.title)
-                .kind(it.kind.id());
+            let mut item = QuickOpenItem::new(it.id.to_string(), it.title).kind(it.kind.id());
             if !it.source.is_empty() {
                 item = item.detail(it.source);
             } else if !it.snippet.is_empty() {
@@ -703,9 +684,7 @@ impl SearchResultsState {
     /// Apply host results if generation matches; else mark stale.
     pub fn apply_results(&mut self, generation: u64, status: SearchResultsStatus, count: usize) {
         if generation < self.generation {
-            self.status = SearchResultsStatus::Stale {
-                generation,
-            };
+            self.status = SearchResultsStatus::Stale { generation };
             return;
         }
         if generation > self.generation {
@@ -764,19 +743,20 @@ impl SearchResultsState {
         // Status-only keys
         if matches!(
             self.status,
-            SearchResultsStatus::Error { retryable: true, .. }
+            SearchResultsStatus::Error {
+                retryable: true,
+                ..
+            }
         ) && matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter)
             && key.modifiers.is_empty()
         {
             return SearchResultsOutcome::RetrySearch;
         }
-        if matches!(self.status, SearchResultsStatus::Stale { generation }) {
-            if let SearchResultsStatus::Stale { generation } = self.status {
-                if matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter)
-                    && key.modifiers.is_empty()
-                {
-                    return SearchResultsOutcome::RefreshStale { generation };
-                }
+        if let SearchResultsStatus::Stale { generation } = self.status {
+            if matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter)
+                && key.modifiers.is_empty()
+            {
+                return SearchResultsOutcome::RefreshStale { generation };
             }
         }
         if matches!(
@@ -1009,9 +989,9 @@ impl SearchResultsState {
         let (item_index, in_snippet) = targets[self.match_walk];
         let id = items[item_index].id.to_string();
         // Move cursor to flattened row for this item
-        if let Some(fi) = flat.iter().position(|r| {
-            matches!(r, SearchFlatRow::Item { item_index: i, .. } if *i == item_index)
-        }) {
+        if let Some(fi) = flat.iter().position(
+            |r| matches!(r, SearchFlatRow::Item { item_index: i, .. } if *i == item_index),
+        ) {
             self.cursor = fi;
             self.reveal(fi);
         }
@@ -1062,9 +1042,9 @@ impl SearchResultsState {
                         SearchResultsOutcome::GroupToggled { id, collapsed }
                     }
                     Some((SearchHitKind::Item, id)) => {
-                        if let Some(fi) = flat.iter().position(|r| {
-                            matches!(r, SearchFlatRow::Item { item, .. } if item.id == id)
-                        }) {
+                        if let Some(fi) = flat.iter().position(
+                            |r| matches!(r, SearchFlatRow::Item { item, .. } if item.id == id),
+                        ) {
                             self.cursor = fi;
                             self.reveal(fi);
                         }
@@ -1251,10 +1231,7 @@ impl<'a> SearchResults<'a> {
                     } else {
                         " "
                     };
-                    let line = format!(
-                        "{mark}{disc} {} ({})",
-                        group.label, group.count
-                    );
+                    let line = format!("{mark}{disc} {} ({})", group.label, group.count);
                     buffer.set_stringn(
                         area.x,
                         py,
@@ -1287,10 +1264,7 @@ impl<'a> SearchResults<'a> {
                         " "
                     };
                     let glyph = item.kind.glyph(ascii);
-                    let line_no = item
-                        .line
-                        .map(|n| format!(":{n}"))
-                        .unwrap_or_default();
+                    let line_no = item.line.map(|n| format!(":{n}")).unwrap_or_default();
                     let title_budget = usize::from(area.width).saturating_sub(4);
                     // Focused match walk: mark first range focused when this is walk target
                     let title_ranges = promote_focused(
@@ -1678,7 +1652,12 @@ mod tests {
     fn never_runs_search_io() {
         let src = include_str!("search_results.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["std::fs::", "std::process::Command", "reqwest::", "tokio::fs"] {
+        for forbidden in [
+            "std::fs::",
+            "std::process::Command",
+            "reqwest::",
+            "tokio::fs",
+        ] {
             assert!(!body.contains(forbidden), "must not contain {forbidden}");
         }
     }

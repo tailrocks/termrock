@@ -484,16 +484,14 @@ pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
 #[must_use]
 pub fn center_line_x(area: Rect, display_width: u16) -> u16 {
     let w = display_width.min(area.width);
-    area.x
-        .saturating_add(area.width.saturating_sub(w) / 2)
+    area.x.saturating_add(area.width.saturating_sub(w) / 2)
 }
 
 /// Vertically center a block of `height` rows inside `area`. Returns top y.
 #[must_use]
 pub fn center_block_y(area: Rect, height: u16) -> u16 {
     let h = height.min(area.height);
-    area.y
-        .saturating_add(area.height.saturating_sub(h) / 2)
+    area.y.saturating_add(area.height.saturating_sub(h) / 2)
 }
 
 fn inset(area: Rect, mx: u16, my: u16) -> Rect {
@@ -617,9 +615,7 @@ mod tests {
 
     #[test]
     fn min_honored_when_room() {
-        let layout = Center::new(2, 1)
-            .min(8, 3)
-            .layout(Rect::new(0, 0, 40, 20));
+        let layout = Center::new(2, 1).min(8, 3).layout(Rect::new(0, 0, 40, 20));
         assert_eq!(layout.child.width, 8);
         assert_eq!(layout.child.height, 3);
     }
@@ -681,7 +677,9 @@ mod tests {
                                     layout.child
                                 );
                                 // content also ⊆ area
-                                assert!(child_inside(outer, layout.content) || layout.content == outer);
+                                assert!(
+                                    child_inside(outer, layout.content) || layout.content == outer
+                                );
                             }
                         }
                     }
@@ -764,7 +762,9 @@ mod tests {
 
     #[test]
     fn debug_summary_nonempty() {
-        let s = Center::new(4, 2).layout(Rect::new(0, 0, 20, 10)).debug_summary();
+        let s = Center::new(4, 2)
+            .layout(Rect::new(0, 0, 20, 10))
+            .debug_summary();
         assert!(s.contains("center"));
         assert!(s.contains("child="));
     }

@@ -10,6 +10,7 @@
 //! Callout / Alert: [`crate::widgets::Callout`], [`crate::widgets::Alert`].
 //! Section chrome: [`crate::widgets::Section`].
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
@@ -243,11 +244,7 @@ impl<'a> Heading<'a> {
     /// Natural height in rows (1 or 2).
     #[must_use]
     pub fn measure_height(&self) -> u16 {
-        if self.wants_rule() {
-            2
-        } else {
-            1
-        }
+        if self.wants_rule() { 2 } else { 1 }
     }
 
     /// Prefix string for hierarchy (`# `, `## `, …) or empty.
@@ -648,12 +645,7 @@ impl<'a> Paragraph<'a> {
         let mut rest = self.text;
         // First line
         if rest.is_empty() {
-            out.push(format!(
-                "{}{}{}",
-                " ".repeat(base),
-                prefix,
-                ""
-            ));
+            out.push(format!("{}{}{}", " ".repeat(base), prefix, ""));
             return out;
         }
         let first = take_display_cols(rest, first_budget);
@@ -661,11 +653,7 @@ impl<'a> Paragraph<'a> {
         rest = advance_by_display(rest, first_budget);
         out.push(format!("{}{}{}", " ".repeat(base), prefix, first));
         // Subsequent
-        let cont_pad = if hang {
-            base + prefix_w
-        } else {
-            base
-        };
+        let cont_pad = if hang { base + prefix_w } else { base };
         while !rest.is_empty() {
             let line = take_display_cols(rest, rest_budget);
             if line.is_empty() {
@@ -682,7 +670,9 @@ impl<'a> Paragraph<'a> {
     /// Natural height for `width` (full wrap, no height cap).
     #[must_use]
     pub fn measure_height(&self, width: u16) -> u16 {
-        u16::try_from(self.wrap_lines(width).len()).unwrap_or(u16::MAX).max(1)
+        u16::try_from(self.wrap_lines(width).len())
+            .unwrap_or(u16::MAX)
+            .max(1)
     }
 
     /// Layout + wrap for area.
@@ -902,11 +892,8 @@ mod tests {
     fn layout_is_cheap() {
         let system = DesignSystem::default();
         let h = Heading::new("Perf", &system).reading().h1();
-        let p = Paragraph::new(
-            "performance path for wrap and heading rule layout",
-            &system,
-        )
-        .reading();
+        let p =
+            Paragraph::new("performance path for wrap and heading rule layout", &system).reading();
         let area = Rect::new(0, 0, 40, 8);
         for _ in 0..10_000 {
             let _ = h.layout(area);

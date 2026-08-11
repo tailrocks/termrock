@@ -16,6 +16,7 @@
 //!
 //! Research: observability event consoles, k8s events, agent activity streams.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -927,10 +928,7 @@ impl<'a> EventStream<'a, ()> {
 impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
     /// Typed-id stream.
     #[must_use]
-    pub const fn with_events(
-        events: &'a [StreamEvent<'a, Id>],
-        system: &'a DesignSystem,
-    ) -> Self {
+    pub const fn with_events(events: &'a [StreamEvent<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             events,
             system,
@@ -962,12 +960,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
     }
 
     /// Paint O(visible).
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut EventStreamState<Id>,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut EventStreamState<Id>) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -983,8 +976,8 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
         let total = view.len().min(u16::MAX as usize) as u16;
         let following = state.scroll.is_following();
         let unread = state.unread();
-        let show_chip = area.height >= 2
-            && (following || unread > 0 || state.dropped > 0 || !view.is_empty());
+        let show_chip =
+            area.height >= 2 && (following || unread > 0 || state.dropped > 0 || !view.is_empty());
         let detail_h = if state.show_inline_detail
             && state.detail_open
             && state.selected.is_some()
@@ -1054,7 +1047,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 
                 let style = if colorless {
                     if selected || cursor {
-                        self.system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
+                        self.system
+                            .style(Role::TextStrong)
+                            .add_modifier(Modifier::BOLD)
                     } else {
                         self.system.style(Role::Text)
                     }
@@ -1098,7 +1093,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 } else if narrow {
                     format!(
                         "{sev} {} {}{batch}",
-                        event.event_type, event.summary, batch = batch
+                        event.event_type,
+                        event.summary,
+                        batch = batch
                     )
                 } else {
                     let mut parts = vec![
@@ -1152,7 +1149,10 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             if let Some(sel) = state.selected.as_ref() {
                 if let Some(ev) = view.iter().find(|e| &e.id == sel) {
                     let detail = ev.detail.unwrap_or(ev.summary);
-                    let line = format!("  └ {}", take_display_cols(detail, usize::from(area.width.saturating_sub(4))));
+                    let line = format!(
+                        "  └ {}",
+                        take_display_cols(detail, usize::from(area.width.saturating_sub(4)))
+                    );
                     buffer.set_stringn(
                         area.x,
                         dy,
@@ -1273,10 +1273,7 @@ mod tests {
         let mut state = EventStreamState::<&str>::new();
         assert!(state.is_following());
         state.on_append(events.len() as u16, 10);
-        let out = state.handle_intent(
-            UiIntent::Move(NavigationMove::Previous),
-            &events,
-        );
+        let out = state.handle_intent(UiIntent::Move(NavigationMove::Previous), &events);
         assert!(matches!(
             out,
             EventStreamOutcome::Detach | EventStreamOutcome::Selected(_)
@@ -1348,7 +1345,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         stream.render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Scheduled") || text.contains("Failed") || text.contains("tool"),
             "{text}"
@@ -1391,18 +1392,23 @@ mod tests {
     #[test]
     fn burst_batch_marker() {
         let system = DesignSystem::default();
-        let events = [
-            StreamEvent::with_id("b", "Warning", "t", "flapping")
-                .severity(EventSeverity::Warn)
-                .batch_count(bench::BURST_BATCH),
-        ];
+        let events = [StreamEvent::with_id("b", "Warning", "t", "flapping")
+            .severity(EventSeverity::Warn)
+            .batch_count(bench::BURST_BATCH)];
         let mut state = EventStreamState::<&str>::new();
         let stream = EventStream::with_events(&events, &system);
         let area = Rect::new(0, 0, 60, 4);
         let mut buf = Buffer::empty(area);
         stream.render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains('×') || text.contains("64") || text.contains("flapping"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('×') || text.contains("64") || text.contains("flapping"),
+            "{text}"
+        );
     }
 
     #[test]

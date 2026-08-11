@@ -12,12 +12,8 @@
 //!
 //! Research: btop, process monitors, collaboration presence, agent status.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::Widget,
-};
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -484,7 +480,10 @@ mod tests {
             SemanticStatus::from_severity(Severity::Success),
             SemanticStatus::Success
         );
-        assert_eq!(SemanticStatus::from_severity(Severity::Error), SemanticStatus::Failed);
+        assert_eq!(
+            SemanticStatus::from_severity(Severity::Error),
+            SemanticStatus::Failed
+        );
         assert_eq!(
             SemanticStatus::from_severity(Severity::Warning),
             SemanticStatus::Warning
@@ -600,14 +599,8 @@ mod tests {
         assert_ne!(u.glyph(), a.glyph());
         let _ = sys_u;
         // GlyphSet path
-        assert_eq!(
-            SemanticStatus::Failed.glyph_for_set(GlyphSet::Ascii),
-            "x"
-        );
-        assert_eq!(
-            SemanticStatus::Failed.glyph_for_set(GlyphSet::Unicode),
-            "✗"
-        );
+        assert_eq!(SemanticStatus::Failed.glyph_for_set(GlyphSet::Ascii), "x");
+        assert_eq!(SemanticStatus::Failed.glyph_for_set(GlyphSet::Unicode), "✗");
     }
 
     #[test]
@@ -642,7 +635,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains('✗') || text.contains('x') || text.contains("err"), "{text}");
+        assert!(
+            text.contains('✗') || text.contains('x') || text.contains("err"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -677,7 +673,8 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         StatusIndicator::compact(SemanticStatus::Online, &system)
             .paint(Rect::new(0, 0, 1, 1), &mut buf);
-        StatusIndicator::new(SemanticStatus::Unknown, &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+        StatusIndicator::new(SemanticStatus::Unknown, &system)
+            .paint(Rect::new(0, 0, 0, 0), &mut buf);
     }
 
     #[test]
@@ -692,7 +689,9 @@ mod tests {
                 1 => StatusIndicatorVariant::Labeled,
                 _ => StatusIndicatorVariant::Elapsed,
             };
-            let mut ind = StatusIndicator::new(k, &system).variant(v).ascii(seed % 2 == 0);
+            let mut ind = StatusIndicator::new(k, &system)
+                .variant(v)
+                .ascii(seed % 2 == 0);
             if matches!(v, StatusIndicatorVariant::Elapsed) {
                 ind = ind.elapsed_secs(seed % 10_000);
             }
@@ -719,10 +718,8 @@ mod tests {
                         if y >= f.area().bottom() {
                             break;
                         }
-                        StatusIndicator::new(k, &system).paint(
-                            Rect::new(f.area().x, y, f.area().width, 1),
-                            f.buffer_mut(),
-                        );
+                        StatusIndicator::new(k, &system)
+                            .paint(Rect::new(f.area().x, y, f.area().width, 1), f.buffer_mut());
                         y = y.saturating_add(1);
                     }
                 })

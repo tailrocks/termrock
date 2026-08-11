@@ -11,23 +11,18 @@
 //! [`PanelVariant::Interactive`] (or collapsible header) registers panel-level
 //! focus / activation.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Style,
-    text::Span,
-    widgets::Widget,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
 use ratatui_widgets::block::Block;
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
-use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
-use crate::widgets::skeleton::Skeleton;
 use crate::widgets::empty_state::EmptyState;
 use crate::widgets::error_state::ErrorView;
+use crate::widgets::skeleton::Skeleton;
+use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
 use crate::widgets::view_state::LoadingView;
 
 // PanelChrome lives in `style` (sole chrome enum). Re-exported from widgets::mod.
@@ -188,11 +183,7 @@ impl<'a> PanelSlots<'a> {
             parts.push(format!("· {}", trailing.trim()));
         }
         let text = parts.join(" ");
-        if text.is_empty() {
-            None
-        } else {
-            Some(text)
-        }
+        if text.is_empty() { None } else { Some(text) }
     }
 }
 
@@ -270,7 +261,12 @@ impl PanelState {
     }
 
     /// Key handling via intents (Activate / Toggle / Expand / Collapse).
-    pub fn handle_key(&mut self, key: KeyEvent, collapsible: bool, interactive: bool) -> PanelOutcome {
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        collapsible: bool,
+        interactive: bool,
+    ) -> PanelOutcome {
         if !self.focused || key.kind != KeyEventKind::Press {
             return PanelOutcome::Ignored;
         }
@@ -357,9 +353,10 @@ impl PanelState {
         }
         if collapsible
             && (parts.disclosure.is_some_and(|r| r.contains(event.position))
-                || parts
-                    .header
-                    .is_some_and(|r| r.contains(event.position) && parts.actions.is_none_or(|a| !a.contains(event.position))))
+                || parts.header.is_some_and(|r| {
+                    r.contains(event.position)
+                        && parts.actions.is_none_or(|a| !a.contains(event.position))
+                }))
         {
             self.collapsed = !self.collapsed;
             return PanelOutcome::ToggleCollapsed {
@@ -656,9 +653,7 @@ impl<'a> Panel<'a> {
     pub const fn has_box_border(&self) -> bool {
         match self.variant {
             PanelVariant::Quiet | PanelVariant::DividerOnly => false,
-            PanelVariant::Bordered
-            | PanelVariant::Interactive
-            | PanelVariant::Selected => true,
+            PanelVariant::Bordered | PanelVariant::Interactive | PanelVariant::Selected => true,
         }
     }
 
@@ -717,13 +712,7 @@ impl<'a> Panel<'a> {
         let collapsed = state.is_some_and(|s| s.collapsed && self.collapsible);
         let has_border = self.has_box_border();
         let border_cells: u16 = if has_border { 1 } else { 0 };
-        let inner = shrink(
-            area,
-            border_cells,
-            border_cells,
-            border_cells,
-            border_cells,
-        );
+        let inner = shrink(area, border_cells, border_cells, border_cells, border_cells);
 
         let slots = self.slots_for_width(area.width);
         let has_title = slots.title_text().is_some() || self.collapsible;
@@ -762,14 +751,8 @@ impl<'a> Panel<'a> {
             None
         };
 
-        let footer_y = inner
-            .bottom()
-            .saturating_sub(footer_rows);
-        let body_bottom = if collapsed {
-            y
-        } else {
-            footer_y
-        };
+        let footer_y = inner.bottom().saturating_sub(footer_rows);
+        let body_bottom = if collapsed { y } else { footer_y };
         let body_h = body_bottom.saturating_sub(y);
         let body = if collapsed {
             Rect {
@@ -815,7 +798,9 @@ impl<'a> Panel<'a> {
                 .min(area.width / 2)
                 .max(4);
             Some(Rect {
-                x: area.x.saturating_add(area.width.saturating_sub(band_w).saturating_sub(1)),
+                x: area
+                    .x
+                    .saturating_add(area.width.saturating_sub(band_w).saturating_sub(1)),
                 y: area.y,
                 width: band_w.min(area.width),
                 height: 1.min(area.height),
@@ -853,12 +838,11 @@ impl<'a> Panel<'a> {
         if area.is_empty() {
             return area;
         }
-        let collapsed = state.as_ref().is_some_and(|s| s.collapsed && self.collapsible);
+        let collapsed = state
+            .as_ref()
+            .is_some_and(|s| s.collapsed && self.collapsible);
         let focused = state.as_ref().is_some_and(|s| s.focused);
-        let parts = self.layout(
-            area,
-            state.as_ref().map(|s| &**s),
-        );
+        let parts = self.layout(area, state.as_ref().map(|s| &**s));
 
         // Surface fill (variant-aware).
         let surface_recipe = if focused && self.is_focusable() {
@@ -890,7 +874,10 @@ impl<'a> Panel<'a> {
             let slots = self.slots_for_width(area.width);
             if let Some(title) = self.title_line(slots, Some(collapsed)) {
                 // Reserve right band for header actions so title does not collide.
-                let action_reserve = parts.actions.map(|a| a.width.saturating_add(1)).unwrap_or(0);
+                let action_reserve = parts
+                    .actions
+                    .map(|a| a.width.saturating_add(1))
+                    .unwrap_or(0);
                 let budget = area
                     .width
                     .saturating_sub(4)
@@ -966,7 +953,11 @@ impl<'a> Panel<'a> {
                     if let Some(d) = self.slots.body_detail {
                         empty = empty.detail(d);
                     }
-                    let glyph = self.tokens.glyphs.resolve(crate::style::Glyph::EmptyCircle).text;
+                    let glyph = self
+                        .tokens
+                        .glyphs
+                        .resolve(crate::style::Glyph::EmptyCircle)
+                        .text;
                     empty = empty.glyph(glyph);
                     Widget::render(&empty, parts.body, buffer);
                 }
@@ -1094,13 +1085,7 @@ fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, colla
         } else {
             panel.tokens.style(Role::Text)
         };
-        buffer.set_stringn(
-            header.x,
-            header.y,
-            &t,
-            usize::from(header.width),
-            style,
-        );
+        buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
     }
 }
 
@@ -1191,9 +1176,7 @@ mod tests {
         use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
         let tokens = DesignSystem::default();
         let actions = [PanelAction::new("retry", "Retry")];
-        let panel = Panel::new(&tokens)
-            .title("Job")
-            .header_actions(&actions);
+        let panel = Panel::new(&tokens).title("Job").header_actions(&actions);
         let mut state = PanelState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 6));
         let _ = panel.paint(Rect::new(0, 0, 40, 6), &mut buf, Some(&mut state));
@@ -1387,9 +1370,11 @@ mod tests {
     fn focusable_only_when_interactive_or_collapsible() {
         let tokens = DesignSystem::default();
         assert!(!Panel::new(&tokens).title("x").is_focusable());
-        assert!(Panel::new(&tokens)
-            .variant(PanelVariant::Interactive)
-            .is_focusable());
+        assert!(
+            Panel::new(&tokens)
+                .variant(PanelVariant::Interactive)
+                .is_focusable()
+        );
         assert!(Panel::new(&tokens).collapsible(true).is_focusable());
     }
 

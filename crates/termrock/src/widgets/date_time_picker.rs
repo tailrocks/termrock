@@ -17,6 +17,7 @@
 //!
 //! Research: shadcn Calendar/DatePicker, Textual DateTimeInput patterns.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -25,7 +26,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
@@ -262,20 +265,14 @@ impl CivilDateTime {
     /// `YYYY-MM-DDTHH:MM` or with seconds.
     #[must_use]
     pub fn to_iso(self, with_seconds: bool) -> String {
-        format!(
-            "{}T{}",
-            self.date.to_iso(),
-            self.time.to_iso(with_seconds)
-        )
+        format!("{}T{}", self.date.to_iso(), self.time.to_iso(with_seconds))
     }
 
     /// Parse `YYYY-MM-DDTHH:MM[:SS]` or space separator.
     #[must_use]
     pub fn parse_iso(s: &str) -> Option<Self> {
         let s = s.trim();
-        let (d, t) = s
-            .split_once('T')
-            .or_else(|| s.split_once(' '))?;
+        let (d, t) = s.split_once('T').or_else(|| s.split_once(' '))?;
         Some(Self {
             date: CivilDate::parse_iso(d)?,
             time: CivilTime::parse_iso(t)?,
@@ -429,12 +426,7 @@ impl TimeDisplayFormat {
             Self::Hms24 => t.to_iso(true),
             Self::Hm12 => {
                 let (h12, am) = to_12h(t.hour);
-                format!(
-                    "{}:{:02} {}",
-                    h12,
-                    t.minute,
-                    if am { "AM" } else { "PM" }
-                )
+                format!("{}:{:02} {}", h12, t.minute, if am { "AM" } else { "PM" })
             }
         }
     }
@@ -446,7 +438,10 @@ impl TimeDisplayFormat {
         if let Some(t) = CivilTime::parse_iso(s) {
             return Some(t);
         }
-        if matches!(self, Self::Hm12) || s.to_ascii_uppercase().contains("AM") || s.to_ascii_uppercase().contains("PM") {
+        if matches!(self, Self::Hm12)
+            || s.to_ascii_uppercase().contains("AM")
+            || s.to_ascii_uppercase().contains("PM")
+        {
             return parse_12h(s);
         }
         None
@@ -1083,7 +1078,8 @@ impl DateTimePickerState {
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
-        self.draft.set_focused(on && matches!(self.view, DateTimePickerView::Field));
+        self.draft
+            .set_focused(on && matches!(self.view, DateTimePickerView::Field));
     }
 
     /// Enabled.
@@ -1125,11 +1121,9 @@ impl DateTimePickerState {
                 .map(|t| self.time_fmt.format(t))
                 .unwrap_or_default(),
             DateTimePickerKind::DateTime => match (self.value_date, self.value_time) {
-                (Some(d), Some(t)) => format!(
-                    "{} {}",
-                    self.date_fmt.format(d),
-                    self.time_fmt.format(t)
-                ),
+                (Some(d), Some(t)) => {
+                    format!("{} {}", self.date_fmt.format(d), self.time_fmt.format(t))
+                }
                 (Some(d), None) => self.date_fmt.format(d),
                 _ => String::new(),
             },
@@ -1296,9 +1290,7 @@ impl DateTimePickerState {
                 if let Some(d) = CivilDate::new(self.view_year, self.view_month, day) {
                     let label = format!("{:02} {}", day, weekday_short(d));
                     let enabled = self.is_available(d);
-                    days.push(
-                        CollectionItem::new(d.to_iso(), label).enabled(enabled),
-                    );
+                    days.push(CollectionItem::new(d.to_iso(), label).enabled(enabled));
                 }
             }
         }
@@ -1451,8 +1443,7 @@ impl DateTimePickerState {
             self.view = match self.view {
                 DateTimePickerView::Field => {
                     if self.kind.has_date() {
-                        if self.root.width > 0
-                            && self.root.width < DATE_TIME_PICKER_LIST_MAX_WIDTH
+                        if self.root.width > 0 && self.root.width < DATE_TIME_PICKER_LIST_MAX_WIDTH
                         {
                             DateTimePickerView::DayList
                         } else {
@@ -1816,7 +1807,9 @@ enum ParsedValue {
 }
 
 fn looks_partial_date(s: &str) -> bool {
-    s.len() < 10 && s.chars().all(|c| c.is_ascii_digit() || c == '-' || c == '/')
+    s.len() < 10
+        && s.chars()
+            .all(|c| c.is_ascii_digit() || c == '-' || c == '/')
 }
 
 fn looks_partial_time(s: &str) -> bool {
@@ -1959,11 +1952,7 @@ impl<'a> DateTimePicker<'a> {
             // open marker
             if area.width > 4 {
                 let mark = if state.open {
-                    if self.ascii {
-                        "^"
-                    } else {
-                        "▴"
-                    }
+                    if self.ascii { "^" } else { "▴" }
                 } else if self.ascii {
                     "v"
                 } else {
@@ -2006,14 +1995,16 @@ impl<'a> DateTimePicker<'a> {
                 y,
                 take_display_cols(&cap, usize::from(area.width)),
                 usize::from(area.width),
-                self.system.style(if matches!(
-                    state.validity,
-                    DateTimeValidity::Invalid | DateTimeValidity::OutOfRange
-                ) {
-                    Role::Danger
-                } else {
-                    Role::TextMuted
-                }),
+                self.system.style(
+                    if matches!(
+                        state.validity,
+                        DateTimeValidity::Invalid | DateTimeValidity::OutOfRange
+                    ) {
+                        Role::Danger
+                    } else {
+                        Role::TextMuted
+                    },
+                ),
             );
             y = y.saturating_add(1);
         }
@@ -2083,13 +2074,7 @@ impl<'a> DateTimePicker<'a> {
             if x >= area.right() {
                 break;
             }
-            buffer.set_stringn(
-                x,
-                header_y,
-                h,
-                2,
-                self.system.style(Role::TextMuted),
-            );
+            buffer.set_stringn(x, header_y, h, 2, self.system.style(Role::TextMuted));
         }
 
         // Build grid: find first cell date
@@ -2391,8 +2376,7 @@ impl StatefulWidget for DateTimePicker<'_> {
 /// - Range selection or timezone label is part of the form UX.
 pub mod guidance {
     /// Short doc string for handbooks / Studio.
-    pub const WHEN_TEXT_INPUT: &str =
-        "Prefer TextInput for rare ISO paste and machine-oriented stamps; \
+    pub const WHEN_TEXT_INPUT: &str = "Prefer TextInput for rare ISO paste and machine-oriented stamps; \
          DateTimePicker when browse, range, or stepped time helps.";
 }
 
@@ -2415,10 +2399,7 @@ mod tests {
         assert_eq!(t.to_iso(false), "14:30");
         let dt = CivilDateTime::new(CivilDate::new(2026, 1, 2).unwrap(), t);
         assert!(dt.to_iso(false).starts_with("2026-01-02T14:30"));
-        assert_eq!(
-            CivilDateTime::parse_iso("2026-01-02T14:30"),
-            Some(dt)
-        );
+        assert_eq!(CivilDateTime::parse_iso("2026-01-02T14:30"), Some(dt));
     }
 
     #[test]
@@ -2433,16 +2414,10 @@ mod tests {
     fn display_formats() {
         let d = CivilDate::new(2026, 8, 10).unwrap();
         assert_eq!(DateDisplayFormat::MdySlash.format(d), "08/10/2026");
-        assert_eq!(
-            DateDisplayFormat::MdySlash.parse("08/10/2026"),
-            Some(d)
-        );
+        assert_eq!(DateDisplayFormat::MdySlash.parse("08/10/2026"), Some(d));
         let t = CivilTime::new(0, 5, 0).unwrap();
         assert_eq!(TimeDisplayFormat::Hm12.format(t), "12:05 AM");
-        assert_eq!(
-            TimeDisplayFormat::Hm12.parse("12:05 AM"),
-            Some(t)
-        );
+        assert_eq!(TimeDisplayFormat::Hm12.parse("12:05 AM"), Some(t));
     }
 
     #[test]
@@ -2503,10 +2478,7 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
             DateTimePickerOutcome::Changed
         ));
-        assert_eq!(
-            state.focus_date().map(|d| d.day),
-            Some(11)
-        );
+        assert_eq!(state.focus_date().map(|d| d.day), Some(11));
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             DateTimePickerOutcome::DateChanged { date } if date.day == 11
@@ -2530,8 +2502,8 @@ mod tests {
 
     #[test]
     fn time_list_select() {
-        let mut state = DateTimePickerState::new(DateTimePickerKind::Time)
-            .with_time_step_minutes(30);
+        let mut state =
+            DateTimePickerState::new(DateTimePickerKind::Time).with_time_step_minutes(30);
         state.set_focused(true);
         let _ = state.open(Rect::new(0, 0, 40, 16));
         assert_eq!(state.view(), DateTimePickerView::TimeList);
@@ -2581,8 +2553,8 @@ mod tests {
 
     #[test]
     fn fuzz_keys() {
-        let mut state = DateTimePickerState::new(DateTimePickerKind::DateTime)
-            .with_timezone_label("UTC");
+        let mut state =
+            DateTimePickerState::new(DateTimePickerKind::DateTime).with_timezone_label("UTC");
         state.set_focused(true);
         state.set_today(CivilDate::new(2026, 8, 10).unwrap());
         let _ = state.open(Rect::new(0, 0, 50, 18));

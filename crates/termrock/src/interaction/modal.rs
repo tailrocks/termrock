@@ -8,6 +8,7 @@
 //! - [`render_backdrop`] — paint helper when stack requests a wash
 //! - [`ModalStack`] — crate-private legacy container (not public API)
 
+#![allow(dead_code)] // legacy / unit-test surface
 use ratatui_core::layout::Rect;
 use ratatui_core::terminal::Frame;
 

@@ -816,9 +816,7 @@ impl ToastQueue {
             progress: spec.progress,
             group_id: spec.group_id,
             undo_label: spec.undo_label,
-            announcement: spec
-                .announcement
-                .unwrap_or_else(|| String::new()),
+            announcement: spec.announcement.unwrap_or_else(|| String::new()),
             archive_on_expire: spec.archive_on_expire,
             region: None,
         });
@@ -872,9 +870,7 @@ impl ToastQueue {
         if let Some(pos) = self.live.iter().position(|t| t.id == id) {
             if let Some(t) = self.live.remove(pos) {
                 self.archive(t, ToastArchiveReason::Dismissed);
-                return ToastOutcome::Dismissed {
-                    id: id.to_string(),
-                };
+                return ToastOutcome::Dismissed { id: id.to_string() };
             }
         }
         ToastOutcome::Ignored
@@ -919,7 +915,10 @@ impl ToastQueue {
         if self.paused {
             return None;
         }
-        self.live.iter().filter_map(|t| t.state.next_deadline()).min()
+        self.live
+            .iter()
+            .filter_map(|t| t.state.next_deadline())
+            .min()
     }
 
     /// Latest announcement for a11y (most recent push still live).
@@ -993,7 +992,12 @@ fn place_toast(
     Some(Rect::new(x, y, width, height))
 }
 
-fn measure_toast_size(title: Option<&str>, message: &str, has_undo: bool, progress: Option<u8>) -> (u16, u16) {
+fn measure_toast_size(
+    title: Option<&str>,
+    message: &str,
+    has_undo: bool,
+    progress: Option<u8>,
+) -> (u16, u16) {
     let mut w = display_cols(message) as u16 + 6; // glyph + pad + border
     if let Some(t) = title {
         w = w.max(display_cols(t) as u16 + 6);
@@ -1056,13 +1060,7 @@ fn paint_one_toast(
         );
         if area.width > 2 {
             let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-            buffer.set_stringn(
-                area.x + 1,
-                area.y,
-                &hz,
-                usize::from(area.width - 2),
-                border,
-            );
+            buffer.set_stringn(area.x + 1, area.y, &hz, usize::from(area.width - 2), border);
             buffer.set_stringn(
                 area.x + 1,
                 area.bottom().saturating_sub(1),
@@ -1099,9 +1097,7 @@ fn paint_one_toast(
             y,
             &take_display_cols(&line, usize::from(inner.width)),
             usize::from(inner.width),
-            system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD),
+            system.style(Role::TextStrong).add_modifier(Modifier::BOLD),
         );
         y = y.saturating_add(1);
         if y < inner.bottom() {
@@ -1132,20 +1128,11 @@ fn paint_one_toast(
         if y < inner.bottom() {
             let bar_w = usize::from(inner.width).saturating_sub(5).max(1);
             let filled = (usize::from(pct) * bar_w) / 100;
-            let bar = format!(
-                "{:3}% {}",
-                pct,
-                format!("{}{}", "█".repeat(filled), "░".repeat(bar_w.saturating_sub(filled)))
-            );
+            let empty = bar_w.saturating_sub(filled);
             let bar = if ascii {
-                format!(
-                    "{:3}% {}{}",
-                    pct,
-                    "#".repeat(filled),
-                    "-".repeat(bar_w.saturating_sub(filled))
-                )
+                format!("{:3}% {}{}", pct, "#".repeat(filled), "-".repeat(empty))
             } else {
-                bar
+                format!("{:3}% {}{}", pct, "█".repeat(filled), "░".repeat(empty))
             };
             buffer.set_stringn(
                 inner.x,
@@ -1294,23 +1281,21 @@ impl<'a> Toast<'a> {
             return None;
         }
         // Classic single-line toast geometry (preserved for stories/docs).
-        let (width, height) = if self.title.is_none()
-            && self.progress.is_none()
-            && self.undo_label.is_none()
-        {
-            let width = u16::try_from(display_cols(self.message).saturating_add(4))
-                .unwrap_or(u16::MAX)
-                .min(area.width);
-            (width, 3.min(area.height))
-        } else {
-            let (w, h) = measure_toast_size(
-                self.title,
-                self.message,
-                self.undo_label.is_some(),
-                self.progress,
-            );
-            (w.min(area.width), h.min(area.height))
-        };
+        let (width, height) =
+            if self.title.is_none() && self.progress.is_none() && self.undo_label.is_none() {
+                let width = u16::try_from(display_cols(self.message).saturating_add(4))
+                    .unwrap_or(u16::MAX)
+                    .min(area.width);
+                (width, 3.min(area.height))
+            } else {
+                let (w, h) = measure_toast_size(
+                    self.title,
+                    self.message,
+                    self.undo_label.is_some(),
+                    self.progress,
+                );
+                (w.min(area.width), h.min(area.height))
+            };
         place_toast(
             area,
             width,
@@ -1531,10 +1516,7 @@ mod tests {
             ToastOutcome::Shown { .. }
         ));
         assert!(matches!(
-            q.push(
-                t0,
-                ToastSpec::message("b", "two").dedup_key("same")
-            ),
+            q.push(t0, ToastSpec::message("b", "two").dedup_key("same")),
             ToastOutcome::Shown { .. }
         ));
         assert!(matches!(
@@ -1561,7 +1543,10 @@ mod tests {
                 .lifetime(ToastLifetime::ExpiresAfter(Duration::from_secs(1))),
         );
         let outs = q.advance(tick(start, Duration::from_secs(2)));
-        assert!(outs.iter().any(|o| matches!(o, ToastOutcome::Expired { .. })));
+        assert!(
+            outs.iter()
+                .any(|o| matches!(o, ToastOutcome::Expired { .. }))
+        );
         assert_eq!(q.missed_len(), 1);
         let drained = q.drain_missed();
         assert_eq!(drained[0].id, "x");
@@ -1576,16 +1561,12 @@ mod tests {
         let mut q = ToastQueue::new();
         let _ = q.push(
             t0,
-            ToastSpec::message("p1", "10%")
-                .progress(10)
-                .group("job"),
+            ToastSpec::message("p1", "10%").progress(10).group("job"),
         );
         assert!(matches!(
             q.push(
                 t0,
-                ToastSpec::message("p2", "50%")
-                    .progress(50)
-                    .group("job")
+                ToastSpec::message("p2", "50%").progress(50).group("job")
             ),
             ToastOutcome::Replaced { .. }
         ));
@@ -1639,7 +1620,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("Saved") || text.contains("+") || text.contains("✓"), "{text}");
+        assert!(
+            text.contains("Saved") || text.contains("+") || text.contains("✓"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1689,12 +1673,13 @@ mod tests {
                 0 => {
                     let _ = q.push(
                         t,
-                        ToastSpec::message(format!("id-{i}"), format!("m{i}"))
-                            .priority(if seed % 2 == 0 {
+                        ToastSpec::message(format!("id-{i}"), format!("m{i}")).priority(
+                            if seed % 2 == 0 {
                                 ToastPriority::Low
                             } else {
                                 ToastPriority::High
-                            }),
+                            },
+                        ),
                     );
                 }
                 1 => {

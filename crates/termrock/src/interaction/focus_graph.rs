@@ -184,7 +184,13 @@ impl FocusDebugSnapshot {
             lines.push(format!("tab: {}", order.join(" → ")));
         }
         if !self.history.is_empty() {
-            let hist = self.history.iter().rev().take(6).cloned().collect::<Vec<_>>();
+            let hist = self
+                .history
+                .iter()
+                .rev()
+                .take(6)
+                .cloned()
+                .collect::<Vec<_>>();
             lines.push(format!("hist: {}", hist.join(" · ")));
         }
         lines.truncate(max);
@@ -338,14 +344,12 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
             .filter(|n| n.focusable && n.enabled && self.in_trap(n))
             .collect();
         nodes.sort_by(|a, b| {
-            a.tab_index
-                .cmp(&b.tab_index)
-                .then_with(|| {
-                    // stable: registration index
-                    let ia = self.nodes.iter().position(|n| n.id == a.id).unwrap_or(0);
-                    let ib = self.nodes.iter().position(|n| n.id == b.id).unwrap_or(0);
-                    ia.cmp(&ib)
-                })
+            a.tab_index.cmp(&b.tab_index).then_with(|| {
+                // stable: registration index
+                let ia = self.nodes.iter().position(|n| n.id == a.id).unwrap_or(0);
+                let ib = self.nodes.iter().position(|n| n.id == b.id).unwrap_or(0);
+                ia.cmp(&ib)
+            })
         });
         nodes.into_iter().map(|n| &n.id).collect()
     }
@@ -461,12 +465,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
         let Some(cur) = self.focused.clone() else {
             return self.focus_next();
         };
-        let Some(cur_area) = self
-            .nodes
-            .iter()
-            .find(|n| n.id == cur)
-            .and_then(|n| n.area)
-        else {
+        let Some(cur_area) = self.nodes.iter().find(|n| n.id == cur).and_then(|n| n.area) else {
             return FocusOutcome::Ignored;
         };
         let origin = center(cur_area);
@@ -474,11 +473,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
             .nodes
             .iter()
             .filter(|n| {
-                n.focusable
-                    && n.enabled
-                    && n.id != cur
-                    && self.in_trap(n)
-                    && n.area.is_some()
+                n.focusable && n.enabled && n.id != cur && self.in_trap(n) && n.area.is_some()
             })
             .collect();
         let mut best: Option<(Id, i64)> = None;
@@ -582,9 +577,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
             KeyCode::Tab if key.modifiers.is_empty() => self.focus_next(),
             KeyCode::BackTab => self.focus_previous(),
             KeyCode::Tab if key.modifiers == KeyModifiers::SHIFT => self.focus_previous(),
-            KeyCode::Up if self.spatial_arrows_active() => {
-                self.focus_spatial(NavigationMove::Up)
-            }
+            KeyCode::Up if self.spatial_arrows_active() => self.focus_spatial(NavigationMove::Up),
             KeyCode::Down if self.spatial_arrows_active() => {
                 self.focus_spatial(NavigationMove::Down)
             }
@@ -675,9 +668,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
 
     /// Projects focusable interaction elements into a flat graph (no parents).
     #[must_use]
-    pub fn from_interaction<LayerId, Action>(
-        scene: &InteractionScene<Id, LayerId, Action>,
-    ) -> Self
+    pub fn from_interaction<LayerId, Action>(scene: &InteractionScene<Id, LayerId, Action>) -> Self
     where
         Id: Clone + PartialEq,
         LayerId: PartialEq,
@@ -712,10 +703,8 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
     }
 
     /// Pushes focused id into a scene when the graph moved (host bridge).
-    pub fn apply_to_scene<LayerId, Action>(
-        &self,
-        scene: &mut InteractionScene<Id, LayerId, Action>,
-    ) where
+    pub fn apply_to_scene<LayerId, Action>(&self, scene: &mut InteractionScene<Id, LayerId, Action>)
+    where
         Id: Clone + PartialEq,
         LayerId: PartialEq,
     {
@@ -831,7 +820,9 @@ impl<'a, Id> FocusLens<'a, Id> {
     }
 }
 
-impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget for &FocusLens<'_, Id> {
+impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
+    for &FocusLens<'_, Id>
+{
     fn render(self, _area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
         let accent = if self.colorless {
             self.system
@@ -843,10 +834,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
         let muted = self.system.style(Role::TextMuted);
         let order = self.graph.tab_order();
         let show_order = self.show_order
-            && matches!(
-                self.mode,
-                FocusLensMode::TabOrder | FocusLensMode::Combined
-            );
+            && matches!(self.mode, FocusLensMode::TabOrder | FocusLensMode::Combined);
         let show_focus = matches!(
             self.mode,
             FocusLensMode::FocusedOnly | FocusLensMode::Combined
@@ -865,13 +853,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
             let style = if focused { accent } else { muted };
             if show_order {
                 let label = format!("{}", i + 1);
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    &label,
-                    usize::from(area.width),
-                    style,
-                );
+                buffer.set_stringn(area.x, area.y, &label, usize::from(area.width), style);
             }
             if show_focus && focused {
                 let mark = if self.ascii { "*" } else { "◈" };
@@ -887,7 +869,9 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
     }
 }
 
-impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget for FocusLens<'_, Id> {
+impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
+    for FocusLens<'_, Id>
+{
     fn render(self, area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
         ratatui_core::widgets::Widget::render(&self, area, buffer);
     }
@@ -896,9 +880,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget fo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interaction::{
-        InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind,
-    };
+    use crate::interaction::{InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind};
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     enum Id {
@@ -958,10 +940,7 @@ mod tests {
     fn hybrid_skips_spatial_inside_roving() {
         let mut g = sample_graph();
         let _ = g.request_focus(Id::List);
-        assert_eq!(
-            g.handle_key(key(KeyCode::Down)),
-            FocusOutcome::Ignored
-        );
+        assert_eq!(g.handle_key(key(KeyCode::Down)), FocusOutcome::Ignored);
         let _ = g.request_focus(Id::Sidebar);
         // Spatial from sidebar toward list (right/down).
         let out = g.focus_spatial(NavigationMove::Right);
@@ -972,9 +951,7 @@ mod tests {
     fn trap_restores_opener() {
         let mut g = FocusGraph::new();
         g.register(FocusNode::leaf(Id::Sidebar, Rect::new(0, 0, 10, 5)).tab_index(0));
-        g.register(
-            FocusNode::roving_collection(Id::List, Rect::new(10, 0, 20, 10)).tab_index(1),
-        );
+        g.register(FocusNode::roving_collection(Id::List, Rect::new(10, 0, 20, 10)).tab_index(1));
         g.register(FocusNode::leaf(Id::Editor, Rect::new(10, 10, 20, 5)).tab_index(2));
         g.register(FocusNode::leaf(Id::Dialog, Rect::new(5, 5, 30, 8)).tab_index(10));
         g.register(
@@ -1008,9 +985,7 @@ mod tests {
         let _ = g.request_focus(Id::List);
         g.begin_frame();
         g.register(FocusNode::leaf(Id::Sidebar, Rect::new(0, 0, 1, 1)));
-        g.register(
-            FocusNode::leaf(Id::List, Rect::new(2, 0, 1, 1)).enabled(false),
-        );
+        g.register(FocusNode::leaf(Id::List, Rect::new(2, 0, 1, 1)).enabled(false));
         let out = g.reconcile();
         assert!(out.changed());
         assert_eq!(g.focused(), Some(&Id::Sidebar));

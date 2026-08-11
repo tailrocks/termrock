@@ -20,10 +20,8 @@
 //! - Chips: [`MentionRef::to_composer_label`] / PromptComposer mention chips
 //! - Strip: project via [`mention_to_token_item`]
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -432,9 +430,7 @@ impl MentionRef {
         if !mark.is_empty() {
             s.push(mark.chars().next().unwrap_or('?'));
         }
-        if matches!(self.validity, MentionValidity::Ambiguous)
-            && self.disambiguators.len() > 1
-        {
+        if matches!(self.validity, MentionValidity::Ambiguous) && self.disambiguators.len() > 1 {
             s.push_str(&format!("×{}", self.disambiguators.len()));
         }
         s
@@ -543,7 +539,11 @@ impl FileMention {
 
     /// Missing path.
     #[must_use]
-    pub fn missing(id: impl Into<String>, label: impl Into<String>, path: impl Into<String>) -> Self {
+    pub fn missing(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        path: impl Into<String>,
+    ) -> Self {
         Self {
             mention: MentionRef::file(id, label, path).validity(MentionValidity::Missing),
         }
@@ -747,7 +747,11 @@ impl MentionCandidate {
 
 /// Detect `@` / `#` mention query before cursor (pure; no I/O).
 #[must_use]
-pub fn detect_mention_query(text: &str, cursor_byte: usize, family: MentionFamily) -> Option<MentionQuery> {
+pub fn detect_mention_query(
+    text: &str,
+    cursor_byte: usize,
+    family: MentionFamily,
+) -> Option<MentionQuery> {
     let abs = cursor_byte.min(text.len());
     let head = &text[..abs];
     let bytes = head.as_bytes();
@@ -803,9 +807,7 @@ pub fn detect_entity_mention_query(text: &str, cursor_byte: usize) -> Option<Men
 
 /// Project mention candidates into completion menu rows (labels live in candidates).
 #[must_use]
-pub fn mention_to_completion_candidate(
-    c: &MentionCandidate,
-) -> CompletionCandidate<'_, String> {
+pub fn mention_to_completion_candidate(c: &MentionCandidate) -> CompletionCandidate<'_, String> {
     let mut cand = CompletionCandidate::new(c.id.clone(), c.label.as_str())
         .kind(c.kind.id())
         .kind_glyph(c.kind.glyph(false))
@@ -830,7 +832,10 @@ pub fn mention_to_completion_candidate(
 pub fn mention_candidates_as_completion(
     candidates: &[MentionCandidate],
 ) -> Vec<CompletionCandidate<'_, String>> {
-    candidates.iter().map(mention_to_completion_candidate).collect()
+    candidates
+        .iter()
+        .map(mention_to_completion_candidate)
+        .collect()
 }
 
 /// Filter candidates by query (case-insensitive label/canonical/id contains).
@@ -1040,16 +1045,13 @@ impl MentionDraft {
                     self.parts.insert(idx, MentionSegment::Text(left));
                     idx += 1;
                 }
-                self.parts
-                    .insert(idx, MentionSegment::Mention(mention));
+                self.parts.insert(idx, MentionSegment::Mention(mention));
                 let mention_part = idx;
                 idx += 1;
                 if !right.is_empty() {
                     self.parts.insert(idx, MentionSegment::Text(right));
                 }
-                self.cursor = MentionCursor::OnMention {
-                    part: mention_part,
-                };
+                self.cursor = MentionCursor::OnMention { part: mention_part };
             }
         }
     }
@@ -1140,7 +1142,10 @@ impl MentionDraft {
                         self.cursor = MentionCursor::OnMention { part: next };
                     }
                     MentionSegment::Text(_) => {
-                        self.cursor = MentionCursor::InText { part: next, byte: 0 };
+                        self.cursor = MentionCursor::InText {
+                            part: next,
+                            byte: 0,
+                        };
                     }
                 }
                 true
@@ -1163,7 +1168,10 @@ impl MentionDraft {
                         self.cursor = MentionCursor::OnMention { part: next };
                     }
                     MentionSegment::Text(_) => {
-                        self.cursor = MentionCursor::InText { part: next, byte: 0 };
+                        self.cursor = MentionCursor::InText {
+                            part: next,
+                            byte: 0,
+                        };
                     }
                 }
                 true
@@ -1273,9 +1281,12 @@ impl MentionDraft {
                                 part: prev.saturating_add(0),
                                 byte: 0,
                             };
-                            // actually text is now at prev if mention was before... 
+                            // actually text is now at prev if mention was before...
                             // parts: [..., mention, text] remove mention -> text at prev
-                            self.cursor = MentionCursor::InText { part: prev, byte: 0 };
+                            self.cursor = MentionCursor::InText {
+                                part: prev,
+                                byte: 0,
+                            };
                         }
                         return true;
                     }
@@ -1471,7 +1482,12 @@ impl<'a> InlineMention<'a> {
     }
 
     /// Paint disambiguation list into area (host places popover).
-    pub fn paint_disambiguation(&self, area: Rect, buffer: &mut Buffer, state: &InlineMentionState) {
+    pub fn paint_disambiguation(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &InlineMentionState,
+    ) {
         if area.is_empty() {
             return;
         }
@@ -1487,11 +1503,7 @@ impl<'a> InlineMention<'a> {
                 break;
             }
             let mark = if i == state.disambiguation_cursor {
-                if self.ascii {
-                    "*"
-                } else {
-                    "›"
-                }
+                if self.ascii { "*" } else { "›" }
             } else {
                 " "
             };

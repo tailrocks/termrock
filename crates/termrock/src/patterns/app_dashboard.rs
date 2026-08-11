@@ -16,22 +16,20 @@
 //!
 //! Research: shadcn dashboard-01, IDE shells, ops TUIs.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{Density, DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        example_sectioned_sidebar_nav, filter_nav_collapsed, NavItem, Panel, PanelVariant, Sidebar,
-        SidebarOutcome, SidebarPresentation, SidebarState,
+        NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
+        example_sectioned_sidebar_nav, filter_nav_collapsed,
     },
 };
 
-use super::app_shell::{layout_app_shell, AppShellConfig, AppShellRecipe, AppShellSlots};
+use super::app_shell::{AppShellConfig, AppShellRecipe, AppShellSlots, layout_app_shell};
 
 // ── Focus / outcomes ────────────────────────────────────────────────────────
 
@@ -182,11 +180,7 @@ impl<Id> AppDashboardState<Id> {
     }
 
     /// Keys.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        nav: &[NavItem<Id>],
-    ) -> AppDashboardOutcome<Id>
+    pub fn handle_key(&mut self, key: KeyEvent, nav: &[NavItem<Id>]) -> AppDashboardOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -323,10 +317,7 @@ pub fn layout_app_dashboard(area: Rect, config: AppDashboardLayout) -> AppDashbo
             ),
         )
     } else {
-        (
-            Rect::new(body.x, body.y, body.width, 0),
-            body,
-        )
+        (Rect::new(body.x, body.y, body.width, 0), body)
     };
 
     let footer = shell.footer.unwrap_or(Rect {
@@ -402,10 +393,7 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
 
     // Sidebar
     if !slots.sidebar.is_empty() {
-        let rail = matches!(
-            state.sidebar.presentation(),
-            SidebarPresentation::Rail
-        );
+        let rail = matches!(state.sidebar.presentation(), SidebarPresentation::Rail);
         let mut panel_state = crate::widgets::PanelState::default();
         let body = Panel::new(system)
             .title("Nav")
@@ -570,13 +558,14 @@ mod tests {
             ),
             "{out:?}"
         );
-        assert_eq!(st.sidebar.route(), Some(&"home"), "route must not change on focus");
+        assert_eq!(
+            st.sidebar.route(),
+            Some(&"home"),
+            "route must not change on focus"
+        );
         let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &nav);
         assert!(
-            matches!(
-                out,
-                AppDashboardOutcome::RouteSelected { id: "analytics" }
-            ),
+            matches!(out, AppDashboardOutcome::RouteSelected { id: "analytics" }),
             "{out:?}"
         );
         assert_eq!(st.sidebar.route(), Some(&"analytics"));

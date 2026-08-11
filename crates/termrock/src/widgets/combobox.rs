@@ -30,7 +30,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
@@ -532,7 +534,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
 
     /// Whether draft exactly matches a candidate label (case-sensitive).
     #[must_use]
-    pub fn draft_matches_candidate(&self, candidates: &[CompletionCandidate<'_, Id>]) -> Option<Id> {
+    pub fn draft_matches_candidate(
+        &self,
+        candidates: &[CompletionCandidate<'_, Id>],
+    ) -> Option<Id> {
         let d = self.draft.value().trim();
         candidates
             .iter()
@@ -578,8 +583,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
 
         // Arrows / menu navigation when open or Down opens
-        if matches!(key.code, KeyCode::Down | KeyCode::Up | KeyCode::PageDown | KeyCode::PageUp)
-            && !ctrl
+        if matches!(
+            key.code,
+            KeyCode::Down | KeyCode::Up | KeyCode::PageDown | KeyCode::PageUp
+        ) && !ctrl
             && !alt
         {
             if !self.menu.is_open() && matches!(key.code, KeyCode::Down) {
@@ -860,11 +867,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
 
     /// Place menu rect for paint.
     #[must_use]
-    pub fn place_menu(
-        &self,
-        bounds: Rect,
-        preferred: CompletionMenuSize,
-    ) -> Rect {
+    pub fn place_menu(&self, bounds: Rect, preferred: CompletionMenuSize) -> Rect {
         place_completion_menu(bounds, self.field, preferred)
     }
 }
@@ -977,11 +980,12 @@ impl<'a> Combobox<'a> {
                 y.min(area.bottom().saturating_sub(1)),
                 status,
                 1,
-                self.system.style(if matches!(state.status, SuggestionStatus::Error) {
-                    Role::Danger
-                } else {
-                    Role::TextMuted
-                }),
+                self.system
+                    .style(if matches!(state.status, SuggestionStatus::Error) {
+                        Role::Danger
+                    } else {
+                        Role::TextMuted
+                    }),
             );
         }
 
@@ -1013,12 +1017,8 @@ impl<'a> Combobox<'a> {
 
         // chevron for open menu
         if area.width > 2 {
-            let chev = if state.menu.is_open() {
-                if self.ascii {
-                    "^"
-                } else {
-                    "▴"
-                }
+            let _chev = if state.menu.is_open() {
+                if self.ascii { "^" } else { "▴" }
             } else if self.ascii {
                 "v"
             } else {
@@ -1156,14 +1156,12 @@ mod tests {
 
     #[test]
     fn draft_active_value_separate() {
-        let mut state: ComboboxState<&'static str> =
-            ComboboxState::new().with_creatable(true).with_exact_required(false);
+        let mut state: ComboboxState<&'static str> = ComboboxState::new()
+            .with_creatable(true)
+            .with_exact_required(false);
         state.set_focused(true);
         let c = cands();
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Char('R'), KeyModifiers::NONE),
-            &c,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('R'), KeyModifiers::NONE), &c);
         match out {
             ComboboxOutcome::DraftChanged { text, generation } => {
                 assert_eq!(text, "R");
@@ -1252,11 +1250,13 @@ mod tests {
         state.set_focused(true);
         let c = cands();
         let _ = state.open_menu();
-        assert!(state.apply_suggestions(0, &c) || state.apply_suggestions(state.generation, &c) || {
-            // generation may be 0 still
-            state.generation = 1;
-            state.apply_suggestions(1, &c)
-        });
+        assert!(
+            state.apply_suggestions(0, &c) || state.apply_suggestions(state.generation, &c) || {
+                // generation may be 0 still
+                state.generation = 1;
+                state.apply_suggestions(1, &c)
+            }
+        );
         // force ready menu
         state.generation = 1;
         assert!(state.apply_suggestions(1, &c));
@@ -1292,7 +1292,12 @@ mod tests {
         let mut stack = OverlayStack::<&str>::default();
         let state = ComboboxState::<&str>::new();
         let bounds = Rect::new(0, 0, 80, 24);
-        let _ = state.open_overlay(&mut stack, bounds, CompletionMenuSize::default(), Some("field"));
+        let _ = state.open_overlay(
+            &mut stack,
+            bounds,
+            CompletionMenuSize::default(),
+            Some("field"),
+        );
         let _ = ComboboxState::<&str>::dismiss_overlay(&mut stack);
     }
 
@@ -1378,12 +1383,7 @@ mod tests {
         let system = DesignSystem::default();
         let state = ComboboxState::<&str>::autocomplete();
         let mut scene = SemanticScene::<&str, ()>::default();
-        Combobox::new(&system).register_semantic(
-            &mut scene,
-            "c",
-            Rect::new(0, 0, 20, 1),
-            &state,
-        );
+        Combobox::new(&system).register_semantic(&mut scene, "c", Rect::new(0, 0, 20, 1), &state);
         assert!(scene.get(&"c").is_some());
     }
 }

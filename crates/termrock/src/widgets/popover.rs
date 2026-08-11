@@ -115,10 +115,7 @@ impl PopoverPresentation {
 
 /// Choose presentation from terminal bounds and preferred content size.
 #[must_use]
-pub fn popover_presentation_for(
-    bounds: Rect,
-    preferred: OverlaySize,
-) -> PopoverPresentation {
+pub fn popover_presentation_for(bounds: Rect, preferred: OverlaySize) -> PopoverPresentation {
     if bounds.is_empty() {
         return PopoverPresentation::Anchored;
     }
@@ -174,12 +171,7 @@ pub fn place_popover_with_modality(
             size,
             OverlayPolicy::for_kind(OverlayKind::Drawer),
         ),
-        PopoverPresentation::Anchored => place_overlay(
-            bounds,
-            anchor,
-            size,
-            modality.policy(),
-        ),
+        PopoverPresentation::Anchored => place_overlay(bounds, anchor, size, modality.policy()),
     }
 }
 
@@ -280,12 +272,12 @@ pub fn open_popover_with_presentation<FocusId: Clone>(
     id_override: Option<String>,
     force_presentation: Option<PopoverPresentation>,
 ) -> OverlayOutcome<FocusId> {
-    let presentation =
-        force_presentation.unwrap_or_else(|| popover_presentation_for(bounds, size));
+    let presentation = force_presentation.unwrap_or_else(|| popover_presentation_for(bounds, size));
     let id = OverlayId(id_override.unwrap_or_else(|| POPOVER_OVERLAY_ID.to_string()));
     let mut spec = match presentation {
-        PopoverPresentation::Fullscreen => OverlaySpec::fullscreen(id, opener_focus)
-            .with_policy(modality.policy()),
+        PopoverPresentation::Fullscreen => {
+            OverlaySpec::fullscreen(id, opener_focus).with_policy(modality.policy())
+        }
         PopoverPresentation::Drawer => {
             let mut s = OverlaySpec::drawer(id, size, opener_focus);
             // Keep modality backdrop/esc when modal
@@ -525,11 +517,7 @@ impl PopoverState {
     }
 
     /// Request open — host places via OverlayStack.
-    pub fn request_open(
-        &mut self,
-        bounds: Rect,
-        preferred: OverlaySize,
-    ) -> PopoverOutcome {
+    pub fn request_open(&mut self, bounds: Rect, preferred: OverlaySize) -> PopoverOutcome {
         if !self.enabled {
             return PopoverOutcome::Ignored;
         }
@@ -560,8 +548,7 @@ impl PopoverState {
         let on_stack = stack.contains(id);
         self.open = on_stack;
         if on_stack {
-            self.accepts_input = stack.top_owns_input()
-                && stack.top().is_some_and(|t| &t.id == id);
+            self.accepts_input = stack.top_owns_input() && stack.top().is_some_and(|t| &t.id == id);
         } else {
             self.focused = false;
             self.accepts_input = false;
@@ -569,20 +556,14 @@ impl PopoverState {
     }
 
     /// Sync presentation from bounds.
-    pub fn sync_presentation(
-        &mut self,
-        bounds: Rect,
-        preferred: OverlaySize,
-    ) -> PopoverOutcome {
+    pub fn sync_presentation(&mut self, bounds: Rect, preferred: OverlaySize) -> PopoverOutcome {
         if self.presentation_override.is_some() {
             return PopoverOutcome::Ignored;
         }
         let next = popover_presentation_for(bounds, preferred);
         if next != self.presentation {
             self.presentation = next;
-            PopoverOutcome::PresentationChanged {
-                presentation: next,
-            }
+            PopoverOutcome::PresentationChanged { presentation: next }
         } else {
             PopoverOutcome::Ignored
         }
@@ -649,10 +630,7 @@ impl PopoverState {
     }
 
     /// Close on stack (restores opener_focus from stack entry).
-    pub fn close_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-    ) -> OverlayOutcome<F> {
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
         let _ = self.request_close();
         dismiss_popover_overlay(stack)
     }
@@ -824,9 +802,7 @@ impl<'a> Popover<'a> {
 
         let header_h = state.header_rows.min(inner.height);
         let footer_h = if state.footer_rows > 0 {
-            state
-                .footer_rows
-                .min(inner.height.saturating_sub(header_h))
+            state.footer_rows.min(inner.height.saturating_sub(header_h))
         } else {
             0
         };
@@ -1086,7 +1062,11 @@ mod tests {
             state.slots.header.height + state.slots.body.height + state.slots.footer.height,
             area.height.saturating_sub(2), // border
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("Settings"), "{text}");
     }
 
@@ -1111,7 +1091,11 @@ mod tests {
         let area = Rect::new(0, 0, 20, 5);
         let mut buf = Buffer::empty(area);
         Widget::render(&Popover::new("Tip", &system), area, &mut buf);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(text.contains("Tip"), "{text}");
     }
 
@@ -1120,13 +1104,7 @@ mod tests {
         let bounds = Rect::new(0, 0, 80, 24);
         let anchor = Rect::new(10, 10, 4, 1);
         let mut stack = OverlayStack::<()>::new();
-        let _ = open_popover_overlay(
-            &mut stack,
-            bounds,
-            anchor,
-            OverlaySize::menu(20, 5),
-            None,
-        );
+        let _ = open_popover_overlay(&mut stack, bounds, anchor, OverlaySize::menu(20, 5), None);
         assert!(matches!(
             stack.handle_outside_click(ratatui_core::layout::Position::new(0, 0)),
             OverlayOutcome::Dismissed { .. }
@@ -1159,7 +1137,12 @@ mod tests {
         state.open = true;
         state.accepts_input = true;
         state.focused = true;
-        let keys = [KeyCode::Esc, KeyCode::Enter, KeyCode::Char('a'), KeyCode::Tab];
+        let keys = [
+            KeyCode::Esc,
+            KeyCode::Enter,
+            KeyCode::Char('a'),
+            KeyCode::Tab,
+        ];
         let mut seed = 3u64;
         for _ in 0..100 {
             seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
@@ -1177,10 +1160,7 @@ mod tests {
         let mut state = PopoverState::new();
         assert!(matches!(state.enter_focus(), PopoverOutcome::Ignored));
         state.open = true;
-        assert!(matches!(
-            state.enter_focus(),
-            PopoverOutcome::FocusEntered
-        ));
+        assert!(matches!(state.enter_focus(), PopoverOutcome::FocusEntered));
         assert!(state.is_focused());
     }
 
@@ -1189,13 +1169,8 @@ mod tests {
         let bounds = Rect::new(0, 0, 80, 24);
         let anchor = Rect::new(10, 10, 4, 1);
         let mut stack = OverlayStack::<()>::new();
-        let _ = open_popover_modal_overlay(
-            &mut stack,
-            bounds,
-            anchor,
-            OverlaySize::menu(20, 5),
-            None,
-        );
+        let _ =
+            open_popover_modal_overlay(&mut stack, bounds, anchor, OverlaySize::menu(20, 5), None);
         // Trap policy: outside click is consumed; layer stays.
         assert!(matches!(
             stack.handle_outside_click(ratatui_core::layout::Position::new(0, 0)),
@@ -1273,9 +1248,11 @@ mod tests {
         for _ in 0..300 {
             terminal
                 .draw(|f| {
-                    Popover::new("Settings", &system)
-                        .footer(Some("esc"))
-                        .paint(f.area(), f.buffer_mut(), &mut state);
+                    Popover::new("Settings", &system).footer(Some("esc")).paint(
+                        f.area(),
+                        f.buffer_mut(),
+                        &mut state,
+                    );
                 })
                 .unwrap();
         }
@@ -1295,9 +1272,11 @@ mod tests {
         let mut terminal = Terminal::new(TestBackend::new(24, 8)).unwrap();
         terminal
             .draw(|f| {
-                Popover::new("Filter", &system)
-                    .footer(Some("esc"))
-                    .paint(f.area(), f.buffer_mut(), &mut state);
+                Popover::new("Filter", &system).footer(Some("esc")).paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut state,
+                );
             })
             .unwrap();
         let text: String = terminal
@@ -1319,9 +1298,11 @@ mod tests {
         state2.set_footer_rows(1);
         terminal2
             .draw(|f| {
-                Popover::new("Filter", &system)
-                    .footer(Some("esc"))
-                    .paint(f.area(), f.buffer_mut(), &mut state2);
+                Popover::new("Filter", &system).footer(Some("esc")).paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut state2,
+                );
             })
             .unwrap();
         let text2: String = terminal2

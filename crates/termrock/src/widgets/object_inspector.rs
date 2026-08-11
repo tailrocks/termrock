@@ -17,6 +17,7 @@
 //! Leaves for pure metadata panels: [`super::KeyValueTable`]. Flat hierarchy:
 //! [`super::Tree`].
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -736,9 +737,7 @@ impl ObjectInspectorState {
             if self.search.is_none() {
                 self.search = Some(String::new());
             }
-            return ObjectInspectorOutcome::SearchChanged(
-                self.search.clone().unwrap_or_default(),
-            );
+            return ObjectInspectorOutcome::SearchChanged(self.search.clone().unwrap_or_default());
         }
         if let Some(q) = self.search.as_mut()
             && is_press
@@ -789,10 +788,7 @@ impl ObjectInspectorState {
         if is_press && matches!(key.code, KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
             return self.copy_value(fields);
         }
-        if is_press
-            && matches!(key.code, KeyCode::Char('y' | 'Y'))
-            && key.modifiers.is_empty()
-        {
+        if is_press && matches!(key.code, KeyCode::Char('y' | 'Y')) && key.modifiers.is_empty() {
             return self.copy_path(fields);
         }
         if is_press && matches!(key.code, KeyCode::Char('e' | 'E')) && key.modifiers.is_empty() {
@@ -878,9 +874,7 @@ impl ObjectInspectorState {
                 if f.branch {
                     return self.hierarchy_step(fields, !f.expanded);
                 }
-                ObjectInspectorOutcome::Activate {
-                    index: self.cursor,
-                }
+                ObjectInspectorOutcome::Activate { index: self.cursor }
             }
             UiIntent::Cancel => {
                 if self.search.is_some() {
@@ -940,9 +934,7 @@ impl ObjectInspectorState {
                 }
             }
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                ObjectInspectorOutcome::Activate {
-                    index: self.cursor,
-                }
+                ObjectInspectorOutcome::Activate { index: self.cursor }
             }
             _ => {
                 let _ = empty;
@@ -1187,8 +1179,7 @@ impl ObjectInspectorState {
                         (
                             r.index,
                             r.path.clone(),
-                            r.disclosure
-                                .is_some_and(|d| d.contains(event.position)),
+                            r.disclosure.is_some_and(|d| d.contains(event.position)),
                         )
                     });
                 if let Some((index, path, on_disclosure)) = hit {
@@ -1406,7 +1397,11 @@ impl<'a> ObjectInspector<'a> {
 
     /// Display value with redaction + escape.
     #[must_use]
-    pub fn display_value(&self, field: &InspectorField<'a>, state: &ObjectInspectorState) -> String {
+    pub fn display_value(
+        &self,
+        field: &InspectorField<'a>,
+        state: &ObjectInspectorState,
+    ) -> String {
         if field.secret && !state.is_revealed(field.path) {
             return if self.ascii || state.ascii {
                 "********".into()
@@ -1421,7 +1416,11 @@ impl<'a> ObjectInspector<'a> {
             return field.container_preview(self.ascii || state.ascii);
         }
         if matches!(field.status, InspectNodeStatus::Loading) {
-            return if self.ascii { "...".into() } else { "…".into() };
+            return if self.ascii {
+                "...".into()
+            } else {
+                "…".into()
+            };
         }
         if matches!(field.status, InspectNodeStatus::Error) {
             return if field.value.is_empty() {
@@ -1450,11 +1449,11 @@ impl<'a> ObjectInspector<'a> {
         let ascii = self.ascii || state.ascii;
         let colorless = self.colorless || state.colorless;
         let footer = 1u16;
-        let header = u16::from(matches!(
-            self.presentation,
-            InspectPresentation::Fullscreen
-        ) || matches!(state.presentation, InspectPresentation::Fullscreen)
-            || state.search.is_some());
+        let header = u16::from(
+            matches!(self.presentation, InspectPresentation::Fullscreen)
+                || matches!(state.presentation, InspectPresentation::Fullscreen)
+                || state.search.is_some(),
+        );
         let body_h = area.height.saturating_sub(footer + header).max(1);
         state.origin = (area.x, area.y.saturating_add(header));
         state.body_rows = body_h;
@@ -1464,10 +1463,8 @@ impl<'a> ObjectInspector<'a> {
         if header > 0 && y < area.bottom() {
             let title = if let Some(q) = &state.search {
                 format!("/ {q}")
-            } else if matches!(
-                self.presentation,
-                InspectPresentation::Fullscreen
-            ) || matches!(state.presentation, InspectPresentation::Fullscreen)
+            } else if matches!(self.presentation, InspectPresentation::Fullscreen)
+                || matches!(state.presentation, InspectPresentation::Fullscreen)
             {
                 "Object inspector".into()
             } else {
@@ -1560,7 +1557,9 @@ impl<'a> ObjectInspector<'a> {
 
             let mut x = area.x.saturating_add(GUTTER);
             let max_indent = area.width.saturating_sub(GUTTER + 8);
-            let indent = u16::from(field.depth).saturating_mul(INDENT).min(max_indent);
+            let indent = u16::from(field.depth)
+                .saturating_mul(INDENT)
+                .min(max_indent);
             x = x.saturating_add(indent);
 
             let mut disclosure = None;
@@ -1616,9 +1615,7 @@ impl<'a> ObjectInspector<'a> {
             } else {
                 let mut s = format!("{}: {}", field.key, value);
                 if self.show_types && area.width >= 48 {
-                    let tl = field
-                        .type_label
-                        .unwrap_or_else(|| field.kind.id());
+                    let tl = field.type_label.unwrap_or_else(|| field.kind.id());
                     // Append type at end if room
                     let type_part = format!("  <{tl}>");
                     if display_cols(&s) + display_cols(&type_part)
@@ -1714,7 +1711,11 @@ impl StatefulWidget for &ObjectInspector<'_> {
 
 impl ObjectInspectorState {
     /// Legacy key handler taking only a count (no path outcomes).
-    pub fn handle_key_count(&mut self, key: KeyEvent, field_count: usize) -> ObjectInspectorOutcome {
+    pub fn handle_key_count(
+        &mut self,
+        key: KeyEvent,
+        field_count: usize,
+    ) -> ObjectInspectorOutcome {
         if !self.accepts_input || field_count == 0 || key.kind == KeyEventKind::Release {
             return ObjectInspectorOutcome::Ignored;
         }
@@ -1762,10 +1763,7 @@ mod tests {
         let fields = sample_tree();
         let mut state = ObjectInspectorState::new();
         state.set_cursor(0);
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),
-            &fields,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE), &fields);
         assert!(matches!(
             out,
             ObjectInspectorOutcome::ExpandToggled {
@@ -1783,10 +1781,7 @@ mod tests {
         let mut state = ObjectInspectorState::new();
         state.set_expanded("spec", true);
         state.set_cursor(0);
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
-            &fields,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &fields);
         assert!(matches!(
             out,
             ObjectInspectorOutcome::CursorMoved { index: 1, .. }
@@ -1877,10 +1872,7 @@ mod tests {
             KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE),
             &fields,
         );
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            &fields,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &fields);
         assert!(matches!(
             out,
             ObjectInspectorOutcome::EditCommitted { text, .. } if text.ends_with('9')
@@ -1908,16 +1900,15 @@ mod tests {
 
     #[test]
     fn max_depth_blocks_expand() {
-        let fields = [InspectorField::container("deep", "a.b.c", InspectKind::Object)
-            .depth(10)
-            .lazy()];
+        let fields = [
+            InspectorField::container("deep", "a.b.c", InspectKind::Object)
+                .depth(10)
+                .lazy(),
+        ];
         let mut state = ObjectInspectorState::new();
         state.max_depth = 5;
         state.set_cursor(0);
-        let out = state.handle_key(
-            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
-            &fields,
-        );
+        let out = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &fields);
         assert!(matches!(out, ObjectInspectorOutcome::Ignored));
     }
 
@@ -1943,19 +1934,13 @@ mod tests {
             KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
             &fields,
         );
-        assert!(matches!(
-            out,
-            ObjectInspectorOutcome::FullscreenRequested
-        ));
+        assert!(matches!(out, ObjectInspectorOutcome::FullscreenRequested));
     }
 
     #[test]
     fn legacy_index_api() {
         let mut state = ObjectInspectorState::new();
-        let out = state.handle_key_count(
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-            3,
-        );
+        let out = state.handle_key_count(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), 3);
         assert!(matches!(
             out,
             ObjectInspectorOutcome::CursorMoved { index: 1, .. }

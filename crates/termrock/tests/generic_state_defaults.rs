@@ -7,6 +7,7 @@ use termrock::widgets::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct NoDefault;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct UnconstrainedId;
 
 #[test]

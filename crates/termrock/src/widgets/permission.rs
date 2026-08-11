@@ -21,6 +21,7 @@
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -1578,10 +1579,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                     inner.x,
                     y,
                     w,
-                    &format!(
-                        "dest: {}",
-                        take_display_cols(dest, w.saturating_sub(6))
-                    ),
+                    &format!("dest: {}", take_display_cols(dest, w.saturating_sub(6))),
                     if req.data.egress && !self.colorless {
                         self.system.style(Role::Danger)
                     } else {
@@ -2414,7 +2412,10 @@ mod tests {
         for w in gens.windows(2) {
             assert!(w[1] > w[0], "generations must increase");
         }
-        assert_eq!(gens.iter().collect::<std::collections::BTreeSet<_>>().len(), 64);
+        assert_eq!(
+            gens.iter().collect::<std::collections::BTreeSet<_>>().len(),
+            64
+        );
     }
 
     #[test]
@@ -2545,8 +2546,16 @@ mod tests {
             }
             text.push('\n');
         }
-        for needle in ["by ", "via ", "op ", "run @", "access:", "dest:", "reversible:", "expect:"]
-        {
+        for needle in [
+            "by ",
+            "via ",
+            "op ",
+            "run @",
+            "access:",
+            "dest:",
+            "reversible:",
+            "expect:",
+        ] {
             assert!(text.contains(needle), "missing {needle} in:\n{text}");
         }
         assert!(text.contains("EGRESS") || text.contains("egress") || text.contains("DATA"));
@@ -2591,7 +2600,10 @@ mod tests {
                 .pattern("**");
             let actions = req.actions_for_risk();
             assert!(actions.contains(&PermissionAction::Deny));
-            let deny_i = actions.iter().position(|a| *a == PermissionAction::Deny).unwrap();
+            let deny_i = actions
+                .iter()
+                .position(|a| *a == PermissionAction::Deny)
+                .unwrap();
             if let Some(allow_i) = actions.iter().position(|a| *a == PermissionAction::Allow) {
                 assert!(deny_i < allow_i);
             }

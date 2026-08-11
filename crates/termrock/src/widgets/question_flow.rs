@@ -17,12 +17,7 @@
 
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -243,14 +238,22 @@ impl QuestionAnswer {
         match self {
             Self::Skipped => false,
             Self::FreeText { text } => !text.trim().is_empty(),
-            Self::Single { option_id, other_text } => {
+            Self::Single {
+                option_id,
+                other_text,
+            } => {
                 !option_id.is_empty()
-                    && (other_text.as_ref().map(|t| !t.trim().is_empty()).unwrap_or(true)
+                    && (other_text
+                        .as_ref()
+                        .map(|t| !t.trim().is_empty())
+                        .unwrap_or(true)
                         || true)
             }
-            Self::Multi { option_ids, other_text } => {
-                !option_ids.is_empty()
-                    || other_text.as_ref().is_some_and(|t| !t.trim().is_empty())
+            Self::Multi {
+                option_ids,
+                other_text,
+            } => {
+                !option_ids.is_empty() || other_text.as_ref().is_some_and(|t| !t.trim().is_empty())
             }
         }
     }
@@ -362,7 +365,10 @@ impl QuestionSet {
 
 /// Validate answer against question (UI-level presence; host may re-validate).
 #[must_use]
-pub fn validate_question_answer(q: &Question, answer: Option<&QuestionAnswer>) -> Result<(), String> {
+pub fn validate_question_answer(
+    q: &Question,
+    answer: Option<&QuestionAnswer>,
+) -> Result<(), String> {
     if !q.required {
         return Ok(());
     }
@@ -394,11 +400,9 @@ pub fn validate_question_answer(q: &Question, answer: Option<&QuestionAnswer>) -
             option_ids,
             other_text,
         } => {
-            let needs_other = option_ids.iter().any(|id| {
-                q.options
-                    .iter()
-                    .any(|o| o.id == *id && o.is_other)
-            });
+            let needs_other = option_ids
+                .iter()
+                .any(|id| q.options.iter().any(|o| o.id == *id && o.is_other));
             if needs_other && other_text.as_ref().is_none_or(|t| t.trim().is_empty()) {
                 return Err("other text required".into());
             }
@@ -655,9 +659,10 @@ impl QuestionFlowState {
                 }
             }
             QuestionKind::MultiChoice => {
-                let other_needed = st.multi_selected.iter().any(|id| {
-                    q.options.iter().any(|o| o.id == *id && o.is_other)
-                });
+                let other_needed = st
+                    .multi_selected
+                    .iter()
+                    .any(|id| q.options.iter().any(|o| o.id == *id && o.is_other));
                 QuestionAnswer::Multi {
                     option_ids: st.multi_selected.iter().cloned().collect(),
                     other_text: if other_needed || q.allow_other {
@@ -689,10 +694,7 @@ impl QuestionFlowState {
     fn advance_after_answer(&mut self) -> QuestionFlowOutcome {
         let n = self.questions().len();
         if self.step_index + 1 >= n {
-            let review = self
-                .set
-                .as_ref()
-                .is_some_and(|s| s.review_before_submit);
+            let review = self.set.as_ref().is_some_and(|s| s.review_before_submit);
             if review {
                 self.phase = QuestionFlowPhase::Review;
                 return QuestionFlowOutcome::ReviewOpened;
@@ -788,7 +790,12 @@ impl QuestionFlowState {
                             self.last_error = None;
                             let qid = q.id.clone();
                             let next = self.advance_after_answer();
-                            if matches!(next, QuestionFlowOutcome::StepChanged { .. } | QuestionFlowOutcome::ReviewOpened | QuestionFlowOutcome::Submitted { .. }) {
+                            if matches!(
+                                next,
+                                QuestionFlowOutcome::StepChanged { .. }
+                                    | QuestionFlowOutcome::ReviewOpened
+                                    | QuestionFlowOutcome::Submitted { .. }
+                            ) {
                                 // Prefer Answered then host may apply next
                                 return QuestionFlowOutcome::Answered {
                                     question_id: qid,
@@ -832,8 +839,9 @@ impl QuestionFlowState {
                 KeyCode::Char('t') if key.modifiers.is_empty() => {
                     self.presentation = match self.presentation {
                         QuestionFlowPresentation::Tabs => QuestionFlowPresentation::Steps,
-                        QuestionFlowPresentation::Steps
-                        | QuestionFlowPresentation::Fullscreen => QuestionFlowPresentation::Tabs,
+                        QuestionFlowPresentation::Steps | QuestionFlowPresentation::Fullscreen => {
+                            QuestionFlowPresentation::Tabs
+                        }
                     };
                     QuestionFlowOutcome::Ignored
                 }
@@ -942,10 +950,7 @@ impl QuestionFlowState {
                         message: msg,
                     }
                 }
-                KeyCode::Char('o')
-                    if q.allow_other
-                        || q.options.iter().any(|o| o.is_other) =>
-                {
+                KeyCode::Char('o') if q.allow_other || q.options.iter().any(|o| o.is_other) => {
                     if let Some(st) = self.current_step_state_mut() {
                         st.text_mode = true;
                     }
@@ -1077,12 +1082,7 @@ impl<'a> QuestionFlow<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut QuestionFlowState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut QuestionFlowState) {
         state.option_hits.clear();
         if area.is_empty() {
             return;
@@ -1137,7 +1137,12 @@ impl<'a> QuestionFlow<'a> {
         let max_y = inner.bottom();
 
         // provenance
-        if let Some(p) = set.provenance.path.as_ref().or(set.provenance.actor.as_ref()) {
+        if let Some(p) = set
+            .provenance
+            .path
+            .as_ref()
+            .or(set.provenance.actor.as_ref())
+        {
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1158,17 +1163,9 @@ impl<'a> QuestionFlow<'a> {
                         s.push(' ');
                     }
                     let mark = if i == state.step_index {
-                        if self.ascii {
-                            "*"
-                        } else {
-                            "●"
-                        }
+                        if self.ascii { "*" } else { "●" }
                     } else if state.answers.get(&q.id).is_some() {
-                        if self.ascii {
-                            "+"
-                        } else {
-                            "✓"
-                        }
+                        if self.ascii { "+" } else { "✓" }
                     } else if self.ascii {
                         "o"
                     } else {
@@ -1253,22 +1250,14 @@ impl<'a> QuestionFlow<'a> {
                         && st.multi_selected.contains(&opt.id);
                     let mark = if matches!(q.kind, QuestionKind::MultiChoice) {
                         if checked {
-                            if self.ascii {
-                                "[x]"
-                            } else {
-                                "[✓]"
-                            }
+                            if self.ascii { "[x]" } else { "[✓]" }
                         } else if self.ascii {
                             "[ ]"
                         } else {
                             "[ ]"
                         }
                     } else if on {
-                        if self.ascii {
-                            ">"
-                        } else {
-                            "›"
-                        }
+                        if self.ascii { ">" } else { "›" }
                     } else {
                         " "
                     };
@@ -1285,13 +1274,7 @@ impl<'a> QuestionFlow<'a> {
                     } else {
                         self.system.style(Role::Text)
                     };
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
-                        style,
-                    );
+                    buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
                     state.option_hits.push((
                         opt.id.clone(),
                         Rect {
@@ -1331,12 +1314,7 @@ impl<'a> QuestionFlow<'a> {
         let _ = display_cols;
     }
 
-    fn paint_review(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &QuestionFlowState,
-    ) {
+    fn paint_review(&self, area: Rect, buffer: &mut Buffer, state: &QuestionFlowState) {
         let mut y = area.y;
         let w = usize::from(area.width);
         buffer.set_stringn(
@@ -1355,7 +1333,10 @@ impl<'a> QuestionFlow<'a> {
                 .answers
                 .get(&q.id)
                 .map(|a| match a {
-                    QuestionAnswer::Single { option_id, other_text } => {
+                    QuestionAnswer::Single {
+                        option_id,
+                        other_text,
+                    } => {
                         if let Some(t) = other_text {
                             format!("{option_id}: {t}")
                         } else {
@@ -1368,7 +1349,12 @@ impl<'a> QuestionFlow<'a> {
                 })
                 .unwrap_or_else(|| "—".into());
             let mark = if i == state.step_index { ">" } else { " " };
-            let line = format!("{mark}{}. {} → {}", i + 1, take_display_cols(&q.prompt, 20), ans);
+            let line = format!(
+                "{mark}{}. {} → {}",
+                i + 1,
+                take_display_cols(&q.prompt, 20),
+                ans
+            );
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1381,12 +1367,7 @@ impl<'a> QuestionFlow<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut QuestionFlowState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QuestionFlowState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1480,10 +1461,7 @@ mod tests {
         let mut st = QuestionFlowState::new();
         st.open_set(example_question_set());
         let out = st.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
-        assert!(matches!(
-            out,
-            QuestionFlowOutcome::ValidationFailed { .. }
-        ));
+        assert!(matches!(out, QuestionFlowOutcome::ValidationFailed { .. }));
         assert_eq!(st.step_index, 0);
     }
 
@@ -1497,8 +1475,7 @@ mod tests {
         let out = st.handle_key(KeyEvent::new(KeyCode::Char(']'), KeyModifiers::NONE));
         assert!(matches!(
             out,
-            QuestionFlowOutcome::StepChanged { index: 2 }
-                | QuestionFlowOutcome::Answered { .. }
+            QuestionFlowOutcome::StepChanged { index: 2 } | QuestionFlowOutcome::Answered { .. }
         ));
     }
 
@@ -1509,11 +1486,7 @@ mod tests {
             "s",
             "T",
             vec![
-                Question::single(
-                    "a",
-                    "Go?",
-                    vec![QuestionOption::new("y", "Yes")],
-                ),
+                Question::single("a", "Go?", vec![QuestionOption::new("y", "Yes")]),
                 Question::text("b", "Notes?").optional(),
             ],
         )
@@ -1569,14 +1542,15 @@ mod tests {
         ));
         assert!(st.is_open());
         assert_eq!(st.queue.len(), 1);
-        assert!(st
-            .set
-            .as_ref()
-            .unwrap()
-            .provenance
-            .actor
-            .as_deref()
-            .is_some());
+        assert!(
+            st.set
+                .as_ref()
+                .unwrap()
+                .provenance
+                .actor
+                .as_deref()
+                .is_some()
+        );
     }
 
     #[test]

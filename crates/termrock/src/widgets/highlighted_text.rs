@@ -170,11 +170,7 @@ fn snap_start(source: &str, byte: usize) -> usize {
     if byte >= source.len() {
         return source.len();
     }
-    if source.is_char_boundary(byte)
-        && source
-            .grapheme_indices(true)
-            .any(|(i, _)| i == byte)
-    {
+    if source.is_char_boundary(byte) && source.grapheme_indices(true).any(|(i, _)| i == byte) {
         return byte;
     }
     // Move to start of grapheme containing byte
@@ -479,11 +475,7 @@ pub struct HighlightedText<'a> {
 impl<'a> HighlightedText<'a> {
     /// Highlight `source` with `ranges`.
     #[must_use]
-    pub const fn new(
-        source: &'a str,
-        ranges: &'a [MatchRange],
-        system: &'a DesignSystem,
-    ) -> Self {
+    pub const fn new(source: &'a str, ranges: &'a [MatchRange], system: &'a DesignSystem) -> Self {
         Self {
             source,
             ranges,
@@ -585,11 +577,7 @@ impl<'a> HighlightedText<'a> {
         let max = usize::from(max_cols);
         let source = self.source;
         if max == 0 {
-            return (
-                String::new(),
-                Vec::new(),
-                MatchRange::new(0, 0),
-            );
+            return (String::new(), Vec::new(), MatchRange::new(0, 0));
         }
         let full_w = display_cols(source);
         if full_w <= max {
@@ -686,7 +674,11 @@ impl<'a> HighlightedText<'a> {
                 .prepare(self.source)
                 .ranges
             };
-            (self.source.to_string(), prep, MatchRange::new(0, self.source.len()))
+            (
+                self.source.to_string(),
+                prep,
+                MatchRange::new(0, self.source.len()),
+            )
         };
 
         // Paint via Text spans built from owned text — need local spans
@@ -1059,13 +1051,15 @@ mod tests {
     #[test]
     fn overlap_priority_focused_wins() {
         let s = "abcdef";
-        let ranges = MatchRanges::from_ranges([
-            MatchRange::new(0, 4),
-            MatchRange::focused(2, 6),
-        ])
-        .prepare(s);
+        let ranges =
+            MatchRanges::from_ranges([MatchRange::new(0, 4), MatchRange::focused(2, 6)]).prepare(s);
         // [0,2) Match, [2,4) Focused, [4,6) Focused
-        assert!(ranges.as_slice().iter().any(|r| r.kind == MatchKind::Focused));
+        assert!(
+            ranges
+                .as_slice()
+                .iter()
+                .any(|r| r.kind == MatchKind::Focused)
+        );
         let at2 = ranges.as_slice().iter().find(|r| r.start == 2).unwrap();
         assert_eq!(at2.kind, MatchKind::Focused);
     }

@@ -19,6 +19,8 @@
 //!
 //! Research: k9s, btop, Grafana concepts, terminal log tools.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -31,18 +33,18 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{
         MetricAlert, MetricAlertSeverity, MetricTile, MetricTileHealth, MetricsDashboard,
         MetricsDashboardOutcome, MetricsDashboardState, MetricsTimeRange,
     },
+    style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        filter_log_lines, filter_stream_events, EventSeverity, EventStream, EventStreamOutcome,
-        EventStreamState, InspectorField, LogLevel, LogLine, LogStream, LogStreamOutcome,
-        LogStreamState, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
-        SearchInput, SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion,
-        StatusSlot, StreamEvent, StreamRowKind,
+        EventSeverity, EventStream, EventStreamOutcome, EventStreamState, InspectorField, LogLevel,
+        LogLine, LogStream, LogStreamOutcome, LogStreamState, ObjectInspector,
+        ObjectInspectorOutcome, ObjectInspectorState, Panel, SearchInput, SearchInputOutcome,
+        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot, StreamEvent,
+        StreamRowKind, filter_log_lines, filter_stream_events,
     },
 };
 
@@ -390,17 +392,16 @@ impl ObservabilityDashboardState {
                 ObservabilityPane::Logs.id(),
                 ObservabilityPane::Events.id(),
             ],
-            ObservabilityDensity::Tiny => vec![
-                ObservabilityPane::Search.id(),
-                ObservabilityPane::Logs.id(),
-            ],
+            ObservabilityDensity::Tiny => {
+                vec![ObservabilityPane::Search.id(), ObservabilityPane::Logs.id()]
+            }
         }
     }
 
     /// Clamp focus to visible panes.
     pub fn clamp_focus_to_density(&mut self, density: ObservabilityDensity) {
         let order = self.focus_order_for(density);
-        if !order.iter().any(|id| *id == self.focus) {
+        if !order.contains(&self.focus) {
             self.focus = order.first().copied().unwrap_or("logs");
             self.apply_focus_gates();
         }
@@ -483,8 +484,7 @@ impl ObservabilityDashboardState {
     /// Host reports reconnecting.
     pub fn set_reconnecting(&mut self, msg: impl Into<String>) {
         self.live = ObservabilityLiveState::Reconnecting;
-        self.logs
-            .set_reconnect_message(Some(msg.into()));
+        self.logs.set_reconnect_message(Some(msg.into()));
         self.apply_focus_gates();
     }
 
@@ -572,18 +572,14 @@ impl ObservabilityDashboardState {
         // Global chords (when not typing in search)
         let in_search = self.focus == "search";
         match key.code {
-            KeyCode::Char(' ')
-                if key.modifiers.is_empty() && !in_search =>
-            {
+            KeyCode::Char(' ') if key.modifiers.is_empty() && !in_search => {
                 return self.toggle_live();
             }
             KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.set_reconnecting("reconnecting…");
                 return ObservabilityDashboardOutcome::ReconnectRequested;
             }
-            KeyCode::Char('a')
-                if key.modifiers.is_empty() && !in_search =>
-            {
+            KeyCode::Char('a') if key.modifiers.is_empty() && !in_search => {
                 self.logs.ack_dropped();
                 self.events.ack_backpressure();
                 return ObservabilityDashboardOutcome::AckDropped;
@@ -784,11 +780,7 @@ impl ObservabilityDashboardState {
 /// Width-derived layout.
 #[must_use]
 pub fn observability_dashboard_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    observability_dashboard_layout_density(
-        area,
-        state,
-        ObservabilityDensity::for_width(area.width),
-    )
+    observability_dashboard_layout_density(area, state, ObservabilityDensity::for_width(area.width))
 }
 
 /// Search strip height: enough for bordered chrome + SearchInput body.
@@ -1190,10 +1182,8 @@ pub fn example_observability_tiles() -> Vec<MetricTile<'static>> {
 #[must_use]
 pub fn example_observability_alerts() -> Vec<MetricAlert<'static>> {
     vec![
-        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%")
-            .metric("err"),
-        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated")
-            .metric("p99"),
+        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%").metric("err"),
+        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated").metric("p99"),
     ]
 }
 
@@ -1201,7 +1191,9 @@ pub fn example_observability_alerts() -> Vec<MetricAlert<'static>> {
 #[must_use]
 pub fn example_log_inspect_fields() -> Vec<InspectorField<'static>> {
     vec![
-        InspectorField::new("id", "l4").path("log.id").type_label("id"),
+        InspectorField::new("id", "l4")
+            .path("log.id")
+            .type_label("id"),
         InspectorField::new("level", "error")
             .path("log.level")
             .type_label("level"),
@@ -1572,14 +1564,7 @@ mod tests {
         let tiles = example_observability_tiles();
         let alerts = example_observability_alerts();
         st.metrics.focus_tile = 0;
-        let out = st.handle_key(
-            press(KeyCode::Enter),
-            &[],
-            &[],
-            &tiles,
-            &alerts,
-            &[],
-        );
+        let out = st.handle_key(press(KeyCode::Enter), &[], &[], &tiles, &alerts, &[]);
         assert!(
             matches!(
                 out,
@@ -1621,10 +1606,18 @@ mod tests {
             assert!(q.contains('t') || q.contains("timeout"), "{q}");
         }
         let logs = example_observability_logs();
-        let q = st.logs.search.clone().unwrap_or_else(|| st.search.query().to_string());
+        let q = st
+            .logs
+            .search
+            .clone()
+            .unwrap_or_else(|| st.search.query().to_string());
         if !q.is_empty() {
             let filtered = filter_log_lines(&logs, &q, LogLevel::Trace);
-            assert!(filtered.iter().any(|l| l.text.contains(&q) || l.id == "l4" || !filtered.is_empty()));
+            assert!(
+                filtered
+                    .iter()
+                    .any(|l| l.text.contains(&q) || l.id == "l4" || !filtered.is_empty())
+            );
         }
     }
 
@@ -1714,8 +1707,7 @@ mod tests {
         }
         // ops_dashboard layout helper preserved as peer (not dual paint path)
         assert!(
-            !body.contains("layout_ops_dashboard")
-                || body.contains("ops_dashboard"),
+            !body.contains("layout_ops_dashboard") || body.contains("ops_dashboard"),
             "if ops_dashboard referenced, document relationship"
         );
     }
@@ -1775,11 +1767,7 @@ mod tests {
         let alerts = example_observability_alerts();
         // Cycle time range if metrics exposes it (often `[` / `]` or arrows in toolbar)
         st.metrics.focus = crate::patterns::MetricsFocus::Toolbar;
-        for code in [
-            KeyCode::Right,
-            KeyCode::Char(']'),
-            KeyCode::Char('t'),
-        ] {
+        for code in [KeyCode::Right, KeyCode::Char(']'), KeyCode::Char('t')] {
             let out = st.handle_key(press(code), &[], &[], &tiles, &alerts, &[]);
             if matches!(out, ObservabilityDashboardOutcome::TimeRangeChanged(_)) {
                 return;
@@ -1818,7 +1806,8 @@ mod tests {
         let events = example_observability_events();
         let hit = filter_stream_events(&events, "crash", EventSeverity::Trace, &Default::default());
         assert!(
-            hit.iter().any(|e| e.id == "e3" || e.summary.contains("crash")),
+            hit.iter()
+                .any(|e| e.id == "e3" || e.summary.contains("crash")),
             "expected crash event in filter"
         );
     }

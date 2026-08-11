@@ -26,7 +26,6 @@ use ratatui_core::{
 
 use crate::{
     // nav sample seed
-
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
         InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
@@ -42,11 +41,11 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon, ModeRibbonState,
-        Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState, PromptComposer,
-        PromptComposerOutcome, PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar,
-        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome, TranscriptState,
-        WorkbenchMode,
+        DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon,
+        ModeRibbonState, Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState,
+        PromptComposer, PromptComposerOutcome, PromptComposerState, QuestionFlow,
+        QuestionFlowState, StatusBar, StatusBarState, StatusSlot, Transcript, TranscriptBlock,
+        TranscriptOutcome, TranscriptState, WorkbenchMode,
     },
 };
 
@@ -344,16 +343,9 @@ impl AgentWorkbenchState {
     pub fn cycle_focus(&mut self, reverse: bool) -> WorkbenchKeyOutcome {
         let order = WorkbenchPane::focus_order();
         let cur = self.focused_pane().unwrap_or("transcript");
-        let idx = order
-            .iter()
-            .position(|p| p.id() == cur)
-            .unwrap_or(1);
+        let idx = order.iter().position(|p| p.id() == cur).unwrap_or(1);
         let next = if reverse {
-            if idx == 0 {
-                order.len() - 1
-            } else {
-                idx - 1
-            }
+            if idx == 0 { order.len() - 1 } else { idx - 1 }
         } else {
             (idx + 1) % order.len()
         };
@@ -747,7 +739,9 @@ pub fn diff_modal_rect(area: Rect) -> Rect {
 
 fn centered_modal(area: Rect, w_num: u16, w_den: u16, h_min: u16, w_min: u16) -> Rect {
     let width = area.width.saturating_mul(w_num) / w_den;
-    let height = (area.height / 3).max(h_min).min(area.height.saturating_sub(2));
+    let height = (area.height / 3)
+        .max(h_min)
+        .min(area.height.saturating_sub(2));
     let width = width.clamp(w_min, area.width.saturating_sub(2).max(1));
     let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
     let y = area
@@ -1038,9 +1032,11 @@ pub fn render_agent_workbench(
                 if let Some(card) = working {
                     if state.working.work.is_some() {
                         state.working.focused = focused == Some("working") && !overlay;
-                        card.ascii(ascii)
-                            .colorless(colorless)
-                            .paint(pane.area, buffer, &mut state.working);
+                        card.ascii(ascii).colorless(colorless).paint(
+                            pane.area,
+                            buffer,
+                            &mut state.working,
+                        );
                     }
                 }
             }
@@ -1171,20 +1167,12 @@ pub fn example_workbench_tasks() -> Vec<ActivityModel> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyModifiers};
+    use crate::input::KeyModifiers;
+    use crate::patterns::{example_plan_document, example_working_state};
     use crate::widgets::{
-    PermissionRequest,
-    PermissionRisk,
-    Question,
-    QuestionOption,
-    QuestionSet,
-    TranscriptBlock,
-    TranscriptKind,
-};
-use crate::patterns::{
-    example_plan_document,
-    example_working_state,
-};
+        PermissionRequest, PermissionRisk, Question, QuestionOption, QuestionSet, TranscriptBlock,
+        TranscriptKind,
+    };
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 
@@ -1465,7 +1453,11 @@ use crate::patterns::{
     fn elevated_task_rail_and_activity_paint() {
         let system = DesignSystem::default();
         let lines = ["stream"];
-        let blocks = [TranscriptBlock::new("b1", TranscriptKind::Assistant, &lines)];
+        let blocks = [TranscriptBlock::new(
+            "b1",
+            TranscriptKind::Assistant,
+            &lines,
+        )];
         let mut workbench = AgentWorkbenchState::new();
         workbench.density = Some(WorkbenchDensity::Normal);
         let models = example_workbench_tasks();
@@ -1504,7 +1496,11 @@ use crate::patterns::{
                 working: None,
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Tasks") || text.contains("cargo") || text.contains("Plan"),
             "{text}"
@@ -1554,11 +1550,7 @@ use crate::patterns::{
             },
         );
         assert!(workbench.plan_open());
-        assert!(workbench
-            .scene
-            .layers()
-            .iter()
-            .any(|l| l.id == "plan"));
+        assert!(workbench.scene.layers().iter().any(|l| l.id == "plan"));
         let _ = workbench.handle_escape();
         assert!(!workbench.plan_open());
     }
@@ -1605,7 +1597,11 @@ use crate::patterns::{
                 working: Some(&working_w),
             },
         );
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
         assert!(
             text.contains("Working") || text.contains("editing") || text.contains("summary"),
             "{text}"
@@ -1634,10 +1630,7 @@ use crate::patterns::{
         assert!(src.contains("public"));
         assert!(src.contains("draft"));
         // Build needles so this test body does not self-match.
-        let forbidden = [
-            format!("{}::process", "std"),
-            format!("{}::new", "Command"),
-        ];
+        let forbidden = [format!("{}::process", "std"), format!("{}::new", "Command")];
         for f in &forbidden {
             assert!(!src.contains(f.as_str()), "{f}");
         }
@@ -1771,14 +1764,14 @@ pub fn example_agent_workbench_nav() -> Vec<crate::widgets::NavItem<&'static str
     use crate::widgets::{NavItem, NavItemStatus};
 
     vec![
-        NavItem::new("chat", "Chat")
-            .icon("💬")
-            .command("wb.chat"),
+        NavItem::new("chat", "Chat").icon("💬").command("wb.chat"),
         NavItem::new("plan", "Plan")
             .icon("📋")
             .status(NavItemStatus::Running)
             .command("wb.plan"),
-        NavItem::new("files", "Files").icon("📁").command("wb.files"),
+        NavItem::new("files", "Files")
+            .icon("📁")
+            .command("wb.files"),
         NavItem::separator("sep1"),
         NavItem::new("sessions", "Sessions")
             .badge("2")

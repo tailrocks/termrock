@@ -15,11 +15,8 @@
 //!
 //! Research: Amp compaction, OpenCode context displays, AI chat token meters.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{
@@ -702,12 +699,7 @@ impl<'a> ContextMeter<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ContextMeterState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
         state.hit = area;
         if area.is_empty() {
             return;
@@ -750,26 +742,14 @@ impl<'a> ContextMeter<'a> {
         let line = format_budget_compact(&self.budget.measure);
         let w = usize::from(area.width);
         if area.height == 1 || w < 16 {
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&line, w),
-                w,
-                style,
-            );
+            buffer.set_stringn(area.x, area.y, take_display_cols(&line, w), w, style);
             return;
         }
         // line 0: bar, line 1: numbers
         let bar_w = w.saturating_sub(2).min(24);
         let bar = meter_bar(frac, bar_w, self.ascii || self.colorless, indeterminate);
         let bar_line = format!("[{bar}]");
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&bar_line, w),
-            w,
-            style,
-        );
+        buffer.set_stringn(area.x, area.y, take_display_cols(&bar_line, w), w, style);
         if area.height > 1 {
             buffer.set_stringn(
                 area.x,
@@ -846,28 +826,16 @@ impl<'a> ContextMeter<'a> {
         if y < max_y {
             let mut bits = Vec::new();
             if let Some(a) = m.available {
-                bits.push(format!(
-                    "avail {}",
-                    format_budget_count(a, m.precision)
-                ));
+                bits.push(format!("avail {}", format_budget_count(a, m.precision)));
             }
             if let Some(c) = b.cached {
                 bits.push(format!("cache {}", format_budget_count(c, m.precision)));
             }
             if let Some(p) = b.pending_attachments {
-                bits.push(format!(
-                    "pend+{}",
-                    format_budget_count(p, m.precision)
-                ));
+                bits.push(format!("pend+{}", format_budget_count(p, m.precision)));
             }
             if !bits.is_empty() {
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&bits.join(" · "), w),
-                    w,
-                    muted,
-                );
+                buffer.set_stringn(area.x, y, take_display_cols(&bits.join(" · "), w), w, muted);
                 y = y.saturating_add(1);
             }
         }
@@ -902,13 +870,7 @@ impl<'a> ContextMeter<'a> {
                 take_display_cols(&src.label, 16),
                 format_budget_count(src.amount, m.precision)
             );
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, w),
-                w,
-                muted,
-            );
+            buffer.set_stringn(area.x, y, take_display_cols(&line, w), w, muted);
             y = y.saturating_add(1);
         }
 
@@ -959,12 +921,7 @@ impl<'a> ContextMeter<'a> {
     }
 
     /// Render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut ContextMeterState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
         self.paint(area, buffer, state);
     }
 }
@@ -986,12 +943,8 @@ pub fn example_context_budgets() -> Vec<ContextBudget> {
         ContextBudget::tokens(12_000, 200_000)
             .model("grok-4", Some(200_000))
             .source(ContextSource::new("m", "messages", 8_000))
-            .source(
-                ContextSource::new("t", "tools", 3_000).kind(ContextSourceKind::Tool),
-            )
-            .source(
-                ContextSource::new("a", "files", 1_000).kind(ContextSourceKind::Attachment),
-            )
+            .source(ContextSource::new("t", "tools", 3_000).kind(ContextSourceKind::Tool))
+            .source(ContextSource::new("a", "files", 1_000).kind(ContextSourceKind::Attachment))
             .cached(2_000)
             .reduce_action("drop attachments")
             .compact_action("compact"),
@@ -1041,10 +994,7 @@ mod tests {
         let m = BudgetMeasure::unknown(BudgetUnit::Tokens);
         assert!(m.fraction().is_none());
         assert_eq!(format_budget_percent(None, BudgetPrecision::Exact), "—");
-        assert_eq!(
-            format_budget_percent(None, BudgetPrecision::Unknown),
-            "—"
-        );
+        assert_eq!(format_budget_percent(None, BudgetPrecision::Unknown), "—");
         let compact = format_budget_compact(&m);
         assert!(!compact.contains("100%"));
         assert!(compact.contains('—') || compact.contains("?"));
@@ -1089,10 +1039,7 @@ mod tests {
     #[test]
     fn pressure_roles() {
         let low = BudgetMeasure::tokens(10, 100);
-        assert_eq!(
-            low.pressure_role(0.75, 0.9),
-            Role::TextMuted
-        );
+        assert_eq!(low.pressure_role(0.75, 0.9), Role::TextMuted);
         let mid = BudgetMeasure::tokens(80, 100);
         assert_eq!(mid.pressure_role(0.75, 0.9), Role::Warning);
         let hi = BudgetMeasure::tokens(95, 100);
@@ -1108,15 +1055,24 @@ mod tests {
         let mut st = ContextMeterState::new();
         st.focused = true;
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE), &budget),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+                &budget
+            ),
             ContextMeterOutcome::CompactRequested
         ));
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE), &budget),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
+                &budget
+            ),
             ContextMeterOutcome::ReduceRequested
         ));
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE), &budget),
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE),
+                &budget
+            ),
             ContextMeterOutcome::ExpandToggled { expanded: true }
         ));
         assert!(matches!(

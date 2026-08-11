@@ -23,7 +23,9 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{
+    KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
@@ -185,34 +187,19 @@ impl<'a> SliderMark<'a> {
 fn mono(system: &DesignSystem, colorless: bool) -> bool {
     colorless
         || system.glyphs.is_ascii()
-        || matches!(
-            system.capability,
-            crate::style::ColorCapability::Monochrome
-        )
+        || matches!(system.capability, crate::style::ColorCapability::Monochrome)
 }
 
 fn handle_glyph(system: &DesignSystem, colorless: bool) -> &'static str {
-    if mono(system, colorless) {
-        "*"
-    } else {
-        "●"
-    }
+    if mono(system, colorless) { "*" } else { "●" }
 }
 
 fn fill_glyph(system: &DesignSystem, colorless: bool) -> &'static str {
-    if mono(system, colorless) {
-        "="
-    } else {
-        "━"
-    }
+    if mono(system, colorless) { "=" } else { "━" }
 }
 
 fn empty_glyph(system: &DesignSystem, colorless: bool) -> &'static str {
-    if mono(system, colorless) {
-        "-"
-    } else {
-        "─"
-    }
+    if mono(system, colorless) { "-" } else { "─" }
 }
 
 fn format_value(value: f64) -> String {
@@ -565,7 +552,10 @@ impl<'a> Slider<'a> {
         } else {
             (display_cols(&value_str) as u16).saturating_add(1)
         };
-        let track_w = area.width.saturating_sub(value_w).max(SLIDER_MIN_TRACK.min(area.width));
+        let track_w = area
+            .width
+            .saturating_sub(value_w)
+            .max(SLIDER_MIN_TRACK.min(area.width));
         let track = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), track_w, 1);
         let frac = self.bounds.fraction(value);
         let handle_idx = if track_w <= 1 {
@@ -605,7 +595,10 @@ impl<'a> Slider<'a> {
 
         let mut value_area = None;
         if !value_str.is_empty() && track.right() < area.right() {
-            let vx = track.right().saturating_add(1).min(area.right().saturating_sub(1));
+            let vx = track
+                .right()
+                .saturating_add(1)
+                .min(area.right().saturating_sub(1));
             let vw = area.right().saturating_sub(vx);
             let text = take_display_cols(&value_str, usize::from(vw));
             buffer.set_stringn(vx, track.y, &text, usize::from(vw), self.value_style(state));
@@ -629,13 +622,7 @@ impl<'a> Slider<'a> {
                     } else {
                         "┊"
                     };
-                    buffer.set_stringn(
-                        gx,
-                        my,
-                        mark_ch,
-                        1,
-                        self.system.style(Role::TextMuted),
-                    );
+                    buffer.set_stringn(gx, my, mark_ch, 1, self.system.style(Role::TextMuted));
                     if let Some(lab) = m.label {
                         if !lab.is_empty() && gx.saturating_add(1) < area.right() {
                             let t = take_display_cols(lab, 4);
@@ -652,12 +639,7 @@ impl<'a> Slider<'a> {
             }
         }
 
-        let handle_rect = Some(Rect::new(
-            track.x.saturating_add(handle_idx),
-            track.y,
-            1,
-            1,
-        ));
+        let handle_rect = Some(Rect::new(track.x.saturating_add(handle_idx), track.y, 1, 1));
         let parts = SliderParts {
             root: area,
             track: Some(track),
@@ -751,7 +733,9 @@ impl<'a> Slider<'a> {
         if !state.enabled {
             self.system.style(Role::TextDisabled)
         } else if state.focused {
-            self.system.style(Role::Focus).add_modifier(Modifier::UNDERLINED)
+            self.system
+                .style(Role::Focus)
+                .add_modifier(Modifier::UNDERLINED)
         } else {
             self.system.style(Role::Text)
         }
@@ -763,7 +747,9 @@ impl<'a> Slider<'a> {
         } else if state.editing {
             self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
         } else if state.focused {
-            self.system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
+            self.system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD)
         } else {
             self.system.style(Role::TextMuted)
         }
@@ -849,9 +835,11 @@ impl<'a> Slider<'a> {
             KeyCode::Left | KeyCode::Down | KeyCode::Char('h') | KeyCode::Char('-') => {
                 self.set_value(state, state.value - step)
             }
-            KeyCode::Right | KeyCode::Up | KeyCode::Char('l') | KeyCode::Char('+') | KeyCode::Char('=') => {
-                self.set_value(state, state.value + step)
-            }
+            KeyCode::Right
+            | KeyCode::Up
+            | KeyCode::Char('l')
+            | KeyCode::Char('+')
+            | KeyCode::Char('=') => self.set_value(state, state.value + step),
             KeyCode::PageDown => self.set_value(state, state.value - page),
             KeyCode::PageUp => self.set_value(state, state.value + page),
             KeyCode::Home => self.set_value(state, self.bounds.min),
@@ -893,11 +881,7 @@ impl<'a> Slider<'a> {
                 SliderOutcome::Ignored
             }
             KeyCode::Char(c)
-                if c.is_ascii_digit()
-                    || c == '-'
-                    || c == '.'
-                    || c == 'e'
-                    || c == 'E' =>
+                if c.is_ascii_digit() || c == '-' || c == '.' || c == 'e' || c == 'E' =>
             {
                 if state.edit_buffer.len() < 24 {
                     state.edit_buffer.push(c);
@@ -1300,11 +1284,7 @@ impl<'a> RangeSlider<'a> {
         }
 
         if area.width < SLIDER_NUMERIC_FALLBACK_WIDTH {
-            let face = format!(
-                "{}–{}",
-                format_value(state.start),
-                format_value(state.end)
-            );
+            let face = format!("{}–{}", format_value(state.start), format_value(state.end));
             let text = take_display_cols(&face, usize::from(area.width));
             let style = if !state.enabled {
                 self.system.style(Role::TextDisabled)
@@ -1319,12 +1299,7 @@ impl<'a> RangeSlider<'a> {
                 track: None,
                 start_handle: None,
                 end_handle: None,
-                value_area: Some(Rect::new(
-                    area.x,
-                    area.y,
-                    display_cols(&text) as u16,
-                    1,
-                )),
+                value_area: Some(Rect::new(area.x, area.y, display_cols(&text) as u16, 1)),
                 numeric_only: true,
             };
             state.parts = Some(parts.clone());
@@ -1351,11 +1326,7 @@ impl<'a> RangeSlider<'a> {
         }
 
         let value_str = if self.show_value {
-            format!(
-                "{}–{}",
-                format_value(state.start),
-                format_value(state.end)
-            )
+            format!("{}–{}", format_value(state.start), format_value(state.end))
         } else {
             String::new()
         };
@@ -1397,7 +1368,10 @@ impl<'a> RangeSlider<'a> {
                     .style(Role::Focus)
                     .add_modifier(Modifier::BOLD | Modifier::REVERSED)
             } else if is_start || is_end {
-                let mut s = self.system.style(Role::TextStrong).add_modifier(Modifier::BOLD);
+                let mut s = self
+                    .system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD);
                 if mono(self.system, self.colorless) {
                     s = s.add_modifier(Modifier::REVERSED);
                 }
@@ -1634,11 +1608,7 @@ impl<'a> RangeSlider<'a> {
         if area.is_empty() {
             return;
         }
-        let desc = format!(
-            "{}–{}",
-            format_value(state.start),
-            format_value(state.end)
-        );
+        let desc = format!("{}–{}", format_value(state.start), format_value(state.end));
         let _ = scene.register(
             SemanticNode::control(id, area)
                 .role(SemanticRole::Progress)
@@ -1688,15 +1658,9 @@ mod tests {
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
         );
         assert!(matches!(out, SliderOutcome::ValueChanged { value: 51.0 }));
-        let out = s.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Home, KeyModifiers::NONE),
-        );
+        let out = s.handle_key(&mut state, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
         assert!(matches!(out, SliderOutcome::ValueChanged { value: 0.0 }));
-        let out = s.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::End, KeyModifiers::NONE),
-        );
+        let out = s.handle_key(&mut state, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
         assert!(matches!(out, SliderOutcome::ValueChanged { value: 100.0 }));
     }
 
@@ -1713,10 +1677,7 @@ mod tests {
         assert!(matches!(out, SliderOutcome::ValueChanged { .. }));
         state.set_read_only(true);
         assert!(matches!(
-            s.handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)
-            ),
+            s.handle_key(&mut state, KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
             SliderOutcome::Ignored
         ));
     }
@@ -1739,10 +1700,7 @@ mod tests {
             &mut state,
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
         );
-        assert!(matches!(
-            out,
-            SliderOutcome::EditCommitted { value: 75.0 }
-        ));
+        assert!(matches!(out, SliderOutcome::EditCommitted { value: 75.0 }));
         assert_eq!(state.value, 75.0);
     }
 
@@ -1821,20 +1779,14 @@ mod tests {
                 end: 80.0
             }
         ));
-        let out = s.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
-        );
+        let out = s.handle_key(&mut state, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         assert!(matches!(
             out,
             RangeSliderOutcome::ThumbChanged {
                 thumb: RangeThumb::End
             }
         ));
-        let out = s.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),
-        );
+        let out = s.handle_key(&mut state, KeyEvent::new(KeyCode::Left, KeyModifiers::NONE));
         assert!(matches!(
             out,
             RangeSliderOutcome::ValueChanged {

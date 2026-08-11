@@ -30,6 +30,7 @@
 //!
 //! Research: desktop segmented controls, shadcn patterns, IDE mode selectors.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -378,7 +379,11 @@ impl<'a, Id> SegmentedControl<'a, Id> {
 
     /// Plan visible indices, overflow indices, and presentation.
     #[must_use]
-    pub fn plan(&self, width: u16, selected: Option<&Id>) -> (SegmentedPresentation, Vec<usize>, Vec<usize>)
+    pub fn plan(
+        &self,
+        width: u16,
+        selected: Option<&Id>,
+    ) -> (SegmentedPresentation, Vec<usize>, Vec<usize>)
     where
         Id: PartialEq,
     {
@@ -448,9 +453,10 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             if let Some(si) = self.items.iter().position(|i| &i.id == s) {
                 if !keep.contains(&si) && !overflow.is_empty() {
                     // swap lowest priority from keep
-                    if let Some(pos) = keep.iter().rposition(|&i| {
-                        Some(&self.items[i].id) != selected
-                    }) {
+                    if let Some(pos) = keep
+                        .iter()
+                        .rposition(|&i| Some(&self.items[i].id) != selected)
+                    {
                         overflow.push(keep.remove(pos));
                         keep.push(si);
                         overflow.retain(|&i| i != si);
@@ -559,8 +565,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             return parts;
         }
 
-        let (presentation, visible, overflow) =
-            self.plan(area.width, state.selected.as_ref());
+        let (presentation, visible, overflow) = self.plan(area.width, state.selected.as_ref());
         let overflow_ids: Vec<Id> = overflow.iter().map(|&i| self.items[i].id.clone()).collect();
 
         // Cursor reconcile
@@ -615,13 +620,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 let text = take_display_cols(&face, usize::from(area.width));
                 let focused = state.surface_focused;
                 let style = self.face_style(true, focused, false, item.enabled);
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    &text,
-                    usize::from(area.width),
-                    style,
-                );
+                buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
                 let w = display_cols(&text).min(usize::from(area.width)) as u16;
                 let rect = Rect::new(area.x, area.y, w.max(1), 1.min(area.height));
                 collapsed_trigger = Some(rect);
@@ -664,13 +663,11 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                         break;
                     }
                     let rect = Rect::new(x, area.y, w, 1.min(area.height));
-                    let focused =
-                        state.surface_focused && state.cursor.as_ref() == Some(&item.id);
+                    let focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
                     let hovered = state.hovered.as_ref() == Some(&item.id);
                     let face = self.format_face(item, selected);
                     let text = take_display_cols(&face, usize::from(w));
-                    let style =
-                        self.face_style(selected, focused, hovered, item.enabled);
+                    let style = self.face_style(selected, focused, hovered, item.enabled);
                     buffer.set_stringn(rect.x, rect.y, &text, usize::from(w), style);
                     item_parts.push(SegmentedItemParts {
                         id: item.id.clone(),
@@ -679,8 +676,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                     });
                     x = x.saturating_add(w);
                 }
-                if matches!(presentation, SegmentedPresentation::Overflow) && !overflow.is_empty()
-                {
+                if matches!(presentation, SegmentedPresentation::Overflow) && !overflow.is_empty() {
                     if !first {
                         if x < area.right() && area.height > 0 {
                             buffer.set_stringn(
@@ -804,11 +800,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 .unwrap_or(0);
             match key.code {
                 crate::input::KeyCode::Left | crate::input::KeyCode::Up => {
-                    let next = if cur == 0 {
-                        enabled.len() - 1
-                    } else {
-                        cur - 1
-                    };
+                    let next = if cur == 0 { enabled.len() - 1 } else { cur - 1 };
                     return self.commit(state, self.items[enabled[next]].id.clone());
                 }
                 crate::input::KeyCode::Right => {
@@ -923,7 +915,12 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 }
             }
             crate::input::KeyCode::End => {
-                if let Some(id) = visible.iter().rev().find(|e| e.enabled).map(|e| e.id.clone()) {
+                if let Some(id) = visible
+                    .iter()
+                    .rev()
+                    .find(|e| e.enabled)
+                    .map(|e| e.id.clone())
+                {
                     state.cursor = Some(id.clone());
                     return self.commit(state, id);
                 }
@@ -1015,11 +1012,9 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         state: &mut SegmentedControlState<Id>,
         id: Id,
     ) -> SegmentedControlOutcome<Id> {
-        if state
-            .parts
-            .as_ref()
-            .is_some_and(|p| p.overflow_ids.iter().any(|x| x == &id) || p.items.iter().any(|i| i.id == id))
-        {
+        if state.parts.as_ref().is_some_and(|p| {
+            p.overflow_ids.iter().any(|x| x == &id) || p.items.iter().any(|i| i.id == id)
+        }) {
             return self.commit(state, id);
         }
         // Also allow selecting any known item (host menu may list all)
@@ -1234,19 +1229,13 @@ mod tests {
             &mut state,
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
         );
-        assert!(matches!(
-            out,
-            SegmentedControlOutcome::Selected { id: "c" }
-        ));
+        assert!(matches!(out, SegmentedControlOutcome::Selected { id: "c" }));
     }
 
     #[test]
     fn selected_mark_brackets_no_neon_only() {
         let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let items = [
-            SegmentedItem::new("a", "A"),
-            SegmentedItem::new("b", "B"),
-        ];
+        let items = [SegmentedItem::new("a", "A"), SegmentedItem::new("b", "B")];
         let g = SegmentedControl::new(&items, &system).colorless(true);
         let mut state = SegmentedControlState::new(Some("a"));
         let mut buf = Buffer::empty(Rect::new(0, 0, 30, 1));

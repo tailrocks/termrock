@@ -3,6 +3,7 @@
 
 //! Navigation and menu overlays: sidebar, breadcrumbs, menu, drawer, popover, tooltip (Plan 051).
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -20,7 +21,6 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
-
 
 // ── Menu (flat adapter) ─────────────────────────────────────────────────────
 // Hierarchical DropdownMenu / ContextMenu live in `dropdown_menu` module.
@@ -197,7 +197,7 @@ impl MenuState {
         if !self.accepts_input || !self.open || items.is_empty() {
             return MenuOutcome::Ignored;
         }
-        let (ox, oy) = self.origin;
+        let (_ox, oy) = self.origin;
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 let row = usize::from(event.position.y.saturating_sub(oy));

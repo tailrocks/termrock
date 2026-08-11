@@ -20,6 +20,7 @@
 //!
 //! Research: Vim/Helix help, Zellij key help, CLI man pages, command palettes.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -37,10 +38,11 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        example_help_entries, filter_help_entries, project_markdown, CommandEntry, HelpEntry,
-        KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome, KeyboardHelpState, List, ListRow,
-        ListState, MarkdownBlock, MarkdownOutcome, MarkdownView, MarkdownViewState, SearchInput,
-        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        CommandEntry, HelpEntry, KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome,
+        KeyboardHelpState, List, ListRow, ListState, MarkdownBlock, MarkdownOutcome, MarkdownView,
+        MarkdownViewState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, example_help_entries, filter_help_entries,
+        project_markdown,
     },
 };
 
@@ -231,7 +233,11 @@ pub struct HelpTopic {
 impl HelpTopic {
     /// Construct.
     #[must_use]
-    pub fn new(id: impl Into<String>, title: impl Into<String>, markdown: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        markdown: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
@@ -340,10 +346,7 @@ pub fn command_list_rows<'a>(commands: &'a [CommandEntry<String>]) -> Vec<ListRo
     for c in commands {
         let g = c.group.as_deref().unwrap_or("Commands");
         if last_group != Some(g) {
-            rows.push(ListRow::group_header(
-                format!("g-cmd-{g}"),
-                Line::from(g),
-            ));
+            rows.push(ListRow::group_header(format!("g-cmd-{g}"), Line::from(g)));
             last_group = Some(g);
         }
         let label = if let Some(s) = &c.shortcut {
@@ -724,13 +727,12 @@ impl HelpCenterState {
         if visible.is_empty() {
             return HelpCenterOutcome::Ignored;
         }
-        let cur = visible.iter().position(|p| p.id() == self.focus).unwrap_or(0);
+        let cur = visible
+            .iter()
+            .position(|p| p.id() == self.focus)
+            .unwrap_or(0);
         let next = if reverse {
-            if cur == 0 {
-                visible.len() - 1
-            } else {
-                cur - 1
-            }
+            if cur == 0 { visible.len() - 1 } else { cur - 1 }
         } else {
             (cur + 1) % visible.len()
         };
@@ -767,9 +769,7 @@ impl HelpCenterState {
         ];
         if let Some(ctx) = &self.context_label {
             let _ = ctx; // content is &'static in StatusSlot — use fixed label
-            slots.push(
-                StatusSlot::context("ctx", "context").priority(30),
-            );
+            slots.push(StatusSlot::context("ctx", "context").priority(30));
         }
         slots
     }
@@ -842,9 +842,7 @@ impl HelpCenterState {
         match out {
             SearchInputOutcome::Ignored => HelpCenterOutcome::Ignored,
             SearchInputOutcome::DebouncedQuery { query }
-            | SearchInputOutcome::Submitted { query } => {
-                HelpCenterOutcome::FilterChanged { query }
-            }
+            | SearchInputOutcome::Submitted { query } => HelpCenterOutcome::FilterChanged { query },
             SearchInputOutcome::Changed | SearchInputOutcome::HistoryRecalled { .. } => {
                 HelpCenterOutcome::FilterChanged {
                     query: self.search.query().to_string(),
@@ -870,9 +868,12 @@ impl HelpCenterState {
         let filtered = filter_help_topics(topics, &q);
         let rows = help_topic_rows(&filtered);
         if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
-            if let Some(id) = self.nav.selected().cloned().or_else(|| {
-                filtered.first().map(|t| t.id.clone())
-            }) {
+            if let Some(id) = self
+                .nav
+                .selected()
+                .cloned()
+                .or_else(|| filtered.first().map(|t| t.id.clone()))
+            {
                 if id.starts_with("g-") {
                     return HelpCenterOutcome::Ignored;
                 }
@@ -910,9 +911,7 @@ impl HelpCenterState {
     ) -> HelpCenterOutcome {
         let visible = filter_help_entries(help_entries, self.search.query());
         // Ensure modal is open when focusing keyboard in compact/full map pane
-        if !self.keyboard.is_open()
-            && matches!(self.keyboard.mode(), KeyboardHelpMode::Modal)
-        {
+        if !self.keyboard.is_open() && matches!(self.keyboard.mode(), KeyboardHelpMode::Modal) {
             let _ = self.keyboard.open_modal();
         }
         let out = self.keyboard.handle_key(key, &visible);
@@ -966,9 +965,12 @@ impl HelpCenterState {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Enter => {
-                    if let Some(id) = self.commands.selected().cloned().or_else(|| {
-                        owned.first().map(|c| c.id.clone())
-                    }) {
+                    if let Some(id) = self
+                        .commands
+                        .selected()
+                        .cloned()
+                        .or_else(|| owned.first().map(|c| c.id.clone()))
+                    {
                         if id.starts_with("g-") {
                             return HelpCenterOutcome::Ignored;
                         }
@@ -1039,9 +1041,7 @@ impl HelpCenterState {
                 if let KeyCode::Char('g') = key.code {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
-                            return HelpCenterOutcome::AnchorJumped {
-                                anchor: a.clone(),
-                            };
+                            return HelpCenterOutcome::AnchorJumped { anchor: a.clone() };
                         }
                     }
                 }
@@ -1058,9 +1058,7 @@ impl HelpCenterState {
                 if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('g') {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
-                            return HelpCenterOutcome::AnchorJumped {
-                                anchor: a.clone(),
-                            };
+                            return HelpCenterOutcome::AnchorJumped { anchor: a.clone() };
                         }
                     }
                 }
@@ -1401,8 +1399,7 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     state.sync_diagnostics_live(doctor, component_ids);
     state.ensure_keyboard_map_modal();
     let show_diag = state.diagnostics_live;
-    let panes =
-        help_center_layout_density(area, &state.workspace, density, state.mode, show_diag);
+    let panes = help_center_layout_density(area, &state.workspace, density, state.mode, show_diag);
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
@@ -1683,7 +1680,7 @@ pub fn example_help_center_commands(system: &DesignSystem) -> Vec<CommandEntry<S
 /// Sample doctor report for projection (real build_doctor_report).
 #[must_use]
 pub fn example_help_doctor_report() -> DoctorReport {
-    use crate::capability::{build_doctor_report, CapabilityOverrides};
+    use crate::capability::{CapabilityOverrides, build_doctor_report};
     build_doctor_report(None, CapabilityOverrides::default())
 }
 
@@ -1695,7 +1692,9 @@ pub fn burst_help_topics(n: usize) -> Vec<HelpTopic> {
             HelpTopic::new(
                 format!("t-{i}"),
                 format!("Topic {i:04}"),
-                format!("# Topic {i}\n\nBody line for paint stress {i}.\n\n## Anchor\n\nMore text.\n"),
+                format!(
+                    "# Topic {i}\n\nBody line for paint stress {i}.\n\n## Anchor\n\nMore text.\n"
+                ),
             )
             .group(match i % 4 {
                 0 => HelpTopicGroup::Tutorial,
@@ -2013,7 +2012,10 @@ mod tests {
             Some(&doctor),
             &components,
         );
-        assert!(matches!(out, HelpCenterOutcome::DoctorOpened), "got {out:?}");
+        assert!(
+            matches!(out, HelpCenterOutcome::DoctorOpened),
+            "got {out:?}"
+        );
     }
 
     #[test]
@@ -2087,11 +2089,7 @@ mod tests {
     fn keyboard_map_full_mode_modal_navigable() {
         let system = DesignSystem::default();
         let mut st = open();
-        assert_eq!(
-            st.mode,
-            HelpCenterMode::Full,
-            "open() is full docs"
-        );
+        assert_eq!(st.mode, HelpCenterMode::Full, "open() is full docs");
         assert_eq!(
             st.keyboard.mode(),
             KeyboardHelpMode::Modal,
@@ -2143,7 +2141,9 @@ mod tests {
             painted.push('\n');
         }
         let hit = help.iter().any(|e| {
-            painted.contains(&e.action) || painted.contains(&e.chord) || painted.contains("Keyboard")
+            painted.contains(&e.action)
+                || painted.contains(&e.chord)
+                || painted.contains("Keyboard")
         });
         assert!(
             hit,
@@ -2194,9 +2194,10 @@ mod tests {
         st.sync_diagnostics_live(Some(&doctor), &[]);
         assert!(st.diagnostics_live || doctor.findings.is_empty());
         if !doctor.findings.is_empty() {
-            assert!(st
-                .visible_focus_panes(HelpCenterDensity::Normal)
-                .contains(&HelpCenterPane::Diagnostics));
+            assert!(
+                st.visible_focus_panes(HelpCenterDensity::Normal)
+                    .contains(&HelpCenterPane::Diagnostics)
+            );
         }
     }
 
@@ -2275,12 +2276,7 @@ mod tests {
         st.sync_diagnostics_live(Some(&doctor), &components);
         st.apply_focus_gates();
         // Start on first finding (list head), then Down until selection is a component id
-        st.diagnostics = ListState::new(
-            doctor
-                .findings
-                .first()
-                .map(|f| f.code.clone()),
-        );
+        st.diagnostics = ListState::new(doctor.findings.first().map(|f| f.code.clone()));
         let mut reached = false;
         for _ in 0..rows.len().saturating_add(4) {
             let _ = st.handle_key(

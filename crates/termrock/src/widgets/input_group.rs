@@ -17,11 +17,7 @@
 //!
 //! Research: shadcn Input Group, browser URL bars, CLI flag+value pairs.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -165,11 +161,7 @@ impl InputGroupState {
     }
 
     /// Keys — field first; Alt+Enter activates first actionable suffix.
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        addons: &[InputAddon],
-    ) -> InputGroupOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, addons: &[InputAddon]) -> InputGroupOutcome {
         if !self.accepts_input || key.kind != KeyEventKind::Press {
             return InputGroupOutcome::Ignored;
         }
@@ -341,10 +333,7 @@ mod tests {
         );
         assert_eq!(st.value(), "ab");
         // Addon action chord
-        let out = st.handle_key(
-            KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT),
-            &addons,
-        );
+        let out = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT), &addons);
         assert!(
             matches!(
                 out,

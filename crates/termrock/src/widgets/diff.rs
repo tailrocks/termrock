@@ -19,6 +19,7 @@
 //!
 //! Research: delta, lazygit, GitUI, review tools, TermRock DiffView/DiffReview.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -123,9 +124,7 @@ impl DiffWordKind {
             Self::Delete => "delete",
         }
     }
-
 }
-
 
 /// One word-level span.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -764,9 +763,7 @@ impl DiffViewState {
                     if q.is_empty() {
                         self.search = None;
                     }
-                    return DiffViewOutcome::SearchChanged(
-                        self.search.clone().unwrap_or_default(),
-                    );
+                    return DiffViewOutcome::SearchChanged(self.search.clone().unwrap_or_default());
                 }
                 KeyCode::Char(c) if !c.is_control() && c != '/' => {
                     q.push(c);
@@ -882,9 +879,7 @@ impl DiffViewState {
                     self.cursor += 1;
                     self.ensure_cursor_visible(len);
                     sync_hunk_from_cursor(self, lines, hunks);
-                    return DiffViewOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
                 if !self.scroll_by_lines(1) {
                     return DiffViewOutcome::Ignored;
@@ -898,9 +893,7 @@ impl DiffViewState {
                     self.cursor -= 1;
                     self.ensure_cursor_visible(len);
                     sync_hunk_from_cursor(self, lines, hunks);
-                    return DiffViewOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
                 if !self.scroll_by_lines(-1) {
                     return DiffViewOutcome::Ignored;
@@ -938,9 +931,7 @@ impl DiffViewState {
                     self.cursor = len - 1;
                     self.ensure_cursor_visible(len);
                 }
-                DiffViewOutcome::CursorMoved {
-                    index: self.cursor,
-                }
+                DiffViewOutcome::CursorMoved { index: self.cursor }
             }
             UiIntent::Page(PageMove::Forward) => {
                 let step = i32::from(self.body_rows.max(1));
@@ -1029,9 +1020,7 @@ impl DiffViewState {
                             index: self.hunk_cursor,
                         };
                     }
-                    return DiffViewOutcome::CursorMoved {
-                        index: self.cursor,
-                    };
+                    return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
                 DiffViewOutcome::Ignored
             }
@@ -1040,11 +1029,7 @@ impl DiffViewState {
     }
 }
 
-fn sync_hunk_from_cursor(
-    state: &mut DiffViewState,
-    lines: &[&DiffLine<'_>],
-    hunks: &[DiffHunk],
-) {
+fn sync_hunk_from_cursor(state: &mut DiffViewState, lines: &[&DiffLine<'_>], hunks: &[DiffHunk]) {
     let Some(line) = lines.get(state.cursor) else {
         return;
     };
@@ -1140,11 +1125,7 @@ pub fn escape_diff_text(raw: &str) -> String {
 
 /// Visible whitespace marker for trailing spaces/tabs.
 fn ws_marker(ascii: bool) -> &'static str {
-    if ascii {
-        "~"
-    } else {
-        "·"
-    }
+    if ascii { "~" } else { "·" }
 }
 
 /// High-quality read-only diff paint.
@@ -1229,11 +1210,7 @@ impl<'a> DiffView<'a> {
         let colorless = self.colorless || state.colorless;
         state.origin = (area.x, area.y);
 
-        let view = filter_diff_lines(
-            self.lines,
-            state.search.as_deref().unwrap_or(""),
-            state,
-        );
+        let view = filter_diff_lines(self.lines, state.search.as_deref().unwrap_or(""), state);
         // Also fold hunk ranges by DiffHunk id when lines lack hunk_id
         let view = apply_hunk_fold_fallback(view, self.lines, self.hunks, state);
 
@@ -1249,10 +1226,7 @@ impl<'a> DiffView<'a> {
         let narrow = area.width < 36;
         let title_h = u16::from(self.title.is_some() && area.height >= 2);
         let chip_h = u16::from(area.height >= 3);
-        let body_h = area
-            .height
-            .saturating_sub(title_h + chip_h)
-            .max(1);
+        let body_h = area.height.saturating_sub(title_h + chip_h).max(1);
 
         let total = view.len().min(u16::MAX as usize) as u16;
         state.sync_metrics(total, body_h);
@@ -1307,17 +1281,14 @@ impl<'a> DiffView<'a> {
                 if py >= bottom {
                     break;
                 }
-                let in_hunk = self
-                    .hunks
-                    .get(state.hunk_cursor)
-                    .is_some_and(|h| {
-                        if let Some(hid) = line.hunk_id {
-                            h.id == hid
-                        } else {
-                            // map filtered index poorly — use id match on header only
-                            h.contains_line(i) || line.text.contains(&h.header)
-                        }
-                    });
+                let in_hunk = self.hunks.get(state.hunk_cursor).is_some_and(|h| {
+                    if let Some(hid) = line.hunk_id {
+                        h.id == hid
+                    } else {
+                        // map filtered index poorly — use id match on header only
+                        h.contains_line(i) || line.text.contains(&h.header)
+                    }
+                });
                 let cursor = i == state.cursor;
 
                 match effective {
@@ -1424,13 +1395,8 @@ fn apply_hunk_fold_fallback<'a>(
     if view.iter().any(|l| l.hunk_id.is_some()) {
         return view;
     }
-    view.into_iter()
-        .filter(|line| {
-            // Find hunk containing by raw index is unreliable on filtered view.
-            // Fold only when line is hunk header matching folded id, drop body until next header.
-            true
-        })
-        .collect()
+    // Fold projection incomplete: identity until header/body drop is implemented.
+    view
 }
 
 fn kind_style(
@@ -1480,17 +1446,9 @@ fn paint_unified_line(
     }
     let style = kind_style(system, line.kind, colorless, surface, cursor || in_hunk);
     let gutter = if cursor && surface {
-        if ascii {
-            ">"
-        } else {
-            "›"
-        }
+        if ascii { ">" } else { "›" }
     } else if in_hunk {
-        if ascii {
-            "."
-        } else {
-            "·"
-        }
+        if ascii { "." } else { "·" }
     } else {
         " "
     };
@@ -1510,10 +1468,7 @@ fn paint_unified_line(
                 .unwrap_or_else(|| "    ".into()),
         )
     } else if state.show_line_numbers && !tiny {
-        format!(
-            "{:>3} ",
-            line.new_no.or(line.old_no).unwrap_or(0)
-        )
+        format!("{:>3} ", line.new_no.or(line.old_no).unwrap_or(0))
     } else {
         String::new()
     };
@@ -1664,17 +1619,9 @@ fn paint_split_line(
     );
 
     let gutter = if cursor && surface {
-        if ascii {
-            ">"
-        } else {
-            "›"
-        }
+        if ascii { ">" } else { "›" }
     } else if in_hunk {
-        if ascii {
-            "."
-        } else {
-            "·"
-        }
+        if ascii { "." } else { "·" }
     } else {
         " "
     };
@@ -1799,7 +1746,6 @@ pub mod bench {
     pub const SPLIT_MIN_WIDTH: u16 = 56;
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1846,7 +1792,9 @@ mod tests {
 
     fn sample_hunks() -> [DiffHunk; 2] {
         [
-            DiffHunk::new(1, 5, "@@ -1,3 +1,4 @@").id("h0").file_id("a.rs"),
+            DiffHunk::new(1, 5, "@@ -1,3 +1,4 @@")
+                .id("h0")
+                .file_id("a.rs"),
             DiffHunk::new(6, 3, "@@ -10,2 +11,2 @@")
                 .id("h1")
                 .file_id("a.rs"),
@@ -1894,14 +1842,8 @@ mod tests {
     fn narrow_forces_unified() {
         let mut state = DiffViewState::new();
         state.mode = DiffMode::Split;
-        assert_eq!(
-            state.effective_mode(22),
-            DiffEffectiveMode::Unified
-        );
-        assert_eq!(
-            state.effective_mode(80),
-            DiffEffectiveMode::Split
-        );
+        assert_eq!(state.effective_mode(22), DiffEffectiveMode::Unified);
+        assert_eq!(state.effective_mode(80), DiffEffectiveMode::Split);
     }
 
     #[test]
@@ -2050,8 +1992,15 @@ mod tests {
         let area = Rect::new(0, 0, 80, 12);
         let mut buf = Buffer::empty(area);
         (&view).render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains('│') || text.contains('|') || text.contains('+'), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains('│') || text.contains('|') || text.contains('+'),
+            "{text}"
+        );
     }
 
     #[test]

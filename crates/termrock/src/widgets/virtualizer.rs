@@ -297,7 +297,8 @@ impl Virtualizer {
     #[must_use]
     pub fn scrollable_len(&self) -> u64 {
         let sticky = self.sticky.leading.saturating_add(self.sticky.trailing);
-        self.logical_len.saturating_sub(sticky.min(self.logical_len))
+        self.logical_len
+            .saturating_sub(sticky.min(self.logical_len))
     }
 
     /// First scrollable item index (after leading sticky).
@@ -544,7 +545,10 @@ impl Virtualizer {
         for i in 0..lead {
             out.push(i);
         }
-        let trail = self.sticky.trailing.min(self.logical_len.saturating_sub(lead));
+        let trail = self
+            .sticky
+            .trailing
+            .min(self.logical_len.saturating_sub(lead));
         let start = self.logical_len.saturating_sub(trail);
         for i in start..self.logical_len {
             if i >= lead {
@@ -706,7 +710,10 @@ mod tests {
             .with_len(bench::ROWS_1M)
             .with_viewport(bench::VIEWPORT_ROWS)
             .with_overscan(5);
-        assert_eq!(v.max_offset(), bench::ROWS_1M - u64::from(bench::VIEWPORT_ROWS));
+        assert_eq!(
+            v.max_offset(),
+            bench::ROWS_1M - u64::from(bench::VIEWPORT_ROWS)
+        );
         assert!(v.scroll_by(500_000));
         let slice = v.visible_slice();
         assert_eq!(slice.len(), u64::from(bench::VIEWPORT_ROWS));
@@ -760,20 +767,12 @@ mod tests {
 
     #[test]
     fn reveal_and_anchor_content_id() {
-        let mut v = Virtualizer::fixed(1)
-            .with_len(10_000)
-            .with_viewport(20);
+        let mut v = Virtualizer::fixed(1).with_len(10_000).with_viewport(20);
         assert!(v.reveal(500));
         assert!(v.offset() <= 500);
         assert!(v.offset() + 20 > 500);
         let a = ScrollAnchor::content_id("row-900");
-        v.apply_anchor(&a, |id| {
-            if id == "row-900" {
-                Some(900)
-            } else {
-                None
-            }
-        });
+        v.apply_anchor(&a, |id| if id == "row-900" { Some(900) } else { None });
         assert!(v.offset() <= 900);
         assert!(v.offset() + 20 > 900 || v.offset() == 900);
     }
@@ -834,10 +833,12 @@ mod tests {
 }
 
 /// Test helper: overscan relationship.
+#[cfg(test)]
 trait SliceOverscan {
     fn overscan_ok(self) -> bool;
 }
 
+#[cfg(test)]
 impl SliceOverscan for VirtSlice {
     fn overscan_ok(self) -> bool {
         self.measure_start <= self.start && self.measure_end >= self.end

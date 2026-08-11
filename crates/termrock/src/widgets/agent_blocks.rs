@@ -5,11 +5,7 @@
 //! QuestionFlow / PlanReview / TaskRail / SessionPicker elevated to dedicated modules.
 //! Domain wording and effects stay consumer-owned.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
@@ -188,13 +184,7 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
                 self.tokens.style(Role::TextMuted)
             };
             let clipped = take_display_cols(&labels[i], usize::from(rect.width));
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                &clipped,
-                usize::from(rect.width),
-                style,
-            );
+            buffer.set_stringn(rect.x, rect.y, &clipped, usize::from(rect.width), style);
         }
     }
 }

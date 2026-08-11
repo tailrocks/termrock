@@ -88,10 +88,7 @@ impl<Id: Clone + PartialEq> Selection<Id> {
 
 impl<Id: Clone + PartialEq> From<Model<Id>> for Selection<Id> {
     fn from(mut inner: Model<Id>) -> Self {
-        if !matches!(
-            inner.kind(),
-            SelectionKind::Multiple | SelectionKind::Range
-        ) {
+        if !matches!(inner.kind(), SelectionKind::Multiple | SelectionKind::Range) {
             inner.set_kind(SelectionKind::Multiple);
         }
         Self { inner }

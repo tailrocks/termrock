@@ -22,6 +22,7 @@
 //!
 //! Research: Radix Tabs, terminal editors, Zellij, Posting, browser tab overflow.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -32,7 +33,9 @@ use ratatui_core::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -527,9 +530,7 @@ impl<Id> TabsState<Id> {
         Id: Clone,
     {
         tabs.iter()
-            .map(|t| {
-                CollectionItem::new(t.id.clone(), t.label.to_owned()).enabled(t.enabled)
-            })
+            .map(|t| CollectionItem::new(t.id.clone(), t.label.to_owned()).enabled(t.enabled))
             .collect()
     }
 
@@ -725,7 +726,7 @@ impl<Id> TabsState<Id> {
     }
 
     /// Mouse.
-    pub fn handle_mouse(&mut self, event: MouseEvent, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
+    pub fn handle_mouse(&mut self, event: MouseEvent, _tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -898,7 +899,9 @@ impl<'a, Id> Tabs<'a, Id> {
                 TabsPresentation::Select => self.paint_select(area, buffer, state),
                 TabsPresentation::Overflow => self.paint_overflow(area, buffer, state),
                 TabsPresentation::Scrolling => self.paint_scrolling(area, buffer, state),
-                TabsPresentation::Expanded => self.paint_expanded(area, buffer, state, 0, self.tabs.len()),
+                TabsPresentation::Expanded => {
+                    self.paint_expanded(area, buffer, state, 0, self.tabs.len())
+                }
             },
         }
     }
@@ -925,7 +928,9 @@ impl<'a, Id> Tabs<'a, Id> {
             }
         }
         if let Some(b) = tab.badge {
-            cols = cols.saturating_add(UnicodeWidthStr::width(b)).saturating_add(1);
+            cols = cols
+                .saturating_add(UnicodeWidthStr::width(b))
+                .saturating_add(1);
         }
         if self.show_close && tab.closable {
             cols = cols.saturating_add(2);
@@ -986,7 +991,11 @@ impl<'a, Id> Tabs<'a, Id> {
         let mut last_fit = 0usize;
         for (i, tab) in self.tabs.iter().enumerate() {
             let w = self.tab_width(tab, show_status);
-            let need = if i == 0 { w } else { w.saturating_add(self.gap) };
+            let need = if i == 0 {
+                w
+            } else {
+                w.saturating_add(self.gap)
+            };
             if used.saturating_add(need) > budget && i > 0 {
                 break;
             }
@@ -1077,7 +1086,12 @@ impl<'a, Id> Tabs<'a, Id> {
     {
         let show_status = crate::layout::tabs_show_status_glyphs(area.width);
         let mut x = area.x;
-        for (i, tab) in self.tabs.iter().enumerate().skip(start).take(end.saturating_sub(start))
+        for (i, tab) in self
+            .tabs
+            .iter()
+            .enumerate()
+            .skip(start)
+            .take(end.saturating_sub(start))
         {
             if x >= area.right() {
                 for t in self.tabs.iter().skip(i) {
@@ -1310,7 +1324,9 @@ mod tests {
                 .active(true)
                 .status(TabStatus::Success),
             Tab::new("details", "Details"),
-            Tab::new("logs", "Logs").closable(true).status(TabStatus::Running),
+            Tab::new("logs", "Logs")
+                .closable(true)
+                .status(TabStatus::Running),
             Tab::new("disabled", "Disabled").enabled(false),
         ]
     }
@@ -1457,10 +1473,7 @@ mod tests {
         let mut state = TabsState::new().with_selected("overview");
         state.set_focused(true);
         assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Right, KeyModifiers::CONTROL),
-                &tabs
-            ),
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::CONTROL), &tabs),
             TabsOutcome::ReorderRequested { from: 0, to: 1 }
         ));
     }
@@ -1473,7 +1486,9 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 14, 2);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&tabs, &system).ascii(true).paint(area, &mut buf, &mut state);
+        Tabs::new(&tabs, &system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), TabsPresentation::Select);
         assert!(state.overflow_trigger.is_some());
     }
@@ -1485,7 +1500,16 @@ mod tests {
                 // leak labels for 'static-ish test — use static array instead
                 Tab::new(
                     ["a", "b", "c", "d", "e", "f", "g", "h"][i],
-                    ["AlphaTab", "BetaTabX", "GammaTabs", "DeltaTab", "EpsilTab", "ZetaTabs", "EtaTabsX", "ThetaTab"][i],
+                    [
+                        "AlphaTab",
+                        "BetaTabX",
+                        "GammaTabs",
+                        "DeltaTab",
+                        "EpsilTab",
+                        "ZetaTabs",
+                        "EtaTabsX",
+                        "ThetaTab",
+                    ][i],
                 )
             })
             .collect();
@@ -1493,7 +1517,9 @@ mod tests {
         let mut state = TabsState::new().with_selected("a");
         let area = Rect::new(0, 0, 30, 2);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&many, &system).ascii(true).paint(area, &mut buf, &mut state);
+        Tabs::new(&many, &system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut state);
         assert!(matches!(
             state.presentation(),
             TabsPresentation::Overflow | TabsPresentation::Scrolling | TabsPresentation::Select
@@ -1510,7 +1536,9 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 16, 6);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&tabs, &system).ascii(true).paint(area, &mut buf, &mut state);
+        Tabs::new(&tabs, &system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut state);
         assert!(state.regions.len() >= 2);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &tabs),

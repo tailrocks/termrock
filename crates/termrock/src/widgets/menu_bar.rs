@@ -195,7 +195,12 @@ impl<Id> MenuNode<Id> {
 
     /// Radio row in a group.
     #[must_use]
-    pub fn radio(id: Id, label: impl Into<String>, group: impl Into<String>, selected: bool) -> Self {
+    pub fn radio(
+        id: Id,
+        label: impl Into<String>,
+        group: impl Into<String>,
+        selected: bool,
+    ) -> Self {
         Self::base(
             id,
             label.into(),
@@ -681,19 +686,13 @@ impl MenuBarState {
     }
 
     /// Open bar cursor menu.
-    pub fn open_active_menu<Id: Clone>(
-        &mut self,
-        menus: &[MenuBarMenu<Id>],
-    ) -> MenuBarOutcome<Id> {
+    pub fn open_active_menu<Id: Clone>(&mut self, menus: &[MenuBarMenu<Id>]) -> MenuBarOutcome<Id> {
         self.ensure_bar(menus);
         let idx = self.bar_cursor();
         self.open_menu_at(menus, idx)
     }
 
-    fn current_items<'a, Id>(
-        &self,
-        menus: &'a [MenuBarMenu<Id>],
-    ) -> Option<&'a [MenuNode<Id>]> {
+    fn current_items<'a, Id>(&self, menus: &'a [MenuBarMenu<Id>]) -> Option<&'a [MenuNode<Id>]> {
         let top = self.open_top?;
         Self::items_at_path(menus, top, &self.open_path)
     }
@@ -754,10 +753,7 @@ impl MenuBarState {
         }
     }
 
-    fn activate_cursor<Id: Clone>(
-        &mut self,
-        menus: &[MenuBarMenu<Id>],
-    ) -> MenuBarOutcome<Id> {
+    fn activate_cursor<Id: Clone>(&mut self, menus: &[MenuBarMenu<Id>]) -> MenuBarOutcome<Id> {
         let items = match self.current_items(menus) {
             Some(i) => i,
             None => return MenuBarOutcome::Ignored,
@@ -776,10 +772,7 @@ impl MenuBarState {
                 let id = node.id.clone();
                 let next = !*checked;
                 self.close_all();
-                MenuBarOutcome::CheckToggled {
-                    id,
-                    checked: next,
-                }
+                MenuBarOutcome::CheckToggled { id, checked: next }
             }
             MenuRowKind::Radio { group, .. } => {
                 let id = node.id.clone();
@@ -895,14 +888,12 @@ impl MenuBarState {
         }
         // Left/Right when open — not always covered by default intent for bar switch.
         match key.code {
-            KeyCode::Left if self.is_open() => self.handle_intent(
-                UiIntent::Move(NavigationMove::Left),
-                menus,
-            ),
-            KeyCode::Right if self.is_open() => self.handle_intent(
-                UiIntent::Move(NavigationMove::Right),
-                menus,
-            ),
+            KeyCode::Left if self.is_open() => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Left), menus)
+            }
+            KeyCode::Right if self.is_open() => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Right), menus)
+            }
             _ => MenuBarOutcome::Ignored,
         }
     }
@@ -1041,9 +1032,7 @@ impl MenuBarState {
                 }
                 MenuBarOutcome::Ignored
             }
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                self.activate_cursor(menus)
-            }
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.activate_cursor(menus),
             UiIntent::Cancel | UiIntent::Close => self.close_one_layer(),
             _ => MenuBarOutcome::Ignored,
         }
@@ -1112,7 +1101,8 @@ impl MenuBarState {
                                 // Auto-open submenu on hover at this depth.
                                 if let Some(items) = self.current_items(menus) {
                                     if let Some(n) = items.get(*item_idx) {
-                                        if matches!(n.kind, MenuRowKind::Submenu) && n.is_activatable()
+                                        if matches!(n.kind, MenuRowKind::Submenu)
+                                            && n.is_activatable()
                                         {
                                             let _ = self.open_submenu_under_cursor(menus);
                                         }
@@ -1362,11 +1352,8 @@ impl<'a, Id> MenuBar<'a, Id> {
                 let label = if self.ascii { "Menu..." } else { "Menu…" };
                 let armed = state.mnemonic_mode || state.focused;
                 let style = if self.colorless {
-                    self.system.style(if armed {
-                        Role::TextStrong
-                    } else {
-                        Role::Text
-                    })
+                    self.system
+                        .style(if armed { Role::TextStrong } else { Role::Text })
                 } else if armed {
                     self.system
                         .style(Role::Focus)
@@ -1377,7 +1364,9 @@ impl<'a, Id> MenuBar<'a, Id> {
                 let text = take_display_cols(label, usize::from(area.width));
                 let w = display_cols(&text) as u16;
                 buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-                state.bar_hits.push((0, Rect::new(area.x, area.y, w.max(1), 1)));
+                state
+                    .bar_hits
+                    .push((0, Rect::new(area.x, area.y, w.max(1), 1)));
             }
             MenuBarPresentation::Full | MenuBarPresentation::Compact => {
                 state.ensure_bar(self.menus);
@@ -1470,7 +1459,11 @@ impl<'a, Id> MenuBar<'a, Id> {
             let rect = place_menu_bar_panel(bounds, anchor, size);
             self.paint_panel_at(rect, buffer, state, items, depth);
             // Next anchor: selected row rect if any.
-            let cursor = state.cascade.get(depth).map(CascadeFrame::cursor).unwrap_or(0);
+            let cursor = state
+                .cascade
+                .get(depth)
+                .map(CascadeFrame::cursor)
+                .unwrap_or(0);
             if let Some((_, _, hit)) = state
                 .panel_hits
                 .iter()
@@ -1519,8 +1512,10 @@ impl<'a, Id> MenuBar<'a, Id> {
         // Fill
         for y in area.y..area.bottom() {
             for x in area.x..area.right() {
-                buffer.get_mut(x, y).set_style(surface);
-                buffer.get_mut(x, y).set_symbol(" ");
+                if let Some(cell) = buffer.cell_mut((x, y)) {
+                    cell.set_style(surface);
+                    cell.set_symbol(" ");
+                }
             }
         }
         // Border
@@ -1542,7 +1537,13 @@ impl<'a, Id> MenuBar<'a, Id> {
             );
             let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
             if area.width > 2 {
-                buffer.set_stringn(area.x + 1, area.y, &hz, usize::from(area.width - 2), border_style);
+                buffer.set_stringn(
+                    area.x + 1,
+                    area.y,
+                    &hz,
+                    usize::from(area.width - 2),
+                    border_style,
+                );
                 buffer.set_stringn(
                     area.x + 1,
                     area.bottom().saturating_sub(1),
@@ -1567,7 +1568,11 @@ impl<'a, Id> MenuBar<'a, Id> {
             return;
         }
 
-        let cursor = state.cascade.get(depth).map(CascadeFrame::cursor).unwrap_or(0);
+        let cursor = state
+            .cascade
+            .get(depth)
+            .map(CascadeFrame::cursor)
+            .unwrap_or(0);
         let surface_focus = state.focused && state.accepts_input;
         let mut y = inner.y;
         for (i, item) in items.iter().enumerate() {
@@ -1610,10 +1615,8 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
             if matches!(item.kind, MenuRowKind::Loading) {
                 let prefix = if self.ascii { "... " } else { "… " };
-                let text = take_display_cols(
-                    &format!("{prefix}{}", item.label),
-                    usize::from(inner.width),
-                );
+                let text =
+                    take_display_cols(&format!("{prefix}{}", item.label), usize::from(inner.width));
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1670,8 +1673,12 @@ impl<'a, Id> MenuBar<'a, Id> {
                 MenuRowKind::Checkbox { checked: false } => "  ",
                 MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
-                MenuRowKind::Radio { selected: false, .. } if self.ascii => "( ) ",
-                MenuRowKind::Radio { selected: false, .. } => "○ ",
+                MenuRowKind::Radio {
+                    selected: false, ..
+                } if self.ascii => "( ) ",
+                MenuRowKind::Radio {
+                    selected: false, ..
+                } => "○ ",
                 _ if active && self.ascii => "> ",
                 _ if active => "› ",
                 _ => "  ",
@@ -1685,7 +1692,9 @@ impl<'a, Id> MenuBar<'a, Id> {
             if let Some(sc) = &item.shortcut {
                 let used = display_cols(&line);
                 let sc_w = display_cols(sc);
-                let pad = usize::from(inner.width).saturating_sub(used).saturating_sub(sc_w);
+                let pad = usize::from(inner.width)
+                    .saturating_sub(used)
+                    .saturating_sub(sc_w);
                 if pad > 1 {
                     line.push_str(&" ".repeat(pad));
                     line.push_str(sc);
@@ -1701,8 +1710,13 @@ impl<'a, Id> MenuBar<'a, Id> {
     }
 
     /// Combined bar + panels paint for simple hosts / stories.
-    pub fn paint_all(&self, bar_area: Rect, bounds: Rect, buffer: &mut Buffer, state: &mut MenuBarState)
-    where
+    pub fn paint_all(
+        &self,
+        bar_area: Rect,
+        bounds: Rect,
+        buffer: &mut Buffer,
+        state: &mut MenuBarState,
+    ) where
         Id: Clone,
     {
         self.paint(bar_area, buffer, state);
@@ -1771,7 +1785,10 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> S
     let lower = m.to_ascii_lowercase();
     // Parentheses form is grid-safe (no combining marks) and works in ASCII /
     // Unicode / colorless paths as a non-color mnemonic cue.
-    if let Some(pos) = label.char_indices().find(|(_, c)| c.to_ascii_lowercase() == lower) {
+    if let Some(pos) = label
+        .char_indices()
+        .find(|(_, c)| c.to_ascii_lowercase() == lower)
+    {
         let (i, ch) = pos;
         let before = &label[..i];
         let after = &label[i + ch.len_utf8()..];
@@ -1876,7 +1893,8 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             "view",
             "View",
             vec![
-                MenuNode::radio("theme-ph", "Phosphor", "theme", true).command_key("view.theme.phosphor"),
+                MenuNode::radio("theme-ph", "Phosphor", "theme", true)
+                    .command_key("view.theme.phosphor"),
                 MenuNode::radio("theme-hi", "High contrast", "theme", false)
                     .command_key("view.theme.hc"),
                 MenuNode::separator("view-sep"),
@@ -1887,9 +1905,11 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
         MenuBarMenu::new(
             "help",
             "Help",
-            vec![MenuNode::command("about", "About")
-                .mnemonic('A')
-                .command_key("help.about")],
+            vec![
+                MenuNode::command("about", "About")
+                    .mnemonic('A')
+                    .command_key("help.about"),
+            ],
         )
         .mnemonic('H'),
     ]
@@ -1992,11 +2012,7 @@ mod tests {
         let menus = menus();
         let mut s = focused_state();
         let _ = s.open_menu_at(&menus, 1); // Edit
-        let wrap_idx = menus[1]
-            .items
-            .iter()
-            .position(|n| n.id == "wrap")
-            .unwrap();
+        let wrap_idx = menus[1].items.iter().position(|n| n.id == "wrap").unwrap();
         s.cascade[0].set_cursor(wrap_idx);
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &menus),
@@ -2028,16 +2044,16 @@ mod tests {
         // Portable fallback chord (host may also call set_mnemonic_mode for F10).
         assert!(matches!(
             s.handle_key(
-                KeyEvent::new(
-                    KeyCode::Char('m'),
-                    KeyModifiers::CONTROL.with_shift()
-                ),
+                KeyEvent::new(KeyCode::Char('m'), KeyModifiers::CONTROL.with_shift()),
                 &menus
             ),
             MenuBarOutcome::MnemonicMode { armed: true }
         ));
         assert!(matches!(
-            s.handle_key(KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE), &menus),
+            s.handle_key(
+                KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
+                &menus
+            ),
             MenuBarOutcome::Opened { menu_id: "view" }
         ));
     }
@@ -2108,14 +2124,8 @@ mod tests {
         let open = open_menu_bar_overlay(&mut stack, bounds, anchor, size, Some("editor"));
         assert!(matches!(open, OverlayOutcome::Opened { .. }));
         let sub_anchor = Rect::new(18, 4, 1, 1);
-        let sub = open_menu_bar_submenu_overlay(
-            &mut stack,
-            bounds,
-            sub_anchor,
-            size,
-            1,
-            Some("editor"),
-        );
+        let sub =
+            open_menu_bar_submenu_overlay(&mut stack, bounds, sub_anchor, size, 1, Some("editor"));
         assert!(matches!(sub, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.entries().len(), 2);
         // Esc dismisses top (submenu) only
@@ -2275,9 +2285,7 @@ mod tests {
         ];
         let mut seed = 0xC0FFEEu64;
         for _ in 0..400 {
-            seed = seed
-                .wrapping_mul(6364136223846793005)
-                .wrapping_add(1);
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
             let k = keys[(seed as usize) % keys.len()];
             let m = mods[((seed >> 8) as usize) % mods.len()];
             let _ = s.handle_key(KeyEvent::new(k, m), &menus);
@@ -2301,12 +2309,7 @@ mod tests {
                 .draw(|f| {
                     let area = f.area();
                     let bar = Rect::new(area.x, area.y, area.width, 1);
-                    MenuBar::new(&menus, &system).paint_all(
-                        bar,
-                        area,
-                        f.buffer_mut(),
-                        &mut s,
-                    );
+                    MenuBar::new(&menus, &system).paint_all(bar, area, f.buffer_mut(), &mut s);
                 })
                 .unwrap();
         }

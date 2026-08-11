@@ -18,6 +18,7 @@
 //!
 //! Research: Radix Select, Huh select, Textual Select, terminal pickers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,7 +27,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -417,9 +420,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options
             .iter()
             .filter(|o| o.is_option())
-            .map(|o| {
-                CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled)
-            })
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
 
@@ -525,9 +526,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             filtered
                 .into_iter()
                 .filter(|o| o.is_option())
-                .map(|o| {
-                    CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled)
-                })
+                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
                 .collect()
         } else {
             Self::collection_items(options)
@@ -620,9 +619,11 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         // Search field takes printable when searchable and focused on search
         if self.searchable {
             // Tab toggles search focus vs list — keep simple: printable goes to search
-            if matches!(key.code, KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete)
-                || key.modifiers.contains(KeyModifiers::CONTROL)
-                    && matches!(key.code, KeyCode::Char('a' | 'A' | 'u' | 'U'))
+            if matches!(
+                key.code,
+                KeyCode::Char(_) | KeyCode::Backspace | KeyCode::Delete
+            ) || key.modifiers.contains(KeyModifiers::CONTROL)
+                && matches!(key.code, KeyCode::Char('a' | 'A' | 'u' | 'U'))
             {
                 match self.search.handle_key(key) {
                     TextInputOutcome::Changed | TextInputOutcome::Cleared => {
@@ -641,9 +642,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             Self::filter_options(options, self.search.value())
                 .into_iter()
                 .filter(|o| o.is_option())
-                .map(|o| {
-                    CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled)
-                })
+                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
                 .collect::<Vec<_>>()
         } else {
             Self::collection_items(options)
@@ -676,9 +675,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             return SelectOutcome::Ignored;
         }
         match intent {
-            UiIntent::Activate | UiIntent::Submit if !self.is_open() => {
-                self.open(bounds, options)
-            }
+            UiIntent::Activate | UiIntent::Submit if !self.is_open() => self.open(bounds, options),
             UiIntent::Activate | UiIntent::Submit if self.is_open() => self.commit_highlight(),
             UiIntent::Cancel | UiIntent::Close if self.is_open() => self.close(),
             UiIntent::Fullscreen if self.is_open() => {
@@ -878,12 +875,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
     }
 
     /// Convenience: paint trigger; if open, list fills remainder below trigger in `area`.
-    pub fn paint_stacked(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SelectState<Id>,
-    ) {
+    pub fn paint_stacked(&self, area: Rect, buffer: &mut Buffer, state: &mut SelectState<Id>) {
         if !state.is_open() {
             self.paint(area, Rect::default(), buffer, state);
             return;
@@ -931,11 +923,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             .unwrap_or(self.placeholder);
 
         let chev = if self.ascii {
-            if state.is_open() {
-                "^"
-            } else {
-                "v"
-            }
+            if state.is_open() { "^" } else { "v" }
         } else if state.is_open() {
             "▴"
         } else {
@@ -1001,13 +989,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             return;
         }
 
-        let visible_opts: Vec<&SelectOption<Id>> = if state.searchable
-            && !state.search.value().is_empty()
-        {
-            SelectState::filter_options(self.options, state.search.value())
-        } else {
-            self.options.iter().collect()
-        };
+        let visible_opts: Vec<&SelectOption<Id>> =
+            if state.searchable && !state.search.value().is_empty() {
+                SelectState::filter_options(self.options, state.search.value())
+            } else {
+                self.options.iter().collect()
+            };
 
         // Flatten for collection viewport among options only
         let coll_items: Vec<CollectionItem<Id>> = visible_opts
@@ -1083,11 +1070,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                         style = self.system.style(Role::TextStrong);
                     }
                     let mark = if is_val {
-                        if self.ascii {
-                            "*"
-                        } else {
-                            "✓"
-                        }
+                        if self.ascii { "*" } else { "✓" }
                     } else {
                         " "
                     };
@@ -1127,11 +1110,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let desc = format!(
-            "select {} {}",
-            state.presentation.id(),
-            state.recipe.id()
-        );
+        let desc = format!("select {} {}", state.presentation.id(), state.recipe.id());
         let _ = scene.register(
             SemanticNode::control(id, area)
                 .role(SemanticRole::Input)
@@ -1224,7 +1203,11 @@ mod tests {
             bounds,
         );
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &opts, bounds),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &opts,
+                bounds
+            ),
             SelectOutcome::Closed
         );
         assert_eq!(state.value(), Some(&"apple"));
@@ -1347,9 +1330,7 @@ mod tests {
             SelectRecipe::Form,
             SelectRecipe::Compact,
         ] {
-            let mut state = SelectState::new()
-                .with_recipe(recipe)
-                .with_value("apple");
+            let mut state = SelectState::new().with_recipe(recipe).with_value("apple");
             state.set_focused(true);
             let area = Rect::new(0, 0, 32, 4);
             let mut buf = Buffer::empty(area);

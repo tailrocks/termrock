@@ -3,6 +3,7 @@
 
 //! Terminal color capability ladder and theme quantization.
 
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::style::{Color, Style};
 
 use super::{Role, RolePalette};

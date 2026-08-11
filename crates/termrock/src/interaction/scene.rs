@@ -957,7 +957,11 @@ impl SemanticSnapshot {
                 format!("{}@{} [{}] {}", n.id, n.role, flags, label)
             })
             .collect();
-        for d in self.diagnostics.iter().take(max.saturating_sub(lines.len())) {
+        for d in self
+            .diagnostics
+            .iter()
+            .take(max.saturating_sub(lines.len()))
+        {
             lines.push(format!("! {d}"));
         }
         lines
@@ -981,18 +985,12 @@ impl SemanticSnapshot {
         let mut out = String::new();
         for n in &self.nodes {
             let parent = n.parent.as_deref().unwrap_or("-");
-            let label = n
-                .label
-                .as_deref()
-                .unwrap_or("")
-                .replace('\t', " ")
-                .replace('\n', " ");
+            let label = n.label.as_deref().unwrap_or("").replace(['\t', '\n'], " ");
             let desc = n
                 .description
                 .as_deref()
                 .unwrap_or("")
-                .replace('\t', " ")
-                .replace('\n', " ");
+                .replace(['\t', '\n'], " ");
             let actions = n.actions.join(",").replace('\t', " ");
             out.push_str(&format!(
                 "node\tid={}\tparent={}\trole={}\tx={}\ty={}\tw={}\th={}\tlabel={}\tfocusable={}\tdisabled={}\thidden={}\tselected={}\texpanded={}\tchecked={}\tbusy={}\tinvalid={}\tpressed={}\tactions={}\tdesc={}\n",
@@ -1018,10 +1016,7 @@ impl SemanticSnapshot {
             ));
         }
         for d in &self.diagnostics {
-            out.push_str(&format!(
-                "diag\t{}\n",
-                d.replace('\t', " ").replace('\n', " ")
-            ));
+            out.push_str(&format!("diag\t{}\n", d.replace(['\t', '\n'], " ")));
         }
         out
     }
@@ -1050,12 +1045,11 @@ impl SemanticSnapshot {
                 }
             }
             let flag = |k: &str| map.get(k).copied().unwrap_or("0") == "1";
-            let parse_u16 = |k: &str| {
-                map.get(k)
-                    .and_then(|s| s.parse::<u16>().ok())
-                    .unwrap_or(0)
-            };
-            let parent = map.get("parent").copied().filter(|p| *p != "-" && !p.is_empty());
+            let parse_u16 = |k: &str| map.get(k).and_then(|s| s.parse::<u16>().ok()).unwrap_or(0);
+            let parent = map
+                .get("parent")
+                .copied()
+                .filter(|p| *p != "-" && !p.is_empty());
             let label = map
                 .get("label")
                 .copied()
@@ -1323,10 +1317,7 @@ impl<Id, Action> SemanticScene<Id, Action> {
             .iter()
             .filter(|node| node.focusable && !node.hidden)
             .map(|node| {
-                let name = node
-                    .label
-                    .clone()
-                    .unwrap_or_else(|| node.id.to_string());
+                let name = node.label.clone().unwrap_or_else(|| node.id.to_string());
                 match &node.description {
                     Some(desc) if !desc.is_empty() => format!("{name} — {desc}"),
                     _ => name,
@@ -1504,9 +1495,7 @@ impl<Id, Action> SemanticScene<Id, Action> {
 
     /// Projects an [`InteractionScene`] into a flat semantic scene (no parents).
     #[must_use]
-    pub fn from_interaction<LayerId>(
-        scene: &InteractionScene<Id, LayerId, Action>,
-    ) -> Self
+    pub fn from_interaction<LayerId>(scene: &InteractionScene<Id, LayerId, Action>) -> Self
     where
         Id: Clone + PartialEq + std::fmt::Display,
         Action: Clone,
@@ -1997,7 +1986,10 @@ mod tests {
     fn semantic_empty_area_records_diagnostic_but_registers() {
         let mut scene = SemanticScene::<&str>::new();
         scene
-            .register(SemanticNode::<&str>::control("ghost", Rect::new(0, 0, 0, 0)))
+            .register(SemanticNode::<&str>::control(
+                "ghost",
+                Rect::new(0, 0, 0, 0),
+            ))
             .unwrap();
         assert_eq!(scene.nodes().len(), 1);
         assert!(matches!(
@@ -2030,14 +2022,8 @@ mod tests {
             )
             .unwrap();
         assert_eq!(scene.by_role(SemanticRole::Button).len(), 2);
-        assert_eq!(
-            scene.focus_neighbor(Some(&"a"), true, false),
-            Some(&"b")
-        );
-        assert_eq!(
-            scene.focus_neighbor(Some(&"b"), true, true),
-            Some(&"a")
-        );
+        assert_eq!(scene.focus_neighbor(Some(&"a"), true, false), Some(&"b"));
+        assert_eq!(scene.focus_neighbor(Some(&"b"), true, true), Some(&"a"));
         assert_eq!(
             scene.hit_test_focusable(Position::new(3, 0)).map(|n| n.id),
             Some("b")

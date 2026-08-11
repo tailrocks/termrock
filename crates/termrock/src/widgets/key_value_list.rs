@@ -14,6 +14,7 @@
 //!
 //! Research: system-info TUIs, detail panels, shadcn DescriptionList patterns.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -250,11 +251,7 @@ impl<'a, Id> KvEntry<'a, Id> {
     /// passes true secret in `value` and only paints redaction).
     #[must_use]
     pub fn copy_text(&self) -> &str {
-        if self.secret {
-            self.value
-        } else {
-            self.value
-        }
+        if self.secret { self.value } else { self.value }
     }
 }
 
@@ -514,10 +511,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
         self.entries
             .iter()
             .filter(|e| !e.group)
-            .map(|e| {
-                display_cols(e.key)
-                    + usize::from(e.depth).saturating_mul(2)
-            })
+            .map(|e| display_cols(e.key) + usize::from(e.depth).saturating_mul(2))
             .max()
             .unwrap_or(0)
             .min(32)
@@ -732,13 +726,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 let clipped = take_display_cols(&title, usize::from(area.width));
                 let mut style = self.system.style(Role::TextStrong);
                 style = style.add_modifier(Modifier::BOLD);
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    &clipped,
-                    usize::from(area.width),
-                    style,
-                );
+                buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
             }
             // gap rows blank
             return;
@@ -767,16 +755,8 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                     let vi = usize::from(sub.saturating_sub(1));
                     if let Some(line) = lines.get(vi) {
                         let style = self.value_style(entry, selected, hovered);
-                        buffer.set_stringn(
-                            x0,
-                            area.y,
-                            line,
-                            usize::from(w0),
-                            style,
-                        );
-                    } else if entry.annotation.is_some()
-                        && vi == lines.len()
-                    {
+                        buffer.set_stringn(x0, area.y, line, usize::from(w0), style);
+                    } else if entry.annotation.is_some() && vi == lines.len() {
                         // annotation after value wraps
                         if let Some(ann) = entry.annotation {
                             let clipped = take_display_cols(ann, usize::from(w0));
@@ -852,13 +832,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                     } else {
                         line.as_str()
                     };
-                    buffer.set_stringn(
-                        value_x,
-                        area.y,
-                        paint_line,
-                        usize::from(value_w),
-                        style,
-                    );
+                    buffer.set_stringn(value_x, area.y, paint_line, usize::from(value_w), style);
                 }
                 if sub == 0 && entry.interactive() {
                     self.paint_affordance(entry, area, buffer, state);
@@ -886,11 +860,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         } else if let Some(st) = entry.status {
             st.role()
         } else if entry.href.is_some() {
-            if hovered {
-                Role::LinkHover
-            } else {
-                Role::Link
-            }
+            if hovered { Role::LinkHover } else { Role::Link }
         } else {
             Role::Text
         };
@@ -956,13 +926,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             .x
             .saturating_add(area.width)
             .saturating_sub(u16::try_from(mw).unwrap_or(0));
-        buffer.set_stringn(
-            x,
-            area.y,
-            mark,
-            mw,
-            self.system.style(Role::TextDisabled),
-        );
+        buffer.set_stringn(x, area.y, mark, mw, self.system.style(Role::TextDisabled));
     }
 
     /// Keys.
@@ -975,9 +939,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             return KeyValueListOutcome::Ignored;
         }
         // copy
-        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C'))
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
             if let Some(id) = state.cursor.clone() {
                 if let Some(e) = self.entries.iter().find(|e| e.id == id) {
                     if e.copyable || e.secret {
@@ -1129,13 +1091,8 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
 
     fn reveal_entry(&self, state: &mut KeyValueListState<Id>, id: &Id) {
         if let Some(idx) = self.entries.iter().position(|e| &e.id == id) {
-            let layout = self.resolved_layout(
-                state
-                    .parts
-                    .as_ref()
-                    .map(|p| p.root.width)
-                    .unwrap_or(80),
-            );
+            let layout =
+                self.resolved_layout(state.parts.as_ref().map(|p| p.root.width).unwrap_or(80));
             let paint_layout = if matches!(layout, KvLayout::Stacked) {
                 KvLayout::Stacked
             } else {
@@ -1288,8 +1245,6 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1400,10 +1355,7 @@ mod tests {
         state.set_focused(true);
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 10));
         let _ = list.paint(Rect::new(0, 0, 40, 10), &mut buf, &mut state);
-        let out = list.handle_key(
-            &mut state,
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-        );
+        let out = list.handle_key(&mut state, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         assert!(matches!(out, KeyValueListOutcome::Selected(_)));
         assert_ne!(state.cursor, Some("g1"));
     }
@@ -1424,7 +1376,10 @@ mod tests {
             }
         }
         // primary path fragments should appear; secondary may be dropped
-        assert!(all.contains("path") || all.contains("Path") || all.contains('/'), "{all}");
+        assert!(
+            all.contains("path") || all.contains("Path") || all.contains('/'),
+            "{all}"
+        );
     }
 
     #[test]
@@ -1433,11 +1388,8 @@ mod tests {
         let entries = [KvEntry::pair("a", "A", "1")];
         let mut state = KeyValueListState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let parts = KeyValueList::new(&entries, &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            &mut state,
-        );
+        let parts =
+            KeyValueList::new(&entries, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
         assert!(parts.root.is_empty());
     }
 
@@ -1487,12 +1439,6 @@ mod tests {
                 modifiers: KeyModifiers::NONE,
             },
         );
-        assert!(matches!(
-            out,
-            KeyValueListOutcome::Copy {
-                id: "name",
-                ..
-            }
-        ));
+        assert!(matches!(out, KeyValueListOutcome::Copy { id: "name", .. }));
     }
 }

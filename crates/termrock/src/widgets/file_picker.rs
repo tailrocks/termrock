@@ -15,6 +15,7 @@
 //!
 //! Research: Yazi, ranger, lf, broot, desktop dialogs, fuzzy finders.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -23,11 +24,13 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome,
-        OverlaySize, OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
+        OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
+        UiIntent,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -781,7 +784,7 @@ impl FilePickerState {
         &mut self,
         generation: u64,
         cwd: impl Into<String>,
-        mut entries: Vec<FileEntry>,
+        entries: Vec<FileEntry>,
         breadcrumbs: Option<Vec<FileBreadcrumb>>,
     ) -> bool {
         if generation != self.generation {
@@ -845,7 +848,10 @@ impl FilePickerState {
                 }
             }
             match self.sort {
-                FileSortKey::Name => a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()),
+                FileSortKey::Name => a
+                    .name
+                    .to_ascii_lowercase()
+                    .cmp(&b.name.to_ascii_lowercase()),
                 FileSortKey::Size => a.size.unwrap_or(0).cmp(&b.size.unwrap_or(0)),
                 FileSortKey::Modified => a
                     .modified
@@ -1155,10 +1161,9 @@ impl FilePickerState {
                 self.path.set_focused(false);
                 self.collection.set_active(Some(id.clone()));
                 // double-click detection (same id within 2 clicks sequential)
-                let is_double = self
-                    .last_click
-                    .as_ref()
-                    .is_some_and(|(prev, seq)| prev == id && self.click_seq.saturating_sub(*seq) <= 2);
+                let is_double = self.last_click.as_ref().is_some_and(|(prev, seq)| {
+                    prev == id && self.click_seq.saturating_sub(*seq) <= 2
+                });
                 self.last_click = Some((id.clone(), self.click_seq));
                 if is_double {
                     return self.open_highlight();
@@ -1272,11 +1277,7 @@ impl<'a> FilePicker<'a> {
             PanelChrome::Normal
         });
         let inner = panel.inner(area);
-        Widget::render(
-            &panel.title(self.title),
-            area,
-            buffer,
-        );
+        Widget::render(&panel.title(self.title), area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1291,13 +1292,7 @@ impl<'a> FilePicker<'a> {
                 }
                 if i > 0 {
                     let sep = if self.ascii { ">" } else { "›" };
-                    buffer.set_stringn(
-                        x,
-                        y,
-                        sep,
-                        1,
-                        self.system.style(Role::TextMuted),
-                    );
+                    buffer.set_stringn(x, y, sep, 1, self.system.style(Role::TextMuted));
                     x = x.saturating_add(2);
                 }
                 let label = take_display_cols(&crumb.label, 12);
@@ -1314,9 +1309,7 @@ impl<'a> FilePicker<'a> {
                         Role::Text
                     }),
                 );
-                state
-                    .breadcrumb_hits
-                    .push((crumb.path.clone(), rect));
+                state.breadcrumb_hits.push((crumb.path.clone(), rect));
                 x = x.saturating_add(w).saturating_add(1);
             }
             y = y.saturating_add(1);
@@ -1336,8 +1329,10 @@ impl<'a> FilePicker<'a> {
 
         // Status / error
         if y < inner.bottom()
-            && (matches!(state.status, FileListingStatus::Loading | FileListingStatus::Error)
-                || state.error_message.is_some())
+            && (matches!(
+                state.status,
+                FileListingStatus::Loading | FileListingStatus::Error
+            ) || state.error_message.is_some())
         {
             let msg = match state.status {
                 FileListingStatus::Loading => "Loading…",
@@ -1353,11 +1348,12 @@ impl<'a> FilePicker<'a> {
                     y,
                     take_display_cols(msg, usize::from(inner.width)),
                     usize::from(inner.width),
-                    self.system.style(if matches!(state.status, FileListingStatus::Error) {
-                        Role::Danger
-                    } else {
-                        Role::TextMuted
-                    }),
+                    self.system
+                        .style(if matches!(state.status, FileListingStatus::Error) {
+                            Role::Danger
+                        } else {
+                            Role::TextMuted
+                        }),
                 );
                 y = y.saturating_add(1);
             }
@@ -1459,11 +1455,7 @@ impl<'a> FilePicker<'a> {
             };
             let check = if state.multi {
                 if is_sel {
-                    if self.ascii {
-                        "[x]"
-                    } else {
-                        "[✓]"
-                    }
+                    if self.ascii { "[x]" } else { "[✓]" }
                 } else {
                     "[ ]"
                 }
@@ -1637,10 +1629,7 @@ mod tests {
         let mut state = FilePickerState::new("/home/u");
         state.set_focused(true);
         match state.request_list("/home/u/proj") {
-            FilePickerOutcome::ListRequested {
-                path,
-                generation,
-            } => {
+            FilePickerOutcome::ListRequested { path, generation } => {
                 assert_eq!(path, "/home/u/proj");
                 assert_eq!(generation, 1);
                 // stale
@@ -1757,8 +1746,7 @@ mod tests {
 
     #[test]
     fn windows_style_paths() {
-        let mut state = FilePickerState::new(r"C:\Users")
-            .with_path_style(PathStyle::Windows);
+        let mut state = FilePickerState::new(r"C:\Users").with_path_style(PathStyle::Windows);
         state.cwd = r"C:\Users\me".into();
         state.rebuild_breadcrumbs();
         assert!(!state.breadcrumbs.is_empty());
@@ -1827,7 +1815,9 @@ mod tests {
         let _ = state.apply_listing(1, "/a/b", sample_entries("/a/b"), None);
         let area = Rect::new(0, 0, 70, 18);
         let mut buf = Buffer::empty(area);
-        FilePicker::new(&system).ascii(true).paint(area, &mut buf, &mut state);
+        FilePicker::new(&system)
+            .ascii(true)
+            .paint(area, &mut buf, &mut state);
         assert!(!state.breadcrumb_hits.is_empty());
         let (path, rect) = state.breadcrumb_hits[0].clone();
         assert!(matches!(

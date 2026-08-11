@@ -20,6 +20,8 @@
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -28,7 +30,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         EventResult, HitRegion, OverlayRequest, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_button_intent, default_list_intent,
@@ -348,9 +352,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     let tone = args.content.tone;
     let tone_role = tone.role();
     let tone_style = if args.colorless {
-        args.system
-            .style(Role::Text)
-            .add_modifier(Modifier::BOLD)
+        args.system.style(Role::Text).add_modifier(Modifier::BOLD)
     } else {
         args.system.style(tone_role)
     };
@@ -433,7 +435,9 @@ fn paint_feedback<Id: Clone + PartialEq>(
         buffer.set_stringn(inner.x, y, rail, 1, tone_style);
     }
 
-    let content_x = inner.x.saturating_add(gutter_w.saturating_add(1).min(inner.width));
+    let content_x = inner
+        .x
+        .saturating_add(gutter_w.saturating_add(1).min(inner.width));
     let content_w = inner
         .width
         .saturating_sub(content_x.saturating_sub(inner.x));
@@ -496,13 +500,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     if args.content.dismissible && dismiss_w > 0 && content_w > dismiss_w {
         let dx = content_x.saturating_add(content_w.saturating_sub(dismiss_w));
         slots.dismiss = Rect::new(dx, y, dismiss_w, 1);
-        buffer.set_stringn(
-            dx,
-            y,
-            dismiss_label,
-            usize::from(dismiss_w),
-            muted,
-        );
+        buffer.set_stringn(dx, y, dismiss_label, usize::from(dismiss_w), muted);
     }
     y = y.saturating_add(1);
 
@@ -580,9 +578,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             } else {
                 text_style
             };
-            let avail = content_x
-                .saturating_add(content_w)
-                .saturating_sub(x);
+            let avail = content_x.saturating_add(content_w).saturating_sub(x);
             buffer.set_stringn(
                 x,
                 y,
@@ -595,13 +591,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
         if args.content.dismissible && args.actions.is_empty() {
             // hint when only dismiss
             let hint = if args.ascii { "esc" } else { "esc" };
-            buffer.set_stringn(
-                content_x,
-                y,
-                hint,
-                usize::from(content_w),
-                muted,
-            );
+            buffer.set_stringn(content_x, y, hint, usize::from(content_w), muted);
         }
     }
 
@@ -761,8 +751,8 @@ impl<'a, Id> Callout<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
-        let show_details =
-            self.show_details || (matches!(self.recipe, CalloutRecipe::Section) && self.details.is_some());
+        let show_details = self.show_details
+            || (matches!(self.recipe, CalloutRecipe::Section) && self.details.is_some());
         paint_feedback(
             &PaintArgs {
                 content: FeedbackContent {
@@ -1062,8 +1052,9 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
     ) -> EventResult<AlertOutcome<Id>> {
         match self.handle_key_with(key, actions, dismissible) {
             AlertOutcome::Ignored => EventResult::ignored(),
-            AlertOutcome::Dismissed => EventResult::emit(AlertOutcome::Dismissed)
-                .with_overlay(OverlayRequest::DismissTop),
+            AlertOutcome::Dismissed => {
+                EventResult::emit(AlertOutcome::Dismissed).with_overlay(OverlayRequest::DismissTop)
+            }
             other => EventResult::emit(other),
         }
     }
@@ -1091,9 +1082,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
             }
         }
         for region in &self.action_regions {
-            if region.area.contains(pos)
-                && actions.iter().any(|a| a.id == region.id && a.enabled)
-            {
+            if region.area.contains(pos) && actions.iter().any(|a| a.id == region.id && a.enabled) {
                 return AlertOutcome::ActionActivated {
                     id: region.id.clone(),
                 };
@@ -1102,11 +1091,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         AlertOutcome::Ignored
     }
 
-    fn move_action(
-        &mut self,
-        actions: &[Action<'_, Id>],
-        dir: isize,
-    ) -> AlertOutcome<Id> {
+    fn move_action(&mut self, actions: &[Action<'_, Id>], dir: isize) -> AlertOutcome<Id> {
         let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
         if enabled.is_empty() {
             return AlertOutcome::Ignored;
@@ -1535,7 +1520,10 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("Deploy") || text.contains("pipeline"), "{text}");
+        assert!(
+            text.contains("Deploy") || text.contains("pipeline"),
+            "{text}"
+        );
     }
 
     #[test]
@@ -1552,14 +1540,19 @@ mod tests {
         let mut scene = SemanticScene::<&str, ()>::default();
         Callout::new("Hi", &system).register_semantic(&mut scene, "c", Rect::new(0, 0, 20, 2));
         let mut state = AlertState::<()>::new();
-        Alert::new("A", &system).register_semantic(
-            &mut scene,
-            "a",
-            Rect::new(0, 2, 20, 3),
-            &state,
+        Alert::new("A", &system).register_semantic(&mut scene, "a", Rect::new(0, 2, 20, 3), &state);
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("callout"))
         );
-        assert!(scene.nodes().iter().any(|n| n.label.as_deref() == Some("callout")));
-        assert!(scene.nodes().iter().any(|n| n.label.as_deref() == Some("alert")));
+        assert!(
+            scene
+                .nodes()
+                .iter()
+                .any(|n| n.label.as_deref() == Some("alert"))
+        );
         let _ = state;
     }
 

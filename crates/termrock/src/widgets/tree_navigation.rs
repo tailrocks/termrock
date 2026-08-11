@@ -27,6 +27,7 @@
 //!
 //! Research: VS Code trees, file explorers, Yazi, broot, DB navigators.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -35,7 +36,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
@@ -407,14 +410,20 @@ impl<Id> TreeNavigationState<Id> {
         let Some(route) = self.route.clone() else {
             return;
         };
-        let mut current = nodes.iter().find(|n| n.id == route).and_then(|n| n.parent.clone());
+        let mut current = nodes
+            .iter()
+            .find(|n| n.id == route)
+            .and_then(|n| n.parent.clone());
         let mut guard = 0u32;
         while let Some(pid) = current {
             if guard > 256 {
                 break;
             }
             self.route_ancestors.push(pid.clone());
-            current = nodes.iter().find(|n| n.id == pid).and_then(|n| n.parent.clone());
+            current = nodes
+                .iter()
+                .find(|n| n.id == pid)
+                .and_then(|n| n.parent.clone());
             guard += 1;
         }
         self.route_ancestors.reverse();
@@ -451,10 +460,7 @@ impl<Id> TreeNavigationState<Id> {
             .collect()
     }
 
-    fn visible_filtered<'a>(
-        &self,
-        nodes: &'a [TreeNavNode<Id>],
-    ) -> Vec<&'a TreeNavNode<Id>> {
+    fn visible_filtered<'a>(&self, nodes: &'a [TreeNavNode<Id>]) -> Vec<&'a TreeNavNode<Id>> {
         let q = self.filter.to_ascii_lowercase();
         if q.is_empty() {
             return nodes.iter().collect();
@@ -648,10 +654,7 @@ impl<Id> TreeNavigationState<Id> {
                 self.typeahead.push(c);
                 let needle = self.typeahead.to_ascii_lowercase();
                 if let Some(node) = nodes.iter().find(|n| {
-                    n.enabled
-                        && n.label
-                            .to_ascii_lowercase()
-                            .starts_with(needle.as_str())
+                    n.enabled && n.label.to_ascii_lowercase().starts_with(needle.as_str())
                 }) {
                     self.collection.set_active(Some(node.id.clone()));
                     return TreeNavigationOutcome::TypeaheadMatched {
@@ -733,10 +736,7 @@ impl<Id> TreeNavigationState<Id> {
             if node.lazy {
                 return self.request_lazy(id);
             }
-            return TreeNavigationOutcome::ExpandToggled {
-                id,
-                expanded: true,
-            };
+            return TreeNavigationOutcome::ExpandToggled { id, expanded: true };
         }
         // first child: next row with greater depth
         if let Some(child) = nodes.iter().skip(idx + 1).find(|n| n.depth > node.depth) {
@@ -796,9 +796,7 @@ impl<Id> TreeNavigationState<Id> {
                 if r.area.contains(event.position) {
                     self.focused = true;
                     self.collection.set_active(Some(r.id.clone()));
-                    return TreeNavigationOutcome::ContextMenuRequested {
-                        id: r.id.clone(),
-                    };
+                    return TreeNavigationOutcome::ContextMenuRequested { id: r.id.clone() };
                 }
             }
             return TreeNavigationOutcome::Ignored;
@@ -886,12 +884,8 @@ impl<'a, Id> TreeNavigation<'a, Id> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TreeNavigationState<Id>,
-    ) where
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeNavigationState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         state.regions.clear();
@@ -904,11 +898,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
 
         state.reconcile_route(self.nodes);
         let coll = TreeNavigationState::<Id>::collection_items(self.nodes);
-        let vp = usize::from(area.height).saturating_sub(if state.filter_active {
-            1
-        } else {
-            0
-        });
+        let vp = usize::from(area.height).saturating_sub(if state.filter_active { 1 } else { 0 });
         state
             .collection
             .set_viewport(state.collection.offset(), vp.max(1), coll.len());
@@ -922,9 +912,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                 y,
                 take_display_cols(&q, usize::from(area.width)),
                 usize::from(area.width),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::BOLD),
+                self.system.style(Role::Focus).add_modifier(Modifier::BOLD),
             );
             y = y.saturating_add(1);
         }
@@ -992,11 +980,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
 
             let chev = if node.branch {
                 if node.expanded {
-                    if self.ascii {
-                        "v"
-                    } else {
-                        "▾"
-                    }
+                    if self.ascii { "v" } else { "▾" }
                 } else if self.ascii {
                     ">"
                 } else {
@@ -1024,11 +1008,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
             let lazy = if node.lazy && !node.expanded {
-                if self.ascii {
-                    " ?"
-                } else {
-                    " …"
-                }
+                if self.ascii { " ?" } else { " …" }
             } else {
                 ""
             };
@@ -1303,7 +1283,10 @@ mod tests {
         let coll = TreeNavigationState::<&str>::collection_items(&nodes);
         let _ = state.collection.reconcile(&coll);
         assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE), &nodes),
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('m'), KeyModifiers::NONE),
+                &nodes
+            ),
             TreeNavigationOutcome::TypeaheadMatched { id: "main" }
         ));
     }
@@ -1314,7 +1297,13 @@ mod tests {
         let mut state = TreeNavigationState::new(Some("main"));
         state.reconcile_route(&nodes);
         assert_eq!(state.route(), Some(&"main"));
-        assert!(state.is_route_ancestor(&"src") || state.route_ancestors().iter().any(|a| *a == "src" || *a == "root"));
+        assert!(
+            state.is_route_ancestor(&"src")
+                || state
+                    .route_ancestors()
+                    .iter()
+                    .any(|a| *a == "src" || *a == "root")
+        );
     }
 
     #[test]
@@ -1323,8 +1312,14 @@ mod tests {
         let mut state = TreeNavigationState::new(Some("install"));
         state.set_focused(true);
         state.reconcile_route(&nodes);
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE), &nodes);
-        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &nodes);
+        let _ = state.handle_key(
+            KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+            &nodes,
+        );
+        let _ = state.handle_key(
+            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
+            &nodes,
+        );
         assert_eq!(state.route(), Some(&"install"));
     }
 

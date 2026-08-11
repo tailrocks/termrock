@@ -385,8 +385,8 @@ impl Lookbook {
             layers: layers_slice,
             recipes: &recipes,
             selection_chrome: "gutter",
-        semantics: &[],
-        focus_graph: &[],
+            semantics: &[],
+            focus_graph: &[],
         };
         frame.render_widget(
             DesignInspector::new(snap, &self.host.system()).panel(InspectorPanel::Focus),

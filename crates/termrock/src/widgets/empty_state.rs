@@ -13,6 +13,7 @@
 //!
 //! Research: shadcn empty patterns, IDE welcome screens, polished CLI onboarding.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -448,12 +449,7 @@ impl<'a> EmptyState<'a> {
     }
 
     /// Paint with optional action focus.
-    pub fn paint_with_state(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut EmptyStateState,
-    ) {
+    pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
         if area.is_empty() {
             return;
         }
@@ -646,11 +642,7 @@ impl<'a> EmptyState<'a> {
     }
 
     /// Handle keyboard when actions are present.
-    pub fn handle_key(
-        &self,
-        key: KeyEvent,
-        state: &mut EmptyStateState,
-    ) -> EmptyStateOutcome {
+    pub fn handle_key(&self, key: KeyEvent, state: &mut EmptyStateState) -> EmptyStateOutcome {
         if key.kind != KeyEventKind::Press {
             return EmptyStateOutcome::Ignored;
         }
@@ -660,11 +652,17 @@ impl<'a> EmptyState<'a> {
         // Tab cycles focus
         if matches!(key.code, KeyCode::Tab) {
             let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-            state.focus = match (state.focus, self.primary.is_some(), self.secondary.is_some(), shift)
-            {
+            state.focus = match (
+                state.focus,
+                self.primary.is_some(),
+                self.secondary.is_some(),
+                shift,
+            ) {
                 (_, true, false, _) => EmptyFocus::Primary,
                 (_, false, true, _) => EmptyFocus::Secondary,
-                (EmptyFocus::None | EmptyFocus::Secondary, true, true, false) => EmptyFocus::Primary,
+                (EmptyFocus::None | EmptyFocus::Secondary, true, true, false) => {
+                    EmptyFocus::Primary
+                }
                 (EmptyFocus::Primary, true, true, false) => EmptyFocus::Secondary,
                 (EmptyFocus::None | EmptyFocus::Primary, true, true, true) => EmptyFocus::Secondary,
                 (EmptyFocus::Secondary, true, true, true) => EmptyFocus::Primary,
@@ -998,7 +996,10 @@ mod tests {
             kind: KeyEventKind::Press,
             state: crate::input::KeyEventState::NONE,
         };
-        assert_eq!(e.handle_key(key, &mut st), EmptyStateOutcome::PrimaryActivated);
+        assert_eq!(
+            e.handle_key(key, &mut st),
+            EmptyStateOutcome::PrimaryActivated
+        );
     }
 
     #[test]
@@ -1014,7 +1015,10 @@ mod tests {
             kind: KeyEventKind::Press,
             state: crate::input::KeyEventState::NONE,
         };
-        assert_eq!(e.handle_key(key, &mut st), EmptyStateOutcome::PrimaryActivated);
+        assert_eq!(
+            e.handle_key(key, &mut st),
+            EmptyStateOutcome::PrimaryActivated
+        );
     }
 
     #[test]

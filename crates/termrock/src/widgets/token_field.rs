@@ -16,16 +16,14 @@
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -404,7 +402,6 @@ impl<Id> TokenFieldState<Id> {
         self.draft.set_enabled(self.enabled);
         self.draft.set_read_only(self.read_only);
     }
-
 }
 
 impl<Id: Clone + PartialEq> TokenFieldState<Id> {
@@ -563,7 +560,11 @@ impl TokenFieldState<String> {
     }
 
     /// Apply completion candidate as new token (or replace draft).
-    pub fn apply_suggestion(&mut self, id: String, label: impl Into<String>) -> TokenFieldOutcome<String> {
+    pub fn apply_suggestion(
+        &mut self,
+        id: String,
+        label: impl Into<String>,
+    ) -> TokenFieldOutcome<String> {
         if self.read_only || !self.enabled {
             return TokenFieldOutcome::Ignored;
         }
@@ -1012,7 +1013,12 @@ impl<'a> TokenField<'a> {
             y = y.saturating_add(1);
         }
 
-        let row = Rect::new(area.x, y.min(area.bottom().saturating_sub(1)), area.width, 1);
+        let row = Rect::new(
+            area.x,
+            y.min(area.bottom().saturating_sub(1)),
+            area.width,
+            1,
+        );
         let mut x = row.x;
         let mut token_rects = Vec::new();
         let mut overflow = None;
@@ -1052,13 +1058,18 @@ impl<'a> TokenField<'a> {
                     TokenFieldZone::Token { index, .. } if index == i
                 );
             let part = match state.zone {
-                TokenFieldZone::Token {
-                    index,
-                    part,
-                } if index == i => part,
+                TokenFieldZone::Token { index, part } if index == i => part,
                 _ => TokenPart::Body,
             };
-            paint_token(tok, rect, buffer, self.system, focused, part, state.multi_select);
+            paint_token(
+                tok,
+                rect,
+                buffer,
+                self.system,
+                focused,
+                part,
+                state.multi_select,
+            );
             token_rects.push(rect);
             x = x.saturating_add(width).saturating_add(self.gap);
         }
@@ -1147,7 +1158,10 @@ impl<'a> TokenField<'a> {
                 .state(SemanticState {
                     selected: state.focused,
                     invalid: matches!(self.validation, Validation::Invalid(_))
-                        || state.tokens.iter().any(|t| matches!(t.status, TokenStatus::Error)),
+                        || state
+                            .tokens
+                            .iter()
+                            .any(|t| matches!(t.status, TokenStatus::Error)),
                     ..Default::default()
                 }),
         );
@@ -1258,14 +1272,20 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
             TokenFieldOutcome::FocusMoved
         );
-        assert!(matches!(state.zone(), TokenFieldZone::Token { index: 0, .. }));
+        assert!(matches!(
+            state.zone(),
+            TokenFieldZone::Token { index: 0, .. }
+        ));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
             TokenFieldOutcome::FocusMoved
         );
         // body → remove if removable, then right → draft
         let _ = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
-        assert!(matches!(state.zone(), TokenFieldZone::Draft) || matches!(state.zone(), TokenFieldZone::Token { .. }));
+        assert!(
+            matches!(state.zone(), TokenFieldZone::Draft)
+                || matches!(state.zone(), TokenFieldZone::Token { .. })
+        );
     }
 
     #[test]
@@ -1296,10 +1316,7 @@ mod tests {
         state.focus_token(0);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
-            TokenFieldOutcome::SelectionChanged {
-                selected: true,
-                ..
-            }
+            TokenFieldOutcome::SelectionChanged { selected: true, .. }
         ));
         assert!(state.tokens()[0].selected);
     }
@@ -1325,9 +1342,7 @@ mod tests {
         let _ = state.draft.insert_str("fi");
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
-            TokenFieldOutcome::CompletionRequested {
-                query: "fi".into()
-            }
+            TokenFieldOutcome::CompletionRequested { query: "fi".into() }
         );
     }
 

@@ -15,7 +15,11 @@ use termrock::style::ColorCapability;
 #[test]
 fn no_color_forces_monochrome_boundary() {
     let hints = EnvHints::fixture("xterm-256color", Some("truecolor"), true);
-    let caps = TerminalCapabilities::with_hints(hints, Some(CapabilityProfile::Modern), CapabilityOverrides::default());
+    let caps = TerminalCapabilities::with_hints(
+        hints,
+        Some(CapabilityProfile::Modern),
+        CapabilityOverrides::default(),
+    );
     assert!(matches!(caps.set.color, ColorCapability::Monochrome));
     let b = caps.boundary();
     assert!(b.colorless());

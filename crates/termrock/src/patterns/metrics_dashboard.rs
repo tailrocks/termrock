@@ -15,24 +15,15 @@
 //!
 //! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
-    widgets::{
-        Gauge,
-        ScaleMode,
-        Sparkline,
-        VizGlyphSet,
-        CommandEntry,
-        LoadState,
-    },
+    widgets::{CommandEntry, Gauge, LoadState, ScaleMode, Sparkline, VizGlyphSet},
 };
 
 /// Width at or below which layout becomes a vertical summary stack.
@@ -1162,8 +1153,7 @@ impl<'a> MetricsDashboard<'a> {
         }
         let ascii = self.ascii || state.ascii;
         let mode = state.layout_mode(area.width);
-        let slots =
-            layout_metrics_dashboard(area, self.tiles.len(), self.alerts.len(), mode);
+        let slots = layout_metrics_dashboard(area, self.tiles.len(), self.alerts.len(), mode);
         // grid cols for nav
         state.grid_cols = match mode {
             MetricsDashboardLayoutMode::Summary => 1,
@@ -1267,7 +1257,12 @@ impl<'a> MetricsDashboard<'a> {
             let warn = self
                 .tiles
                 .iter()
-                .filter(|t| matches!(t.health, MetricTileHealth::Warning | MetricTileHealth::Danger))
+                .filter(|t| {
+                    matches!(
+                        t.health,
+                        MetricTileHealth::Warning | MetricTileHealth::Danger
+                    )
+                })
                 .count();
             let footer = if failed > 0 {
                 format!(
@@ -1330,7 +1325,10 @@ fn paint_summary_tile(
     };
     let style = if focused {
         system.style(Role::Focus)
-    } else if matches!(tile.health, MetricTileHealth::Failed | MetricTileHealth::Danger) {
+    } else if matches!(
+        tile.health,
+        MetricTileHealth::Failed | MetricTileHealth::Danger
+    ) {
         system.style(tile.health.role())
     } else if tile.delta_bad && !tile.delta.is_empty() {
         system.style(Role::Danger)
@@ -1450,7 +1448,10 @@ fn paint_grid_tile(
     if body.height == 0 || body.width == 0 {
         return;
     }
-    if matches!(tile.health, MetricTileHealth::Failed | MetricTileHealth::Loading) {
+    if matches!(
+        tile.health,
+        MetricTileHealth::Failed | MetricTileHealth::Loading
+    ) {
         let msg = match tile.health {
             MetricTileHealth::Loading => "loading…",
             _ => tile.error.unwrap_or("failed"),
@@ -1565,8 +1566,7 @@ mod tests {
 
     fn alerts() -> Vec<MetricAlert<'static>> {
         vec![
-            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%")
-                .metric("mem"),
+            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%").metric("mem"),
             MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed")
                 .metric("err"),
         ]
@@ -1664,15 +1664,15 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("CPU") || text.contains("ops") || text.contains("42"), "{text}");
+        assert!(
+            text.contains("CPU") || text.contains("ops") || text.contains("42"),
+            "{text}"
+        );
 
         let area_n = Rect::new(0, 0, 40, 12);
         let mut buf_n = Buffer::empty(area_n);
         MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
-        assert_eq!(
-            state.layout_mode(40),
-            MetricsDashboardLayoutMode::Summary
-        );
+        assert_eq!(state.layout_mode(40), MetricsDashboardLayoutMode::Summary);
     }
 
     #[test]

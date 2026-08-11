@@ -11,7 +11,7 @@ use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, RolePalette},
     widgets::{
-        any_dirty, collect_errors, first_invalid_id, Field, Fieldset, Form, FormOutcome, FormState,
+        Field, Fieldset, Form, FormOutcome, FormState, any_dirty, collect_errors, first_invalid_id,
     },
 };
 

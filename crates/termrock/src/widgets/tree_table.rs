@@ -20,6 +20,7 @@
 //! Research: process trees, file trees with metadata, IDE outlines, DB schema browsers.
 //! Single-column hierarchy → [`super::Tree`]. Flat multi-column → [`super::DataTable`].
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -464,7 +465,10 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
 
         // Shift+Left/Right always hierarchy when in Cell mode
         if key.modifiers.contains(KeyModifiers::SHIFT)
-            && matches!(key.code, KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L'))
+            && matches!(
+                key.code,
+                KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L')
+            )
         {
             let expand = matches!(key.code, KeyCode::Right | KeyCode::Char('l' | 'L'));
             return self.hierarchy_step(rows, expand);
@@ -730,11 +734,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             .iter()
             .enumerate()
             .filter(|(_, r)| r.enabled && navigable(r));
-        let Some((idx, row)) = (if last {
-            iter.next_back()
-        } else {
-            iter.next()
-        }) else {
+        let Some((idx, row)) = (if last { iter.next_back() } else { iter.next() }) else {
             return TreeTableOutcome::Ignored;
         };
         self.cursor_row = idx;
@@ -889,8 +889,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> Default for TreeTableState<Id, C
 }
 
 fn navigable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
-    !matches!(row.status, TreeNodeStatus::Loading)
-        && !matches!(row.kind, TreeTableRowKind::Group)
+    !matches!(row.status, TreeNodeStatus::Loading) && !matches!(row.kind, TreeTableRowKind::Group)
 }
 
 /// Intent map for TreeTable: mode-sensitive Left/Right.
@@ -970,12 +969,8 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
     }
 
     /// Paint O(projected) only.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TreeTableState<Id, ColId>,
-    ) where
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeTableState<Id, ColId>)
+    where
         ColId: Clone,
     {
         state.header_regions.clear();
@@ -992,16 +987,16 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         let mut y = area.y;
         let col_budget = area.width.saturating_sub(GUTTER_W);
         state.viewport_width = col_budget;
-        self.columns
-            .resolve_paint_widths(col_budget.saturating_add(state.h_offset), &mut state.paint_widths);
+        self.columns.resolve_paint_widths(
+            col_budget.saturating_add(state.h_offset),
+            &mut state.paint_widths,
+        );
         state.content_width = state
             .paint_widths
             .iter()
             .map(|(_, w)| *w)
             .fold(0u16, u16::saturating_add)
-            .saturating_add(
-                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
-            );
+            .saturating_add(u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0));
         state.h_offset = state
             .h_offset
             .min(state.content_width.saturating_sub(col_budget));
@@ -1241,19 +1236,25 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         TreeNodeStatus::Error => table.system.style(Role::Danger),
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => table.system.style(Role::TextMuted),
         TreeNodeStatus::Ready if !row.enabled => table.system.style(Role::TextDisabled),
-        TreeNodeStatus::Ready if matches!(row.kind, TreeTableRowKind::Group | TreeTableRowKind::Aggregate) => {
-            table.system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
+        TreeNodeStatus::Ready
+            if matches!(
+                row.kind,
+                TreeTableRowKind::Group | TreeTableRowKind::Aggregate
+            ) =>
+        {
+            table
+                .system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD)
         }
-        TreeNodeStatus::Ready if selected && surface_focused => {
-            match table.system.selection {
-                SelectionChrome::Fill => table.system.style(Role::Selection),
-                SelectionChrome::Tint => table.system.style(Role::Focus),
-                SelectionChrome::Gutter => table
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
-            }
-        }
+        TreeNodeStatus::Ready if selected && surface_focused => match table.system.selection {
+            SelectionChrome::Fill => table.system.style(Role::Selection),
+            SelectionChrome::Tint => table.system.style(Role::Focus),
+            SelectionChrome::Gutter => table
+                .system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD),
+        },
         TreeNodeStatus::Ready if selected => table.system.style(Role::TextStrong),
         TreeNodeStatus::Ready if state.striped && row_index % 2 == 1 => {
             table.system.style(Role::TextMuted)

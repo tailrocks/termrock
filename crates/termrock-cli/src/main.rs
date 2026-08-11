@@ -31,9 +31,7 @@ fn usage() -> ! {
 }
 
 fn run_contract(args: &[String]) -> ExitCode {
-    use termrock::registry::{
-        official_kernel_contracts, validate_contracts, ContractIssueLevel,
-    };
+    use termrock::registry::{ContractIssueLevel, official_kernel_contracts, validate_contracts};
 
     let sub = args.first().map(String::as_str).unwrap_or("check");
     match sub {

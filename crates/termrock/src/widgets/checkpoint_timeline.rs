@@ -20,6 +20,7 @@
 //! Research: Grok Build rewind, IDE local history, Git reflog, notebook
 //! checkpoints. Uses Timeline substrate for list paint projection.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
 
 use ratatui_core::{
@@ -240,11 +241,7 @@ pub struct Checkpoint {
 impl Checkpoint {
     /// Minimal soft checkpoint.
     #[must_use]
-    pub fn new(
-        id: impl Into<String>,
-        when: impl Into<String>,
-        label: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, when: impl Into<String>, label: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
@@ -887,11 +884,10 @@ impl CheckpointTimelineState {
                     return CheckpointTimelineOutcome::Ignored;
                 };
                 let to = cp.id.clone();
-                let from = self.compare_anchor.clone().or_else(|| {
-                    self.head()
-                        .filter(|h| h.id != to)
-                        .map(|h| h.id.clone())
-                });
+                let from = self
+                    .compare_anchor
+                    .clone()
+                    .or_else(|| self.head().filter(|h| h.id != to).map(|h| h.id.clone()));
                 CheckpointTimelineOutcome::CompareRequested { from, to }
             }
             KeyCode::Char('a') => {
@@ -904,9 +900,7 @@ impl CheckpointTimelineState {
             KeyCode::Char('b') => {
                 if let Some(branch) = self.current().and_then(|c| c.branch_id.clone()) {
                     self.branch_filter = Some(branch.clone());
-                    CheckpointTimelineOutcome::BranchFocused {
-                        branch_id: branch,
-                    }
+                    CheckpointTimelineOutcome::BranchFocused { branch_id: branch }
                 } else {
                     self.branch_filter = None;
                     CheckpointTimelineOutcome::Ignored
@@ -1033,8 +1027,9 @@ impl CheckpointTimelineState {
                 } else {
                     TimelineStatus::Success
                 };
-                let mut ev = TimelineEvent::checkpoint(c.id.clone(), c.when.as_str(), c.label.as_str())
-                    .status(status);
+                let mut ev =
+                    TimelineEvent::checkpoint(c.id.clone(), c.when.as_str(), c.label.as_str())
+                        .status(status);
                 if let Some(a) = c.actor.as_deref() {
                     ev = ev.actor(a);
                 }
@@ -1047,8 +1042,10 @@ impl CheckpointTimelineState {
                 if let Some(s) = c.summary.as_deref() {
                     ev = ev.detail(s);
                 }
-                if matches!(self.mode, CheckpointTimelineMode::Preview | CheckpointTimelineMode::Confirm)
-                    && self.focus_id.as_deref() == Some(c.id.as_str())
+                if matches!(
+                    self.mode,
+                    CheckpointTimelineMode::Preview | CheckpointTimelineMode::Confirm
+                ) && self.focus_id.as_deref() == Some(c.id.as_str())
                 {
                     ev = ev.expanded();
                 }
@@ -1103,12 +1100,7 @@ impl<'a> CheckpointTimeline<'a> {
     }
 
     /// Paint.
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CheckpointTimelineState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckpointTimelineState) {
         state.row_hits.clear();
         state.confirm_hits.clear();
         if area.is_empty() {
@@ -1180,12 +1172,7 @@ impl<'a> CheckpointTimeline<'a> {
         }
     }
 
-    fn paint_list(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut CheckpointTimelineState,
-    ) {
+    fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckpointTimelineState) {
         if area.is_empty() {
             return;
         }
@@ -1205,13 +1192,7 @@ impl<'a> CheckpointTimeline<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(banner, w),
-                w,
-                style,
-            );
+            buffer.set_stringn(area.x, y, take_display_cols(banner, w), w, style);
             y = y.saturating_add(1);
         }
 
@@ -1251,14 +1232,9 @@ impl<'a> CheckpointTimeline<'a> {
                 .as_ref()
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
-            let text = format!(
-                "{mark}{bound} {} {}{}{}",
-                cp.when, cp.label, head, branch
-            );
+            let text = format!("{mark}{bound} {} {}{}{}", cp.when, cp.label, head, branch);
             let style = if selected {
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if cp.boundary.needs_warning() && !self.colorless {
                 self.system.style(cp.boundary.role())
             } else if cp.is_head {
@@ -1280,12 +1256,7 @@ impl<'a> CheckpointTimeline<'a> {
         }
     }
 
-    fn paint_detail(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &CheckpointTimelineState,
-    ) {
+    fn paint_detail(&self, area: Rect, buffer: &mut Buffer, state: &CheckpointTimelineState) {
         if area.is_empty() {
             return;
         }
@@ -1298,10 +1269,7 @@ impl<'a> CheckpointTimeline<'a> {
 
         let lines: Vec<(String, Role)> = {
             let mut v = Vec::new();
-            v.push((
-                format!("{} · {}", cp.kind.id(), cp.label),
-                Role::Accent,
-            ));
+            v.push((format!("{} · {}", cp.kind.id(), cp.label), Role::Accent));
             if let Some(a) = cp.actor.as_ref() {
                 v.push((format!("actor {a}"), Role::TextMuted));
             }
@@ -1323,7 +1291,10 @@ impl<'a> CheckpointTimeline<'a> {
                 v.push((format!("branch {b}{p}"), Role::Info));
             }
             if !cp.changed_files.is_empty() {
-                v.push((format!("files ({})", cp.changed_files.len()), Role::TextMuted));
+                v.push((
+                    format!("files ({})", cp.changed_files.len()),
+                    Role::TextMuted,
+                ));
                 for f in cp
                     .changed_files
                     .iter()
@@ -1455,19 +1426,16 @@ impl<'a> CheckpointTimeline<'a> {
 
     /// Bridge: handle Timeline substrate outcome → CheckpointTimelineOutcome.
     #[must_use]
-    pub fn map_timeline_outcome(
-        outcome: TimelineOutcome<String>,
-    ) -> CheckpointTimelineOutcome {
+    pub fn map_timeline_outcome(outcome: TimelineOutcome<String>) -> CheckpointTimelineOutcome {
         match outcome {
             TimelineOutcome::Ignored => CheckpointTimelineOutcome::Ignored,
             TimelineOutcome::Selected(id) => CheckpointTimelineOutcome::Selected { id },
             TimelineOutcome::RestoreRequested(id) => {
                 CheckpointTimelineOutcome::RestoreRequested { id }
             }
-            TimelineOutcome::CompareRequested(id) => CheckpointTimelineOutcome::CompareRequested {
-                from: None,
-                to: id,
-            },
+            TimelineOutcome::CompareRequested(id) => {
+                CheckpointTimelineOutcome::CompareRequested { from: None, to: id }
+            }
             TimelineOutcome::Cancelled => CheckpointTimelineOutcome::Cancelled,
             TimelineOutcome::Scrolled { following } => {
                 CheckpointTimelineOutcome::FollowToggled { following }
@@ -1508,8 +1476,8 @@ pub fn checkpoint_to_timeline_event(cp: &Checkpoint) -> TimelineEvent<'_, String
     } else {
         TimelineStatus::Success
     };
-    let mut ev =
-        TimelineEvent::checkpoint(cp.id.clone(), cp.when.as_str(), cp.label.as_str()).status(status);
+    let mut ev = TimelineEvent::checkpoint(cp.id.clone(), cp.when.as_str(), cp.label.as_str())
+        .status(status);
     if let Some(a) = cp.actor.as_deref() {
         ev = ev.actor(a);
     }
@@ -1661,10 +1629,7 @@ mod tests {
         assert!(!st.confirm_proceed_focused, "Cancel is default focus");
         // Enter without moving → cancel
         let out = st.handle_key(press(KeyCode::Enter));
-        assert!(matches!(
-            out,
-            CheckpointTimelineOutcome::ConfirmCancelled
-        ));
+        assert!(matches!(out, CheckpointTimelineOutcome::ConfirmCancelled));
     }
 
     #[test]
@@ -1685,11 +1650,7 @@ mod tests {
     #[test]
     fn irreversible_blocks_restore() {
         let mut st = open_sample();
-        let i = st
-            .checkpoints
-            .iter()
-            .position(|c| c.id == "c6")
-            .unwrap();
+        let i = st.checkpoints.iter().position(|c| c.id == "c6").unwrap();
         st.cursor = i;
         let _ = st.handle_key(press(KeyCode::Char('r')));
         // WarningAcknowledged or cannot open confirm with proceed
@@ -1794,11 +1755,7 @@ mod tests {
     #[test]
     fn branch_focus() {
         let mut st = open_sample();
-        let i = st
-            .checkpoints
-            .iter()
-            .position(|c| c.id == "c4")
-            .unwrap();
+        let i = st.checkpoints.iter().position(|c| c.id == "c4").unwrap();
         st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('b')));
         assert!(matches!(
@@ -1812,7 +1769,10 @@ mod tests {
         let st = open_sample();
         let evs = st.project_timeline_events();
         assert_eq!(evs.len(), st.checkpoints.len());
-        assert!(evs.iter().all(|e| matches!(e.kind, TimelineRowKind::Checkpoint)));
+        assert!(
+            evs.iter()
+                .all(|e| matches!(e.kind, TimelineRowKind::Checkpoint))
+        );
     }
 
     #[test]

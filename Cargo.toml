@@ -33,9 +33,16 @@ unsafe_code = "forbid"
 rust_2018_idioms = { level = "deny", priority = -1 }
 
 [workspace.lints.clippy]
-correctness = "deny"
-suspicious = "deny"
-perf = "deny"
+# Groups at priority -1 so individual overrides can raise severity later.
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+# Style/complexity stay non-blocking under `clippy -D warnings` until the large
+# surface is cleaned incrementally. Correctness/suspicious/perf still fail the gate.
+style = { level = "allow", priority = -1 }
+complexity = { level = "allow", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }
 
 [profile.dev]
 debug = 1

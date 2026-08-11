@@ -652,12 +652,7 @@ pub fn layout_stack_with_cross(
 }
 
 /// Layout into a caller-owned buffer (avoids alloc when reusing capacity).
-pub fn layout_stack_into(
-    area: Rect,
-    spec: &StackSpec,
-    children: &[FlexSize],
-    out: &mut Vec<Rect>,
-) {
+pub fn layout_stack_into(area: Rect, spec: &StackSpec, children: &[FlexSize], out: &mut Vec<Rect>) {
     layout_stack_into_cross(area, spec, children, None, out);
 }
 
@@ -826,9 +821,7 @@ fn layout_single_line(
     out.reserve(n);
     for i in 0..n {
         let main = main_sizes[i];
-        let child_cross = cross
-            .and_then(|c| c.get(i).copied())
-            .unwrap_or(cross_total);
+        let child_cross = cross.and_then(|c| c.get(i).copied()).unwrap_or(cross_total);
         let (cross_off, cross_size) = cross_place(spec.align, cross_total, child_cross);
         let rect = match spec.direction {
             StackDirection::Vertical => Rect {
@@ -1114,7 +1107,11 @@ mod tests {
     fn horizontal_inline_equal_weights() {
         let layout = Inline::new().layout(
             Rect::new(0, 0, 30, 5),
-            &[FlexSize::Weight(1), FlexSize::Weight(1), FlexSize::Weight(1)],
+            &[
+                FlexSize::Weight(1),
+                FlexSize::Weight(1),
+                FlexSize::Weight(1),
+            ],
         );
         assert_eq!(layout.children[0].width, 10);
         assert_eq!(layout.children[1].width, 10);
@@ -1138,11 +1135,7 @@ mod tests {
     fn overflow_shrinks_from_end() {
         let layout = Stack::new().layout(
             Rect::new(0, 0, 10, 5),
-            &[
-                FlexSize::Fixed(3),
-                FlexSize::Fixed(3),
-                FlexSize::Fixed(3),
-            ],
+            &[FlexSize::Fixed(3), FlexSize::Fixed(3), FlexSize::Fixed(3)],
         );
         assert!(layout.overflowed);
         let sum: u16 = layout.children.iter().map(|r| r.height).sum();
@@ -1156,16 +1149,10 @@ mod tests {
 
     #[test]
     fn overflow_clip_tail_keeps_head() {
-        let layout = Stack::new()
-            .overflow(OverflowPolicy::ClipTail)
-            .layout(
-                Rect::new(0, 0, 10, 5),
-                &[
-                    FlexSize::Fixed(3),
-                    FlexSize::Fixed(3),
-                    FlexSize::Fixed(3),
-                ],
-            );
+        let layout = Stack::new().overflow(OverflowPolicy::ClipTail).layout(
+            Rect::new(0, 0, 10, 5),
+            &[FlexSize::Fixed(3), FlexSize::Fixed(3), FlexSize::Fixed(3)],
+        );
         assert!(layout.overflowed);
         assert_eq!(layout.children[0].height, 3);
         assert_eq!(layout.children[1].height, 2);
@@ -1182,25 +1169,21 @@ mod tests {
 
     #[test]
     fn justify_space_around() {
-        let layout = Inline::new()
-            .justify(Justify::SpaceAround)
-            .layout(
-                Rect::new(0, 0, 20, 3),
-                &[FlexSize::Fixed(4), FlexSize::Fixed(4)],
-            );
+        let layout = Inline::new().justify(Justify::SpaceAround).layout(
+            Rect::new(0, 0, 20, 3),
+            &[FlexSize::Fixed(4), FlexSize::Fixed(4)],
+        );
         // free = 12, unit = 6, leading = 3
         assert_eq!(layout.children[0].x, 3);
     }
 
     #[test]
     fn align_center_with_cross_hint() {
-        let layout = Inline::new()
-            .align(Align::Center)
-            .layout_with_cross(
-                Rect::new(0, 0, 20, 6),
-                &[FlexSize::Fixed(4)],
-                &[2],
-            );
+        let layout = Inline::new().align(Align::Center).layout_with_cross(
+            Rect::new(0, 0, 20, 6),
+            &[FlexSize::Fixed(4)],
+            &[2],
+        );
         assert_eq!(layout.children[0].height, 2);
         assert_eq!(layout.children[0].y, 2);
     }
@@ -1209,11 +1192,7 @@ mod tests {
     fn wrap_moves_to_next_row() {
         let layout = Inline::new().wrap(true).gap(0).layout(
             Rect::new(0, 0, 10, 4),
-            &[
-                FlexSize::Fixed(6),
-                FlexSize::Fixed(6),
-                FlexSize::Fixed(6),
-            ],
+            &[FlexSize::Fixed(6), FlexSize::Fixed(6), FlexSize::Fixed(6)],
         );
         assert_eq!(layout.children[0].y, 0);
         assert_eq!(layout.children[1].y, 1);
@@ -1224,13 +1203,10 @@ mod tests {
     fn direction_for_width_responsive() {
         assert_eq!(direction_for_width(40, 60), StackDirection::Vertical);
         assert_eq!(direction_for_width(80, 60), StackDirection::Horizontal);
-        let layout = Stack::new()
-            .responsive(80, 60)
-            .gap(0)
-            .layout(
-                Rect::new(0, 0, 80, 4),
-                &[FlexSize::Weight(1), FlexSize::Weight(1)],
-            );
+        let layout = Stack::new().responsive(80, 60).gap(0).layout(
+            Rect::new(0, 0, 80, 4),
+            &[FlexSize::Weight(1), FlexSize::Weight(1)],
+        );
         assert_eq!(layout.direction, StackDirection::Horizontal);
         assert_eq!(layout.children[0].width, 40);
     }
@@ -1239,7 +1215,11 @@ mod tests {
     fn hit_child_and_regions() {
         let layout = Inline::new().layout(
             Rect::new(0, 0, 30, 3),
-            &[FlexSize::Fixed(10), FlexSize::Fixed(10), FlexSize::Fixed(10)],
+            &[
+                FlexSize::Fixed(10),
+                FlexSize::Fixed(10),
+                FlexSize::Fixed(10),
+            ],
         );
         assert_eq!(layout.hit_child(15, 1), Some(1));
         assert_eq!(layout.hit_child(5, 1), Some(0));
@@ -1275,10 +1255,7 @@ mod tests {
         );
         assert_eq!(layout.children[0].height, 4);
         // No weight residual to preferred-only: preferred 2..6 with free space grows
-        let grow = Stack::new().layout(
-            Rect::new(0, 0, 10, 10),
-            &[FlexSize::preferred(2, 2, 6)],
-        );
+        let grow = Stack::new().layout(Rect::new(0, 0, 10, 10), &[FlexSize::preferred(2, 2, 6)]);
         assert_eq!(grow.children[0].height, 6);
     }
 
@@ -1305,10 +1282,7 @@ mod tests {
             &[FlexSize::Weight(1), FlexSize::Weight(1)],
         );
         assert_eq!(layout.content.height, 8);
-        assert_eq!(
-            layout.children[0].height + layout.children[1].height,
-            7
-        );
+        assert_eq!(layout.children[0].height + layout.children[1].height, 7);
     }
 
     #[test]
@@ -1317,10 +1291,7 @@ mod tests {
             Rect::new(0, 0, 10, 10),
             &[FlexSize::Weight(1), FlexSize::Weight(1)],
         );
-        assert_eq!(
-            layout.children[0].height + layout.children[1].height,
-            9
-        );
+        assert_eq!(layout.children[0].height + layout.children[1].height, 9);
     }
 
     #[test]
@@ -1338,12 +1309,10 @@ mod tests {
 
     #[test]
     fn builder_direction_flip() {
-        let layout = Inline::new()
-            .direction(StackDirection::Vertical)
-            .layout(
-                Rect::new(0, 0, 10, 6),
-                &[FlexSize::Fixed(2), FlexSize::fill()],
-            );
+        let layout = Inline::new().direction(StackDirection::Vertical).layout(
+            Rect::new(0, 0, 10, 6),
+            &[FlexSize::Fixed(2), FlexSize::fill()],
+        );
         assert_eq!(layout.direction, StackDirection::Vertical);
         assert_eq!(layout.children[0].height, 2);
     }

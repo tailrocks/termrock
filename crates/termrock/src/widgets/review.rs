@@ -22,12 +22,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -307,11 +302,7 @@ pub struct DiffComment {
 impl DiffComment {
     /// Construct.
     #[must_use]
-    pub fn new(
-        id: impl Into<String>,
-        anchor: DiffCommentAnchor,
-        body: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, anchor: DiffCommentAnchor, body: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             anchor,
@@ -425,6 +416,7 @@ enum ReviewOp {
         after_files: BTreeSet<String>,
     },
     CommentAdd(DiffComment),
+    #[allow(dead_code)]
     CommentRemove(DiffComment),
     CommentResolve {
         id: String,
@@ -873,7 +865,10 @@ impl DiffReviewState {
         }
         // Fallback: line under cursor
         if let Some(l) = lines.get(self.view.cursor) {
-            return vec![DiffReviewUnit::line_range(l.id.to_string(), l.id.to_string())];
+            return vec![DiffReviewUnit::line_range(
+                l.id.to_string(),
+                l.id.to_string(),
+            )];
         }
         units
     }
@@ -1146,9 +1141,7 @@ impl DiffReviewState {
                 KeyCode::Char('x' | 'X') if key.modifiers.is_empty() => {
                     return self.request_decision(DiffDecision::Applied, lines, hunks, files);
                 }
-                KeyCode::Char('c')
-                    if key.modifiers.is_empty() && self.comment_draft.is_none() =>
-                {
+                KeyCode::Char('c') if key.modifiers.is_empty() && self.comment_draft.is_none() => {
                     self.comment_draft = Some(String::new());
                     self.region = DiffReviewRegion::Comments;
                     return DiffReviewOutcome::CommentDraftChanged(String::new());
@@ -1201,7 +1194,11 @@ impl DiffReviewState {
                         if let Some(cm) = self.comments.iter_mut().find(|x| x.id == id) {
                             cm.resolved = after;
                         }
-                        self.push_undo(ReviewOp::CommentResolve { id: id.clone(), before, after });
+                        self.push_undo(ReviewOp::CommentResolve {
+                            id: id.clone(),
+                            before,
+                            after,
+                        });
                         return DiffReviewOutcome::CommentResolved {
                             id,
                             resolved: after,
@@ -1285,9 +1282,7 @@ impl DiffReviewState {
                     self.region = DiffReviewRegion::Diff;
                     return DiffReviewOutcome::CursorMoved { index: i };
                 }
-                DiffReviewOutcome::FileCursorMoved {
-                    id: id.to_string(),
-                }
+                DiffReviewOutcome::FileCursorMoved { id: id.to_string() }
             }
             KeyCode::Char(' ') => {
                 let id = files[self.file_cursor].id.to_string();
@@ -1355,7 +1350,9 @@ impl DiffReviewState {
             .or_else(|| files.get(self.file_cursor).map(|f| f.id))
             .unwrap_or("")
             .to_string();
-        let line = lines.get(self.view.cursor).and_then(|l| l.new_no.or(l.old_no));
+        let line = lines
+            .get(self.view.cursor)
+            .and_then(|l| l.new_no.or(l.old_no));
         if path.is_empty() {
             DiffReviewOutcome::Ignored
         } else {
@@ -1530,12 +1527,7 @@ impl<'a> DiffReview<'a> {
         };
         state.tree_width = tree_w;
 
-        let tree_area = Rect::new(
-            area.x,
-            area.y,
-            tree_w,
-            area.height.saturating_sub(bottom_h),
-        );
+        let tree_area = Rect::new(area.x, area.y, tree_w, area.height.saturating_sub(bottom_h));
         let body = Rect::new(
             area.x.saturating_add(tree_w),
             area.y,
@@ -1699,20 +1691,12 @@ fn paint_file_tree(
         let cur = i == state.file_cursor;
         let mark = dec.glyph(ascii);
         let sel_m = if sel {
-            if ascii {
-                "*"
-            } else {
-                "★"
-            }
+            if ascii { "*" } else { "★" }
         } else {
             " "
         };
         let gutter = if cur && focus {
-            if ascii {
-                ">"
-            } else {
-                "›"
-            }
+            if ascii { ">" } else { "›" }
         } else {
             " "
         };
@@ -1742,10 +1726,9 @@ fn paint_file_tree(
             usize::from(area.width),
             style,
         );
-        state.file_regions.push((
-            f.id.to_string(),
-            Rect::new(area.x, y, area.width, 1),
-        ));
+        state
+            .file_regions
+            .push((f.id.to_string(), Rect::new(area.x, y, area.width, 1)));
         y = y.saturating_add(1);
     }
     // Divider
@@ -1813,13 +1796,7 @@ fn paint_review_marks(
         } else {
             system.style(Role::Accent)
         };
-        buffer.set_stringn(
-            x,
-            region.area.y,
-            take_display_cols(&marks, 4),
-            4,
-            style,
-        );
+        buffer.set_stringn(x, region.area.y, take_display_cols(&marks, 4), 4, style);
         let _ = hunks;
     }
 }
@@ -2117,8 +2094,15 @@ mod tests {
             .files(&files)
             .title("PR #12")
             .render(area, &mut buf, &mut state);
-        let text: String = buf.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains("a.rs") || text.contains("files") || text.contains("hunk"), "{text}");
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("a.rs") || text.contains("files") || text.contains("hunk"),
+            "{text}"
+        );
         assert!(!state.file_regions.is_empty());
 
         let mut empty = DiffReviewState::new();

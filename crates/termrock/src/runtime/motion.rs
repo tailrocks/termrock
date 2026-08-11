@@ -64,19 +64,16 @@ pub fn earliest_deadline(deadlines: impl IntoIterator<Item = Option<Instant>>) -
 
 /// Spinner / indeterminate frame index from elapsed time.
 #[must_use]
-pub fn spinner_step(
-    tick: FrameTick,
-    frame_count: usize,
-    period_ms: u64,
-    motion: Motion,
-) -> usize {
+pub fn spinner_step(tick: FrameTick, frame_count: usize, period_ms: u64, motion: Motion) -> usize {
     if frame_count == 0 {
         return 0;
     }
     if !motion.animate_spinners() {
         return 0;
     }
-    let period = period_ms.max(1).saturating_mul(motion.spinner_divisor().max(1));
+    let period = period_ms
+        .max(1)
+        .saturating_mul(motion.spinner_divisor().max(1));
     let step = tick.elapsed().as_millis() as u64 / period;
     (step as usize) % frame_count
 }
@@ -284,9 +281,9 @@ impl Presence {
         match self.phase {
             PresencePhase::Hidden => None,
             PresencePhase::Pending { since } => since.checked_add(self.show_delay),
-            PresencePhase::Visible { since } => self
-                .visible_ttl
-                .and_then(|ttl| since.checked_add(ttl)),
+            PresencePhase::Visible { since } => {
+                self.visible_ttl.and_then(|ttl| since.checked_add(ttl))
+            }
             PresencePhase::Exiting { since } => since.checked_add(self.exit_duration),
         }
     }
@@ -341,8 +338,8 @@ impl FrameTick {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::FrameClock;
+    use super::*;
 
     fn tick_at(clock: &mut FrameClock, start: Instant, ms: u64) -> FrameTick {
         clock.tick_at(start + Duration::from_millis(ms))
@@ -351,7 +348,11 @@ mod tests {
     #[test]
     fn spinner_static_when_motion_off() {
         let start = Instant::now();
-        let tick = FrameTick::manual(start + Duration::from_millis(500), Duration::from_millis(500), Duration::from_millis(16));
+        let tick = FrameTick::manual(
+            start + Duration::from_millis(500),
+            Duration::from_millis(500),
+            Duration::from_millis(16),
+        );
         assert_eq!(spinner_step(tick, 4, 80, Motion::Off), 0);
         assert!(spinner_step(tick, 4, 80, Motion::Full) > 0);
     }

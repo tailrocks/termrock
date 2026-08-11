@@ -18,9 +18,9 @@ mod validate;
 
 pub use catalog::{official_contract, official_ids, official_kernel_contracts};
 pub use contract::{
-    AnatomyPartRef, CapabilityRequirements, ComponentContract, ContractDependencies,
-    ContractFile, ContractFileRole, KernelRequirement, OutcomeRef, Provenance, RegistryItemKind,
-    SemanticRoleRef, VariantRef, CONTRACT_SCHEMA,
+    AnatomyPartRef, CONTRACT_SCHEMA, CapabilityRequirements, ComponentContract,
+    ContractDependencies, ContractFile, ContractFileRole, KernelRequirement, OutcomeRef,
+    Provenance, RegistryItemKind, SemanticRoleRef, VariantRef,
 };
 pub use validate::{
     ContractIssue, ContractIssueLevel, ValidationReport, validate_contract, validate_contracts,

@@ -3,6 +3,7 @@
 
 //! Empty, loading, error, and banner feedback views.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{

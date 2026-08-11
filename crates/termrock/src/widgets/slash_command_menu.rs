@@ -20,25 +20,21 @@
 //! centered command surface. SlashCommandMenu is **caret-anchored**, draft-aware,
 //! and `/`-token scoped for PromptComposer.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-};
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyEvent, MouseEvent},
-    interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
-    },
+    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
     style::DesignSystem,
     widgets::{
+        MatchRanges,
         command_palette::{CommandEntry, fuzzy_match_label},
         completion_menu::{
             CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
             CompletionMenuState, CompletionPresentation, CompletionStatus,
             completion_presentation_for, place_completion_menu,
         },
-        MatchRanges,
     },
 };
 
@@ -426,7 +422,7 @@ pub fn detect_slash_query(text: &str, cursor_byte: usize) -> Option<SlashQuery> 
                     bytes[i - 1],
                     b' ' | b'\n' | b'\t' | b'(' | b'[' | b'{' | b'"' | b'\''
                 );
-            // reject `://` or word/ 
+            // reject `://` or word/
             if !prev_ok {
                 // allow if prev is start of line only
                 continue;
@@ -552,7 +548,11 @@ pub fn filter_slash_commands(catalog: &[SlashCommand], prefix: &str) -> Vec<Slas
             best.map(|(score, ranges)| {
                 let mut c = c.clone();
                 c.score = score;
-                c.match_ranges = if ranges.is_empty() { None } else { Some(ranges) };
+                c.match_ranges = if ranges.is_empty() {
+                    None
+                } else {
+                    Some(ranges)
+                };
                 c
             })
         })
@@ -614,9 +614,7 @@ pub fn slash_commands_to_candidates(
 
 /// Project argument values to candidates.
 #[must_use]
-pub fn argument_values_to_candidates(
-    values: &[String],
-) -> Vec<CompletionCandidate<'_, String>> {
+pub fn argument_values_to_candidates(values: &[String]) -> Vec<CompletionCandidate<'_, String>> {
     values
         .iter()
         .map(|v| {
@@ -701,11 +699,9 @@ pub fn example_slash_catalog() -> Vec<SlashCommand> {
             .source(SlashCommandSource::Plugin {
                 id: "demo-plugin".into(),
             })
-            .arguments(vec![SlashArgument::required("task").values([
-                "build",
-                "test",
-                "lint",
-            ])]),
+            .arguments(vec![
+                SlashArgument::required("task").values(["build", "test", "lint"]),
+            ]),
         SlashCommand::new("deploy", "deploy")
             .description("Deploy (unavailable)")
             .disabled("offline")
@@ -969,7 +965,8 @@ impl SlashCommandMenuState {
             CompletionMenuOutcome::GenerationStale { generation } => {
                 SlashCommandMenuOutcome::GenerationStale { generation }
             }
-            CompletionMenuOutcome::Committed(id) | CompletionMenuOutcome::CommitWithChar { id, .. } => {
+            CompletionMenuOutcome::Committed(id)
+            | CompletionMenuOutcome::CommitWithChar { id, .. } => {
                 self.commit_id(&id, catalog, visible)
             }
         }
@@ -1025,9 +1022,8 @@ impl SlashCommandMenuState {
                 let mut args = prior_args;
                 args.push(id.to_string());
                 let more = arg_index + 1 < cmd.arguments.len();
-                let insertion = cmd.insert_with_args(
-                    &args.iter().map(String::as_str).collect::<Vec<_>>(),
-                );
+                let insertion =
+                    cmd.insert_with_args(&args.iter().map(String::as_str).collect::<Vec<_>>());
                 let insertion = if more {
                     format!("{insertion} ")
                 } else {
@@ -1068,9 +1064,9 @@ impl SlashCommandMenuState {
 fn map_menu_outcome(out: CompletionMenuOutcome<String>) -> SlashCommandMenuOutcome {
     match out {
         CompletionMenuOutcome::Ignored => SlashCommandMenuOutcome::Ignored,
-        CompletionMenuOutcome::SelectionChanged => SlashCommandMenuOutcome::SelectionChanged {
-            id: String::new(),
-        },
+        CompletionMenuOutcome::SelectionChanged => {
+            SlashCommandMenuOutcome::SelectionChanged { id: String::new() }
+        }
         CompletionMenuOutcome::Committed(id) => SlashCommandMenuOutcome::CommandCommitted {
             id,
             insertion: String::new(),
@@ -1177,12 +1173,7 @@ impl<'a> SlashCommandMenu<'a> {
 
     /// Paint filtered visible commands (places relative to anchor unless host
     /// already constrained `area` — then uses force_area).
-    pub fn paint(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SlashCommandMenuState,
-    ) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SlashCommandMenuState) {
         if area.is_empty() || !state.open {
             return;
         }
@@ -1200,12 +1191,7 @@ impl<'a> SlashCommandMenu<'a> {
     }
 
     /// Convenience render alias.
-    pub fn render(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SlashCommandMenuState,
-    ) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SlashCommandMenuState) {
         self.paint(area, buffer, state);
     }
 }
@@ -1410,10 +1396,12 @@ mod tests {
     #[test]
     fn reject_url_scheme_slash() {
         // "http://" — slash preceded by /
-        assert!(detect_slash_query("http://x", 8).is_none() || {
-            // if we match last slash after :, prev is : which is not boundary — none
-            true
-        });
+        assert!(
+            detect_slash_query("http://x", 8).is_none() || {
+                // if we match last slash after :, prev is : which is not boundary — none
+                true
+            }
+        );
         assert!(detect_slash_query("http://", 7).is_none());
     }
 
@@ -1443,7 +1431,12 @@ mod tests {
     fn never_executes_commands() {
         let src = include_str!("slash_command_menu.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        for forbidden in ["std::process::Command", "std::fs::", "reqwest::", "tokio::process"] {
+        for forbidden in [
+            "std::process::Command",
+            "std::fs::",
+            "reqwest::",
+            "tokio::process",
+        ] {
             assert!(!body.contains(forbidden), "must not contain {forbidden}");
         }
     }
@@ -1459,10 +1452,7 @@ mod tests {
             Some("composer"),
         );
         assert!(matches!(out, OverlayOutcome::Opened { .. }));
-        assert_eq!(
-            stack.top().unwrap().id.as_str(),
-            SLASH_COMMAND_OVERLAY_ID
-        );
+        assert_eq!(stack.top().unwrap().id.as_str(), SLASH_COMMAND_OVERLAY_ID);
     }
 
     #[test]

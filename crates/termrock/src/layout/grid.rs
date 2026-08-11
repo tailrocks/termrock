@@ -489,12 +489,7 @@ impl Grid {
 
     /// Auto-flow `count` cells into the grid (row-major by default).
     #[must_use]
-    pub fn layout_flow(
-        &self,
-        area: Rect,
-        count: usize,
-        flow: GridAutoFlow,
-    ) -> GridLayout {
+    pub fn layout_flow(&self, area: Rect, count: usize, flow: GridAutoFlow) -> GridLayout {
         let items = auto_flow_items(self.spec.col_count(), count, flow);
         layout_grid(area, &self.spec, &items)
     }
@@ -512,8 +507,7 @@ impl Default for Grid {
 /// - else → 1 column
 #[must_use]
 pub fn responsive_columns(width: u16, two_col_min: u16, min_col: u16, gap: u16) -> GridSpec {
-    let fits_two = width >= two_col_min
-        && width >= min_col.saturating_mul(2).saturating_add(gap);
+    let fits_two = width >= two_col_min && width >= min_col.saturating_mul(2).saturating_add(gap);
     if fits_two {
         GridSpec::columns_fr(2).gaps(gap, gap)
     } else {
@@ -536,7 +530,9 @@ pub fn dashboard_grid_template(width: u16, max_cols: u16, min_card: u16, gap: u1
     let max_cols = max_cols.max(1);
     let mut cols = 1u16;
     for c in (2..=max_cols).rev() {
-        let need = min_card.saturating_mul(c).saturating_add(gap.saturating_mul(c - 1));
+        let need = min_card
+            .saturating_mul(c)
+            .saturating_add(gap.saturating_mul(c - 1));
         if width >= need {
             cols = c;
             break;
@@ -556,10 +552,7 @@ pub fn settings_grid_template(width: u16, label_width: u16, gap: u16) -> GridSpe
     let need = label_width.saturating_add(gap).saturating_add(12);
     if width >= need {
         GridSpec::default()
-            .columns([
-                TrackSize::content(label_width),
-                TrackSize::fr(1),
-            ])
+            .columns([TrackSize::content(label_width), TrackSize::fr(1)])
             .gaps(gap, 0)
             .auto_row(TrackSize::Fixed(1))
     } else {
@@ -714,11 +707,7 @@ pub fn auto_flow_items(col_count: u16, count: usize, flow: GridAutoFlow) -> Vec<
 /// Returns the index of the nearest item in the move direction, or `None`.
 /// Hosts map [`NavigationMove`] from intents; grid does not consume keys.
 #[must_use]
-pub fn grid_neighbor(
-    items: &[GridItem],
-    focus: usize,
-    direction: NavigationMove,
-) -> Option<usize> {
+pub fn grid_neighbor(items: &[GridItem], focus: usize, direction: NavigationMove) -> Option<usize> {
     match direction {
         NavigationMove::First => items.iter().enumerate().map(|(i, _)| i).min(),
         NavigationMove::Last => items.iter().enumerate().map(|(i, _)| i).max(),
@@ -728,18 +717,12 @@ pub fn grid_neighbor(
             .or_else(|| grid_reading_neighbor(items, focus, false)),
         NavigationMove::Down => grid_neighbor_2d(items, focus, 0, 1),
         NavigationMove::Up => grid_neighbor_2d(items, focus, 0, -1),
-        _ => None,
     }
 }
 
 /// 2D spatial neighbor: `(dx, dy)` in grid cell steps (e.g. (0,-1) = up).
 #[must_use]
-pub fn grid_neighbor_2d(
-    items: &[GridItem],
-    focus: usize,
-    dx: i32,
-    dy: i32,
-) -> Option<usize> {
+pub fn grid_neighbor_2d(items: &[GridItem], focus: usize, dx: i32, dy: i32) -> Option<usize> {
     if dx == 0 && dy == 0 {
         return Some(focus);
     }
@@ -782,11 +765,7 @@ pub fn grid_neighbor_2d(
 
 /// Reading-order next/previous (row-major by (row, col)).
 #[must_use]
-pub fn grid_reading_neighbor(
-    items: &[GridItem],
-    focus: usize,
-    forward: bool,
-) -> Option<usize> {
+pub fn grid_reading_neighbor(items: &[GridItem], focus: usize, forward: bool) -> Option<usize> {
     if items.is_empty() {
         return None;
     }
@@ -934,7 +913,7 @@ fn apply_track_overflow(
         OverflowPolicy::ClipTail => {
             let mut remaining = available;
             for i in 0..n {
-                if matches!(tracks[i], TrackSize::Weight(_) ) {
+                if matches!(tracks[i], TrackSize::Weight(_)) {
                     sizes[i] = 0;
                     continue;
                 }
@@ -1069,10 +1048,9 @@ mod tests {
 
     #[test]
     fn span_merges_columns() {
-        let spec = GridSpec::columns_fr(3).gaps(1, 1).rows([
-            TrackSize::Fixed(3),
-            TrackSize::Fixed(3),
-        ]);
+        let spec = GridSpec::columns_fr(3)
+            .gaps(1, 1)
+            .rows([TrackSize::Fixed(3), TrackSize::Fixed(3)]);
         let items = [
             GridItem::span(0, 0, 2, 1),
             GridItem::cell(2, 0),
@@ -1090,7 +1068,11 @@ mod tests {
             TrackSize::Fixed(10),
             TrackSize::Fixed(10),
         ]);
-        let items = [GridItem::cell(0, 0), GridItem::cell(1, 0), GridItem::cell(2, 0)];
+        let items = [
+            GridItem::cell(0, 0),
+            GridItem::cell(1, 0),
+            GridItem::cell(2, 0),
+        ];
         let layout = layout_grid(Rect::new(0, 0, 15, 5), &spec, &items);
         assert!(layout.overflowed);
         let sum: u16 = layout.column_sizes.iter().sum();
@@ -1110,7 +1092,11 @@ mod tests {
                 TrackSize::Fixed(10),
                 TrackSize::Fixed(10),
             ]);
-        let items = [GridItem::cell(0, 0), GridItem::cell(1, 0), GridItem::cell(2, 0)];
+        let items = [
+            GridItem::cell(0, 0),
+            GridItem::cell(1, 0),
+            GridItem::cell(2, 0),
+        ];
         let layout = layout_grid(Rect::new(0, 0, 15, 5), &spec, &items);
         assert!(layout.overflowed);
         assert_eq!(layout.column_sizes[0], 10);
@@ -1157,10 +1143,7 @@ mod tests {
         let items = auto_flow_items(3, 6, GridAutoFlow::Row);
         assert_eq!(grid_neighbor_2d(&items, 0, 1, 0), Some(1));
         assert_eq!(grid_neighbor_2d(&items, 0, 0, 1), Some(3));
-        assert_eq!(
-            grid_neighbor(&items, 0, NavigationMove::Right),
-            Some(1)
-        );
+        assert_eq!(grid_neighbor(&items, 0, NavigationMove::Right), Some(1));
     }
 
     #[test]
@@ -1186,9 +1169,10 @@ mod tests {
 
     #[test]
     fn debug_summary_lists_sizes() {
-        let layout = Grid::columns(2)
-            .gaps(0, 0)
-            .layout_flow(Rect::new(0, 0, 20, 4), 2, GridAutoFlow::Row);
+        let layout =
+            Grid::columns(2)
+                .gaps(0, 0)
+                .layout_flow(Rect::new(0, 0, 20, 4), 2, GridAutoFlow::Row);
         let s = layout.debug_summary();
         assert!(s.contains("cols="));
         assert!(s.contains("overflowed=false"));
@@ -1254,9 +1238,11 @@ mod tests {
     #[test]
     fn semantic_group_registers() {
         use crate::interaction::SemanticScene;
-        let layout = Grid::columns(2)
-            .auto_row(TrackSize::Fixed(2))
-            .layout_flow(Rect::new(0, 0, 20, 4), 2, GridAutoFlow::Row);
+        let layout = Grid::columns(2).auto_row(TrackSize::Fixed(2)).layout_flow(
+            Rect::new(0, 0, 20, 4),
+            2,
+            GridAutoFlow::Row,
+        );
         let mut scene = SemanticScene::<String, ()>::new();
         scene.begin_frame();
         layout.register_semantic_group(&mut scene, "g".into(), "grid", |i| format!("c{i}"));

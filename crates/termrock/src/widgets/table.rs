@@ -563,9 +563,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         // the host has selected a row; otherwise H-scroll.
         let can_cell = self.selected.is_some()
             && !self.header_regions.is_empty()
-            && rows.iter().any(|row| {
-                row.enabled && self.selected.as_ref().is_some_and(|id| &row.id == id)
-            });
+            && rows
+                .iter()
+                .any(|row| row.enabled && self.selected.as_ref().is_some_and(|id| &row.id == id));
         if can_cell && (self.focused_column.is_some() || self.content_width <= self.viewport_width)
         {
             return self.move_cell_focus(delta);
@@ -947,11 +947,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             &mut state.scratch_widths,
             &mut state.scratch_policies,
         );
-        state.content_width = content_width(
-            &state.visible_columns,
-            &state.resolved_widths,
-            gap,
-        );
+        state.content_width = content_width(&state.visible_columns, &state.resolved_widths, gap);
         let max_h = state.content_width.saturating_sub(column_budget);
         state.h_offset = state.h_offset.min(max_h);
 
@@ -983,14 +979,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         }
 
         if self.sticky_header && header_h > 0 && !state.visible_columns.is_empty() {
-            paint_header_row(
-                self,
-                area,
-                buffer,
-                state,
-                gap,
-                bordered,
-            );
+            paint_header_row(self, area, buffer, state, gap, bordered);
         }
 
         let body_y = area.y.saturating_add(header_h);
@@ -1013,13 +1002,19 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .unwrap_or_else(|| Line::from("Failed to load")),
                 Role::Danger,
             )),
-            TableBodyState::Ready if self.rows.is_empty() => self.empty_message.as_ref().map(|m| {
-                (m.clone(), Role::TextMuted)
-            }),
+            TableBodyState::Ready if self.rows.is_empty() => self
+                .empty_message
+                .as_ref()
+                .map(|m| (m.clone(), Role::TextMuted)),
             TableBodyState::Ready => None,
         };
         if let Some((message, role)) = placeholder {
-            let msg_area = Rect::new(area.x.saturating_add(MARKER_WIDTH), body_y, column_budget, 1);
+            let msg_area = Rect::new(
+                area.x.saturating_add(MARKER_WIDTH),
+                body_y,
+                column_budget,
+                1,
+            );
             render_line(
                 &message,
                 msg_area,
@@ -1063,9 +1058,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             let show_leading = row.leading.is_some() && show_leading_tier;
             let show_badge = row.badge.is_some() && show_badge_tier;
             let mut content_x = area.x.saturating_add(MARKER_WIDTH);
-            if show_leading
-                && let Some(leading) = row.leading.as_ref()
-            {
+            if show_leading && let Some(leading) = row.leading.as_ref() {
                 let lw = u16::try_from(leading.width())
                     .unwrap_or(u16::MAX)
                     .min(area.right().saturating_sub(content_x));
@@ -1101,9 +1094,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 style,
                 selected,
             );
-            if show_badge
-                && let Some(badge) = row.badge.as_ref()
-            {
+            if show_badge && let Some(badge) = row.badge.as_ref() {
                 let bw = u16::try_from(badge.width())
                     .unwrap_or(u16::MAX)
                     .min(area.width);
@@ -1228,7 +1219,13 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     let header_style = table.tokens.palette.style(Role::TextStrong);
     let origin_x = area.x.saturating_add(MARKER_WIDTH);
     // Clear gutter under header for alignment.
-    buffer.set_stringn(area.x, area.y, "  ", usize::from(MARKER_WIDTH), header_style);
+    buffer.set_stringn(
+        area.x,
+        area.y,
+        "  ",
+        usize::from(MARKER_WIDTH),
+        header_style,
+    );
     let mut logical_x: i32 = i32::from(origin_x) - i32::from(state.h_offset);
     let mut shown_sort = false;
     let clip_left = origin_x;
@@ -1357,9 +1354,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 }
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
-                if fully_left
-                    && let Some(value) = row.cells.get(column_index)
-                {
+                if fully_left && let Some(value) = row.cells.get(column_index) {
                     render_line_overflow(
                         value,
                         rect,
@@ -1500,9 +1495,8 @@ fn resolve_layout_into(
         if visible.len() <= 1 {
             break;
         }
-        let gaps = gap.saturating_mul(
-            u16::try_from(visible.len().saturating_sub(1)).unwrap_or(u16::MAX),
-        );
+        let gaps =
+            gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(u16::MAX));
         let mandatory: u64 = visible
             .iter()
             .map(|&i| match columns[i] {
@@ -1564,10 +1558,14 @@ fn resolve_layout_into(
         keep
     });
     if visible.is_empty() {
-        if let Some(index) = columns.iter().enumerate().find_map(|(index, policy)| match policy {
-            ColumnWidth::Fixed(0) | ColumnWidth::Min(0) => None,
-            _ => Some(index),
-        }) {
+        if let Some(index) = columns
+            .iter()
+            .enumerate()
+            .find_map(|(index, policy)| match policy {
+                ColumnWidth::Fixed(0) | ColumnWidth::Min(0) => None,
+                _ => Some(index),
+            })
+        {
             visible.push(index);
             solve_visible(columns, visible, available, gap, scratch, scratch_policies);
         }
@@ -1641,9 +1639,7 @@ fn render_line_overflow(
     } else {
         area.width
     };
-    let painted = u16::try_from(line_width)
-        .unwrap_or(u16::MAX)
-        .min(budget);
+    let painted = u16::try_from(line_width).unwrap_or(u16::MAX).min(budget);
     let left = match alignment {
         CellAlignment::Left => 0,
         CellAlignment::Center => budget.saturating_sub(painted) / 2,
@@ -1803,7 +1799,10 @@ mod tests {
             &mut policies,
             &mut scratch,
         );
-        assert!(!visible.contains(&1), "low priority col dropped: {visible:?}");
+        assert!(
+            !visible.contains(&1),
+            "low priority col dropped: {visible:?}"
+        );
         assert!(visible.contains(&0));
     }
 
@@ -2196,8 +2195,11 @@ mod tests {
         let area = Rect::new(0, 0, 40, 5);
         let mut state = TableState::<u8, &str>::default();
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &tokens).empty_message(Line::from("No rows")))
-            .render(area, &mut buffer, &mut state);
+        (&Table::new(&columns, &rows, &tokens).empty_message(Line::from("No rows"))).render(
+            area,
+            &mut buffer,
+            &mut state,
+        );
         let text: String = buffer
             .content()
             .iter()
@@ -2265,7 +2267,11 @@ mod tests {
             Column::new("b", "B", ColumnWidth::Fixed(12)).priority(90),
             Column::new("c", "C", ColumnWidth::Fixed(12)).priority(80),
         ];
-        let cells = [[Line::from("alpha-long"), Line::from("beta-long"), Line::from("gamma-long")]];
+        let cells = [[
+            Line::from("alpha-long"),
+            Line::from("beta-long"),
+            Line::from("gamma-long"),
+        ]];
         let rows = [TableRow::new(1, &cells[0])];
         let area = Rect::new(0, 0, 20, 3);
         let mut state = TableState::new(Some(1));
@@ -2284,9 +2290,10 @@ mod tests {
         // Cell focus advances among header regions after paint.
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         state.set_focused_column(Some(state.header_regions[0].id));
-        let _ = state.handle_intent(&rows, crate::interaction::UiIntent::Move(
-            crate::interaction::NavigationMove::Right,
-        ));
+        let _ = state.handle_intent(
+            &rows,
+            crate::interaction::UiIntent::Move(crate::interaction::NavigationMove::Right),
+        );
         assert!(state.focused_column().is_some());
     }
 
@@ -2370,7 +2377,9 @@ mod tests {
                 assert_eq!(resolved_a, resolved_b, "avail={available} gap={gap}");
                 assert_eq!(visible_a, visible_b, "avail={available} gap={gap}");
                 assert!(
-                    visible_a.iter().all(|&i| resolved_a[i] > 0 || available == 0),
+                    visible_a
+                        .iter()
+                        .all(|&i| resolved_a[i] > 0 || available == 0),
                     "visible zeros avail={available}"
                 );
             }

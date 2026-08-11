@@ -14,17 +14,16 @@
 //!
 //! Research: secure CLI prompts, password managers, desktop secret fields.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -816,7 +815,10 @@ impl<'a> PasswordInput<'a> {
                 self.strength.label()
             };
             if !status.is_empty() && !matches!(self.validation, Validation::Invalid(_)) {
-                let y = area.y.saturating_add(2).min(area.bottom().saturating_sub(1));
+                let y = area
+                    .y
+                    .saturating_add(2)
+                    .min(area.bottom().saturating_sub(1));
                 buffer.set_stringn(
                     area.x,
                     y,
@@ -951,8 +953,7 @@ mod tests {
 
     #[test]
     fn deny_all_blocks_paste() {
-        let mut state =
-            PasswordInputState::new().with_clipboard_policy(ClipboardPolicy::DenyAll);
+        let mut state = PasswordInputState::new().with_clipboard_policy(ClipboardPolicy::DenyAll);
         state.set_focused(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('v'), KeyModifiers::CONTROL)),

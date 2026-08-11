@@ -105,10 +105,7 @@ impl<'a, Id> VirtualListItem<'a, Id> {
     /// Construct.
     #[must_use]
     pub fn new(logical_index: u64, row: ListRow<'a, Id>) -> Self {
-        Self {
-            logical_index,
-            row,
-        }
+        Self { logical_index, row }
     }
 
     /// Placeholder loading row for a missing page.
@@ -389,7 +386,8 @@ impl<Id> VirtualListState<Id> {
     /// Record measured row height (variable extents).
     pub fn note_measured(&mut self, logical_index: u64, extent: u16) {
         self.virt.note_measured(logical_index, extent);
-        self.virt.forget_measured_outside(u64::from(self.virt.overscan()).saturating_add(8));
+        self.virt
+            .forget_measured_outside(u64::from(self.virt.overscan()).saturating_add(8));
     }
 
     /// Reveal logical index in the body viewport.
@@ -496,8 +494,12 @@ impl<Id> VirtualListState<Id> {
                 self.set_follow(VirtualListFollow::Tail);
                 Outcome::Changed
             }
-            UiIntent::Activate | UiIntent::Open | UiIntent::Submit | UiIntent::Toggle
-            | UiIntent::Cancel | UiIntent::Close => self.list.handle_intent(&rows, intent),
+            UiIntent::Activate
+            | UiIntent::Open
+            | UiIntent::Submit
+            | UiIntent::Toggle
+            | UiIntent::Cancel
+            | UiIntent::Close => self.list.handle_intent(&rows, intent),
             _ => Outcome::Ignored,
         }
     }
@@ -540,9 +542,7 @@ impl<Id> VirtualListState<Id> {
     }
 }
 
-fn projected_rows<'a, Id: Clone>(
-    projected: &'a [VirtualListItem<'a, Id>],
-) -> Vec<ListRow<'a, Id>> {
+fn projected_rows<'a, Id: Clone>(projected: &'a [VirtualListItem<'a, Id>]) -> Vec<ListRow<'a, Id>> {
     // List APIs take &[ListRow] — clone row shells (cheap Line clones).
     projected.iter().map(|p| p.row.clone()).collect()
 }
@@ -571,10 +571,7 @@ pub struct VirtualList<'a, Id> {
 impl<'a, Id> VirtualList<'a, Id> {
     /// Projected window + design system.
     #[must_use]
-    pub const fn new(
-        projected: &'a [VirtualListItem<'a, Id>],
-        system: &'a DesignSystem,
-    ) -> Self {
+    pub const fn new(projected: &'a [VirtualListItem<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             projected,
             system,
@@ -629,9 +626,7 @@ impl<'a, Id> VirtualList<'a, Id> {
 
         // Filter / page chrome
         if let Some(q) = state.filter_query.as_ref() {
-            let n = state
-                .filter_match_count
-                .unwrap_or(state.virt.logical_len());
+            let n = state.filter_match_count.unwrap_or(state.virt.logical_len());
             let line = format!("filter:{q} · {n} matches");
             buffer.set_stringn(
                 area.x,
@@ -835,7 +830,10 @@ impl<'a, Id> VirtualList<'a, Id> {
         );
         // Only projected items (window + sticky) — never full N.
         for (i, p) in self.projected.iter().enumerate() {
-            if i as u64 >= d.semantic_count.saturating_add(u64::from(state.virt.overscan())) {
+            if i as u64
+                >= d.semantic_count
+                    .saturating_add(u64::from(state.virt.overscan()))
+            {
                 // Soft cap: still register all projected; projected is already window-sized.
             }
             let row_area = state
@@ -885,13 +883,7 @@ fn paint_simple_row<Id>(
     }
     let text = row.plain_label();
     let w = display_cols(&text).min(usize::from(area.width));
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        &take_display_cols(&text, w),
-        w,
-        style,
-    );
+    buffer.set_stringn(area.x, area.y, &take_display_cols(&text, w), w, style);
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &VirtualList<'_, Id> {
@@ -914,28 +906,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for VirtualList<'_, Id> {
 
 /// Build projected items for fixed-extent demos: `row {index}` labels.
 #[must_use]
-pub fn project_index_window<'a>(
-    indices: &[u64],
-    id_prefix: &'a str,
-) -> Vec<(u64, String, String)> {
+pub fn project_index_window<'a>(indices: &[u64], id_prefix: &'a str) -> Vec<(u64, String, String)> {
     // Returns (index, id, label) owned — host maps to VirtualListItem.
     indices
         .iter()
-        .map(|&i| {
-            (
-                i,
-                format!("{id_prefix}{i}"),
-                format!("row {i:>9}"),
-            )
-        })
+        .map(|&i| (i, format!("{id_prefix}{i}"), format!("row {i:>9}")))
         .collect()
 }
 
 /// Example: project sticky + measure window for a million-row universe.
-pub fn example_project_million(
-    state: &VirtualListState<&'static str>,
-    out_indices: &mut Vec<u64>,
-) {
+pub fn example_project_million(state: &VirtualListState<&'static str>, out_indices: &mut Vec<u64>) {
     state.projection_indices(out_indices);
 }
 
@@ -1093,7 +1073,10 @@ mod tests {
         for x in 0..40 {
             s.push_str(buf[(x, 0)].symbol());
         }
-        assert!(s.contains("filter") || s.contains("foo") || s.contains("3"), "{s}");
+        assert!(
+            s.contains("filter") || s.contains("foo") || s.contains("3"),
+            "{s}"
+        );
     }
 
     #[test]
@@ -1238,11 +1221,6 @@ mod tests {
         VirtualList::new(&projected, &system)
             .empty_message("empty")
             .paint(Rect::new(0, 0, 10, 5), &mut buf, &mut state);
-        VirtualList::new(&projected, &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            &mut state,
-        );
+        VirtualList::new(&projected, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
     }
-
 }

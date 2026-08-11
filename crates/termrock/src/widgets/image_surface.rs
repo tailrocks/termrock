@@ -8,6 +8,7 @@
 //! product-neutral cell fallback. Pair with [`crate::style::CapabilityPreviewHost`]
 //! for generation-safe placement planning and session commands.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{

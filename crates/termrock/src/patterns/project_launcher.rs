@@ -19,6 +19,7 @@
 //!
 //! Research: IDE welcome screens, zoxide/fzf workflows, agent session launchers.
 
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -32,11 +33,11 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome, Role},
     patterns::{
-        example_sessions, ConnectionStatus, SessionEntry, SessionPicker, SessionPickerOutcome,
-        SessionPickerState,
+        ConnectionStatus, SessionEntry, SessionPicker, SessionPickerOutcome, SessionPickerState,
+        example_sessions,
     },
+    style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
@@ -754,13 +755,12 @@ impl ProjectLauncherState {
         if visible.is_empty() {
             return ProjectLauncherOutcome::Ignored;
         }
-        let cur = visible.iter().position(|p| p.id() == self.focus).unwrap_or(0);
+        let cur = visible
+            .iter()
+            .position(|p| p.id() == self.focus)
+            .unwrap_or(0);
         let next = if reverse {
-            if cur == 0 {
-                visible.len() - 1
-            } else {
-                cur - 1
-            }
+            if cur == 0 { visible.len() - 1 } else { cur - 1 }
         } else {
             (cur + 1) % visible.len()
         };
@@ -847,7 +847,9 @@ impl ProjectLauncherState {
                 return ProjectLauncherOutcome::QuickOpenClosed;
             }
             let providers = default_project_quick_open_providers();
-            let out = self.quick_open.handle_key(key, &providers, quick_open_items);
+            let out = self
+                .quick_open
+                .handle_key(key, &providers, quick_open_items);
             return match out {
                 QuickOpenOutcome::Ignored => ProjectLauncherOutcome::Ignored,
                 QuickOpenOutcome::Activated { id, .. } => {
@@ -917,11 +919,9 @@ impl ProjectLauncherState {
                 let query = self.search.query().to_string();
                 ProjectLauncherOutcome::FilterChanged { query }
             }
-            SearchInputOutcome::Cleared => {
-                ProjectLauncherOutcome::FilterChanged {
-                    query: String::new(),
-                }
-            }
+            SearchInputOutcome::Cleared => ProjectLauncherOutcome::FilterChanged {
+                query: String::new(),
+            },
             SearchInputOutcome::Cancelled => ProjectLauncherOutcome::Cancelled,
             other => {
                 let kind = format!("{other:?}")
@@ -953,9 +953,12 @@ impl ProjectLauncherState {
                     return ProjectLauncherOutcome::ImportRequested;
                 }
                 KeyCode::Char('f') => {
-                    if let Some(id) = self.projects.selected().cloned().or_else(|| {
-                        filtered.first().map(|e| e.id.clone())
-                    }) {
+                    if let Some(id) = self
+                        .projects
+                        .selected()
+                        .cloned()
+                        .or_else(|| filtered.first().map(|e| e.id.clone()))
+                    {
                         let on = filtered
                             .iter()
                             .find(|e| e.id == id)
@@ -973,9 +976,12 @@ impl ProjectLauncherState {
                     return ProjectLauncherOutcome::ReloadRequested;
                 }
                 KeyCode::Enter => {
-                    if let Some(id) = self.projects.selected().cloned().or_else(|| {
-                        filtered.first().map(|e| e.id.clone())
-                    }) {
+                    if let Some(id) = self
+                        .projects
+                        .selected()
+                        .cloned()
+                        .or_else(|| filtered.first().map(|e| e.id.clone()))
+                    {
                         self.selected_id = Some(id.clone());
                         return ProjectLauncherOutcome::OpenRequested { id };
                     }
@@ -988,11 +994,7 @@ impl ProjectLauncherState {
         match out {
             Outcome::Ignored => ProjectLauncherOutcome::Ignored,
             Outcome::Changed => {
-                let id = self
-                    .projects
-                    .selected()
-                    .cloned()
-                    .unwrap_or_default();
+                let id = self.projects.selected().cloned().unwrap_or_default();
                 if id.is_empty() || id.starts_with("g-") {
                     return ProjectLauncherOutcome::Ignored;
                 }
@@ -1025,9 +1027,7 @@ impl ProjectLauncherState {
         let out = self.sessions.handle_key(key);
         match out {
             SessionPickerOutcome::Ignored => ProjectLauncherOutcome::Ignored,
-            SessionPickerOutcome::Opened { id } => {
-                ProjectLauncherOutcome::SessionResume { id }
-            }
+            SessionPickerOutcome::Opened { id } => ProjectLauncherOutcome::SessionResume { id },
             SessionPickerOutcome::CreateRequested { title } => {
                 ProjectLauncherOutcome::SessionCreate { title }
             }
@@ -1341,7 +1341,10 @@ pub fn render_project_launcher(
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
     state.project_count = projects.len() as u64;
-    state.problem_count = projects.iter().filter(|p| p.path_status.is_problem()).count() as u64;
+    state.problem_count = projects
+        .iter()
+        .filter(|p| p.path_status.is_problem())
+        .count() as u64;
 
     // Sync sessions into picker when home
     if matches!(state.mode, ProjectLauncherMode::Home) && !sessions.is_empty() {
@@ -1584,8 +1587,7 @@ pub fn burst_project_entries(n: usize) -> Vec<ProjectEntry> {
 
 /// Preview for selected project.
 #[must_use]
-pub fn example_project_preview(
-) -> (
+pub fn example_project_preview() -> (
     PreviewCardContent<'static>,
     &'static [&'static str],
     &'static [PreviewMetadata<'static>],
@@ -1760,7 +1762,10 @@ mod tests {
         );
 
         let out = st.handle_key(press(KeyCode::Char('n')), &projects, &sessions, &[]);
-        assert!(matches!(out, ProjectLauncherOutcome::NewRequested), "got {out:?}");
+        assert!(
+            matches!(out, ProjectLauncherOutcome::NewRequested),
+            "got {out:?}"
+        );
 
         let out = st.handle_key(press(KeyCode::Char('i')), &projects, &sessions, &[]);
         assert!(
@@ -1943,7 +1948,12 @@ mod tests {
             },
         );
         assert!(st.problem_count >= 2, "missing+stale in fixtures");
-        assert!(st.status.transient.as_ref().is_some_and(|t| t.contains("stale")));
+        assert!(
+            st.status
+                .transient
+                .as_ref()
+                .is_some_and(|t| t.contains("stale"))
+        );
     }
 
     #[test]
@@ -2154,8 +2164,9 @@ mod tests {
         );
         let filtered = filter_project_entries(&projects, st.search.query());
         assert!(
-            filtered.iter().all(|p| p.path_status == ProjectPathStatus::Missing
-                || p.matches_query("missing")),
+            filtered
+                .iter()
+                .all(|p| p.path_status == ProjectPathStatus::Missing || p.matches_query("missing")),
             "filter should narrow"
         );
     }

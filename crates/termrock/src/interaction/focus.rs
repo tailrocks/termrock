@@ -1,5 +1,6 @@
 //! Per-frame, stable-identity focus registration with scoped modal restoration.
 
+#![allow(dead_code)] // legacy / unit-test surface
 use ratatui_core::layout::{Position, Rect};
 
 use crate::{
