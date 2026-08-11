@@ -45,6 +45,8 @@ import {
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
+  underlineMetrics,
+  underlineSpans,
   type KeyStrokeStamp,
 } from '@/components/preview-metrics'
 
@@ -82,6 +84,8 @@ export {
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
+  underlineMetrics,
+  underlineSpans,
 } from '@/components/preview-metrics'
 
 /** Cell payload from termrock-lookbook frame export (truecolor RGB). */
@@ -215,6 +219,7 @@ export type PaintCursor = {
  * Always fills every cell background (including pure black) so truecolor is preserved.
  * Text glyphs are centered in-cell. Common box/block glyphs are vector-stroked
  * full-cell so panel borders join exactly at edges (Ghostty grid chrome).
+ * Underlines are drawn as continuous row spans (selection chrome), not per-cell hairlines.
  * Optional block cursor overlays the active selection row when the host is focused.
  */
 export function paintCanvas(
@@ -243,6 +248,7 @@ export function paintCanvas(
   ctx.fillRect(0, 0, w, h)
   const fontSize = fontSizeForCell(cellH)
   const baseline = baselineForCell(cellH)
+  const ul = underlineMetrics(cellH)
   for (let y = 0; y < frame.rows; y++) {
     for (let x = 0; x < frame.cols; x++) {
       const cell = frame.cells[y * frame.cols + x]
@@ -278,13 +284,6 @@ export function paintCanvas(
           ctx.stroke()
         }
         ctx.globalAlpha = 1
-        if (cell.underline) {
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          ctx.moveTo(px, py + cellH - 2)
-          ctx.lineTo(px + cellW, py + cellH - 2)
-          ctx.stroke()
-        }
         continue
       }
       const weight = boldFontWeight(cell.bold)
@@ -303,27 +302,30 @@ export function paintCanvas(
           ctx.fillRect(px + cellW, py, cellW, cellH)
           ctx.fillStyle = paintFg(cell)
           ctx.fillText(ch, px + 0.5, drawY)
-          if (cell.underline) {
-            ctx.strokeStyle = paintFg(cell)
-            ctx.lineWidth = 1
-            ctx.beginPath()
-            ctx.moveTo(px, py + cellH - 2)
-            ctx.lineTo(px + cellW * 2, py + cellH - 2)
-            ctx.stroke()
-          }
           x += 1 // skip continuation cell
           continue
         }
       }
       ctx.fillText(ch, drawX, drawY)
-      if (cell.underline) {
-        ctx.strokeStyle = paintFg(cell)
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(px, py + cellH - 2)
-        ctx.lineTo(px + cellW, py + cellH - 2)
-        ctx.stroke()
-      }
+    }
+  }
+  // Continuous underlines (Ghostty selection chrome) — one stroke per run.
+  ctx.lineCap = 'butt'
+  for (let y = 0; y < frame.rows; y++) {
+    const rowStart = y * frame.cols
+    const row = frame.cells.slice(rowStart, rowStart + frame.cols)
+    const spans = underlineSpans(row)
+    if (spans.length === 0) continue
+    const py = y * cellH + ul.offsetFromTop + ul.thickness / 2
+    ctx.lineWidth = ul.thickness
+    for (const span of spans) {
+      const first = row[span.start]
+      if (!first) continue
+      ctx.strokeStyle = paintFg(first)
+      ctx.beginPath()
+      ctx.moveTo(span.start * cellW, py)
+      ctx.lineTo(span.end * cellW, py)
+      ctx.stroke()
     }
   }
   // Block cursor (Ghostty default): solid phosphor cell when blink-on.

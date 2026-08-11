@@ -55,6 +55,43 @@ export function boldFontWeight(bold: boolean | undefined): '400' | '700' {
   return bold ? '700' : '400'
 }
 
+/**
+ * Underline geometry inside a cell (CSS px, top-origin).
+ * Thickness scales with cell height (~10%) so selection chrome stays visible
+ * on large grids; sits near the bottom with a 1px air gap when possible.
+ */
+export function underlineMetrics(cellH: number): {
+  offsetFromTop: number
+  thickness: number
+} {
+  const h = Math.max(1, cellH | 0)
+  const thickness = Math.max(1, Math.round(h * 0.1))
+  const offsetFromTop = Math.max(0, h - thickness - 1)
+  return { offsetFromTop, thickness }
+}
+
+/**
+ * Merge consecutive underlined cells on one row into continuous spans.
+ * `end` is exclusive. Pure — host draws one stroke per span (Ghostty selection).
+ */
+export function underlineSpans(
+  rowCells: ReadonlyArray<{ underline?: boolean } | null | undefined>,
+): Array<{ start: number; end: number }> {
+  const spans: Array<{ start: number; end: number }> = []
+  let i = 0
+  const n = rowCells.length
+  while (i < n) {
+    if (!rowCells[i]?.underline) {
+      i++
+      continue
+    }
+    const start = i
+    while (i < n && rowCells[i]?.underline) i++
+    spans.push({ start, end: i })
+  }
+  return spans
+}
+
 /** sRGB channel → linear (WCAG). */
 function srgbToLinear(c: number): number {
   const x = Math.max(0, Math.min(255, c)) / 255

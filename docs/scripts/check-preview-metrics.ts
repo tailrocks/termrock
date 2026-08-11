@@ -36,6 +36,8 @@ import {
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
+  underlineMetrics,
+  underlineSpans,
   type ProbeCell,
 } from '../src/components/preview-metrics'
 
@@ -188,6 +190,70 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
   )
   const shadeGeo = boxStrokeGeometry(boxStrokeForGlyph('░')!, 0, 0, 9, 18)
   assert(shadeGeo.fills.length === 1 && shadeGeo.fills[0]!.w === 9, '░ full-cell fill geom')
+}
+
+// Continuous underline metrics + spans (list selection chrome).
+{
+  const m18 = underlineMetrics(18)
+  assert(m18.thickness >= 1, `thickness ${m18.thickness}`)
+  assert(m18.offsetFromTop + m18.thickness < 18, 'underline fits in cell')
+  assert(m18.offsetFromTop >= 18 - m18.thickness - 1, 'near bottom')
+  const m9 = underlineMetrics(9)
+  assert(m9.thickness === 1, `small cell thickness ${m9.thickness}`)
+  assert(JSON.stringify(underlineSpans([])) === '[]', 'empty row')
+  assert(
+    JSON.stringify(underlineSpans([{}, { underline: true }, { underline: true }, {}])) ===
+      JSON.stringify([{ start: 1, end: 3 }]),
+    'merge consecutive',
+  )
+  assert(
+    JSON.stringify(
+      underlineSpans([
+        { underline: true },
+        {},
+        { underline: true },
+        { underline: true },
+      ]),
+    ) === JSON.stringify([{ start: 0, end: 1 }, { start: 2, end: 4 }]),
+    'two spans',
+  )
+  // Real list-selection step1: "Alpha" underline is one continuous span
+  {
+    const path = join(
+      import.meta.dir,
+      '..',
+      'public',
+      'preview-frames',
+      'list-selection',
+      '40x8',
+      '1.json',
+    )
+    const fr = JSON.parse(readFileSync(path, 'utf8')) as {
+      cols: number
+      rows: number
+      cells: { underline?: boolean; ch: string }[]
+    }
+    // Find first underline row
+    let found = false
+    for (let y = 0; y < fr.rows; y++) {
+      const row = fr.cells.slice(y * fr.cols, (y + 1) * fr.cols)
+      const spans = underlineSpans(row)
+      const ulCount = row.filter((c) => c.underline).length
+      if (ulCount === 0) continue
+      found = true
+      assert(spans.length >= 1, 'has span')
+      // All underline cells on this row covered by spans without gaps inside runs
+      const covered = spans.reduce((n, s) => n + (s.end - s.start), 0)
+      assert(covered === ulCount, `covered ${covered} vs ul ${ulCount}`)
+      // Prefer single span for selection word when underlines are contiguous
+      if (ulCount >= 3) {
+        const maxRun = Math.max(...spans.map((s) => s.end - s.start))
+        assert(maxRun >= 3, `selection run >=3 got ${maxRun}`)
+      }
+      break
+    }
+    assert(found, 'list step1 has underline cells')
+  }
 }
 
 // Ghostty min-contrast: dim near-bg fg is boosted.
