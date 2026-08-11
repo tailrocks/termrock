@@ -9,6 +9,7 @@ import {
   allSteps,
   applyNavStepAction,
   baselineForCell,
+  boldFontWeight,
   cellAtPointer,
   clampStep,
   cursorCellForStep,
@@ -18,6 +19,7 @@ import {
   glyphCellSpan,
   glyphDrawX,
   inferCursorFromFrame,
+  isBoxOrBlockGlyph,
   isLoadStillCurrent,
   combinedHostViewport,
   hostViewportSize,
@@ -51,6 +53,37 @@ assert(
 )
 const wide = glyphDrawX(0, cellW, 20)
 assert(wide === 0.5, `wide glyph left-aligned, got ${wide}`)
+
+// Box/block glyphs flush-left (no center hairline gaps in panel chrome).
+assert(isBoxOrBlockGlyph('─'), 'box light horizontal')
+assert(isBoxOrBlockGlyph('│'), 'box light vertical')
+assert(isBoxOrBlockGlyph('┌'), 'box corner')
+assert(isBoxOrBlockGlyph('█'), 'full block')
+assert(isBoxOrBlockGlyph('▌'), 'left half block / selection bar')
+assert(isBoxOrBlockGlyph('━'), 'heavy horizontal')
+assert(!isBoxOrBlockGlyph('A'), 'latin not box')
+assert(!isBoxOrBlockGlyph(''), 'empty not box')
+assert(glyphDrawX(18, cellW, 5, '─') === 18, `box flush-left got ${glyphDrawX(18, cellW, 5, '─')}`)
+assert(glyphDrawX(18, cellW, 5, 'A') !== 18, 'text still centered, not flush')
+assert(boldFontWeight(true) === '700', 'bold weight 700')
+assert(boldFontWeight(false) === '400', 'normal weight 400')
+assert(boldFontWeight(undefined) === '400', 'undef weight 400')
+
+// Real pack box chars must be classified as box (panel borders).
+{
+  const path = join(import.meta.dir, '..', 'public', 'preview-frames', 'panel-variants', '40x8', '0.json')
+  const fr = JSON.parse(readFileSync(path, 'utf8')) as { cells: { ch: string }[] }
+  const boxCells = fr.cells.filter((c) => c.ch && isBoxOrBlockGlyph(c.ch))
+  assert(boxCells.length > 50, `panel pack box cells ${boxCells.length}`)
+  for (const ch of ['─', '┌', '┐', '└', '┘']) {
+    assert(
+      fr.cells.some((c) => c.ch === ch),
+      `panel pack contains ${ch}`,
+    )
+    assert(isBoxOrBlockGlyph(ch), `pack glyph ${ch} is box`)
+    assert(glyphDrawX(9, 9, 4, ch) === 9, `pack ${ch} flush drawX`)
+  }
+}
 
 assert(stepDeltaFromWheel(0) === 0, 'dead zone zero')
 assert(stepDeltaFromWheel(3) === 0, 'dead zone small')

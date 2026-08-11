@@ -14,15 +14,45 @@ export function baselineForCell(cellH: number): number {
 }
 
 /**
- * Horizontal draw origin for a glyph inside a cell.
- * Centers single-width glyphs; falls back to left+0.5 when wide or unmeasured.
+ * True for Unicode Box Drawing / Block Elements (and common terminal line glyphs).
+ * These must paint flush to the cell edge so panel borders join without hairline gaps.
  */
-export function glyphDrawX(cellPx: number, cellW: number, textWidth: number): number {
+export function isBoxOrBlockGlyph(ch: string): boolean {
+  if (!ch) return false
+  const cp = ch.codePointAt(0)
+  if (cp === undefined) return false
+  // Box Drawing U+2500–257F, Block Elements U+2580–259F
+  if (cp >= 0x2500 && cp <= 0x259f) return true
+  // Half/selection bars used by TermRock list chrome (outside block range when combined)
+  if (ch === '▌' || ch === '▐' || ch === '│' || ch === '┃') return true
+  return false
+}
+
+/**
+ * Horizontal draw origin for a glyph inside a cell.
+ * Centers single-width text glyphs; box/block glyphs flush-left so seams join
+ * (Ghostty/TUI panel chrome). Wide/unmeasured glyphs fall back to left+0.5.
+ */
+export function glyphDrawX(
+  cellPx: number,
+  cellW: number,
+  textWidth: number,
+  ch?: string,
+): number {
+  if (ch && isBoxOrBlockGlyph(ch)) {
+    // Flush to cell origin — no +0.5 hairline; borders abut neighboring cells.
+    return cellPx
+  }
   const w = Math.max(1, cellW)
   if (!(textWidth > 0) || textWidth >= w - 0.25) {
     return cellPx + 0.5
   }
   return cellPx + (w - textWidth) / 2
+}
+
+/** Canvas font-weight for cell bold flag (Ghostty-class mono bold). */
+export function boldFontWeight(bold: boolean | undefined): '400' | '700' {
+  return bold ? '700' : '400'
 }
 
 /** Monospace stack matching docs --font-mono / Ghostty-class host. */

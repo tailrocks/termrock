@@ -112,6 +112,9 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   (focus-follows-mouse) so keys work without an extra click. Resize remap uses
   `combinedHostViewport` (min of stage + chrome width) + RO on both nodes +
   window resize + reconcile on focus/pointerenter so style-driven shrinks remapped.
+- **Box/block flush paint:** `isBoxOrBlockGlyph` + `glyphDrawX(..., ch)` left-align
+  Box Drawing / Block Elements (and `▌`) so panel borders join without centered
+  hairline gaps; bold uses weight 700.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

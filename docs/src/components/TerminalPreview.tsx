@@ -19,6 +19,7 @@ import {
   allSteps,
   applyNavStepAction,
   baselineForCell,
+  boldFontWeight,
   cellAtPointer,
   clampStep,
   cursorCellForStep,
@@ -27,6 +28,7 @@ import {
   glyphCellSpan,
   glyphDrawX,
   inferCursorFromFrame,
+  isBoxOrBlockGlyph,
   isLoadStillCurrent,
   combinedHostViewport,
   hostViewportSize,
@@ -48,6 +50,7 @@ export {
   allSteps,
   applyNavStepAction,
   baselineForCell,
+  boldFontWeight,
   cellAtPointer,
   clampStep,
   combinedHostViewport,
@@ -59,6 +62,7 @@ export {
   glyphDrawX,
   hostViewportSize,
   inferCursorFromFrame,
+  isBoxOrBlockGlyph,
   isLoadStillCurrent,
   materialViewportChange,
   paintDpr,
@@ -200,7 +204,8 @@ export type PaintCursor = {
 /**
  * Ghostty-class cell paint: full 24-bit RGB bg+fg, monospaced metrics, no smoothing.
  * Always fills every cell background (including pure black) so truecolor is preserved.
- * Glyphs are centered in-cell when the mono advance fits (terminal-grid feel).
+ * Text glyphs are centered in-cell; box/block glyphs flush-left so panel
+ * borders join without hairline gaps (Ghostty/TUI chrome).
  * Optional block cursor overlays the active selection row when the host is focused.
  */
 export function paintCanvas(
@@ -240,12 +245,18 @@ export function paintCanvas(
       ctx.fillRect(px, py, cellW, cellH)
       const ch = cell.ch
       if (!ch || ch === ' ' || ch === '\u00a0') continue
-      const weight = cell.bold ? '600' : '400'
+      const weight = boldFontWeight(cell.bold)
       ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
       ctx.fillStyle = paintFg(cell)
       ctx.textBaseline = 'alphabetic'
+      // Box/block: alphabetic baseline can lift line glyphs; use middle for seams.
+      if (isBoxOrBlockGlyph(ch)) {
+        ctx.textBaseline = 'middle'
+      }
       const tw = ctx.measureText(ch).width
-      const span = glyphCellSpan(tw, cellW)
+      const span = isBoxOrBlockGlyph(ch) ? 1 : glyphCellSpan(tw, cellW)
+      const drawY = isBoxOrBlockGlyph(ch) ? py + cellH / 2 : py + baseline
+      const drawX = glyphDrawX(px, cellW, tw, ch)
       // Double-width glyphs: paint across two cells when the next cell is empty.
       if (span === 2 && x + 1 < frame.cols) {
         const next = frame.cells[y * frame.cols + x + 1]
@@ -253,7 +264,7 @@ export function paintCanvas(
           ctx.fillStyle = rgb(cell.bg)
           ctx.fillRect(px + cellW, py, cellW, cellH)
           ctx.fillStyle = paintFg(cell)
-          ctx.fillText(ch, px + 0.5, py + baseline)
+          ctx.fillText(ch, px + 0.5, drawY)
           if (cell.underline) {
             ctx.strokeStyle = paintFg(cell)
             ctx.lineWidth = 1
@@ -266,7 +277,7 @@ export function paintCanvas(
           continue
         }
       }
-      ctx.fillText(ch, glyphDrawX(px, cellW, tw), py + baseline)
+      ctx.fillText(ch, drawX, drawY)
       if (cell.underline) {
         ctx.strokeStyle = paintFg(cell)
         ctx.lineWidth = 1
@@ -290,12 +301,14 @@ export function paintCanvas(
     ctx.globalAlpha = 1
     // Invert glyph under cursor when present.
     if (under?.ch && under.ch !== ' ' && under.ch !== '\u00a0') {
-      const weight = under.bold ? '600' : '400'
+      const weight = boldFontWeight(under.bold)
       ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
       ctx.fillStyle = '#0a0a0a'
-      ctx.textBaseline = 'alphabetic'
+      const box = isBoxOrBlockGlyph(under.ch)
+      ctx.textBaseline = box ? 'middle' : 'alphabetic'
       const tw = ctx.measureText(under.ch).width
-      ctx.fillText(under.ch, glyphDrawX(px, cellW, tw), py + baseline)
+      const dy = box ? py + cellH / 2 : py + baseline
+      ctx.fillText(under.ch, glyphDrawX(px, cellW, tw, under.ch), dy)
     }
   }
 }
