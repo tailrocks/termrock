@@ -59,19 +59,19 @@
 | 39 | chart-pie-donut-text | covered | `.center` (0255) | |
 | 40 | chart-pie-stacked | partial | nested meters host | |
 | 41 | chart-pie-interactive | covered | `.selected` | |
-| 42 | chart-radar-default | N/A | multi-metric bars | Polar radar not TUI-honest |
-| 43 | chart-radar-dots | N/A | multi-metric bars | |
-| 44 | chart-radar-lines-only | N/A | multi-metric bars | |
-| 45 | chart-radar-label-custom | N/A | multi-metric bars | |
-| 46 | chart-radar-grid-none | N/A | multi-metric bars | |
-| 47 | chart-radar-grid-circle | N/A | multi-metric bars | |
-| 48 | chart-radar-grid-circle-fill | N/A | multi-metric bars | |
-| 49 | chart-radar-grid-circle-nofill | N/A | multi-metric bars | |
-| 50 | chart-radar-grid-fill | N/A | multi-metric bars | |
-| 51 | chart-radar-grid-custom | N/A | multi-metric bars | |
-| 52 | chart-radar-multiple | N/A | multi-metric bars | |
-| 53 | chart-radar-legend | N/A | multi-metric bars | |
-| 54 | chart-radar-icons | N/A | multi-metric bars | |
+| 42 | chart-radar-default | covered | `MetricRadar` (0256) | Grouped bars per axis; polar N/A |
+| 43 | chart-radar-dots | covered | legend + monochrome markers | |
+| 44 | chart-radar-lines-only | partial | bars peer; host `Chart` for lines | Spider lines N/A |
+| 45 | chart-radar-label-custom | partial | axis labels; host custom | |
+| 46 | chart-radar-grid-none | N/A | — | Polar grid chrome N/A |
+| 47 | chart-radar-grid-circle | N/A | — | |
+| 48 | chart-radar-grid-circle-fill | N/A | — | |
+| 49 | chart-radar-grid-circle-nofill | N/A | — | |
+| 50 | chart-radar-grid-fill | N/A | — | |
+| 51 | chart-radar-grid-custom | N/A | — | |
+| 52 | chart-radar-multiple | covered | multi `MetricSeries` | |
+| 53 | chart-radar-legend | covered | `.show_legend` | |
+| 54 | chart-radar-icons | partial | series markers | React icons N/A |
 | 55 | chart-radial-simple | covered | `Gauge` | |
 | 56 | chart-radial-label | covered | gauge label | |
 | 57 | chart-radial-grid | partial | thresholds | |
@@ -91,13 +91,13 @@
 
 | Status | Count |
 |--------|------:|
-| covered | 36 |
-| partial | 18 |
+| covered | 40 |
+| partial | 21 |
 | missing | 0 |
-| N/A | 14 |
+| N/A | 7 |
 | **Total** | **68** |
 
-## Port decisions (0252)
+## Port decisions (0252–0256)
 
 | Gap | Decision |
 |-----|----------|
@@ -106,7 +106,7 @@
 | Bar / histogram | `BarSeries` / `Histogram`; stacked + negative on BarSeries (0253) |
 | Pie proportions | `SegmentedMeter` + selection/center (0255) |
 | Radial | `Gauge` |
-| Radar polar | N/A |
+| Radar multi-metric | `MetricRadar` axes×series grouped bars (0256); polar grid **N/A** |
 | Continuous gradient | N/A |
 
 ## Validation

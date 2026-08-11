@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! **Visualization family** — Sparkline, Chart (line + **area**), Gauge,
-//! Histogram (+ BarSeries, SegmentedMeter).
+//! Histogram (+ BarSeries, SegmentedMeter), MetricRadar (multi-axis peer).
 //!
 //! **Mission.** Coherent terminal data-viz: time series, filled area under
-//! series, bars, stacked bars, histogram buckets, gauges, thresholds, labels,
-//! legends, missing data, and selected points. Braille / block / ASCII
-//! capability fallbacks with **consistent scale semantics**. Autoscale, fixed
-//! scale, log (where justified), time-window behavior. No-color mode uses line
-//! styles, glyphs, labels, and ordering — never color alone.
+//! series, bars, stacked bars, histogram buckets, gauges, multi-metric axis
+//! comparison (radar substitute), thresholds, labels, legends, missing data,
+//! and selected points. Braille / block / ASCII capability fallbacks with
+//! **consistent scale semantics**. Autoscale, fixed scale, log (where
+//! justified), time-window behavior. No-color mode uses line styles, glyphs,
+//! labels, and ordering — never color alone.
 //!
 //! Research: btop, bottom, gping, Ratatui charts, shadcn Recharts demos (area/
-//! bar/line/pie peers), observability dashboards.
+//! bar/line/pie/radar peers), observability dashboards.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -2256,6 +2257,306 @@ impl Widget for SegmentedMeter<'_> {
     }
 }
 
+// ── MetricRadar (multi-axis comparison; shadcn radar TUI peer) ───────────────
+
+/// One metric axis on a multi-metric comparison (radar substitute).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MetricAxis<'a> {
+    /// Short label (row header).
+    pub label: &'a str,
+}
+
+impl<'a> MetricAxis<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(label: &'a str) -> Self {
+        Self { label }
+    }
+}
+
+/// One series of values aligned with axes (len should match axis count).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MetricSeries<'a> {
+    /// Legend label.
+    pub label: &'a str,
+    /// Per-axis values (non-finite = missing).
+    pub values: &'a [f64],
+}
+
+impl<'a> MetricSeries<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(label: &'a str, values: &'a [f64]) -> Self {
+        Self { label, values }
+    }
+}
+
+/// Multi-metric / multi-axis comparison chart (shadcn **radar** job without polar theater).
+///
+/// Each axis is a labeled row; each series paints a horizontal value bar on that
+/// row (grouped when multi-series). Shared scale/glyphs. Polar grid/SVG radar
+/// remains N/A — this is the terminal-honest peer.
+#[derive(Debug, Clone, Copy)]
+pub struct MetricRadar<'a> {
+    axes: &'a [MetricAxis<'a>],
+    series: &'a [MetricSeries<'a>],
+    system: &'a DesignSystem,
+    scale: ScaleMode,
+    glyphs: VizGlyphSet,
+    selected_axis: Option<usize>,
+    selected_series: Option<usize>,
+    show_legend: bool,
+    title: Option<&'a str>,
+}
+
+impl<'a> MetricRadar<'a> {
+    /// Axes + series + design system.
+    #[must_use]
+    pub const fn new(
+        axes: &'a [MetricAxis<'a>],
+        series: &'a [MetricSeries<'a>],
+        system: &'a DesignSystem,
+    ) -> Self {
+        Self {
+            axes,
+            series,
+            system,
+            scale: ScaleMode::Auto,
+            glyphs: VizGlyphSet::Auto,
+            selected_axis: None,
+            selected_series: None,
+            show_legend: true,
+            title: None,
+        }
+    }
+
+    /// Scale (Auto fits finite values across all series; Fixed for unit scores).
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
+    /// Highlight axis row.
+    #[must_use]
+    pub const fn selected_axis(mut self, i: usize) -> Self {
+        self.selected_axis = Some(i);
+        self
+    }
+
+    /// Highlight series (emphasizes that series' bars).
+    #[must_use]
+    pub const fn selected_series(mut self, i: usize) -> Self {
+        self.selected_series = Some(i);
+        self
+    }
+
+    /// Legend row under title.
+    #[must_use]
+    pub const fn show_legend(mut self, on: bool) -> Self {
+        self.show_legend = on;
+        self
+    }
+
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
+}
+
+impl Widget for &MetricRadar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        if area.is_empty() || self.axes.is_empty() || self.series.is_empty() {
+            return;
+        }
+        let gset = self.glyphs.resolve(self.system.glyphs);
+        let mut y = area.y;
+        let mut h = area.height;
+
+        if let Some(title) = self.title {
+            if h > 0 {
+                buffer.set_stringn(
+                    area.x,
+                    y,
+                    take_display_cols(title, usize::from(area.width)),
+                    usize::from(area.width),
+                    self.system.style(Role::TextStrong),
+                );
+                y = y.saturating_add(1);
+                h = h.saturating_sub(1);
+            }
+        }
+
+        if self.show_legend && h > 0 && area.width >= 8 {
+            let mut legend = String::new();
+            for (i, s) in self.series.iter().enumerate() {
+                if i > 0 {
+                    legend.push(' ');
+                }
+                legend.push(gset.series_marker(i));
+                legend.push(' ');
+                legend.push_str(s.label);
+            }
+            buffer.set_stringn(
+                area.x,
+                y,
+                take_display_cols(&legend, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            y = y.saturating_add(1);
+            h = h.saturating_sub(1);
+        }
+
+        if h == 0 {
+            return;
+        }
+
+        // Domain across all finite values (include 0 for bar baseline)
+        let mut vals: Vec<f64> = vec![0.0];
+        for s in self.series {
+            for v in s.values {
+                if v.is_finite() {
+                    vals.push(*v);
+                }
+            }
+        }
+        let domain = resolve_domain(self.scale, vals.into_iter());
+
+        let n_series = self.series.len().max(1);
+        let label_w = self
+            .axes
+            .iter()
+            .map(|a| display_cols(a.label))
+            .max()
+            .unwrap_or(0)
+            .min(usize::from(area.width) / 3)
+            .min(14);
+        let track_w = area
+            .width
+            .saturating_sub(u16::try_from(label_w).unwrap_or(0));
+        if track_w == 0 {
+            return;
+        }
+        // Grouped bars: divide track among series with 1-col gap when multi
+        let gap = u16::from(n_series > 1);
+        let slots = n_series as u16;
+        let gap_total = gap.saturating_mul(slots.saturating_sub(1));
+        let bar_w = track_w.saturating_sub(gap_total) / slots.max(1);
+        if bar_w == 0 {
+            return;
+        }
+
+        let rows = usize::from(h).min(self.axes.len());
+        let miss = gset.missing_mark();
+        let fill_ch = *gset.ladder().last().unwrap_or(&'#');
+
+        for (ai, axis) in self.axes.iter().take(rows).enumerate() {
+            let py = y.saturating_add(ai as u16);
+            let axis_selected = self.selected_axis == Some(ai);
+            let lab = take_display_cols(axis.label, label_w);
+            let lab_style = if axis_selected {
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+            } else {
+                self.system.style(Role::TextMuted)
+            };
+            if label_w > 0 {
+                buffer.set_stringn(area.x, py, lab, label_w, lab_style);
+            }
+            let track_x = area
+                .x
+                .saturating_add(u16::try_from(label_w).unwrap_or(0));
+
+            for (si, series) in self.series.iter().enumerate() {
+                let bx = track_x.saturating_add(si as u16 * (bar_w + gap));
+                let val = series.values.get(ai).copied().unwrap_or(f64::NAN);
+                if !val.is_finite() {
+                    buffer.set_stringn(
+                        bx,
+                        py,
+                        miss.to_string(),
+                        1,
+                        self.system.style(Role::TextMuted),
+                    );
+                    continue;
+                }
+                let frac = domain.normalize(val).unwrap_or(0.0);
+                let filled = ((f64::from(bar_w) * frac).round() as u16)
+                    .min(bar_w)
+                    .max(if val > 0.0 && bar_w > 0 { 1 } else { 0 });
+                let series_selected = self.selected_series == Some(si);
+                let selected = series_selected || axis_selected;
+                let ch = if selected && matches!(gset, VizGlyphSet::Ascii) {
+                    'X'
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
+                    gset.series_marker(si)
+                } else if selected {
+                    '█'
+                } else {
+                    fill_ch
+                };
+                let style = if selected {
+                    self.system
+                        .style(Role::TextStrong)
+                        .add_modifier(Modifier::BOLD)
+                } else if matches!(
+                    self.system.capability,
+                    crate::style::ColorCapability::Monochrome
+                ) {
+                    self.system.style(Role::Text)
+                } else {
+                    self.system.style(series_role(si))
+                };
+                // empty track
+                let empty = match gset {
+                    VizGlyphSet::Ascii => '-',
+                    _ => '░',
+                };
+                buffer.set_stringn(
+                    bx,
+                    py,
+                    &empty.to_string().repeat(usize::from(bar_w)),
+                    usize::from(bar_w),
+                    self.system.style(Role::TextDisabled),
+                );
+                if filled > 0 {
+                    buffer.set_stringn(
+                        bx,
+                        py,
+                        &ch.to_string().repeat(usize::from(filled)),
+                        usize::from(filled),
+                        style,
+                    );
+                }
+            }
+        }
+    }
+}
+
+impl Widget for MetricRadar<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
 // ── Bench ───────────────────────────────────────────────────────────────────
 
 /// Streaming / tiny-dimension targets.
@@ -2816,6 +3117,168 @@ mod tests {
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m2 = VizGlyphSet::Ascii.series_marker(2);
         assert!(row.contains(m0) && row.contains(m2), "positive segments paint: {row:?}");
+    }
+
+    #[test]
+    fn metric_radar_paints_axes_title_legend_and_bars() {
+        let system = system_ascii_nocolor();
+        let axes = [
+            MetricAxis::new("cpu"),
+            MetricAxis::new("mem"),
+            MetricAxis::new("io"),
+        ];
+        let s0 = [10.0, 50.0, 90.0];
+        let s1 = [80.0, 20.0, 40.0];
+        let series = [
+            MetricSeries::new("prod", &s0),
+            MetricSeries::new("stage", &s1),
+        ];
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buffer = Buffer::empty(area);
+        MetricRadar::new(&axes, &series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .title("metrics")
+            .show_legend(true)
+            .render(area, &mut buffer);
+
+        let row0: String = (0..40u16).map(|x| buffer[(x, 0)].symbol().to_string()).collect();
+        assert!(
+            row0.contains('m') && row0.contains('e'),
+            "title on first row: {row0:?}"
+        );
+        let row1: String = (0..40u16).map(|x| buffer[(x, 1)].symbol().to_string()).collect();
+        // Monochrome uses series_marker glyphs for fill (not color)
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        assert!(
+            row1.contains(m0) && row1.contains(m1),
+            "legend markers: {row1:?}"
+        );
+        assert!(
+            row1.contains('p') || row1.contains('s'),
+            "legend labels: {row1:?}"
+        );
+
+        // Data rows start at y=2 (title + legend). Higher magnitudes paint more marker cells.
+        let count_mark = |row: u16| -> usize {
+            (0..40u16)
+                .filter(|&x| {
+                    let s = buffer[(x, row)].symbol();
+                    s.contains(m0) || s.contains(m1)
+                })
+                .count()
+        };
+        // mem (50+20) vs io (90+40) — io row must fill more marker cells
+        let mem_row = 3u16;
+        let io_row = 4u16;
+        assert!(
+            count_mark(io_row) > count_mark(mem_row),
+            "io (90/40) should fill more than mem (50/20): mem={} io={}",
+            count_mark(mem_row),
+            count_mark(io_row)
+        );
+        let cpu_row_s: String = (0..40u16)
+            .map(|x| buffer[(x, 2)].symbol().to_string())
+            .collect();
+        assert!(
+            cpu_row_s.contains('c'),
+            "axis label on data row: {cpu_row_s:?}"
+        );
+        // cpu prod=10 vs stage=80: series1 marker must outnumber series0 on that row
+        let c0 = cpu_row_s.chars().filter(|&c| c == m0).count();
+        let c1 = cpu_row_s.chars().filter(|&c| c == m1).count();
+        assert!(
+            c1 > c0,
+            "stage(80) bar wider than prod(10) on cpu: c0={c0} c1={c1} row={cpu_row_s:?}"
+        );
+    }
+
+    #[test]
+    fn metric_radar_missing_and_selection() {
+        let system = system_ascii_nocolor();
+        let axes = [MetricAxis::new("a"), MetricAxis::new("b")];
+        let s0 = [100.0, f64::NAN];
+        let series = [MetricSeries::new("only", &s0)];
+        let area = Rect::new(0, 0, 24, 4);
+        let mut plain = Buffer::empty(area);
+        MetricRadar::new(&axes, &series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .render(area, &mut plain);
+        let miss = VizGlyphSet::Ascii.missing_mark();
+        let row_b: String = (0..24u16)
+            .map(|x| plain[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(
+            row_b.contains(miss),
+            "NaN value paints missing mark: {row_b:?}"
+        );
+
+        let mut selected = Buffer::empty(area);
+        MetricRadar::new(&axes, &series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .selected_axis(0)
+            .selected_series(0)
+            .render(area, &mut selected);
+        let plain_a: String = (0..24u16)
+            .map(|x| plain[(x, 0)].symbol().to_string())
+            .collect();
+        let sel_a: String = (0..24u16)
+            .map(|x| selected[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            sel_a.contains('X'),
+            "selected series+axis uses X on ascii: {sel_a:?}"
+        );
+        assert_ne!(
+            plain_a, sel_a,
+            "selection must change paint vs unselected"
+        );
+    }
+
+    #[test]
+    fn metric_radar_multi_series_grouped_slots() {
+        let system = system_ascii_nocolor();
+        let axes = [MetricAxis::new("m")];
+        let s0 = [100.0];
+        let s1 = [50.0];
+        let series = [
+            MetricSeries::new("a", &s0),
+            MetricSeries::new("b", &s1),
+        ];
+        // Wide enough for label + two bar slots
+        let area = Rect::new(0, 0, 36, 3);
+        let mut buffer = Buffer::empty(area);
+        MetricRadar::new(&axes, &series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(true)
+            .scale(ScaleMode::Fixed {
+                min: 0.0,
+                max: 100.0,
+            })
+            .render(area, &mut buffer);
+        // Data row is y=1 (legend on y=0). Monochrome fill = series markers.
+        let data: String = (0..36u16)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        let m0 = VizGlyphSet::Ascii.series_marker(0);
+        let m1 = VizGlyphSet::Ascii.series_marker(1);
+        let empty = '-';
+        assert!(
+            data.contains(m0) && data.contains(m1),
+            "both series markers paint: {data:?}"
+        );
+        assert!(
+            data.contains(empty),
+            "empty track remainder for half series: {data:?}"
+        );
+        let c0 = data.chars().filter(|&c| c == m0).count();
+        let c1 = data.chars().filter(|&c| c == m1).count();
+        assert!(
+            c0 > c1,
+            "full (100) wider than half (50): c0={c0} c1={c1} row={data:?}"
+        );
     }
 
     #[test]
