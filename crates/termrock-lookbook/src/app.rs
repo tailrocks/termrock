@@ -57,7 +57,7 @@ fn prototype_modal_actions() -> [Action<'static, FocusId>; 3] {
     [
         Action {
             id: FocusId::ModalContinue,
-            label: "続ける",
+            label: "Continue",
             enabled: true,
             style: None,
         },

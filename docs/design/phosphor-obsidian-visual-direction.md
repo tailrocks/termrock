@@ -192,18 +192,18 @@ Legend for mockups:
 
 ```text
   PID  Process          Region     CPU    State
-  101  termrock         東京🧪     82.4%  run
+  101  termrock         region🧪     82.4%  run
 ▌422  bun-docs          us-east    9.2%  wait   ← full green slab
-  509  shell            東京       4.4%  done
+  509  shell            region       4.4%  done
 ```
 
 **After:**
 
 ```text
   PID  Process          Region     CPU    State
-  101  termrock         東京       82.4%  run     ← success state glyph, not brand fill
+  101  termrock         region       82.4%  run     ← success state glyph, not brand fill
 ▌ 422  bun-docs         us-east     9.2%  wait    ← gutter; primary bold; meta muted
-  509  shell            東京        4.4%  done
+  509  shell            region        4.4%  done
 ```
 
 **Spec:** header row `fg_muted` or bold once; sorted column: underline or `↑` muted, not green header fill; selected row gutter + optional tint; numeric columns faint/muted; status column uses status tokens + letter (`R`/`W`/`D`) for mono.

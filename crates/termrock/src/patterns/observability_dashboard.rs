@@ -1122,7 +1122,7 @@ pub fn example_observability_logs() -> Vec<LogLine<'static>> {
             .timestamp("12:00:04")
             .source("ingest")
             .batch_count(128),
-        LogLine::new("l7", LogLevel::Debug, "日本語 log 🧪")
+        LogLine::new("l7", LogLevel::Debug, "sample log 🧪")
             .timestamp("12:00:05")
             .source("i18n"),
         LogLine::new("l8", LogLevel::Error, "panic recovered in worker")

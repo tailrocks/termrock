@@ -1660,8 +1660,8 @@ pub fn example_help_topics() -> Vec<HelpTopic> {
         .group(HelpTopicGroup::Context),
         HelpTopic::new(
             "unicode",
-            "Unicode & 日本語",
-            "# Unicode\n\n日本語 labels and wide glyphs are safe on the paint path.\n",
+            "Unicode & wide glyphs",
+            "# Unicode\n\nWide labels and glyphs are safe on the paint path.\n",
         )
         .group(HelpTopicGroup::Reference)
         .anchors(["wide"]),

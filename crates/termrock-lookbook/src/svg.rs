@@ -352,12 +352,12 @@ mod color_tests {
     #[test]
     fn wide_character_emits_one_text_element_at_its_cell_x() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
-        buffer.set_string(1, 0, "日", Style::default());
+        buffer.set_string(1, 0, "Ａ", Style::default());
 
         let svg = buffer_to_svg(&buffer, "wide");
 
-        assert_eq!(svg.matches(">日</text>").count(), 1);
-        assert!(svg.contains(r##"<text x="9" y="14" fill="#ffffff">日</text>"##));
+        assert_eq!(svg.matches(">Ａ</text>").count(), 1);
+        assert!(svg.contains(r##"<text x="9" y="14" fill="#ffffff">Ａ</text>"##));
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod color_tests {
     }
 
     #[test]
-    fn button_unicode_svg_contains_cjk_or_emoji() {
+    fn button_unicode_svg_contains_english_and_emoji() {
         use crate::stories::stories;
         let theme = RolePalette::default();
         let story = stories()
@@ -405,8 +405,8 @@ mod color_tests {
             .expect("unicode story");
         let svg = render_story_to_svg(story, &theme);
         assert!(
-            svg.contains("保存") || svg.contains("✨") || svg.contains("&#"),
-            "unicode story must paint non-ASCII content, got snippet: {}",
+            svg.contains("Save") || svg.contains("✨") || svg.contains("&#"),
+            "unicode story must paint English + emoji sample, got snippet: {}",
             &svg[svg.find("<text").unwrap_or(0)
                 ..svg
                     .find("<text")

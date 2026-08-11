@@ -1728,7 +1728,7 @@ pub fn example_file_entries() -> Vec<FileTreeEntry<'static, String>> {
         FileTreeEntry::file(".gitignore".into(), ".gitignore", ".gitignore", 0)
             .hidden(true)
             .file_type("git"),
-        FileTreeEntry::file("日本語.txt".into(), "日本語.txt", "日本語.txt", 0)
+        FileTreeEntry::file("sample.txt".into(), "sample.txt", "sample.txt", 0)
             .file_type("txt"),
     ]
 }

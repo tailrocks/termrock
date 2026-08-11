@@ -11012,7 +11012,7 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LogPaneState::new();
     for line in [
         "[12:04:01] resolving workspace",
-        "[12:04:02] 東京 worker ready 🪨",
+        "[12:04:02] region worker ready 🪨",
         "[12:04:03] compiling termrock",
         "[12:04:04] running tests",
         "[12:04:05] rendering previews",
@@ -11394,8 +11394,8 @@ fn button_group_loading_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn button_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
-        ButtonGroupItem::new("cancel", "取消"),
-        ButtonGroupItem::primary("ok", "保存 ✨"),
+        ButtonGroupItem::new("cancel", "Cancel"),
+        ButtonGroupItem::primary("ok", "Save ✨"),
     ];
     let mut state = ButtonGroupState::new();
     state.set_surface_focused(true);
@@ -11432,7 +11432,7 @@ fn toggle_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 fn toggle_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ToggleState::with_value(ToggleValue::Pressed);
     state.set_focused(true);
-    let _ = Toggle::new("強調 ✨", system).paint(area, frame.buffer_mut(), &mut state);
+    let _ = Toggle::new("Emphasis ✨", system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn toggle_group_format_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11484,9 +11484,9 @@ fn toggle_group_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn toggle_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
-        ToggleGroupItem::new("b", "粗").pressed(true),
-        ToggleGroupItem::new("i", "斜"),
-        ToggleGroupItem::new("u", "下"),
+        ToggleGroupItem::new("b", "B").pressed(true),
+        ToggleGroupItem::new("i", "I"),
+        ToggleGroupItem::new("u", "U"),
     ];
     let mut state = ToggleGroupState::new();
     state.set_surface_focused(true);
@@ -12358,14 +12358,14 @@ fn menu_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     use termrock::widgets::{MenuBarMenu, MenuNode};
     let menus = vec![MenuBarMenu::new(
         "file",
-        "ファイル",
+        "File",
         vec![
-            MenuNode::command("open", "開く 📂").mnemonic('開'),
-            MenuNode::command("save", "保存 ✨").mnemonic('保'),
-            MenuNode::checkbox("wrap", "折り返し", true),
+            MenuNode::command("open", "Open 📂").mnemonic('O'),
+            MenuNode::command("save", "Save ✨").mnemonic('S'),
+            MenuNode::checkbox("wrap", "Word wrap", true),
         ],
     )
-    .mnemonic('フ')];
+    .mnemonic('F')];
     let mut state = MenuBarState::new();
     state.set_focused(true);
     let _ = state.open_menu_at(&menus, 0);
@@ -12814,14 +12814,14 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = [
         ListRow {
             id: "cjk",
-            label: Line::from("東京 設定"),
+            label: Line::from("region settings"),
             leading: None,
             secondary: None,
                 status: None,
             badge: None,
             shortcut: None,
                 actions: None,
-            trailing: Some(Line::from("日本語")),
+            trailing: Some(Line::from("sample")),
                 custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -12945,14 +12945,14 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let rows = [
         ListRow {
             id: "tokyo",
-            label: Line::from("東京デプロイ 🧪"),
+            label: Line::from("region deploy 🧪"),
             leading: None,
             secondary: None,
                 status: None,
             badge: None,
             shortcut: None,
                 actions: None,
-            trailing: Some(Line::from("操作")),
+            trailing: Some(Line::from("Actions")),
                 custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -12967,7 +12967,7 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("表示")),
+            trailing: Some(Line::from("View")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -12975,13 +12975,13 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         },
     ];
     let mut state = PickerState::new(Some("tokyo"));
-    let _ = state.query_mut().insert_str("東");
+    let _ = state.query_mut().insert_str("R");
     frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
 fn text_input_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = TextInputState::new("東京🧪 Cafe\u{301}");
-    assert!(state.set_cursor_byte("東京".len()));
+    let mut state = TextInputState::new("region🧪 Cafe\u{301}");
+    assert!(state.set_cursor_byte("region".len()));
     frame.render_stateful_widget(
         &TextInput::new("Query", system).validation(Validation::Valid),
         area,
@@ -13042,8 +13042,8 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let rows = [
         DetailRow {
             id: "region",
-            label: "地域",
-            value: "東京 🇯🇵",
+            label: "Region",
+            value: "region 🇯🇵",
             href: None,
             capability: DetailCapability::None,
             emphasis: true,
@@ -13051,8 +13051,8 @@ fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         },
         DetailRow {
             id: "status",
-            label: "状態",
-            value: "準備完了 ✅ Cafe\u{301}",
+            label: "Status",
+            value: "ready ✅ Cafe\u{301}",
             href: None,
             capability: DetailCapability::Copy,
             emphasis: false,
@@ -13106,7 +13106,7 @@ fn object_inspector_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
             .path("spec.containers[0].ports")
             .depth(2)
             .kind(InspectKind::String),
-        InspectorField::new("地域", "東京 🇯🇵")
+        InspectorField::new("Region", "region 🇯🇵")
             .path("spec.region")
             .depth(1)
             .kind(InspectKind::String),
@@ -13242,7 +13242,7 @@ fn log_stream_sample_lines() -> [LogLine<'static>; 8] {
         LogLine::new("1", LogLevel::Info, "scheduler start")
             .timestamp("12:00:00")
             .source("main"),
-        LogLine::new("2", LogLevel::Debug, "load config 東京")
+        LogLine::new("2", LogLevel::Debug, "load config region")
             .timestamp("12:00:01")
             .source("cfg"),
         LogLine::new("3", LogLevel::Warn, "retry connect")
@@ -13457,7 +13457,7 @@ fn diff_review_sample() -> (
             .old_no(2)
             .hunk_id("h0")
             .file_id("main.rs"),
-        DiffLine::added("a1", "    println!(\"hello 東京\");")
+        DiffLine::added("a1", "    println!(\"hello region\");")
             .new_no(2)
             .hunk_id("h0")
             .file_id("main.rs"),
@@ -13638,7 +13638,7 @@ fn diagnostic_full(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let lines = [
         CodeFrameLine::new(1, "fn main() {"),
         CodeFrameLine::new(2, "    let x = foo();"),
-        CodeFrameLine::new(3, "    println!(\"{x} 東京\");"),
+        CodeFrameLine::new(3, "    println!(\"{x} region\");"),
         CodeFrameLine::new(4, "}"),
     ];
     let items = [Diagnostic::new("d1", DiagnosticSeverity::Error, "mismatched types")
@@ -13718,7 +13718,7 @@ fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
         TerminalLine::stdout("o2", "test widgets::list ... ok"),
         TerminalLine::stderr("e1", "warning: unused import"),
         TerminalLine::stdout("o3", "test widgets::tree ... ok"),
-        TerminalLine::stdout("o4", "done 東京 🧪"),
+        TerminalLine::stdout("o4", "done region 🧪"),
     ]
 }
 
@@ -13832,7 +13832,7 @@ fn terminal_output_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn hex_viewer_sample() -> Vec<u8> {
     let mut v: Vec<u8> = (0..48u8).collect();
     v.extend_from_slice(b"Hello, xxd!\n");
-    v.extend_from_slice("東京🧪".as_bytes());
+    v.extend_from_slice("region🧪".as_bytes());
     v.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef, 0x00, 0xff]);
     v
 }
@@ -15130,7 +15130,7 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
         [
             Line::from("101"),
             Line::from(Span::styled("termrock", system.style(Role::Accent))),
-            Line::from("東京🧪alpha"),
+            Line::from("region🧪alpha"),
             Line::from("82.4%"),
             Line::from("run"),
         ],
@@ -15158,7 +15158,7 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
         [
             Line::from("509"),
             Line::from("shell"),
-            Line::from("東京"),
+            Line::from("region"),
             Line::from("4.4%"),
             Line::from("done"),
         ],
@@ -15238,7 +15238,7 @@ fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         system,
         "Narrow",
-        "prefix 東京🧪 trailing content",
+        "prefix wide🧪 trailing content",
         None,
     );
 }
@@ -15248,7 +15248,7 @@ fn text_area_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         system,
         "Unicode",
-        "e\u{301} cafe\n東京 region\n👩\u{200d}💻 builds",
+        "e\u{301} cafe\nregion demo\n👩\u{200d}💻 builds",
         None,
     );
 }
@@ -15619,7 +15619,7 @@ fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         if y >= body.bottom() {
             break;
         }
-        let line = format!("L{row:04} stream body · unicode 日本語 🧪");
+        let line = format!("L{row:04} stream body · unicode sample 🧪");
         frame.buffer_mut().set_stringn(
             body.x,
             y,
@@ -17004,7 +17004,7 @@ fn diff_sample_lines() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
             .file_id("main.rs")
             .hunk_id("h0")
             .trailing_ws(true),
-        DiffLine::added("a1", "    println!(\"hello 東京\");")
+        DiffLine::added("a1", "    println!(\"hello region\");")
             .new_no(2)
             .file_id("main.rs")
             .hunk_id("h0"),
@@ -17701,9 +17701,9 @@ fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.set_focused(true);
     let mut entries = example_command_catalog();
     entries.push(
-        CommandEntry::new("tokyo", "Open 東京 workspace")
+        CommandEntry::new("tokyo", "Open region workspace")
             .group("Navigation")
-            .keywords(["tokyo", "東京"]),
+            .keywords(["tokyo", "region"]),
     );
     let visible = state.refilter(&entries);
     frame.render_stateful_widget(
@@ -18119,18 +18119,9 @@ fn histogram_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn bar_series(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let bars = [
-        BarDatum {
-            label: "cpu",
-            fraction: 0.72,
-        },
-        BarDatum {
-            label: "mem",
-            fraction: 0.41,
-        },
-        BarDatum {
-            label: "disk",
-            fraction: 0.88,
-        },
+        BarDatum::new("cpu", 0.72),
+        BarDatum::new("mem", 0.41),
+        BarDatum::new("disk", 0.88),
     ];
     frame.render_widget(BarSeries::new(&bars, system).selected(2), area);
 }
@@ -18188,7 +18179,7 @@ fn tool_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let user = ["Run the suite", "with unicode: 日本語 🚀"];
+    let user = ["Run the suite", "with unicode: sample 🚀"];
     let assistant = [
         "Sure — preparing the environment.",
         "Running tests…",
@@ -18372,11 +18363,11 @@ fn checkpoint_timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
     use termrock::widgets::{Checkpoint, CheckpointTimeline, CheckpointTimelineState};
     let mut state = CheckpointTimelineState::new();
     state.set_checkpoints(vec![
-        Checkpoint::new("u0", "12:00", "検査 🔍")
-            .summary("ファイル状態")
-            .files(["src/日本語.rs"]),
-        Checkpoint::new("u1", "12:05", "分岐 ⑂").branch("探索", Some("u0")),
-        Checkpoint::new("u2", "12:10", "現在").head(),
+        Checkpoint::new("u0", "12:00", "Inspect 🔍")
+            .summary("file status")
+            .files(["src/sample.rs"]),
+        Checkpoint::new("u1", "12:05", "Branch ⑂").branch("Explore", Some("u0")),
+        Checkpoint::new("u2", "12:10", "Current").head(),
     ]);
     state.focused = true;
     frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
@@ -18466,10 +18457,10 @@ fn approval_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_items(vec![ApprovalItem::new(
         "u",
         ApprovalKind::Question,
-        "続行しますか？",
+        "Continue?",
         PermissionRisk::Low,
     )
-    .actor("エージェント")]);
+    .actor("Agent")]);
     state.presentation = ApprovalQueuePresentation::Full;
     state.focused = true;
     frame.render_stateful_widget(&ApprovalQueue::new(system), area, &mut state);
@@ -18518,8 +18509,8 @@ fn working_state_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
     };
     let mut state = WorkingStateCardState::new();
     state.set_work(Some(
-        WorkingState::new("u", WorkingPhase::Searching, "ファイルを検索 🔍")
-            .resources(vec![WorkingResource::new("f", "日本語.rs")]),
+        WorkingState::new("u", WorkingPhase::Searching, "searching files 🔍")
+            .resources(vec![WorkingResource::new("f", "sample.rs")]),
     ));
     state.presentation = WorkingStatePresentation::Expanded;
     state.focused = true;
@@ -18573,9 +18564,9 @@ fn integration_status_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
     };
     let mut state = IntegrationStatusState::new();
     state.set_entries(vec![
-        IntegrationEntry::new("u1", "検査 MCP 🔍", IntegrationKind::McpServer)
+        IntegrationEntry::new("u1", "Inspect MCP 🔍", IntegrationKind::McpServer)
             .health(IntegrationHealth::Connected)
-            .provenance(IntegrationProvenance::third_party("発行者", "pkg:日本語", "1.0")),
+            .provenance(IntegrationProvenance::third_party("Publisher", "pkg:sample", "1.0")),
     ]);
     state.presentation = IntegrationStatusPresentation::CompactList;
     state.focused = true;
@@ -18619,11 +18610,11 @@ fn agent_status_header_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
     let mut state = AgentStatusHeaderState::new();
     state.set_snapshot(
         AgentStatusSnapshot::new()
-            .project("プロジェクト")
-            .session("検査 🔍")
-            .branch("機能")
-            .mode("編集")
-            .model("モデル")
+            .project("Project")
+            .session("Inspect 🔍")
+            .branch("Feature")
+            .mode("Edit")
+            .model("Model")
             .work(AgentWorkStatus::Working),
     );
     state.presentation = AgentStatusPresentation::Header;
@@ -18686,9 +18677,9 @@ fn prompt_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     };
     let mut state = PromptQueueState::new();
     state.set_items(vec![
-        PromptQueueItem::new("u1", "検査して 🔍")
-            .attachments(vec![PromptQueueRef::file("f", "日本語.rs")]),
-        PromptQueueItem::new("u2", "次のメッセージ"),
+        PromptQueueItem::new("u1", "Inspect 🔍")
+            .attachments(vec![PromptQueueRef::file("f", "sample.rs")]),
+        PromptQueueItem::new("u2", "Next message"),
     ]);
     state.set_agent(AgentBusyState::Busy);
     state.presentation = PromptQueuePresentation::Expanded;
@@ -19075,7 +19066,7 @@ fn slider_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let mut state = SliderState::new(33.0);
     state.set_focused(true);
     let _ = Slider::new(SliderBounds::percent(), system)
-        .label("音量 ✨")
+        .label("Volume ✨")
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -19151,9 +19142,9 @@ fn segmented_control_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn segmented_control_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
-        SegmentedItem::new("list", "一覧"),
-        SegmentedItem::new("grid", "格子"),
-        SegmentedItem::new("table", "表 ✨"),
+        SegmentedItem::new("list", "List"),
+        SegmentedItem::new("grid", "Grid"),
+        SegmentedItem::new("table", "Table ✨"),
     ];
     let mut state = SegmentedControlState::new(Some("grid"));
     state.set_surface_focused(true);
@@ -19234,8 +19225,8 @@ fn switch_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 fn switch_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SwitchState::new(true);
     state.set_focused(true);
-    let _ = Switch::new("dark", "ダークモード", system)
-        .description("システムに従う")
+    let _ = Switch::new("dark", "Dark mode", system)
+        .description("Follow system")
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -19402,14 +19393,14 @@ fn radio_group_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn radio_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let options = [
-        RadioOption::new("a", "計画").description("読み取り専用"),
-        RadioOption::new("b", "構築").description("編集を適用 ✨"),
-        RadioOption::new("c", "質問"),
+        RadioOption::new("a", "Plan").description("Read only"),
+        RadioOption::new("b", "Build").description("Apply edits ✨"),
+        RadioOption::new("c", "Ask"),
     ];
     let mut state = RadioState::new(Some("b"));
     state.set_surface_focused(true);
     let _ = RadioGroup::new(&options, system)
-        .legend("モード")
+        .legend("Mode")
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -21137,18 +21128,18 @@ fn fullscreen_viewer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
 fn fullscreen_viewer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let actions = [Action {
         id: "open",
-        label: "開く",
+        label: "Open",
         enabled: true,
         style: None,
     }];
     let mut state = FullscreenViewerState::new();
     state.zoom_mut().set_content_kind(ViewerContentKind::Media);
     let _ = state.enter_fullscreen(
-        fv_source("画像", &["資料", "プレビュー", "画像.png"]),
-        "画像.png",
+        fv_source("Images", &["Docs", "Preview", "image.png"]),
+        "image.png",
     );
     FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
-    paint_viewer_body(frame, state.body_area(), system, "メディア · 🖼");
+    paint_viewer_body(frame, state.body_area(), system, "Media · 🖼");
 }
 
 fn preview_card_file_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21278,7 +21269,7 @@ fn text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     use termrock::widgets::Text;
     let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(1)])
         .split(area);
-    let _ = Text::new("日本語 e\u{301} 🧪", system).paint(chunks[0], frame.buffer_mut());
+    let _ = Text::new("sample e\u{301} 🧪", system).paint(chunks[0], frame.buffer_mut());
     let _ = Text::new("tabs:\tone\ttwo", system).paint(chunks[1], frame.buffer_mut());
     let _ = Text::new("controls stripped:\u{1b}[0mok", system).paint(chunks[2], frame.buffer_mut());
 }
@@ -21497,7 +21488,7 @@ fn avatar_glyph_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn avatar_glyph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _ = AvatarGlyph::new("文档 用户", system)
+    let _ = AvatarGlyph::new("doc user", system)
         .size(AvatarSize::Normal)
         .paint(area, frame.buffer_mut());
 }
@@ -21571,7 +21562,7 @@ fn highlighted_text_overlap_story(frame: &mut Frame<'_>, area: Rect, system: &De
 
 fn highlighted_text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::substring_ranges;
-    let src = "文档/组件/palette.md";
+    let src = "docs/components/palette.md";
     let ranges = substring_ranges(src, "palette");
     let _ = HighlightedText::prepared(src, ranges.as_slice(), system)
         .truncate(MatchTruncate::KeepFirstMatch)
@@ -21616,8 +21607,8 @@ fn identity_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn identity_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _ = Identity::new("ドキュメント", system)
-        .secondary("日本語")
+    let _ = Identity::new("Document", system)
+        .secondary("sample")
         .role(IdentityRole::User)
         .paint(area, frame.buffer_mut());
 }
@@ -21793,8 +21784,8 @@ fn key_value_list_secret_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 
 fn key_value_list_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = [
-        KvEntry::pair("name", "名称", "文档 🔗"),
-        KvEntry::pair("ok", "状态", "就绪").status(KvStatus::Success),
+        KvEntry::pair("name", "Name", "docs 🔗"),
+        KvEntry::pair("ok", "Status", "Ready").status(KvStatus::Success),
     ];
     let mut state = KeyValueListState::new();
     let _ = KeyValueList::reading(&entries, system).paint(area, frame.buffer_mut(), &mut state);
@@ -21833,7 +21824,7 @@ fn link_app_route_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 
 fn link_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LinkState::new();
-    let _ = Link::url("文档 🔗", "https://example.invalid/文档", system)
+    let _ = Link::url("docs 🔗", "https://example.invalid/docs", system)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -21879,7 +21870,7 @@ fn ansi_text_hyperlink_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 
 fn ansi_text_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::parse_lines;
-    let src = "\x1b[36m文档\x1b[0m 🔗 \x1b[1mOK\x1b[0m\n";
+    let src = "\x1b[36mdocs\x1b[0m 🔗 \x1b[1mOK\x1b[0m\n";
     let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
     let mut state = AnsiTextState::new();
     AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
@@ -21895,7 +21886,7 @@ fn action_link_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn action_link_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = LinkState::new();
-    let _ = ActionLink::new("运行测试", system)
+    let _ = ActionLink::new("Run tests", system)
         .risk_note("cargo test")
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -22877,7 +22868,7 @@ fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
     frame.render_stateful_widget(
-        &Button::new("保存 ✨", &tokens).primary(true),
+        &Button::new("Save ✨", &tokens).primary(true),
         area,
         &mut state,
     );
@@ -22894,15 +22885,15 @@ fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     let tokens = system.clone().density(Density::default());
     let mut cb = CheckboxState::new(true);
     cb.set_focused(true);
-    let _ = Checkbox::new("jp", "有効化 🇯🇵", &tokens)
-        .description("説明テキスト")
+    let _ = Checkbox::new("jp", "Enable 🇯🇵", &tokens)
+        .description("Description text")
         .paint(
             Rect::new(area.x, area.y, area.width, 2.min(area.height)),
             frame.buffer_mut(),
             &mut cb,
         );
     let mut sw = SwitchState::new(false);
-    let _ = Switch::new("dark", "暗色モード", &tokens).paint(
+    let _ = Switch::new("dark", "Dark mode", &tokens).paint(
         Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
         frame.buffer_mut(),
         &mut sw,
@@ -23304,20 +23295,20 @@ fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new(
             "id",
-            "番号",
+            "No.",
             termrock::widgets::DataColumnWidth::Min(4),
         ),
         termrock::widgets::DataColumn::new(
             "name",
-            "名称 ✨",
+            "Name ✨",
             termrock::widgets::DataColumnWidth::Min(8),
         ),
     ]);
-    let cells0: &[&str] = &["一", "アルファ 🚀"];
-    let cells1: &[&str] = &["二", "ベータ"];
+    let cells0: &[&str] = &["1", "Alpha 🚀"];
+    let cells1: &[&str] = &["2", "Beta"];
     let rows = [(1u64, cells0), (2u64, cells1)];
     let toolbar = DataTableToolbar {
-        actions: &["更新", "出力"],
+        actions: &["Refresh", "Export"],
     };
     let mut state = DataTableState::<u64, &str>::new();
     DataTable::new(&tokens, &columns, &rows)
@@ -23328,9 +23319,9 @@ fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     let items = [
-        MenuItem::new("a", "開く 📂"),
-        MenuItem::new("b", "無効").enabled(false),
-        MenuItem::new("c", "保存 ✨"),
+        MenuItem::new("a", "Open 📂"),
+        MenuItem::new("b", "Disabled").enabled(false),
+        MenuItem::new("c", "Save ✨"),
     ];
     let mut state = MenuState::new();
     Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
@@ -23340,13 +23331,13 @@ fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let actions = [
         Action {
             id: "accept",
-            label: "承認 ✅",
+            label: "Approve ✅",
             enabled: true,
             style: None,
         },
         Action {
             id: "cancel",
-            label: "取消 🚫",
+            label: "Cancel 🚫",
             enabled: true,
             style: None,
         },
@@ -23366,13 +23357,13 @@ fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&panel_tokens)
-            .title("概要 ✨")
+            .title("Overview ✨")
             .emphasis(PanelChrome::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
         frame.render_widget(
-            Paragraph::new("状態   準備完了\nモード 対話 🚀"),
+            Paragraph::new("Status   Ready\nMode dialogue 🚀"),
             Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
         );
     }
@@ -23383,7 +23374,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let nodes = [
         TreeNode {
             id: "ws",
-            label: Line::from("作業場 🗂️"),
+            label: Line::from("Workspace 🗂️"),
             leading: None,
             secondary: None,
             badge: None,
@@ -23399,7 +23390,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         },
         TreeNode {
             id: "src",
-            label: Line::from("ソース 📦"),
+            label: Line::from("Source 📦"),
             leading: None,
             secondary: None,
             badge: None,
@@ -23422,7 +23413,7 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let items = [
         Tab {
             id: "one",
-            label: "概要 ✨",
+            label: "Overview ✨",
             glyph: Some(Span::styled("●", system.style(Role::Success))),
             badge: None,
             status: TabStatus::Success,
@@ -23432,7 +23423,7 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         },
         Tab {
             id: "two",
-            label: "詳細 📋",
+            label: "Details 📋",
             glyph: None,
             badge: None,
             status: TabStatus::None,
@@ -23453,7 +23444,7 @@ fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "設定 ⚙️",
+            "Settings ⚙️",
             usize::from(area.width),
             system.style(Role::TextStrong),
         );
@@ -23464,13 +23455,14 @@ fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let tokens = system.clone().density(Density::default());
     frame.render_widget(
         Panel::new(&tokens)
-            .title("確認 ❓")
+            .title("Confirm ❓")
             .emphasis(PanelChrome::Focused),
         area,
     );
     if area.width > 2 && area.height > 2 {
         frame.render_widget(
-            Paragraph::new("この操作を実行しますか？\n日本語 + emoji 🚀"),
+            Paragraph::new("Run this operation?
+English + emoji 🚀"),
             Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
         );
     }
@@ -23482,7 +23474,7 @@ fn choice_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "選択 ✨",
+            "Select ✨",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23495,7 +23487,7 @@ fn message_dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "通知 📣",
+            "Notify 📣",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23508,7 +23500,7 @@ fn status_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "準備完了 ✅ | 行 42",
+            "Ready ✅ | line 42",
             usize::from(area.width),
             system.style(Role::StatusBar),
         );
@@ -23521,7 +23513,7 @@ fn toast_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(area.height / 2),
-            "保存しました ✨",
+            "Saved ✨",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Success),
         );
@@ -23534,7 +23526,7 @@ fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "情報: 接続完了 🌐",
+            "Info: connected 🌐",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Info),
         );
@@ -23547,7 +23539,7 @@ fn command_palette_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "コマンドを検索… 🔍",
+            "Search commands… 🔍",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Input),
         );
@@ -23560,7 +23552,7 @@ fn prompt_composer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(2),
             area.y.saturating_add(area.height.saturating_sub(3)),
-            "こんにちは 世界 🌍",
+            "Hello world 🌍",
             usize::from(area.width.saturating_sub(4)),
             system.style(Role::Text),
         );
@@ -23573,7 +23565,7 @@ fn permission_prompt_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "権限要求: シェル ⚠️",
+            "Permission: shell ⚠️",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Warning),
         );
@@ -23586,7 +23578,7 @@ fn timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "開始 🚀",
+            "Start 🚀",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23599,7 +23591,7 @@ fn tool_card_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "ツール: シェル 🔧",
+            "Tool: shell 🔧",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23612,7 +23604,7 @@ fn theme_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "テーマ選択 🎨",
+            "Pick theme 🎨",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23625,7 +23617,7 @@ fn diff_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "差分: 設定.json ✨",
+            "diff: settings.json ✨",
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -23638,7 +23630,7 @@ fn design_inspector_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &De
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "検査: フォーカス 🔍",
+            "inspect: focus 🔍",
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -23651,7 +23643,7 @@ fn hint_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "↑↓ 移動  ⏎ 決定  🌐",
+            "↑↓ move  ⏎ confirm  🌐",
             usize::from(area.width),
             system.style(Role::HintText),
         );
@@ -23664,7 +23656,7 @@ fn split_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "左ペイン 📁",
+            "Left pane 📁",
             usize::from(area.width / 2),
             system.style(Role::Text),
         );
@@ -23677,7 +23669,7 @@ fn viewport_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "日本語行 📜 絵文字",
+            "sample line 📜 emoji",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Text),
         );
@@ -23690,7 +23682,7 @@ fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(area.height / 2),
-            "モーダル背景 🌑",
+            "Modal backdrop 🌑",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextMuted),
         );
@@ -23698,35 +23690,35 @@ fn backdrop_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    EmptyState::new("結果なし 🌀", system)
+    EmptyState::new("No results 🌀", system)
         .kind(EmptyKind::NoResults)
-        .explanation("クエリを変更してください")
-        .primary(EmptyAction::with_shortcut("クリア", "esc"))
-        .example("status:失敗")
+        .explanation("Try a different query")
+        .primary(EmptyAction::with_shortcut("Clear", "esc"))
+        .example("status:Failed")
         .paint(area, frame.buffer_mut());
 }
 
 fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    ErrorState::new("失敗しました 💥", system)
+    ErrorState::new("Failed 💥", system)
         .kind(ErrorKind::Network)
-        .explanation("再試行してください")
+        .explanation("Please try again")
         .technical("timeout: GET /v1/jobs")
         .recovery(
             Recovery::none()
-                .with_retry(RecoveryAction::with_shortcut("再試行", "r"))
+                .with_retry(RecoveryAction::with_shortcut("Retry", "r"))
                 .with_retry_safety(RetrySafety::Safe)
-                .with_work_preserved(true, Some("下書きを保持")),
+                .with_work_preserved(true, Some("keep draft")),
         )
         .paint(area, frame.buffer_mut());
 }
 
 fn loading_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(LoadingView::new("読込中… ⏳", "⠋", system), area);
+    frame.render_widget(LoadingView::new("Loading… ⏳", "⠋", system), area);
 }
 
 fn banner_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
-        Banner::new("警告: 接続不安定 ⚠️", Severity::Warning, system),
+        Banner::new("Warning: unstable link ⚠️", Severity::Warning, system),
         area,
     );
 }
@@ -23737,7 +23729,7 @@ fn skeleton_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "読込プレースホルダ …",
+            "loading placeholder …",
             usize::from(area.width),
             system.style(Role::TextDisabled),
         );
@@ -23750,7 +23742,7 @@ fn jump_overlay_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "ジャンプ a→ファイル 🎯",
+            "jump a→file 🎯",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Accent),
         );
@@ -23763,7 +23755,7 @@ fn code_block_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "// こんにちは 世界",
+            "// Hello world",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Text),
         );
@@ -23776,7 +23768,7 @@ fn markdown_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "# 見出し ✨",
+            "# Heading ✨",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -23789,7 +23781,7 @@ fn sparkline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "負荷 📈",
+            "Load 📈",
             6.min(usize::from(area.width)),
             system.style(Role::TextMuted),
         );
@@ -23802,7 +23794,7 @@ fn bar_series_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "CPU 使用率 📊",
+            "CPU usage 📊",
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -23815,7 +23807,7 @@ fn segmented_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "配分 🧩",
+            "Split 🧩",
             6.min(usize::from(area.width)),
             system.style(Role::TextMuted),
         );
@@ -23828,7 +23820,7 @@ fn token_meter_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "トークン 🧮",
+            "Tokens 🧮",
             8.min(usize::from(area.width)),
             system.style(Role::TextMuted),
         );
@@ -23841,7 +23833,7 @@ fn thinking_block_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "思考中 🤔",
+            "Thinking 🤔",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextMuted),
         );
@@ -23854,7 +23846,7 @@ fn image_surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "画像: 写真.png 🖼️",
+            "Image: photo.png 🖼️",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextMuted),
         );
@@ -23866,13 +23858,13 @@ fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let modes = [
         WorkbenchMode {
             id: "plan",
-            label: "計画 📝",
+            label: "Plan 📝",
             active: true,
             enabled: true,
         },
         WorkbenchMode {
             id: "build",
-            label: "構築 🔨",
+            label: "Build 🔨",
             active: false,
             enabled: true,
         },
@@ -23889,14 +23881,14 @@ fn plan_review_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         PlanDocument::new(
             "u1",
             1,
-            "計画 🚀",
-            "# 検査\n\n- ファイルを読む\n- 編集 ✏️\n",
+            "Plan 🚀",
+            "# Inspect\n\n- Read files\n- Edit ✏️\n",
             PermissionRisk::Medium,
         )
         .summary("Unicode plan body")
         .tasks(vec![
-            PlanTask::new("s1", "検査 🔍"),
-            PlanTask::new("s2", "編集 ✏️"),
+            PlanTask::new("s1", "Inspect 🔍"),
+            PlanTask::new("s2", "Edit ✏️"),
         ]),
     );
     state.focused = true;
@@ -23909,13 +23901,13 @@ fn question_flow_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     };
     let set = QuestionSet::new(
         "u1",
-        "確認",
+        "Confirm",
         vec![Question::single(
             "q1",
-            "続行しますか？",
+            "Continue?",
             vec![
-                QuestionOption::new("y", "はい ✅"),
-                QuestionOption::new("n", "いいえ ❌"),
+                QuestionOption::new("y", "Yes ✅"),
+                QuestionOption::new("n", "No ❌"),
             ],
         )],
     );
@@ -23929,13 +23921,13 @@ fn session_picker_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     use termrock::widgets::{SessionEntry, SessionPicker, SessionPickerState, SessionStatus};
     let mut state = SessionPickerState::new();
     state.set_sessions(vec![
-        SessionEntry::new("s1", "セッション甲 🅰️")
-            .project("プロジェクト")
-            .recency("2分前")
+        SessionEntry::new("s1", "Session A 🅰️")
+            .project("Project")
+            .recency("2m ago")
             .status(SessionStatus::Active)
-            .summary("概要テキスト"),
-        SessionEntry::new("s2", "セッション乙 🅱️")
-            .branch("機能")
+            .summary("Summary text"),
+        SessionEntry::new("s2", "Session B 🅱️")
+            .branch("Feature")
             .pinned(true),
     ]);
     state.focused = true;
@@ -23951,18 +23943,18 @@ fn connection_manager_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &
     state.set_connections(vec![
         ConnectionEntry::new(
             "u1",
-            "本番DB 🔍",
+            "Prod DB 🔍",
             ConnectionKind::Database,
             "postgres",
-            "db.東京:5432",
+            "db.region:5432",
         )
-        .environment("本番")
-        .group("データベース")
+        .environment("prod")
+        .group("Database")
         .status(ConnectionStatus::Connected)
         .favorite(true)
-        .credential(ConnectionCredentialMeta::present("パスワード")),
-        ConnectionEntry::new("u2", "堡垒机", ConnectionKind::Ssh, "ssh", "堡垒:22")
-            .environment("运维")
+        .credential(ConnectionCredentialMeta::present("Password")),
+        ConnectionEntry::new("u2", "Bastion", ConnectionKind::Ssh, "ssh", "bastion:22")
+            .environment("ops")
             .status(ConnectionStatus::AuthRequired),
     ]);
     state.focused = true;
@@ -23974,42 +23966,42 @@ fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         ActivityKind, ActivityModel, ActivityScope, SemanticStatus, TaskRail, TaskRailState,
     };
     let items = vec![
-        ActivityModel::new("u1", "タスク一 📌")
+        ActivityModel::new("u1", "Task one 📌")
             .scope(ActivityScope::Foreground)
             .kind(ActivityKind::Tool)
             .status(SemanticStatus::Running)
             .elapsed("1s"),
-        ActivityModel::new("u2", "サブエージェント 🔍")
+        ActivityModel::new("u2", "Subagent 🔍")
             .scope(ActivityScope::Subagent)
             .status(SemanticStatus::Waiting)
             .needs_input(true)
-            .waiting_reason("確認"),
+            .waiting_reason("Confirm"),
     ];
     let mut st = TaskRailState::new();
     st.focused = true;
     TaskRail::new(&items, system)
-        .title("任務")
+        .title("Tasks")
         .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = termrock::widgets::DrawerState::new();
     state.open();
-    Drawer::new("設定 ⚙️", system).paint(area, frame.buffer_mut(), &mut state);
+    Drawer::new("Settings ⚙️", system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = popover_open_state();
     state.set_footer_rows(1);
-    Popover::new("ヒント 💡", system)
-        .footer(Some("閉じる"))
+    Popover::new("Hint 💡", system)
+        .footer(Some("Close"))
         .paint(area, frame.buffer_mut(), &mut state);
     let body = state.slots().body;
     if !body.is_empty() {
         frame.buffer_mut().set_stringn(
             body.x,
             body.y,
-            "設定 · フィルター",
+            "Settings · filter",
             usize::from(body.width),
             system.style(termrock::style::Role::Text),
         );
@@ -24019,14 +24011,14 @@ fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
     Separator::horizontal(system)
-        .label("区切")
+        .label("Rule")
         .paint(area, frame.buffer_mut());
     // Distinct label cell so body differs even though rule glyphs match.
     if area.width > 4 && area.height > 0 {
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "区切 ─ 線",
+            "Rule ─ line",
             usize::from(area.width),
             system.style(Role::Border),
         );
@@ -24042,7 +24034,7 @@ fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut().set_stringn(
             content.x,
             content.y,
-            "面 🎴 raised",
+            "Surface 🎴 raised",
             usize::from(content.width),
             system.style(Role::Text),
         );
@@ -24056,41 +24048,41 @@ fn kbd_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = FormWizardState::with_steps([
-        WizardStep::new("a", "設定"),
-        WizardStep::new("b", "接続 🪄"),
-        WizardStep::new("c", "確認"),
+        WizardStep::new("a", "Settings"),
+        WizardStep::new("b", "Connect 🪄"),
+        WizardStep::new("c", "Confirm"),
     ]);
     state.set_focused(true);
     FormWizard::new(system)
-        .title("ウィザード 🪄")
+        .title("Wizard 🪄")
         .ascii(false)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn badge_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Badge;
-    let _ = Badge::new("新规 ✨", system)
+    let _ = Badge::new("New ✨", system)
         .warning()
         .paint(area, frame.buffer_mut(), None);
 }
 
 fn heading_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _ = Heading::new("見出し ✨", system)
+    let _ = Heading::new("Heading ✨", system)
         .h1()
         .reading()
         .paint(area, frame.buffer_mut());
 }
 
 fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _ = termrock::widgets::Paragraph::new("日本語と絵文字 🚀 を含む本文。", system)
+    let _ = termrock::widgets::Paragraph::new("Body with emoji 🚀 and combining marks.", system)
         .paint(area, frame.buffer_mut());
 }
 
 fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     Widget::render(
-        &Callout::new("注意", &tokens)
-            .body("絵文字付きの説明 ⚠️")
+        &Callout::new("Note", &tokens)
+            .body("Note with emoji ⚠️")
             .tone(CalloutTone::Warning),
         area,
         frame.buffer_mut(),
@@ -24819,7 +24811,7 @@ fn completion_menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "候補: 関数名 🔍",
+            "Candidates: function 🔍",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Input),
         );
@@ -24832,7 +24824,7 @@ fn virtual_grid_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y,
-            "列: 名称 ✨",
+            "Column: name ✨",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::TextStrong),
         );
@@ -24845,7 +24837,7 @@ fn transcript_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         frame.buffer_mut().set_stringn(
             area.x.saturating_add(1),
             area.y.saturating_add(1),
-            "ユーザー: こんにちは 👋",
+            "User: hello 👋",
             usize::from(area.width.saturating_sub(2)),
             system.style(Role::Text),
         );
@@ -24858,7 +24850,7 @@ fn progress_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         frame.buffer_mut().set_stringn(
             area.x,
             area.y,
-            "処理中 ⏳ 62%",
+            "Processing ⏳ 62%",
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -25235,10 +25227,10 @@ fn paint_database_workbench_story(
             state.set_tx_status(DatabaseTxStatus::Active);
         }
         DatabaseWorkbenchStoryKind::Unicode => {
-            state.tabs[0].title = "ユーザー".into();
-            state.tabs[0].draft = "SELECT * FROM ユーザー LIMIT 10;".into();
+            state.tabs[0].title = "Users".into();
+            state.tabs[0].draft = "SELECT * FROM users LIMIT 10;".into();
             state.query.set_text(&state.tabs[0].draft);
-            state.query.title = Some("ユーザー".into());
+            state.query.title = Some("Users".into());
         }
         DatabaseWorkbenchStoryKind::Basic => {
             state.conn_gate = DatabaseConnGate::Connected;
@@ -25248,12 +25240,12 @@ fn paint_database_workbench_story(
 
     let schema = if matches!(kind, DatabaseWorkbenchStoryKind::Unicode) {
         vec![
-            SchemaBrowserEntry::connection("c", "本番", "prod")
+            SchemaBrowserEntry::connection("c", "prod", "prod")
                 .branch()
                 .expanded(),
-            SchemaBrowserEntry::table("t", "ユーザー", "prod/ユーザー", 1)
+            SchemaBrowserEntry::table("t", "Users", "prod/Users", 1)
                 .parent("c")
-                .secondary("≈1万"),
+                .secondary("≈10k"),
         ]
     } else {
         example_schema_entries()
@@ -25763,13 +25755,13 @@ fn paint_error_recovery_story(
         ErrorRecoveryStoryKind::Basic => example_recovery_snapshot(),
         ErrorRecoveryStoryKind::Inline => example_crash_snapshot_with_secrets(),
         ErrorRecoveryStoryKind::Unicode => CrashReportSnapshot {
-            summary: "予期しないエラー · unexpected".into(),
-            technical: "panic at 日本語 path".into(),
+            summary: "unexpected error · unexpected".into(),
+            technical: "panic at sample path".into(),
             source: "termrock".into(),
-            preserved_note: "ドラフト保持".into(),
+            preserved_note: "draft kept".into(),
             work_preserved: true,
             env_lines: vec!["TERM=xterm-256color".into()],
-            log_lines: vec!["INFO 日本語 log".into()],
+            log_lines: vec!["INFO sample log".into()],
             capabilities_text: String::new(),
             class: FailureClass::Crash,
         },

@@ -1543,9 +1543,9 @@ pub fn example_projects() -> Vec<ProjectEntry> {
             .connection(ConnectionStatus::Offline)
             .branch("main")
             .recency("5d"),
-        ProjectEntry::new("p-jp", "日本語プロジェクト", "~/src/日本語")
+        ProjectEntry::new("p-jp", "Sample project", "~/src/sample")
             .branch("main")
-            .recency("今日"),
+            .recency("today"),
     ]
 }
 

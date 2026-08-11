@@ -58,7 +58,7 @@ use termrock::widgets::{DiffLine, DiffHunk, DiffView, DiffViewState};
 
 let lines = [
     DiffLine::removed("1", "old").old_no(1),
-    DiffLine::added("2", "new 東京").new_no(1),
+    DiffLine::added("2", "new region").new_no(1),
 ];
 let hunks = [DiffHunk::new(0, 2, "@@ -1 +1 @@").id("h0")];
 let mut state = DiffViewState::new();

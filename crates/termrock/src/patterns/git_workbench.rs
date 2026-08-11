@@ -1525,7 +1525,7 @@ pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
         DiffLine::added("a2", "    println!(\"ready\");")
             .hunk_id("h1")
             .file_id("src/main.rs"),
-        DiffLine::added("a3", "    // 日本語 🧪")
+        DiffLine::added("a3", "    // sample 🧪")
             .hunk_id("h1")
             .file_id("src/main.rs"),
     ]
