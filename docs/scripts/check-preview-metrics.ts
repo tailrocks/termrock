@@ -2,6 +2,8 @@
  * Unit check of shipped Ghostty preview metric helpers (no DOM canvas required).
  * Invoked from docs quality path / local verify.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   adjacentSteps,
   allSteps,
@@ -159,10 +161,87 @@ const plain = inferCursorFromFrame(
   1,
 )
 assert(plain.x === 1 && plain.y === 2, `fallback step1 → 1,2 got ${plain.x},${plain.y}`)
-// selection bar glyph
+// Leftmost-body selection bar ▌ only (pad col).
 const barGrid: ProbeCell[] = Array.from({ length: cols * rows }, () => ({ ...empty }))
-barGrid[1 * cols + 1] = { ch: '▌', fg: [0, 255, 65], bg: [0, 0, 0] }
-const barCur = inferCursorFromFrame(barGrid, cols, rows, 0, 9)
-assert(barCur.x === 1 && barCur.y === 1, `bar glyph cursor got ${barCur.x},${barCur.y}`)
+barGrid[2 * cols + 1] = { ch: '▌', fg: [0, 255, 65], bg: [0, 0, 0] }
+const barCur = inferCursorFromFrame(barGrid, cols, rows, 1, 9)
+assert(barCur.x === 1 && barCur.y === 2, `leftmost ▌ cursor got ${barCur.x},${barCur.y}`)
+// Mid-body ▌ is not a selection cue → fallback
+const midBar: ProbeCell[] = Array.from({ length: cols * rows }, () => ({ ...empty }))
+midBar[2 * cols + 3] = { ch: '▌', fg: [0, 255, 65], bg: [0, 0, 0] }
+const midCur = inferCursorFromFrame(midBar, cols, rows, 1, 0)
+assert(midCur.x === 1 && midCur.y === 1, `mid ▌ ignored → fallback got ${midCur.x},${midCur.y}`)
+// Panel scrollbar █ (right edge) must NOT pin cursor — form pack pattern.
+const scrollGrid: ProbeCell[] = Array.from({ length: cols * rows }, () => ({ ...empty }))
+for (let y = 1; y <= 2; y++) {
+  scrollGrid[y * cols + (cols - 1)] = { ch: '█', fg: [0, 255, 65], bg: [0, 0, 0] }
+}
+const scrollCur = inferCursorFromFrame(scrollGrid, cols, rows, 1, 0)
+assert(
+  !(scrollCur.x === cols - 1),
+  `scrollbar █ must not win cursor, got ${scrollCur.x},${scrollCur.y}`,
+)
+assert(scrollCur.x === 1 && scrollCur.y === 1, `scrollbar █ → fallback step0 pad1`)
+// Decorative › (transcript/prompt) must NOT pin cursor — workbench pattern.
+const decoGrid: ProbeCell[] = Array.from({ length: cols * rows }, () => ({ ...empty }))
+decoGrid[2 * cols + 2] = { ch: '›', fg: [255, 255, 255], bg: [0, 0, 0] }
+const decoCur = inferCursorFromFrame(decoGrid, cols, rows, 1, 0)
+assert(
+  !(decoCur.x === 2 && decoCur.y === 2),
+  `decorative › must not win, got ${decoCur.x},${decoCur.y}`,
+)
+assert(decoCur.x === 1 && decoCur.y === 1, `› → fallback step0 pad1`)
+
+// Real frame packs: drive shipped inferCursorFromFrame on exported cells.
+function loadPackCells(slug: string, size: string, step: number): {
+  cells: ProbeCell[]
+  cols: number
+  rows: number
+} {
+  const path = join(import.meta.dir, '..', 'public', 'preview-frames', slug, size, `${step}.json`)
+  const fr = JSON.parse(readFileSync(path, 'utf8')) as {
+    cells: ProbeCell[]
+    cols: number
+    rows: number
+  }
+  return { cells: fr.cells, cols: fr.cols, rows: fr.rows }
+}
+
+// form-responsive: right-edge █ scrollbar + decorative › — must fall back, not (40,1)
+{
+  const { cells, cols: fc, rows: fr } = loadPackCells('form-responsive', '40x8', 0)
+  const hasBar = cells.some((c) => c.ch === '█')
+  const hasDeco = cells.some((c) => c.ch === '›')
+  assert(hasBar, 'form pack fixture has █ scrollbar cells')
+  assert(hasDeco, 'form pack fixture has › glyph')
+  const cur = inferCursorFromFrame(cells, fc, fr, 1, 0)
+  assert(cur.x !== 40, `form must not pin to scrollbar col 40, got ${cur.x},${cur.y}`)
+  // No underline/reversed/leftmost-▌ in step0 form → step+pad fallback (1,1)
+  assert(cur.x === 1 && cur.y === 1, `form step0 fallback (1,1) got ${cur.x},${cur.y}`)
+}
+
+// agent-workbench: decorative › in transcript — must not sticky (5,2)
+{
+  const { cells, cols: wc, rows: wr } = loadPackCells('agent-workbench-basic', '72x16', 0)
+  const gt = cells.findIndex((c) => c.ch === '›')
+  assert(gt >= 0, 'workbench pack has decorative ›')
+  const gx = gt % wc
+  const gy = Math.floor(gt / wc)
+  const cur = inferCursorFromFrame(cells, wc, wr, 1, 0)
+  assert(
+    !(cur.x === gx && cur.y === gy),
+    `workbench must not pin to › at (${gx},${gy}), got ${cur.x},${cur.y}`,
+  )
+  assert(cur.x === 1 && cur.y === 1, `workbench step0 fallback (1,1) got ${cur.x},${cur.y}`)
+}
+
+// list-selection step1: underline on label + leftmost ▌ — underline leftmost on row wins
+{
+  const { cells, cols: lc, rows: lr } = loadPackCells('list-selection', '40x8', 1)
+  const cur = inferCursorFromFrame(cells, lc, lr, 1, 1)
+  assert(cells[cur.y * lc + cur.x]?.underline, `list cursor on underline cell got ${cur.x},${cur.y}`)
+  // First underline on selection row is col 5 ('A') in exported pack
+  assert(cur.y === 2 && cur.x === 5, `list step1 underline start (5,2) got ${cur.x},${cur.y}`)
+}
 
 console.log('preview-metrics: ok')

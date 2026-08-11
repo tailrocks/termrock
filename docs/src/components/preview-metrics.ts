@@ -242,8 +242,14 @@ export function formatCellProbe(
 }
 
 /**
- * Infer block-cursor cell from real frame paint (underline / reverse / selection bar).
- * Falls back to step+pad heuristic when no selection cue is found.
+ * Infer block-cursor cell from real frame paint.
+ *
+ * Cues (strict — chrome glyphs must NOT win):
+ * 1. Underline / reverse video (list focus, selected fields)
+ * 2. Leftmost-body selection bar `▌` only (not full-block `█` scrollbars,
+ *    not decorative `›` / `❯` / `▶` in transcripts/prompts)
+ *
+ * Falls back to step+pad heuristic when no safe cue is found.
  */
 export function inferCursorFromFrame(
   cells: readonly ProbeCell[],
@@ -259,22 +265,29 @@ export function inferCursorFromFrame(
   const x1 = Math.max(x0, c - 1 - p)
   const y0 = Math.min(r - 1, p)
   const y1 = Math.max(y0, r - 1 - p)
-  // Prefer underline (list focus), then reverse, then selection bar glyphs.
-  const rank = (cell: ProbeCell | undefined): number => {
+  // Body left column for selection bars (pad cell). Never treat right-edge █
+  // panel scrollbars or decorative › as cursor.
+  const barCol = x0
+  const rank = (cell: ProbeCell | undefined, x: number): number => {
     if (!cell) return 0
     if (cell.underline) return 3
     if (cell.reversed) return 2
-    const ch = cell.ch
-    if (ch === '▌' || ch === '█' || ch === '▶' || ch === '›' || ch === '❯') return 1
+    // Only half-block selection bar in the leftmost body column.
+    if (cell.ch === '▌' && x === barCol) return 1
     return 0
   }
   let best: { x: number; y: number; score: number } | null = null
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       const cell = cells[y * c + x]
-      const score = rank(cell)
+      const score = rank(cell, x)
       if (score <= 0) continue
-      if (!best || score > best.score || (score === best.score && y < best.y)) {
+      // Higher score wins; ties prefer topmost then leftmost (scan order).
+      if (
+        !best ||
+        score > best.score ||
+        (score === best.score && (y < best.y || (y === best.y && x < best.x)))
+      ) {
         best = { x, y, score }
       }
     }
