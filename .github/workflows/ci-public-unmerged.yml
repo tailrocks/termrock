@@ -1,24 +1,15 @@
-name: CI
+name: CI (public unmerged)
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  schedule:
-    - cron: "0 4 * * 0"
-  workflow_dispatch:
-    inputs:
-      lanes:
-        description: velnor (default) | github | both
-        type: choice
-        default: velnor
-        options: [velnor, github, both]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-public-unmerged-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rust:
@@ -27,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -93,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -142,7 +133,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -191,7 +182,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     env:
       CARGO_INCREMENTAL: "0"
@@ -244,7 +235,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: ${{ fromJSON((github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'both')) && '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true},{"lane":"GitHub","runner":"ubuntu-26.04","writer":false}]' || (github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') && '[{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]' || '[{"lane":"Velnor","runner":["self-hosted","velnor-target-mvp"],"writer":true}]') }}
+        config: [{"lane":"GitHub","runner":"ubuntu-26.04","writer":true}]
     runs-on: ${{ matrix.config.runner }}
     steps:
       - name: Fail on any failed or cancelled need
@@ -253,3 +244,4 @@ jobs:
         run: |
           echo "$NEEDS_JSON" | jq -e 'to_entries | map(.value.result) | any(. == "failure" or . == "cancelled") | not' >/dev/null \
             || { echo "A required job failed or was cancelled." >&2; exit 1; }
+
