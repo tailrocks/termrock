@@ -49,10 +49,10 @@ Unicode PermissionPrompt
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{PermissionPrompt, PermissionPromptState, PermissionRequest}};
+use termrock::{style::DesignSystem, widgets::{PermissionPrompt, PermissionPromptState, PermissionRequest}};
 
-let theme = Theme::default();
-let prompt = PermissionPrompt::new(&theme);
+let system = DesignSystem::default();
+let prompt = PermissionPrompt::new(&system);
 let mut state = PermissionPromptState::new();
 state.enqueue(PermissionRequest::new("r1", "bash", "workspace"));
 ```

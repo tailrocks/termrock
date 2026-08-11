@@ -49,12 +49,12 @@ Unicode QuestionFlow
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{QuestionFlow, QuestionOption, QuestionStep}};
+use termrock::{style::DesignSystem, widgets::{QuestionFlow, QuestionOption, QuestionStep}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let opts = [QuestionOption { id: "y", label: "Yes" }];
 let steps = [QuestionStep { id: "q1", prompt: "Continue?", options: &opts, required: true }];
-let flow = QuestionFlow::new(&steps, &tokens);
+let flow = QuestionFlow::new(&steps, &system);
 ```
 
 ## Interaction contract

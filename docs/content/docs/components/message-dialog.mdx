@@ -32,11 +32,11 @@ Unicode MessageDialog
 
 ```rust
 use ratatui_core::text::Text;
-use termrock::{Theme, widgets::{DetailCapability, DetailRow, DetailTableState, Dialog, MessageDialog}};
+use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTableState, Dialog, MessageDialog}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let details = [DetailRow { id: "stage", label: "Stage", value: "Build", href: None, capability: DetailCapability::None, emphasis: false, style: None }];
-let dialog = MessageDialog::new(Dialog::new("Failure", Text::from("Build failed"), &theme), &details, &theme).wrap(true);
+let dialog = MessageDialog::new(Dialog::new("Failure", Text::from("Build failed"), &system), &details, &system).wrap(true);
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&details);
 ```

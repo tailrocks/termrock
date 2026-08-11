@@ -30,11 +30,11 @@ AlertDialog::new(&system).paint(area, buf, &mut state);`,
   ActionBar: {
     description: 'A horizontal group of stable, caller-owned actions with painted hit regions.',
     primaryStory: 'action-bar/basic',
-    usage: `use termrock::{Theme, widgets::{Action, ActionBar, ActionBarState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Action, ActionBar, ActionBarState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let actions = [Action { id: "save", label: "Save", enabled: true, style: None }];
-let bar = ActionBar::new(&actions, &theme);
+let bar = ActionBar::new(&actions, &system);
 let state = ActionBarState { focused: Some("save"), ..ActionBarState::default() };`,
   },
   Backdrop: {
@@ -93,9 +93,9 @@ CompletionMenu::new(&candidates, &system, bounds, anchor).paint(area, buf, &mut 
   DesignInspector: {
     description: 'Studio debug strip for focus, layer, density, and color capability.',
     primaryStory: 'design-inspector/basic',
-    usage: `use termrock::{Theme, style::ColorCapability, widgets::{DesignInspector, DesignInspectorFrame}};
+    usage: `use termrock::{style::{ColorCapability, DesignSystem}, widgets::{DesignInspector, DesignInspectorFrame}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let frame = DesignInspectorFrame {
     focused: Some("list"),
     layer: Some("root"),
@@ -105,16 +105,16 @@ let frame = DesignInspectorFrame {
     recipes: &[],
     selection_chrome: "gutter",
 };
-let _inspector = DesignInspector::new(frame, &theme);`,
+let _inspector = DesignInspector::new(frame, &system);`,
   },
   DetailTable: {
     description: 'A selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
-    usage: `use termrock::{Theme, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let rows = [DetailRow { id: "url", label: "URL", value: "https://example.com", href: Some("https://example.com"), capability: DetailCapability::Link, emphasis: false, style: None }];
-let table = DetailTable::new(&rows, &theme).wrap(true);
+let table = DetailTable::new(&rows, &system).wrap(true);
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&rows);`,
   },
@@ -123,14 +123,14 @@ let outcome = state.select_next(&rows);`,
     primaryStory: 'table/basic',
     usage: `use std::num::NonZeroU16;
 use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
+use termrock::{style::DesignSystem, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
 let rows = [TableRow { id: "termrock", cells: &cells, leading: None, badge: None, enabled: true, emphasis: false, style: None }];
-let tokens = DesignTokens::default();
-let table = Table::new(&columns, &rows, &tokens);
+let system = DesignSystem::default();
+let table = Table::new(&columns, &rows, &system);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
 state.set_focused(true);
 let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));`,
@@ -160,11 +160,11 @@ Dialog::new("Notice", Text::from("Saved"), &system)
   DiffView: {
     description: 'A vertically scrollable, syntax-neutral presentation of projected diff lines.',
     primaryStory: 'diff/basic',
-    usage: `use termrock::{Theme, widgets::{DiffKind, DiffLine, DiffState, DiffView}};
+    usage: `use termrock::{style::DesignSystem, widgets::{DiffKind, DiffLine, DiffState, DiffView}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = [DiffLine { text: "+added", kind: DiffKind::Added }];
-let diff = DiffView::new(&lines, &theme);
+let diff = DiffView::new(&lines, &system);
 let mut state = DiffState::default();
 state.offset = 1;
 let _visible_offset = state.offset;`,
@@ -188,12 +188,12 @@ let _ = FormWizard::new(&system).title("Setup");`,
     description: 'A responsive form layout with stable focus, validation, and hit geometry.',
     primaryStory: 'form/responsive',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Form, FormField, FormSection, FormState}};
+use termrock::{style::DesignSystem, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Form, FormField, FormSection, FormState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let fields = [FormField::new("name", Line::from("Name"), Line::from("Ada")).required(true)];
 let sections = [FormSection { title: Line::from("Profile"), fields: &fields }];
-let form = Form::new(&sections, &theme);
+let form = Form::new(&sections, &system);
 let mut state = FormState::new(Some("name"));
 let outcome = state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));`,
   },
@@ -201,11 +201,11 @@ let outcome = state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifie
     description: 'A wrapping row of prioritized keyboard hints with semantic styling.',
     primaryStory: 'hint-bar/wrapped',
     usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
-use termrock::{Theme, widgets::{Hint, HintBar}};
+use termrock::{style::DesignSystem, widgets::{Hint, HintBar}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let hints = [Hint { chord: "Enter", label: "open", priority: 0, visible: true }];
-let bar = HintBar::new(&hints, &theme).separator(" · ");
+let bar = HintBar::new(&hints, &system).separator(" · ");
 let area = Rect::new(0, 0, 40, 2);
 bar.render(area, &mut Buffer::empty(area));`,
   },
@@ -246,14 +246,14 @@ VirtualList::new(&projected, &system).show_diagnostics(true).paint(area, buf, &m
     primaryStory: 'log-pane/follow',
     usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use termrock::{
-  Theme,
+  DesignSystem,
   ansi_text::line_from_ansi,
   style::Role,
   widgets::{LogPane, LogPaneState},
 };
 
-let theme = Theme::default();
-let pane = LogPane::new(&theme).title("Build");
+let system = DesignSystem::default();
+let pane = LogPane::new(&system).title("Build");
 let mut state = LogPaneState::new().with_max_lines(1_000);
 state.append(line_from_ansi("\\u{1b}[32mready\\u{1b}[0m", theme.style(Role::Text)));
 let area = Rect::new(0, 0, 80, 24);
@@ -273,11 +273,11 @@ let unbounded = LogPaneState::new().unbounded();`,
     description: 'A message dialog composed with optional scrollable detail rows.',
     primaryStory: 'message-dialog/details',
     usage: `use ratatui_core::text::Text;
-use termrock::{Theme, widgets::{DetailCapability, DetailRow, DetailTableState, Dialog, MessageDialog}};
+use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTableState, Dialog, MessageDialog}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let details = [DetailRow { id: "stage", label: "Stage", value: "Build", href: None, capability: DetailCapability::None, emphasis: false, style: None }];
-let dialog = MessageDialog::new(Dialog::new("Failure", Text::from("Build failed"), &theme), &details, &theme).wrap(true);
+let dialog = MessageDialog::new(Dialog::new("Failure", Text::from("Build failed"), &system), &details, &system).wrap(true);
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&details);`,
   },
@@ -313,9 +313,9 @@ let body = Card::new(&system)
     description: 'A filterable stable-ID list composition with caller-owned matching and ordering.',
     primaryStory: 'picker/basic',
     usage: `use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
+use termrock::{style::DesignSystem, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{ListRow, Picker, PickerOutcome, PickerState, RowRole}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let candidates = [("open", "Open file"), ("logs", "Show logs")];
 let project = |query: &str| candidates.iter()
     .filter(|(_, label)| label.to_lowercase().contains(&query.to_lowercase()))
@@ -327,8 +327,8 @@ if matches!(state.handle_key(&rows, KeyEvent::new(KeyCode::Char('l'), KeyModifie
     rows = project(state.query_text());
     state.reconcile(&rows);
 }
-let tokens = DesignTokens::default();
-let picker = Picker::new(&rows, &tokens);`,
+let system = DesignSystem::default();
+let picker = Picker::new(&rows, &system);`,
   },
   ProgressSteps: {
     description:
@@ -350,10 +350,10 @@ ProgressSteps::new(&steps, &system)
     description: 'A resizable two-pane layout with bounded ratios and collapse support.',
     primaryStory: 'split-pane/horizontal',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{SplitDirection, SplitPane, SplitPaneState, SplitRatio}};
+use termrock::{style::DesignSystem, widgets::{SplitDirection, SplitPane, SplitPaneState, SplitRatio}};
 
-let theme = Theme::default();
-let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &theme);
+let system = DesignSystem::default();
+let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &system);
 let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);`,
   },
@@ -361,11 +361,11 @@ let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);`,
     description: 'A one-row collection of prioritized, interactive status slots.',
     primaryStory: 'status-bar/basic',
     usage: `use ratatui_core::style::Style;
-use termrock::{Theme, widgets::{StatusBar, StatusBarState, StatusSlot}};
+use termrock::{style::DesignSystem, widgets::{StatusBar, StatusBarState, StatusSlot}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let left = [StatusSlot { id: "mode", content: "NORMAL", priority: 10, min_width: 0, enabled: true, style: Style::new(), hover_style: None }];
-let bar = StatusBar::new(&left, &[], &theme);
+let bar = StatusBar::new(&left, &[], &system);
 let mut state = StatusBarState::<&str>::default();
 state.hovered = Some("mode");`,
   },
@@ -627,10 +627,10 @@ let _ = KeybindingRecorder::new(&system);`,
   TextInput: {
     description: 'A single-line, grapheme-safe input with validation and semantic outcomes.',
     primaryStory: 'text-input/unicode',
-    usage: `use termrock::{Theme, widgets::{EditAction, TextInput, TextInputState, Validation}};
+    usage: `use termrock::{style::DesignSystem, widgets::{EditAction, TextInput, TextInputState, Validation}};
 
-let theme = Theme::default();
-let input = TextInput::new("Filter", &theme)
+let system = DesignSystem::default();
+let input = TextInput::new("Filter", &system)
     .placeholder("type to filter")
     .validation(Validation::Valid);
 let mut state = TextInputState::new("").with_max_graphemes(80);
@@ -693,27 +693,27 @@ Tree::new(&nodes, &system);`,
   VirtualGrid: {
     description: 'A two-axis virtualized grid whose paint cost is bounded by caller-projected resident rows.',
     primaryStory: 'virtual-grid/basic',
-    usage: `use termrock::{Theme, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let columns = [
   GridColumn::fixed("id", "ID", 8),
   GridColumn::min("name", "Name", 16),
 ];
 let cells = [GridCell::text("42"), GridCell::text("termrock")];
 let rows = [GridRow::new("row-42", 42, &cells)];
-let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(1_000_000);
+let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1_000_000);
 let state = VirtualGridState::<&str, &str>::new();`,
   },
   Viewport: {
     description: 'A two-axis scrollable view over borrowed terminal lines.',
     primaryStory: 'viewport/both-axes',
     usage: `use ratatui_core::text::Line;
-use termrock::{Theme, scroll::DialogScroll, widgets::Viewport};
+use termrock::{style::DesignSystem, scroll::DialogScroll, widgets::Viewport};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = [Line::from("long output")];
-let viewport = Viewport::new(&lines, &theme).title("Output");
+let viewport = Viewport::new(&lines, &system).title("Output");
 let mut state = DialogScroll::default();
 state.scroll_y = 1;
 let _vertical_offset = state.scroll_y;`,
@@ -722,28 +722,28 @@ let _vertical_offset = state.scroll_y;`,
   Banner: {
     description: 'A single-line severity banner with non-color glyphs.',
     primaryStory: 'banner/basic',
-    usage: `use termrock::{Theme, widgets::{Banner, Severity}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Banner, Severity}};
 
-let theme = Theme::default();
-let banner = Banner::new("Deployed", Severity::Success, &theme);`,
+let system = DesignSystem::default();
+let banner = Banner::new("Deployed", Severity::Success, &system);`,
   },
   BarSeries: {
     description: 'Labeled horizontal bars for density dashboards.',
     primaryStory: 'bar-series/basic',
-    usage: `use termrock::{Theme, widgets::{BarDatum, BarSeries}};
+    usage: `use termrock::{style::DesignSystem, widgets::{BarDatum, BarSeries}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let bars = [BarDatum { label: "cpu", fraction: 0.72 }];
-let series = BarSeries::new(&bars, &theme);`,
+let series = BarSeries::new(&bars, &system);`,
   },
   CodeBlock: {
     description: 'Source listing with optional line numbers and pluggable syntax.',
     primaryStory: 'code-block/basic',
-    usage: `use termrock::{Theme, widgets::CodeBlock};
+    usage: `use termrock::{style::DesignSystem, widgets::CodeBlock};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = ["fn main() {}"];
-let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);`,
+let block = CodeBlock::new(&lines, &system).language("rust").line_numbers(true);`,
   },
   CommandPalette: {
     description:
@@ -854,21 +854,21 @@ example_error_network(&system).paint(area, buf);`,
     description: 'Letter-badge jump navigation over registered rectangles.',
     primaryStory: 'jump-overlay/basic',
     usage: `use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{JumpOverlay, JumpOverlayState, JumpTarget}};
+use termrock::{style::DesignSystem, widgets::{JumpOverlay, JumpOverlayState, JumpTarget}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let targets = [JumpTarget { id: "files", area: Rect::new(0, 0, 10, 1), badge: 'f' }];
-let overlay = JumpOverlay::new(&targets, &theme);
+let overlay = JumpOverlay::new(&targets, &system);
 let mut state = JumpOverlayState::new();
 state.open();`,
   },
   LoadingView: {
     description: 'Centered loading label with a caller-ticked spinner frame.',
     primaryStory: 'loading-view/basic',
-    usage: `use termrock::{Theme, widgets::LoadingView};
+    usage: `use termrock::{style::DesignSystem, widgets::LoadingView};
 
-let theme = Theme::default();
-let loading = LoadingView::new("Loading…", "⠋", &theme);`,
+let system = DesignSystem::default();
+let loading = LoadingView::new("Loading…", "⠋", &system);`,
   },
   OfflineBanner: {
     description:
@@ -894,20 +894,20 @@ Spinner::labeled("Fetching packages", &system)
   MarkdownView: {
     description: 'Projected markdown-like blocks with semantic roles.',
     primaryStory: 'markdown-view/basic',
-    usage: `use termrock::{Theme, widgets::{MarkdownBlock, MarkdownBlockKind, MarkdownView}};
+    usage: `use termrock::{style::DesignSystem, widgets::{MarkdownBlock, MarkdownBlockKind, MarkdownView}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let blocks = [MarkdownBlock { kind: MarkdownBlockKind::Heading, text: "Plan" }];
-let view = MarkdownView::new(&blocks, &theme);`,
+let view = MarkdownView::new(&blocks, &system);`,
   },
   SegmentedMeter: {
     description: 'Single-row proportional meter for stacked shares.',
     primaryStory: 'segmented-meter/basic',
-    usage: `use termrock::{Theme, style::Role, widgets::{MeterSegment, SegmentedMeter}};
+    usage: `use termrock::{style::DesignSystem, style::Role, widgets::{MeterSegment, SegmentedMeter}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let segments = [MeterSegment { label: "used", weight: 1.0, role: Role::Success }];
-let meter = SegmentedMeter::new(&segments, &theme);`,
+let meter = SegmentedMeter::new(&segments, &system);`,
   },
   Skeleton: {
     description:
@@ -936,19 +936,19 @@ StatusIndicator::new(SemanticStatus::Running, &system)
   Sparkline: {
     description: 'One-row sparkline over normalized samples.',
     primaryStory: 'sparkline/basic',
-    usage: `use termrock::{Theme, widgets::Sparkline};
+    usage: `use termrock::{style::DesignSystem, widgets::Sparkline};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let samples = [0.1, 0.5, 0.9];
-let spark = Sparkline::new(&samples, &theme);`,
+let spark = Sparkline::new(&samples, &system);`,
   },
   ThinkingBlock: {
     description: 'Collapsible thinking/reasoning chrome.',
     primaryStory: 'thinking-block/basic',
-    usage: `use termrock::{Theme, widgets::ThinkingBlock};
+    usage: `use termrock::{style::DesignSystem, widgets::ThinkingBlock};
 
-let theme = Theme::default();
-let block = ThinkingBlock::new("Planning", &theme).expanded(true).body("Details");`,
+let system = DesignSystem::default();
+let block = ThinkingBlock::new("Planning", &system).expanded(true).body("Details");`,
   },
   CheckpointTimeline: {
     description:
@@ -971,90 +971,90 @@ match state.handle_key(key) {
   Timeline: {
     description: 'Vertical activity timeline with active markers.',
     primaryStory: 'timeline/basic',
-    usage: `use termrock::{Theme, widgets::{Timeline, TimelineEvent}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Timeline, TimelineEvent}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let events = [TimelineEvent { when: "12:01", text: "Started", active: true }];
-let timeline = Timeline::new(&events, &theme);`,
+let timeline = Timeline::new(&events, &system);`,
   },
   TokenMeter: {
     description: 'Token or cost usage meter with threshold roles.',
     primaryStory: 'token-meter/basic',
-    usage: `use termrock::{Theme, widgets::TokenMeter};
+    usage: `use termrock::{style::DesignSystem, widgets::TokenMeter};
 
-let theme = Theme::default();
-let meter = TokenMeter::new(128_000, 200_000, &theme);`,
+let system = DesignSystem::default();
+let meter = TokenMeter::new(128_000, 200_000, &system);`,
   },
   Transcript: {
     description: 'Variable-height streaming transcript with stable visual anchors.',
     primaryStory: 'transcript/basic',
-    usage: `use termrock::{Theme, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = ["hello", "world"];
 let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
 let mut state: TranscriptState<&str> = TranscriptState::new();
-let view = Transcript::new(&blocks, &theme);
+let view = Transcript::new(&blocks, &system);
 let _ = (&mut state, view);`,
   },
   ToolCard: {
     description: 'Mutable tool invocation card with non-color status glyphs.',
     primaryStory: 'tool-card/basic',
-    usage: `use termrock::{Theme, widgets::{ToolCard, ToolStatus}};
+    usage: `use termrock::{style::DesignSystem, widgets::{ToolCard, ToolStatus}};
 
-let theme = Theme::default();
-let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);`,
+let system = DesignSystem::default();
+let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &system);`,
   },
 
   ThemePicker: {
     description: 'A live theme preset list; selection changes drive caller re-render.',
     primaryStory: 'system-picker/basic',
-    usage: `use termrock::{Theme, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
+    usage: `use termrock::{style::DesignSystem, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
 
-let theme = Theme::default();
-let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &theme);
+let system = DesignSystem::default();
+let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &system);
 let mut state = ThemePickerState::new(0);
 let preview = theme_from_preset_id("slate");`,
   },
   ImageSurface: {
     description: 'A framed image slot with protocol labels; pixels stay caller-owned.',
     primaryStory: 'image-surface/basic',
-    usage: `use termrock::{Theme, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
+    usage: `use termrock::{style::DesignSystem, widgets::{ImageMeta, ImageProtocol, ImageSurface}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let meta = ImageMeta { label: "shot.png", pixel_width: Some(64), pixel_height: Some(64), protocol: ImageProtocol::Placeholder, pending: false, stale: false, generation: 0 };
-let surface = ImageSurface::new(meta, &theme);`,
+let surface = ImageSurface::new(meta, &system);`,
   },
 
 
   Button: {
     description: 'Activation primitive. Enter/Space or pointer activate once; disabled/loading never activate.',
     primaryStory: 'button/activation',
-    usage: `use termrock::{style::DesignTokens, widgets::{Button, ButtonState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Button, ButtonState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let mut state = ButtonState::new();
-let button = Button::new("Save", &tokens);`,
+let button = Button::new("Save", &system);`,
   },
   Checkbox: {
     description: 'Controlled checkbox with typed value-change outcomes.',
     primaryStory: 'checkbox/switch',
-    usage: `use termrock::{style::DesignTokens, widgets::{Checkbox, CheckboxState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Checkbox, CheckboxState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let mut state = CheckboxState::new(false);
-let box_ = Checkbox::new("enable", "Enable", &tokens);`,
+let box_ = Checkbox::new("enable", "Enable", &system);`,
   },
   DataTable: {
     description: 'Scalable table chrome; SelectAll is request-only over projected rows.',
     primaryStory: 'data-table/toolbar',
-    usage: `use termrock::{style::DesignTokens, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let columns = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
 let rows: [(u64, &[&str]); 0] = [];
 let mut state = DataTableState::<u64, &str>::new();
-let table = DataTable::new(&tokens, &columns, &rows);`,
+let table = DataTable::new(&system, &columns, &rows);`,
   },
   Menu: {
     description:
@@ -1106,10 +1106,10 @@ MenuBar::new(&menus, &system).paint_all(bar_area, bounds, buf, &mut state);`,
   Badge: {
     description: 'Non-interactive status badge with semantic role paint.',
     primaryStory: 'badge/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::Badge};
+    usage: `use termrock::{style::DesignSystem, widgets::Badge};
 
-let tokens = DesignTokens::default();
-let badge = Badge::new("NEW", &tokens);`,
+let system = DesignSystem::default();
+let badge = Badge::new("NEW", &system);`,
   },
   Callout: {
     description:
@@ -1207,43 +1207,43 @@ PreviewCard::new(content, &system).paint(area, buf, &mut state);`,
   Heading: {
     description: 'Semantic heading line with terminal typography levels.',
     primaryStory: 'heading/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{Heading, HeadingLevel}};
+    usage: `use termrock::{style::DesignSystem, widgets::{Heading, HeadingLevel}};
 
-let tokens = DesignTokens::default();
-let h = Heading::new("Title", &tokens).level(HeadingLevel::H1);`,
+let system = DesignSystem::default();
+let h = Heading::new("Title", &system).level(HeadingLevel::H1);`,
   },
   Kbd: {
     description: 'Key chord chrome for keymap hint projection.',
     primaryStory: 'kbd/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::Kbd};
+    usage: `use termrock::{style::DesignSystem, widgets::Kbd};
 
-let tokens = DesignTokens::default();
-let kbd = Kbd::new("C-k", &tokens);`,
+let system = DesignSystem::default();
+let kbd = Kbd::new("C-k", &system);`,
   },
   ModeRibbon: {
     description: 'Product-neutral agent mode strip with selection outcomes.',
     primaryStory: 'mode-ribbon/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{ModeRibbon, WorkbenchMode}};
+    usage: `use termrock::{style::DesignSystem, widgets::{ModeRibbon, WorkbenchMode}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let modes = [WorkbenchMode { id: "plan", label: "Plan", active: true, enabled: true }];
-let ribbon = ModeRibbon::new(&modes, &tokens);`,
+let ribbon = ModeRibbon::new(&modes, &system);`,
   },
   Paragraph: {
     description: 'Body paragraph with grapheme-safe display-column wrap.',
     primaryStory: 'paragraph/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::Paragraph};
+    usage: `use termrock::{style::DesignSystem, widgets::Paragraph};
 
-let tokens = DesignTokens::default();
-let p = Paragraph::new("Body text", &tokens);`,
+let system = DesignSystem::default();
+let p = Paragraph::new("Body text", &system);`,
   },
   PermissionPrompt: {
     description: 'Fail-safe permission/trust surface with default-deny focus.',
     primaryStory: 'permission-prompt/basic',
-    usage: `use termrock::{Theme, widgets::{PermissionPrompt, PermissionPromptState, PermissionRequest}};
+    usage: `use termrock::{style::DesignSystem, widgets::{PermissionPrompt, PermissionPromptState, PermissionRequest}};
 
-let theme = Theme::default();
-let prompt = PermissionPrompt::new(&theme);
+let system = DesignSystem::default();
+let prompt = PermissionPrompt::new(&system);
 let mut state = PermissionPromptState::new();
 state.enqueue(PermissionRequest::new("r1", "bash", "workspace"));`,
   },
@@ -1271,22 +1271,22 @@ let _ = state.open_on_stack(&mut stack, bounds, anchor, size, Some("trigger"));
   PromptComposer: {
     description: 'Flagship agent prompt composer with chips, policy, and completion overlays.',
     primaryStory: 'prompt-composer/basic',
-    usage: `use termrock::{style::DesignTokens, Theme, widgets::{PromptComposer, PromptComposerState}};
+    usage: `use termrock::{style::DesignSystem, widgets::{PromptComposer, PromptComposerState}};
 
-let tokens = DesignTokens::default();
-let theme = Theme::default();
+let system = DesignSystem::default();
+let system = DesignSystem::default();
 let mut state = PromptComposerState::new();
-let composer = PromptComposer::new(&tokens, &theme);`,
+let composer = PromptComposer::new(&system, &system);`,
   },
   QuestionFlow: {
     description: 'Multi-step interview flow with option selection outcomes.',
     primaryStory: 'question-flow/basic',
-    usage: `use termrock::{style::DesignTokens, widgets::{QuestionFlow, QuestionOption, QuestionStep}};
+    usage: `use termrock::{style::DesignSystem, widgets::{QuestionFlow, QuestionOption, QuestionStep}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let opts = [QuestionOption { id: "y", label: "Yes" }];
 let steps = [QuestionStep { id: "q1", prompt: "Continue?", options: &opts, required: true }];
-let flow = QuestionFlow::new(&steps, &tokens);`,
+let flow = QuestionFlow::new(&steps, &system);`,
   },
   Surface: {
     description:

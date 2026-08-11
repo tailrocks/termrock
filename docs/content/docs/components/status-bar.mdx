@@ -50,11 +50,11 @@ Unicode StatusBar
 
 ```rust
 use ratatui_core::style::Style;
-use termrock::{Theme, widgets::{StatusBar, StatusBarState, StatusSlot}};
+use termrock::{style::DesignSystem, widgets::{StatusBar, StatusBarState, StatusSlot}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let left = [StatusSlot { id: "mode", content: "NORMAL", priority: 10, min_width: 0, enabled: true, style: Style::new(), hover_style: None }];
-let bar = StatusBar::new(&left, &[], &theme);
+let bar = StatusBar::new(&left, &[], &system);
 let mut state = StatusBarState::<&str>::default();
 state.hovered = Some("mode");
 ```

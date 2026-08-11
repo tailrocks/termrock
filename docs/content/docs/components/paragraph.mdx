@@ -49,10 +49,10 @@ Unicode Paragraph
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::Paragraph};
+use termrock::{style::DesignSystem, widgets::Paragraph};
 
-let tokens = DesignTokens::default();
-let p = Paragraph::new("Body text", &tokens);
+let system = DesignSystem::default();
+let p = Paragraph::new("Body text", &system);
 ```
 
 ## Interaction contract

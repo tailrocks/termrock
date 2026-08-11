@@ -31,10 +31,10 @@ Unicode Banner
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{Banner, Severity}};
+use termrock::{style::DesignSystem, widgets::{Banner, Severity}};
 
-let theme = Theme::default();
-let banner = Banner::new("Deployed", Severity::Success, &theme);
+let system = DesignSystem::default();
+let banner = Banner::new("Deployed", Severity::Success, &system);
 ```
 
 ## Interaction contract

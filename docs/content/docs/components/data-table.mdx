@@ -121,13 +121,13 @@ DataTable wide
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
+use termrock::{style::DesignSystem, widgets::{ColumnModel, DataColumn, DataColumnWidth, DataTable, DataTableState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let columns = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
 let rows: [(u64, &[&str]); 0] = [];
 let mut state = DataTableState::<u64, &str>::new();
-let table = DataTable::new(&tokens, &columns, &rows);
+let table = DataTable::new(&system, &columns, &rows);
 ```
 
 ## Interaction contract

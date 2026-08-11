@@ -31,10 +31,10 @@ Unicode TokenMeter
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::TokenMeter};
+use termrock::{style::DesignSystem, widgets::TokenMeter};
 
-let theme = Theme::default();
-let meter = TokenMeter::new(128_000, 200_000, &theme);
+let system = DesignSystem::default();
+let meter = TokenMeter::new(128_000, 200_000, &system);
 ```
 
 ## Interaction contract

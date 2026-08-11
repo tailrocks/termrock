@@ -87,14 +87,14 @@ Unicode table
 ```rust
 use std::num::NonZeroU16;
 use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
+use termrock::{style::DesignSystem, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{CellAlignment, Column, ColumnWidth, Table, TableRow, TableState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let columns = [Column { id: "name", title: Line::from("Name"), width: ColumnWidth::Fill(NonZeroU16::new(1).unwrap()), alignment: CellAlignment::Left, sortable: true, sort: None }];
 let cells = [Line::from("termrock")];
 let rows = [TableRow { id: "termrock", cells: &cells, leading: None, badge: None, enabled: true, emphasis: false, style: None }];
-let tokens = DesignTokens::default();
-let table = Table::new(&columns, &rows, &tokens);
+let system = DesignSystem::default();
+let table = Table::new(&columns, &rows, &system);
 let mut state = TableState::<&str, &str>::new(Some("termrock"));
 state.set_focused(true);
 let outcome = state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));

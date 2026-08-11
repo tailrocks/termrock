@@ -91,11 +91,11 @@ Button variants
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{Button, ButtonState}};
+use termrock::{style::DesignSystem, widgets::{Button, ButtonState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let mut state = ButtonState::new();
-let button = Button::new("Save", &tokens);
+let button = Button::new("Save", &system);
 ```
 
 ## Interaction contract

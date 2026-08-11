@@ -37,16 +37,16 @@ Virtual grid Unicode
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
+use termrock::{style::DesignSystem, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let columns = [
   GridColumn::fixed("id", "ID", 8),
   GridColumn::min("name", "Name", 16),
 ];
 let cells = [GridCell::text("42"), GridCell::text("termrock")];
 let rows = [GridRow::new("row-42", 42, &cells)];
-let grid = VirtualGrid::new(&columns, &rows, &theme).total_rows(1_000_000);
+let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1_000_000);
 let state = VirtualGridState::<&str, &str>::new();
 ```
 

@@ -31,11 +31,11 @@ Unicode BarSeries
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{BarDatum, BarSeries}};
+use termrock::{style::DesignSystem, widgets::{BarDatum, BarSeries}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let bars = [BarDatum { label: "cpu", fraction: 0.72 }];
-let series = BarSeries::new(&bars, &theme);
+let series = BarSeries::new(&bars, &system);
 ```
 
 ## Interaction contract

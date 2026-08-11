@@ -55,13 +55,13 @@ Transcript unicode
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
+use termrock::{style::DesignSystem, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = ["hello", "world"];
 let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
 let mut state: TranscriptState<&str> = TranscriptState::new();
-let view = Transcript::new(&blocks, &theme);
+let view = Transcript::new(&blocks, &system);
 let _ = (&mut state, view);
 ```
 

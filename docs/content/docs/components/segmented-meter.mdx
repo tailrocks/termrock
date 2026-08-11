@@ -31,11 +31,11 @@ Unicode SegmentedMeter
 ## Usage
 
 ```rust
-use termrock::{Theme, style::Role, widgets::{MeterSegment, SegmentedMeter}};
+use termrock::{style::DesignSystem, style::Role, widgets::{MeterSegment, SegmentedMeter}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let segments = [MeterSegment { label: "used", weight: 1.0, role: Role::Success }];
-let meter = SegmentedMeter::new(&segments, &theme);
+let meter = SegmentedMeter::new(&segments, &system);
 ```
 
 ## Interaction contract

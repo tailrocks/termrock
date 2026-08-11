@@ -43,10 +43,10 @@ Unicode Heading
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{Heading, HeadingLevel}};
+use termrock::{style::DesignSystem, widgets::{Heading, HeadingLevel}};
 
-let tokens = DesignTokens::default();
-let h = Heading::new("Title", &tokens).level(HeadingLevel::H1);
+let system = DesignSystem::default();
+let h = Heading::new("Title", &system).level(HeadingLevel::H1);
 ```
 
 ## Interaction contract

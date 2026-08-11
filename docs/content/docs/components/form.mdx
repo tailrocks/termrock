@@ -44,12 +44,12 @@ Form validation
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{Theme, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Form, FormField, FormSection, FormState}};
+use termrock::{style::DesignSystem, input::{KeyCode, KeyEvent, KeyModifiers}, widgets::{Form, FormField, FormSection, FormState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let fields = [FormField::new("name", Line::from("Name"), Line::from("Ada")).required(true)];
 let sections = [FormSection { title: Line::from("Profile"), fields: &fields }];
-let form = Form::new(&sections, &theme);
+let form = Form::new(&sections, &system);
 let mut state = FormState::new(Some("name"));
 let outcome = state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
 ```

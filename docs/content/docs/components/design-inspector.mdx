@@ -49,9 +49,9 @@ Unicode DesignInspector
 ## Usage
 
 ```rust
-use termrock::{Theme, style::ColorCapability, widgets::{DesignInspector, DesignInspectorFrame}};
+use termrock::{style::{ColorCapability, DesignSystem}, widgets::{DesignInspector, DesignInspectorFrame}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let frame = DesignInspectorFrame {
     focused: Some("list"),
     layer: Some("root"),
@@ -61,7 +61,7 @@ let frame = DesignInspectorFrame {
     recipes: &[],
     selection_chrome: "gutter",
 };
-let _inspector = DesignInspector::new(frame, &theme);
+let _inspector = DesignInspector::new(frame, &system);
 ```
 
 ## Interaction contract

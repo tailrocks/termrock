@@ -31,10 +31,10 @@ Unicode LoadingView
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::LoadingView};
+use termrock::{style::DesignSystem, widgets::LoadingView};
 
-let theme = Theme::default();
-let loading = LoadingView::new("Loading…", "⠋", &theme);
+let system = DesignSystem::default();
+let loading = LoadingView::new("Loading…", "⠋", &system);
 ```
 
 ## Interaction contract

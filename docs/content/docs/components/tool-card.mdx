@@ -31,10 +31,10 @@ Unicode ToolCard
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{ToolCard, ToolStatus}};
+use termrock::{style::DesignSystem, widgets::{ToolCard, ToolStatus}};
 
-let theme = Theme::default();
-let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &theme);
+let system = DesignSystem::default();
+let card = ToolCard::new("shell", "cargo test", ToolStatus::Running, &system);
 ```
 
 ## Interaction contract

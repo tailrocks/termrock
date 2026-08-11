@@ -31,11 +31,11 @@ Unicode ActionBar
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{Action, ActionBar, ActionBarState}};
+use termrock::{style::DesignSystem, widgets::{Action, ActionBar, ActionBarState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let actions = [Action { id: "save", label: "Save", enabled: true, style: None }];
-let bar = ActionBar::new(&actions, &theme);
+let bar = ActionBar::new(&actions, &system);
 let state = ActionBarState { focused: Some("save"), ..ActionBarState::default() };
 ```
 

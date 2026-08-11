@@ -49,11 +49,11 @@ Unicode MarkdownView
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{MarkdownBlock, MarkdownBlockKind, MarkdownView}};
+use termrock::{style::DesignSystem, widgets::{MarkdownBlock, MarkdownBlockKind, MarkdownView}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let blocks = [MarkdownBlock { kind: MarkdownBlockKind::Heading, text: "Plan" }];
-let view = MarkdownView::new(&blocks, &theme);
+let view = MarkdownView::new(&blocks, &system);
 ```
 
 ## Interaction contract

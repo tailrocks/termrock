@@ -31,11 +31,11 @@ Unicode Sparkline
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::Sparkline};
+use termrock::{style::DesignSystem, widgets::Sparkline};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let samples = [0.1, 0.5, 0.9];
-let spark = Sparkline::new(&samples, &theme);
+let spark = Sparkline::new(&samples, &system);
 ```
 
 ## Interaction contract

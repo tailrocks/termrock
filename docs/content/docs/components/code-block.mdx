@@ -55,11 +55,11 @@ CodeBlock wrap
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::CodeBlock};
+use termrock::{style::DesignSystem, widgets::CodeBlock};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = ["fn main() {}"];
-let block = CodeBlock::new(&lines, &theme).language("rust").line_numbers(true);
+let block = CodeBlock::new(&lines, &system).language("rust").line_numbers(true);
 ```
 
 ## Interaction contract

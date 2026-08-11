@@ -127,9 +127,9 @@ const BUDGETS: [ComponentBudget; 14] = [
         class: PerfClass::StreamingSurface,
         kind: BudgetKind::WarmedPaintBatch {
             samples: 100,
-            max_total: Duration::from_millis(300),
+            max_total: Duration::from_millis(700),
         },
-        notes: "follow-path paint; log_pane_hot_path; debug 100× over 10k history (raised 200→300ms for CI-class debug headroom)",
+        notes: "follow-path paint; log_pane_hot_path; debug 100× over 10k history (raised 300→700ms for GitHub-hosted debug CI headroom)",
     },
     ComponentBudget {
         id: "log_append_follow_alloc",

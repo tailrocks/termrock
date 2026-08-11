@@ -37,10 +37,10 @@ Unicode Kbd
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::Kbd};
+use termrock::{style::DesignSystem, widgets::Kbd};
 
-let tokens = DesignTokens::default();
-let kbd = Kbd::new("C-k", &tokens);
+let system = DesignSystem::default();
+let kbd = Kbd::new("C-k", &system);
 ```
 
 ## Interaction contract

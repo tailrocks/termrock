@@ -31,11 +31,11 @@ Unicode detail table
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
+use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let rows = [DetailRow { id: "url", label: "URL", value: "https://example.com", href: Some("https://example.com"), capability: DetailCapability::Link, emphasis: false, style: None }];
-let table = DetailTable::new(&rows, &theme).wrap(true);
+let table = DetailTable::new(&rows, &system).wrap(true);
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&rows);
 ```

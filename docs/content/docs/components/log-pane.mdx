@@ -39,14 +39,14 @@ Unicode LogPane
 ```rust
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use termrock::{
-  Theme,
+  DesignSystem,
   ansi_text::line_from_ansi,
   style::Role,
   widgets::{LogPane, LogPaneState},
 };
 
-let theme = Theme::default();
-let pane = LogPane::new(&theme).title("Build");
+let system = DesignSystem::default();
+let pane = LogPane::new(&system).title("Build");
 let mut state = LogPaneState::new().with_max_lines(1_000);
 state.append(line_from_ansi("\u{1b}[32mready\u{1b}[0m", theme.style(Role::Text)));
 let area = Rect::new(0, 0, 80, 24);

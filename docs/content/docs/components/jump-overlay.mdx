@@ -32,11 +32,11 @@ Unicode JumpOverlay
 
 ```rust
 use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{JumpOverlay, JumpOverlayState, JumpTarget}};
+use termrock::{style::DesignSystem, widgets::{JumpOverlay, JumpOverlayState, JumpTarget}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let targets = [JumpTarget { id: "files", area: Rect::new(0, 0, 10, 1), badge: 'f' }];
-let overlay = JumpOverlay::new(&targets, &theme);
+let overlay = JumpOverlay::new(&targets, &system);
 let mut state = JumpOverlayState::new();
 state.open();
 ```

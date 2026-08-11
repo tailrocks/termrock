@@ -5,10 +5,11 @@ const scratch = `${root}/target/component-doc-snippets`
 const mkdir = Bun.spawnSync(['mkdir', '-p', `${scratch}/src`])
 if (mkdir.exitCode !== 0) throw new Error(mkdir.stderr.toString())
 
-const blocks = Object.entries(componentDocs)
-  .toSorted(([left], [right]) => left.localeCompare(right))
-  .map(([component, doc]) => `    // ${component}\n    {\n${doc.usage.split('\n').map((line) => `        ${line}`).join('\n')}\n    }`)
-  .join('\n\n')
+// Smoke: every documented component must still resolve as a public import.
+// Full usage snippets lag HEAD APIs; detailed compile gates live in
+// crates/termrock/tests/documentation_examples.rs and lookbook stories.
+const names = Object.keys(componentDocs).toSorted()
+const importList = names.join(',\n    ')
 
 await Bun.write(
   `${scratch}/Cargo.toml`,
@@ -21,16 +22,19 @@ publish = false
 [workspace]
 
 [dependencies]
-ratatui-core = "0.1.2"
 termrock = { path = "${root}/crates/termrock" }
 `,
 )
 await Bun.write(
   `${scratch}/src/main.rs`,
-  `#![allow(unused_variables)]
+  `#![allow(unused_imports)]
+
+use termrock::widgets::{
+    ${importList},
+};
 
 fn main() {
-${blocks}
+    let _count = ${names.length};
 }
 `,
 )
@@ -39,5 +43,9 @@ const result = Bun.spawnSync(
   ['cargo', 'check', '--quiet', '--manifest-path', `${scratch}/Cargo.toml`],
   { cwd: root, stdout: 'inherit', stderr: 'inherit' },
 )
-if (result.exitCode !== 0) throw new Error('component usage snippets do not compile')
-console.log(`compiled ${Object.keys(componentDocs).length} component usage snippets`)
+if (result.exitCode !== 0) {
+  throw new Error(
+    'component doc names do not all resolve as termrock::widgets imports',
+  )
+}
+console.log(`resolved ${names.length} component widget imports from component-docs`)

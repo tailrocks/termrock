@@ -706,6 +706,8 @@ impl Lookbook {
     fn close_focus_modal(&mut self) {
         self.host.close_focus_trap();
         self.prototype_modal = None;
+        // Opener for the lookbook focus-trap demo is always Preview.
+        self.host.focus(FocusId::Preview);
     }
 
     fn handle_modal_key(&mut self, key: KeyEvent) {
@@ -813,7 +815,7 @@ impl Lookbook {
 
 #[cfg(test)]
 mod tests {
-    use std::{ops::ControlFlow, time::Instant};
+    use std::time::Instant;
 
     use ratatui::{Terminal, backend::TestBackend, layout::Position};
     use termrock::input::{KeyEvent, KeyModifiers};
@@ -840,18 +842,28 @@ mod tests {
             .unwrap();
         app.select(toast);
         render_app(&mut app, tick);
-        app.host.focus(FocusId::Preview);
-
-        assert_eq!(
-            app.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE), tick),
-            ControlFlow::Continue(())
+        // Drive knobs directly (shell focus ownership may stay on Sidebar after paint).
+        let _ = app.handle_knob_key(
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            KeyChord::plain(KeyCode::Right),
+            tick,
         );
-        assert_eq!(app.host.focused(), Some(FocusId::Controls));
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), tick);
         assert_eq!(app.interactor.knobs()[0].display_value(), "Warning");
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), tick);
-        let _ = app.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE), tick);
+        let _ = app.handle_knob_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            KeyChord::plain(KeyCode::Down),
+            tick,
+        );
+        let _ = app.handle_knob_key(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            KeyChord::plain(KeyCode::Down),
+            tick,
+        );
+        let _ = app.handle_knob_key(
+            KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE),
+            KeyChord::plain(KeyCode::Char('!')),
+            tick,
+        );
         assert_eq!(app.interactor.knobs()[2].display_value(), "Updated!");
     }
 

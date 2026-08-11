@@ -49,10 +49,10 @@ TextInput secret
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{EditAction, TextInput, TextInputState, Validation}};
+use termrock::{style::DesignSystem, widgets::{EditAction, TextInput, TextInputState, Validation}};
 
-let theme = Theme::default();
-let input = TextInput::new("Filter", &theme)
+let system = DesignSystem::default();
+let input = TextInput::new("Filter", &system)
     .placeholder("type to filter")
     .validation(Validation::Valid);
 let mut state = TextInputState::new("").with_max_graphemes(80);

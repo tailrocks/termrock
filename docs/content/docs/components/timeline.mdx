@@ -55,11 +55,11 @@ Unicode Timeline
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{Timeline, TimelineEvent}};
+use termrock::{style::DesignSystem, widgets::{Timeline, TimelineEvent}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let events = [TimelineEvent { when: "12:01", text: "Started", active: true }];
-let timeline = Timeline::new(&events, &theme);
+let timeline = Timeline::new(&events, &system);
 ```
 
 ## Interaction contract

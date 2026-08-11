@@ -32,11 +32,11 @@ Unicode Viewport
 
 ```rust
 use ratatui_core::text::Line;
-use termrock::{Theme, scroll::DialogScroll, widgets::Viewport};
+use termrock::{style::DesignSystem, scroll::DialogScroll, widgets::Viewport};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = [Line::from("long output")];
-let viewport = Viewport::new(&lines, &theme).title("Output");
+let viewport = Viewport::new(&lines, &system).title("Output");
 let mut state = DialogScroll::default();
 state.scroll_y = 1;
 let _vertical_offset = state.scroll_y;

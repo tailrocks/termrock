@@ -49,11 +49,11 @@ Diff view word-level
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{DiffKind, DiffLine, DiffState, DiffView}};
+use termrock::{style::DesignSystem, widgets::{DiffKind, DiffLine, DiffState, DiffView}};
 
-let theme = Theme::default();
+let system = DesignSystem::default();
 let lines = [DiffLine { text: "+added", kind: DiffKind::Added }];
-let diff = DiffView::new(&lines, &theme);
+let diff = DiffView::new(&lines, &system);
 let mut state = DiffState::default();
 state.offset = 1;
 let _visible_offset = state.offset;

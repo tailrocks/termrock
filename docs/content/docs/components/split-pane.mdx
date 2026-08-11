@@ -32,10 +32,10 @@ Unicode SplitPane
 
 ```rust
 use ratatui_core::layout::Rect;
-use termrock::{Theme, widgets::{SplitDirection, SplitPane, SplitPaneState, SplitRatio}};
+use termrock::{style::DesignSystem, widgets::{SplitDirection, SplitPane, SplitPaneState, SplitRatio}};
 
-let theme = Theme::default();
-let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &theme);
+let system = DesignSystem::default();
+let pane = SplitPane::new(SplitDirection::Horizontal, 20, 20, &system);
 let mut state = SplitPaneState::new(SplitRatio::from_percent(40));
 let layout = pane.layout(Rect::new(0, 0, 100, 24), &mut state);
 ```

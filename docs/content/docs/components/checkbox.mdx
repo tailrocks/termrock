@@ -61,11 +61,11 @@ Unicode Checkbox
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{Checkbox, CheckboxState}};
+use termrock::{style::DesignSystem, widgets::{Checkbox, CheckboxState}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let mut state = CheckboxState::new(false);
-let box_ = Checkbox::new("enable", "Enable", &tokens);
+let box_ = Checkbox::new("enable", "Enable", &system);
 ```
 
 ## Interaction contract

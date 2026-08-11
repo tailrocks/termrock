@@ -31,11 +31,11 @@ Unicode ModeRibbon
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, widgets::{ModeRibbon, WorkbenchMode}};
+use termrock::{style::DesignSystem, widgets::{ModeRibbon, WorkbenchMode}};
 
-let tokens = DesignTokens::default();
+let system = DesignSystem::default();
 let modes = [WorkbenchMode { id: "plan", label: "Plan", active: true, enabled: true }];
-let ribbon = ModeRibbon::new(&modes, &tokens);
+let ribbon = ModeRibbon::new(&modes, &system);
 ```
 
 ## Interaction contract

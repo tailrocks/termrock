@@ -31,10 +31,10 @@ Unicode ThemePicker
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
+use termrock::{style::DesignSystem, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
 
-let theme = Theme::default();
-let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &theme);
+let system = DesignSystem::default();
+let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &system);
 let mut state = ThemePickerState::new(0);
 let preview = theme_from_preset_id("slate");
 ```

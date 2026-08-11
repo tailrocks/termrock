@@ -61,12 +61,12 @@ Unicode PromptComposer
 ## Usage
 
 ```rust
-use termrock::{style::DesignTokens, Theme, widgets::{PromptComposer, PromptComposerState}};
+use termrock::{style::DesignSystem, widgets::{PromptComposer, PromptComposerState}};
 
-let tokens = DesignTokens::default();
-let theme = Theme::default();
+let system = DesignSystem::default();
+let system = DesignSystem::default();
 let mut state = PromptComposerState::new();
-let composer = PromptComposer::new(&tokens, &theme);
+let composer = PromptComposer::new(&system, &system);
 ```
 
 ## Interaction contract

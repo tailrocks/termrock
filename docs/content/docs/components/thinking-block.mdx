@@ -31,10 +31,10 @@ Unicode ThinkingBlock
 ## Usage
 
 ```rust
-use termrock::{Theme, widgets::ThinkingBlock};
+use termrock::{style::DesignSystem, widgets::ThinkingBlock};
 
-let theme = Theme::default();
-let block = ThinkingBlock::new("Planning", &theme).expanded(true).body("Details");
+let system = DesignSystem::default();
+let block = ThinkingBlock::new("Planning", &system).expanded(true).body("Details");
 ```
 
 ## Interaction contract
