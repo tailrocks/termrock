@@ -102,6 +102,10 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   track + phosphor thumb; track click and thumb drag scrub steps via
   `stepFromScrollRatio` / `scrollThumbMetrics`. Canvas click uses pure
   `stepFromPointer` (row for lists, column for short wide strips).
+- **Cell probe + paint-true cursor:** pointermove maps CSS → grid via
+  `cellAtPointer`; status bar shows `col,row · ch · #fg/#bg` (`formatCellProbe`).
+  Block cursor uses `inferCursorFromFrame` (underline / reverse / selection bar)
+  so it tracks real lookbook selection paint, not only a step+pad heuristic.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

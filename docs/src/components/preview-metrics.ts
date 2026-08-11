@@ -186,3 +186,99 @@ export function scrollThumbMetrics(
   const top = ratio * travel
   return { top, height, ratio }
 }
+
+/** Minimal cell shape for hover/cursor inference (matches FrameCell fields used). */
+export type ProbeCell = {
+  ch: string
+  fg: [number, number, number]
+  bg: [number, number, number]
+  underline?: boolean
+  reversed?: boolean
+}
+
+/**
+ * Map canvas CSS pointer coords to a grid cell, or null if outside the grid.
+ */
+export function cellAtPointer(
+  xCss: number,
+  yCss: number,
+  cellW: number,
+  cellH: number,
+  cols: number,
+  rows: number,
+): { x: number; y: number } | null {
+  const cw = Math.max(1, cellW)
+  const ch = Math.max(1, cellH)
+  const c = Math.max(1, cols | 0)
+  const r = Math.max(1, rows | 0)
+  if (!(xCss >= 0) || !(yCss >= 0)) return null
+  const x = Math.floor(xCss / cw)
+  const y = Math.floor(yCss / ch)
+  if (x < 0 || y < 0 || x >= c || y >= r) return null
+  return { x, y }
+}
+
+/** Format RGB triple as #rrggbb (lowercase). */
+export function formatRgbHex(rgb: [number, number, number]): string {
+  const h = (n: number) => {
+    const v = Math.max(0, Math.min(255, n | 0))
+    return v.toString(16).padStart(2, '0')
+  }
+  return `#${h(rgb[0])}${h(rgb[1])}${h(rgb[2])}`
+}
+
+/**
+ * Status-bar probe string for a hovered cell (Ghostty-class cell inspector).
+ * Example: `3,2 · A · #00ff41/#1c1c1c`
+ */
+export function formatCellProbe(
+  x: number,
+  y: number,
+  cell: ProbeCell | null | undefined,
+): string {
+  if (!cell) return `${x | 0},${y | 0}`
+  const ch = cell.ch && cell.ch !== ' ' && cell.ch !== '\u00a0' ? cell.ch : '·'
+  return `${x | 0},${y | 0} · ${ch} · ${formatRgbHex(cell.fg)}/${formatRgbHex(cell.bg)}`
+}
+
+/**
+ * Infer block-cursor cell from real frame paint (underline / reverse / selection bar).
+ * Falls back to step+pad heuristic when no selection cue is found.
+ */
+export function inferCursorFromFrame(
+  cells: readonly ProbeCell[],
+  cols: number,
+  rows: number,
+  pad: number,
+  fallbackStep: number,
+): { x: number; y: number } {
+  const c = Math.max(1, cols | 0)
+  const r = Math.max(1, rows | 0)
+  const p = Math.max(0, pad | 0)
+  const x0 = Math.min(c - 1, p)
+  const x1 = Math.max(x0, c - 1 - p)
+  const y0 = Math.min(r - 1, p)
+  const y1 = Math.max(y0, r - 1 - p)
+  // Prefer underline (list focus), then reverse, then selection bar glyphs.
+  const rank = (cell: ProbeCell | undefined): number => {
+    if (!cell) return 0
+    if (cell.underline) return 3
+    if (cell.reversed) return 2
+    const ch = cell.ch
+    if (ch === '▌' || ch === '█' || ch === '▶' || ch === '›' || ch === '❯') return 1
+    return 0
+  }
+  let best: { x: number; y: number; score: number } | null = null
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const cell = cells[y * c + x]
+      const score = rank(cell)
+      if (score <= 0) continue
+      if (!best || score > best.score || (score === best.score && y < best.y)) {
+        best = { x, y, score }
+      }
+    }
+  }
+  if (best) return { x: best.x, y: best.y }
+  return cursorCellForStep(fallbackStep, p, c, r)
+}

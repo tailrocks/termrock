@@ -18,11 +18,14 @@ import {
   adjacentSteps,
   allSteps,
   baselineForCell,
+  cellAtPointer,
   clampStep,
   cursorCellForStep,
   fontSizeForCell,
+  formatCellProbe,
   glyphCellSpan,
   glyphDrawX,
+  inferCursorFromFrame,
   isLoadStillCurrent,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
@@ -38,11 +41,15 @@ export {
   adjacentSteps,
   allSteps,
   baselineForCell,
+  cellAtPointer,
   clampStep,
   cursorCellForStep,
   fontSizeForCell,
+  formatCellProbe,
+  formatRgbHex,
   glyphCellSpan,
   glyphDrawX,
+  inferCursorFromFrame,
   isLoadStillCurrent,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
@@ -312,6 +319,7 @@ export function TerminalPreview({
   const [caretOn, setCaretOn] = useState(true)
   const [stepPulse, setStepPulse] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
   const labelId = useId()
   const stepRef = useRef(0)
   const sizeKeyRef = useRef(sizeKey)
@@ -436,7 +444,7 @@ export function TerminalPreview({
     const cursor =
       focused && canInteract
         ? {
-            ...cursorCellForStep(step, PAD, frame.cols, frame.rows),
+            ...inferCursorFromFrame(frame.cells, frame.cols, frame.rows, PAD, step),
             on: caretOn,
           }
         : null
@@ -616,6 +624,43 @@ export function TerminalPreview({
     return () => window.removeEventListener('keydown', onWin, true)
   }, [focused, canInteract, handleNavKey])
 
+  const pointerCssOnCanvas = (
+    e: { clientX: number; clientY: number },
+    canvas: HTMLCanvasElement,
+  ): { xCss: number; yCss: number } => {
+    const rect = canvas.getBoundingClientRect()
+    const scaleY = rect.height > 0 ? canvas.clientHeight / rect.height : 1
+    const scaleX = rect.width > 0 ? canvas.clientWidth / rect.width : 1
+    return {
+      xCss: (e.clientX - rect.left) * scaleX,
+      yCss: (e.clientY - rect.top) * scaleY,
+    }
+  }
+
+  const onPointerMove = (e: ReactPointerEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas || !frame) {
+      if (hover) setHover(null)
+      return
+    }
+    const t = e.target as HTMLElement | null
+    if (t?.closest?.('[data-termrock-scrollbar]')) {
+      if (hover) setHover(null)
+      return
+    }
+    const { xCss, yCss } = pointerCssOnCanvas(e, canvas)
+    const next = cellAtPointer(xCss, yCss, cellW, cellH, frame.cols, frame.rows)
+    if (!next) {
+      if (hover) setHover(null)
+      return
+    }
+    if (!hover || hover.x !== next.x || hover.y !== next.y) setHover(next)
+  }
+
+  const onPointerLeave = () => {
+    if (hover) setHover(null)
+  }
+
   const onPointerDown = (e: ReactPointerEvent) => {
     hostRef.current?.focus()
     setFocused(true)
@@ -626,11 +671,9 @@ export function TerminalPreview({
     if (t?.closest?.('[data-termrock-scrollbar]')) return
     const canvas = canvasRef.current
     if (canvas && frame) {
-      const rect = canvas.getBoundingClientRect()
-      const scaleY = rect.height > 0 ? canvas.clientHeight / rect.height : 1
-      const scaleX = rect.width > 0 ? canvas.clientWidth / rect.width : 1
-      const yCss = (e.clientY - rect.top) * scaleY
-      const xCss = (e.clientX - rect.left) * scaleX
+      const { xCss, yCss } = pointerCssOnCanvas(e, canvas)
+      const at = cellAtPointer(xCss, yCss, cellW, cellH, frame.cols, frame.rows)
+      if (at) setHover(at)
       goStep(
         stepFromPointer(
           yCss,
@@ -739,9 +782,22 @@ export function TerminalPreview({
 
   const hint = canInteract
     ? tour && tour.length > 1
-      ? '↑↓/wheel/scroll · j/k · click · Home/End'
-      : '↑↓/←→ · wheel/scroll · j/k · click · Home/End'
-    : 'read-only frame'
+      ? '↑↓/wheel/scroll · j/k · click · hover cell · Home/End'
+      : '↑↓/←→ · wheel/scroll · j/k · click · hover cell · Home/End'
+    : 'read-only frame · hover cell'
+
+  const hoverProbe =
+    hover && frame
+      ? formatCellProbe(
+          hover.x,
+          hover.y,
+          frame.cells[hover.y * frame.cols + hover.x] ?? null,
+        )
+      : ''
+
+  const cursorCell = frame
+    ? inferCursorFromFrame(frame.cells, frame.cols, frame.rows, PAD, step)
+    : cursorCellForStep(step, PAD, 40, 8)
 
   return (
     <figure
@@ -759,10 +815,10 @@ export function TerminalPreview({
       data-preview-pulse={String(stepPulse)}
       data-preview-loading={loading ? 'true' : 'false'}
       data-preview-cursor={
-        focused && canInteract && frame
-          ? `${cursorCellForStep(step, PAD, frame.cols, frame.rows).x},${cursorCellForStep(step, PAD, frame.cols, frame.rows).y}`
-          : ''
+        focused && canInteract && frame ? `${cursorCell.x},${cursorCell.y}` : ''
       }
+      data-preview-hover={hover ? `${hover.x},${hover.y}` : ''}
+      data-preview-hover-probe={hoverProbe}
       data-preview-scrollbar={thumb ? 'true' : 'false'}
       data-preview-scroll-ratio={thumb ? thumb.ratio.toFixed(4) : ''}
     >
@@ -774,6 +830,8 @@ export function TerminalPreview({
         aria-label={`Interactive terminal preview: ${story}`}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
         onWheel={onWheel}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -947,6 +1005,15 @@ export function TerminalPreview({
           {frame ? (
             <span style={{ opacity: 0.75 }}>
               RGB24 · {frame.cols}×{frame.rows}
+            </span>
+          ) : null}
+          {hoverProbe ? (
+            <span
+              data-termrock-cell-probe="1"
+              style={{ color: focused ? '#9fef9f' : '#7a8a7a', opacity: 0.95 }}
+              title="Cell under pointer (truecolor)"
+            >
+              {hoverProbe}
             </span>
           ) : null}
           <span style={{ marginLeft: 'auto', opacity: 0.85 }}>{hint}</span>
