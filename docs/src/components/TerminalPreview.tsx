@@ -11,6 +11,19 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import {
+  PREVIEW_MONO_STACK,
+  baselineForCell,
+  fontSizeForCell,
+  glyphDrawX,
+} from '@/components/preview-metrics'
+
+export {
+  PREVIEW_MONO_STACK,
+  baselineForCell,
+  fontSizeForCell,
+  glyphDrawX,
+} from '@/components/preview-metrics'
 
 /** Cell payload from termrock-lookbook frame export (truecolor RGB). */
 export type FrameCell = {
@@ -135,6 +148,7 @@ async function loadJson<T>(url: string): Promise<T> {
 /**
  * Ghostty-class cell paint: full 24-bit RGB bg+fg, monospaced metrics, no smoothing.
  * Always fills every cell background (including pure black) so truecolor is preserved.
+ * Glyphs are centered in-cell when the mono advance fits (terminal-grid feel).
  */
 export function paintCanvas(
   canvas: HTMLCanvasElement,
@@ -151,15 +165,14 @@ export function paintCanvas(
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
   canvas.style.maxWidth = 'none'
-  canvas.style.height = `${h}px`
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.imageSmoothingEnabled = false
   ctx.fillStyle = SURFACE_BG
   ctx.fillRect(0, 0, w, h)
-  const fontSize = Math.max(11, Math.floor(cellH * 0.78))
-  const baseline = Math.floor(cellH * 0.78)
+  const fontSize = fontSizeForCell(cellH)
+  const baseline = baselineForCell(cellH)
   for (let y = 0; y < frame.rows; y++) {
     for (let x = 0; x < frame.cols; x++) {
       const cell = frame.cells[y * frame.cols + x]
@@ -172,10 +185,11 @@ export function paintCanvas(
       const ch = cell.ch
       if (!ch || ch === ' ' || ch === '\u00a0') continue
       const weight = cell.bold ? '600' : '400'
-      ctx.font = `${weight} ${fontSize}px "JetBrains Mono", "SF Mono", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace`
+      ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
       ctx.fillStyle = paintFg(cell)
       ctx.textBaseline = 'alphabetic'
-      ctx.fillText(ch, px + 0.5, py + baseline)
+      const tw = ctx.measureText(ch).width
+      ctx.fillText(ch, glyphDrawX(px, cellW, tw), py + baseline)
       if (cell.underline) {
         ctx.strokeStyle = paintFg(cell)
         ctx.lineWidth = 1
@@ -271,11 +285,33 @@ export function TerminalPreview({
     }
   }, [packBase, loadFrame])
 
+  // Paint after JetBrains Mono is ready so advances match Ghostty mono metrics
+  // (first paint may use fallback mono; fonts.ready triggers a true repaint).
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || !frame) return
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    paintCanvas(canvas, frame, cellW, cellH, dpr)
+    let cancelled = false
+    const paint = () => {
+      if (cancelled) return
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+      paintCanvas(canvas, frame, cellW, cellH, dpr)
+    }
+    paint()
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined
+    if (fonts?.ready) {
+      void fonts.ready.then(paint)
+    }
+    if (fonts?.load) {
+      void fonts
+        .load(`${fontSizeForCell(cellH)}px JetBrains Mono`)
+        .then(paint)
+        .catch(() => {
+          /* optional webfont */
+        })
+    }
+    return () => {
+      cancelled = true
+    }
   }, [frame, cellW, cellH])
 
   // Ghostty-style caret blink while focused (visual only; selection is frame-backed).
@@ -322,63 +358,89 @@ export function TerminalPreview({
     }
   }, [manifest, cellW, cellH, sizes, loadFrame])
 
-  const goStep = (n: number) => {
-    const next = Math.max(0, Math.min(maxStep, n))
-    void loadFrame(sizeKey, next)
-  }
+  const goStep = useCallback(
+    (n: number) => {
+      const next = Math.max(0, Math.min(maxStep, n))
+      void loadFrame(sizeKey, next)
+    },
+    [loadFrame, maxStep, sizeKey],
+  )
+
+  /** Shared nav mapping for React onKeyDown + window capture (agent-browser reliability). */
+  const handleNavKey = useCallback(
+    (rawKey: string): boolean => {
+      if (!canInteract) return false
+      const map: Record<string, string> = {
+        ArrowDown: 'ArrowDown',
+        ArrowUp: 'ArrowUp',
+        ArrowLeft: 'ArrowLeft',
+        ArrowRight: 'ArrowRight',
+        Enter: 'Enter',
+        Escape: 'Escape',
+        Tab: 'Tab',
+        Home: 'Home',
+        End: 'End',
+        PageDown: 'PageDown',
+        PageUp: 'PageUp',
+        Backspace: 'Backspace',
+        ' ': ' ',
+      }
+      const key = map[rawKey] ?? (rawKey.length === 1 ? rawKey : null)
+      if (!key) return false
+      if (
+        key === 'ArrowDown' ||
+        key === 'ArrowRight' ||
+        key === 'j' ||
+        key === 'l' ||
+        key === 'PageDown' ||
+        key === ' '
+      ) {
+        goStep(stepRef.current + 1)
+        return true
+      }
+      if (
+        key === 'ArrowUp' ||
+        key === 'ArrowLeft' ||
+        key === 'k' ||
+        key === 'h' ||
+        key === 'PageUp'
+      ) {
+        goStep(stepRef.current - 1)
+        return true
+      }
+      if (key === 'Home' || key === 'Escape') {
+        goStep(0)
+        return true
+      }
+      if (key === 'End') {
+        goStep(maxStep)
+        return true
+      }
+      return false
+    },
+    [canInteract, goStep, maxStep],
+  )
 
   const onKeyDown = (e: ReactKeyboardEvent) => {
-    if (!canInteract) return
-    const map: Record<string, string> = {
-      ArrowDown: 'ArrowDown',
-      ArrowUp: 'ArrowUp',
-      ArrowLeft: 'ArrowLeft',
-      ArrowRight: 'ArrowRight',
-      Enter: 'Enter',
-      Escape: 'Escape',
-      Tab: 'Tab',
-      Home: 'Home',
-      End: 'End',
-      PageDown: 'PageDown',
-      PageUp: 'PageUp',
-      Backspace: 'Backspace',
-      ' ': ' ',
-    }
-    const key = map[e.key] ?? (e.key.length === 1 ? e.key : null)
-    if (!key) return
-    e.preventDefault()
-    e.stopPropagation()
-    // Forward navigation: Down / Right / j / PageDown / Space
-    if (
-      key === 'ArrowDown' ||
-      key === 'ArrowRight' ||
-      key === 'j' ||
-      key === 'l' ||
-      key === 'PageDown' ||
-      key === ' '
-    ) {
-      goStep(step + 1)
-      return
-    }
-    // Backward: Up / Left / k / PageUp
-    if (
-      key === 'ArrowUp' ||
-      key === 'ArrowLeft' ||
-      key === 'k' ||
-      key === 'h' ||
-      key === 'PageUp'
-    ) {
-      goStep(step - 1)
-      return
-    }
-    if (key === 'Home' || key === 'Escape') {
-      goStep(0)
-      return
-    }
-    if (key === 'End') {
-      goStep(maxStep)
+    if (handleNavKey(e.key)) {
+      e.preventDefault()
+      e.stopPropagation()
     }
   }
+
+  // Capture phase on window while focused — keys still reach the TUI host when
+  // focus is slightly wrong (common under headless agent-browser injection).
+  useEffect(() => {
+    if (!focused || !canInteract) return
+    const onWin = (e: KeyboardEvent) => {
+      if (handleNavKey(e.key)) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    window.addEventListener('keydown', onWin, true)
+    return () => window.removeEventListener('keydown', onWin, true)
+  }, [focused, canInteract, handleNavKey])
 
   const onPointerDown = (e: ReactPointerEvent) => {
     hostRef.current?.focus()
@@ -426,8 +488,7 @@ export function TerminalPreview({
     gap: 8,
     padding: '8px 12px',
     borderBottom: '1px solid #1e241e',
-    fontFamily:
-      '"JetBrains Mono", "SF Mono", "Cascadia Mono", ui-monospace, monospace',
+    fontFamily: PREVIEW_MONO_STACK,
     fontSize: 12,
     color: '#8a9a8a',
     userSelect: 'none',
@@ -439,8 +500,7 @@ export function TerminalPreview({
     gap: 10,
     padding: '5px 12px',
     borderTop: '1px solid #1e241e',
-    fontFamily:
-      '"JetBrains Mono", "SF Mono", "Cascadia Mono", ui-monospace, monospace',
+    fontFamily: PREVIEW_MONO_STACK,
     fontSize: 11,
     color: '#6a7a6a',
     background: '#0c0e0c',

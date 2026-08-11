@@ -85,6 +85,9 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   sibling paints (narrow/unicode/empty/…) into one pack — one Ghostty surface
   cycles states instead of N static screens. Key-driven interactors still use
   ArrowDown/Right step graphs.
+- **Paint fidelity:** canvas repaints after `document.fonts.ready` / JetBrains Mono
+  load; glyphs centered in cells via measured mono advance; window-capture
+  keydown while focused for reliable TUI nav under automation.
 
 ## Size packs
 

@@ -11,9 +11,10 @@
     "check:components": "bun run scripts/gen-component-pages.ts --check",
     "check:snippets": "bun run scripts/check-component-snippets.ts",
     "check:catalog": "bun run scripts/check-catalog.ts",
+    "check:preview-metrics": "bun run scripts/check-preview-metrics.ts",
     "finalize:site": "bun run scripts/finalize-static-site.ts",
     "check:site": "bun run scripts/check-static-site.ts",
-    "build": "bun run check:components && bun run check:snippets && bunx --bun fumadocs-mdx && bun run check:catalog && bunx --bun vite build && bun run finalize:site && bun run check:site"
+    "build": "bun run check:components && bun run check:snippets && bun run check:preview-metrics && bunx --bun fumadocs-mdx && bun run check:catalog && bunx --bun vite build && bun run finalize:site && bun run check:site"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.18",
