@@ -159,11 +159,8 @@ for (const component of publicComponents) {
     )
   }
   // Stories table replaces multi-preview galleries.
-  if (!body.includes('| Story |') && !body.includes('| Story id |')) {
-    // Accept "## Stories" markdown table with Story column
-    if (!/\| *Story\b/i.test(body)) {
-      throw new Error(`${componentSlug(component)}.mdx missing Stories table`)
-    }
+  if (!/\| *Story\b/i.test(body)) {
+    throw new Error(`${componentSlug(component)}.mdx missing Stories table`)
   }
   // Every lookbook story id for this component must appear in docs (table or text).
   for (const story of stories) {
@@ -171,6 +168,18 @@ for (const component of publicComponents) {
     if (!body.includes(`\`${story.id}\``)) {
       throw new Error(`missing docs for story ${story.id} on ${component} page`)
     }
+  }
+}
+
+// Every component MDX (including hand-authored) is one-focus + Stories table.
+for await (const name of new Bun.Glob('*.mdx').scan({ cwd: `${docsDir}/components` })) {
+  const body = await Bun.file(`${docsDir}/components/${name}`).text()
+  const previewCount = (body.match(/<TerminalPreview\b/g) ?? []).length
+  if (previewCount !== 1) {
+    throw new Error(`components/${name} must embed exactly one TerminalPreview (found ${previewCount})`)
+  }
+  if (!/\| *Story\b/i.test(body)) {
+    throw new Error(`components/${name} missing Stories table (| Story | …)`)
   }
 }
 
