@@ -19,7 +19,9 @@ import {
   glyphDrawX,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  combinedHostViewport,
   hostViewportSize,
+  materialViewportChange,
   paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
@@ -267,6 +269,25 @@ assert(paintDpr(1.1) === 1 || paintDpr(1.1) === 1.25, `dpr 1.1 → ${paintDpr(1.
   const zero = hostViewportSize(0, 0, 0, 0)
   assert(zero.width === 0 && zero.height === 0, 'all zero')
 }
+
+// Combined chrome+stage: narrowed Ghostty chrome wins over stuck-wide stage.
+{
+  const stuck = combinedHostViewport(678, 400, 260)
+  assert(stuck.width === 260, `chrome min width got ${stuck.width}`)
+  assert(stuck.height === 400, `stage height kept got ${stuck.height}`)
+  const both = combinedHostViewport(240, 180, 300)
+  assert(both.width === 240, `stage narrower than chrome got ${both.width}`)
+  const onlyChrome = combinedHostViewport(0, 0, 200, 500, 300)
+  // stage falls back to content 500x300; min with chrome 200
+  assert(onlyChrome.width === 200, `chrome vs content got ${onlyChrome.width}`)
+  assert(onlyChrome.height === 300, `content height got ${onlyChrome.height}`)
+}
+
+assert(!materialViewportChange(100, 50, 100, 50), 'no change')
+assert(materialViewportChange(100, 50, 101, 50), 'width delta 1')
+assert(materialViewportChange(100, 50, 100, 52), 'height delta')
+assert(!materialViewportChange(100, 50, 100.4, 50, 1), 'sub-threshold')
+assert(materialViewportChange(100, 50, 102, 50, 2), 'at threshold 2')
 
 // Pure nav key map drives host path (not reimplemented).
 assert(stepDeltaFromNavKey('ArrowDown') === 1, 'down')

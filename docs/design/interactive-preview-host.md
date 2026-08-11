@@ -109,9 +109,9 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
 - **Crisp HiDPI + pure nav:** canvas uses `paintDpr` (0.25-step quantize) for
   integer-friendlier backing stores. Key stepping goes through pure
   `stepDeltaFromNavKey` / `applyNavStepAction`. Pointer enter focuses the host
-  (focus-follows-mouse) so keys work without an extra click. Resize remap reads
-  `hostViewportSize(clientW, clientH, contentRect…)` so overflow:auto stages
-  remapped by the **visible** box, not the wide canvas content size.
+  (focus-follows-mouse) so keys work without an extra click. Resize remap uses
+  `combinedHostViewport` (min of stage + chrome width) + RO on both nodes +
+  window resize + reconcile on focus/pointerenter so style-driven shrinks remapped.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

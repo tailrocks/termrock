@@ -28,7 +28,9 @@ import {
   glyphDrawX,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  combinedHostViewport,
   hostViewportSize,
+  materialViewportChange,
   paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
@@ -48,6 +50,7 @@ export {
   baselineForCell,
   cellAtPointer,
   clampStep,
+  combinedHostViewport,
   cursorCellForStep,
   fontSizeForCell,
   formatCellProbe,
@@ -57,6 +60,7 @@ export {
   hostViewportSize,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  materialViewportChange,
   paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
@@ -335,6 +339,8 @@ export function TerminalPreview({
   const frameCacheRef = useRef<Map<string, TerminalFrame>>(new Map())
   const loadGenRef = useRef(0)
   const lastKeyRef = useRef<KeyStrokeStamp | null>(null)
+  const lastViewportRef = useRef({ w: 0, h: 0 })
+  const reconcileViewportRef = useRef<(() => void) | null>(null)
   stepRef.current = step
   sizeKeyRef.current = sizeKey
 
@@ -489,14 +495,28 @@ export function TerminalPreview({
     return () => window.clearInterval(id)
   }, [focused, canInteract])
 
-  // Real remap: host CSS size → story cols/rows → nearest exported pack → load.
-  // sizeKeyRef avoids re-binding ResizeObserver on every size change.
-  // Warm the next size pack immediately so remap feels like Ghostty reflow, not fetch lag.
+  // Real remap: visible CSS size → story cols/rows → nearest exported pack → load.
+  // Observe stage AND chrome host; re-check on window resize and pointerenter.
+  // combinedHostViewport mins chrome width so overflow:auto stages cannot stick
+  // on wide canvas when the Ghostty window chrome is narrowed.
   useEffect(() => {
     const stage = stageRef.current
+    const chrome = hostRef.current
     if (!stage || !manifest) return
     let timer: ReturnType<typeof setTimeout> | null = null
-    const apply = (cssW: number, cssH: number) => {
+    const apply = (cssW: number, cssH: number, force = false) => {
+      if (
+        !force &&
+        !materialViewportChange(
+          lastViewportRef.current.w,
+          lastViewportRef.current.h,
+          cssW,
+          cssH,
+        )
+      ) {
+        return
+      }
+      lastViewportRef.current = { w: cssW, h: cssH }
       const { storyCols, storyRows } = storySizeForCssHost(cssW, cssH, cellW, cellH)
       const nextKey = pickSizeKey(storyCols, storyRows, sizes)
       stage.dataset['hostCssW'] = String(Math.round(cssW))
@@ -504,34 +524,49 @@ export function TerminalPreview({
       stage.dataset['wantStoryCols'] = String(storyCols)
       stage.dataset['wantStoryRows'] = String(storyRows)
       stage.dataset['sizeKey'] = nextKey
+      if (chrome) {
+        chrome.dataset['chromeCssW'] = String(Math.round(chrome.clientWidth))
+      }
       if (nextKey !== sizeKeyRef.current) {
         prefetchSizePack(nextKey)
         void loadFrame(nextKey, stepRef.current)
       }
     }
     const readViewport = (contentW = 0, contentH = 0) =>
-      hostViewportSize(stage.clientWidth, stage.clientHeight, contentW, contentH)
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      const { width, height } = readViewport(
-        entry.contentRect.width,
-        entry.contentRect.height,
+      combinedHostViewport(
+        stage.clientWidth,
+        stage.clientHeight,
+        chrome?.clientWidth ?? 0,
+        contentW,
+        contentH,
       )
-      // Speculative warm: if the pending size differs, start fetching before debounce fires.
+    const schedule = (contentW = 0, contentH = 0, force = false) => {
+      const { width, height } = readViewport(contentW, contentH)
       const { storyCols, storyRows } = storySizeForCssHost(width, height, cellW, cellH)
       const pendingKey = pickSizeKey(storyCols, storyRows, sizes)
       if (pendingKey !== sizeKeyRef.current) {
         prefetchSizePack(pendingKey)
       }
       if (timer) clearTimeout(timer)
-      timer = setTimeout(() => apply(width, height), 50)
+      timer = setTimeout(() => apply(width, height, force), 40)
+    }
+    const reconcile = () => schedule(0, 0, true)
+    reconcileViewportRef.current = reconcile
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      schedule(entry.contentRect.width, entry.contentRect.height, false)
     })
     ro.observe(stage)
-    const initial = readViewport()
-    apply(initial.width, initial.height)
+    if (chrome) ro.observe(chrome)
+    const onWinResize = () => schedule(0, 0, false)
+    window.addEventListener('resize', onWinResize)
+    // Initial force so first paint picks the real visible pack.
+    schedule(0, 0, true)
     return () => {
+      reconcileViewportRef.current = null
       ro.disconnect()
+      window.removeEventListener('resize', onWinResize)
       if (timer) clearTimeout(timer)
     }
   }, [manifest, cellW, cellH, sizes, loadFrame, prefetchSizePack])
@@ -579,6 +614,8 @@ export function TerminalPreview({
     if (!canInteract) return
     hostRef.current?.focus()
     setFocused(true)
+    // Reconcile size when pointer enters — catches style-driven shrinks RO missed.
+    reconcileViewportRef.current?.()
   }
 
   const onKeyDown = (e: ReactKeyboardEvent) => {
@@ -812,9 +849,19 @@ export function TerminalPreview({
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onWheel={onWheel}
-        onFocus={() => setFocused(true)}
+        onFocus={() => {
+          setFocused(true)
+          reconcileViewportRef.current?.()
+        }}
         onBlur={() => setFocused(false)}
-        style={{ ...chrome, outline: 'none', cursor: canInteract ? 'text' : 'default' }}
+        style={{
+          ...chrome,
+          outline: 'none',
+          cursor: canInteract ? 'text' : 'default',
+          // Allow chrome width constraints (agent-browser / responsive parents).
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
       >
         <div style={titleBar} id={labelId}>
           <span style={{ display: 'flex', gap: 6 }} aria-hidden>

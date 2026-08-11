@@ -153,6 +153,51 @@ export function hostViewportSize(
 }
 
 /**
+ * True when the visible viewport moved enough to warrant a size-pack re-pick.
+ * Pure — host uses this to skip no-op reconciles.
+ */
+export function materialViewportChange(
+  prevW: number,
+  prevH: number,
+  nextW: number,
+  nextH: number,
+  thresholdPx = 1,
+): boolean {
+  const t = Math.max(0, thresholdPx)
+  return Math.abs(nextW - prevW) >= t || Math.abs(nextH - prevH) >= t
+}
+
+/**
+ * Ghostty window viewport for remap: min of stage + chrome **width**.
+ * Height stays stage-only (chrome includes title/status bars).
+ * When overflow leaves stage.clientWidth stuck wide, a narrowed chrome
+ * host still drives the correct smaller pack.
+ */
+export function combinedHostViewport(
+  stageClientW: number,
+  stageClientH: number,
+  chromeClientW: number,
+  stageContentW = 0,
+  stageContentH = 0,
+): { width: number; height: number } {
+  const stage = hostViewportSize(
+    stageClientW,
+    stageClientH,
+    stageContentW,
+    stageContentH,
+  )
+  const chromeW =
+    chromeClientW > 0 && Number.isFinite(chromeClientW) ? chromeClientW : 0
+  const width =
+    chromeW > 0 && stage.width > 0
+      ? Math.min(stage.width, chromeW)
+      : stage.width > 0
+        ? stage.width
+        : chromeW
+  return { width: Math.max(0, width), height: Math.max(0, stage.height) }
+}
+
+/**
  * Pure TUI nav key → step action used by TerminalPreview host.
  * - `+1` / `-1`: relative step
  * - `'first'` / `'last'`: Home/End (and Esc → first)
