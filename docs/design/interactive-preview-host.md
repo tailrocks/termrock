@@ -119,6 +119,8 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   `resolvePaintFg` / Ghostty-like `ensureMinContrast` vs cell bg.
 - **Continuous underlines:** `underlineMetrics` + `underlineSpans` paint one stroke
   per consecutive run (list selection chrome), thickness ~10% of cell height.
+- **Idle tour:** multi-step packs auto-advance while unfocused via pure
+  `idleTourTick` (~2.2s), paused on focus / `prefers-reduced-motion`.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

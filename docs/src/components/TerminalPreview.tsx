@@ -36,6 +36,8 @@ import {
   isLoadStillCurrent,
   combinedHostViewport,
   hostViewportSize,
+  idleTourTick,
+  IDLE_TOUR_INTERVAL_MS,
   materialViewportChange,
   paintDpr,
   resolvePaintFg,
@@ -72,6 +74,8 @@ export {
   glyphCellSpan,
   glyphDrawX,
   hostViewportSize,
+  idleTourTick,
+  IDLE_TOUR_INTERVAL_MS,
   inferCursorFromFrame,
   isBoxOrBlockGlyph,
   isLoadStillCurrent,
@@ -412,6 +416,8 @@ export function TerminalPreview({
   const lastKeyRef = useRef<KeyStrokeStamp | null>(null)
   const lastViewportRef = useRef({ w: 0, h: 0 })
   const reconcileViewportRef = useRef<(() => void) | null>(null)
+  const idleStampRef = useRef(0)
+  const [idleTour, setIdleTour] = useState(false)
   stepRef.current = step
   sizeKeyRef.current = sizeKey
 
@@ -649,6 +655,46 @@ export function TerminalPreview({
     [loadFrame, maxStep, sizeKey],
   )
 
+  // Idle tour: cycle multi-step packs while unfocused so docs feel live (Ghostty demo).
+  // Pauses on focus / prefers-reduced-motion; pure idleTourTick owns the schedule.
+  useEffect(() => {
+    if (!canInteract || maxStep <= 0 || focused) {
+      setIdleTour(false)
+      return
+    }
+    const reduced =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced) {
+      setIdleTour(false)
+      return
+    }
+    setIdleTour(true)
+    if (idleStampRef.current === 0) {
+      idleStampRef.current =
+        typeof performance !== 'undefined' ? performance.now() : Date.now()
+    }
+    const id = window.setInterval(() => {
+      const now =
+        typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const tick = idleTourTick(now, idleStampRef.current, {
+        focused: false,
+        reducedMotion: false,
+        maxStep,
+        step: stepRef.current,
+        intervalMs: IDLE_TOUR_INTERVAL_MS,
+      })
+      if (!tick.advance) return
+      idleStampRef.current = tick.stamp
+      goStep(tick.nextStep)
+    }, Math.min(500, IDLE_TOUR_INTERVAL_MS / 2))
+    return () => {
+      window.clearInterval(id)
+      setIdleTour(false)
+    }
+  }, [canInteract, maxStep, focused, goStep])
+
   const onWheel = (e: ReactWheelEvent) => {
     if (!canInteract) return
     const delta = stepDeltaFromWheel(e.deltaY)
@@ -868,8 +914,8 @@ export function TerminalPreview({
 
   const hint = canInteract
     ? tour && tour.length > 1
-      ? '↑↓/wheel/scroll · j/k · click · hover cell · Home/End'
-      : '↑↓/←→ · wheel/scroll · j/k · click · hover cell · Home/End'
+      ? '↑↓/wheel/scroll · j/k · click · idle tour · Home/End'
+      : '↑↓/←→ · wheel/scroll · j/k · click · idle tour · Home/End'
     : 'read-only frame · hover cell'
 
   const hoverProbe =
@@ -907,6 +953,7 @@ export function TerminalPreview({
       data-preview-hover-probe={hoverProbe}
       data-preview-scrollbar={thumb ? 'true' : 'false'}
       data-preview-scroll-ratio={thumb ? thumb.ratio.toFixed(4) : ''}
+      data-preview-idle-tour={idleTour ? 'true' : 'false'}
     >
       <div
         ref={hostRef}
@@ -1087,9 +1134,11 @@ export function TerminalPreview({
             {loading
               ? '… loading'
               : canInteract
-                ? tour && tour.length > 1
-                  ? '● state tour'
-                  : '● live pack'
+                ? idleTour
+                  ? '◐ idle tour'
+                  : tour && tour.length > 1
+                    ? '● state tour'
+                    : '● live pack'
                 : '○ snapshot'}
           </span>
           <span>{stepLabel}</span>

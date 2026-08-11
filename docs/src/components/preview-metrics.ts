@@ -467,6 +467,42 @@ export function cursorCellForStep(
 /** Phosphor block-cursor fill used when the preview host is focused. */
 export const CURSOR_BLOCK_RGB: [number, number, number] = [0x00, 0xff, 0x41]
 
+/** Default idle tour period (ms) — slow Ghostty-demo cycle while unfocused. */
+export const IDLE_TOUR_INTERVAL_MS = 2200
+
+/**
+ * Whether an idle multi-step tour should advance once.
+ * Pauses when focused, reduced-motion, single-step, or interval not elapsed.
+ * Pure — host drives step with applyNavStepAction / goStep.
+ */
+export function idleTourTick(
+  nowMs: number,
+  lastAdvanceMs: number,
+  opts: {
+    focused: boolean
+    reducedMotion: boolean
+    maxStep: number
+    step: number
+    intervalMs?: number
+  },
+): { advance: boolean; nextStep: number; stamp: number } {
+  const max = Math.max(0, opts.maxStep | 0)
+  const cur = clampStep(opts.step, max)
+  const interval = Math.max(200, opts.intervalMs ?? IDLE_TOUR_INTERVAL_MS)
+  const stamp = Number.isFinite(lastAdvanceMs) ? lastAdvanceMs : 0
+  if (opts.focused || opts.reducedMotion || max <= 0) {
+    return { advance: false, nextStep: cur, stamp }
+  }
+  if (!(nowMs >= 0) || !Number.isFinite(nowMs)) {
+    return { advance: false, nextStep: cur, stamp }
+  }
+  if (nowMs - stamp < interval) {
+    return { advance: false, nextStep: cur, stamp }
+  }
+  const next = cur >= max ? 0 : cur + 1
+  return { advance: true, nextStep: next, stamp: nowMs }
+}
+
 /**
  * Quantize `devicePixelRatio` for crisp Ghostty-class cell paint.
  * Fractional DPR (1.25 / 1.33 / 2.75) is rounded to 0.25 steps so the canvas

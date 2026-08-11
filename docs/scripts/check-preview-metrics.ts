@@ -38,6 +38,8 @@ import {
   stepFromScrollRatio,
   underlineMetrics,
   underlineSpans,
+  idleTourTick,
+  IDLE_TOUR_INTERVAL_MS,
   type ProbeCell,
 } from '../src/components/preview-metrics'
 
@@ -190,6 +192,30 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
   )
   const shadeGeo = boxStrokeGeometry(boxStrokeForGlyph('░')!, 0, 0, 9, 18)
   assert(shadeGeo.fills.length === 1 && shadeGeo.fills[0]!.w === 9, '░ full-cell fill geom')
+}
+
+// Idle tour tick (unfocused multi-step demo).
+{
+  const base = {
+    focused: false,
+    reducedMotion: false,
+    maxStep: 3,
+    step: 0,
+    intervalMs: 1000,
+  }
+  const wait = idleTourTick(500, 0, base)
+  assert(!wait.advance && wait.nextStep === 0, 'before interval no advance')
+  const go = idleTourTick(1000, 0, base)
+  assert(go.advance && go.nextStep === 1 && go.stamp === 1000, `advance step1 ${JSON.stringify(go)}`)
+  const wrap = idleTourTick(5000, 0, { ...base, step: 3 })
+  assert(wrap.advance && wrap.nextStep === 0, 'wrap to 0')
+  const focused = idleTourTick(5000, 0, { ...base, focused: true })
+  assert(!focused.advance, 'pause when focused')
+  const reduced = idleTourTick(5000, 0, { ...base, reducedMotion: true })
+  assert(!reduced.advance, 'pause reduced motion')
+  const staticPack = idleTourTick(5000, 0, { ...base, maxStep: 0 })
+  assert(!staticPack.advance, 'no tour for single step')
+  assert(IDLE_TOUR_INTERVAL_MS >= 1000, 'default interval sane')
 }
 
 // Continuous underline metrics + spans (list selection chrome).
