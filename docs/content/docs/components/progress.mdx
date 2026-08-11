@@ -2,44 +2,12 @@
 title: Progress
 description: 'Determinate/indeterminate progress with percentage, units, rate, ETA, phases, and status recipes for task/transfer models.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `progress/determinate`
-
-Progress
-
-![Progress — determinate](/component-previews/progress-determinate.svg)
-
-### `progress/detailed`
-
-ProgressBar detailed
-
-![Progress — detailed](/component-previews/progress-detailed.svg)
-
-### `progress/multi-line`
-
-ProgressBar multi-line
-
-![Progress — multi-line](/component-previews/progress-multi-line.svg)
-
-### `progress/failed`
-
-ProgressBar failed
-
-![Progress — failed](/component-previews/progress-failed.svg)
-
-### `progress/narrow`
-
-Narrow progress
-
-![Progress — narrow](/component-previews/progress-narrow.svg)
-
-### `progress/unicode`
-
-Unicode progress labels
-
-![Progress — unicode](/component-previews/progress-unicode.svg)
+<TerminalPreview story="progress/determinate" interactive caption="Progress · progress/determinate — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -71,4 +39,11 @@ ProgressBar::paint_state(&system, area, buf, &mut state, tick, motion);
 
 ## Stories
 
-- `progress/determinate`, `detailed`, `multi-line`, `failed`, `narrow`, `unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `progress/determinate` | Progress | **Primary (live preview)** |
+| `progress/detailed` | ProgressBar detailed | detailed |
+| `progress/multi-line` | ProgressBar multi-line | multi line |
+| `progress/failed` | ProgressBar failed | failed |
+| `progress/narrow` | Narrow progress | narrow |
+| `progress/unicode` | Unicode progress labels | unicode |

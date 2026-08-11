@@ -3,11 +3,12 @@ title: Tag
 description: 'Static or removable compact tokens for entities, attachments, and paste chips.'
 ---
 
-## Previews
+## Live terminal (Ghostty-class)
 
-### `tag/removable`
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
 
-![Removable tag](/component-previews/tag-removable.svg)
+<TerminalPreview story="tag/removable" interactive caption="Tag · tag/removable — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -38,3 +39,9 @@ assert_eq!(remove_label("paste.txt"), "remove paste.txt");
 ## Migration
 
 See `migrations/0119-v0.13.0-tag-chip.md`.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `tag/removable` | Tag removable | **Primary (live preview)** |

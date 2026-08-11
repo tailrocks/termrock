@@ -133,8 +133,9 @@ pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>>
             stderr_line(format_args!("{failure}"));
         }
         Err(concat!(
-            "tui lookbook previews are out of date; regenerate with ",
-            "`cargo run -p termrock-lookbook -- render --out docs/public/component-previews`",
+            "lookbook SVG check out of date; regenerate with ",
+            "`cargo run -p termrock-lookbook -- render --out target/render-check` ",
+            "(docs product path is Ghostty export-frames → docs/public/preview-frames, not SVG)",
         )
         .into())
     }

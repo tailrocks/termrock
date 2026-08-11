@@ -17,7 +17,10 @@ A component documentation page is complete only when:
 2. **Basic** and **interactive** Rust examples use **public APIs only**.  
 3. Those examples are mirrored in `crates/termrock/tests/documentation_examples.rs` and pass CI.  
 4. Lookbook/Studio story ids are named for visual proof.  
-5. Writing answers *when/why*, not only *what exists*.
+5. Writing answers *when/why*, not only *what exists*.  
+6. **Exactly one** Ghostty-class `<TerminalPreview story="…/…" />` embed per handbook
+   page (primary lookbook story + multi-step interactivity). **Never** SVG,
+   `component-previews/`, or multi-image galleries.
 
 Thin generated inventory pages (`docs/content/docs/components/`) are **not** a substitute for handbook pages.
 
@@ -28,6 +31,7 @@ Thin generated inventory pages (`docs/content/docs/components/`) are **not** a s
 | # | Section | Content rules |
 |---|---------|----------------|
 | 1 | **Purpose** | One-line + short paragraph: problem solved in a terminal UI |
+| 1b | **Live terminal (Ghostty-class)** | One `<TerminalPreview>` for the primary story; no SVG |
 | 2 | **When to use / when not** | Table vs alternatives |
 | 3 | **Installation** | Crate pin and/or `termrock add …` |
 | 4 | **Source files** | Crate paths or registry install list |

@@ -2,32 +2,12 @@
 title: JumpMode
 description: 'Easymotion-style jump navigation over SemanticScene regions with prefix-free multi-key labels, role/action filters, and OverlayStack Esc restore.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `jump-mode/multi`
-
-JumpMode multi-key
-
-![JumpMode — multi-key](/component-previews/jump-mode-multi.svg)
-
-### `jump-mode/filter`
-
-JumpMode role filter
-
-![JumpMode — filter](/component-previews/jump-mode-filter.svg)
-
-### `jump-mode/ascii`
-
-JumpMode ASCII
-
-![JumpMode — ASCII](/component-previews/jump-mode-ascii.svg)
-
-### `jump-overlay/basic`
-
-Jump overlay
-
-![JumpOverlay — basic](/component-previews/jump-overlay-basic.svg)
+<TerminalPreview story="jump-mode/multi" interactive caption="JumpMode · jump-mode/multi — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -57,3 +37,12 @@ JumpOverlay::from_state(&targets, &system, &state).render(area, buf);
 | Role/action filter | covered |
 | Non-color cues | covered |
 | Deterministic labels | covered |
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `jump-mode/multi` | JumpMode multi-key | **Primary (live preview)** |
+| `jump-mode/filter` | JumpMode role filter | filter |
+| `jump-mode/ascii` | JumpMode ASCII | ascii |
+| `jump-overlay/basic` | Jump overlay | basic |

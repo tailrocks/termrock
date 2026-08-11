@@ -2,28 +2,12 @@
 title: ApprovalQueue
 description: 'Unified pending decisions inbox — Open default, no bulk high-risk.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `approval-queue/basic`
-
-![ApprovalQueue — basic](/component-previews/approval-queue-basic.svg)
-
-### `approval-queue/badge`
-
-![ApprovalQueue — badge](/component-previews/approval-queue-badge.svg)
-
-### `approval-queue/drawer`
-
-![ApprovalQueue — drawer](/component-previews/approval-queue-drawer.svg)
-
-### `approval-queue/narrow`
-
-![ApprovalQueue — narrow](/component-previews/approval-queue-narrow.svg)
-
-### `approval-queue/unicode`
-
-![ApprovalQueue — unicode](/component-previews/approval-queue-unicode.svg)
+<TerminalPreview story="approval-queue/basic" interactive caption="ApprovalQueue · approval-queue/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -58,8 +42,10 @@ match state.handle_key(key) {
 
 ## Stories
 
-- `approval-queue/basic`
-- `approval-queue/badge`
-- `approval-queue/drawer`
-- `approval-queue/narrow`
-- `approval-queue/unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `approval-queue/basic` | ApprovalQueue | **Primary (live preview)** |
+| `approval-queue/badge` | ApprovalQueue badge | badge |
+| `approval-queue/drawer` | ApprovalQueue drawer | drawer |
+| `approval-queue/narrow` | Narrow ApprovalQueue | narrow |
+| `approval-queue/unicode` | Unicode ApprovalQueue | unicode |

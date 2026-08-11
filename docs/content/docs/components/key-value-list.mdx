@@ -2,32 +2,12 @@
 title: KeyValueList
 description: 'Metadata list — aligned keys, stacked narrow, secrets, status, links.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `key-value-list/basic`
-
-![Basic](/component-previews/key-value-list-basic.svg)
-
-### `key-value-list/dense`
-
-![Dense](/component-previews/key-value-list-dense.svg)
-
-### `key-value-list/stacked`
-
-![Stacked](/component-previews/key-value-list-stacked.svg)
-
-### `key-value-list/secret`
-
-![Secret](/component-previews/key-value-list-secret.svg)
-
-### `key-value-list/narrow`
-
-![Narrow](/component-previews/key-value-list-narrow.svg)
-
-### `key-value-list/unicode`
-
-![Unicode](/component-previews/key-value-list-unicode.svg)
+<TerminalPreview story="key-value-list/basic" interactive caption="KeyValueList · key-value-list/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -43,12 +23,13 @@ let mut state = KeyValueListState::new();
 KeyValueList::dense(&entries, &system).paint(area, buf, &mut state);
 ```
 
-## vs DetailTable
+## Stories
 
-Prefer **KeyValueList** for settings/summaries (groups, density, redaction,
-stacked contraction). Keep **DetailTable** for selection-heavy dialog detail
-bodies with measured scroll caching.
-
-## Migration
-
-See `migrations/0125-v0.13.0-key-value-list.md`.
+| Story | Title | Focus |
+|---|---|---|
+| `key-value-list/basic` | KeyValueList reading | **Primary (live preview)** |
+| `key-value-list/dense` | KeyValueList dense | dense |
+| `key-value-list/stacked` | KeyValueList stacked | stacked |
+| `key-value-list/secret` | KeyValueList secret | secret |
+| `key-value-list/narrow` | Narrow KeyValueList | narrow |
+| `key-value-list/unicode` | Unicode KeyValueList | unicode |

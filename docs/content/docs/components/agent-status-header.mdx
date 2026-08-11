@@ -2,24 +2,12 @@
 title: AgentStatusHeader
 description: 'Compact agent/session status with StatusBar contraction.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `agent-status-header/basic`
-
-![AgentStatusHeader — basic](/component-previews/agent-status-header-basic.svg)
-
-### `agent-status-header/idle`
-
-![AgentStatusHeader — idle](/component-previews/agent-status-header-idle.svg)
-
-### `agent-status-header/narrow`
-
-![AgentStatusHeader — narrow](/component-previews/agent-status-header-narrow.svg)
-
-### `agent-status-header/unicode`
-
-![AgentStatusHeader — unicode](/component-previews/agent-status-header-unicode.svg)
+<TerminalPreview story="agent-status-header/basic" interactive caption="AgentStatusHeader · agent-status-header/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -52,7 +40,9 @@ match state.handle_key(key) {
 
 ## Stories
 
-- `agent-status-header/basic`
-- `agent-status-header/idle`
-- `agent-status-header/narrow`
-- `agent-status-header/unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `agent-status-header/basic` | AgentStatusHeader | **Primary (live preview)** |
+| `agent-status-header/idle` | AgentStatusHeader idle | idle |
+| `agent-status-header/narrow` | AgentStatusHeader narrow | narrow |
+| `agent-status-header/unicode` | Unicode AgentStatusHeader | unicode |

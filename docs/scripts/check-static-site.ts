@@ -8,24 +8,32 @@ for (const relative of required) {
 }
 
 // Spot-check core component reference pages that must always prerender.
+// Ghostty path: MDX embeds `story="…/…"` (slash form), not SVG-era hyphenated filenames.
 const componentChecks = [
-  ['action-bar', 'action-bar-basic'],
-  ['list', 'list-selection'],
-  ['viewport', 'viewport-both-axes'],
+  ['action-bar', 'action-bar/basic'],
+  ['list', 'list/selection'],
+  ['viewport', 'viewport/both-axes'],
 ] as const
-for (const [component, preview] of componentChecks) {
+for (const [component, storyId] of componentChecks) {
   const page = `${output}/docs/components/${component}/index.html`
   if (!(await Bun.file(page).exists())) {
     throw new Error(`static docs output missing docs/components/${component}/index.html`)
   }
   const html = await Bun.file(page).text()
+  // SSR/prerender may keep the attribute as story="…" or HTML-escaped story=&#34;…&#34;.
+  const storyNeedle = storyId
+  const hasStory =
+    html.includes(`story="${storyNeedle}"`) ||
+    html.includes(`story='${storyNeedle}'`) ||
+    html.includes(`story=&#34;${storyNeedle}&#34;`) ||
+    html.includes(storyNeedle)
   if (
-    !html.includes(preview) ||
+    !hasStory ||
     !html.includes('Interaction contract') ||
     !html.includes('class="line"')
   ) {
     throw new Error(
-      `${component} reference page is missing its preview, contract, or Rust usage`,
+      `${component} reference page is missing its Ghostty story embed, contract, or Rust usage`,
     )
   }
 }

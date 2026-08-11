@@ -2,6 +2,12 @@
 title: Field
 description: 'Single form field projection — label, value, status, dirty/touched.'
 ---
+## Live terminal (Ghostty-class)
+
+One focused interactive surface. Variants are listed in **Stories** — interactivity
+replaces multi-image galleries.
+
+<TerminalPreview story="text-input/basic" interactive caption="Field · text-input/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -30,3 +36,14 @@ Compose inside [`Fieldset`](./fieldset) / [`Form`](./form). Caption-only chrome 
 ## Migration
 
 See `migrations/0137-v0.13.0-form-field-fieldset.md`.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `text-input/basic` | Text input | **Primary (live preview)** |
+| `text-input/unicode` | Unicode text input | unicode |
+| `text-input/narrow` | Narrow TextInput | narrow |
+| `text-input/secret` | TextInput secret | secret |
+| `text-input/invalid` | TextInput invalid | invalid |
+| `text-input/prefix` | TextInput prefix/suffix | prefix |

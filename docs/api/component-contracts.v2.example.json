@@ -13,7 +13,7 @@
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/basic"],
-            "snapshots": ["docs/public/component-previews/permission-prompt-basic.svg"]
+            "snapshots": ["docs/public/preview-frames/permission-prompt-basic/manifest.json"]
           }
         },
         "keyboard": {
@@ -67,7 +67,7 @@
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/narrow"],
-            "snapshots": ["docs/public/component-previews/permission-prompt-narrow.svg"]
+            "snapshots": ["docs/public/preview-frames/permission-prompt-narrow/manifest.json"]
           }
         },
         "tiny_terminal": {
@@ -75,14 +75,14 @@
           "reason": "narrow story covers contraction; dedicated tiny matrix pending",
           "evidence": {
             "stories": ["permission-prompt/narrow"],
-            "snapshots": ["docs/public/component-previews/permission-prompt-narrow.svg"]
+            "snapshots": ["docs/public/preview-frames/permission-prompt-narrow/manifest.json"]
           }
         },
         "unicode": {
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/unicode"],
-            "snapshots": ["docs/public/component-previews/permission-prompt-unicode.svg"]
+            "snapshots": ["docs/public/preview-frames/permission-prompt-unicode/manifest.json"]
           }
         },
         "cjk": {

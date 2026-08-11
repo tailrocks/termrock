@@ -2,44 +2,12 @@
 title: Center
 description: 'Axis-aware constrained centering for empty states, dialogs, onboarding, and failure screens.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `center/both`
-
-![Center both](/component-previews/center-both.svg)
-
-### `center/dialog`
-
-![Center dialog](/component-previews/center-dialog.svg)
-
-### `center/horizontal`
-
-![Center horizontal](/component-previews/center-horizontal.svg)
-
-### `center/vertical`
-
-![Center vertical](/component-previews/center-vertical.svg)
-
-### `center/max`
-
-![Center max-width](/component-previews/center-max.svg)
-
-### `center/onboarding`
-
-![Onboarding recipe](/component-previews/center-onboarding.svg)
-
-### `center/failure`
-
-![Failure recipe](/component-previews/center-failure.svg)
-
-### `center/tiny`
-
-![Center tiny](/component-previews/center-tiny.svg)
-
-## Anatomy
-
-`area` (outer) · `content` (after margins) · `child` (placed rect)
+<TerminalPreview story="center/both" interactive caption="Center · center/both — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -63,35 +31,15 @@ let child = Center::new(100, 20)
     .child;
 ```
 
-## Axes
+## Stories
 
-| Axis | Behavior |
-|------|----------|
-| Both | Center X and Y; preferred size |
-| Horizontal | Center X; height fills content |
-| Vertical | Center Y; width fills content |
-
-## Semantics
-
-Center is **not** interactive and must not be a focus node. Register only the
-**child** widgets, or:
-
-```rust
-layout.register_child_semantics(&mut scene, "empty", "No items");
-```
-
-## Safety
-
-Child is always ⊆ outer. Empty / tiny terminals never underflow. Preferred size
-is clamped by max, min (when room), margins, and available cells.
-
-## Common mistakes
-
-- Treating Center as a Panel (it does not paint borders)
-- Registering Center on FocusGraph (register children only)
-- Forgetting max-width on wide terminals
-- Assuming underflow on tiny sizes (child is clamped inside)
-
-## Migration
-
-See `migrations/0106-v0.13.0-center-premium.md` (extends 0099).
+| Story | Title | Focus |
+|---|---|---|
+| `center/both` | Center both axes | **Primary (live preview)** |
+| `center/dialog` | Center dialog safe margin | dialog |
+| `center/horizontal` | Center horizontal only | horizontal |
+| `center/vertical` | Center vertical only | vertical |
+| `center/max` | Center max-width | max |
+| `center/onboarding` | Center onboarding recipe | onboarding |
+| `center/failure` | Center failure recipe | failure |
+| `center/tiny` | Center tiny terminal | tiny |

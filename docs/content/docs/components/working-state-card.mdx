@@ -2,28 +2,12 @@
 title: WorkingStateCard
 description: 'Privacy-safe current agent work summary with ActivityShelf collapse.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `working-state-card/basic`
-
-![WorkingStateCard — basic](/component-previews/working-state-card-basic.svg)
-
-### `working-state-card/waiting`
-
-![WorkingStateCard — waiting](/component-previews/working-state-card-waiting.svg)
-
-### `working-state-card/collapsed`
-
-![WorkingStateCard — collapsed](/component-previews/working-state-card-collapsed.svg)
-
-### `working-state-card/narrow`
-
-![WorkingStateCard — narrow](/component-previews/working-state-card-narrow.svg)
-
-### `working-state-card/unicode`
-
-![WorkingStateCard — unicode](/component-previews/working-state-card-unicode.svg)
+<TerminalPreview story="working-state-card/basic" interactive caption="WorkingStateCard · working-state-card/basic — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -59,8 +43,10 @@ match state.handle_key(key) {
 
 ## Stories
 
-- `working-state-card/basic`
-- `working-state-card/waiting`
-- `working-state-card/collapsed`
-- `working-state-card/narrow`
-- `working-state-card/unicode`
+| Story | Title | Focus |
+|---|---|---|
+| `working-state-card/basic` | WorkingStateCard | **Primary (live preview)** |
+| `working-state-card/waiting` | WorkingStateCard waiting | waiting |
+| `working-state-card/collapsed` | WorkingStateCard collapsed | collapsed |
+| `working-state-card/narrow` | Narrow WorkingStateCard | narrow |
+| `working-state-card/unicode` | Unicode WorkingStateCard | unicode |

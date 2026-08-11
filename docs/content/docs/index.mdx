@@ -18,7 +18,7 @@ to terminal geometry, focus, and Unicode safety.
 | **Widgets** | List, Table, Dialog, PromptComposer, PermissionPrompt, Tree, … with stable IDs and borrowed render data |
 | **Interaction** | `InteractionScene`, `OverlayStack`, `UiIntent`, keymaps — Esc law and focus traps |
 | **Design system** | Semantic `Role` palette, density, glyphs, recipes (phosphor default) |
-| **Lookbook** | Deterministic SVG previews of every catalog story — same paint path as the TUI CLI |
+| **Lookbook** | Ghostty-class interactive truecolor frame packs for every catalog story — same paint path as the TUI CLI |
 
 TermRock owns reusable rendering, layout, theme roles, focus/navigation, hit
 geometry, narrow-terminal behavior, and non-color cues. **Your app owns** domain
@@ -26,21 +26,23 @@ state, wording, effects, secrets, process policy, and projections into widgets.
 
 ## Browse the catalog
 
-1. **[Components](/docs/components)** — every public widget with **all lookbook
-   state previews** (basic, narrow, unicode, disabled, empty, … where applicable).
+1. **[Components](/docs/components)** — every public widget with **Ghostty
+   terminal previews** for all lookbook states (basic, narrow, unicode, …).
 2. **[Handbook](/docs/handbook)** — deeper guides for flagship surfaces.
 3. **[Interaction](/docs/interaction)** — scene, overlays, and session lifecycle.
 4. **[Quality & migrations](/docs/quality-migrations)** — contracts and breaking-change index.
 
-Previews on this site are **not mockups**. They are regenerated from:
+Previews on this site are **not mockups and not SVGs**. They are truecolor cell
+packs regenerated from:
 
 ```bash
-cargo run -p termrock-lookbook -- render --out docs/public/component-previews
-cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames
+# or: mise run export-preview-frames
 ```
 
-That is the same renderer the interactive gallery CLI uses, so what you see in
-the docs matches what a terminal session paints for that story.
+The docs host (`TerminalPreview`) paints those packs with Ghostty-class chrome,
+responsive size remapping, and keyboard/click stepping when the story is
+interactive — the same TermRock paint path as the lookbook TUI.
 
 ## Quick start
 

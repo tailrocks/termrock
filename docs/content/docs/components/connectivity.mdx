@@ -2,44 +2,12 @@
 title: Offline / ReconnectingState
 description: 'Connectivity for remote sessions — banner, full recovery, StatusBar and NotificationCenter projection.'
 ---
+## Live terminal (Ghostty-class)
 
-## Previews
+One focused interactive surface. Other variants are in the **Stories** table —
+interactivity replaces multi-image galleries.
 
-### `connectivity/banner`
-
-Unobtrusive reconnecting banner
-
-![OfflineBanner](/component-previews/connectivity-banner.svg)
-
-### `connectivity/reconnecting`
-
-Full reconnect surface
-
-![OfflineSurface — reconnecting](/component-previews/connectivity-reconnecting.svg)
-
-### `connectivity/auth`
-
-Auth required
-
-![OfflineSurface — auth](/component-previews/connectivity-auth.svg)
-
-### `connectivity/unavailable`
-
-Server unavailable
-
-![OfflineSurface — unavailable](/component-previews/connectivity-unavailable.svg)
-
-### `connectivity/status-bar`
-
-StatusBar projection
-
-![ReconnectingState — status bar](/component-previews/connectivity-status-bar.svg)
-
-### `connectivity/notification`
-
-NotificationCenter ingest
-
-![ReconnectingState — notification](/component-previews/connectivity-notification.svg)
+<TerminalPreview story="connectivity/banner" interactive caption="Offline / ReconnectingState · connectivity/banner — focus surface; keys/click for states" />
 
 ## Usage
 
@@ -69,14 +37,6 @@ OfflineSurface::new(&system).paint(area, buf, &mut conn);
 center.ingest_item(conn.to_notification_item("conn-1"));
 ```
 
-## Rules
-
-1. Prefer banner for transient blips; full surface for auth/unavailable/long outages.
-2. Always show **target** + phase; include last-ok and retry when known.
-3. Default **drafts + selection preserved** — say so on full surface.
-4. Project StatusBar/NotificationCenter from the same state (no private strings).
-5. Esc dismisses banner only; StatusBar still carries the connection cue.
-
 ## Interaction contract
 
 | Axis | Status |
@@ -90,4 +50,11 @@ center.ingest_item(conn.to_notification_item("conn-1"));
 
 ## Stories
 
-- `connectivity/banner`, `reconnecting`, `auth`, `unavailable`, `status-bar`, `notification`
+| Story | Title | Focus |
+|---|---|---|
+| `connectivity/banner` | Offline banner | **Primary (live preview)** |
+| `connectivity/reconnecting` | Reconnecting full | reconnecting |
+| `connectivity/auth` | Auth required | auth |
+| `connectivity/unavailable` | Server unavailable | unavailable |
+| `connectivity/status-bar` | Connectivity StatusBar | status bar |
+| `connectivity/notification` | Connectivity notification | notification |
