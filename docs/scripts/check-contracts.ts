@@ -214,6 +214,13 @@ function validateComponent(
 async function validateSnapshots(c: V2Component) {
   for (const axis of Object.values(c.axes)) {
     for (const path of axis.evidence?.snapshots ?? []) {
+      // Ghostty-only product path: ban SVG component-previews evidence.
+      if (path.includes('component-previews/') || path.endsWith('.svg')) {
+        fail(
+          `${c.component}: snapshot must be a Ghostty frame pack under docs/public/preview-frames/, not ${path}`,
+        )
+        continue
+      }
       if (!(await fileExists(path))) {
         fail(`${c.component}: missing snapshot file ${path}`)
       }
