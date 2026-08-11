@@ -9,7 +9,7 @@
     {
       "source": "src/lib.rs",
       "dest": "src/ui/blocks/form_wizard.rs",
-      "sha256": "aedd716e239710237a5e17b60b0145d8e198e2fa7d090f437b1eec8e9f5522f1"
+      "sha256": "e2188b0255c59ae9f0d1a9924084c2d35bb2b582a28362b81472bbbd597bd060"
     }
   ]
 }
