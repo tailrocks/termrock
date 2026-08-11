@@ -688,7 +688,10 @@ mod tests {
         let story = story_by_id("tabs/status").expect("tabs/status");
         let key = preferred_step_key(story).expect("tabs must accept a nav key");
         assert!(
-            matches!(key, "ArrowRight" | "ArrowDown" | "ArrowLeft" | "ArrowUp" | "j" | "Tab"),
+            matches!(
+                key,
+                "ArrowRight" | "ArrowDown" | "ArrowLeft" | "ArrowUp" | "j" | "Tab"
+            ),
             "unexpected step key {key}"
         );
         assert!(probe_interactive(story));
@@ -747,13 +750,14 @@ mod tests {
             tour.len()
         );
         assert_eq!(tour[0], "button/activation");
-        assert!(tour.iter().any(|id| id.contains("narrow") || id.contains("disabled") || id.contains("loading") || id.contains("destructive")));
+        assert!(tour.iter().any(|id| id.contains("narrow")
+            || id.contains("disabled")
+            || id.contains("loading")
+            || id.contains("destructive")));
         let theme = RolePalette::default();
         let frames: Vec<_> = tour
             .iter()
-            .map(|id| {
-                paint_story_frame(story_by_id(id).unwrap(), &theme, Some(40), Some(8))
-            })
+            .map(|id| paint_story_frame(story_by_id(id).unwrap(), &theme, Some(40), Some(8)))
             .collect();
         let base = &frames[0].cells;
         let distinct = frames.iter().skip(1).filter(|f| f.cells != *base).count();

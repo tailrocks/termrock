@@ -154,7 +154,7 @@ assert(boldFontWeight(undefined) === '400', 'undef weight 400')
     for (const c of bars) {
       const plan = boxStrokeForGlyph(c.ch)
       assert(plan && plan.kind === 'lower', `spark ${c.ch} lower plan got ${JSON.stringify(plan)}`)
-      assert(plan.kind !== 'fill', `spark ${c.ch} must not full-fill`)
+      // kind==='lower' already excludes full-cell solid bars (sparklines)
     }
   }
   // metrics-dashboard larger size uses ▅▆▇
