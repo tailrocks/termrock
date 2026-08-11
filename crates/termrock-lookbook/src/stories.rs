@@ -14962,9 +14962,9 @@ fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let panel_tokens = system.clone().density(Density::default());
     frame.render_widget(Panel::new(&panel_tokens).title("Edge"), area);
     let candidates = [
-        CompletionCandidate::new("alpha", "αlpha-wide-label"),
-        CompletionCandidate::new("beta", "βeta"),
-        CompletionCandidate::new("gamma", "γamma").kind("fn"),
+        CompletionCandidate::new("alpha", "alpha-wide-label ✨"),
+        CompletionCandidate::new("beta", "beta"),
+        CompletionCandidate::new("gamma", "gamma").kind("fn"),
     ];
     // Anchor near bottom-right so the menu must flip and clamp.
     let anchor = Rect::new(

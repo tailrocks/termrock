@@ -1361,7 +1361,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                     table.system.glyphs.disclosure_closed()
                 }
             } else if matches!(row.kind, TreeTableRowKind::Aggregate) {
-                if state.ascii { "=" } else { "Σ" }
+                // ASCII "=" for all glyph sets (no non-English Σ showcase).
+                "="
             } else {
                 " "
             };
