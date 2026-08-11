@@ -28,3 +28,29 @@ export function glyphDrawX(cellPx: number, cellW: number, textWidth: number): nu
 /** Monospace stack matching docs --font-mono / Ghostty-class host. */
 export const PREVIEW_MONO_STACK =
   '"JetBrains Mono", "SF Mono", "Cascadia Mono", ui-monospace, Menlo, Consolas, monospace'
+
+/**
+ * Map wheel delta to a step delta for TUI state/tour navigation.
+ * Positive deltaY (scroll down) advances; negative goes back. Dead-zone ignores noise.
+ */
+export function stepDeltaFromWheel(deltaY: number, deadZone = 4): number {
+  if (!(Math.abs(deltaY) > deadZone)) return 0
+  return deltaY > 0 ? 1 : -1
+}
+
+/** Clamp step index into [0, maxStep]. */
+export function clampStep(step: number, maxStep: number): number {
+  const max = Math.max(0, maxStep)
+  if (step < 0) return 0
+  if (step > max) return max
+  return step | 0
+}
+
+/** Adjacent step indices to prefetch for snappy Ghostty-style interaction. */
+export function adjacentSteps(step: number, maxStep: number): number[] {
+  const cur = clampStep(step, maxStep)
+  const out: number[] = []
+  if (cur > 0) out.push(cur - 1)
+  if (cur < maxStep) out.push(cur + 1)
+  return out
+}

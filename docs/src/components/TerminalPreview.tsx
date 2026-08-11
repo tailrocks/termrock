@@ -10,19 +10,26 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from 'react'
 import {
   PREVIEW_MONO_STACK,
+  adjacentSteps,
   baselineForCell,
+  clampStep,
   fontSizeForCell,
   glyphDrawX,
+  stepDeltaFromWheel,
 } from '@/components/preview-metrics'
 
 export {
   PREVIEW_MONO_STACK,
+  adjacentSteps,
   baselineForCell,
+  clampStep,
   fontSizeForCell,
   glyphDrawX,
+  stepDeltaFromWheel,
 } from '@/components/preview-metrics'
 
 /** Cell payload from termrock-lookbook frame export (truecolor RGB). */
@@ -231,9 +238,12 @@ export function TerminalPreview({
   const [error, setError] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
   const [caretOn, setCaretOn] = useState(true)
+  const [stepPulse, setStepPulse] = useState(0)
   const labelId = useId()
   const stepRef = useRef(0)
   const sizeKeyRef = useRef(sizeKey)
+  const maxStepRef = useRef(0)
+  const frameCacheRef = useRef<Map<string, TerminalFrame>>(new Map())
   stepRef.current = step
   sizeKeyRef.current = sizeKey
 
@@ -245,27 +255,60 @@ export function TerminalPreview({
   const sizes = manifest?.sizes?.length ? manifest.sizes : DEFAULT_SIZES
   const canInteract = Boolean(interactive && manifest?.interactive)
   const maxStep = Math.max(0, (manifest?.steps || 1) - 1)
+  maxStepRef.current = maxStep
+
+  const cacheKey = (size: string, n: number) => `${size}:${n}`
+
+  const fetchFrame = useCallback(
+    async (size: string, n: number): Promise<TerminalFrame> => {
+      const key = cacheKey(size, n)
+      const hit = frameCacheRef.current.get(key)
+      if (hit) return hit
+      let f: TerminalFrame
+      try {
+        f = await loadJson<TerminalFrame>(`${packBase}/${size}/${n}.json`)
+      } catch {
+        f = await loadJson<TerminalFrame>(`${packBase}/${n}.json`)
+      }
+      frameCacheRef.current.set(key, f)
+      return f
+    },
+    [packBase],
+  )
+
+  const prefetchAdjacent = useCallback(
+    (size: string, n: number) => {
+      for (const s of adjacentSteps(n, maxStepRef.current)) {
+        void fetchFrame(size, s).catch(() => {
+          /* optional adjacent pack */
+        })
+      }
+    },
+    [fetchFrame],
+  )
 
   const loadFrame = useCallback(
     async (size: string, n: number) => {
       try {
-        // Prefer size pack; fall back to root step for older packs.
-        let f: TerminalFrame
-        try {
-          f = await loadJson<TerminalFrame>(`${packBase}/${size}/${n}.json`)
-        } catch {
-          f = await loadJson<TerminalFrame>(`${packBase}/${n}.json`)
-        }
+        const next = clampStep(n, maxStepRef.current)
+        const f = await fetchFrame(size, next)
         setFrame(f)
-        setStep(n)
+        setStep(next)
         setSizeKey(size)
         setError(null)
+        setStepPulse((p) => p + 1)
+        prefetchAdjacent(size, next)
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e))
       }
     },
-    [packBase],
+    [fetchFrame, prefetchAdjacent],
   )
+
+  // Drop cache when pack story changes.
+  useEffect(() => {
+    frameCacheRef.current = new Map()
+  }, [packBase])
 
   useEffect(() => {
     let cancelled = false
@@ -360,11 +403,21 @@ export function TerminalPreview({
 
   const goStep = useCallback(
     (n: number) => {
-      const next = Math.max(0, Math.min(maxStep, n))
-      void loadFrame(sizeKey, next)
+      void loadFrame(sizeKey, clampStep(n, maxStep))
     },
     [loadFrame, maxStep, sizeKey],
   )
+
+  const onWheel = (e: ReactWheelEvent) => {
+    if (!canInteract) return
+    const delta = stepDeltaFromWheel(e.deltaY)
+    if (!delta) return
+    e.preventDefault()
+    e.stopPropagation()
+    hostRef.current?.focus()
+    setFocused(true)
+    goStep(stepRef.current + delta)
+  }
 
   /** Shared nav mapping for React onKeyDown + window capture (agent-browser reliability). */
   const handleNavKey = useCallback(
@@ -471,26 +524,31 @@ export function TerminalPreview({
   }
 
   const chrome: CSSProperties = {
-    borderRadius: 10,
-    border: focused ? '1px solid #39ff14' : '1px solid #273027',
+    borderRadius: 12,
+    border: focused ? '1px solid #39ff14' : '1px solid #1e261e',
     background:
-      'linear-gradient(180deg, #1a1c1a 0%, #0c0e0c 12%, #050705 100%)',
+      'linear-gradient(180deg, #222622 0%, #121512 14%, #070907 100%)',
     boxShadow: focused
-      ? '0 0 0 1px rgba(57,255,20,0.25), 0 12px 40px rgba(0,0,0,0.55)'
-      : '0 12px 40px rgba(0,0,0,0.45)',
+      ? '0 0 0 1px rgba(57,255,20,0.28), 0 0 24px rgba(57,255,20,0.08), 0 16px 48px rgba(0,0,0,0.6)'
+      : '0 1px 0 rgba(255,255,255,0.04) inset, 0 16px 48px rgba(0,0,0,0.5)',
     overflow: 'hidden',
     maxWidth: '100%',
+    filter: focused ? 'none' : 'brightness(0.92)',
+    transition: 'border-color 120ms ease, box-shadow 120ms ease, filter 120ms ease',
   }
 
   const titleBar: CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    padding: '8px 12px',
-    borderBottom: '1px solid #1e241e',
+    padding: '9px 12px',
+    borderBottom: '1px solid #1a201a',
+    background: focused
+      ? 'linear-gradient(180deg, #1c221c 0%, #121612 100%)'
+      : 'linear-gradient(180deg, #181b18 0%, #0e100e 100%)',
     fontFamily: PREVIEW_MONO_STACK,
     fontSize: 12,
-    color: '#8a9a8a',
+    color: focused ? '#9aaa9a' : '#6a766a',
     userSelect: 'none',
   }
 
@@ -499,11 +557,15 @@ export function TerminalPreview({
     alignItems: 'center',
     gap: 10,
     padding: '5px 12px',
-    borderTop: '1px solid #1e241e',
+    borderTop: '1px solid #1a201a',
     fontFamily: PREVIEW_MONO_STACK,
     fontSize: 11,
     color: '#6a7a6a',
-    background: '#0c0e0c',
+    background:
+      stepPulse > 0
+        ? 'linear-gradient(90deg, rgba(57,255,20,0.12), #0c0e0c 40%)'
+        : '#0c0e0c',
+    transition: 'background 160ms ease',
     userSelect: 'none',
   }
 
@@ -526,8 +588,8 @@ export function TerminalPreview({
 
   const hint = canInteract
     ? tour && tour.length > 1
-      ? '↑↓ cycle states · j/k · click · Home/End'
-      : '↑↓/←→ · j/k · click · Home/End'
+      ? '↑↓/wheel cycle states · j/k · click · Home/End'
+      : '↑↓/←→ · wheel · j/k · click · Home/End'
     : 'read-only frame'
 
   return (
@@ -543,6 +605,7 @@ export function TerminalPreview({
       data-preview-truecolor="rgb24"
       data-preview-scene={sceneId}
       data-preview-tour={tour && tour.length > 1 ? 'true' : 'false'}
+      data-preview-pulse={String(stepPulse)}
     >
       <div
         ref={hostRef}
@@ -552,6 +615,7 @@ export function TerminalPreview({
         aria-label={`Interactive terminal preview: ${story}`}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
+        onWheel={onWheel}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{ ...chrome, outline: 'none', cursor: canInteract ? 'text' : 'default' }}
@@ -616,14 +680,17 @@ export function TerminalPreview({
           ref={stageRef}
           data-termrock-stage="1"
           style={{
-            padding: 10,
-            background: SURFACE_BG,
+            padding: 12,
+            background:
+              'radial-gradient(120% 80% at 50% 0%, #121412 0%, #0a0a0a 55%, #050505 100%)',
+            boxShadow: 'inset 0 0 0 1px #151915, inset 0 12px 28px rgba(0,0,0,0.45)',
             overflow: 'auto',
             maxHeight,
             minHeight: 120,
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
+            alignItems: 'flex-start',
             boxSizing: 'border-box',
           }}
         >

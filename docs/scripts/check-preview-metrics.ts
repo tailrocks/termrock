@@ -3,9 +3,12 @@
  * Invoked from docs quality path / local verify.
  */
 import {
+  adjacentSteps,
   baselineForCell,
+  clampStep,
   fontSizeForCell,
   glyphDrawX,
+  stepDeltaFromWheel,
 } from '../src/components/preview-metrics'
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -27,5 +30,15 @@ assert(
 )
 const wide = glyphDrawX(0, cellW, 20)
 assert(wide === 0.5, `wide glyph left-aligned, got ${wide}`)
+
+assert(stepDeltaFromWheel(0) === 0, 'dead zone zero')
+assert(stepDeltaFromWheel(3) === 0, 'dead zone small')
+assert(stepDeltaFromWheel(20) === 1, 'scroll down advances')
+assert(stepDeltaFromWheel(-20) === -1, 'scroll up retreats')
+assert(clampStep(-1, 5) === 0, 'clamp low')
+assert(clampStep(9, 5) === 5, 'clamp high')
+assert(JSON.stringify(adjacentSteps(0, 5)) === JSON.stringify([1]), 'adj start')
+assert(JSON.stringify(adjacentSteps(3, 5)) === JSON.stringify([2, 4]), 'adj mid')
+assert(JSON.stringify(adjacentSteps(5, 5)) === JSON.stringify([4]), 'adj end')
 
 console.log('preview-metrics: ok')
