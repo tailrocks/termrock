@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import {
   adjacentSteps,
   allSteps,
+  applyNavStepAction,
   baselineForCell,
   cellAtPointer,
   clampStep,
@@ -18,8 +19,11 @@ import {
   glyphDrawX,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  hostViewportSize,
+  paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
+  stepDeltaFromNavKey,
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
@@ -243,5 +247,51 @@ function loadPackCells(slug: string, size: string, step: number): {
   // First underline on selection row is col 5 ('A') in exported pack
   assert(cur.y === 2 && cur.x === 5, `list step1 underline start (5,2) got ${cur.x},${cur.y}`)
 }
+
+// HiDPI paint DPR quantize (Ghostty-class crisp cells).
+assert(paintDpr(1) === 1, 'dpr 1')
+assert(paintDpr(2) === 2, 'dpr 2')
+assert(paintDpr(1.25) === 1.25, 'dpr 1.25')
+assert(Math.abs(paintDpr(1.33) - 1.25) < 1e-9, `dpr 1.33 → ${paintDpr(1.33)}`)
+assert(paintDpr(0) === 1, 'dpr 0 → 1')
+assert(paintDpr(-2) === 1, 'dpr neg → 1')
+assert(paintDpr(2.75) === 2.75, `dpr 2.75 → ${paintDpr(2.75)}`)
+assert(paintDpr(1.1) === 1 || paintDpr(1.1) === 1.25, `dpr 1.1 → ${paintDpr(1.1)}`)
+
+// Prefer client viewport over overflow contentRect (wide canvas trap).
+{
+  const vis = hostViewportSize(260, 200, 678, 400)
+  assert(vis.width === 260 && vis.height === 200, `client wins got ${vis.width}x${vis.height}`)
+  const fallback = hostViewportSize(0, 0, 400, 300)
+  assert(fallback.width === 400 && fallback.height === 300, 'content fallback')
+  const zero = hostViewportSize(0, 0, 0, 0)
+  assert(zero.width === 0 && zero.height === 0, 'all zero')
+}
+
+// Pure nav key map drives host path (not reimplemented).
+assert(stepDeltaFromNavKey('ArrowDown') === 1, 'down')
+assert(stepDeltaFromNavKey('j') === 1, 'j')
+assert(stepDeltaFromNavKey('J') === 1, 'J lowercased')
+assert(stepDeltaFromNavKey('ArrowUp') === -1, 'up')
+assert(stepDeltaFromNavKey('k') === -1, 'k')
+assert(stepDeltaFromNavKey('Home') === 'first', 'Home')
+assert(stepDeltaFromNavKey('Escape') === 'first', 'Esc')
+assert(stepDeltaFromNavKey('End') === 'last', 'End')
+assert(stepDeltaFromNavKey('PageDown') === 1, 'PgDn')
+assert(stepDeltaFromNavKey('PageUp') === -1, 'PgUp')
+assert(stepDeltaFromNavKey(' ') === 1, 'space')
+assert(stepDeltaFromNavKey('Enter') === null, 'Enter not step')
+assert(stepDeltaFromNavKey('Tab') === null, 'Tab not step')
+assert(stepDeltaFromNavKey('') === null, 'empty')
+assert(applyNavStepAction(2, 5, 1) === 3, 'apply +1')
+assert(applyNavStepAction(0, 5, -1) === 0, 'apply -1 clamp')
+assert(applyNavStepAction(3, 5, 'first') === 0, 'apply first')
+assert(applyNavStepAction(3, 5, 'last') === 5, 'apply last')
+// One physical keystroke path: same key within dedupe window still one accept.
+assert(shouldAcceptKeyEvent('ArrowDown', 100, null), 'nav first accept')
+assert(
+  !shouldAcceptKeyEvent('ArrowDown', 120, { key: 'ArrowDown', t: 100 }),
+  'nav duplicate rejected',
+)
 
 console.log('preview-metrics: ok')

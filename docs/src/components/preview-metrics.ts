@@ -122,6 +122,87 @@ export function cursorCellForStep(
 export const CURSOR_BLOCK_RGB: [number, number, number] = [0x00, 0xff, 0x41]
 
 /**
+ * Quantize `devicePixelRatio` for crisp Ghostty-class cell paint.
+ * Fractional DPR (1.25 / 1.33 / 2.75) is rounded to 0.25 steps so the canvas
+ * backing store aligns better with integer cell metrics.
+ */
+export function paintDpr(raw: number): number {
+  if (!(raw > 0) || !Number.isFinite(raw)) return 1
+  const q = Math.round(raw * 4) / 4
+  return Math.max(1, q)
+}
+
+/**
+ * Visible host viewport for size remap (Ghostty window-step feel).
+ * Prefer `clientWidth`/`clientHeight` over ResizeObserver `contentRect` —
+ * with overflow:auto stages, contentRect can track the wide canvas and stick
+ * remaps on large packs while the visible box is narrow.
+ */
+export function hostViewportSize(
+  clientW: number,
+  clientH: number,
+  contentW: number,
+  contentH: number,
+): { width: number; height: number } {
+  const w = clientW > 0 ? clientW : contentW
+  const h = clientH > 0 ? clientH : contentH
+  return {
+    width: Math.max(0, Number.isFinite(w) ? w : 0),
+    height: Math.max(0, Number.isFinite(h) ? h : 0),
+  }
+}
+
+/**
+ * Pure TUI nav key → step action used by TerminalPreview host.
+ * - `+1` / `-1`: relative step
+ * - `'first'` / `'last'`: Home/End (and Esc → first)
+ * - `null`: not a preview nav key (host ignores)
+ */
+export type NavStepAction = 1 | -1 | 'first' | 'last'
+
+export function stepDeltaFromNavKey(rawKey: string): NavStepAction | null {
+  if (!rawKey) return null
+  // Normalize single-char keys to lowercase for vim-style j/k/h/l.
+  const key = rawKey.length === 1 ? rawKey.toLowerCase() : rawKey
+  if (
+    key === 'ArrowDown' ||
+    key === 'ArrowRight' ||
+    key === 'j' ||
+    key === 'l' ||
+    key === 'PageDown' ||
+    key === ' ' ||
+    key === 'Spacebar'
+  ) {
+    return 1
+  }
+  if (
+    key === 'ArrowUp' ||
+    key === 'ArrowLeft' ||
+    key === 'k' ||
+    key === 'h' ||
+    key === 'PageUp'
+  ) {
+    return -1
+  }
+  if (key === 'Home' || key === 'Escape') return 'first'
+  if (key === 'End') return 'last'
+  return null
+}
+
+/**
+ * Apply a nav action to the current step (pure clamp for host/tests).
+ */
+export function applyNavStepAction(
+  step: number,
+  maxStep: number,
+  action: NavStepAction,
+): number {
+  if (action === 'first') return 0
+  if (action === 'last') return clampStep(maxStep, maxStep)
+  return clampStep(step + action, maxStep)
+}
+
+/**
  * Map pointer position over the terminal canvas to a pack step index.
  * Prefer body-row mapping (lists/tours); short wide grids (tabs) use column fraction.
  * Pure — drives the real host path (no reimplementation in tests).

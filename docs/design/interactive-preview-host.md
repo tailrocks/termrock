@@ -106,6 +106,12 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   `cellAtPointer`; status bar shows `col,row · ch · #fg/#bg` (`formatCellProbe`).
   Block cursor uses `inferCursorFromFrame`: underline / reverse, or leftmost-body
   `▌` only — never panel scrollbar `█` or decorative `›`/`❯` (form/workbench packs).
+- **Crisp HiDPI + pure nav:** canvas uses `paintDpr` (0.25-step quantize) for
+  integer-friendlier backing stores. Key stepping goes through pure
+  `stepDeltaFromNavKey` / `applyNavStepAction`. Pointer enter focuses the host
+  (focus-follows-mouse) so keys work without an extra click. Resize remap reads
+  `hostViewportSize(clientW, clientH, contentRect…)` so overflow:auto stages
+  remapped by the **visible** box, not the wide canvas content size.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
 - **Block cursor:** when focused, a blinking phosphor block tracks the active

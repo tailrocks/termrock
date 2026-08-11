@@ -17,6 +17,7 @@ import {
   PREVIEW_MONO_STACK,
   adjacentSteps,
   allSteps,
+  applyNavStepAction,
   baselineForCell,
   cellAtPointer,
   clampStep,
@@ -27,8 +28,11 @@ import {
   glyphDrawX,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  hostViewportSize,
+  paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
+  stepDeltaFromNavKey,
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
@@ -40,6 +44,7 @@ export {
   PREVIEW_MONO_STACK,
   adjacentSteps,
   allSteps,
+  applyNavStepAction,
   baselineForCell,
   cellAtPointer,
   clampStep,
@@ -49,10 +54,13 @@ export {
   formatRgbHex,
   glyphCellSpan,
   glyphDrawX,
+  hostViewportSize,
   inferCursorFromFrame,
   isLoadStillCurrent,
+  paintDpr,
   scrollThumbMetrics,
   shouldAcceptKeyEvent,
+  stepDeltaFromNavKey,
   stepDeltaFromWheel,
   stepFromPointer,
   stepFromScrollRatio,
@@ -450,8 +458,8 @@ export function TerminalPreview({
         : null
     const paint = () => {
       if (cancelled) return
-      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-      paintCanvas(canvas, frame, cellW, cellH, dpr, cursor)
+      const raw = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+      paintCanvas(canvas, frame, cellW, cellH, paintDpr(raw), cursor)
     }
     paint()
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined
@@ -501,10 +509,15 @@ export function TerminalPreview({
         void loadFrame(nextKey, stepRef.current)
       }
     }
+    const readViewport = (contentW = 0, contentH = 0) =>
+      hostViewportSize(stage.clientWidth, stage.clientHeight, contentW, contentH)
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
-      const { width, height } = entry.contentRect
+      const { width, height } = readViewport(
+        entry.contentRect.width,
+        entry.contentRect.height,
+      )
       // Speculative warm: if the pending size differs, start fetching before debounce fires.
       const { storyCols, storyRows } = storySizeForCssHost(width, height, cellW, cellH)
       const pendingKey = pickSizeKey(storyCols, storyRows, sizes)
@@ -515,8 +528,8 @@ export function TerminalPreview({
       timer = setTimeout(() => apply(width, height), 50)
     })
     ro.observe(stage)
-    const rect = stage.getBoundingClientRect()
-    apply(rect.width, rect.height)
+    const initial = readViewport()
+    apply(initial.width, initial.height)
     return () => {
       ro.disconnect()
       if (timer) clearTimeout(timer)
@@ -545,63 +558,28 @@ export function TerminalPreview({
   const handleNavKey = useCallback(
     (rawKey: string): boolean => {
       if (!canInteract) return false
-      const map: Record<string, string> = {
-        ArrowDown: 'ArrowDown',
-        ArrowUp: 'ArrowUp',
-        ArrowLeft: 'ArrowLeft',
-        ArrowRight: 'ArrowRight',
-        Enter: 'Enter',
-        Escape: 'Escape',
-        Tab: 'Tab',
-        Home: 'Home',
-        End: 'End',
-        PageDown: 'PageDown',
-        PageUp: 'PageUp',
-        Backspace: 'Backspace',
-        ' ': ' ',
-      }
-      const key = map[rawKey] ?? (rawKey.length === 1 ? rawKey : null)
-      if (!key) return false
-      // Window capture + React bubble both see the same stroke — only advance once.
+      const action = stepDeltaFromNavKey(rawKey)
+      if (action === null) return false
+      // Dedupe identity is the raw key (window + React both fire).
       const now =
         typeof performance !== 'undefined' ? performance.now() : Date.now()
-      if (!shouldAcceptKeyEvent(key, now, lastKeyRef.current)) {
+      if (!shouldAcceptKeyEvent(rawKey, now, lastKeyRef.current)) {
         return true // swallow duplicate without double-stepping
       }
-      lastKeyRef.current = { key, t: now }
-      if (
-        key === 'ArrowDown' ||
-        key === 'ArrowRight' ||
-        key === 'j' ||
-        key === 'l' ||
-        key === 'PageDown' ||
-        key === ' '
-      ) {
-        goStep(stepRef.current + 1)
-        return true
-      }
-      if (
-        key === 'ArrowUp' ||
-        key === 'ArrowLeft' ||
-        key === 'k' ||
-        key === 'h' ||
-        key === 'PageUp'
-      ) {
-        goStep(stepRef.current - 1)
-        return true
-      }
-      if (key === 'Home' || key === 'Escape') {
-        goStep(0)
-        return true
-      }
-      if (key === 'End') {
-        goStep(maxStep)
-        return true
-      }
-      return false
+      lastKeyRef.current = { key: rawKey, t: now }
+      goStep(applyNavStepAction(stepRef.current, maxStep, action))
+      setCaretOn(true) // reset blink on nav like a real terminal
+      return true
     },
     [canInteract, goStep, maxStep],
   )
+
+  /** Ghostty-like focus-follows-mouse: hover focuses so keys work without click. */
+  const onPointerEnterHost = () => {
+    if (!canInteract) return
+    hostRef.current?.focus()
+    setFocused(true)
+  }
 
   const onKeyDown = (e: ReactKeyboardEvent) => {
     if (handleNavKey(e.key)) {
@@ -829,6 +807,7 @@ export function TerminalPreview({
         aria-labelledby={labelId}
         aria-label={`Interactive terminal preview: ${story}`}
         onKeyDown={onKeyDown}
+        onPointerEnter={onPointerEnterHost}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
