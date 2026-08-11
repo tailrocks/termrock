@@ -296,8 +296,8 @@ fn cmd_frame(
     Ok(())
 }
 
-fn public_widget_components_from_api() -> Result<std::collections::HashSet<String>, Box<dyn std::error::Error>>
-{
+fn public_widget_components_from_api()
+-> Result<std::collections::HashSet<String>, Box<dyn std::error::Error>> {
     use std::collections::HashSet;
     use std::fs;
     // Prefer repo public-api SoT when run from workspace root.
@@ -324,11 +324,7 @@ fn public_widget_components_from_api() -> Result<std::collections::HashSet<Strin
                 .chars()
                 .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
                 .collect();
-            if name
-                .chars()
-                .next()
-                .is_some_and(|c| c.is_ascii_uppercase())
-            {
+            if name.chars().next().is_some_and(|c| c.is_ascii_uppercase()) {
                 set.insert(name);
             }
         }
@@ -344,8 +340,7 @@ fn cmd_export_frames(
         resolve_export_tour, story_by_id,
     };
     use std::fs;
-    let usage =
-        "usage: termrock-lookbook export-frames --out <dir> [--story id]* | --all-public";
+    let usage = "usage: termrock-lookbook export-frames --out <dir> [--story id]* | --all-public";
     let mut out_dir = None;
     let mut only: Vec<String> = Vec::new();
     let mut all_public = false;
@@ -437,8 +432,8 @@ fn cmd_export_frames(
             fs::create_dir_all(&size_dir)?;
             if let Some(ref tour) = tour {
                 for (step, story_id) in tour.iter().enumerate() {
-                    let step_story =
-                        story_by_id(story_id).ok_or_else(|| format!("unknown tour story: {story_id}"))?;
+                    let step_story = story_by_id(story_id)
+                        .ok_or_else(|| format!("unknown tour story: {story_id}"))?;
                     let f = paint_story_frame(step_story, &theme, Some(sc), Some(sr));
                     // Force interactive flag so hosts enable input for tour packs.
                     let mut f = f;
