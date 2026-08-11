@@ -2252,7 +2252,7 @@ mod tests {
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
         state.set_accepts_input(true);
         assert!(state.set_cursor(c(0, 0)));
-        let area = Rect::new(2, 3, 14, 6);
+        let area = Rect::new(2, 2, 14, 8);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
         (&TextArea::new(&system).title("Edit")).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "┐");
@@ -2461,9 +2461,9 @@ mod tests {
             .render(area, &mut buffer, &mut state);
         assert!(state.gutter_width >= 2);
         assert!(!state.body.is_empty());
-        // Gutter starts at panel inner x (after border)
-        let inner_x = area.x + 1;
-        let cell = &buffer[(inner_x, area.y + 1)];
+        // Gutter starts immediately before the live padded body.
+        let inner_x = state.body.x.saturating_sub(state.gutter_width);
+        let cell = &buffer[(inner_x, state.body.y)];
         assert!(
             cell.symbol().chars().any(|c| c.is_ascii_digit()) || !cell.symbol().trim().is_empty(),
             "expected line number gutter cell, got {:?}",

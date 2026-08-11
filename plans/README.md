@@ -31,7 +31,7 @@ starting, honor its STOP conditions, and update your row when done.
 |------|-------|----------|--------|------------|--------|
 | 001 | Fill the surface ladder and expand the semantic role system | P1 | L | — | DONE |
 | 002 | Border shape theme token (`BorderShape`) | P2 | M | 001 | DONE |
-| 003 | Activate the spacing system (padding, gaps, dialog rhythm) | P1 | L | 001 | TODO |
+| 003 | Activate the spacing system (padding, gaps, dialog rhythm) | P1 | L | 001 | DONE |
 | 004 | Enforce recipes — chips, badges, tinted selection, meters | P1 | L | 001, 003 | TODO |
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | TODO |
 | 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | TODO |
@@ -66,6 +66,9 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 002: widened frame Scope to every affected ASCII-capability
   cascade; live Panel had no claimed ASCII border path, so the required
   `+/-/|` contract legitimately updates composed previews repository-wide.
+- 2026-08-12 — Plan 003: expanded local-density removal to all live consumers,
+  added generated API/frame/QA files, and updated two stale flush-geometry
+  fixtures while preserving content and hit ownership.
 
 ## Dependency notes
 

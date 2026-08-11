@@ -30,11 +30,11 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, Role, SelectionChrome},
     text::take_display_cols,
     widgets::data_view::{
-        CellCoord, ColumnModel, ColumnPin, CopyPayload, DataDensity, ExpandState, FilterSpec,
-        GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
+        CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
+        LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
     },
 };
 
@@ -216,7 +216,7 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     /// Load projection.
     pub load: LoadState,
     /// Row chrome density.
-    pub density: DataDensity,
+    pub density: Density,
     /// Expand detail rows.
     pub expand: ExpandState<RowId>,
     /// Active sort (chrome marker; consumer applies).
@@ -273,7 +273,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             cursor_col: 0,
             nav_mode: DataTableNavMode::Cell,
             load: LoadState::Ready { count: 0 },
-            density: DataDensity::Comfortable,
+            density: Density::Comfortable,
             expand: ExpandState::default(),
             sort: None,
             filter: FilterSpec::default(),

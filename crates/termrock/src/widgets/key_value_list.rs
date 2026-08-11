@@ -26,48 +26,22 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{Density, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 
-// ── Density / layout ────────────────────────────────────────────────────────
-
-/// Vertical density recipe.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum KvDensity {
-    /// Tight rows (settings drawers, side panels).
-    Dense,
-    /// Reading mode: extra blank between groups, prefers stacked sooner.
-    #[default]
-    Reading,
+pub(crate) const fn kv_group_gap(density: Density) -> u16 {
+    if matches!(density, Density::Comfortable) {
+        1
+    } else {
+        0
+    }
 }
 
-impl KvDensity {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Dense => "dense",
-            Self::Reading => "reading",
-        }
-    }
-
-    /// Gap rows after a group header.
-    #[must_use]
-    pub const fn group_gap(self) -> u16 {
-        match self {
-            Self::Dense => 0,
-            Self::Reading => 1,
-        }
-    }
-
-    /// Width below which Auto layout stacks (columns need room for key + value).
-    #[must_use]
-    pub const fn stack_below(self) -> u16 {
-        match self {
-            Self::Dense => 36,
-            Self::Reading => 48,
-        }
+pub(crate) const fn kv_stack_below(density: Density) -> u16 {
+    if matches!(density, Density::Comfortable) {
+        48
+    } else {
+        36
     }
 }
 
@@ -420,7 +394,7 @@ pub enum KeyValueListOutcome<Id> {
 pub struct KeyValueList<'a, Id> {
     entries: &'a [KvEntry<'a, Id>],
     system: &'a DesignSystem,
-    density: KvDensity,
+    density: Density,
     layout: KvLayout,
     /// Fixed key column width (0 = auto max key).
     key_width: u16,
@@ -435,7 +409,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
         Self {
             entries,
             system,
-            density: KvDensity::Reading,
+            density: Density::Comfortable,
             layout: KvLayout::Auto,
             key_width: 0,
             separator: "  ",
@@ -448,7 +422,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
         Self {
             entries,
             system,
-            density: KvDensity::Dense,
+            density: Density::Compact,
             layout: KvLayout::Auto,
             key_width: 0,
             separator: " ",
@@ -463,7 +437,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
 
     /// Density override.
     #[must_use]
-    pub const fn density(mut self, density: KvDensity) -> Self {
+    pub const fn density(mut self, density: Density) -> Self {
         self.density = density;
         self
     }
@@ -494,7 +468,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
     pub fn resolved_layout(&self, width: u16) -> KvLayout {
         match self.layout {
             KvLayout::Auto => {
-                if width < self.density.stack_below() {
+                if width < kv_stack_below(self.density) {
                     KvLayout::Stacked
                 } else {
                     KvLayout::Columns
@@ -546,7 +520,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             return 0;
         }
         if entry.group {
-            return 1u16.saturating_add(self.density.group_gap());
+            return 1u16.saturating_add(kv_group_gap(self.density));
         }
         let value = self.display_value(entry, state);
         let show_ann = entry.annotation.is_some_and(|a| !a.is_empty());

@@ -29,7 +29,7 @@ use crate::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{DesignSystem, GlyphSet, Role},
+    style::{Density, DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
     widgets::{Button, ButtonState, ButtonVariant},
 };
@@ -116,27 +116,10 @@ impl EmptyKind {
     }
 }
 
-// ── Density ─────────────────────────────────────────────────────────────────
-
-/// Layout density.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum EmptyDensity {
-    /// Centered block with illustration and multi-line content.
-    #[default]
-    Full,
-    /// Concise form for small panes (1–2 lines).
-    Inline,
-}
-
-impl EmptyDensity {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Full => "full",
-            Self::Inline => "inline",
-        }
+const fn empty_density_id(density: Density) -> &'static str {
+    match density {
+        Density::Comfortable => "full",
+        Density::Compact | Density::Dashboard => "inline",
     }
 }
 
@@ -257,7 +240,7 @@ pub struct EmptyState<'a> {
     shortcut: Option<&'a str>,
     illustration: Option<&'a str>,
     context: Option<&'a str>,
-    density: EmptyDensity,
+    density: Density,
     force_ascii: bool,
     system: &'a DesignSystem,
 }
@@ -276,7 +259,7 @@ impl<'a> EmptyState<'a> {
             shortcut: None,
             illustration: None,
             context: None,
-            density: EmptyDensity::Full,
+            density: Density::Comfortable,
             force_ascii: false,
             system,
         }
@@ -354,7 +337,7 @@ impl<'a> EmptyState<'a> {
 
     /// Density override.
     #[must_use]
-    pub const fn density(mut self, density: EmptyDensity) -> Self {
+    pub const fn density(mut self, density: Density) -> Self {
         self.density = density;
         self
     }
@@ -362,7 +345,7 @@ impl<'a> EmptyState<'a> {
     /// Concise inline form.
     #[must_use]
     pub const fn inline(mut self) -> Self {
-        self.density = EmptyDensity::Inline;
+        self.density = Density::Compact;
         self
     }
 
@@ -396,14 +379,14 @@ impl<'a> EmptyState<'a> {
         g
     }
 
-    fn effective_density(&self, area: Rect) -> EmptyDensity {
-        if matches!(self.density, EmptyDensity::Inline)
+    fn effective_density(&self, area: Rect) -> Density {
+        if matches!(self.density, Density::Compact)
             || area.width <= EMPTY_STATE_INLINE_MAX_WIDTH
             || area.height <= EMPTY_STATE_INLINE_MAX_HEIGHT
         {
-            EmptyDensity::Inline
+            Density::Compact
         } else {
-            EmptyDensity::Full
+            Density::Comfortable
         }
     }
 
@@ -413,7 +396,7 @@ impl<'a> EmptyState<'a> {
         if width == 0 {
             return 0;
         }
-        if width <= EMPTY_STATE_INLINE_MAX_WIDTH || matches!(self.density, EmptyDensity::Inline) {
+        if width <= EMPTY_STATE_INLINE_MAX_WIDTH || matches!(self.density, Density::Compact) {
             return if self.primary.is_some() && self.explanation.is_some() {
                 2
             } else {
@@ -454,8 +437,8 @@ impl<'a> EmptyState<'a> {
             return;
         }
         match self.effective_density(area) {
-            EmptyDensity::Inline => self.paint_inline(area, buffer, state),
-            EmptyDensity::Full => self.paint_full(area, buffer, state),
+            Density::Compact | Density::Dashboard => self.paint_inline(area, buffer, state),
+            Density::Comfortable => self.paint_full(area, buffer, state),
         }
     }
 
@@ -757,7 +740,7 @@ impl<'a> EmptyState<'a> {
             "empty-state kind={} title={} density={} primary={} secondary={} focus={}",
             self.kind.id(),
             self.title,
-            self.effective_density(area).id(),
+            empty_density_id(self.effective_density(area)),
             self.primary.map(|a| a.label).unwrap_or("-"),
             self.secondary.map(|a| a.label).unwrap_or("-"),
             match focus {
@@ -960,7 +943,7 @@ mod tests {
     fn force_inline_density() {
         let system = system();
         let e = EmptyState::new("X", &system).inline();
-        assert_eq!(e.density, EmptyDensity::Inline);
+        assert_eq!(e.density, Density::Compact);
         assert_eq!(e.measure_height(80), 1);
     }
 

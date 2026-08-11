@@ -7745,8 +7745,11 @@ pub termrock::layout::DialogSpec::min_height: u16
 pub termrock::layout::DialogSpec::min_width: u16
 pub termrock::layout::DialogSpec::placement: termrock::layout::Placement
 pub termrock::layout::DialogSpec::preferred_height: u16
+pub termrock::layout::DialogSpec::preferred_reference_pct: core::option::Option<u16>
 pub termrock::layout::DialogSpec::preferred_width: u16
 pub termrock::layout::DialogSpec::vertical_margin: u16
+impl termrock::layout::DialogSpec
+pub const fn termrock::layout::DialogSpec::preferred_pct_of_reference(self, u16) -> Self
 impl core::clone::Clone for termrock::layout::DialogSpec
 pub fn termrock::layout::DialogSpec::clone(&self) -> termrock::layout::DialogSpec
 impl core::cmp::Eq for termrock::layout::DialogSpec
@@ -7969,6 +7972,7 @@ pub const fn termrock::layout::GridSpec::auto_row(self, termrock::layout::TrackS
 pub fn termrock::layout::GridSpec::col_count(&self) -> u16
 pub fn termrock::layout::GridSpec::columns(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::layout::TrackSize>) -> Self
 pub fn termrock::layout::GridSpec::columns_fr(u16) -> Self
+pub fn termrock::layout::GridSpec::from_system(&termrock::style::DesignSystem) -> Self
 pub const fn termrock::layout::GridSpec::gaps(self, u16, u16) -> Self
 pub const fn termrock::layout::GridSpec::overflow(self, termrock::layout::OverflowPolicy) -> Self
 pub const fn termrock::layout::GridSpec::padding(self, u16, u16) -> Self
@@ -8659,6 +8663,7 @@ pub termrock::layout::StackSpec::pad_x: u16
 pub termrock::layout::StackSpec::pad_y: u16
 pub termrock::layout::StackSpec::wrap: bool
 impl termrock::layout::StackSpec
+pub const fn termrock::layout::StackSpec::from_system(&termrock::style::DesignSystem) -> Self
 pub const fn termrock::layout::StackSpec::horizontal() -> Self
 pub const fn termrock::layout::StackSpec::responsive(self, u16, u16) -> Self
 pub const fn termrock::layout::StackSpec::vertical() -> Self
@@ -8965,6 +8970,7 @@ impl<T> core::convert::From<T> for termrock::layout::WorkspaceState
 pub fn termrock::layout::WorkspaceState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::WorkspaceState
 pub const termrock::layout::HEIGHT_LADDER: [u16; 6]
+pub const termrock::layout::REFERENCE_COLS: u16
 pub const termrock::layout::WIDTH_LADDER: [u16; 7]
 pub fn termrock::layout::auto_flow_items(u16, usize, termrock::layout::GridAutoFlow) -> alloc::vec::Vec<termrock::layout::GridItem>
 pub fn termrock::layout::bottom_rows<const N: usize>(ratatui_core::layout::rect::Rect, [u16; N]) -> (ratatui_core::layout::rect::Rect, [ratatui_core::layout::rect::Rect; N])
@@ -35285,58 +35291,6 @@ pub unsafe fn termrock::widgets::DataColumnWidth::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::DataColumnWidth
 pub fn termrock::widgets::DataColumnWidth::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataColumnWidth
-#[non_exhaustive] pub enum termrock::widgets::DataDensity
-pub termrock::widgets::DataDensity::Comfortable
-pub termrock::widgets::DataDensity::Compact
-impl termrock::widgets::DataDensity
-pub const fn termrock::widgets::DataDensity::cell_pad_x(self) -> u16
-pub const fn termrock::widgets::DataDensity::from_design(termrock::style::Density) -> Self
-pub const fn termrock::widgets::DataDensity::row_height(self) -> u16
-impl core::clone::Clone for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::clone(&self) -> termrock::widgets::DataDensity
-impl core::cmp::Eq for termrock::widgets::DataDensity
-impl core::cmp::PartialEq for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::eq(&self, &termrock::widgets::DataDensity) -> bool
-impl core::default::Default for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::default() -> termrock::widgets::DataDensity
-impl core::fmt::Debug for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::DataDensity
-impl core::marker::StructuralPartialEq for termrock::widgets::DataDensity
-impl core::marker::Freeze for termrock::widgets::DataDensity
-impl core::marker::Send for termrock::widgets::DataDensity
-impl core::marker::Sync for termrock::widgets::DataDensity
-impl core::marker::Unpin for termrock::widgets::DataDensity
-impl core::marker::UnsafeUnpin for termrock::widgets::DataDensity
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataDensity
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataDensity
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::DataDensity::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::DataDensity where U: core::convert::From<T>
-pub fn termrock::widgets::DataDensity::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DataDensity where U: core::convert::Into<T>
-pub type termrock::widgets::DataDensity::Error = core::convert::Infallible
-pub fn termrock::widgets::DataDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::DataDensity where U: core::convert::TryFrom<T>
-pub type termrock::widgets::DataDensity::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::DataDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::DataDensity where T: core::clone::Clone
-pub type termrock::widgets::DataDensity::Owned = T
-pub fn termrock::widgets::DataDensity::clone_into(&self, &mut T)
-pub fn termrock::widgets::DataDensity::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::DataDensity where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::DataDensity::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::DataDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::DataDensity::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DataDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::DataDensity::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::DataDensity where T: core::clone::Clone
-pub unsafe fn termrock::widgets::DataDensity::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::DataDensity
-pub fn termrock::widgets::DataDensity::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::DataDensity
 #[non_exhaustive] pub enum termrock::widgets::DataTableNavMode
 pub termrock::widgets::DataTableNavMode::Cell
 pub termrock::widgets::DataTableNavMode::Range
@@ -37868,56 +37822,6 @@ pub unsafe fn termrock::widgets::EditField::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::EditField
 pub fn termrock::widgets::EditField::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::EditField
-#[non_exhaustive] pub enum termrock::widgets::EmptyDensity
-pub termrock::widgets::EmptyDensity::Full
-pub termrock::widgets::EmptyDensity::Inline
-impl termrock::widgets::EmptyDensity
-pub const fn termrock::widgets::EmptyDensity::id(self) -> &'static str
-impl core::clone::Clone for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::clone(&self) -> termrock::widgets::EmptyDensity
-impl core::cmp::Eq for termrock::widgets::EmptyDensity
-impl core::cmp::PartialEq for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::eq(&self, &termrock::widgets::EmptyDensity) -> bool
-impl core::default::Default for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::default() -> termrock::widgets::EmptyDensity
-impl core::fmt::Debug for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::EmptyDensity
-impl core::marker::StructuralPartialEq for termrock::widgets::EmptyDensity
-impl core::marker::Freeze for termrock::widgets::EmptyDensity
-impl core::marker::Send for termrock::widgets::EmptyDensity
-impl core::marker::Sync for termrock::widgets::EmptyDensity
-impl core::marker::Unpin for termrock::widgets::EmptyDensity
-impl core::marker::UnsafeUnpin for termrock::widgets::EmptyDensity
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::EmptyDensity
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::EmptyDensity
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::EmptyDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::EmptyDensity::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::EmptyDensity where U: core::convert::From<T>
-pub fn termrock::widgets::EmptyDensity::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::EmptyDensity where U: core::convert::Into<T>
-pub type termrock::widgets::EmptyDensity::Error = core::convert::Infallible
-pub fn termrock::widgets::EmptyDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::EmptyDensity where U: core::convert::TryFrom<T>
-pub type termrock::widgets::EmptyDensity::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::EmptyDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::EmptyDensity where T: core::clone::Clone
-pub type termrock::widgets::EmptyDensity::Owned = T
-pub fn termrock::widgets::EmptyDensity::clone_into(&self, &mut T)
-pub fn termrock::widgets::EmptyDensity::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::EmptyDensity where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::EmptyDensity::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::EmptyDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::EmptyDensity::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::EmptyDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::EmptyDensity::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::EmptyDensity where T: core::clone::Clone
-pub unsafe fn termrock::widgets::EmptyDensity::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::EmptyDensity
-pub fn termrock::widgets::EmptyDensity::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::EmptyDensity
 #[non_exhaustive] pub enum termrock::widgets::EmptyFocus
 pub termrock::widgets::EmptyFocus::None
 pub termrock::widgets::EmptyFocus::Primary
@@ -41357,58 +41261,6 @@ pub unsafe fn termrock::widgets::KeyboardHelpPresentation::clone_to_uninit(&self
 impl<T> core::convert::From<T> for termrock::widgets::KeyboardHelpPresentation
 pub fn termrock::widgets::KeyboardHelpPresentation::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeyboardHelpPresentation
-#[non_exhaustive] pub enum termrock::widgets::KvDensity
-pub termrock::widgets::KvDensity::Dense
-pub termrock::widgets::KvDensity::Reading
-impl termrock::widgets::KvDensity
-pub const fn termrock::widgets::KvDensity::group_gap(self) -> u16
-pub const fn termrock::widgets::KvDensity::id(self) -> &'static str
-pub const fn termrock::widgets::KvDensity::stack_below(self) -> u16
-impl core::clone::Clone for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::clone(&self) -> termrock::widgets::KvDensity
-impl core::cmp::Eq for termrock::widgets::KvDensity
-impl core::cmp::PartialEq for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::eq(&self, &termrock::widgets::KvDensity) -> bool
-impl core::default::Default for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::default() -> termrock::widgets::KvDensity
-impl core::fmt::Debug for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::KvDensity
-impl core::marker::StructuralPartialEq for termrock::widgets::KvDensity
-impl core::marker::Freeze for termrock::widgets::KvDensity
-impl core::marker::Send for termrock::widgets::KvDensity
-impl core::marker::Sync for termrock::widgets::KvDensity
-impl core::marker::Unpin for termrock::widgets::KvDensity
-impl core::marker::UnsafeUnpin for termrock::widgets::KvDensity
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::KvDensity
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::KvDensity
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::KvDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::KvDensity::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::KvDensity where U: core::convert::From<T>
-pub fn termrock::widgets::KvDensity::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::KvDensity where U: core::convert::Into<T>
-pub type termrock::widgets::KvDensity::Error = core::convert::Infallible
-pub fn termrock::widgets::KvDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::KvDensity where U: core::convert::TryFrom<T>
-pub type termrock::widgets::KvDensity::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::KvDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::KvDensity where T: core::clone::Clone
-pub type termrock::widgets::KvDensity::Owned = T
-pub fn termrock::widgets::KvDensity::clone_into(&self, &mut T)
-pub fn termrock::widgets::KvDensity::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::KvDensity where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::KvDensity::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::KvDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::KvDensity::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::KvDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::KvDensity::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::KvDensity where T: core::clone::Clone
-pub unsafe fn termrock::widgets::KvDensity::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::KvDensity
-pub fn termrock::widgets::KvDensity::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::KvDensity
 #[non_exhaustive] pub enum termrock::widgets::KvLayout
 pub termrock::widgets::KvLayout::Auto
 pub termrock::widgets::KvLayout::Columns
@@ -41964,57 +41816,6 @@ pub unsafe fn termrock::widgets::ListClickPolicy::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::ListClickPolicy
 pub fn termrock::widgets::ListClickPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ListClickPolicy
-#[non_exhaustive] pub enum termrock::widgets::ListDensity
-pub termrock::widgets::ListDensity::Comfortable
-pub termrock::widgets::ListDensity::Compact
-impl termrock::widgets::ListDensity
-pub const fn termrock::widgets::ListDensity::id(self) -> &'static str
-pub const fn termrock::widgets::ListDensity::row_height(self, bool) -> u16
-impl core::clone::Clone for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::clone(&self) -> termrock::widgets::ListDensity
-impl core::cmp::Eq for termrock::widgets::ListDensity
-impl core::cmp::PartialEq for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::eq(&self, &termrock::widgets::ListDensity) -> bool
-impl core::default::Default for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::default() -> termrock::widgets::ListDensity
-impl core::fmt::Debug for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::ListDensity
-impl core::marker::StructuralPartialEq for termrock::widgets::ListDensity
-impl core::marker::Freeze for termrock::widgets::ListDensity
-impl core::marker::Send for termrock::widgets::ListDensity
-impl core::marker::Sync for termrock::widgets::ListDensity
-impl core::marker::Unpin for termrock::widgets::ListDensity
-impl core::marker::UnsafeUnpin for termrock::widgets::ListDensity
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListDensity
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListDensity
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ListDensity where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::ListDensity::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::ListDensity where U: core::convert::From<T>
-pub fn termrock::widgets::ListDensity::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ListDensity where U: core::convert::Into<T>
-pub type termrock::widgets::ListDensity::Error = core::convert::Infallible
-pub fn termrock::widgets::ListDensity::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::ListDensity where U: core::convert::TryFrom<T>
-pub type termrock::widgets::ListDensity::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::ListDensity::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::ListDensity where T: core::clone::Clone
-pub type termrock::widgets::ListDensity::Owned = T
-pub fn termrock::widgets::ListDensity::clone_into(&self, &mut T)
-pub fn termrock::widgets::ListDensity::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::ListDensity where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::ListDensity::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::ListDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::ListDensity::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ListDensity where T: ?core::marker::Sized
-pub fn termrock::widgets::ListDensity::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::ListDensity where T: core::clone::Clone
-pub unsafe fn termrock::widgets::ListDensity::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::ListDensity
-pub fn termrock::widgets::ListDensity::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::ListDensity
 #[non_exhaustive] pub enum termrock::widgets::ListSelectionMode
 pub termrock::widgets::ListSelectionMode::Multi
 pub termrock::widgets::ListSelectionMode::Range
@@ -62062,7 +61863,7 @@ pub termrock::widgets::DataTableState::cell_regions: alloc::vec::Vec<termrock::w
 pub termrock::widgets::DataTableState::colorless: bool
 pub termrock::widgets::DataTableState::cursor_col: usize
 pub termrock::widgets::DataTableState::cursor_row: usize
-pub termrock::widgets::DataTableState::density: termrock::widgets::DataDensity
+pub termrock::widgets::DataTableState::density: termrock::style::Density
 pub termrock::widgets::DataTableState::edit_draft: alloc::string::String
 pub termrock::widgets::DataTableState::editing: bool
 pub termrock::widgets::DataTableState::expand: termrock::widgets::ExpandState<RowId>
@@ -64588,7 +64389,7 @@ pub struct termrock::widgets::EmptyState<'a>
 impl<'a> termrock::widgets::EmptyState<'a>
 pub const fn termrock::widgets::EmptyState<'a>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::EmptyState<'a>::context(self, &'a str) -> Self
-pub const fn termrock::widgets::EmptyState<'a>::density(self, termrock::widgets::EmptyDensity) -> Self
+pub const fn termrock::widgets::EmptyState<'a>::density(self, termrock::style::Density) -> Self
 pub const fn termrock::widgets::EmptyState<'a>::detail(self, &'a str) -> Self
 pub const fn termrock::widgets::EmptyState<'a>::empty_kind(self) -> termrock::widgets::EmptyKind
 pub const fn termrock::widgets::EmptyState<'a>::example(self, &'a str) -> Self
@@ -69086,7 +68887,7 @@ pub fn termrock::widgets::KeyValueList<'a, Id>::paint(&self, ratatui_core::layou
 pub fn termrock::widgets::KeyValueList<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::KeyValueListState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 impl<'a, Id> termrock::widgets::KeyValueList<'a, Id>
 pub const fn termrock::widgets::KeyValueList<'a, Id>::dense(&'a [termrock::widgets::KvEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::KeyValueList<'a, Id>::density(self, termrock::widgets::KvDensity) -> Self
+pub const fn termrock::widgets::KeyValueList<'a, Id>::density(self, termrock::style::Density) -> Self
 pub const fn termrock::widgets::KeyValueList<'a, Id>::key_width(self, u16) -> Self
 pub const fn termrock::widgets::KeyValueList<'a, Id>::layout(self, termrock::widgets::KvLayout) -> Self
 pub const fn termrock::widgets::KeyValueList<'a, Id>::new(&'a [termrock::widgets::KvEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -69287,7 +69088,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueTable<'a,
 pub struct termrock::widgets::KeyValueTableState<Id: core::clone::Clone + core::cmp::PartialEq>
 pub termrock::widgets::KeyValueTableState::accepts_input: bool
 pub termrock::widgets::KeyValueTableState::copied: core::option::Option<Id>
-pub termrock::widgets::KeyValueTableState::density: termrock::widgets::KvDensity
+pub termrock::widgets::KeyValueTableState::density: termrock::style::Density
 pub termrock::widgets::KeyValueTableState::edit_draft: alloc::string::String
 pub termrock::widgets::KeyValueTableState::editing: bool
 pub termrock::widgets::KeyValueTableState::filter: core::option::Option<alloc::string::String>
@@ -70153,7 +69954,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::LinkState
 pub struct termrock::widgets::List<'a, Id>
 impl<'a, Id> termrock::widgets::List<'a, Id>
 pub const fn termrock::widgets::List<'a, Id>::comfortable(self) -> Self
-pub const fn termrock::widgets::List<'a, Id>::density(self, termrock::widgets::ListDensity) -> Self
+pub const fn termrock::widgets::List<'a, Id>::density(self, termrock::style::Density) -> Self
 pub fn termrock::widgets::List<'a, Id>::empty_message(self, ratatui_core::text::line::Line<'a>) -> Self
 pub const fn termrock::widgets::List<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::List<'a, Id>::from_system(&'a [termrock::widgets::ListRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -88025,7 +87826,7 @@ pub termrock::widgets::TreeTableState::accepts_input: bool
 pub termrock::widgets::TreeTableState::ascii: bool
 pub termrock::widgets::TreeTableState::cursor_col: usize
 pub termrock::widgets::TreeTableState::cursor_row: usize
-pub termrock::widgets::TreeTableState::density: termrock::widgets::DataDensity
+pub termrock::widgets::TreeTableState::density: termrock::style::Density
 pub termrock::widgets::TreeTableState::h_offset: u16
 pub termrock::widgets::TreeTableState::header_regions: alloc::vec::Vec<termrock::widgets::TreeTableHeaderRegion<ColId>>
 pub termrock::widgets::TreeTableState::load: termrock::widgets::LoadState
@@ -88351,7 +88152,7 @@ pub fn termrock::widgets::VirtualGridState<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtualGridState<RowId, ColId>
 pub struct termrock::widgets::VirtualList<'a, Id>
 impl<'a, Id> termrock::widgets::VirtualList<'a, Id>
-pub const fn termrock::widgets::VirtualList<'a, Id>::density(self, termrock::widgets::ListDensity) -> Self
+pub const fn termrock::widgets::VirtualList<'a, Id>::density(self, termrock::style::Density) -> Self
 pub const fn termrock::widgets::VirtualList<'a, Id>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::VirtualList<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::VirtualList<'a, Id>::new(&'a [termrock::widgets::VirtualListItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self

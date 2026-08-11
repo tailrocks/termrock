@@ -28,7 +28,7 @@ use crate::{
         default_list_intent,
     },
     scroll::max_offset,
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{Density, DesignSystem, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
@@ -69,35 +69,11 @@ impl ListSelectionMode {
     }
 }
 
-/// Vertical density: row height and secondary placement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum ListDensity {
-    /// One terminal row per item; secondary inline when space allows.
-    #[default]
-    Compact,
-    /// Two rows when secondary present (primary + muted secondary).
-    Comfortable,
-}
-
-impl ListDensity {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Comfortable => "comfortable",
-        }
-    }
-
-    /// Rows occupied by one list item given whether secondary is painted below.
-    #[must_use]
-    pub const fn row_height(self, has_secondary_below: bool) -> u16 {
-        match self {
-            Self::Compact => 1,
-            Self::Comfortable if has_secondary_below => 2,
-            Self::Comfortable => 1,
-        }
+const fn list_row_height(density: Density, has_secondary_below: bool) -> u16 {
+    if matches!(density, Density::Comfortable) && has_secondary_below {
+        2
+    } else {
+        1
     }
 }
 
@@ -1045,7 +1021,7 @@ pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
-    density: ListDensity,
+    density: Density,
 }
 
 impl<'a, Id> List<'a, Id> {
@@ -1057,7 +1033,7 @@ impl<'a, Id> List<'a, Id> {
             rows,
             tokens,
             empty_message: None,
-            density: ListDensity::Compact,
+            density: Density::Compact,
         }
     }
 
@@ -1076,7 +1052,7 @@ impl<'a, Id> List<'a, Id> {
 
     /// Compact (1-line) or comfortable (secondary below primary).
     #[must_use]
-    pub const fn density(mut self, density: ListDensity) -> Self {
+    pub const fn density(mut self, density: Density) -> Self {
         self.density = density;
         self
     }
@@ -1084,7 +1060,7 @@ impl<'a, Id> List<'a, Id> {
     /// Comfortable density shorthand.
     #[must_use]
     pub const fn comfortable(mut self) -> Self {
-        self.density = ListDensity::Comfortable;
+        self.density = Density::Comfortable;
         self
     }
 
@@ -1173,10 +1149,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             if y >= body.bottom() {
                 break;
             }
-            let secondary_below = matches!(self.density, ListDensity::Comfortable)
+            let secondary_below = matches!(self.density, Density::Comfortable)
                 && row.secondary.is_some()
                 && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
-            let rh = self.density.row_height(secondary_below);
+            let rh = list_row_height(self.density, secondary_below);
             if y.saturating_add(rh) > body.bottom() {
                 break;
             }

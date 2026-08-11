@@ -29,11 +29,11 @@ use crate::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_list_intent,
     },
-    style::{DesignSystem, Role},
+    style::{Density, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::list::{List, ListDensity, ListRow, ListState, RowRole};
+use super::list::{List, ListRow, ListState, RowRole};
 use super::virtualizer::{ExtentPolicy, StickyRegion, VirtRange, VirtSlice, Virtualizer};
 
 /// Default overscan items for prefetch/measure.
@@ -562,7 +562,7 @@ fn projected_rows<'a, Id: Clone>(projected: &'a [VirtualListItem<'a, Id>]) -> Ve
 pub struct VirtualList<'a, Id> {
     projected: &'a [VirtualListItem<'a, Id>],
     system: &'a DesignSystem,
-    density: ListDensity,
+    density: Density,
     empty_message: Option<&'a str>,
     show_diagnostics: bool,
     focused: bool,
@@ -575,7 +575,7 @@ impl<'a, Id> VirtualList<'a, Id> {
         Self {
             projected,
             system,
-            density: ListDensity::Compact,
+            density: Density::Compact,
             empty_message: None,
             show_diagnostics: false,
             focused: true,
@@ -584,7 +584,7 @@ impl<'a, Id> VirtualList<'a, Id> {
 
     /// Density.
     #[must_use]
-    pub const fn density(mut self, d: ListDensity) -> Self {
+    pub const fn density(mut self, d: Density) -> Self {
         self.density = d;
         self
     }

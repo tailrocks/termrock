@@ -331,9 +331,9 @@ pub use data_table::{
 };
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
-    CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataDensity,
-    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
-    SelectionModel, SortSpec, VirtualWindow,
+    CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataViewOutcome,
+    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
+    VirtualWindow,
 };
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
@@ -414,8 +414,8 @@ pub use kbd::{
     format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
 };
 pub use key_value_list::{
-    KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvDensity, KvEntry,
-    KvEntryParts, KvLayout, KvStatus,
+    KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvEntry, KvEntryParts,
+    KvLayout, KvStatus,
 };
 pub use key_value_table::{
     KeyValueTable, KeyValueTableOutcome, KeyValueTableState, KvtField, KvtMode, KvtRegion,
@@ -442,8 +442,8 @@ pub use link::{
     LinkParts, LinkState, LinkVariant,
 };
 pub use list::{
-    LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListDensity, ListRow, ListSelectionMode,
-    ListState, RowRole, filter_list_rows,
+    LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,
+    filter_list_rows,
 };
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{
@@ -524,8 +524,8 @@ pub use date_time_picker::{
     guidance as date_time_picker_guidance,
 };
 pub use empty_state::{
-    EMPTY_STATE_INLINE_MAX_HEIGHT, EMPTY_STATE_INLINE_MAX_WIDTH, EmptyAction, EmptyDensity,
-    EmptyFocus, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, example_empty_logs,
+    EMPTY_STATE_INLINE_MAX_HEIGHT, EMPTY_STATE_INLINE_MAX_WIDTH, EmptyAction, EmptyFocus,
+    EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, example_empty_logs,
     example_empty_permission, example_empty_projects, example_empty_search, example_empty_sessions,
     example_empty_table,
 };

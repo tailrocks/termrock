@@ -52,29 +52,29 @@ use termrock::{
         DiagnosticView, Dialog, DialogRecipe, DiffDecision, DiffHunk, DiffKind, DiffLine, DiffMode,
         DiffReview, DiffReviewFileRow, DiffReviewState, DiffReviewUnit, DiffView, DiffViewState,
         DiffWordKind, DiffWordSpan, Drawer, DropdownMenu, DropdownMenuState, EmptyAction,
-        EmptyDensity, EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, ErrorView,
-        EventSeverity, EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry,
-        FileEntryKind, FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview,
-        FileSortKey, FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState,
-        FormWizard, FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell,
-        GridColumn, GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer,
-        HexViewerState, HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram,
-        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity,
-        IdentityRole, ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel,
-        JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList,
-        KeyValueListState, KeyValueTable, KeyValueTableState, KeybindingRecorder,
-        KeybindingRecorderState, KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus,
-        KvtField, KvtMode, KvtValidation, Link, LinkState, List, ListDensity, ListRow,
-        ListSelectionMode, ListState, LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane,
-        LogPaneState, LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
-        MarkdownViewState, MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar,
-        MenuBarState, MenuItem, MenuNode, MenuState, MessageDialog, MeterSegment, ModeRibbon,
-        MultiSelect, MultiSelectState, NavItem, NavigationList, NavigationListState,
-        NotificationCenter, NotificationCenterState, NotificationRecipe, NumberConstraints,
-        NumberInput, NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState,
-        OfflineBanner, OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome,
-        PasswordInput, PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus,
-        PathInput, PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
+        EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, ErrorView, EventSeverity,
+        EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry, FileEntryKind,
+        FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview, FileSortKey,
+        FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState, FormWizard,
+        FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell, GridColumn,
+        GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer, HexViewerState,
+        HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram, HistoryEntry,
+        HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity, IdentityRole,
+        ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel, JumpFilter,
+        JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList, KeyValueListState,
+        KeyValueTable, KeyValueTableState, KeybindingRecorder, KeybindingRecorderState,
+        KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus, KvtField, KvtMode,
+        KvtValidation, Link, LinkState, List, ListRow, ListSelectionMode, ListState,
+        LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane, LogPaneState, LogStream,
+        LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
+        MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar, MenuBarState, MenuItem,
+        MenuNode, MenuState, MessageDialog, MeterSegment, ModeRibbon, MultiSelect,
+        MultiSelectState, NavItem, NavigationList, NavigationListState, NotificationCenter,
+        NotificationCenterState, NotificationRecipe, NumberConstraints, NumberInput,
+        NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState, OfflineBanner,
+        OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome, PasswordInput,
+        PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus, PathInput,
+        PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
         PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
         PickerState, Popover, PopoverState, PresenceStatus, PreviewCard, PreviewCardContent,
         PreviewCardState, PreviewLoadState, PreviewResourceKind, Progress, ProgressKind,
@@ -16803,6 +16803,22 @@ fn paint_stack_rects(
 
 fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(termrock::style::Density::default());
+    let dialog_area = termrock::layout::resolve_dialog(
+        area,
+        termrock::layout::DialogSpec {
+            min_width: 32,
+            preferred_width: 48,
+            preferred_reference_pct: None,
+            max_width: 72,
+            min_height: 8,
+            preferred_height: 10,
+            max_height: 12,
+            horizontal_margin: 4,
+            vertical_margin: 2,
+            placement: termrock::layout::Placement::Centered,
+        }
+        .preferred_pct_of_reference(40),
+    );
     frame.render_widget(
         Dialog::new(
             "Notice",
@@ -16814,7 +16830,7 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .emphasis(termrock::widgets::PanelChrome::Focused)
         .recipe(DialogRecipe::Normal)
         .footer_hint("esc dismiss"),
-        area,
+        dialog_area,
     );
 }
 
@@ -17295,7 +17311,7 @@ fn empty_state_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .kind(EmptyKind::NoData)
         .explanation("Pick a story")
         .primary(EmptyAction::new("Browse"))
-        .density(EmptyDensity::Inline)
+        .density(Density::Compact)
         .paint(area, frame.buffer_mut());
 }
 
@@ -23280,7 +23296,7 @@ fn key_value_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     ];
     let mut state = KeyValueTableState::new().with_cursor("cmd");
     state.load = LoadState::Ready { count: 6 };
-    state.density = termrock::widgets::KvDensity::Dense;
+    state.density = Density::Compact;
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -23391,7 +23407,7 @@ fn key_value_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     ];
     let mut state = KeyValueTableState::new().with_cursor("a");
     state.layout = KvLayout::Auto;
-    state.density = termrock::widgets::KvDensity::Dense;
+    state.density = Density::Compact;
     state.load = LoadState::Ready { count: 3 };
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }

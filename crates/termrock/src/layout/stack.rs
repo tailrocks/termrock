@@ -18,7 +18,7 @@
 
 use ratatui_core::layout::Rect;
 
-use crate::style::{Density, SpacingScale};
+use crate::style::{Density, DesignSystem, SpacingScale};
 
 /// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
 const INLINE_SCRATCH: usize = 64;
@@ -248,6 +248,12 @@ impl Default for StackSpec {
 }
 
 impl StackSpec {
+    /// Resolves gap and padding from the frame design system.
+    #[must_use]
+    pub const fn from_system(system: &DesignSystem) -> Self {
+        Self::vertical().with_spacing(system.spacing)
+    }
+
     /// Vertical stack defaults.
     #[must_use]
     pub const fn vertical() -> Self {

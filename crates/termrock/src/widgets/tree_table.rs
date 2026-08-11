@@ -33,12 +33,10 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, Role, SelectionChrome},
     text::take_display_cols,
     widgets::{
-        data_view::{
-            ColumnModel, ColumnPin, DataDensity, LoadState, SelectionModel, SortSpec, VirtualWindow,
-        },
+        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
         tree::TreeNodeStatus,
     },
 };
@@ -289,7 +287,7 @@ pub struct TreeTableState<Id: Clone + Ord, ColId: Clone + PartialEq> {
     /// Load chrome.
     pub load: LoadState,
     /// Density.
-    pub density: DataDensity,
+    pub density: Density,
     /// Active sort (data columns).
     pub sort: Option<SortSpec<ColId>>,
     /// Striped body.
@@ -325,7 +323,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             h_offset: 0,
             nav_mode: TreeTableNavMode::Hierarchy,
             load: LoadState::Ready { count: 0 },
-            density: DataDensity::Comfortable,
+            density: Density::Comfortable,
             sort: None,
             striped: false,
             ascii: false,

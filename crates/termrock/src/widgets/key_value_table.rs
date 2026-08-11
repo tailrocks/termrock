@@ -32,11 +32,11 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, Role, SelectionChrome},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
-        key_value_list::{KvDensity, KvLayout, KvStatus},
+        key_value_list::{KvLayout, KvStatus, kv_group_gap, kv_stack_below},
     },
 };
 
@@ -394,7 +394,7 @@ pub struct KeyValueTableState<Id: Clone + PartialEq> {
     /// Presentation mode.
     pub mode: KvtMode,
     /// Density.
-    pub density: KvDensity,
+    pub density: Density,
     /// Layout override (Auto still contracts).
     pub layout: KvLayout,
     /// Load chrome.
@@ -432,7 +432,7 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
             revealed: BTreeSet::new(),
             copied: None,
             mode: KvtMode::View,
-            density: KvDensity::Dense,
+            density: Density::Compact,
             layout: KvLayout::Auto,
             load: LoadState::Ready { count: 0 },
             filter: None,
@@ -556,7 +556,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     fn resolved_layout(&self, width: u16, state: &KeyValueTableState<Id>) -> KvLayout {
         match state.layout {
             KvLayout::Auto => {
-                if width < state.density.stack_below() {
+                if width < kv_stack_below(state.density) {
                     KvLayout::Stacked
                 } else {
                     KvLayout::Columns
@@ -662,7 +662,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         }
         match field.kind {
             KvtRowKind::Separator => 1,
-            KvtRowKind::Group => 1u16.saturating_add(state.density.group_gap()),
+            KvtRowKind::Group => 1u16.saturating_add(kv_group_gap(state.density)),
             KvtRowKind::Field => {
                 let value = self.display_value(field, state);
                 match layout {
@@ -1689,7 +1689,7 @@ mod tests {
         let fields = sample();
         let table = KeyValueTable::new(&fields, &system);
         let mut state = KeyValueTableState::new();
-        state.density = KvDensity::Dense;
+        state.density = Density::Compact;
         state.layout = KvLayout::Auto;
         let layout = table.resolved_layout(30, &state);
         assert_eq!(layout, KvLayout::Stacked);

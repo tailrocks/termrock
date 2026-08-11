@@ -103,8 +103,12 @@ Design constraints:
 - `crates/termrock/src/layout/stack.rs`, `crates/termrock/src/layout/grid.rs`
 - `crates/termrock/src/widgets/list.rs`, `empty_state.rs`,
   `key_value_list.rs`, `data_view.rs` (density-enum collapse only)
+- Mechanical density-consumer migration only:
+  `widgets/{data_table,key_value_table,tree_table,virtual_list,text_area,mod}.rs`
 - `crates/termrock/src/layout/mod.rs` (`DialogSpec` — locate `resolve_dialog`)
 - `crates/termrock-lookbook/src/stories.rs` (story updates for new geometry)
+- `docs/api/public-api.txt`, `docs/public/preview-frames/`, and
+  `artifacts/visual-qa/plan-003/` (generated inventory/browser proof)
 - `migrations/0263-*.md` + `MIGRATING.md`
 - `plans/README.md`
 
@@ -219,12 +223,19 @@ unchanged when the mode is unset.
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` exit 0
-- [ ] `grep -n "padding(0, 0)" crates/termrock/src/widgets/panel.rs` → no matches
-- [ ] `grep -rn "enum ListDensity\|enum EmptyDensity\|enum KvDensity\|enum DataDensity" crates/` → no matches
-- [ ] Dialog rhythm test passes; reference-width test passes
-- [ ] `migrations/0263-*.md` exists, linked from `MIGRATING.md`
-- [ ] `plans/README.md` updated
+- [x] `mise run check` + `mise run gate` exit 0
+- [x] `grep -n "padding(0, 0)" crates/termrock/src/widgets/panel.rs` → no matches
+- [x] `grep -rn "enum ListDensity\|enum EmptyDensity\|enum KvDensity\|enum DataDensity" crates/` → no matches
+- [x] Dialog rhythm test passes; reference-width test passes
+- [x] `migrations/0263-*.md` exists, linked from `MIGRATING.md`
+- [x] `plans/README.md` updated
+
+## Visual QA
+
+- Panel, List, EmptyState, KeyValueTable, DataTable, TextArea: **pass**.
+- Dialog: **pass, iterated once** to replace full-frame dead space with the
+  new centered reference-width policy.
+- Evidence: [`artifacts/visual-qa/plan-003/README.md`](../artifacts/visual-qa/plan-003/README.md).
 
 ## STOP conditions
 
@@ -243,3 +254,19 @@ unchanged when the mode is unset.
   so they will).
 - Any future widget must consume `DesignSystem.spacing`, never local
   constants — reviewers should reject new hardcoded pads.
+
+## Amendments
+
+- 2026-08-12: Expanded density-collapse Scope to every live consumer and the
+  widget export module. Options were aliases (reject: forward-only law), leave
+  peer tables on removed types (does not compile and violates consistency), or
+  mechanically migrate all consumers to `style::Density`. The full mechanical
+  cascade is the only coherent, independently green resolution.
+- 2026-08-12: Added generated API/frame output and browser artifacts omitted
+  from Scope. Public removals require canonical inventory refresh; visible
+  padding/rhythm requires real-browser responsive and designer validation.
+- 2026-08-12: Preserved one DetailTable row inside cramped MessageDialog bodies
+  and resized the TextArea scrollbar fixture to its new padded geometry. The
+  failing tests exposed stale flush-layout assumptions, not hit-ownership
+  breakage; deriving behavior from padded content keeps content-before-spacing
+  and interaction laws intact.
