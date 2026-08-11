@@ -23,14 +23,22 @@ pub use density::{Density, Motion};
 pub use glyph::{Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
 pub use palette::Rgb;
 use palette::{
-    BORDER_GRAY as BORDER_GRAY_RGB, CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB,
-    DIALOG_SCROLL_THUMB as DIALOG_SCROLL_THUMB_RGB, DIALOG_SCROLL_TRACK as DIALOG_SCROLL_TRACK_RGB,
+    ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,
+    ACTOR_PLAN as ACTOR_PLAN_RGB, ACTOR_SYSTEM as ACTOR_SYSTEM_RGB,
+    ACTOR_THINKING as ACTOR_THINKING_RGB, ACTOR_TOOL as ACTOR_TOOL_RGB,
+    ACTOR_USER as ACTOR_USER_RGB, BACKDROP_WASH as BACKDROP_WASH_RGB,
+    BORDER_GRAY as BORDER_GRAY_RGB, CANVAS as CANVAS_RGB, CHART_GREEN as CHART_GREEN_RGB,
+    CYAN as CYAN_RGB, DANGER_RED as DANGER_RED_RGB, DIALOG_SCROLL_THUMB as DIALOG_SCROLL_THUMB_RGB,
+    DIALOG_SCROLL_TRACK as DIALOG_SCROLL_TRACK_RGB, DISCLOSURE_HEADER as DISCLOSURE_HEADER_RGB,
+    ELEVATED as ELEVATED_RGB, HOVER_TINT as HOVER_TINT_RGB, INFO_DIM as INFO_DIM_RGB,
     INPUT_BG_DIM as INPUT_BG_DIM_RGB, LINK_FG as LINK_FG_RGB, LINK_FG_HOVER as LINK_FG_HOVER_RGB,
     PHOSPHOR_DARK as PHOSPHOR_DARK_RGB, PHOSPHOR_DIM as PHOSPHOR_DIM_RGB,
-    PHOSPHOR_GREEN as PHOSPHOR_GREEN_RGB, PREVIEW_CARD as PREVIEW_CARD_RGB,
-    TAB_BG_ACTIVE as TAB_BG_ACTIVE_RGB, TAB_BG_ACTIVE_HOVER as TAB_BG_ACTIVE_HOVER_RGB,
-    TAB_BG_INACTIVE as TAB_BG_INACTIVE_RGB, TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB,
-    WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
+    PHOSPHOR_GREEN as PHOSPHOR_GREEN_RGB, PREVIEW_CARD as PREVIEW_CARD_RGB, RAISED as RAISED_RGB,
+    SELECTION_TINT as SELECTION_TINT_RGB, SUCCESS_GREEN as SUCCESS_GREEN_RGB, SUNKEN as SUNKEN_RGB,
+    SURFACE as SURFACE_RGB, TAB_BG_ACTIVE as TAB_BG_ACTIVE_RGB,
+    TAB_BG_ACTIVE_HOVER as TAB_BG_ACTIVE_HOVER_RGB, TAB_BG_INACTIVE as TAB_BG_INACTIVE_RGB,
+    TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB, WARNING_YELLOW as WARNING_YELLOW_RGB,
+    WHITE as WHITE_RGB,
 };
 pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
@@ -116,8 +124,12 @@ pub enum Role {
     Canvas,
     /// Ordinary component surface above the canvas.
     Surface,
+    /// Hover or section surface between ordinary and elevated surfaces.
+    Raised,
     /// Raised surface such as a dialog or preview card.
     Elevated,
+    /// Recessed well surface used by inputs and inset content.
+    Sunken,
     /// Occluding layer behind modal content.
     Backdrop,
     /// Ordinary body text (default weight).
@@ -198,6 +210,30 @@ pub enum Role {
     SyntaxNumber,
     /// Syntax: function / method name.
     SyntaxFunction,
+    /// Quiet selected-row background wash.
+    SelectionTint,
+    /// Pointer-hover row background wash.
+    HoverTint,
+    /// Creation or additive action-row accent.
+    ActionConstructive,
+    /// Expand/collapse group-header accent.
+    DisclosureHeader,
+    /// Strong live-status information accent.
+    InfoStrong,
+    /// Dim live-status information accent.
+    InfoDim,
+    /// User actor accent for agent surfaces.
+    ActorUser,
+    /// Assistant actor accent for agent surfaces.
+    ActorAssistant,
+    /// Thinking actor accent for agent surfaces.
+    ActorThinking,
+    /// Tool actor accent for agent surfaces.
+    ActorTool,
+    /// Plan actor accent for agent surfaces.
+    ActorPlan,
+    /// System actor accent for agent surfaces.
+    ActorSystem,
     /// Chart series 1 (primary series).
     ChartSeries1,
     /// Chart series 2.
@@ -213,14 +249,16 @@ pub enum Role {
 }
 
 /// Number of [`Role`] variants (stable for palette array sizing).
-pub const ROLE_COUNT: usize = 49;
+pub const ROLE_COUNT: usize = 63;
 
 macro_rules! every_role {
     ($macro:ident) => {
         $macro! {
             Canvas,
             Surface,
+            Raised,
             Elevated,
+            Sunken,
             Backdrop,
             Text,
             TextStrong,
@@ -261,6 +299,18 @@ macro_rules! every_role {
             SyntaxComment,
             SyntaxNumber,
             SyntaxFunction,
+            SelectionTint,
+            HoverTint,
+            ActionConstructive,
+            DisclosureHeader,
+            InfoStrong,
+            InfoDim,
+            ActorUser,
+            ActorAssistant,
+            ActorThinking,
+            ActorTool,
+            ActorPlan,
+            ActorSystem,
             ChartSeries1,
             ChartSeries2,
             ChartSeries3,
@@ -313,10 +363,12 @@ impl RolePalette {
     pub fn tailrocks_phosphor() -> Self {
         Self {
             roles: [
-                Style::new(),
-                Style::new(),
-                Style::new(),
-                Style::new(),
+                Style::new().bg(color(CANVAS_RGB)),
+                Style::new().bg(color(SURFACE_RGB)),
+                Style::new().bg(color(RAISED_RGB)),
+                Style::new().bg(color(ELEVATED_RGB)),
+                Style::new().bg(color(SUNKEN_RGB)),
+                Style::new().fg(color(BACKDROP_WASH_RGB)),
                 Style::new().fg(WHITE),
                 BOLD_WHITE,
                 DIM,
@@ -326,7 +378,7 @@ impl RolePalette {
                 Style::new().bg(PHOSPHOR_GREEN).fg(INK),
                 GREEN,
                 GREEN,
-                GREEN,
+                Style::new().fg(color(SUCCESS_GREEN_RGB)),
                 Style::new().fg(WARNING_YELLOW),
                 DANGER,
                 Style::new().fg(CYAN),
@@ -343,7 +395,7 @@ impl RolePalette {
                 GREEN,
                 Style::new().fg(WHITE),
                 Style::new().fg(WHITE).add_modifier(Modifier::BOLD),
-                GREEN,
+                DIM,
                 DIM,
                 Style::new().fg(BORDER_GRAY),
                 // Explicit RGB so lookbook SVG (and monochrome-unaware paths)
@@ -354,7 +406,7 @@ impl RolePalette {
                     .bg(PHOSPHOR_GREEN)
                     .add_modifier(Modifier::BOLD),
                 Style::new().fg(PHOSPHOR_DIM),
-                Style::new(),
+                Style::new().fg(WHITE).bg(color(SURFACE_RGB)),
                 Style::new().fg(DIFF_ADDED_FG).bg(DIFF_ADDED_BG),
                 Style::new().fg(DIFF_REMOVED_FG).bg(DIFF_REMOVED_BG),
                 // Syntax
@@ -363,8 +415,20 @@ impl RolePalette {
                 Style::new().fg(PHOSPHOR_DIM),              // comment
                 Style::new().fg(Color::Rgb(255, 200, 100)), // number
                 Style::new().fg(Color::Rgb(120, 220, 255)), // function
+                Style::new().bg(color(SELECTION_TINT_RGB)),
+                Style::new().bg(color(HOVER_TINT_RGB)),
+                Style::new().fg(color(ACTION_CONSTRUCTIVE_RGB)),
+                Style::new().fg(color(DISCLOSURE_HEADER_RGB)),
+                Style::new().fg(CYAN),
+                Style::new().fg(color(INFO_DIM_RGB)),
+                Style::new().fg(color(ACTOR_USER_RGB)),
+                Style::new().fg(color(ACTOR_ASSISTANT_RGB)),
+                Style::new().fg(color(ACTOR_THINKING_RGB)),
+                Style::new().fg(color(ACTOR_TOOL_RGB)),
+                Style::new().fg(color(ACTOR_PLAN_RGB)),
+                Style::new().fg(color(ACTOR_SYSTEM_RGB)),
                 // Chart series + axis/grid
-                Style::new().fg(PHOSPHOR_GREEN),
+                Style::new().fg(color(CHART_GREEN_RGB)),
                 Style::new().fg(CYAN),
                 Style::new().fg(WARNING_YELLOW),
                 Style::new().fg(Color::Rgb(180, 120, 255)),
@@ -372,6 +436,26 @@ impl RolePalette {
                 Style::new().fg(Color::Rgb(50, 50, 50)),
             ],
         }
+    }
+
+    /// Builds the phosphor palette while inheriting terminal-default surfaces.
+    ///
+    /// This preserves the pre-surface-ladder background behavior for hosts
+    /// that must follow the operator's terminal theme.
+    #[must_use]
+    pub fn terminal_native() -> Self {
+        let mut palette = Self::tailrocks_phosphor();
+        for role in [
+            Role::Canvas,
+            Role::Surface,
+            Role::Raised,
+            Role::Elevated,
+            Role::Sunken,
+        ] {
+            palette.roles[role as usize] = Style::new();
+        }
+        palette.roles[Role::StatusBar as usize] = Style::new().fg(WHITE);
+        palette
     }
 
     /// Cool-gray neutrality proof and rebranding reference.
@@ -398,7 +482,9 @@ impl RolePalette {
             roles: [
                 Style::new().bg(canvas),
                 Style::new().bg(surface),
+                Style::new().bg(Color::Rgb(40, 52, 72)),
                 Style::new().bg(elevated),
+                Style::new().bg(Color::Rgb(17, 28, 48)),
                 Style::new().bg(Color::Rgb(2, 6, 23)),
                 Style::new().fg(text),
                 Style::new().fg(text).bold(),
@@ -444,6 +530,18 @@ impl RolePalette {
                 Style::new().fg(muted),
                 Style::new().fg(Color::Rgb(253, 186, 116)),
                 Style::new().fg(Color::Rgb(125, 211, 252)),
+                Style::new().bg(Color::Rgb(20, 55, 80)),
+                Style::new().bg(Color::Rgb(36, 52, 68)),
+                Style::new().fg(Color::Rgb(167, 243, 208)),
+                Style::new().fg(Color::Rgb(252, 211, 77)),
+                Style::new().fg(info),
+                Style::new().fg(Color::Rgb(14, 116, 144)),
+                Style::new().fg(Color::Rgb(203, 213, 225)),
+                Style::new().fg(Color::Rgb(216, 180, 254)),
+                Style::new().fg(Color::Rgb(167, 139, 250)),
+                Style::new().fg(Color::Rgb(148, 163, 184)),
+                Style::new().fg(Color::Rgb(253, 230, 138)),
+                Style::new().fg(Color::Rgb(147, 197, 253)),
                 // Chart
                 Style::new().fg(accent),
                 Style::new().fg(info),
@@ -475,7 +573,9 @@ impl RolePalette {
             roles: [
                 Style::new().bg(canvas),
                 Style::new().bg(surface),
+                Style::new().bg(Color::Rgb(247, 245, 242)),
                 Style::new().bg(elevated),
+                Style::new().bg(Color::Rgb(238, 235, 230)),
                 Style::new().bg(Color::Rgb(231, 229, 228)),
                 Style::new().fg(text),
                 Style::new().fg(text).bold(),
@@ -516,6 +616,18 @@ impl RolePalette {
                 Style::new().fg(muted),
                 Style::new().fg(warning),
                 Style::new().fg(info),
+                Style::new().bg(Color::Rgb(220, 252, 231)),
+                Style::new().bg(Color::Rgb(240, 253, 244)),
+                Style::new().fg(Color::Rgb(5, 150, 105)),
+                Style::new().fg(Color::Rgb(180, 83, 9)),
+                Style::new().fg(info),
+                Style::new().fg(Color::Rgb(14, 116, 144)),
+                Style::new().fg(Color::Rgb(68, 64, 60)),
+                Style::new().fg(Color::Rgb(126, 34, 206)),
+                Style::new().fg(Color::Rgb(107, 33, 168)),
+                Style::new().fg(Color::Rgb(87, 83, 78)),
+                Style::new().fg(Color::Rgb(161, 98, 7)),
+                Style::new().fg(Color::Rgb(29, 78, 216)),
                 Style::new().fg(accent),
                 Style::new().fg(info),
                 Style::new().fg(warning),
@@ -531,10 +643,12 @@ impl RolePalette {
     pub fn ansi() -> Self {
         Self {
             roles: [
-                Style::new(), // Canvas — terminal default
-                Style::new(),
-                Style::new(),
-                Style::new(),
+                Style::new().bg(Color::Black),
+                Style::new().bg(Color::Black),
+                Style::new().bg(Color::DarkGray),
+                Style::new().bg(Color::DarkGray),
+                Style::new().bg(Color::Black),
+                Style::new().fg(Color::DarkGray),
                 Style::new().fg(Color::White),
                 Style::new().fg(Color::White).bold(),
                 Style::new().fg(Color::Gray).dim(),
@@ -566,7 +680,7 @@ impl RolePalette {
                 Style::new().fg(Color::DarkGray),
                 Style::new().fg(Color::Black).bg(Color::Green).bold(),
                 Style::new().fg(Color::DarkGray),
-                Style::new(),
+                Style::new().fg(Color::White).bg(Color::Black),
                 Style::new().fg(Color::Green),
                 Style::new().fg(Color::Red),
                 Style::new().fg(Color::Magenta),
@@ -574,6 +688,18 @@ impl RolePalette {
                 Style::new().fg(Color::Gray).dim(),
                 Style::new().fg(Color::Yellow),
                 Style::new().fg(Color::Cyan),
+                Style::new().bg(Color::DarkGray),
+                Style::new().bg(Color::DarkGray),
+                Style::new().fg(Color::Green),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Cyan),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Gray),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::Magenta),
+                Style::new().fg(Color::DarkGray),
+                Style::new().fg(Color::Yellow),
+                Style::new().fg(Color::Blue),
                 Style::new().fg(Color::Green),
                 Style::new().fg(Color::Cyan),
                 Style::new().fg(Color::Yellow),
@@ -597,7 +723,9 @@ impl RolePalette {
             roles: [
                 Style::new().bg(paper),
                 Style::new().bg(paper),
+                Style::new().bg(Color::Rgb(10, 10, 10)),
                 Style::new().bg(Color::Rgb(20, 20, 20)),
+                Style::new().bg(paper),
                 Style::new().bg(paper),
                 Style::new().fg(ink).bold(),
                 Style::new().fg(ink).bold(),
@@ -635,6 +763,18 @@ impl RolePalette {
                 Style::new().fg(danger).bg(paper).bold(),
                 Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
                 Style::new().fg(ok).bold(),
+                Style::new().fg(Color::Rgb(180, 180, 180)),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().bg(Color::Rgb(0, 80, 80)),
+                Style::new().bg(Color::Rgb(30, 30, 30)),
+                Style::new().fg(ok).bold(),
+                Style::new().fg(warn).bold(),
+                Style::new().fg(accent).bold(),
+                Style::new().fg(Color::Rgb(0, 180, 180)),
+                Style::new().fg(ink),
+                Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
+                Style::new().fg(Color::Rgb(220, 160, 255)).bold(),
                 Style::new().fg(Color::Rgb(180, 180, 180)),
                 Style::new().fg(warn).bold(),
                 Style::new().fg(accent).bold(),
@@ -772,6 +912,104 @@ mod tests {
     }
 
     #[test]
+    fn ladder_is_monotonic() {
+        fn luminance(color: Color) -> f64 {
+            let Color::Rgb(r, g, b) = color else {
+                panic!("expected RGB ladder color, got {color:?}");
+            };
+            0.2126 * f64::from(r) + 0.7152 * f64::from(g) + 0.0722 * f64::from(b)
+        }
+
+        let palette = RolePalette::tailrocks_phosphor();
+        let bg = |role| palette.style(role).bg.expect("surface role must carry bg");
+        let canvas = luminance(bg(Role::Canvas));
+        let surface = luminance(bg(Role::Surface));
+        let raised = luminance(bg(Role::Raised));
+        let elevated = luminance(bg(Role::Elevated));
+        let sunken = luminance(bg(Role::Sunken));
+        assert!(canvas < surface && surface < raised && raised < elevated);
+        assert!(sunken < surface);
+    }
+
+    #[test]
+    fn accents_are_distinct() {
+        let palette = RolePalette::tailrocks_phosphor();
+        assert_ne!(palette.style(Role::Success), palette.style(Role::Accent));
+        assert_ne!(palette.style(Role::HintText), palette.style(Role::Accent));
+        assert_ne!(
+            palette.style(Role::ChartSeries1),
+            palette.style(Role::Accent)
+        );
+    }
+
+    #[test]
+    fn every_preset_fills_new_roles() {
+        let new_roles = [
+            Role::Raised,
+            Role::Sunken,
+            Role::SelectionTint,
+            Role::HoverTint,
+            Role::ActionConstructive,
+            Role::DisclosureHeader,
+            Role::InfoStrong,
+            Role::InfoDim,
+            Role::ActorUser,
+            Role::ActorAssistant,
+            Role::ActorThinking,
+            Role::ActorTool,
+            Role::ActorPlan,
+            Role::ActorSystem,
+        ];
+        for palette in [
+            RolePalette::phosphor(),
+            RolePalette::slate(),
+            RolePalette::paper(),
+            RolePalette::ansi(),
+            RolePalette::high_contrast(),
+        ] {
+            for role in new_roles {
+                let style = palette.style(role);
+                assert!(
+                    style.fg.is_some() || style.bg.is_some(),
+                    "{role:?} must be populated"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn tint_roles_carry_bg() {
+        for palette in [
+            RolePalette::phosphor(),
+            RolePalette::slate(),
+            RolePalette::paper(),
+            RolePalette::high_contrast(),
+        ] {
+            assert!(palette.style(Role::SelectionTint).bg.is_some());
+            assert!(palette.style(Role::HoverTint).bg.is_some());
+        }
+    }
+
+    #[test]
+    fn terminal_native_inherits_terminal_background() {
+        let palette = RolePalette::terminal_native();
+        for role in [
+            Role::Canvas,
+            Role::Surface,
+            Role::Raised,
+            Role::Elevated,
+            Role::Sunken,
+        ] {
+            assert_eq!(palette.style(role), Style::new());
+        }
+        assert_eq!(palette.style(Role::StatusBar).bg, None);
+        assert_eq!(
+            crate::style::DesignSystem::terminal_native().palette,
+            palette
+        );
+    }
+
+    #[test]
     fn action_focused_and_disabled_use_distinct_rgb() {
         let theme = RolePalette::tailrocks_phosphor();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
@@ -820,7 +1058,7 @@ mod tests {
                 Role::Selection,
                 Style::new().bg(Color::Rgb(0, 255, 65)).fg(Color::Black),
             ),
-            (Role::Success, Style::new().fg(Color::Rgb(0, 255, 65))),
+            (Role::Success, Style::new().fg(Color::Rgb(61, 220, 90))),
             (Role::Warning, Style::new().fg(Color::Rgb(255, 216, 94))),
             (
                 Role::Danger,

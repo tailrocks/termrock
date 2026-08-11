@@ -29,7 +29,7 @@ starting, honor its STOP conditions, and update your row when done.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Fill the surface ladder and expand the semantic role system | P1 | L | — | TODO |
+| 001 | Fill the surface ladder and expand the semantic role system | P1 | L | — | DONE |
 | 002 | Border shape theme token (`BorderShape`) | P2 | M | 001 | TODO |
 | 003 | Activate the spacing system (padding, gaps, dialog rhythm) | P1 | L | 001 | TODO |
 | 004 | Enforce recipes — chips, badges, tinted selection, meters | P1 | L | 001, 003 | TODO |
@@ -42,6 +42,24 @@ starting, honor its STOP conditions, and update your row when done.
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
+
+## Amendments log
+
+- 2026-08-12 — Plan 001: added `widgets/list.rs` and `widgets/tree.rs` to
+  Scope for required tint/`hover_wash` wiring; original Scope contradicted
+  Step 3 and the design SoT.
+- 2026-08-12 — Plan 001: corrected `ROLE_COUNT` target from 64 to 63; 14
+  named additions plus 49 existing roles equals 63, while Plan 008 reuses
+  `Danger`/`Success` for error/success actors.
+- 2026-08-12 — Plan 001: added affected generated frame packs and browser
+  screenshots to Scope so the standing real-browser visual QA gate validates
+  the new palette instead of stale output; `agent-browser` is the authority.
+- 2026-08-12 — Plan 001: added one SVG favicon and root head declaration;
+  live browser QA found a pre-existing `/favicon.ico` 404 that violated the
+  zero-failed-request standing gate for every docs page.
+- 2026-08-12 — Plan 001: added generated `docs/api/public-api.txt`; the full
+  gate proved the plan omitted the repository-mandated inventory refresh for
+  its public `Role` additions.
 
 ## Dependency notes
 

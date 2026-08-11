@@ -147,9 +147,15 @@ and repo `AGENTS.md`):
 - `crates/termrock/src/style/palette.rs`
 - `crates/termrock/src/style/quantize.rs` (only if a test reveals new colors bypass it)
 - `crates/termrock/src/widgets/surface.rs` (tests only)
+- `crates/termrock/src/widgets/list.rs` (only tint/`hover_wash` wiring and resulting test expectations)
+- `crates/termrock/src/widgets/tree.rs` (only tint/`hover_wash` wiring and resulting test expectations)
 - `migrations/0261-*.md` (create; number = last existing + 1 — verify with `ls migrations | tail -1`)
 - `MIGRATING.md` (add index entry)
 - `crates/termrock-lookbook/src/stories.rs` (only if theme-role stories fail to compile after role additions)
+- `docs/public/preview-frames/` (generated frame packs needed for browser validation)
+- `docs/api/public-api.txt` (generated public inventory required by the full gate)
+- `docs/public/favicon.svg` + `docs/src/routes/__root.tsx` (shared zero-failed-request browser prerequisite)
+- `artifacts/visual-qa/plan-001/` (browser screenshots required by the standing visual QA gate)
 - `plans/README.md` (status row)
 
 **Out of scope** (do NOT touch, even though they look related):
@@ -194,7 +200,7 @@ pick one placement and keep the `roles:` array, `every_role!` macro, and
   cards, plan review)."
 
 Every variant needs a doc comment (workspace denies `missing_docs`). Update
-`ROLE_COUNT` (49 → 64) and the `every_role!` macro list (line 218) to match
+`ROLE_COUNT` (49 → 63) and the `every_role!` macro list (line 218) to match
 declaration order exactly.
 
 **Verify**: `cargo check -p termrock` → compiles; any non-exhaustive-match
@@ -332,7 +338,7 @@ Follow the structure of `migrations/0260-*.md` (read it first). Must record:
 
 - Default visual change: phosphor now paints surface fills, status-bar band,
   selection/hover tints; screenshots/lookbook story names to compare.
-- New `Role` variants (full list), `ROLE_COUNT` 49 → 64.
+- New `Role` variants (full list), `ROLE_COUNT` 49 → 63.
 - Consumers matching exhaustively on `Role` (it is `#[non_exhaustive]`, so
   only crate-internal matches break) and consumers with custom `RolePalette`
   arrays must add the new roles.
@@ -362,14 +368,24 @@ Commit as described in Git workflow (single commit; migration file included).
 
 ## Done criteria
 
-- [ ] `mise run check` exits 0; `mise run gate` exits 0
-- [ ] `cargo nextest run -p termrock style::` passes with the new invariant tests
-- [ ] Test `phosphor_raised_skips_empty_elevated_fill` no longer exists:
+- [x] `mise run check` exits 0; `mise run gate` exits 0
+- [x] `cargo nextest run -p termrock style::` passes with the new invariant tests
+- [x] Test `phosphor_raised_skips_empty_elevated_fill` no longer exists:
       `grep -rn "phosphor_raised_skips_empty_elevated_fill" crates/` → no matches
-- [ ] `DesignSystem::default()` has `style(Role::Surface).bg.is_some()` (asserted by new test)
-- [ ] `migrations/0261-*.md` exists and is linked from `MIGRATING.md`
-- [ ] No files outside the in-scope list are modified (`git status`)
-- [ ] `plans/README.md` status row updated
+- [x] `DesignSystem::default()` has `style(Role::Surface).bg.is_some()` (asserted by new test)
+- [x] `migrations/0261-*.md` exists and is linked from `MIGRATING.md`
+- [x] No files outside the in-scope list are modified (`git status`)
+- [x] `plans/README.md` status row updated
+
+## Visual QA
+
+- Surface: **pass** — layered canvas/sunken/raised/elevated hierarchy remains
+  clear at all required viewports; see
+  [`artifacts/visual-qa/plan-001/README.md`](../artifacts/visual-qa/plan-001/README.md).
+- List: **pass** — row hierarchy, selection, focus, and narrow contraction stay
+  legible; same evidence index.
+- Tree: **pass** — disclosure depth, metadata, selection, and focus remain
+  distinct; same evidence index.
 
 ## STOP conditions
 
@@ -394,3 +410,42 @@ Stop and report back (do not improvise) if:
   silently shifts every color in a preset); and lookbook previews for the
   ladder actually reading as layered (Canvas vs Surface vs Elevated).
 - Deferred: docs-site token bridge and per-widget adoption (later plans).
+
+## Amendments
+
+- 2026-08-12: Added `widgets/list.rs` and `widgets/tree.rs` to Scope, limited
+  to Step 3 tint/`hover_wash` wiring and resulting test expectations. Original
+  Scope contradicted Step 3 and the design SoT's requirement that
+  `SelectionTint`/`HoverTint` reach both row painters. Evidence: goal state,
+  repository cross-surface consistency law, design SoT §§4.2/5, and live
+  `ListRowRecipe` consumers. This is a plan defect; widening Scope by exactly
+  two required files has the smallest blast radius and preserves one green
+  Plan 001 commit.
+- 2026-08-12: Corrected `ROLE_COUNT` target from 64 to 63. The plan names 14
+  additions, so 49 + 14 = 63. Options considered: invent one unnamed role
+  (reject: no goal/design contract), add dedicated actor error/success roles
+  (reject: Plan 008 explicitly maps those actors to existing `Danger` and
+  `Success`, producing 65), or correct the arithmetic. Correcting arithmetic
+  best matches the goal, design intent, live positional-array architecture,
+  and smallest green change.
+- 2026-08-12: Added generated preview-frame packs and Plan 001 visual-QA
+  screenshots to Scope. Options considered: inspect stale checked-in frames
+  (reject: cannot prove the new palette), validate raw JSON only (reject:
+  standing browser gate requires rendered output), or regenerate only the
+  affected public stories and retain browser screenshots. The last option
+  directly proves surface/list/tree visuals with the smallest reviewable
+  artifact set and keeps the plan independently green.
+- 2026-08-12: Added the docs favicon asset and root head link after live
+  browser validation exposed a pre-existing `/favicon.ico` 404. Options:
+  ignore the browser failure (reject: standing gate explicitly requires zero
+  failed requests), add an opaque ICO (reject: uninspectable duplicate brand
+  asset), or add one inspectable phosphor SVG and declare it in document head.
+  The SVG fix is product-neutral, matches phosphor identity, removes the
+  shared failure for every later plan, and has the smallest blast radius.
+- 2026-08-12: Added `docs/api/public-api.txt` to Scope after `mise run gate`
+  correctly rejected the stale checked-in inventory for the new public roles.
+  Options considered: hide the public additions (reject: defeats the design
+  goal), weaken the gate (reject: violates repo inventory law), or regenerate
+  the canonical inventory with the gate's pinned command. Regeneration best
+  advances the goal, matches repository/design contracts, has generated-file
+  blast radius only, and restores an independently green commit.

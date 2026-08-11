@@ -1211,7 +1211,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             } else if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             } else if recipe.hover_fill {
-                buffer.set_style(rect, recipe.hover);
+                buffer.set_style(rect, recipe.hover_wash);
             }
             if matches!(row.role, RowRole::Separator) {
                 let rule = self.tokens.glyphs.rule();

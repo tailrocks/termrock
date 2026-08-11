@@ -594,12 +594,27 @@ mod tests {
     }
 
     #[test]
-    fn phosphor_raised_skips_empty_elevated_fill() {
+    fn phosphor_surface_ladder_is_populated() {
+        let system = DesignSystem::default();
+        for role in [
+            Role::Canvas,
+            Role::Surface,
+            Role::Raised,
+            Role::Elevated,
+            Role::Sunken,
+            Role::StatusBar,
+            Role::SelectionTint,
+            Role::HoverTint,
+        ] {
+            assert!(system.style(role).bg.is_some(), "{role:?} must carry bg");
+        }
+    }
+
+    #[test]
+    fn phosphor_raised_fill_is_painted() {
         let system = DesignSystem::default();
         let plan = system.surface_recipe(SurfaceRecipe::Raised);
-        // Phosphor Elevated is intentionally empty (terminal-default compatible).
-        assert!(system.style(Role::Elevated).bg.is_none());
-        assert!(plan.fill.is_none());
+        assert_eq!(plan.fill, Some(system.style(Role::Elevated)));
         assert!(plan.border.is_some());
     }
 }

@@ -274,6 +274,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0258 | `v0.13.0` | [Widgets/patterns boundary fix](migrations/0258-v0.13.0-widgets-patterns-boundary-fix.md) |
 | 0259 | `v0.13.0` | [Neutral panel presets + example nav](migrations/0259-v0.13.0-neutral-panel-presets-and-example-nav.md) |
 | 0260 | `v0.13.0` | [Building-block classification rule](migrations/0260-v0.13.0-building-block-classification-rule.md) |
+| 0261 | `v0.13.0` | [Surface ladder and semantic role expansion](migrations/0261-v0.13.0-surface-ladder-and-role-expansion.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

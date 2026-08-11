@@ -1077,7 +1077,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             if recipe.use_fill && selected {
                 buffer.set_style(row, style);
             } else if recipe.hover_fill {
-                buffer.set_style(row, recipe.hover);
+                buffer.set_style(row, recipe.hover_wash);
             }
 
             // Quiet selection gutter (aligned with List) when Gutter chrome.

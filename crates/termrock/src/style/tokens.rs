@@ -422,6 +422,12 @@ impl DesignSystem {
         Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
     }
 
+    /// Terminal-default background variant of the phosphor system.
+    #[must_use]
+    pub fn terminal_native() -> Self {
+        Self::from_palette(RolePalette::terminal_native()).selection(SelectionChrome::Gutter)
+    }
+
     /// Alias for [`Self::phosphor`] (marketing name).
     #[must_use]
     pub fn obsidian() -> Self {
@@ -764,7 +770,8 @@ impl DesignSystem {
             show_focus_underline: state.focused && state.selected && !disabled,
             focus: self.style(Role::Focus),
             hover: self.style(Role::LinkHover),
-            tint: self.style(Role::Focus),
+            hover_wash: self.style(Role::HoverTint),
+            tint: self.style(Role::SelectionTint),
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
@@ -805,6 +812,8 @@ pub struct ListRowRecipe {
     pub focus: Style,
     /// Hover style when not selected.
     pub hover: Style,
+    /// Background wash for hovered rows.
+    pub hover_wash: Style,
     /// Tint style for [`SelectionChrome::Tint`].
     pub tint: Style,
     /// Multi-select checked glyph.

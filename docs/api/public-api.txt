@@ -28807,8 +28807,15 @@ pub fn termrock::style::PreviewSurfaceKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::PreviewSurfaceKind
 #[non_exhaustive] pub enum termrock::style::Role
 pub termrock::style::Role::Accent
+pub termrock::style::Role::ActionConstructive
 pub termrock::style::Role::ActionDisabled
 pub termrock::style::Role::ActionFocused
+pub termrock::style::Role::ActorAssistant
+pub termrock::style::Role::ActorPlan
+pub termrock::style::Role::ActorSystem
+pub termrock::style::Role::ActorThinking
+pub termrock::style::Role::ActorTool
+pub termrock::style::Role::ActorUser
 pub termrock::style::Role::Backdrop
 pub termrock::style::Role::Border
 pub termrock::style::Role::BorderFocused
@@ -28822,22 +28829,29 @@ pub termrock::style::Role::ChartSeries4
 pub termrock::style::Role::Danger
 pub termrock::style::Role::DiffAdded
 pub termrock::style::Role::DiffRemoved
+pub termrock::style::Role::DisclosureHeader
 pub termrock::style::Role::Elevated
 pub termrock::style::Role::Focus
 pub termrock::style::Role::HintDim
 pub termrock::style::Role::HintKey
 pub termrock::style::Role::HintSeparator
 pub termrock::style::Role::HintText
+pub termrock::style::Role::HoverTint
 pub termrock::style::Role::Info
+pub termrock::style::Role::InfoDim
+pub termrock::style::Role::InfoStrong
 pub termrock::style::Role::Input
 pub termrock::style::Role::InputInvalid
 pub termrock::style::Role::Link
 pub termrock::style::Role::LinkHover
+pub termrock::style::Role::Raised
 pub termrock::style::Role::ScrollThumb
 pub termrock::style::Role::ScrollTrack
 pub termrock::style::Role::Selection
+pub termrock::style::Role::SelectionTint
 pub termrock::style::Role::StatusBar
 pub termrock::style::Role::Success
+pub termrock::style::Role::Sunken
 pub termrock::style::Role::Surface
 pub termrock::style::Role::SyntaxComment
 pub termrock::style::Role::SyntaxFunction
@@ -29193,6 +29207,7 @@ pub fn termrock::style::DesignSystem::resolve_list_row(&self, termrock::style::L
 pub const fn termrock::style::DesignSystem::selection(self, termrock::style::SelectionChrome) -> Self
 pub fn termrock::style::DesignSystem::slate() -> Self
 pub fn termrock::style::DesignSystem::style(&self, termrock::style::Role) -> ratatui_core::style::Style
+pub fn termrock::style::DesignSystem::terminal_native() -> Self
 pub fn termrock::style::DesignSystem::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::surface_recipe(&self, termrock::widgets::SurfaceRecipe) -> termrock::widgets::SurfacePaintPlan
@@ -29346,6 +29361,7 @@ pub termrock::style::ListRowRecipe::focus: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::gutter: core::option::Option<(&'static str, ratatui_core::style::Style)>
 pub termrock::style::ListRowRecipe::hover: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::hover_fill: bool
+pub termrock::style::ListRowRecipe::hover_wash: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::label: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::loading: bool
 pub termrock::style::ListRowRecipe::loading_glyph: &'static str
@@ -29603,10 +29619,11 @@ pub fn termrock::style::RolePalette::merge(self, &Self) -> Self
 pub fn termrock::style::RolePalette::obsidian() -> Self
 pub fn termrock::style::RolePalette::paper() -> Self
 pub fn termrock::style::RolePalette::phosphor() -> Self
-pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 49]
+pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 63]
 pub fn termrock::style::RolePalette::slate() -> Self
 pub const fn termrock::style::RolePalette::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::RolePalette::tailrocks_phosphor() -> Self
+pub fn termrock::style::RolePalette::terminal_native() -> Self
 pub fn termrock::style::RolePalette::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::RolePalette
 pub fn termrock::style::RolePalette::quantized(&self, termrock::style::ColorCapability) -> Self
