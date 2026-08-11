@@ -451,12 +451,23 @@ export function TerminalPreview({
     ? `${frame.cols}×${frame.rows} · story ${frame.story_cols}×${frame.story_rows} · ${sizeKey}`
     : sizeKey
 
+  const tour = manifest?.tour
+  const sceneId =
+    tour && tour.length > 0
+      ? (tour[Math.min(step, tour.length - 1)] ?? story)
+      : story
+  const sceneTitle = frame?.title ?? sceneId
+
   const stepLabel = canInteract
-    ? `step ${step + 1}/${maxStep + 1}`
+    ? tour && tour.length > 1
+      ? `scene ${step + 1}/${maxStep + 1}`
+      : `step ${step + 1}/${maxStep + 1}`
     : 'static'
 
   const hint = canInteract
-    ? '↑↓/←→ · j/k · click · Home/End'
+    ? tour && tour.length > 1
+      ? '↑↓ cycle states · j/k · click · Home/End'
+      : '↑↓/←→ · j/k · click · Home/End'
     : 'read-only frame'
 
   return (
@@ -470,6 +481,8 @@ export function TerminalPreview({
       data-preview-interactive={canInteract ? 'true' : 'false'}
       data-preview-focused={focused ? 'true' : 'false'}
       data-preview-truecolor="rgb24"
+      data-preview-scene={sceneId}
+      data-preview-tour={tour && tour.length > 1 ? 'true' : 'false'}
     >
       <div
         ref={hostRef}
@@ -515,6 +528,14 @@ export function TerminalPreview({
           <span style={{ color: '#8a9a8a' }}>TermRock</span>
           <span style={{ opacity: 0.55 }}>—</span>
           <span style={{ color: '#39ff14' }}>{story}</span>
+          {tour && tour.length > 1 ? (
+            <>
+              <span style={{ opacity: 0.55 }}>·</span>
+              <span style={{ color: '#c8e6c8' }} title={sceneId}>
+                {sceneTitle}
+              </span>
+            </>
+          ) : null}
           <span
             aria-hidden
             style={{
@@ -577,9 +598,18 @@ export function TerminalPreview({
         </div>
         <div style={statusBar} data-termrock-status="1">
           <span style={{ color: canInteract ? '#39ff14' : '#6a7a6a' }}>
-            {canInteract ? '● live pack' : '○ snapshot'}
+            {canInteract
+              ? tour && tour.length > 1
+                ? '● state tour'
+                : '● live pack'
+              : '○ snapshot'}
           </span>
           <span>{stepLabel}</span>
+          {tour && tour.length > 1 ? (
+            <span style={{ color: '#8aba8a' }} data-preview-scene-label={sceneId}>
+              {sceneId}
+            </span>
+          ) : null}
           <span style={{ opacity: 0.8 }}>{sizeKey}</span>
           {frame ? (
             <span style={{ opacity: 0.75 }}>

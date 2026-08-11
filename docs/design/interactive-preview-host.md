@@ -80,6 +80,11 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   so horizontal widgets (Tabs) bake correct multi-step graphs.
 - **Composite tour:** `agent-workbench/basic` packs multi-scene workbench stories
   (`tool-running`, `permission`, `plan`, `diff`, `session`) as interactive steps.
+- **Variant tour (auto):** when a primary story has no keyboard interactor but the
+  component has multiple lookbook stories, `resolve_export_tour` bakes up to 6
+  sibling paints (narrow/unicode/empty/…) into one pack — one Ghostty surface
+  cycles states instead of N static screens. Key-driven interactors still use
+  ArrowDown/Right step graphs.
 
 ## Size packs
 

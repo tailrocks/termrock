@@ -340,8 +340,8 @@ fn cmd_export_frames(
     mut args: impl Iterator<Item = std::ffi::OsString>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use frame::{
-        PreviewKey, composite_tour_stories, paint_story_after_keys, paint_story_frame,
-        preferred_step_key, story_by_id,
+        PreviewKey, paint_story_after_keys, paint_story_frame, preferred_step_key,
+        resolve_export_tour, story_by_id,
     };
     use std::fs;
     let usage =
@@ -411,10 +411,15 @@ fn cmd_export_frames(
     let total = ids.len();
     for (index, id) in ids.into_iter().enumerate() {
         let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
-        let tour = composite_tour_stories(&id);
-        let step_key = preferred_step_key(story);
+        // Fixed composite tours, auto variant tours for static components, or key steps.
+        let tour = resolve_export_tour(&id);
+        let step_key = if tour.is_some() {
+            None
+        } else {
+            preferred_step_key(story)
+        };
         let interactive = tour.is_some() || step_key.is_some();
-        let steps = if let Some(tour) = tour {
+        let steps = if let Some(ref tour) = tour {
             tour.len() as u32
         } else if step_key.is_some() {
             6
@@ -430,7 +435,7 @@ fn cmd_export_frames(
             size_keys.push(size_key.clone());
             let size_dir = pack.join(&size_key);
             fs::create_dir_all(&size_dir)?;
-            if let Some(tour) = tour {
+            if let Some(ref tour) = tour {
                 for (step, story_id) in tour.iter().enumerate() {
                     let step_story =
                         story_by_id(story_id).ok_or_else(|| format!("unknown tour story: {story_id}"))?;
@@ -438,6 +443,7 @@ fn cmd_export_frames(
                     // Force interactive flag so hosts enable input for tour packs.
                     let mut f = f;
                     f.interactive = true;
+                    // Keep pack id stable; paint title comes from the scene story.
                     f.story_id = id.clone();
                     write_frame_json(size_dir.join(format!("{step}.json")), &f)?;
                 }
