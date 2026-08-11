@@ -97,3 +97,26 @@ export function shouldAcceptKeyEvent(
   if (last && last.key === key && nowMs - last.t < windowMs) return false
   return true
 }
+
+/**
+ * Ghostty-style block cursor cell for interactive previews.
+ * Maps selection/tour step onto the padded body row (list/tour demos).
+ */
+export function cursorCellForStep(
+  step: number,
+  pad: number,
+  cols: number,
+  rows: number,
+): { x: number; y: number } {
+  const p = Math.max(0, pad | 0)
+  const c = Math.max(1, cols | 0)
+  const r = Math.max(1, rows | 0)
+  const maxY = Math.max(0, r - 1)
+  const bodyMax = Math.max(p, maxY - p)
+  const y = Math.min(bodyMax, Math.max(p, p + Math.max(0, step | 0)))
+  const x = Math.min(c - 1, p)
+  return { x, y }
+}
+
+/** Phosphor block-cursor fill used when the preview host is focused. */
+export const CURSOR_BLOCK_RGB: [number, number, number] = [0x00, 0xff, 0x41]

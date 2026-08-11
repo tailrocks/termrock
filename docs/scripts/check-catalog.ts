@@ -183,9 +183,21 @@ for await (const name of new Bun.Glob('*.mdx').scan({ cwd: `${docsDir}/component
   }
 }
 
-// Handbook / other docs: at most one TerminalPreview per mdx file (one focus).
+// Handbook widget pages: exactly one Ghostty TerminalPreview (no SVG galleries).
+for await (const name of new Bun.Glob('*.mdx').scan({ cwd: `${docsDir}/handbook` })) {
+  if (name === 'index.mdx') continue
+  const body = await Bun.file(`${docsDir}/handbook/${name}`).text()
+  const n = (body.match(/<TerminalPreview\b/g) ?? []).length
+  if (n !== 1) {
+    throw new Error(
+      `handbook/${name} must embed exactly one TerminalPreview (found ${n}); Ghostty-only, never SVG`,
+    )
+  }
+}
+
+// Other non-component docs: at most one TerminalPreview per mdx file (one focus).
 for (const [name, body] of pageBodies) {
-  if (name.startsWith('components/')) continue
+  if (name.startsWith('components/') || name.startsWith('handbook/')) continue
   const n = (body.match(/<TerminalPreview\b/g) ?? []).length
   if (n > 1) {
     throw new Error(`${name} embeds ${n} TerminalPreview surfaces; max one focus per page`)

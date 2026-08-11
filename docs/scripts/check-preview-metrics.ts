@@ -7,6 +7,7 @@ import {
   allSteps,
   baselineForCell,
   clampStep,
+  cursorCellForStep,
   fontSizeForCell,
   glyphCellSpan,
   glyphDrawX,
@@ -65,5 +66,12 @@ assert(
   shouldAcceptKeyEvent('ArrowUp', 105, { key: 'ArrowDown', t: 100 }),
   'different key ok',
 )
+
+const c0 = cursorCellForStep(0, 1, 42, 10)
+assert(c0.x === 1 && c0.y === 1, `cursor step0 pad1 → (1,1) got ${c0.x},${c0.y}`)
+const c3 = cursorCellForStep(3, 1, 42, 10)
+assert(c3.y === 4, `cursor step3 pad1 → y=4 got ${c3.y}`)
+const cHi = cursorCellForStep(99, 1, 42, 10)
+assert(cHi.y === 8, `cursor clamp bottom got ${cHi.y}`)
 
 console.log('preview-metrics: ok')

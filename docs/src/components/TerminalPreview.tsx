@@ -13,11 +13,13 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from 'react'
 import {
+  CURSOR_BLOCK_RGB,
   PREVIEW_MONO_STACK,
   adjacentSteps,
   allSteps,
   baselineForCell,
   clampStep,
+  cursorCellForStep,
   fontSizeForCell,
   glyphCellSpan,
   glyphDrawX,
@@ -28,11 +30,13 @@ import {
 } from '@/components/preview-metrics'
 
 export {
+  CURSOR_BLOCK_RGB,
   PREVIEW_MONO_STACK,
   adjacentSteps,
   allSteps,
   baselineForCell,
   clampStep,
+  cursorCellForStep,
   fontSizeForCell,
   glyphCellSpan,
   glyphDrawX,
@@ -161,10 +165,18 @@ async function loadJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+export type PaintCursor = {
+  x: number
+  y: number
+  /** When false, cursor is in the off phase of blink. */
+  on: boolean
+}
+
 /**
  * Ghostty-class cell paint: full 24-bit RGB bg+fg, monospaced metrics, no smoothing.
  * Always fills every cell background (including pure black) so truecolor is preserved.
  * Glyphs are centered in-cell when the mono advance fits (terminal-grid feel).
+ * Optional block cursor overlays the active selection row when the host is focused.
  */
 export function paintCanvas(
   canvas: HTMLCanvasElement,
@@ -172,6 +184,7 @@ export function paintCanvas(
   cellW: number,
   cellH: number,
   dpr: number,
+  cursor?: PaintCursor | null,
 ) {
   const w = frame.cols * cellW
   const h = frame.rows * cellH
@@ -181,6 +194,8 @@ export function paintCanvas(
   canvas.style.width = `${w}px`
   canvas.style.height = `${h}px`
   canvas.style.maxWidth = 'none'
+  canvas.style.imageRendering = 'pixelated'
+  canvas.style.fontFeatureSettings = '"liga" 0, "calt" 0'
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -237,6 +252,27 @@ export function paintCanvas(
       }
     }
   }
+  // Block cursor (Ghostty default): solid phosphor cell when blink-on.
+  if (cursor?.on) {
+    const cx = Math.max(0, Math.min(frame.cols - 1, cursor.x | 0))
+    const cy = Math.max(0, Math.min(frame.rows - 1, cursor.y | 0))
+    const px = cx * cellW
+    const py = cy * cellH
+    const under = frame.cells[cy * frame.cols + cx]
+    ctx.fillStyle = rgb(CURSOR_BLOCK_RGB)
+    ctx.globalAlpha = 0.92
+    ctx.fillRect(px, py, cellW, cellH)
+    ctx.globalAlpha = 1
+    // Invert glyph under cursor when present.
+    if (under?.ch && under.ch !== ' ' && under.ch !== '\u00a0') {
+      const weight = under.bold ? '600' : '400'
+      ctx.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
+      ctx.fillStyle = '#0a0a0a'
+      ctx.textBaseline = 'alphabetic'
+      const tw = ctx.measureText(under.ch).width
+      ctx.fillText(under.ch, glyphDrawX(px, cellW, tw), py + baseline)
+    }
+  }
 }
 
 export type TerminalPreviewProps = {
@@ -269,6 +305,7 @@ export function TerminalPreview({
   const [focused, setFocused] = useState(false)
   const [caretOn, setCaretOn] = useState(true)
   const [stepPulse, setStepPulse] = useState(0)
+  const [loading, setLoading] = useState(false)
   const labelId = useId()
   const stepRef = useRef(0)
   const sizeKeyRef = useRef(sizeKey)
@@ -336,6 +373,9 @@ export function TerminalPreview({
       const reqId = ++loadGenRef.current
       try {
         const next = clampStep(n, maxStepRef.current)
+        const key = cacheKey(size, next)
+        const warm = frameCacheRef.current.has(key)
+        if (!warm) setLoading(true)
         const f = await fetchFrame(size, next)
         // Drop stale responses so rapid nav never rewinds the visible step.
         if (!isLoadStillCurrent(reqId, loadGenRef.current)) return
@@ -343,11 +383,13 @@ export function TerminalPreview({
         setStep(next)
         setSizeKey(size)
         setError(null)
+        setLoading(false)
         setStepPulse((p) => p + 1)
         prefetchAdjacent(size, next)
         prefetchSizePack(size)
       } catch (e) {
         if (!isLoadStillCurrent(reqId, loadGenRef.current)) return
+        setLoading(false)
         setError(e instanceof Error ? e.message : String(e))
       }
     },
@@ -380,14 +422,22 @@ export function TerminalPreview({
 
   // Paint after JetBrains Mono is ready so advances match Ghostty mono metrics
   // (first paint may use fallback mono; fonts.ready triggers a true repaint).
+  // Cursor blink re-enters this effect via caretOn.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || !frame) return
     let cancelled = false
+    const cursor =
+      focused && canInteract
+        ? {
+            ...cursorCellForStep(step, PAD, frame.cols, frame.rows),
+            on: caretOn,
+          }
+        : null
     const paint = () => {
       if (cancelled) return
       const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-      paintCanvas(canvas, frame, cellW, cellH, dpr)
+      paintCanvas(canvas, frame, cellW, cellH, dpr, cursor)
     }
     paint()
     const fonts = typeof document !== 'undefined' ? document.fonts : undefined
@@ -405,7 +455,7 @@ export function TerminalPreview({
     return () => {
       cancelled = true
     }
-  }, [frame, cellW, cellH])
+  }, [frame, cellW, cellH, focused, canInteract, step, caretOn])
 
   // Ghostty-style caret blink while focused (visual only; selection is frame-backed).
   useEffect(() => {
@@ -671,6 +721,12 @@ export function TerminalPreview({
       data-preview-scene={sceneId}
       data-preview-tour={tour && tour.length > 1 ? 'true' : 'false'}
       data-preview-pulse={String(stepPulse)}
+      data-preview-loading={loading ? 'true' : 'false'}
+      data-preview-cursor={
+        focused && canInteract && frame
+          ? `${cursorCellForStep(step, PAD, frame.cols, frame.rows).x},${cursorCellForStep(step, PAD, frame.cols, frame.rows).y}`
+          : ''
+      }
     >
       <div
         ref={hostRef}
@@ -790,11 +846,13 @@ export function TerminalPreview({
         </div>
         <div style={statusBar} data-termrock-status="1">
           <span style={{ color: canInteract ? '#39ff14' : '#6a7a6a' }}>
-            {canInteract
-              ? tour && tour.length > 1
-                ? '● state tour'
-                : '● live pack'
-              : '○ snapshot'}
+            {loading
+              ? '… loading'
+              : canInteract
+                ? tour && tour.length > 1
+                  ? '● state tour'
+                  : '● live pack'
+                : '○ snapshot'}
           </span>
           <span>{stepLabel}</span>
           {tour && tour.length > 1 ? (

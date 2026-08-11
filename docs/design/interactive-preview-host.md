@@ -100,6 +100,10 @@ Repeatable export: `mise run export-preview-frames` (or `termrock-lookbook expor
   window (`shouldAcceptKeyEvent`) so one ArrowDown advances one step, not two.
 - **Resize warm:** ResizeObserver speculatively prefetches the pending size pack
   before the 50ms debounce applies the remap.
+- **Block cursor:** when focused, a blinking phosphor block tracks the active
+  step row (pad + step) so the surface reads like a live Ghostty caret, not a
+  static screenshot. Ligatures disabled on canvas for terminal-true metrics.
+- **Loading:** uncached pack fetches set `data-preview-loading` + status “loading”.
 
 ## Size packs
 
