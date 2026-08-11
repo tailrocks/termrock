@@ -2634,16 +2634,118 @@ mod tests {
 
     #[test]
     fn sparkline_autoscale_raw_and_selected() {
-        let system = system();
+        let system = system_ascii_nocolor();
+        // Values span domain; threshold equals a sample so band mark paints.
         let samples = [10.0, 20.0, 40.0, f64::NAN, 30.0];
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 1));
+        let area = Rect::new(0, 0, 10, 1);
+        let mut plain = Buffer::empty(area);
         Sparkline::new(&samples, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .threshold(20.0)
+            .render(area, &mut plain);
+        let mut selected = Buffer::empty(area);
+        Sparkline::new(&samples, &system)
+            .glyphs(VizGlyphSet::Ascii)
             .selected(1)
-            .threshold(25.0)
-            .render(Rect::new(0, 0, 10, 1), &mut buffer);
-        // selected glyph present somewhere
-        let text: String = buffer.content().iter().map(|c| c.symbol().to_string()).collect();
-        assert!(text.contains('◆') || text.contains('X') || !text.trim().is_empty());
+            .threshold(20.0)
+            .render(area, &mut selected);
+        let plain_s: String = (0..10u16)
+            .map(|x| plain[(x, 0)].symbol().to_string())
+            .collect();
+        let sel_s: String = (0..10u16)
+            .map(|x| selected[(x, 0)].symbol().to_string())
+            .collect();
+        assert_ne!(
+            plain_s, sel_s,
+            "selection must change sparkline paint: plain={plain_s:?} sel={sel_s:?}"
+        );
+        // ASCII selected uses X
+        assert!(
+            sel_s.contains('X'),
+            "selected sample highlight X: {sel_s:?}"
+        );
+        // Sample index 1 maps to cols — selection overrides threshold glyph there;
+        // unselected path still paints threshold mark at samples near 20.
+        let tick = VizGlyphSet::Ascii.threshold_mark();
+        assert!(
+            plain_s.contains(tick),
+            "threshold mark on unselected sparkline: plain={plain_s:?}"
+        );
+    }
+
+    #[test]
+    fn chart_selection_changes_paint_vs_unselected() {
+        let system = system_ascii_nocolor();
+        let a = [1.0, 2.0, 5.0, 2.0, 1.0];
+        let series = [ChartSeries::new("s", &a)];
+        let area = Rect::new(0, 0, 28, 6);
+        let mut plain = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .render(area, &mut plain);
+        let mut selected = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .selected_series(0)
+            .selected_index(2)
+            .render(area, &mut selected);
+        let cell = |buf: &Buffer| -> String {
+            let mut s = String::new();
+            for y in 0..6u16 {
+                for x in 0..28u16 {
+                    s.push_str(buf[(x, y)].symbol());
+                }
+                s.push('\n');
+            }
+            s
+        };
+        let plain_s = cell(&plain);
+        let sel_s = cell(&selected);
+        assert_ne!(
+            plain_s, sel_s,
+            "selected_index must change chart paint vs unselected"
+        );
+        assert!(
+            sel_s.contains('X'),
+            "ASCII selection highlight X: {sel_s}"
+        );
+        assert!(
+            !plain_s.contains('X'),
+            "unselected chart must not paint X highlight: {plain_s}"
+        );
+    }
+
+    #[test]
+    fn chart_threshold_indicator_line_paints() {
+        let system = system_ascii_nocolor();
+        let a = [0.0, 10.0, 20.0, 30.0, 40.0];
+        let series = [ChartSeries::new("s", &a)];
+        let thr = [20.0];
+        let area = Rect::new(0, 0, 30, 8);
+        let mut buffer = Buffer::empty(area);
+        Chart::new(&series, &system)
+            .glyphs(VizGlyphSet::Ascii)
+            .show_legend(false)
+            .show_axes(false)
+            .thresholds(&thr)
+            .render(area, &mut buffer);
+        let tick = VizGlyphSet::Ascii.threshold_mark();
+        // Horizontal indicator: many threshold marks on one plot row
+        let mut max_row_ticks = 0usize;
+        for y in 0..8u16 {
+            let n = (0..30u16)
+                .filter(|&x| buffer[(x, y)].symbol().contains(tick))
+                .count();
+            max_row_ticks = max_row_ticks.max(n);
+        }
+        assert!(
+            max_row_ticks >= 8,
+            "threshold indicator line must span plot (got max_row_ticks={max_row_ticks})"
+        );
     }
 
     #[test]

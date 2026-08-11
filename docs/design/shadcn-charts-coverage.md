@@ -78,24 +78,25 @@
 | 58 | chart-radial-text | covered | `Gauge` unit/label | |
 | 59 | chart-radial-shape | partial | glyph fill | Custom SVG shapes N/A |
 | 60 | chart-radial-stacked | covered | `SegmentedMeter` | Stacked part-to-whole |
-| 61 | chart-tooltip-default | covered | `selected_index` highlight | Keyboard focus peer |
-| 62 | chart-tooltip-indicator-line | partial | threshold lines | |
+| 61 | chart-tooltip-default | covered | `selected_series` + `selected_index` | Keyboard focus peer |
+| 62 | chart-tooltip-indicator-line | covered | `Chart::thresholds` / sparkline threshold | Indicator line |
 | 63 | chart-tooltip-indicator-none | covered | selection only | |
 | 64 | chart-tooltip-label-none | covered | selection | |
 | 65 | chart-tooltip-label-formatter | partial | host formats | |
-| 66 | chart-tooltip-formatter | partial | host | |
-| 67 | chart-tooltip-icons | partial | markers | |
-| 68 | chart-tooltip-advanced | partial | host overlay | No hover DOM |
+| 66 | chart-tooltip-label-custom | partial | host label keys | Registry id locked |
+| 67 | chart-tooltip-formatter | partial | host | |
+| 68 | chart-tooltip-icons | partial | series markers | |
+| 69 | chart-tooltip-advanced | partial | host overlay | No hover DOM |
 
 ## Counts
 
 | Status | Count |
 |--------|------:|
-| covered | 41 |
+| covered | 42 |
 | partial | 20 |
 | missing | 0 |
 | N/A | 7 |
-| **Total** | **68** |
+| **Total** | **69** |
 
 ## Port decisions (0252–0256)
 
@@ -107,6 +108,7 @@
 | Pie proportions | `SegmentedMeter` + selection/center (0255) |
 | Radial progress | `Gauge` + `BarSeries` multi-category + `SegmentedMeter` stacked; polar rings **N/A** (see `shadcn-radial-charts-coverage.md`) |
 | Radar multi-metric | `MetricRadar` axes×series grouped bars (0256); polar grid **N/A** |
+| Tooltip / hover | Keyboard `selected_*` highlight + threshold indicator lines; floating DOM **N/A** (see `shadcn-tooltip-charts-coverage.md`) |
 | Continuous gradient | N/A |
 
 ## Validation
