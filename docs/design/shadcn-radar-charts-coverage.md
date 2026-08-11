@@ -1,7 +1,7 @@
 # shadcn/ui radar charts → TermRock TUI coverage
 
 **Source:** [ui.shadcn.com/charts/radar](https://ui.shadcn.com/charts/radar)  
-**Locked crawl:** 2026-08 (registry-style `chart-radar-*`; live fetch may be SSRF-blocked).
+**Locked crawl:** 2026-08-11 live page + registry (HTTP 200). Page lists **12** `chart-radar-*` demos; registry also serves **`chart-radar-icons`** (200) → **13** locked ids. Registry spelling: `chart-radar-grid-circle-no-lines` (not `…-nofill`, 404).
 
 **TermRock surface:** `MetricRadar` / `MetricAxis` / `MetricSeries` (migration **0256**). Multi-axis comparison as **grouped horizontal bars per metric** — not polar SVG radar.
 
@@ -25,12 +25,12 @@
 | 5 | chart-radar-grid-none | N/A | — | Polar grid chrome not ported |
 | 6 | chart-radar-grid-circle | N/A | — | Circular grid N/A |
 | 7 | chart-radar-grid-circle-fill | N/A | — | Filled circular grid N/A |
-| 8 | chart-radar-grid-circle-nofill | N/A | — | Circle outline N/A |
+| 8 | chart-radar-grid-circle-no-lines | N/A | — | Registry spelling (was nofill 404) |
 | 9 | chart-radar-grid-fill | N/A | — | Polar fill N/A |
 | 10 | chart-radar-grid-custom | N/A | — | Custom polar grid N/A |
 | 11 | chart-radar-multiple | covered | multi `MetricSeries` | Grouped bar slots per series |
 | 12 | chart-radar-legend | covered | `.show_legend(true)` default | Marker + label row |
-| 13 | chart-radar-icons | partial | series markers as icon peer | React icon components N/A |
+| 13 | chart-radar-icons | partial | series markers as icon peer | On registry (200); React icons N/A |
 
 ## Counts
 

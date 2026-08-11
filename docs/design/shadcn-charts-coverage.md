@@ -66,12 +66,12 @@
 | 46 | chart-radar-grid-none | N/A | — | Polar grid chrome N/A |
 | 47 | chart-radar-grid-circle | N/A | — | |
 | 48 | chart-radar-grid-circle-fill | N/A | — | |
-| 49 | chart-radar-grid-circle-nofill | N/A | — | |
+| 49 | chart-radar-grid-circle-no-lines | N/A | — | Registry id (not nofill) |
 | 50 | chart-radar-grid-fill | N/A | — | |
 | 51 | chart-radar-grid-custom | N/A | — | |
 | 52 | chart-radar-multiple | covered | multi `MetricSeries` | |
 | 53 | chart-radar-legend | covered | `.show_legend` | |
-| 54 | chart-radar-icons | partial | series markers | React icons N/A |
+| 54 | chart-radar-icons | partial | series markers | Registry 200; React icons N/A |
 | 55 | chart-radial-simple | covered | `Gauge` | |
 | 56 | chart-radial-label | covered | gauge label | |
 | 57 | chart-radial-grid | partial | thresholds | |
