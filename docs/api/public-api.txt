@@ -24588,6 +24588,7 @@ pub const fn termrock::patterns::SubagentCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::SubagentCard<'a>::new(&'a termrock::patterns::SubagentRun, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::SubagentCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SubagentCardState)
 pub fn termrock::patterns::SubagentCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SubagentCardState)
+pub const fn termrock::patterns::SubagentCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::SubagentCard<'a>
 pub fn termrock::patterns::SubagentCard<'a>::clone(&self) -> termrock::patterns::SubagentCard<'a>
 impl<'a> core::fmt::Debug for termrock::patterns::SubagentCard<'a>
@@ -25002,6 +25003,7 @@ pub const fn termrock::patterns::TerminalRunCard<'a>::colorless(self, bool) -> S
 pub const fn termrock::patterns::TerminalRunCard<'a>::new(&'a termrock::patterns::TerminalRun, &'a [termrock::widgets::TerminalLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::TerminalRunCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TerminalRunCardState)
 pub fn termrock::patterns::TerminalRunCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TerminalRunCardState)
+pub const fn termrock::patterns::TerminalRunCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::TerminalRunCard<'a>
 pub fn termrock::patterns::TerminalRunCard<'a>::clone(&self) -> termrock::patterns::TerminalRunCard<'a>
 impl<'a> core::fmt::Debug for termrock::patterns::TerminalRunCard<'a>
@@ -25347,6 +25349,7 @@ pub const fn termrock::patterns::WorkingStateCard<'a>::ascii(self, bool) -> Self
 pub const fn termrock::patterns::WorkingStateCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::WorkingStateCard<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::WorkingStateCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::WorkingStateCardState)
+pub const fn termrock::patterns::WorkingStateCard<'a>::tick(self, u64) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::patterns::WorkingStateCard<'_>
 pub type &termrock::patterns::WorkingStateCard<'_>::State = termrock::patterns::WorkingStateCardState
 pub fn &termrock::patterns::WorkingStateCard<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)

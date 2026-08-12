@@ -36,10 +36,10 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::activity_shelf::{ActivityItem, ActivityKind},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
     widgets::SemanticStatus,
+    widgets::{AccentRail, Panel},
 };
 
 /// Overlay id when host promotes expanded work card.
@@ -720,6 +720,7 @@ pub struct WorkingStateCard<'a> {
     system: &'a DesignSystem,
     ascii: bool,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> WorkingStateCard<'a> {
@@ -730,6 +731,7 @@ impl<'a> WorkingStateCard<'a> {
             system,
             ascii: false,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -744,6 +746,13 @@ impl<'a> WorkingStateCard<'a> {
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
+        self
+    }
+
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
         self
     }
 
@@ -792,8 +801,14 @@ impl<'a> WorkingStateCard<'a> {
         } else {
             self.system.style(work.phase.role())
         };
-        let mark = if self.ascii { ">" } else { "▸" };
-        let text = format!("{mark}{line}");
+        let mark = if matches!(work.phase, WorkingPhase::Waiting) {
+            if self.ascii { "!" } else { "●" }
+        } else if self.ascii || !matches!(self.system.motion, Motion::Full) {
+            if self.ascii { "." } else { "●" }
+        } else {
+            SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
+        };
+        let text = format!("{mark} {line}");
         buffer.set_stringn(area.x, area.y, take_display_cols(&text, w), w, style);
         state.header_hit = Some(Rect {
             x: area.x,
@@ -812,6 +827,10 @@ impl<'a> WorkingStateCard<'a> {
     ) {
         // Title avoids “thinking” — status chrome only
         let title = format!("Working · {}", work.phase.label());
+        let rail = AccentRail::new(self.system, Role::ActorAssistant)
+            .active(!matches!(work.phase, WorkingPhase::Waiting))
+            .tick(self.tick);
+        let content_area = rail.paint(area, buffer);
         let panel = Panel::new(self.system)
             .title(title.as_str())
             .emphasis(if state.focused {
@@ -819,9 +838,9 @@ impl<'a> WorkingStateCard<'a> {
             } else {
                 PanelChrome::Normal
             });
-        let inner = panel.inner(area);
+        let inner = panel.inner(content_area);
         use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        Widget::render(&panel, content_area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1234,6 +1253,21 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(!text.to_ascii_lowercase().contains("thinking"), "{text}");
+    }
+
+    #[test]
+    fn reduced_motion_running_presence_is_tick_static() {
+        let system = DesignSystem::default().motion(Motion::Reduced);
+        let render = |tick| {
+            let area = Rect::new(0, 0, 48, 10);
+            let mut buffer = Buffer::empty(area);
+            let mut state = open();
+            WorkingStateCard::new(&system)
+                .tick(tick)
+                .paint(area, &mut buffer, &mut state);
+            buffer
+        };
+        assert_eq!(render(0), render(19));
     }
 
     #[test]

@@ -258,3 +258,7 @@ paint tests on the widget's existing test module.
   removing light mode would contradict the docs design SoT. Splitting the
   shared CSS tokens into Rust-paper-equivalent `:root` values and phosphor
   `.dark` values is cross-surface, minimal, and keeps both themes readable.
+- 2026-08-12: Allocated migration 0271 to the three pattern-card defaults in
+  Step 3. They share one public visual vocabulary and ship in one independently
+  green slice; documenting them together is narrower than three redundant
+  migrations while remaining historically exact.

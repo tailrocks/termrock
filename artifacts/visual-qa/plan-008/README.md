@@ -38,3 +38,33 @@ Evidence: [desktop](tool-call-card-desktop-1440x900.png),
 [paper + reduced motion](tool-call-card-paper-reduced-motion-1440x900.png),
 [mobile](tool-call-card-mobile-375x812.png), and
 [tablet](tool-call-card-tablet-768x1024.png).
+
+## Agent pattern-card presence
+
+Validated SubagentCard, TerminalRunCard, and WorkingStateCard handbook pages
+with `agent-browser` at 375×812, 768×1024, and 1440×900 plus paper/reduced-
+motion desktop. Each preview accepted keyboard scene navigation, remapped its
+terminal grid at narrow widths, retained wide content inside the preview, and
+kept page overflow at zero. Clean consoles and networks reported no failures.
+
+Designer verdict — SubagentCard: **pass** — role/task is the focal line;
+provenance and context recede cleanly; the assistant rail separates nested work
+without extra chrome. Evidence: [desktop](subagent-card-desktop-1440x900.png),
+[paper](subagent-card-paper-reduced-motion-1440x900.png),
+[mobile](subagent-card-mobile-375x812.png),
+[tablet](subagent-card-tablet-768x1024.png).
+
+Designer verdict — TerminalRunCard: **pass** — command identity leads, execution
+metadata forms a restrained second tier, and the tool rail plus terminal well
+make streaming output unmistakable. Evidence:
+[desktop](terminal-run-card-desktop-1440x900.png),
+[paper](terminal-run-card-paper-reduced-motion-1440x900.png),
+[mobile](terminal-run-card-mobile-375x812.png),
+[tablet](terminal-run-card-tablet-768x1024.png).
+
+Designer verdict — WorkingStateCard: **pass** — phase/progress leads, public
+summary and resources follow a compact rhythm, and actions stay quiet until
+focus. Evidence: [desktop](working-state-card-desktop-1440x900.png),
+[paper](working-state-card-paper-reduced-motion-1440x900.png),
+[mobile](working-state-card-mobile-375x812.png),
+[tablet](working-state-card-tablet-768x1024.png).

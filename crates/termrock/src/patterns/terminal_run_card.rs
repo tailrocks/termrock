@@ -25,10 +25,10 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{
-        Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
+        AccentRail, Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
         TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
         TerminalRunStatus, ToolCall, ToolRisk, ToolStatus, escape_raw_terminal,
         filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
@@ -837,6 +837,7 @@ pub struct TerminalRunCard<'a> {
     system: &'a DesignSystem,
     ascii: bool,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> TerminalRunCard<'a> {
@@ -853,6 +854,7 @@ impl<'a> TerminalRunCard<'a> {
             system,
             ascii: false,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -867,6 +869,13 @@ impl<'a> TerminalRunCard<'a> {
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
+        self
+    }
+
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
         self
     }
 
@@ -886,6 +895,41 @@ impl<'a> TerminalRunCard<'a> {
             .set_accepts_input(state.accepts_input && state.focused);
 
         let phase = run.phase();
+        if matches!(state.presentation, TerminalRunPresentation::Compact) {
+            let running = matches!(run.status, TerminalRunStatus::Running);
+            let marker = if running {
+                if ascii || !matches!(self.system.motion, Motion::Full) {
+                    if ascii { "." } else { "●" }
+                } else {
+                    SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
+                }
+            } else {
+                run.status.glyph(ascii || colorless)
+            };
+            let line = format!(
+                "{marker} {} ({})",
+                run.display_command(),
+                run.status.label()
+            );
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(&line, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(if colorless {
+                    Role::Text
+                } else {
+                    run.status.role()
+                }),
+            );
+            state.header_hit = Rect::new(area.x, area.y, area.width, 1);
+            return;
+        }
+        let active = matches!(run.status, TerminalRunStatus::Running);
+        let rail = AccentRail::new(self.system, Role::ActorTool)
+            .active(active)
+            .tick(self.tick);
+        let content_area = rail.paint(area, buffer);
         let mut title = take_display_cols(run.display_command(), 40);
         if ascii {
             title = format!("{} {title}", run.status.glyph(true));
@@ -928,7 +972,7 @@ impl<'a> TerminalRunCard<'a> {
             .badge(badge)
             .subtitle(subtitle.as_str())
             .emphasis(emphasis);
-        let body = card.paint(area, buffer, None);
+        let body = card.paint(content_area, buffer, None);
         state.header_hit = Rect {
             x: area.x,
             y: area.y,
@@ -1291,6 +1335,26 @@ mod tests {
             st.presentation = TerminalRunPresentation::Expanded;
             TerminalRunCard::new(&run, &ansi_lines, &system).paint(area, &mut buf, &mut st);
         }
+    }
+
+    #[test]
+    fn reduced_motion_running_presence_is_tick_static() {
+        let system = DesignSystem::default().motion(Motion::Reduced);
+        let run = TerminalRun::new("r", "cargo test")
+            .execute("cargo test")
+            .status(TerminalRunStatus::Running);
+        let lines = example_terminal_run_lines();
+        let render = |tick| {
+            let area = Rect::new(0, 0, 48, 10);
+            let mut buffer = Buffer::empty(area);
+            let mut state = TerminalRunCardState::new();
+            state.presentation = TerminalRunPresentation::Expanded;
+            TerminalRunCard::new(&run, &lines, &system)
+                .tick(tick)
+                .paint(area, &mut buffer, &mut state);
+            buffer
+        };
+        assert_eq!(render(0), render(19));
     }
 
     #[test]

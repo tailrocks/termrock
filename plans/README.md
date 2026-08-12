@@ -56,6 +56,7 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 008: allocated migration 0269 at the breaking Transcript slice; later breaking slices advance sequentially.
 - 2026-08-12 — Plan 008: allocated migration 0270 to ToolCallCard; each independently shipped visual default now gets its own historical boundary.
 - 2026-08-12 — Plan 008: browser QA exposed forced-dark docs tokens in light mode; scope now includes the shared paper/phosphor CSS split.
+- 2026-08-12 — Plan 008: allocated migration 0271 to the unified Subagent/TerminalRun/WorkingState presence vocabulary.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

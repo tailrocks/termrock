@@ -18763,7 +18763,7 @@ fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     state.set_work(Some(example_working_state()));
     state.presentation = WorkingStatePresentation::Expanded;
     state.focused = true;
-    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+    frame.render_stateful_widget(&WorkingStateCard::new(system).tick(3), area, &mut state);
 }
 
 fn working_state_card_waiting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20930,7 +20930,9 @@ fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &D
     st.focused = true;
     st.presentation = TerminalRunPresentation::Expanded;
     st.on_append(lines.len() as u16, 8);
-    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
+    TerminalRunCard::new(run, &lines, system)
+        .tick(3)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23058,7 +23060,9 @@ fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let mut st = SubagentCardState::new();
     st.focused = true;
     st.presentation = SubagentPresentation::Card;
-    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+    SubagentCard::new(run, system)
+        .tick(3)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
