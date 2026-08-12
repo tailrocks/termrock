@@ -6,6 +6,7 @@
 mod center;
 mod dialog;
 mod grid;
+mod panel_stack;
 mod responsive;
 mod stack;
 mod work_surface;
@@ -25,6 +26,7 @@ pub use grid::{
     grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns,
     settings_grid_template,
 };
+pub use panel_stack::{PanelStackBlock, panel_stack};
 pub use responsive::{
     AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
     OverflowAction, OverflowBehavior, ResponsiveRecipe, ResponsiveSnapshot, ResponsiveSurface,
@@ -58,6 +60,8 @@ pub struct DialogSpec {
     pub min_width: u16,
     /// Preferred width in terminal cells.
     pub preferred_width: u16,
+    /// Optional preferred width as a percentage of a 160-column reference.
+    pub preferred_reference_pct: Option<u16>,
     /// Max width in terminal cells.
     pub max_width: u16,
     /// Min height in terminal rows.
@@ -74,13 +78,28 @@ pub struct DialogSpec {
     pub placement: Placement,
 }
 
+impl DialogSpec {
+    /// Uses a stable percentage of a virtual 160-column terminal.
+    #[must_use]
+    pub const fn preferred_pct_of_reference(mut self, pct: u16) -> Self {
+        self.preferred_reference_pct = Some(if pct > 100 { 100 } else { pct });
+        self
+    }
+}
+
+/// Reference width used by stable dialog sizing.
+pub const REFERENCE_COLS: u16 = 160;
+
 /// Resolve a dialog specification inside `outer` without assuming a rendering backend.
 #[must_use]
 pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
     let available_width = outer.width.saturating_sub(spec.horizontal_margin);
     let available_height = outer.height.saturating_sub(spec.vertical_margin);
-    let width = spec
-        .preferred_width
+    let preferred_width = match spec.preferred_reference_pct {
+        Some(pct) => REFERENCE_COLS.saturating_mul(pct) / 100,
+        None => spec.preferred_width,
+    };
+    let width = preferred_width
         .clamp(spec.min_width, spec.max_width.max(spec.min_width))
         .min(available_width.max(spec.min_width));
     let height = spec
@@ -175,6 +194,7 @@ mod tests {
             DialogSpec {
                 min_width: 40,
                 preferred_width: 60,
+                preferred_reference_pct: None,
                 max_width: 80,
                 min_height: 8,
                 preferred_height: 20,
@@ -194,6 +214,7 @@ mod tests {
             DialogSpec {
                 min_width: 8,
                 preferred_width: 12,
+                preferred_reference_pct: None,
                 max_width: 16,
                 min_height: 4,
                 preferred_height: 6,
@@ -213,6 +234,7 @@ mod tests {
             DialogSpec {
                 min_width: 0,
                 preferred_width: 20,
+                preferred_reference_pct: None,
                 max_width: 20,
                 min_height: 0,
                 preferred_height: 10,
@@ -223,6 +245,27 @@ mod tests {
             },
         );
         assert_eq!(rect, Rect::new(2, 0, 16, 10));
+    }
+
+    #[test]
+    fn reference_width_stays_stable_until_clamped() {
+        let spec = DialogSpec {
+            min_width: 20,
+            preferred_width: 60,
+            preferred_reference_pct: None,
+            max_width: 100,
+            min_height: 4,
+            preferred_height: 8,
+            max_height: 12,
+            horizontal_margin: 0,
+            vertical_margin: 0,
+            placement: Placement::Centered,
+        }
+        .preferred_pct_of_reference(50);
+        for width in [200, 160, 120, 80] {
+            assert_eq!(resolve_dialog(Rect::new(0, 0, width, 20), spec).width, 80);
+        }
+        assert_eq!(resolve_dialog(Rect::new(0, 0, 64, 20), spec).width, 64);
     }
 
     #[test]

@@ -34,6 +34,29 @@ use super::{ComposedRow, Selection, StickyRegion, Virtualizer};
 /// Default overscan when using virtualized tree windows.
 pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
 
+/// Semantic emphasis for a ready tree row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ToneTier {
+    /// Ordinary hierarchy content.
+    #[default]
+    Primary,
+    /// Live or currently changing content.
+    Live,
+    /// Subdued live content that remains distinguishable from ordinary text.
+    LiveDim,
+}
+
+impl ToneTier {
+    const fn role(self) -> Role {
+        match self {
+            Self::Primary => Role::Text,
+            Self::Live => Role::InfoStrong,
+            Self::LiveDim => Role::InfoDim,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 /// Loading, error, and lazy-child states associated with a tree node.
@@ -100,6 +123,8 @@ pub struct TreeNode<'a, Id> {
     pub enabled: bool,
     /// Optional loading, error, or lazy state.
     pub status: TreeNodeStatus,
+    /// Semantic emphasis for ready content.
+    pub tone: ToneTier,
     /// Parent id when known (enables filter ancestor retention without re-walk).
     pub parent: Option<Id>,
 }
@@ -122,6 +147,7 @@ impl<'a, Id> TreeNode<'a, Id> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: ToneTier::Primary,
             parent: None,
         }
     }
@@ -235,6 +261,13 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
+    /// Sets semantic emphasis for this row without hardcoded color.
+    #[must_use]
+    pub const fn tone(mut self, tone: ToneTier) -> Self {
+        self.tone = tone;
+        self
+    }
+
     /// Plain label for typeahead / filter.
     #[must_use]
     pub fn plain_label(&self) -> String {
@@ -330,6 +363,9 @@ pub struct TreeState<Id> {
     hovered: Option<Id>,
     offset: usize,
     viewport_height: usize,
+    h_offset: u16,
+    content_width: u16,
+    viewport_width: u16,
     follow_selection: bool,
     regions: Vec<HitRegion<Id>>,
     disclosure_regions: Vec<HitRegion<Id>>,
@@ -354,6 +390,9 @@ impl<Id> Default for TreeState<Id> {
             hovered: None,
             offset: 0,
             viewport_height: 0,
+            h_offset: 0,
+            content_width: 0,
+            viewport_width: 0,
             follow_selection: false,
             regions: Vec::new(),
             disclosure_regions: Vec::new(),
@@ -383,6 +422,9 @@ impl<Id> TreeState<Id> {
             hovered: None,
             offset: 0,
             viewport_height: 0,
+            h_offset: 0,
+            content_width: 0,
+            viewport_width: 0,
             follow_selection: true,
             regions: Vec::new(),
             disclosure_regions: Vec::new(),
@@ -413,6 +455,30 @@ impl<Id> TreeState<Id> {
     /// Returns the zero-based first visible node index.
     pub const fn offset(&self) -> usize {
         self.offset
+    }
+
+    /// Horizontal label offset in display columns.
+    #[must_use]
+    pub const fn h_offset(&self) -> u16 {
+        self.h_offset
+    }
+
+    /// Sets horizontal label scroll; clamped on the next paint.
+    pub fn set_h_offset(&mut self, offset: u16) {
+        self.h_offset = offset;
+    }
+
+    /// Scrolls the label region while disclosure and indentation remain pinned.
+    pub fn scroll_horizontal(&mut self, delta: i16) -> bool {
+        let max = self.content_width.saturating_sub(self.viewport_width);
+        let next = if delta >= 0 {
+            self.h_offset.saturating_add(delta as u16).min(max)
+        } else {
+            self.h_offset.saturating_sub((-delta) as u16)
+        };
+        let changed = next != self.h_offset;
+        self.h_offset = next;
+        changed
     }
 
     /// Selects the item with the supplied stable identity (active cursor).
@@ -1010,16 +1076,28 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: body.width.saturating_sub(u16::from(show_scrollbar)),
             height: body.height,
         };
+        let paint_offset = if state.virtual_total > 0 {
+            0
+        } else {
+            state.offset
+        };
+        state.content_width = self
+            .nodes
+            .iter()
+            .skip(paint_offset)
+            .take(usize::from(body.height))
+            .map(|node| u16::try_from(node.label.width()).unwrap_or(u16::MAX))
+            .max()
+            .unwrap_or(0);
+        state.viewport_width = content_area.width.saturating_sub(4);
+        state.h_offset = state
+            .h_offset
+            .min(state.content_width.saturating_sub(state.viewport_width));
         // Density indent; collapse under narrow pressure (tiny → 0).
         let indent_step = match content_area.width {
             0..=7 => 0,
             8..=11 => 1,
             _ => self.tokens.density.tree_indent().max(1),
-        };
-        let paint_offset = if state.virtual_total > 0 {
-            0
-        } else {
-            state.offset
         };
         for (visible, node) in self
             .nodes
@@ -1048,7 +1126,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 checked,
             });
             let mut style = match node.status {
-                TreeNodeStatus::Ready if node.enabled => recipe.label,
+                TreeNodeStatus::Ready if node.enabled => {
+                    recipe.label.patch(self.tokens.style(node.tone.role()))
+                }
                 TreeNodeStatus::Ready => self.tokens.style(Role::TextDisabled),
                 // Loading / lazy stay muted.
                 TreeNodeStatus::Loading | TreeNodeStatus::Lazy => {
@@ -1077,7 +1157,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             if recipe.use_fill && selected {
                 buffer.set_style(row, style);
             } else if recipe.hover_fill {
-                buffer.set_style(row, recipe.hover);
+                buffer.set_style(row, recipe.hover_wash);
             }
 
             // Quiet selection gutter (aligned with List) when Gutter chrome.
@@ -1267,12 +1347,26 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 let mid_end = right_edge.saturating_sub(reserve);
                 let primary_budget = mid_end.saturating_sub(x);
                 if primary_budget > 0 {
-                    buffer.set_line(x, y, &node.label, primary_budget);
-                    x = x.saturating_add(
+                    let painted = if state.h_offset == 0 {
+                        buffer.set_line(x, y, &node.label, primary_budget);
                         u16::try_from(node.label.width())
                             .unwrap_or(u16::MAX)
-                            .min(primary_budget),
-                    );
+                            .min(primary_budget)
+                    } else {
+                        let mut visible = String::new();
+                        crate::text::display_cols_slice_into(
+                            &node.plain_label(),
+                            usize::from(state.h_offset),
+                            usize::from(primary_budget),
+                            &mut visible,
+                        );
+                        let width = u16::try_from(crate::text::display_cols(&visible))
+                            .unwrap_or(primary_budget)
+                            .min(primary_budget);
+                        buffer.set_stringn(x, y, &visible, usize::from(primary_budget), style);
+                        width
+                    };
+                    x = x.saturating_add(painted);
                 }
                 if show_secondary && let Some(secondary) = node.secondary.as_ref() {
                     let avail = mid_end.saturating_sub(x);

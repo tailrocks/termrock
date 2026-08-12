@@ -1024,7 +1024,10 @@ fn render_determinate(
     // legacy track geometry (width 9 → 8 track cells).
     let track_width = right_limit.saturating_sub(track_x).saturating_sub(1);
 
-    let filled = ((f64::from(track_width) * fraction).round() as u16).min(track_width);
+    let scaled = f64::from(track_width) * fraction;
+    let filled = (scaled.floor() as u16).min(track_width);
+    let partial = ((scaled.fract() * 8.0).floor() as usize).min(7);
+    let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
     let fill = fill_glyph(ascii);
     let empty = empty_glyph(ascii);
     let fill_role = status.role();
@@ -1032,11 +1035,17 @@ fn render_determinate(
         buffer.set_string(
             track_x.saturating_add(column),
             area.y,
-            if column < filled { fill } else { empty },
-            system.style(if column < filled {
+            if column < filled {
+                fill
+            } else if !ascii && column == filled && partial > 0 {
+                partial_glyph.as_str()
+            } else {
+                empty
+            },
+            system.style(if column <= filled && (column < filled || partial > 0) {
                 fill_role
             } else {
-                Role::TextMuted
+                Role::Sunken
             }),
         );
     }
@@ -1092,7 +1101,7 @@ fn render_indeterminate(
                     track_x.saturating_add(c),
                     area.y,
                     if on { fill } else { empty },
-                    system.style(if on { status.role() } else { Role::TextMuted }),
+                    system.style(if on { status.role() } else { Role::Sunken }),
                 );
             }
             // label after? put label at end if fits - skip if track used
@@ -1175,6 +1184,12 @@ mod tests {
     fn zero_fraction_renders_all_empty_glyphs() {
         let buffer = determinate(0.0, 9);
         assert!((0..8).all(|x| buffer[(x, 0)].symbol() == "░"));
+    }
+
+    #[test]
+    fn determinate_boundary_uses_ramp() {
+        let buffer = determinate(9.0 / 16.0, 9);
+        assert_eq!(buffer[(4, 0)].symbol(), "▄");
     }
 
     #[test]

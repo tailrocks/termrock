@@ -135,8 +135,19 @@ pub enum SelectionChrome {
     Fill,
     /// Leading gutter glyph only (quieter).
     Gutter,
-    /// Tint via `Role::Focus` without full fill.
+    /// Tint via `Role::SelectionTint` without full fill.
     Tint,
+}
+
+/// Corner-glyph family for single-line borders. Focus stays color-only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum BorderShape {
+    /// Square corners `┌┐└┘` (phosphor identity default).
+    #[default]
+    Square,
+    /// Rounded corners `╭╮╰╯` for alternate product themes.
+    Rounded,
 }
 
 /// Cell-scale spacing resolved from density (and optional overrides).
@@ -403,6 +414,8 @@ pub struct DesignSystem {
     pub spacing: SpacingScale,
     /// Default list/menu selection chrome.
     pub selection: SelectionChrome,
+    /// Single-line border corner family.
+    pub border_shape: BorderShape,
     /// Color depth used for quantize-at-edge.
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
@@ -419,7 +432,13 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
+        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Tint)
+    }
+
+    /// Terminal-default background variant of the phosphor system.
+    #[must_use]
+    pub fn terminal_native() -> Self {
+        Self::from_palette(RolePalette::terminal_native()).selection(SelectionChrome::Gutter)
     }
 
     /// Alias for [`Self::phosphor`] (marketing name).
@@ -477,6 +496,7 @@ impl DesignSystem {
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
+            border_shape: BorderShape::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
         }
@@ -521,6 +541,35 @@ impl DesignSystem {
     pub const fn selection(mut self, selection: SelectionChrome) -> Self {
         self.selection = selection;
         self
+    }
+
+    /// Overrides the single-line border corner family.
+    #[must_use]
+    pub const fn border_shape(mut self, shape: BorderShape) -> Self {
+        self.border_shape = shape;
+        self
+    }
+
+    /// Resolves the border symbols for shape and glyph capability.
+    #[must_use]
+    pub const fn border_set(&self) -> ratatui_core::symbols::border::Set<'static> {
+        use ratatui_core::symbols::border::{PLAIN, ROUNDED, Set};
+        if matches!(self.glyphs, GlyphSet::Ascii) {
+            Set {
+                top_left: "+",
+                top_right: "+",
+                bottom_left: "+",
+                bottom_right: "+",
+                vertical_left: "|",
+                vertical_right: "|",
+                horizontal_top: "-",
+                horizontal_bottom: "-",
+            }
+        } else if matches!(self.border_shape, BorderShape::Rounded) {
+            ROUNDED
+        } else {
+            PLAIN
+        }
     }
 
     /// Overrides color capability (call before quantize).
@@ -730,6 +779,9 @@ impl DesignSystem {
             self.style(Role::TextDisabled)
         } else if state.selected && matches!(self.selection, SelectionChrome::Fill) {
             self.style(Role::Selection)
+        } else if state.selected && matches!(self.selection, SelectionChrome::Tint) {
+            self.style(Role::TextStrong)
+                .patch(self.style(Role::SelectionTint))
         } else if state.selected {
             self.style(Role::TextStrong)
         } else if state.loading {
@@ -764,7 +816,8 @@ impl DesignSystem {
             show_focus_underline: state.focused && state.selected && !disabled,
             focus: self.style(Role::Focus),
             hover: self.style(Role::LinkHover),
-            tint: self.style(Role::Focus),
+            hover_wash: self.style(Role::HoverTint),
+            tint: self.style(Role::SelectionTint),
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
@@ -805,6 +858,8 @@ pub struct ListRowRecipe {
     pub focus: Style,
     /// Hover style when not selected.
     pub hover: Style,
+    /// Background wash for hovered rows.
+    pub hover_wash: Style,
     /// Tint style for [`SelectionChrome::Tint`].
     pub tint: Style,
     /// Multi-select checked glyph.
@@ -845,6 +900,19 @@ mod tests {
         assert!(!gutter.use_fill);
         assert!(gutter.gutter.is_some());
         assert_ne!(fill.label, gutter.label);
+    }
+
+    #[test]
+    fn tint_recipe_keeps_wash_when_label_repaints_cells() {
+        let system = DesignSystem::phosphor();
+        let recipe = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: true,
+            enabled: true,
+            ..Default::default()
+        });
+        assert!(recipe.use_tint);
+        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
     }
 
     #[test]

@@ -5,6 +5,7 @@ pub use crate::ansi_text::{
     is_paint_safe, line_from_ansi, lines_for_log, parse_lines, parse_to_line, strip_bytes,
     strip_str, styled_spans,
 };
+use std::borrow::Cow;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -48,6 +49,32 @@ pub fn take_display_cols(s: &str, max_cols: usize) -> String {
         used += width;
     }
     out
+}
+
+/// Truncate to display columns without splitting a grapheme, appending the
+/// caller-selected Unicode or ASCII ellipsis when contraction is required.
+#[must_use]
+pub fn truncate_cols<'a>(s: &'a str, max_cols: usize, ellipsis: &str) -> Cow<'a, str> {
+    if display_cols(s) <= max_cols {
+        return Cow::Borrowed(s);
+    }
+    let ellipsis_width = display_cols(ellipsis);
+    if ellipsis_width > max_cols {
+        return Cow::Owned(take_display_cols(ellipsis, max_cols));
+    }
+    let budget = max_cols - ellipsis_width;
+    let mut out = String::new();
+    let mut used = 0;
+    for grapheme in s.graphemes(true) {
+        let width = display_cols(grapheme);
+        if used + width > budget {
+            break;
+        }
+        out.push_str(grapheme);
+        used += width;
+    }
+    out.push_str(ellipsis);
+    Cow::Owned(out)
 }
 
 /// Substring of `s` covering display columns `[skip, skip + width)`,
@@ -477,6 +504,18 @@ mod tests {
         let mid = truncate_display_cols("abcdefghij", 7, TruncateMode::Middle, "…");
         assert!(mid.contains('…') || mid.contains("..."));
         assert!(display_cols(&mid) <= 7);
+    }
+
+    #[test]
+    fn truncate_cols_is_grapheme_safe_and_borrows_exact_fit() {
+        let exact = truncate_cols("hello", 5, "…");
+        assert!(matches!(exact, Cow::Borrowed("hello")));
+        let cjk = truncate_cols("日本語", 5, "…");
+        assert!(display_cols(&cjk) <= 5);
+        assert!(cjk.ends_with('…'));
+        let combining = truncate_cols("e\u{301}clair", 4, "…");
+        assert!(display_cols(&combining) <= 4);
+        assert!(combining.starts_with("e\u{301}"));
     }
 
     #[test]

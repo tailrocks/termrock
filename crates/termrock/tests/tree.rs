@@ -27,6 +27,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -43,6 +44,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -59,6 +61,7 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -179,6 +182,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -195,6 +199,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Error,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -211,6 +216,7 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -249,6 +255,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         })
@@ -329,6 +336,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -345,6 +353,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -361,6 +370,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Error,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -415,6 +425,7 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Ready,
+        tone: termrock::widgets::ToneTier::Primary,
         actions: None,
         parent: None,
     }];
@@ -466,6 +477,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         expanded: false,
         enabled: false,
         status: TreeNodeStatus::Loading,
+        tone: termrock::widgets::ToneTier::Primary,
         actions: None,
         parent: None,
     }];
@@ -507,6 +519,7 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -523,6 +536,7 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         },
@@ -561,6 +575,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Ready,
+        tone: termrock::widgets::ToneTier::Primary,
         actions: None,
         parent: None,
     }];
@@ -591,6 +606,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         expanded: false,
         enabled: true,
         status: TreeNodeStatus::Loading,
+        tone: termrock::widgets::ToneTier::Primary,
         actions: None,
         parent: None,
     }];
@@ -648,4 +664,39 @@ fn multi_select_toggles_by_space_and_painted_checkbox() {
         state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
         TreeOutcome::Ignored
     );
+}
+
+#[test]
+fn tone_tiers_map_to_semantic_roles() {
+    let tokens = DesignSystem::phosphor();
+    let rows = [
+        TreeNode::new("live", Line::from("streaming"), 0).tone(termrock::widgets::ToneTier::Live),
+        TreeNode::new("dim", Line::from("waiting"), 0).tone(termrock::widgets::ToneTier::LiveDim),
+    ];
+    let area = Rect::new(0, 0, 24, 2);
+    let mut buffer = Buffer::empty(area);
+    Tree::new(&rows, &tokens).render(area, &mut buffer, &mut TreeState::default());
+    assert_eq!(
+        buffer[(2, 0)].fg,
+        tokens.style(Role::InfoStrong).fg.unwrap()
+    );
+    assert_eq!(buffer[(2, 1)].fg, tokens.style(Role::InfoDim).fg.unwrap());
+}
+
+#[test]
+fn horizontal_scroll_keeps_hierarchy_prefix_pinned() {
+    let tokens = DesignSystem::phosphor();
+    let rows = [TreeNode::new("root", Line::from("abcdefghijklmnopqrstuvwxyz"), 0).branch()];
+    let area = Rect::new(0, 0, 12, 1);
+    let mut state = TreeState::default();
+    let mut before = Buffer::empty(area);
+    Tree::new(&rows, &tokens).render(area, &mut before, &mut state);
+    let disclosure = before[(0, 0)].symbol().to_owned();
+    state.set_h_offset(5);
+    let mut after = Buffer::empty(area);
+    Tree::new(&rows, &tokens).render(area, &mut after, &mut state);
+    assert_eq!(after[(0, 0)].symbol(), disclosure);
+    assert_eq!(state.h_offset(), 5);
+    let rendered: String = after.content().iter().map(|cell| cell.symbol()).collect();
+    assert!(rendered.contains("fgh"), "{rendered:?}");
 }

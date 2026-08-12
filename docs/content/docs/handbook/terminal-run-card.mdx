@@ -8,6 +8,8 @@ description: Shell/terminal command card with proposed vs executed chrome and li
 Agent-card specialization of shell runs over the `TerminalOutput` substrate:
 proposed vs executed command, edited approval, provenance, env redaction,
 stdout/stderr, exit/signal, follow/scroll, and typed control requests.
+Compact runs are one semantic status line; expanded runs continue the
+tool-actor rail. Pass `.tick(frame_tick)` for deterministic running presence.
 
 ## Live terminal (Ghostty-class)
 
@@ -43,4 +45,4 @@ Enter expand · `c` stop · `r` retry · `d` detach · `p` permission · `f`/Shi
 
 ## Related
 
-TerminalOutput · ToolCallCard · PermissionPrompt · migration `0220`
+TerminalOutput · ToolCallCard · PermissionPrompt · migrations `0220`, `0271`

@@ -1,4 +1,12 @@
 {
+  "AccentRail": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
   "Accordion": {
     "focus": "covered",
     "keyboard": "covered",
@@ -299,6 +307,14 @@
     "focus": "covered",
     "keyboard": "covered",
     "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
+  "FieldRow": {
+    "focus": "caller-owned",
+    "keyboard": "not-applicable",
+    "mouse": "caller-owned",
     "narrowTerminal": "covered",
     "nonColor": "covered",
     "unicode": "covered"

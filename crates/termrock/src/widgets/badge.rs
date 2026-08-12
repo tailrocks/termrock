@@ -84,14 +84,14 @@ impl BadgeVariant {
     }
 }
 
-/// Background fill policy (default none — dense tables stay quiet).
+/// Background fill policy (default soft surface chip).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum BadgeFill {
-    /// Brackets + fg only (default).
-    #[default]
+    /// Transparent fg-only badge.
     None,
-    /// Soft surface under the badge (rare; still low contrast).
+    /// Soft surface under the badge.
+    #[default]
     Soft,
 }
 
@@ -226,7 +226,7 @@ impl<'a> Badge<'a> {
             system,
             variant: BadgeVariant::Info,
             count: None,
-            fill: BadgeFill::None,
+            fill: BadgeFill::Soft,
             interactive: false,
             disabled: false,
             show_glyph: true,
@@ -242,7 +242,7 @@ impl<'a> Badge<'a> {
             system,
             variant: BadgeVariant::Count,
             count: Some(BadgeCount::new(value)),
-            fill: BadgeFill::None,
+            fill: BadgeFill::Soft,
             interactive: false,
             disabled: false,
             show_glyph: false,
@@ -412,7 +412,17 @@ impl<'a> Badge<'a> {
         {
             inner.push('*');
         }
-        // Outline / default: square brackets; count uses parentheses for density.
+        if matches!(self.variant, BadgeVariant::Outline) {
+            return if self.system.glyphs.is_ascii() {
+                format!("[{inner}]")
+            } else {
+                format!("⟨{inner}⟩")
+            };
+        }
+        if matches!(self.fill, BadgeFill::Soft) && !self.system.glyphs.is_ascii() {
+            return format!(" {inner} ");
+        }
+        // Transparent/ASCII badges retain explicit structural delimiters.
         match self.variant {
             BadgeVariant::Count => format!("({inner})"),
             BadgeVariant::Outline => format!("⟨{inner}⟩"),
@@ -454,9 +464,8 @@ impl<'a> Badge<'a> {
                 style = style.add_modifier(Modifier::BOLD);
             }
         }
-        // Default: strip bg so dense views stay quiet.
         if matches!(self.fill, BadgeFill::None) {
-            style.bg = None;
+            style = ratatui_core::style::Style { bg: None, ..style };
         } else if matches!(self.fill, BadgeFill::Soft) && !self.disabled {
             // Soft: keep role fg; use Surface as quiet underlay only.
             let surface = self.system.style(Role::Surface);
@@ -653,13 +662,21 @@ mod tests {
     use crate::style::GlyphSet;
 
     #[test]
-    fn variants_paint_brackets() {
+    fn variants_paint_soft_chip() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 16, 1));
         let _ = Badge::new("NEW", &system)
             .info()
             .paint(Rect::new(0, 0, 16, 1), &mut buf, None);
-        assert_eq!(buf[(0, 0)].symbol(), "[");
+        assert_eq!(buf[(0, 0)].symbol(), " ");
+        assert_eq!(buf[(0, 0)].bg, system.style(Role::Surface).bg.unwrap());
+    }
+
+    #[test]
+    fn badge_default_is_soft_chip() {
+        let system = DesignSystem::default();
+        assert_eq!(Badge::new("NEW", &system).fill, BadgeFill::Soft);
+        assert_eq!(BadgeFill::default(), BadgeFill::Soft);
     }
 
     #[test]
@@ -752,11 +769,11 @@ mod tests {
     }
 
     #[test]
-    fn default_fill_strips_background() {
+    fn default_fill_uses_surface_background() {
         let system = DesignSystem::default();
         let b = Badge::new("x", &system).success();
         let style = b.paint_style(None);
-        assert!(style.bg.is_none());
+        assert_eq!(style.bg, system.style(Role::Surface).bg);
     }
 
     #[test]

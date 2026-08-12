@@ -533,9 +533,10 @@ fn token_style(
         TokenStatus::Default if focused => system.style(Role::Focus),
         TokenStatus::Default => system.style(Role::TextMuted),
     };
-    // Quiet: no bg dominance for dense strips.
     if !selected {
-        style.bg = None;
+        if let Some(bg) = system.style(Role::Raised).bg {
+            style = style.bg(bg);
+        }
     }
     if focused {
         style = style.add_modifier(Modifier::BOLD);

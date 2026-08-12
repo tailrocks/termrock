@@ -31,7 +31,10 @@ use crate::{
     scroll::max_offset,
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
-    widgets::label::{Description, Label, LabelTone},
+    widgets::{
+        field_row::{FieldRow, FieldRowValue},
+        label::Description,
+    },
 };
 
 // ── Field ───────────────────────────────────────────────────────────────────
@@ -89,14 +92,14 @@ impl<'a> FieldStatus<'a> {
 }
 
 /// One form field projection (controlled; host owns domain values).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Field<'a, Id> {
     /// Stable identity (focus, hits, outcomes).
     pub id: Id,
     /// Label text.
     pub label: &'a str,
     /// Displayed value (host-formatted).
-    pub value: &'a str,
+    pub value: FieldRowValue<'a>,
     /// Optional long description (contracts before label on narrow).
     pub description: Option<&'a str>,
     /// Supporting status line.
@@ -122,7 +125,7 @@ impl<'a, Id> Field<'a, Id> {
         Self {
             id,
             label,
-            value,
+            value: FieldRowValue::Plain(value),
             description: None,
             status: FieldStatus::None,
             required: false,
@@ -132,6 +135,20 @@ impl<'a, Id> Field<'a, Id> {
             dirty: false,
             touched: false,
         }
+    }
+
+    /// Masks the projected value using the canonical FieldRow recipe.
+    #[must_use]
+    pub fn masked(mut self, len: usize) -> Self {
+        self.value = FieldRowValue::Masked { len };
+        self
+    }
+
+    /// Projects a missing value using the canonical FieldRow recipe.
+    #[must_use]
+    pub fn unset(mut self, hint: &'a str) -> Self {
+        self.value = FieldRowValue::Unset { hint };
+        self
     }
 
     /// Help status (and optional description keep separate).
@@ -237,7 +254,7 @@ pub type FormField<'a, Id> = Field<'a, Id>;
 // ── Fieldset ────────────────────────────────────────────────────────────────
 
 /// Labeled group of fields (fieldset / section).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fieldset<'a, Id> {
     /// Legend / section title.
     pub legend: &'a str,
@@ -528,7 +545,7 @@ pub fn required_filled<Id>(fieldsets: &[Fieldset<'_, Id>]) -> bool {
         .iter()
         .flat_map(|fs| fs.fields.iter())
         .filter(|f| f.required && f.enabled)
-        .all(|f| !f.value.trim().is_empty())
+        .all(|f| f.value.is_set())
 }
 
 impl<Id: Clone + PartialEq> FormState<Id> {
@@ -1053,46 +1070,6 @@ fn paint_field<Id: Clone>(
     hovered: bool,
 ) {
     let invalid = field.is_invalid();
-    let mut value_style = if invalid {
-        system.style(Role::InputInvalid)
-    } else {
-        system.style(Role::Input)
-    };
-    if focused {
-        value_style = value_style.patch(system.style(Role::Focus));
-        paint_string(
-            buffer,
-            viewport,
-            offset,
-            content_y.saturating_add(1),
-            field_area.x,
-            "›",
-            system.style(Role::Focus),
-        );
-    }
-    if !field.enabled || field.read_only {
-        value_style = value_style
-            .patch(system.style(Role::TextDisabled))
-            .add_modifier(Modifier::DIM);
-    }
-
-    let mut label = Label::new(field.label, system).for_id(field.id.clone());
-    if field.required {
-        label = label.required();
-    } else if field.show_optional {
-        label = label.optional();
-    }
-    if !field.enabled {
-        label = label.disabled();
-    } else if invalid {
-        label = label.invalid();
-    } else if matches!(field.status, FieldStatus::Warning(_)) {
-        label = label.warning();
-    } else if focused {
-        label = label.focused();
-    } else if field.dirty {
-        label = label.tone(LabelTone::Default);
-    }
     let label_row = visible_rect(
         viewport,
         offset,
@@ -1102,55 +1079,39 @@ fn paint_field<Id: Clone>(
         field_area.width,
     );
     if let Some(row) = label_row {
-        // Inline layout: label left portion
-        let label_width = if matches!(layout, FormLayout::Inline) && row.width >= 20 {
-            row.width / 3
+        let marker = if field.required {
+            Some("*")
+        } else if field.dirty {
+            Some("·")
         } else {
-            row.width
+            None
         };
-        let lrect = Rect::new(row.x, row.y, label_width, 1);
-        let _ = label.paint(lrect, buffer);
-        if field.dirty && field.enabled {
-            // Non-color dirty cue: trailing ·
-            if lrect.width > 1 {
-                let dx = lrect.right().saturating_sub(1);
-                buffer.set_stringn(dx, lrect.y, "·", 1, system.style(Role::TextMuted));
-            }
-        }
-        if hovered && field.enabled && !focused {
-            for x in lrect.x..lrect.right() {
-                let cell = &mut buffer[(x, lrect.y)];
-                cell.set_style(cell.style().add_modifier(Modifier::UNDERLINED));
-            }
-        }
-        // Inline: value on same row
-        if matches!(layout, FormLayout::Inline) && row.width >= 20 {
-            let vx = row.x.saturating_add(label_width).saturating_add(1);
-            let vw = row.right().saturating_sub(vx);
-            if vw > 0 {
-                let text = take_display_cols(field.value, usize::from(vw));
-                buffer.set_stringn(vx, row.y, &text, usize::from(vw), value_style);
-            }
-        }
-    }
-
-    if !matches!(layout, FormLayout::Inline) || field_area.width < 20 {
-        let value_x = if focused {
-            field_area.x.saturating_add(2)
+        let annotation = if field.read_only {
+            Some("read only")
+        } else if field.show_optional && !field.required {
+            Some("optional")
         } else {
-            field_area.x
+            None
         };
-        let value_width = field_area.width.saturating_sub(if focused { 2 } else { 0 });
-        let text = take_display_cols(field.value, usize::from(value_width));
-        paint_string(
-            buffer,
-            viewport,
-            offset,
-            content_y.saturating_add(1),
-            value_x,
-            &text,
-            value_style,
-        );
+        let label_cols = if matches!(layout, FormLayout::Inline) && row.width >= 20 {
+            (row.width / 3).max(8)
+        } else {
+            8
+        };
+        let mut field_row = FieldRow::new(system, field.label, field.value.clone())
+            .label_cols(label_cols)
+            .required(field.required)
+            .selected(focused)
+            .hovered(hovered)
+            .enabled(field.enabled && !field.read_only)
+            .invalid(invalid);
+        if let Some(marker) = marker {
+            field_row = field_row.marker(marker);
+        }
+        if let Some(annotation) = annotation {
+            field_row = field_row.annotation(annotation);
+        }
+        field_row.paint(row, buffer);
     }
 
     let supporting_y = content_y.saturating_add(2);
@@ -1379,6 +1340,28 @@ mod unit_tests {
             .inline()
             .render(area, &mut buf, &mut state);
         assert!(state.content_height() > 0);
+    }
+
+    #[test]
+    fn typed_values_render_masked_and_unset_rows() {
+        let system = DesignSystem::default();
+        let fields = [
+            Field::new("token", "Token", "ignored").masked(5),
+            Field::new("region", "Region", "")
+                .unset("required")
+                .required(true),
+        ];
+        let sections = [Fieldset::new("Auth", &fields)];
+        let area = Rect::new(0, 0, 40, 12);
+        let mut buf = Buffer::empty(area);
+        Form::new(&sections, &system).render(area, &mut buf, &mut FormState::new());
+        let text = buf
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("●●●●●"));
+        assert!(text.contains("required"));
     }
 
     #[test]

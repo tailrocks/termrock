@@ -21,7 +21,7 @@ use crate::{
     },
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{DesignSystem, Glyph, Motion, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Motion, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -312,6 +312,17 @@ impl ButtonVariant {
             Self::Command => "command",
         }
     }
+
+    const fn recipe(self) -> ButtonRecipeVariant {
+        match self {
+            Self::Primary | Self::Success | Self::Command => ButtonRecipeVariant::Primary,
+            Self::Destructive => ButtonRecipeVariant::Destructive,
+            Self::Link => ButtonRecipeVariant::Link,
+            Self::Outline => ButtonRecipeVariant::Outline,
+            Self::Quiet => ButtonRecipeVariant::Quiet,
+            Self::Secondary => ButtonRecipeVariant::Secondary,
+        }
+    }
 }
 
 /// Horizontal density of button chrome.
@@ -563,16 +574,6 @@ impl<'a> Button<'a> {
         u16::try_from(w.min(usize::from(u16::MAX))).unwrap_or(u16::MAX)
     }
 
-    fn base_role(&self) -> Role {
-        match self.variant {
-            ButtonVariant::Primary | ButtonVariant::Command => Role::Accent,
-            ButtonVariant::Destructive => Role::Danger,
-            ButtonVariant::Success => Role::Success,
-            ButtonVariant::Link => Role::Link,
-            ButtonVariant::Secondary | ButtonVariant::Quiet | ButtonVariant::Outline => Role::Text,
-        }
-    }
-
     fn mono(&self) -> bool {
         self.colorless
             || self.ascii
@@ -659,39 +660,31 @@ impl Button<'_> {
         let hovered = state.hovered && surface;
         let mono = self.mono();
 
+        // Public variants collapse onto the product-neutral recipe vocabulary;
+        // Success/Command retain their semantic label cues below.
+        let recipe_variant = self.variant.recipe();
+        let control_state = if disabled {
+            ControlState::Disabled
+        } else if loading {
+            ControlState::Loading
+        } else if armed {
+            ControlState::Pressed
+        } else if hovered {
+            ControlState::Hovered
+        } else if surface {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = theme.button_recipe(recipe_variant, control_state);
         let mut style = if !a11y_ok {
             theme.style(Role::Danger)
-        } else if disabled {
-            theme.style(Role::ActionDisabled)
-        } else if loading {
-            // Loading distinct from disabled: Info / muted, not ActionDisabled alone.
-            if mono {
-                theme.style(Role::TextMuted)
-            } else {
-                theme.style(Role::Info)
-            }
-        } else if surface && armed {
-            theme.style(Role::ActionFocused)
-        } else if surface && hovered {
-            match self.variant {
-                ButtonVariant::Link => theme.style(Role::LinkHover),
-                _ => theme.style(Role::ActionFocused),
-            }
-        } else if surface {
-            theme.style(Role::ActionFocused)
-        } else if mono {
-            match self.variant {
-                ButtonVariant::Primary
-                | ButtonVariant::Destructive
-                | ButtonVariant::Success
-                | ButtonVariant::Command => theme.style(Role::TextStrong),
-                ButtonVariant::Link => theme.style(Role::Text),
-                _ => theme.style(Role::Text),
-            }
         } else {
-            theme.style(self.base_role())
+            recipe.fill.patch(recipe.label)
         };
-        style.bg = None;
+        if matches!(self.variant, ButtonVariant::Success) && recipe.fill.bg.is_none() {
+            style = style.patch(theme.style(Role::Success));
+        }
 
         // Non-color / structural affordance (never brackets alone).
         match self.variant {
@@ -1276,37 +1269,25 @@ impl<'a> IconButton<'a> {
             height: 1,
         };
 
+        let icon_state = if disabled {
+            ControlState::Disabled
+        } else if loading {
+            ControlState::Loading
+        } else if armed {
+            ControlState::Pressed
+        } else if state.hovered {
+            ControlState::Hovered
+        } else if surface {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.button_recipe(self.variant.recipe(), icon_state);
         let mut style = if !a11y_ok {
             self.system.style(Role::Danger)
-        } else if disabled {
-            self.system.style(Role::ActionDisabled)
-        } else if loading {
-            if mono {
-                self.system.style(Role::TextMuted)
-            } else {
-                self.system.style(Role::Info)
-            }
-        } else if surface && (armed || state.hovered || toggled) {
-            match self.variant {
-                ButtonVariant::Destructive => self.system.style(Role::Danger),
-                ButtonVariant::Primary => self.system.style(Role::ActionFocused),
-                _ => self.system.style(Role::ActionFocused),
-            }
-        } else if mono {
-            match self.variant {
-                ButtonVariant::Destructive | ButtonVariant::Primary => {
-                    self.system.style(Role::TextStrong)
-                }
-                _ => self.system.style(Role::Text),
-            }
         } else {
-            match self.variant {
-                ButtonVariant::Destructive => self.system.style(Role::Danger),
-                ButtonVariant::Primary => self.system.style(Role::Accent),
-                _ => self.system.style(Role::Text),
-            }
+            recipe.fill.patch(recipe.label)
         };
-        style.bg = None;
         if toggled || armed {
             style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
         } else if surface {
@@ -1331,7 +1312,7 @@ impl<'a> IconButton<'a> {
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD);
                 }
-                bs.bg = None;
+                bs = ratatui_core::style::Style { bg: None, ..bs };
                 buffer.set_stringn(bx, hit.y, &bt, 1, bs);
                 badge_rect = Rect {
                     x: bx,
@@ -1432,6 +1413,22 @@ mod tests {
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
+    }
+
+    #[test]
+    fn primary_button_is_accent_chip() {
+        let system = DesignSystem::default();
+        let mut state = ButtonState::new();
+        state.activation.set_enabled(true);
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+        Button::new("Run", &system)
+            .as_primary()
+            .paint(area, &mut buffer, &mut state);
+        let cell = &buffer[(2, 0)];
+        let accent = system.style(Role::ActionFocused);
+        assert_eq!(cell.bg, accent.bg.unwrap());
+        assert_eq!(cell.fg, accent.fg.unwrap());
     }
 
     #[test]

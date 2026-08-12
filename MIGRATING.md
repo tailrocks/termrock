@@ -274,6 +274,25 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0258 | `v0.13.0` | [Widgets/patterns boundary fix](migrations/0258-v0.13.0-widgets-patterns-boundary-fix.md) |
 | 0259 | `v0.13.0` | [Neutral panel presets + example nav](migrations/0259-v0.13.0-neutral-panel-presets-and-example-nav.md) |
 | 0260 | `v0.13.0` | [Building-block classification rule](migrations/0260-v0.13.0-building-block-classification-rule.md) |
+| 0261 | `v0.13.0` | [Surface ladder and semantic role expansion](migrations/0261-v0.13.0-surface-ladder-and-role-expansion.md) |
+| 0262 | `v0.13.0` | [Border shape token](migrations/0262-v0.13.0-border-shape-token.md) |
+| 0263 | `v0.13.0` | [Spacing activation](migrations/0263-v0.13.0-spacing-activation.md) |
+| 0264 | `v0.13.0` | [Recipe-enforced controls, chips, tints, and meters](migrations/0264-v0.13.0-recipe-enforcement-and-chips.md) |
+| 0265 | `v0.13.0` | [Overlay elevation and shared shells](migrations/0265-v0.13.0-overlay-elevation.md) |
+| 0266 | `v0.13.0` | [Motion, text, and glyph kit](migrations/0266-v0.13.0-motion-text-glyph-kit.md) |
+| 0267 | `v0.13.0` | [Tree tone tiers and pinned horizontal scroll](migrations/0267-v0.13.0-tree-tone-and-scroll.md) |
+| 0268 | `v0.13.0` | [Composition and measurement primitives](migrations/0268-v0.13.0-composition-measurement-primitives.md) |
+| 0269 | `v0.13.0` | [Transcript actor rails and active presence](migrations/0269-v0.13.0-transcript-actor-rails.md) |
+| 0270 | `v0.13.0` | [ToolCallCard actor rail and compact row](migrations/0270-v0.13.0-tool-call-card-actor-rail.md) |
+| 0271 | `v0.13.0` | [Agent pattern-card presence](migrations/0271-v0.13.0-agent-pattern-card-presence.md) |
+| 0272 | `v0.13.0` | [Composer and permission trust chrome](migrations/0272-v0.13.0-composer-permission-chrome.md) |
+| 0273 | `v0.13.0` | [Plan review golden composition chrome](migrations/0273-v0.13.0-plan-review-golden-chrome.md) |
+| 0274 | `v0.13.0` | [Table recipe rows and raised headers](migrations/0274-v0.13.0-table-recipe-rows.md) |
+| 0275 | `v0.13.0` | [TreeTable recipe rows and pointer hover](migrations/0275-v0.13.0-tree-table-recipe-rows.md) |
+| 0276 | `v0.13.0` | [Overlay and picker recipe rows](migrations/0276-v0.13.0-overlay-picker-recipe-rows.md) |
+| 0277 | `v0.13.0` | [Full-row diff semantic tints](migrations/0277-v0.13.0-diff-row-tints.md) |
+| 0278 | `v0.13.0` | [Typed Form values through FieldRow](migrations/0278-v0.13.0-form-field-row-values.md) |
+| 0279 | `v0.13.0` | [Visual cascade completion](migrations/0279-v0.13.0-visual-cascade-completion.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

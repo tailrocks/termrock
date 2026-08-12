@@ -922,18 +922,6 @@ impl<'a> Drawer<'a> {
         }
         state.slots.root = area;
 
-        let fill = if self.colorless {
-            self.system.style(Role::Surface)
-        } else {
-            self.system.style(Role::Elevated)
-        };
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                buffer[(x, y)].set_style(fill);
-                buffer[(x, y)].set_symbol(" ");
-            }
-        }
-
         let border = if state.focused && !self.colorless {
             Role::BorderFocused
         } else {
@@ -941,6 +929,12 @@ impl<'a> Drawer<'a> {
         };
         let border_style = self.system.style(border);
         let no_motion = matches!(state.motion, Motion::Off | Motion::Reduced) || self.ascii;
+        super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(border_style)
+            .padding(0, 0)
+            .paint(area, buffer);
 
         // Handle on inner edge (resize grip)
         let handle = match state.edge {
@@ -1001,50 +995,9 @@ impl<'a> Drawer<'a> {
             },
         };
 
-        // Outer border on far edges
+        // Shared Surface paints the shell; the handle above overlays its inner
+        // edge. Preserve the established content geometry below.
         if area.width >= 2 && area.height >= 2 {
-            let (tl, tr, bl, br, h, v) = if no_motion {
-                ("+", "+", "+", "+", "-", "|")
-            } else {
-                ("┌", "┐", "└", "┘", "─", "│")
-            };
-            // Only paint corners that are not handle-side for cleanliness
-            buffer.set_stringn(area.x, area.y, tl, 1, border_style);
-            buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border_style);
-            buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border_style);
-            buffer.set_stringn(
-                area.right().saturating_sub(1),
-                area.bottom().saturating_sub(1),
-                br,
-                1,
-                border_style,
-            );
-            if area.width > 2 {
-                let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.y,
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.bottom().saturating_sub(1),
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-            }
-            for y in area.y + 1..area.bottom().saturating_sub(1) {
-                if !handle.contains(Position::new(area.x, y)) {
-                    buffer.set_stringn(area.x, y, v, 1, border_style);
-                }
-                let rx = area.right().saturating_sub(1);
-                if !handle.contains(Position::new(rx, y)) {
-                    buffer.set_stringn(rx, y, v, 1, border_style);
-                }
-            }
             // Shrink inner for border
             inner = Rect {
                 x: inner.x.saturating_add(1),

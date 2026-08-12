@@ -3,6 +3,7 @@
   "pagesIndex": "../components",
   "defaultOpen": true,
   "pages": [
+    "accent-rail",
     "accordion",
     "action-bar",
     "action-link",
@@ -41,6 +42,7 @@
     "error-state",
     "event-stream",
     "field-caption",
+    "field-row",
     "file-picker",
     "form",
     "form-wizard",

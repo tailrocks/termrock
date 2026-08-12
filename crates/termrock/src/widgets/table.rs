@@ -20,7 +20,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role, SelectionChrome},
 };
 
 const MARKER_WIDTH: u16 = 2;
@@ -1143,20 +1143,18 @@ fn row_style(
     if !row.enabled {
         return tokens.palette.style(Role::TextDisabled);
     }
+    let recipe = tokens.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: selected && table_focused,
+        hovered,
+        enabled: row.enabled,
+        loading: false,
+        checked: false,
+    });
     let mut style = if selected {
-        match tokens.selection {
-            SelectionChrome::Fill => tokens.palette.style(Role::Selection),
-            SelectionChrome::Tint => tokens.palette.style(Role::Focus),
-            SelectionChrome::Gutter => {
-                if table_focused {
-                    tokens.palette.style(Role::TextStrong)
-                } else {
-                    tokens.palette.style(Role::Text)
-                }
-            }
-        }
+        recipe.label.patch(recipe.tint)
     } else if hovered {
-        tokens.palette.style(Role::Focus)
+        recipe.label.patch(recipe.hover_wash)
     } else if row.emphasis {
         tokens.palette.style(Role::Accent)
     } else if striped {
@@ -1216,7 +1214,11 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     gap: u16,
     bordered: bool,
 ) {
-    let header_style = table.tokens.palette.style(Role::TextStrong);
+    let header_style = table.tokens.palette.style(Role::TextMuted);
+    buffer.set_style(
+        Rect::new(area.x, area.y, area.width, 1),
+        table.tokens.palette.style(Role::Raised),
+    );
     let origin_x = area.x.saturating_add(MARKER_WIDTH);
     // Clear gutter under header for alignment.
     buffer.set_stringn(
@@ -2042,18 +2044,39 @@ mod tests {
         let cells = cells();
         let rows = rows(&cells);
         let tokens = DesignSystem::default();
-        let theme = tokens.palette.clone();
         let area = Rect::new(0, 0, 30, 4);
         let mut state = TableState::new(None);
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         state.hover(Position::new(0, 3));
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 3)].fg, theme.style(Role::Focus).fg.unwrap());
+        assert_eq!(
+            buffer[(0, 3)].bg,
+            tokens
+                .resolve_list_row(ListRowVisualState {
+                    hovered: true,
+                    enabled: true,
+                    ..ListRowVisualState::default()
+                })
+                .hover_wash
+                .bg
+                .unwrap()
+        );
         state.scroll_by(1, rows.len());
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.hovered(), Some(&4));
-        assert_eq!(buffer[(0, 3)].fg, theme.style(Role::Focus).fg.unwrap());
+        assert_eq!(
+            buffer[(0, 3)].bg,
+            tokens
+                .resolve_list_row(ListRowVisualState {
+                    hovered: true,
+                    enabled: true,
+                    ..ListRowVisualState::default()
+                })
+                .hover_wash
+                .bg
+                .unwrap()
+        );
     }
 
     #[test]

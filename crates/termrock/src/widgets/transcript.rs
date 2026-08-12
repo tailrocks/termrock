@@ -16,8 +16,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Role, blend_toward},
     text::{display_cols, take_display_cols},
+    widgets::AccentRail,
 };
 
 /// Semantic kind of a transcript block.
@@ -78,14 +79,13 @@ impl TranscriptKind {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::User => Role::TextStrong,
-            Self::Assistant => Role::Text,
-            Self::Tool => Role::Info,
-            Self::System => Role::Warning,
-            Self::Thinking => Role::TextMuted,
-            Self::Approval => Role::Danger,
-            Self::Diff => Role::Text,
-            Self::Content => Role::Text,
+            Self::User => Role::ActorUser,
+            Self::Assistant => Role::ActorAssistant,
+            Self::Tool => Role::ActorTool,
+            Self::System => Role::ActorSystem,
+            Self::Thinking => Role::ActorThinking,
+            Self::Approval => Role::ActorPlan,
+            Self::Diff | Self::Content => Role::ActorAssistant,
         }
     }
 }
@@ -107,6 +107,8 @@ pub struct TranscriptBlock<'a, Id> {
     pub summary: Option<&'a str>,
     /// Whether the block accepts activation.
     pub enabled: bool,
+    /// Whether the block is actively streaming or running.
+    pub active: bool,
 }
 
 impl<'a, Id> TranscriptBlock<'a, Id> {
@@ -121,6 +123,7 @@ impl<'a, Id> TranscriptBlock<'a, Id> {
             folded: false,
             summary: None,
             enabled: true,
+            active: false,
         }
     }
 
@@ -152,11 +155,22 @@ impl<'a, Id> TranscriptBlock<'a, Id> {
         self
     }
 
+    /// Marks this block active for deterministic presence motion.
+    #[must_use]
+    pub const fn active(mut self, active: bool) -> Self {
+        self.active = active;
+        self
+    }
+
     /// Display height in rows at the current fold state.
     #[must_use]
     pub fn height(&self) -> u16 {
         if self.folded {
-            1
+            if matches!(self.kind, TranscriptKind::Thinking) {
+                u16::try_from(self.lines.len().clamp(1, 3)).unwrap_or(3)
+            } else {
+                1
+            }
         } else {
             u16::try_from(self.lines.len().max(1)).unwrap_or(u16::MAX)
         }
@@ -646,6 +660,8 @@ pub struct Transcript<'a, Id> {
     colorless: bool,
     /// Empty-state copy when `blocks` is empty.
     empty_label: &'a str,
+    /// Host-owned deterministic paint tick.
+    tick: u64,
 }
 
 impl<'a, Id> Transcript<'a, Id> {
@@ -659,6 +675,7 @@ impl<'a, Id> Transcript<'a, Id> {
             ascii: false,
             colorless: false,
             empty_label: "(empty transcript)",
+            tick: 0,
         }
     }
 
@@ -689,6 +706,13 @@ impl<'a, Id> Transcript<'a, Id> {
         self.empty_label = label;
         self
     }
+
+    /// Supplies the host-owned deterministic paint tick.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
+        self
+    }
 }
 
 fn kind_prefix(kind: TranscriptKind, ascii: bool) -> &'static str {
@@ -707,7 +731,16 @@ fn kind_style(system: &DesignSystem, kind: TranscriptKind, colorless: bool) -> S
             _ => system.style(Role::Text),
         };
     }
-    system.style(kind.role())
+    let style = system.style(kind.role());
+    if matches!(kind, TranscriptKind::Thinking) {
+        let canvas = system
+            .style(Role::Canvas)
+            .bg
+            .unwrap_or(ratatui_core::style::Color::Reset);
+        style.fg(style.fg.map_or(canvas, |fg| blend_toward(fg, canvas, 0.3)))
+    } else {
+        style
+    }
 }
 
 impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
@@ -785,31 +818,68 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
             let mut region_y0: Option<u16> = None;
             let mut region_y1: u16 = area.y;
 
+            let visible_start = (*start).max(view_start);
+            let visible_end = end.min(view_end);
+            let rail_area = Rect::new(
+                area.x,
+                area.y.saturating_add(
+                    u16::try_from(visible_start.saturating_sub(view_start)).unwrap_or(u16::MAX),
+                ),
+                area.width,
+                u16::try_from(visible_end.saturating_sub(visible_start)).unwrap_or(u16::MAX),
+            );
+            let content_area = AccentRail::new(self.system, block.kind.role())
+                .active(block.active)
+                .tick(self.tick)
+                .collapsed(block.folded)
+                .paint(rail_area, buffer);
+            let content_x = content_area.x;
+            let content_width = content_area.width;
+
             if block.folded {
-                let abs = *start;
-                if abs < view_start || abs >= view_end {
-                    continue;
+                let preview_rows = usize::from(block.height());
+                for preview in 0..preview_rows {
+                    let abs = start.saturating_add(preview as u64);
+                    if abs < view_start || abs >= view_end {
+                        continue;
+                    }
+                    let y = area
+                        .y
+                        .saturating_add(u16::try_from(abs - view_start).unwrap_or(0));
+                    let text = if preview == 0 {
+                        block
+                            .summary
+                            .unwrap_or_else(|| block.lines.first().copied().unwrap_or("…"))
+                    } else {
+                        block.lines.get(preview).copied().unwrap_or("")
+                    };
+                    let gutter = if selected && accepts && preview == 0 {
+                        sel_gutter
+                    } else {
+                        " "
+                    };
+                    let head = if preview == 0 {
+                        format!("{gutter}{fold_closed}{prefix}")
+                    } else {
+                        "   ".to_owned()
+                    };
+                    let label = format!(
+                        "{head}{}",
+                        take_display_cols(
+                            text,
+                            usize::from(content_width).saturating_sub(display_cols(&head))
+                        )
+                    );
+                    let clipped = take_display_cols(&label, usize::from(content_width));
+                    buffer.set_stringn(content_x, y, &clipped, usize::from(content_width), style);
                 }
-                let y = area
-                    .y
-                    .saturating_add(u16::try_from(abs - view_start).unwrap_or(0));
-                let text = block
-                    .summary
-                    .unwrap_or_else(|| block.lines.first().copied().unwrap_or("…"));
-                let gutter = if selected && accepts { sel_gutter } else { " " };
-                let label = format!(
-                    "{gutter}{fold_closed}{prefix}{}",
-                    take_display_cols(text, usize::from(area.width.saturating_sub(6)))
-                );
-                let clipped = take_display_cols(&label, usize::from(area.width));
-                buffer.set_stringn(area.x, y, &clipped, usize::from(area.width), style);
                 state.block_regions.push((
                     block.id.clone(),
                     Rect {
                         x: area.x,
-                        y,
+                        y: rail_area.y,
                         width: area.width,
-                        height: 1,
+                        height: rail_area.height,
                     },
                 ));
                 continue;
@@ -835,11 +905,11 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
                 } else {
                     format!("{gutter}  ")
                 };
-                let budget = usize::from(area.width).saturating_sub(display_cols(&head));
+                let budget = usize::from(content_width).saturating_sub(display_cols(&head));
                 let body = take_display_cols(line, budget);
                 let full = format!("{head}{body}");
-                let clipped = take_display_cols(&full, usize::from(area.width));
-                buffer.set_stringn(area.x, y, &clipped, usize::from(area.width), style);
+                let clipped = take_display_cols(&full, usize::from(content_width));
+                buffer.set_stringn(content_x, y, &clipped, usize::from(content_width), style);
             }
 
             if let Some(y0) = region_y0 {
@@ -1036,10 +1106,56 @@ mod tests {
     }
 
     #[test]
-    fn folded_block_is_one_row() {
+    fn folded_thinking_block_previews_three_rows() {
         let lines = ["a", "b", "c"];
         let block = TranscriptBlock::new(1u32, TranscriptKind::Thinking, &lines).folded(true);
-        assert_eq!(block.height(), 1);
+        assert_eq!(block.height(), 3);
+        let ordinary = TranscriptBlock::new(2u32, TranscriptKind::Tool, &lines).folded(true);
+        assert_eq!(ordinary.height(), 1);
+    }
+
+    #[test]
+    fn blocks_carry_actor_rails() {
+        let system = system();
+        let line = ["content"];
+        let kinds = [
+            TranscriptKind::User,
+            TranscriptKind::Assistant,
+            TranscriptKind::Thinking,
+            TranscriptKind::Tool,
+            TranscriptKind::Approval,
+            TranscriptKind::System,
+        ];
+        let blocks = kinds
+            .iter()
+            .enumerate()
+            .map(|(id, kind)| TranscriptBlock::new(id, *kind, &line))
+            .collect::<Vec<_>>();
+        let area = Rect::new(0, 0, 30, kinds.len() as u16);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TranscriptState::new();
+        (&Transcript::new(&blocks, &system)).render(area, &mut buffer, &mut state);
+        for (row, kind) in kinds.iter().enumerate() {
+            assert_eq!(
+                buffer[(0, row as u16)].fg,
+                system.style(kind.role()).fg.unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn reduced_motion_rail_is_static() {
+        let system = system().motion(crate::style::Motion::Reduced);
+        let lines = ["streaming", "response"];
+        let blocks = [TranscriptBlock::new(1u32, TranscriptKind::Assistant, &lines).active(true)];
+        let render = |tick| {
+            let area = Rect::new(0, 0, 30, 2);
+            let mut buffer = Buffer::empty(area);
+            let mut state = TranscriptState::new();
+            (&Transcript::new(&blocks, &system).tick(tick)).render(area, &mut buffer, &mut state);
+            buffer
+        };
+        assert_eq!(render(0), render(31));
     }
 
     #[test]

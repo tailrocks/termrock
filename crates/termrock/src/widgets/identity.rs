@@ -558,7 +558,7 @@ impl<'a> AvatarGlyph<'a> {
         }
         let face = self.face_text();
         let mut style = self.system.style(self.face_role());
-        style.bg = None;
+        style = ratatui_core::style::Style { bg: None, ..style };
         style = style.add_modifier(Modifier::BOLD);
         // No-color: reverse/underline for presence of identity without hue
         if matches!(
@@ -578,7 +578,7 @@ impl<'a> AvatarGlyph<'a> {
         if parts.presence.width > 0 {
             if let Some(ch) = self.presence.glyph_char(self.system.glyphs.is_ascii()) {
                 let mut ps = self.system.style(self.presence.role());
-                ps.bg = None;
+                ps = ratatui_core::style::Style { bg: None, ..ps };
                 if matches!(
                     self.system.capability,
                     crate::style::ColorCapability::Monochrome

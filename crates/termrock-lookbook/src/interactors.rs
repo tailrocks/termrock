@@ -10,7 +10,7 @@ use std::num::NonZeroU16;
 use termrock::{
     input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::Outcome,
-    style::{ColorCapability, Density, DesignSystem, RolePalette},
+    style::{BorderShape, ColorCapability, Density, DesignSystem, RolePalette},
     widgets::{
         Anchor, BUILTIN_THEME_PRESETS, CellAlignment, ChoiceDialogState, Column, ColumnWidth,
         CommandPalette, CommandPaletteState, ComposerChip, ContextEstimate, DesignInspector,
@@ -87,6 +87,74 @@ pub(crate) trait StoryInteraction {
 pub(crate) struct StaticStory {
     pub(crate) render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
     pub(crate) theme: RolePalette,
+}
+
+pub(crate) struct PanelInteractor {
+    render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
+    knobs: Vec<Knob>,
+    theme: RolePalette,
+}
+
+impl PanelInteractor {
+    pub(crate) fn new(render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem)) -> Self {
+        Self {
+            render_fn,
+            knobs: vec![Knob {
+                id: "border-shape",
+                label: "Border shape",
+                value: KnobValue::Choice(0),
+                choices: &["Square", "Rounded"],
+            }],
+            theme: RolePalette::default(),
+        }
+    }
+}
+
+impl StoryInteraction for PanelInteractor {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let shape = if matches!(self.knobs[0].value, KnobValue::Choice(1)) {
+            BorderShape::Rounded
+        } else {
+            BorderShape::Square
+        };
+        (self.render_fn)(
+            frame,
+            area,
+            &DesignSystem::from_palette(self.theme.clone()).border_shape(shape),
+        );
+    }
+
+    fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+
+    fn set_theme(&mut self, theme: RolePalette) {
+        self.theme = theme;
+    }
+
+    fn knobs(&self) -> &[Knob] {
+        &self.knobs
+    }
+
+    fn handle_knob_key(&mut self, selected: usize, key: KeyEvent) -> bool {
+        let Some(Knob {
+            value: KnobValue::Choice(index),
+            choices,
+            ..
+        }) = self.knobs.get_mut(selected)
+        else {
+            return false;
+        };
+        if !matches!(key.code, KeyCode::Left | KeyCode::Right) {
+            return false;
+        }
+        *index = usize::from(key.code == KeyCode::Right) % choices.len();
+        true
+    }
 }
 
 impl StoryInteraction for StaticStory {
@@ -1031,25 +1099,62 @@ impl TranscriptInteractor {
 
 impl StoryInteraction for TranscriptInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let lines = ["hello from user", "assistant reply"];
+        let user = [
+            "Run the release suite",
+            "include docs and capability checks",
+        ];
+        let assistant = [
+            "I’ll verify the full workspace.",
+            "The dependency graph is clean.",
+        ];
+        let thinking = [
+            "Inspecting affected surfaces…",
+            "Checking migration order…",
+            "Comparing deterministic frames…",
+            "Hidden reasoning beyond preview.",
+        ];
+        let tool = ["mise run check", "2,968 tests · all green"];
         let blocks = [
-            TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
-            TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
+            TranscriptBlock::new("u1", TranscriptKind::User, &user),
+            TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+            TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+                .folded(true)
+                .summary("Reasoning through the verification plan"),
+            TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
         ];
         self.state.set_focused(true);
         frame.render_stateful_widget(
             &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone()))
-                .focused(true),
+                .focused(true)
+                .tick(7),
             area,
             &mut self.state,
         );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let lines = ["hello from user", "assistant reply"];
+        let user = [
+            "Run the release suite",
+            "include docs and capability checks",
+        ];
+        let assistant = [
+            "I’ll verify the full workspace.",
+            "The dependency graph is clean.",
+        ];
+        let thinking = [
+            "Inspecting affected surfaces…",
+            "Checking migration order…",
+            "Comparing deterministic frames…",
+            "Hidden reasoning beyond preview.",
+        ];
+        let tool = ["mise run check", "2,968 tests · all green"];
         let blocks = [
-            TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
-            TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
+            TranscriptBlock::new("u1", TranscriptKind::User, &user),
+            TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+            TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+                .folded(true)
+                .summary("Reasoning through the verification plan"),
+            TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
         ];
         self.state.set_focused(true);
         !matches!(

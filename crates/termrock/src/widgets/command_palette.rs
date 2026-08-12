@@ -34,11 +34,11 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate, Panel,
-        PanelChrome, TextInput, TextInputOutcome, TextInputState,
+        HighlightVisual, HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate,
+        Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState,
     },
 };
 
@@ -1323,10 +1323,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         let surface = self.focused && state.accepts_input();
-        let emphasis = if surface {
-            PanelChrome::Focused
+        let border = if surface {
+            Role::BorderFocused
         } else {
-            PanelChrome::Normal
+            Role::Border
         };
 
         let title = if state.current_page_title().is_some() {
@@ -1338,9 +1338,21 @@ impl<'a, Id> CommandPalette<'a, Id> {
         };
         let _ = pt_title_marker(state, title);
 
-        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
-        let inner = panel.inner(area);
-        ratatui_core::widgets::Widget::render(&panel, area, buffer);
+        let inner = Surface::new(self.system)
+            .recipe(SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(self.system.style(border))
+            .padding(1, 0)
+            .paint(area, buffer);
+        if area.width > 4 {
+            buffer.set_stringn(
+                area.x.saturating_add(2),
+                area.y,
+                &take_display_cols(self.title, usize::from(area.width.saturating_sub(4))),
+                usize::from(area.width.saturating_sub(4)),
+                self.system.style(Role::TextStrong),
+            );
+        }
         if inner.is_empty() {
             return;
         }
@@ -1387,6 +1399,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         // Query or argument field.
         if content.height > 0 {
             let field_area = Rect::new(content.x, content.y, content.width, 1);
+            buffer.set_style(field_area, self.system.style(Role::Sunken));
             match &state.phase {
                 CommandPalettePhase::Argument { prompt, .. } => {
                     let prefix = if self.ascii {
@@ -1620,6 +1633,23 @@ impl<'a, Id> CommandPalette<'a, Id> {
             let active = i == cursor && surface;
             let row_rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row_rect));
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: false,
+                    enabled: entry.enabled,
+                    loading: false,
+                    checked: false,
+                });
+            if recipe.use_fill {
+                buffer.set_style(row_rect, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(row_rect, recipe.tint);
+            }
 
             // Cursor gutter.
             let gutter = if active {
@@ -1629,7 +1659,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             };
             let mut x = area.x;
             let gstyle = if active {
-                self.system.style(Role::Selection)
+                recipe.label
             } else {
                 self.system.style(Role::Text)
             };
@@ -1676,11 +1706,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             // Label with fuzzy highlights.
             if label_w > 0 {
                 if let Some(ranges) = &entry.match_ranges {
-                    let visual = if active {
-                        HighlightVisual::Selected
-                    } else {
-                        HighlightVisual::Normal
-                    };
+                    let visual = HighlightVisual::Normal;
                     let _ = HighlightedText::new(&entry.label, ranges.as_slice(), self.system)
                         .visual(visual)
                         .truncate(MatchTruncate::End)
@@ -1699,7 +1725,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     } else if !entry.enabled {
                         self.system.style(Role::TextDisabled)
                     } else if active {
-                        self.system.style(Role::Selection)
+                        recipe.label
                     } else {
                         self.system.style(Role::Text)
                     };

@@ -30,6 +30,7 @@ use ratatui_core::{
     widgets::Widget,
 };
 
+use super::{Surface, SurfaceRecipe};
 use crate::{
     runtime::{FrameTick, Presence},
     style::{DesignSystem, Motion, Role},
@@ -1033,54 +1034,26 @@ fn paint_one_toast(
     if area.is_empty() {
         return;
     }
-    // Clear / elevated fill (non-disruptive small card — not full-screen dim)
-    let fill = system.style(Role::Elevated);
-    for y in area.y..area.bottom() {
-        for x in area.x..area.right() {
-            buffer[(x, y)].set_style(fill);
-            buffer[(x, y)].set_symbol(" ");
-        }
-    }
-    let border = system.style(kind.role());
-    let (tl, tr, bl, br, h, v) = if ascii {
-        ("+", "+", "+", "+", "-", "|")
-    } else {
-        ("┌", "┐", "└", "┘", "─", "│")
-    };
-    if area.width >= 2 && area.height >= 2 {
-        buffer.set_stringn(area.x, area.y, tl, 1, border);
-        buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border);
-        buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border);
-        buffer.set_stringn(
-            area.right().saturating_sub(1),
-            area.bottom().saturating_sub(1),
-            br,
-            1,
-            border,
-        );
-        if area.width > 2 {
-            let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-            buffer.set_stringn(area.x + 1, area.y, &hz, usize::from(area.width - 2), border);
-            buffer.set_stringn(
-                area.x + 1,
-                area.bottom().saturating_sub(1),
-                &hz,
-                usize::from(area.width - 2),
-                border,
-            );
-        }
-        for y in area.y + 1..area.bottom().saturating_sub(1) {
-            buffer.set_stringn(area.x, y, v, 1, border);
-            buffer.set_stringn(area.right().saturating_sub(1), y, v, 1, border);
-        }
-    }
-    let inner = Rect {
-        x: area.x.saturating_add(1),
-        y: area.y.saturating_add(1),
-        width: area.width.saturating_sub(2),
-        height: area.height.saturating_sub(2),
-    };
+    let inner = Surface::new(system)
+        .recipe(SurfaceRecipe::Overlay)
+        .bordered(true)
+        .padding(0, 0)
+        .paint(area, buffer);
     if inner.is_empty() {
+        return;
+    }
+    let rail = system.style(kind.role());
+    for y in inner.y..inner.bottom() {
+        buffer[(inner.x, y)].set_style(rail);
+        buffer[(inner.x, y)].set_symbol("│");
+    }
+    let content = Rect::new(
+        inner.x.saturating_add(2),
+        inner.y,
+        inner.width.saturating_sub(2),
+        inner.height,
+    );
+    if content.is_empty() {
         return;
     }
     let glyph = if ascii {
@@ -1089,66 +1062,84 @@ fn paint_one_toast(
         kind.glyph_unicode()
     };
     let text_style = style_override.unwrap_or(system.style(Role::Text));
-    let mut y = inner.y;
+    let mut y = content.y;
     if let Some(title) = title {
-        let line = format!("{glyph} {title}");
+        buffer.set_stringn(content.x, y, glyph, 1, system.style(kind.role()));
         buffer.set_stringn(
-            inner.x,
+            content.x.saturating_add(2),
             y,
-            &take_display_cols(&line, usize::from(inner.width)),
-            usize::from(inner.width),
+            &take_display_cols(title, usize::from(content.width.saturating_sub(2))),
+            usize::from(content.width.saturating_sub(2)),
             system.style(Role::TextStrong).add_modifier(Modifier::BOLD),
         );
         y = y.saturating_add(1);
-        if y < inner.bottom() {
+        if y < content.bottom() {
             buffer.set_stringn(
-                inner.x,
+                content.x,
                 y,
-                &take_display_cols(message, usize::from(inner.width)),
-                usize::from(inner.width),
+                &take_display_cols(message, usize::from(content.width)),
+                usize::from(content.width),
                 text_style,
             );
             y = y.saturating_add(1);
         }
     } else {
-        let mut line = format!("{glyph} {message}");
+        buffer.set_stringn(content.x, y, glyph, 1, system.style(kind.role()));
+        let mut line = message.to_string();
         if let Some(ul) = undo_label {
             line = format!("{line}  [{ul}]");
         }
         buffer.set_stringn(
-            inner.x,
+            content.x.saturating_add(2),
             y,
-            &take_display_cols(&line, usize::from(inner.width)),
-            usize::from(inner.width),
+            &take_display_cols(&line, usize::from(content.width.saturating_sub(2))),
+            usize::from(content.width.saturating_sub(2)),
             text_style,
         );
         y = y.saturating_add(1);
     }
     if let Some(pct) = progress {
-        if y < inner.bottom() {
-            let bar_w = usize::from(inner.width).saturating_sub(5).max(1);
-            let filled = (usize::from(pct) * bar_w) / 100;
-            let empty = bar_w.saturating_sub(filled);
-            let bar = if ascii {
-                format!("{:3}% {}{}", pct, "#".repeat(filled), "-".repeat(empty))
-            } else {
-                format!("{:3}% {}{}", pct, "█".repeat(filled), "░".repeat(empty))
-            };
+        if y < content.bottom() {
+            let bar_w = usize::from(content.width).saturating_sub(5).max(1);
             buffer.set_stringn(
-                inner.x,
+                content.x,
                 y,
-                &take_display_cols(&bar, usize::from(inner.width)),
-                usize::from(inner.width),
+                &format!("{pct:3}% "),
+                5.min(usize::from(content.width)),
                 system.style(Role::Info),
             );
+            let scaled = f64::from(pct) * bar_w as f64 / 100.0;
+            let filled = scaled.floor() as usize;
+            let partial = ((scaled.fract() * 8.0).floor() as usize).min(7);
+            let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
+            let track_x = content.x.saturating_add(5);
+            for column in 0..bar_w {
+                let on = column < filled || (!ascii && column == filled && partial > 0);
+                let symbol = if column < filled {
+                    if ascii { "#" } else { "█" }
+                } else if !ascii && column == filled && partial > 0 {
+                    partial_glyph.as_str()
+                } else if ascii {
+                    "-"
+                } else {
+                    " "
+                };
+                buffer.set_stringn(
+                    track_x.saturating_add(column as u16),
+                    y,
+                    symbol,
+                    1,
+                    system.style(if on { Role::Info } else { Role::Sunken }),
+                );
+            }
         }
-    } else if undo_label.is_some() && title.is_some() && y < inner.bottom() {
+    } else if undo_label.is_some() && title.is_some() && y < content.bottom() {
         if let Some(ul) = undo_label {
             buffer.set_stringn(
-                inner.x,
+                content.x,
                 y,
-                &take_display_cols(&format!("[{ul}]"), usize::from(inner.width)),
-                usize::from(inner.width),
+                &take_display_cols(&format!("[{ul}]"), usize::from(content.width)),
+                usize::from(content.width),
                 system.style(Role::TextMuted),
             );
         }
@@ -1649,6 +1640,27 @@ mod tests {
         Toast::new(&system, "deleted", Severity::Success)
             .undo("Undo")
             .paint(area, &mut buf);
+    }
+
+    #[test]
+    fn toast_border_is_muted_severity_on_icon_and_rail() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+        paint_one_toast(
+            area,
+            &mut buffer,
+            &system,
+            ToastKind::Warning,
+            Some("Warning"),
+            "Check input",
+            None,
+            None,
+            false,
+            None,
+        );
+        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
+        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Warning).fg.unwrap());
     }
 
     #[test]

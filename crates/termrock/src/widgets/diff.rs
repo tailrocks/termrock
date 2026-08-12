@@ -1445,6 +1445,9 @@ fn paint_unified_line(
         return;
     }
     let style = kind_style(system, line.kind, colorless, surface, cursor || in_hunk);
+    if !colorless && matches!(line.kind, DiffKind::Added | DiffKind::Removed) {
+        buffer.set_style(area, system.style(line.kind.role()));
+    }
     let gutter = if cursor && surface {
         if ascii { ">" } else { "›" }
     } else if in_hunk {
@@ -1608,6 +1611,9 @@ fn paint_split_line(
 ) {
     if area.is_empty() {
         return;
+    }
+    if !colorless && matches!(line.kind, DiffKind::Added | DiffKind::Removed) {
+        buffer.set_style(area, system.style(line.kind.role()));
     }
     let mid = area.width / 2;
     let left = Rect::new(area.x, area.y, mid.saturating_sub(1).max(1), 1);

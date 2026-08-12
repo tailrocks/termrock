@@ -669,7 +669,9 @@ impl<'a> Panel<'a> {
         let recipe = self.recipe();
         let border = self.style.unwrap_or(recipe.border);
         let mut block = if self.has_box_border() {
-            Block::bordered().border_style(border)
+            Block::bordered()
+                .border_style(border)
+                .border_set(self.tokens.border_set())
         } else {
             Block::default()
         };
@@ -713,6 +715,18 @@ impl<'a> Panel<'a> {
         let has_border = self.has_box_border();
         let border_cells: u16 = if has_border { 1 } else { 0 };
         let inner = shrink(area, border_cells, border_cells, border_cells, border_cells);
+        let spacing = self.tokens.spacing;
+        let pad_x = if inner.width >= spacing.pad_x.saturating_mul(2).saturating_add(4) {
+            spacing.pad_x
+        } else {
+            0
+        };
+        let pad_y = if inner.height >= spacing.pad_y.saturating_mul(2).saturating_add(1) {
+            spacing.pad_y
+        } else {
+            0
+        };
+        let inner = shrink(inner, pad_x, pad_y, pad_x, pad_y);
 
         let slots = self.slots_for_width(area.width);
         let has_title = slots.title_text().is_some() || self.collapsible;
@@ -855,11 +869,17 @@ impl<'a> Panel<'a> {
         } else {
             SurfaceFill::Auto
         };
+        let surface_style = if focused && self.is_focusable() {
+            PanelChrome::Focused
+        } else {
+            self.emphasis
+        };
+        let surface_recipe_tokens = self.tokens.panel_recipe(surface_style);
         let _ = Surface::new(self.tokens)
             .recipe(surface_recipe)
             .bordered(false)
             .fill(fill_policy)
-            .padding(0, 0)
+            .padding(surface_recipe_tokens.pad_x, surface_recipe_tokens.pad_y)
             .paint(area, buffer);
 
         // Box border + title/footer on border.
@@ -870,7 +890,9 @@ impl<'a> Panel<'a> {
             }
             let recipe = self.tokens.panel_recipe(emphasis);
             let border = self.style.unwrap_or(recipe.border);
-            let mut block = Block::bordered().border_style(border);
+            let mut block = Block::bordered()
+                .border_style(border)
+                .border_set(self.tokens.border_set());
             let slots = self.slots_for_width(area.width);
             if let Some(title) = self.title_line(slots, Some(collapsed)) {
                 // Reserve right band for header actions so title does not collide.
@@ -1134,7 +1156,67 @@ fn shrink(area: Rect, left: u16, top: u16, right: u16, bottom: u16) -> Rect {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::style::DesignSystem;
+    use crate::style::{BorderShape, DesignSystem, GlyphSet};
+
+    fn render_border(system: &DesignSystem) -> Buffer {
+        let area = Rect::new(0, 0, 8, 4);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(system).paint(area, &mut buffer, None);
+        buffer
+    }
+
+    #[test]
+    fn rounded_shape_changes_corners_only() {
+        let square = render_border(&DesignSystem::default());
+        let rounded = render_border(&DesignSystem::default().border_shape(BorderShape::Rounded));
+        for (position, square_symbol, rounded_symbol) in [
+            ((0, 0), "\u{250c}", "\u{256d}"),
+            ((7, 0), "┐", "╮"),
+            ((0, 3), "└", "╰"),
+            ((7, 3), "┘", "╯"),
+        ] {
+            assert_eq!(square[position].symbol(), square_symbol);
+            assert_eq!(rounded[position].symbol(), rounded_symbol);
+            assert_eq!(square[position].style(), rounded[position].style());
+        }
+        assert_eq!(square[(3, 0)].symbol(), "─");
+        assert_eq!(rounded[(3, 0)].symbol(), "─");
+        assert_eq!(square[(0, 2)].symbol(), "│");
+        assert_eq!(rounded[(0, 2)].symbol(), "│");
+    }
+
+    #[test]
+    fn ascii_maps_both_shapes_to_plus() {
+        let square = render_border(&DesignSystem::default().glyphs(GlyphSet::Ascii));
+        let rounded = render_border(
+            &DesignSystem::default()
+                .glyphs(GlyphSet::Ascii)
+                .border_shape(BorderShape::Rounded),
+        );
+        assert_eq!(square, rounded);
+        assert_eq!(square[(0, 0)].symbol(), "+");
+        assert_eq!(square[(7, 3)].symbol(), "+");
+    }
+
+    #[test]
+    fn square_is_the_default_border_shape() {
+        assert_eq!(DesignSystem::default().border_shape, BorderShape::Square);
+    }
+
+    #[test]
+    fn panel_inner_uses_density_padding_and_contracts_when_narrow() {
+        let area = Rect::new(0, 0, 20, 10);
+        let comfortable = Panel::new(&DesignSystem::default()).inner(area);
+        let dashboard =
+            Panel::new(&DesignSystem::default().density(crate::style::Density::Dashboard))
+                .inner(area);
+        assert_eq!(comfortable, Rect::new(3, 2, 14, 6));
+        assert_eq!(dashboard, Rect::new(1, 1, 18, 8));
+        assert_eq!(
+            Panel::new(&DesignSystem::default()).inner(Rect::new(0, 0, 5, 2)),
+            Rect::new(1, 1, 0, 0)
+        );
+    }
 
     #[test]
     fn panel_recipe_focus_uses_border_focused_not_weight() {

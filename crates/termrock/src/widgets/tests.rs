@@ -80,7 +80,7 @@ fn inactive_panel_preserves_plain_gray_border() {
 }
 
 fn assert_panel_border(buffer: &Buffer, area: Rect, expected: Style) {
-    assert_eq!(buffer[(area.left(), area.top())].symbol(), "┌");
+    assert_eq!(buffer[(area.left(), area.top())].symbol(), "\u{250c}");
     assert_eq!(buffer[(area.right() - 1, area.top())].symbol(), "┐");
     assert_eq!(buffer[(area.left(), area.bottom() - 1)].symbol(), "└");
     assert_eq!(buffer[(area.right() - 1, area.bottom() - 1)].symbol(), "┘");

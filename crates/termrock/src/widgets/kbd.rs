@@ -563,8 +563,11 @@ impl<'a> Kbd<'a> {
         if matches!(self.variant, KbdVariant::Keycap) {
             style = style.add_modifier(Modifier::BOLD);
         }
-        // Quiet: no bg on keycaps for dense footers.
-        style.bg = None;
+        if matches!(self.variant, KbdVariant::Keycap)
+            && let Some(bg) = self.system.style(Role::Raised).bg
+        {
+            style = style.bg(bg);
+        }
         buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
     }
 }

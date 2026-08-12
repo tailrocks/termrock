@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome,
@@ -1224,6 +1224,23 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             let active = i == cursor && surface;
             let rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, rect));
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: false,
+                    enabled: true,
+                    loading: false,
+                    checked: entry.pinned,
+                });
+            if recipe.use_fill {
+                buffer.set_style(rect, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(rect, recipe.tint);
+            }
 
             // Apply redaction for display if sensitive
             let display = if entry.sensitive
@@ -1257,7 +1274,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                     self.system.style(Role::Text)
                 }
             } else if active {
-                self.system.style(Role::Selection)
+                recipe.label
             } else {
                 self.system.style(Role::Text)
             };

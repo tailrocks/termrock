@@ -11,6 +11,7 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 
 | Component | Purpose |
 |---|---|
+| [AccentRail](./accent-rail) | A semantic one-column block rail with deterministic wave motion, reduced-motion fallback, and collapsed-block glyph. |
 | [Accordion](./accordion) | Accordion widget. |
 | [ActionBar](./action-bar) | A horizontal group of stable, caller-owned actions with painted hit regions. |
 | [ActionLink](./action-link) | ActionLink widget. |
@@ -38,7 +39,7 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 | [DateTimePicker](./date-time-picker) | Civil date, time, and range picker with text entry, calendar/time-list browse, min/max, and non-color day states. Prefer TextInput for rare ISO paste. |
 | [Description](./description) | Description widget. |
 | [DesignInspector](./design-inspector) | Studio debug strip for focus, layer, density, and color capability. |
-| [DetailTable](./detail-table) | A selectable key/value table with stable rows and typed activation capabilities. |
+| [DetailTable](./detail-table) | A measurable selectable key/value table with stable rows and typed activation capabilities. |
 | [DiagnosticView](./diagnostic-view) | DiagnosticView widget. |
 | [Dialog](./dialog) | Canonical modal surface: title, description, body, actions, close policy, focus trap via OverlayStack, initial focus, opener restoration, scrolling, loading, validation; recipes normal/compact/wide/fullscreen/destructive; safe Enter (no accidental submit from body). |
 | [DiffReview](./diff-review) | DiffReview widget. |
@@ -49,6 +50,7 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 | [ErrorState](./error-state) | Canonical structured recoverable failure surface (see ErrorView). Recovery bundle, detail disclosure, recipes. |
 | [EventStream](./event-stream) | EventStream widget. |
 | [FieldCaption](./field-caption) | FieldCaption widget. |
+| [FieldRow](./field-row) | A density-aware composed field row with shared label columns, semantic selection chrome, masked and unset values, markers, and annotations. |
 | [FilePicker](./file-picker) | A host-driven file/directory browser with breadcrumbs, multi-select, path entry, and optional preview — no filesystem I/O in TermRock. |
 | [Form](./form) | A responsive form layout with stable focus, validation, and hit geometry. |
 | [FormWizard](./form-wizard) | Multi-step form wizard chrome with stepper, validation gates, review, failure/retry, and resume. Domain fields stay consumer-owned. |
@@ -57,7 +59,7 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 | [Heading](./heading) | Semantic heading line with terminal typography levels. |
 | [HexViewer](./hex-viewer) | HexViewer widget. |
 | [HighlightedText](./highlighted-text) | HighlightedText widget. |
-| [HintBar](./hint-bar) | A wrapping row of prioritized keyboard hints with semantic styling. |
+| [HintBar](./hint-bar) | A measured wrapping row of prioritized keyboard hints with semantic styling and an optional leading spacer band. |
 | [Histogram](./histogram) | Histogram widget. |
 | [HistoryPicker](./history-picker) | Reusable recent-history selector with pin/delete, search, groups, preview, redaction hooks, draft preservation, and popover/fullscreen placement. |
 | [Icon](./icon) | Icon widget. |
@@ -87,7 +89,7 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 | [ObjectInspector](./object-inspector) | ObjectInspector widget. |
 | [OfflineBanner](./offline-banner) | Unobtrusive single-line connectivity banner (Esc dismisses; StatusBar still shows connection). |
 | [Pagination](./pagination) | Page navigation for remote datasets with prev/next, page numbers, unknown totals, page size, loading, jump entry, and narrow contraction. Not scroll virtualization. |
-| [Panel](./panel) | Composable container with variants, body modes, collapsible/interactive state; focus ≠ selection. |
+| [Panel](./panel) | Composable container with variants, body modes, and content-measured vertical stacking; focus ≠ selection. |
 | [Paragraph](./paragraph) | Body paragraph with grapheme-safe display-column wrap. |
 | [PasswordInput](./password-input) | A secure secret-entry field that masks paint, redacts Debug/semantic output, and never embeds secrets in outcomes. |
 | [PathInput](./path-input) | A filesystem-aware path field with host-projected status, completion/browse hooks, and no FS coupling. |
@@ -137,8 +139,8 @@ the old multi-SVG state gallery. SVG snapshots are not used.
 | [ToolCard](./tool-card) | Mutable tool invocation card with non-color status glyphs. |
 | [Toolbar](./toolbar) | Toolbar widget. |
 | [Tooltip](./tooltip) | Delayed non-focus-stealing contextual help with pointer/focus triggers, plain/shortcut/rich variants, reduced-motion, and essential-elsewhere policy. |
-| [Transcript](./transcript) | Variable-height streaming transcript with stable visual anchors. |
-| [Tree](./tree) | Hierarchical collection: stable IDs, lazy children, loading/error, expansion, cursor/selection/check, icons, metadata, context actions, typeahead; Left collapse/parent, Right expand/enter; ancestor-preserving filter; virtual window + scroll anchors; ASCII glyphs. |
+| [Transcript](./transcript) | Variable-height streaming transcript with stable visual anchors, semantic actor rails, and deterministic active presence. |
+| [Tree](./tree) | Hierarchical collection with stable IDs, semantic live-tone tiers, pinned-prefix horizontal label scroll, lazy children, expansion, selection/check, metadata, typeahead, virtualization, and ASCII glyphs. |
 | [TreeNavigation](./tree-navigation) | Hierarchical route navigation with expansion, lazy children, typeahead, active ancestors, and route distinct from focus. Distinct from data Tree. |
 | [TreeTable](./tree-table) | TreeTable widget. |
 | [Viewport](./viewport) | A two-axis scrollable view over borrowed terminal lines. |

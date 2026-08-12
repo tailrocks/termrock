@@ -52,29 +52,29 @@ use termrock::{
         DiagnosticView, Dialog, DialogRecipe, DiffDecision, DiffHunk, DiffKind, DiffLine, DiffMode,
         DiffReview, DiffReviewFileRow, DiffReviewState, DiffReviewUnit, DiffView, DiffViewState,
         DiffWordKind, DiffWordSpan, Drawer, DropdownMenu, DropdownMenuState, EmptyAction,
-        EmptyDensity, EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, ErrorView,
-        EventSeverity, EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry,
-        FileEntryKind, FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview,
-        FileSortKey, FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState,
-        FormWizard, FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell,
-        GridColumn, GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer,
-        HexViewerState, HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram,
-        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity,
-        IdentityRole, ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel,
-        JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList,
-        KeyValueListState, KeyValueTable, KeyValueTableState, KeybindingRecorder,
-        KeybindingRecorderState, KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus,
-        KvtField, KvtMode, KvtValidation, Link, LinkState, List, ListDensity, ListRow,
-        ListSelectionMode, ListState, LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane,
-        LogPaneState, LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
-        MarkdownViewState, MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar,
-        MenuBarState, MenuItem, MenuNode, MenuState, MessageDialog, MeterSegment, ModeRibbon,
-        MultiSelect, MultiSelectState, NavItem, NavigationList, NavigationListState,
-        NotificationCenter, NotificationCenterState, NotificationRecipe, NumberConstraints,
-        NumberInput, NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState,
-        OfflineBanner, OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome,
-        PasswordInput, PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus,
-        PathInput, PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
+        EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, ErrorView, EventSeverity,
+        EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry, FileEntryKind,
+        FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview, FileSortKey,
+        FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState, FormWizard,
+        FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell, GridColumn,
+        GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer, HexViewerState,
+        HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram, HistoryEntry,
+        HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity, IdentityRole,
+        ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel, JumpFilter,
+        JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList, KeyValueListState,
+        KeyValueTable, KeyValueTableState, KeybindingRecorder, KeybindingRecorderState,
+        KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus, KvtField, KvtMode,
+        KvtValidation, Link, LinkState, List, ListRow, ListSelectionMode, ListState,
+        LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane, LogPaneState, LogStream,
+        LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
+        MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar, MenuBarState, MenuItem,
+        MenuNode, MenuState, MessageDialog, MeterSegment, ModeRibbon, MultiSelect,
+        MultiSelectState, NavItem, NavigationList, NavigationListState, NotificationCenter,
+        NotificationCenterState, NotificationRecipe, NumberConstraints, NumberInput,
+        NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState, OfflineBanner,
+        OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome, PasswordInput,
+        PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus, PathInput,
+        PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
         PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
         PickerState, Popover, PopoverState, PresenceStatus, PreviewCard, PreviewCardContent,
         PreviewCardState, PreviewLoadState, PreviewResourceKind, Progress, ProgressKind,
@@ -127,7 +127,7 @@ use termrock::{
 
 use crate::interactors::{
     ChoiceDialogInteractor, CommandPaletteInteractor, DesignInspectorInteractor, FormInteractor,
-    ListInteractor, LogPaneInteractor, PickerInteractor, PromptComposerInteractor,
+    ListInteractor, LogPaneInteractor, PanelInteractor, PickerInteractor, PromptComposerInteractor,
     SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor, TabsInteractor,
     TextAreaInteractor, ThemePickerInteractor, ToastInteractor, TranscriptInteractor,
     TreeInteractor, VirtualGridInteractor,
@@ -189,6 +189,10 @@ fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
         render_fn: render,
         theme: RolePalette::default(),
     })
+}
+
+fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PanelInteractor::new(render))
 }
 
 fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
@@ -575,7 +579,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             7,
             panel,
-        ),
+        )
+        .with_interactor(panel_interactor),
         Story::new(
             "panel/variants",
             "Panel variants",
@@ -584,6 +589,15 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             16,
             panel_variants_story,
+        ),
+        Story::new(
+            "panel-stack/omission",
+            "Measured panel stack",
+            "Panel",
+            "Content-sized panels; hidden blocks consume neither rows nor gaps.",
+            56,
+            17,
+            panel_stack_omission_story,
         ),
         Story::new(
             "panel/empty",
@@ -1425,11 +1439,11 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "hint-bar/wrapped",
-            "Hint bar",
+            "Measured hint bar",
             "HintBar",
-            "Prioritized caller-defined hints.",
+            "Measured wrapping with an intentional leading spacer band.",
             42,
-            2,
+            12,
             hint_bar,
         ),
         Story::new(
@@ -1532,6 +1546,15 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             6,
             tree_actions_story,
+        ),
+        Story::new(
+            "tree/tone-scroll",
+            "Tree tone and pinned scroll",
+            "Tree",
+            "Primary/live tone tiers with fixed hierarchy prefix under horizontal scroll.",
+            38,
+            7,
+            tree_tone_scroll_story,
         ),
         Story::new(
             "progress/determinate",
@@ -3056,7 +3079,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "status-bar/basic",
             "Status bar",
             "StatusBar",
-            "Mode, focus zone, selection, and shortcuts.",
+            "Filled band with muted separators: mode, focus zone, selection, shortcuts.",
             64,
             1,
             status_bar,
@@ -3333,6 +3356,15 @@ pub(crate) fn stories() -> Vec<Story> {
             spinner_phases_story,
         ),
         Story::new(
+            "motion/presence",
+            "Motion presence kit",
+            "Spinner",
+            "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
+            48,
+            8,
+            motion_presence_story,
+        ),
+        Story::new(
             "spinner/compact",
             "Spinner compact embedded",
             "Spinner",
@@ -3435,7 +3467,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "dialog/message",
             "Message dialog",
             "Dialog",
-            "Canonical modal shell with description and footer hint.",
+            "Elevated modal shell over a dim backdrop, with description and footer hint.",
             48,
             9,
             dialog,
@@ -3562,7 +3594,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "toast/success",
             "Toast success",
             "Toast",
-            "Caller-owned transient success message (default top-right).",
+            "Elevated transient success card with muted border and semantic accent rail.",
             34,
             4,
             toast,
@@ -3824,7 +3856,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "empty-state/basic",
             "Empty state",
             "EmptyState",
-            "Search no-results with primary clear action.",
+            "Framed inset no-results card with primary clear action.",
             40,
             10,
             empty_state,
@@ -4836,7 +4868,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "button/activation",
             "Button primary",
             "Button",
-            "Primary button with surface input chrome.",
+            "Primary accent chip driven by the shared button recipe.",
             28,
             3,
             button_story,
@@ -5718,9 +5750,9 @@ pub(crate) fn stories() -> Vec<Story> {
             "tool-call-card/running",
             "ToolCallCard running",
             "ToolCallCard",
-            "Running tool with risk and actor.",
-            48,
-            6,
+            "Running tool in compact and expanded actor-rail states.",
+            56,
+            12,
             tool_call_card_running_story,
         ),
         Story::new(
@@ -5853,7 +5885,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "badge/basic",
             "Badge variants",
             "Badge",
-            "Neutral info success warning destructive outline count.",
+            "Soft surface chips: neutral, info, success, warning, destructive, outline, count.",
             48,
             8,
             badge_story,
@@ -5862,7 +5894,7 @@ pub(crate) fn stories() -> Vec<Story> {
             "badge/table",
             "Badge in table context",
             "Badge",
-            "Dense row badges without fill dominance.",
+            "Dense row badges with calm shared-surface fills.",
             48,
             5,
             badge_table_story,
@@ -6325,6 +6357,24 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             label_basic_story,
+        ),
+        Story::new(
+            "field-row/states",
+            "Field row states",
+            "FieldRow",
+            "Plain, masked, required-unset, selected, and annotated rows.",
+            56,
+            7,
+            field_row_states_story,
+        ),
+        Story::new(
+            "accent-rail/actors",
+            "Accent rail actors",
+            "AccentRail",
+            "Static, active-wave, tool, and collapsed semantic rails.",
+            52,
+            12,
+            accent_rail_actors_story,
         ),
         Story::new(
             "label/states",
@@ -7279,6 +7329,33 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             14,
             plan_review_comments_story,
+        ),
+        Story::new(
+            "agent/tool-block-parity",
+            "Agent tool block parity",
+            "AgentParity",
+            "Public ToolCallCard compact and expanded running states.",
+            56,
+            12,
+            agent_tool_block_parity_story,
+        ),
+        Story::new(
+            "agent/plan-approval-parity",
+            "Agent plan approval parity",
+            "AgentParity",
+            "Public PlanReview golden plan and approval composition.",
+            56,
+            16,
+            agent_plan_approval_parity_story,
+        ),
+        Story::new(
+            "agent/turn-status-parity",
+            "Agent turn status parity",
+            "AgentParity",
+            "Public spinner, token glyph, elapsed meta, and stop chip.",
+            56,
+            3,
+            agent_turn_status_parity_story,
         ),
         Story::new(
             "question-flow/basic",
@@ -10692,6 +10769,86 @@ fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     }
 }
 
+fn panel_stack_omission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{PanelStackBlock, panel_stack};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let blocks = [
+        PanelStackBlock {
+            content_rows: 2,
+            chrome_rows: 2,
+            min: 3,
+            max: 6,
+            visible: true,
+        },
+        PanelStackBlock {
+            content_rows: 8,
+            chrome_rows: 2,
+            min: 4,
+            max: 7,
+            visible: true,
+        },
+        PanelStackBlock {
+            content_rows: 3,
+            chrome_rows: 2,
+            min: 3,
+            max: 5,
+            visible: false,
+        },
+        PanelStackBlock {
+            content_rows: 2,
+            chrome_rows: 2,
+            min: 3,
+            max: 5,
+            visible: true,
+        },
+    ];
+    let titles = [
+        "Summary · measured 2",
+        "Activity · capped 7",
+        "Hidden",
+        "Actions · measured 2",
+    ];
+    let details = [
+        "3 checks passing\nupdated moments ago",
+        "build  completed\ntests  2,961 passed\ndocs   verified\npush   ready",
+        "omitted",
+        "enter inspect\nesc close",
+    ];
+
+    for (index, rect) in panel_stack(area, &blocks, 1).into_iter().enumerate() {
+        let Some(rect) = rect.filter(|rect| rect.height > 0) else {
+            continue;
+        };
+        let emphasis = if index == 1 {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::default()
+        };
+        let body = Panel::new(system)
+            .title(titles[index])
+            .emphasis(emphasis)
+            .paint(rect, frame.buffer_mut(), None);
+        for (line, text) in details[index].lines().enumerate() {
+            let y = body.y.saturating_add(line as u16);
+            if y >= body.bottom() {
+                break;
+            }
+            frame.buffer_mut().set_stringn(
+                body.x,
+                y,
+                text,
+                usize::from(body.width),
+                system.style(if index == 1 && line == 0 {
+                    Role::Success
+                } else {
+                    Role::TextMuted
+                }),
+            );
+        }
+    }
+}
+
 fn panel_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Panel, PanelBody};
     let _ = Panel::new(system)
@@ -11528,6 +11685,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11544,6 +11702,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11560,6 +11719,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11576,6 +11736,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
     ]
@@ -11626,8 +11787,12 @@ fn form_validation_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             .error("invalid email")
             .required(true)
             .touched(true),
-        Field::new("token", "Token", "")
+        Field::new("token", "Token", "ignored")
+            .masked(8)
             .pending("checking…")
+            .required(true),
+        Field::new("region", "Region", "")
+            .unset("required")
             .required(true),
         Field::new("note", "Note", "ok").warning("optional warning"),
     ];
@@ -11934,6 +12099,28 @@ fn tree_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             .secondary(Line::from("manifest")),
     ];
     let mut state = TreeState::new(Some("f1"));
+    frame.render_stateful_widget(&Tree::new(&nodes, system), area, &mut state);
+}
+
+fn tree_tone_scroll_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ToneTier;
+    let nodes = [
+        TreeNode::new("root", Line::from("workspace"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new(
+            "live",
+            Line::from(
+                "streaming-agent-output-with-long-label-and-build-diagnostics-from-worker-07-persistent-tail-follow-session-alpha",
+            ),
+            1,
+        )
+        .tone(ToneTier::Live),
+        TreeNode::new("dim", Line::from("queued-background-index"), 1).tone(ToneTier::LiveDim),
+        TreeNode::new("plain", Line::from("README.md"), 1),
+    ];
+    let mut state = TreeState::new(Some("live"));
+    state.set_h_offset(18);
     frame.render_stateful_widget(&Tree::new(&nodes, system), area, &mut state);
 }
 
@@ -12666,7 +12853,51 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             visible: true,
         },
     ];
-    frame.render_widget(HintBar::new(&hints, &system).separator("  "), area);
+    let bar = HintBar::new(&hints, &system)
+        .separator("  ")
+        .leading_spacer(true);
+    let narrow_bar = HintBar::new(&hints, &system).separator("  ");
+    if area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            format!("WIDE BUDGET  ·  {} ROWS", bar.measured_height(area.width)),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let wide_y = area.y.saturating_add(1);
+    let wide_height = bar
+        .measured_height(area.width)
+        .min(area.bottom().saturating_sub(wide_y));
+    frame.render_widget(&bar, Rect::new(area.x, wide_y, area.width, wide_height));
+
+    let narrow_width = area.width.min(20);
+    let narrow_y = wide_y.saturating_add(wide_height).saturating_add(1);
+    if narrow_y < area.bottom() {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            narrow_y,
+            format!(
+                "NARROW 20 COL  ·  {} ROWS",
+                narrow_bar.measured_height(narrow_width)
+            ),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let narrow_bar_y = narrow_y.saturating_add(1);
+    frame.render_widget(
+        &narrow_bar,
+        Rect::new(
+            area.x,
+            narrow_bar_y,
+            narrow_width,
+            narrow_bar
+                .measured_height(narrow_width)
+                .min(area.bottom().saturating_sub(narrow_bar_y)),
+        ),
+    );
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13034,13 +13265,54 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             emphasis: false,
             style: None,
         },
+        DetailRow {
+            id: "region",
+            label: "Region",
+            value: "ap-southeast-1",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "updated",
+            label: "Updated",
+            value: "moments ago",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "owner",
+            label: "Owner",
+            value: "platform / runtime",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
     ];
-    let mut state = DetailTableState::default();
-    frame.render_stateful_widget(
-        &DetailTable::new(&rows, system).label_width(14).wrap(true),
-        area,
-        &mut state,
+    let table = DetailTable::new(&rows, system).label_width(14).wrap(true);
+    let measured = table.measure();
+    if area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            format!("NATURAL EXTENT  {} × {}", measured.0, measured.1),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let table_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width.min(measured.0),
+        area.height.saturating_sub(2).min(measured.1),
     );
+    let mut state = DetailTableState::default();
+    state.selected = Some("link");
+    frame.render_stateful_widget(&table, table_area, &mut state);
 }
 
 fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16346,6 +16618,45 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     }
 }
 
+fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tick = 11;
+    let canvas = system
+        .style(Role::Canvas)
+        .bg
+        .unwrap_or(ratatui::style::Color::Black);
+    let accent = system.style(Role::Accent);
+    for row in 0..area.height.min(6) {
+        let alpha = termrock::style::wave_brightness(tick, row, 16, 0.5);
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y.saturating_add(row),
+            "│",
+            1,
+            termrock::style::fade_style(accent, alpha, canvas),
+        );
+    }
+    let pulse = termrock::style::pulse_brightness(tick, 16);
+    frame.buffer_mut().set_stringn(
+        area.x.saturating_add(3),
+        area.y,
+        termrock::style::SPINNER_DOT_PULSE_FRAMES[2],
+        1,
+        termrock::style::fade_style(accent, pulse, canvas),
+    );
+    let label = "Presence travels without breaking terminal rhythm";
+    let width = area.width.saturating_sub(3).min(44);
+    for (col, ch) in label.chars().take(usize::from(width)).enumerate() {
+        let alpha = termrock::style::edge_fade(col as u16, width, 5);
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(3).saturating_add(col as u16),
+            area.y.saturating_add(3),
+            ch.to_string(),
+            1,
+            termrock::style::fade_style(system.style(Role::Text), alpha, canvas),
+        );
+    }
+}
+
 fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use std::time::{Duration, Instant};
     use termrock::runtime::FrameTick;
@@ -16436,58 +16747,6 @@ fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
         .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
-}
-
-fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
-    use termrock::runtime::{FrameClock, FrameTick, Presence, spinner_demand};
-    use termrock::style::Motion;
-    use termrock::widgets::{Panel, PanelChrome, Spinner};
-
-    frame.render_widget(
-        Panel::new(system)
-            .title("FrameClock · Presence · Motion")
-            .chrome(PanelChrome::Focused),
-        area,
-    );
-    let inner = Rect::new(
-        area.x.saturating_add(1),
-        area.y.saturating_add(1),
-        area.width.saturating_sub(2),
-        area.height.saturating_sub(2),
-    );
-    let start = Instant::now();
-    let mut clock = FrameClock::from_start(start);
-    let tick = clock.tick_at(start + Duration::from_millis(560));
-    let spin_full = Spinner::new(system).frame_glyph(tick, Motion::Full);
-    let spin_off = Spinner::new(system).frame_glyph(tick, Motion::Off);
-    let mut toast = Presence::toast(Duration::from_secs(2));
-    toast.request_show(FrameTick::manual(start, Duration::ZERO, Duration::ZERO));
-    let demand = spinner_demand(tick, Motion::Full, true);
-    let idle = spinner_demand(tick, Motion::Full, false);
-    let lines = [
-        format!("spinner Full={spin_full} Off={spin_off}"),
-        format!(
-            "toast visible={} focusable={}",
-            toast.is_visible(),
-            toast.is_focusable()
-        ),
-        format!(
-            "demand active={} idle={}",
-            demand.needs_redraw, idle.needs_redraw
-        ),
-    ];
-    let mut y = inner.y;
-    for line in lines {
-        frame.buffer_mut().set_stringn(
-            inner.x,
-            y,
-            &line,
-            usize::from(inner.width),
-            system.style(termrock::style::Role::Text),
-        );
-        y = y.saturating_add(1);
-    }
 }
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16798,6 +17057,22 @@ fn paint_stack_rects(
 
 fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(termrock::style::Density::default());
+    let dialog_area = termrock::layout::resolve_dialog(
+        area,
+        termrock::layout::DialogSpec {
+            min_width: 32,
+            preferred_width: 48,
+            preferred_reference_pct: None,
+            max_width: 72,
+            min_height: 8,
+            preferred_height: 10,
+            max_height: 12,
+            horizontal_margin: 4,
+            vertical_margin: 2,
+            placement: termrock::layout::Placement::Centered,
+        }
+        .preferred_pct_of_reference(40),
+    );
     frame.render_widget(
         Dialog::new(
             "Notice",
@@ -16809,7 +17084,7 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .emphasis(termrock::widgets::PanelChrome::Focused)
         .recipe(DialogRecipe::Normal)
         .footer_hint("esc dismiss"),
-        area,
+        dialog_area,
     );
 }
 
@@ -17290,7 +17565,7 @@ fn empty_state_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .kind(EmptyKind::NoData)
         .explanation("Pick a story")
         .primary(EmptyAction::new("Browse"))
-        .density(EmptyDensity::Inline)
+        .density(Density::Compact)
         .paint(area, frame.buffer_mut());
 }
 
@@ -18211,20 +18486,31 @@ fn tool_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let user = ["Run the suite", "with unicode: sample 🚀"];
-    let assistant = [
-        "Sure — preparing the environment.",
-        "Running tests…",
-        "All green.",
+    let user = [
+        "Run the release suite",
+        "include docs and capability checks",
     ];
-    let tool = ["cargo test — passed"];
+    let assistant = [
+        "I’ll verify the full workspace.",
+        "The dependency graph is clean.",
+    ];
+    let thinking = [
+        "Inspecting affected surfaces…",
+        "Checking migration order…",
+        "Comparing deterministic frames…",
+        "Hidden reasoning beyond preview.",
+    ];
+    let tool = ["mise run check", "2,968 tests · all green"];
     let blocks = [
         TranscriptBlock::new("u1", TranscriptKind::User, &user),
         TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
-        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).folded(false),
+        TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+            .folded(true)
+            .summary("Reasoning through the verification plan"),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
     ];
     let mut state = TranscriptState::new();
-    frame.render_stateful_widget(&Transcript::new(&blocks, system), area, &mut state);
+    frame.render_stateful_widget(&Transcript::new(&blocks, system).tick(7), area, &mut state);
 }
 
 fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18508,7 +18794,7 @@ fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     state.set_work(Some(example_working_state()));
     state.presentation = WorkingStatePresentation::Expanded;
     state.focused = true;
-    frame.render_stateful_widget(&WorkingStateCard::new(system), area, &mut state);
+    frame.render_stateful_widget(&WorkingStateCard::new(system).tick(3), area, &mut state);
 }
 
 fn working_state_card_waiting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20592,10 +20878,25 @@ fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     };
     let calls = example_tool_calls();
     let call = calls.iter().find(|c| c.id == "t2").unwrap_or(&calls[1]);
-    let mut st = ToolCallCardState::new();
-    st.focused = true;
-    st.presentation = ToolCallPresentation::Compact;
-    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+    let compact_area = Rect::new(area.x, area.y, area.width, 1);
+    let expanded_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width,
+        area.height.saturating_sub(2),
+    );
+    let mut compact = ToolCallCardState::new();
+    compact.focused = true;
+    compact.presentation = ToolCallPresentation::Compact;
+    ToolCallCard::new(call, system)
+        .tick(3)
+        .paint(compact_area, frame.buffer_mut(), &mut compact);
+    let mut expanded = ToolCallCardState::new();
+    expanded.focused = true;
+    expanded.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(call, system)
+        .tick(3)
+        .paint(expanded_area, frame.buffer_mut(), &mut expanded);
 }
 
 fn tool_call_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20660,7 +20961,9 @@ fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &D
     st.focused = true;
     st.presentation = TerminalRunPresentation::Expanded;
     st.on_append(lines.len() as u16, 8);
-    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
+    TerminalRunCard::new(run, &lines, system)
+        .tick(3)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21705,6 +22008,75 @@ fn label_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .paint(area, frame.buffer_mut());
 }
 
+fn field_row_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FieldRow, FieldRowValue};
+    let rows = Layout::vertical([Constraint::Length(1); 5]).split(area);
+    let labels = ["Workspace", "API token", "Endpoint", "Mode", "Owner"];
+    let label_cols = FieldRow::label_cols_for(labels.into_iter());
+    FieldRow::new(system, labels[0], FieldRowValue::Plain("termrock"))
+        .label_cols(label_cols)
+        .marker("◆")
+        .paint(rows[0], frame.buffer_mut());
+    FieldRow::new(system, labels[1], FieldRowValue::Masked { len: 8 })
+        .label_cols(label_cols)
+        .annotation("stored locally")
+        .annotation_italic(true)
+        .paint(rows[1], frame.buffer_mut());
+    FieldRow::new(system, labels[2], FieldRowValue::Unset { hint: "required" })
+        .label_cols(label_cols)
+        .required(true)
+        .paint(rows[2], frame.buffer_mut());
+    FieldRow::new(system, labels[3], FieldRowValue::Plain("Focused"))
+        .label_cols(label_cols)
+        .selected(true)
+        .paint(rows[3], frame.buffer_mut());
+    FieldRow::new(system, labels[4], FieldRowValue::Plain("Tailrocks"))
+        .label_cols(label_cols)
+        .hovered(true)
+        .paint(rows[4], frame.buffer_mut());
+}
+
+fn accent_rail_actors_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::AccentRail;
+    let blocks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(3),
+        Constraint::Length(2),
+        Constraint::Length(2),
+    ])
+    .spacing(1)
+    .split(area);
+    let cases = [
+        (Role::ActorUser, false, false, "USER  Request received"),
+        (
+            Role::ActorAssistant,
+            true,
+            false,
+            "ASSISTANT  Working with deterministic wave",
+        ),
+        (Role::ActorTool, false, false, "TOOL  Build complete"),
+        (Role::TextMuted, false, true, "COLLAPSED  3 hidden events"),
+    ];
+    for (index, (role, active, collapsed, label)) in cases.into_iter().enumerate() {
+        let content = AccentRail::new(system, role)
+            .active(active)
+            .collapsed(collapsed)
+            .tick(11)
+            .paint(blocks[index], frame.buffer_mut());
+        frame.buffer_mut().set_stringn(
+            content.x,
+            content.y,
+            label,
+            usize::from(content.width),
+            system.style(if index == 1 {
+                Role::TextStrong
+            } else {
+                Role::Text
+            }),
+        );
+    }
+}
+
 fn label_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{FieldCaption, Label};
     let chunks = Layout::vertical([
@@ -22487,6 +22859,98 @@ fn plan_review_comments_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
 }
 
+fn agent_tool_block_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ToolCall, ToolCallCard, ToolCallCardState, ToolCallPresentation, ToolStatus,
+    };
+    let call = ToolCall::new("parity-tool", "search", "Search")
+        .status(ToolStatus::Running)
+        .args_summary("component recipes")
+        .args_detail("docs/design + crates/termrock/src")
+        .result_summary("Scanning public surfaces");
+    let compact_area = Rect::new(area.x, area.y, area.width, 1);
+    let expanded_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width,
+        area.height.saturating_sub(2),
+    );
+    let mut compact = ToolCallCardState::new();
+    compact.presentation = ToolCallPresentation::Compact;
+    let mut expanded = ToolCallCardState::new();
+    expanded.focused = true;
+    expanded.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(&call, system)
+        .tick(7)
+        .paint(compact_area, frame.buffer_mut(), &mut compact);
+    ToolCallCard::new(&call, system).tick(7).paint(
+        expanded_area,
+        frame.buffer_mut(),
+        &mut expanded,
+    );
+}
+
+fn agent_plan_approval_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{PlanReview, PlanReviewPane, PlanReviewState, example_plan_document};
+    let mut state = PlanReviewState::new();
+    state.open(example_plan_document());
+    state.pane = PlanReviewPane::Tasks;
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::{
+        runtime::FrameTick,
+        style::Glyph,
+        widgets::{Action, ActionBar, ActionBarState, Spinner, SpinnerGlyphSet, SpinnerState},
+    };
+    let tick = FrameTick::manual(
+        Instant::now(),
+        Duration::from_millis(2_400),
+        Duration::from_millis(16),
+    );
+    let spinner_area = Rect::new(area.x, area.y, area.width.saturating_sub(22), 1);
+    let mut spinner_state = SpinnerState::new();
+    spinner_state.set_glyph_set(SpinnerGlyphSet::DotPulse);
+    Spinner::labeled("Building catalog", system)
+        .role(Role::ActorAssistant)
+        .paint(
+            spinner_area,
+            frame.buffer_mut(),
+            &spinner_state,
+            tick,
+            system.motion,
+        );
+    let token = Glyph::Token.resolve(system.glyphs).text;
+    let meta = format!("2.4s  {token} 12.8k");
+    let meta_width = 14_u16.min(area.width);
+    let meta_x = area.right().saturating_sub(meta_width.saturating_add(7));
+    frame.buffer_mut().set_stringn(
+        meta_x,
+        area.y,
+        meta,
+        usize::from(meta_width),
+        system.style(Role::TextMuted),
+    );
+    let actions = [Action {
+        id: "stop",
+        label: "Stop",
+        enabled: true,
+        style: Some(system.style(Role::Danger)),
+    }];
+    let mut action_state = ActionBarState {
+        cursor: Some("stop"),
+        regions: Vec::new(),
+    };
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system),
+        Rect::new(area.right().saturating_sub(7), area.y, 7, 1),
+        &mut action_state,
+    );
+}
+
 fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{QuestionFlow, QuestionFlowState, example_question_set};
     let mut state = QuestionFlowState::new();
@@ -22719,7 +23183,9 @@ fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let mut st = SubagentCardState::new();
     st.focused = true;
     st.presentation = SubagentPresentation::Card;
-    SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
+    SubagentCard::new(run, system)
+        .tick(3)
+        .paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23020,6 +23486,7 @@ fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         TreeTableRow::new(1902, 4, r4).parent(1888),
     ];
     let mut state = TreeTableState::new(Some(1888));
+    state.hovered = Some(1204);
     state.load = LoadState::Ready { count: 5 };
     state.sort = Some(SortSpec {
         column: "cpu",
@@ -23275,7 +23742,7 @@ fn key_value_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     ];
     let mut state = KeyValueTableState::new().with_cursor("cmd");
     state.load = LoadState::Ready { count: 6 };
-    state.density = termrock::widgets::KvDensity::Dense;
+    state.density = Density::Compact;
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -23386,7 +23853,7 @@ fn key_value_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     ];
     let mut state = KeyValueTableState::new().with_cursor("a");
     state.layout = KvLayout::Auto;
-    state.density = termrock::widgets::KvDensity::Dense;
+    state.density = Density::Compact;
     state.load = LoadState::Ready { count: 3 };
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
@@ -23483,6 +23950,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -23499,6 +23967,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
     ];

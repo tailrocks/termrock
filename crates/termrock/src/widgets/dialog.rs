@@ -42,7 +42,8 @@ use crate::{
 };
 
 use super::{
-    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel, PanelChrome,
+    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
+    PanelChrome, Surface, SurfaceRecipe,
 };
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
@@ -506,12 +507,7 @@ pub struct Backdrop {
 
 impl Default for Backdrop {
     fn default() -> Self {
-        Self {
-            symbol: ' ',
-            style: Style::new()
-                .fg(Color::Reset)
-                .bg(crate::style::DIALOG_BACKDROP),
-        }
+        Self::dim_wash(false)
     }
 }
 
@@ -525,7 +521,12 @@ impl Backdrop {
     /// Terminal-default background (Reset).
     #[must_use]
     pub fn reset() -> Self {
-        Self::default()
+        Self {
+            symbol: ' ',
+            style: Style::new()
+                .fg(Color::Reset)
+                .bg(crate::style::DIALOG_BACKDROP),
+        }
     }
 
     /// Dim wash glyph field.
@@ -540,11 +541,16 @@ impl Backdrop {
         }
     }
 
-    /// From design tokens (Reset by default).
+    /// From design tokens (dim wash by default).
     #[must_use]
     pub fn from_tokens(tokens: &DesignSystem) -> Self {
-        let _ = tokens;
-        Self::reset()
+        Self {
+            symbol: if tokens.glyphs.is_ascii() { '.' } else { '░' },
+            style: tokens
+                .style(Role::Backdrop)
+                .bg(crate::style::DIALOG_BACKDROP)
+                .add_modifier(ratatui_core::style::Modifier::DIM),
+        }
     }
 
     /// Fill symbol.
@@ -1256,6 +1262,11 @@ impl<'a> Dialog<'a> {
         }
         state.slots.root = area;
         Clear.render(area, buffer);
+        Surface::new(self.tokens)
+            .recipe(SurfaceRecipe::Overlay)
+            .bordered(false)
+            .padding(0, 0)
+            .paint(area, buffer);
 
         let emphasis = if matches!(
             state.focus_zone,
@@ -1293,18 +1304,43 @@ impl<'a> Dialog<'a> {
         let inner = block.inner(area);
         block.render(area, buffer);
 
+        let pad_x = if inner.width
+            >= self
+                .tokens
+                .spacing
+                .pad_x
+                .saturating_mul(2)
+                .saturating_add(4)
+        {
+            self.tokens.spacing.pad_x
+        } else {
+            0
+        };
+        let content = Rect::new(
+            inner.x.saturating_add(pad_x),
+            inner.y,
+            inner.width.saturating_sub(pad_x.saturating_mul(2)),
+            inner.height,
+        );
+        let rhythm = inner.height
+            >= 3_u16
+                .saturating_add(action_h)
+                .saturating_add(desc_rows)
+                .saturating_add(validation_rows)
+                .saturating_add(footer_rows);
+
         // Title slot approx first inner row used by block title — report full top.
         state.slots.title = Rect::new(area.x, area.y, area.width, 1);
 
-        let mut y = inner.y;
+        let mut y = content.y.saturating_add(u16::from(rhythm));
         if has_desc {
             if let Some(d) = self.description {
-                state.slots.description = Rect::new(inner.x, y, inner.width, 1);
+                state.slots.description = Rect::new(content.x, y, content.width, 1);
                 buffer.set_stringn(
-                    inner.x,
+                    content.x,
                     y,
-                    &crate::text::take_display_cols(d, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    &crate::text::take_display_cols(d, usize::from(content.width)),
+                    usize::from(content.width),
                     self.tokens.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1315,13 +1351,14 @@ impl<'a> Dialog<'a> {
 
         let reserved_bottom = action_h
             .saturating_add(footer_rows)
-            .saturating_add(validation_rows);
+            .saturating_add(validation_rows)
+            .saturating_add(if rhythm { 2 } else { 0 });
         let body_h = inner
             .bottom()
             .saturating_sub(y)
             .saturating_sub(reserved_bottom)
             .max(1);
-        state.slots.body = Rect::new(inner.x, y, inner.width, body_h);
+        state.slots.body = Rect::new(content.x, y, content.width, body_h);
 
         // Body paragraph with scroll
         let mut body_style = self.style;
@@ -1338,13 +1375,13 @@ impl<'a> Dialog<'a> {
         y = state.slots.body.bottom();
 
         if has_validation {
-            state.slots.validation = Rect::new(inner.x, y, inner.width, 1);
+            state.slots.validation = Rect::new(content.x, y, content.width, 1);
             if let Some(msg) = &state.validation_message {
                 buffer.set_stringn(
-                    inner.x,
+                    content.x,
                     y,
-                    &crate::text::take_display_cols(msg, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    &crate::text::take_display_cols(msg, usize::from(content.width)),
+                    usize::from(content.width),
                     self.tokens.style(Role::Danger),
                 );
             }
@@ -1353,21 +1390,25 @@ impl<'a> Dialog<'a> {
             state.slots.validation = Rect::default();
         }
 
+        if rhythm {
+            y = y.saturating_add(1);
+        }
+
         if action_h > 0 {
-            state.slots.actions = Rect::new(inner.x, y, inner.width, action_h);
+            state.slots.actions = Rect::new(content.x, y, content.width, action_h);
             y = y.saturating_add(action_h);
         } else {
             state.slots.actions = Rect::default();
         }
 
         if has_footer {
-            state.slots.footer = Rect::new(inner.x, y, inner.width, 1);
+            state.slots.footer = Rect::new(content.x, y, content.width, 1);
             if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
-                    inner.x,
+                    content.x,
                     y,
-                    &crate::text::take_display_cols(hint, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    &crate::text::take_display_cols(hint, usize::from(content.width)),
+                    usize::from(content.width),
                     self.tokens.style(Role::TextMuted),
                 );
             }
@@ -1816,7 +1857,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &MessageDialog<'_, Id> {
             .map(|line| line.width().div_ceil(content_width).max(1))
             .sum::<usize>()
             .min(usize::from(body.height));
-        let body_height = u16::try_from(body_height).unwrap_or(u16::MAX);
+        let body_height = u16::try_from(body_height).unwrap_or(u16::MAX).min(
+            body.height
+                .saturating_sub(u16::from(!self.details.is_empty())),
+        );
         let detail_area = Rect::new(
             body.x,
             body.y.saturating_add(body_height.min(body.height)),
@@ -1855,10 +1899,18 @@ mod backdrop_tests {
     };
 
     #[test]
-    fn default_backdrop_uses_terminal_background() {
+    fn default_backdrop_dims_terminal_background() {
         let backdrop = Backdrop::default();
-        assert_eq!(backdrop.symbol, ' ');
-        assert_eq!(backdrop.style.fg, Some(Color::Reset));
+        assert_eq!(backdrop.symbol, '░');
+        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+    }
+
+    #[test]
+    fn backdrop_from_tokens_dims() {
+        let system = DesignSystem::default();
+        let backdrop = Backdrop::from_tokens(&system);
+        assert_eq!(backdrop.symbol, '░');
+        assert_eq!(backdrop.style.fg, system.style(Role::Backdrop).fg);
         assert_eq!(backdrop.style.bg, Some(Color::Reset));
     }
 
@@ -2096,6 +2148,26 @@ mod backdrop_tests {
     }
 
     #[test]
+    fn dialog_rhythm_adds_and_contracts_spacer_rows() {
+        let tokens = DesignSystem::default();
+        let dialog = Dialog::new("Edit", Text::from("Body"), &tokens)
+            .description("Description")
+            .footer_hint("esc cancel");
+        let mut spacious = DialogState::<()>::new();
+        spacious.set_validation_message(Some("Required".into()));
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 20));
+        dialog.paint(Rect::new(0, 0, 40, 20), &mut buffer, &mut spacious, 1);
+        assert!(spacious.slots.description.y > 1);
+        assert!(spacious.slots.actions.y > spacious.slots.validation.bottom());
+
+        let mut cramped = DialogState::<()>::new();
+        cramped.set_validation_message(Some("Required".into()));
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 8));
+        dialog.paint(Rect::new(0, 0, 20, 8), &mut buffer, &mut cramped, 1);
+        assert_eq!(cramped.slots.actions.y, cramped.slots.validation.bottom());
+    }
+
+    #[test]
     fn dialog_uses_semantic_focused_panel_chrome() {
         let tokens = DesignSystem::default();
         let dialog =
@@ -2267,6 +2339,17 @@ mod backdrop_tests {
             .collect();
         assert!(text.contains("Title") || text.contains("Body"), "{text}");
         assert!(!state.slots.body.is_empty());
+    }
+
+    #[test]
+    fn dialog_paints_elevated_fill() {
+        let system = DesignSystem::default();
+        let dialog = Dialog::new("Title", Text::from("Body"), &system);
+        let mut state = DialogState::<()>::new();
+        let area = Rect::new(0, 0, 30, 8);
+        let mut buffer = Buffer::empty(area);
+        dialog.paint(area, &mut buffer, &mut state, 0);
+        assert_eq!(buffer[(2, 2)].bg, system.style(Role::Elevated).bg.unwrap());
     }
 
     #[test]

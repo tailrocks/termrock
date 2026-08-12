@@ -30,11 +30,11 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::data_view::{
-        CellCoord, ColumnModel, ColumnPin, CopyPayload, DataDensity, ExpandState, FilterSpec,
-        GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
+        CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
+        LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
     },
 };
 
@@ -216,7 +216,7 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     /// Load projection.
     pub load: LoadState,
     /// Row chrome density.
-    pub density: DataDensity,
+    pub density: Density,
     /// Expand detail rows.
     pub expand: ExpandState<RowId>,
     /// Active sort (chrome marker; consumer applies).
@@ -273,7 +273,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             cursor_col: 0,
             nav_mode: DataTableNavMode::Cell,
             load: LoadState::Ready { count: 0 },
-            density: DataDensity::Comfortable,
+            density: Density::Comfortable,
             expand: ExpandState::default(),
             sort: None,
             filter: FilterSpec::default(),
@@ -1330,15 +1330,15 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut DataTableState<RowId, ColId>,
-    surface_focused: bool,
+    _surface_focused: bool,
 ) where
     ColId: Clone,
 {
-    let style = if surface_focused {
-        table.system.style(Role::TextStrong)
-    } else {
-        table.system.style(Role::TextMuted)
-    };
+    let style = table.system.style(Role::TextMuted);
+    buffer.set_style(
+        Rect::new(area.x, y, area.width, 1),
+        table.system.style(Role::Raised),
+    );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
     let origin = area.x.saturating_add(GUTTER_W);
     let clip_right = area.right();
@@ -1443,6 +1443,18 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let expanded = state.expand.expanded.contains(id);
     let logical_row = state.window.offset.saturating_add(row_index as u64);
 
+    let recipe = table
+        .system
+        .clone()
+        .selection(crate::style::SelectionChrome::Tint)
+        .resolve_list_row(ListRowVisualState {
+            selected,
+            focused: cursor && surface_focused,
+            hovered: false,
+            enabled: true,
+            loading: false,
+            checked: selected,
+        });
     let style = if state.colorless {
         if selected || (cursor && surface_focused) {
             table.system.style(Role::TextStrong)
@@ -1450,17 +1462,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             table.system.style(Role::Text)
         }
     } else if selected {
-        match table.system.selection {
-            SelectionChrome::Fill => table.system.style(Role::Selection),
-            SelectionChrome::Tint => table.system.style(Role::Focus),
-            SelectionChrome::Gutter => {
-                if cursor && surface_focused {
-                    table.system.style(Role::TextStrong)
-                } else {
-                    table.system.style(Role::Text)
-                }
-            }
-        }
+        recipe.label.patch(recipe.tint)
     } else if cursor && surface_focused {
         table.system.style(Role::Focus)
     } else if state.striped && row_index % 2 == 1 {

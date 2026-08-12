@@ -701,7 +701,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                             Role::TextMuted
                         });
                         style = style.add_modifier(Modifier::BOLD);
-                        style.bg = None;
+                        style = style.patch(self.system.style(Role::SelectionTint));
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);

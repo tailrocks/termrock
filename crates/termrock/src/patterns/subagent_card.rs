@@ -28,9 +28,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::{ActivityKind, ActivityModel, ActivityScope},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
-    widgets::{Card, SemanticStatus},
+    widgets::{AccentRail, Card, SemanticStatus},
 };
 
 /// Overlay id for fullscreen subagent detail.
@@ -795,6 +795,7 @@ pub struct SubagentCard<'a> {
     system: &'a DesignSystem,
     ascii: bool,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> SubagentCard<'a> {
@@ -806,6 +807,7 @@ impl<'a> SubagentCard<'a> {
             system,
             ascii: false,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -820,6 +822,13 @@ impl<'a> SubagentCard<'a> {
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
+        self
+    }
+
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
         self
     }
 
@@ -838,6 +847,11 @@ impl<'a> SubagentCard<'a> {
             return;
         }
 
+        let active = matches!(run.status, SemanticStatus::Running);
+        let rail = AccentRail::new(self.system, Role::ActorAssistant)
+            .active(active)
+            .tick(self.tick);
+        let content_area = rail.paint(area, buffer);
         let g = if ascii {
             run.status.glyph_ascii()
         } else {
@@ -877,7 +891,7 @@ impl<'a> SubagentCard<'a> {
             .badge(badge)
             .subtitle(subtitle.as_str())
             .emphasis(emphasis);
-        let body = card.paint(area, buffer, None);
+        let body = card.paint(content_area, buffer, None);
         state.header_hit = Rect {
             x: area.x,
             y: area.y,
@@ -1069,7 +1083,20 @@ impl<'a> SubagentCard<'a> {
         ascii: bool,
     ) {
         let run = self.run;
-        let line = run.header_line(ascii);
+        let pulse = if matches!(run.status, SemanticStatus::Running) {
+            if ascii || !matches!(self.system.motion, Motion::Full) {
+                if ascii { "." } else { "●" }
+            } else {
+                SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
+            }
+        } else {
+            run.status.glyph(ascii)
+        };
+        let line = format!(
+            "{pulse} {} · {}",
+            run.role,
+            take_display_cols(&run.task, 36)
+        );
         let indent = "  ".repeat(usize::from(run.depth.min(4)));
         let mut text = format!("{indent}{line}");
         if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
@@ -1308,6 +1335,24 @@ mod tests {
                 SubagentCard::new(run, &system).paint(area, &mut buf, &mut st);
             }
         }
+    }
+
+    #[test]
+    fn reduced_motion_running_presence_is_tick_static() {
+        let system = DesignSystem::default().motion(Motion::Reduced);
+        let run =
+            SubagentRun::new("sa", "reviewer", "review changes").status(SemanticStatus::Running);
+        let render = |tick| {
+            let area = Rect::new(0, 0, 48, 10);
+            let mut buffer = Buffer::empty(area);
+            let mut state = SubagentCardState::new();
+            state.presentation = SubagentPresentation::Card;
+            SubagentCard::new(&run, &system)
+                .tick(tick)
+                .paint(area, &mut buffer, &mut state);
+            buffer
+        };
+        assert_eq!(render(0), render(19));
     }
 
     #[test]

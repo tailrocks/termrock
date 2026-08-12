@@ -5,6 +5,16 @@ export interface ComponentDoc {
 }
 
 export const componentDocs = {
+  AccentRail: {
+    description: 'A semantic one-column block rail with deterministic wave motion, reduced-motion fallback, and collapsed-block glyph.',
+    primaryStory: 'accent-rail/actors',
+    usage: `use termrock::{style::{DesignSystem, Role}, widgets::AccentRail};
+
+let system = DesignSystem::phosphor();
+let rail = AccentRail::new(&system, Role::ActorAssistant)
+  .active(true)
+  .tick(11);`,
+  },
   AlertDialog: {
     description:
       'High-risk confirmation distinct from Dialog: exact scope, consequences, reversibility, target, safer alternatives; typed confirmation, justified countdown, safe initial focus, non-dismissable critical state.',
@@ -108,13 +118,15 @@ let frame = DesignInspectorFrame {
 let _inspector = DesignInspector::new(frame, &system);`,
   },
   DetailTable: {
-    description: 'A selectable key/value table with stable rows and typed activation capabilities.',
+    description:
+      'A measurable selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
     usage: `use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
 
 let system = DesignSystem::default();
 let rows = [DetailRow { id: "url", label: "URL", value: "https://example.com", href: Some("https://example.com"), capability: DetailCapability::Link, emphasis: false, style: None }];
 let table = DetailTable::new(&rows, &system).wrap(true);
+let natural_extent = table.measure();
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&rows);`,
   },
@@ -198,14 +210,18 @@ let mut state = FormState::new(Some("name"));
 let outcome = state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));`,
   },
   HintBar: {
-    description: 'A wrapping row of prioritized keyboard hints with semantic styling.',
+    description:
+      'A measured wrapping row of prioritized keyboard hints with semantic styling and an optional leading spacer band.',
     primaryStory: 'hint-bar/wrapped',
     usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use termrock::{style::DesignSystem, widgets::{Hint, HintBar}};
 
 let system = DesignSystem::default();
 let hints = [Hint { chord: "Enter", label: "open", priority: 0, visible: true }];
-let bar = HintBar::new(&hints, &system).separator(" · ");
+let bar = HintBar::new(&hints, &system)
+    .separator(" · ")
+    .leading_spacer(true);
+let required_rows = bar.measured_height(40);
 let area = Rect::new(0, 0, 40, 2);
 bar.render(area, &mut Buffer::empty(area));`,
   },
@@ -283,11 +299,14 @@ let outcome = state.select_next(&details);`,
   },
   Panel: {
     description:
-      'Composable container with variants, body modes, collapsible/interactive state; focus ≠ selection.',
-    primaryStory: 'panel/variants',
-    usage: `use termrock::{style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
+      'Composable container with variants, body modes, and content-measured vertical stacking; focus ≠ selection.',
+    primaryStory: 'panel-stack/omission',
+    usage: `use termrock::{layout::{panel_stack, PanelStackBlock}, style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
 
 let system = DesignSystem::default();
+let rows = panel_stack(area, &[PanelStackBlock {
+    content_rows: 3, chrome_rows: 2, min: 3, max: 8, visible: true,
+}], 1);
 let body = Panel::new(&system)
     .title("Inbox")
     .variant(PanelVariant::Bordered)
@@ -675,8 +694,8 @@ NotificationCenter::new(&system).paint(area, buf, &mut state);
   },
   Tree: {
     description:
-      'Hierarchical collection: stable IDs, lazy children, loading/error, expansion, cursor/selection/check, icons, metadata, context actions, typeahead; Left collapse/parent, Right expand/enter; ancestor-preserving filter; virtual window + scroll anchors; ASCII glyphs.',
-    primaryStory: 'tree/navigation',
+      'Hierarchical collection with stable IDs, semantic live-tone tiers, pinned-prefix horizontal label scroll, lazy children, expansion, selection/check, metadata, typeahead, virtualization, and ASCII glyphs.',
+    primaryStory: 'tree/tone-scroll',
     usage: `use ratatui_core::text::Line;
 use termrock::style::DesignSystem;
 use termrock::widgets::{Tree, TreeNode, TreeState, filter_tree_with_ancestors};
@@ -986,15 +1005,16 @@ let system = DesignSystem::default();
 let meter = TokenMeter::new(128_000, 200_000, &system);`,
   },
   Transcript: {
-    description: 'Variable-height streaming transcript with stable visual anchors.',
+    description:
+      'Variable-height streaming transcript with stable visual anchors, semantic actor rails, and deterministic active presence.',
     primaryStory: 'transcript/basic',
     usage: `use termrock::{style::DesignSystem, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
 
 let system = DesignSystem::default();
 let lines = ["hello", "world"];
-let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+let blocks = [TranscriptBlock::new("b1", TranscriptKind::Assistant, &lines).active(true)];
 let mut state: TranscriptState<&str> = TranscriptState::new();
-let view = Transcript::new(&blocks, &system);
+let view = Transcript::new(&blocks, &system).tick(7);
 let _ = (&mut state, view);`,
   },
   ToolCard: {
@@ -1378,6 +1398,16 @@ Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDe
     usage: `use termrock::widgets::FieldCaption;
 
 // See handbook / lookbook story field-caption/basic.`,
+  },
+  FieldRow: {
+    description: 'A density-aware composed field row with shared label columns, semantic selection chrome, masked and unset values, markers, and annotations.',
+    primaryStory: 'field-row/states',
+    usage: `use termrock::{style::DesignSystem, widgets::{FieldRow, FieldRowValue}};
+
+let system = DesignSystem::phosphor();
+let row = FieldRow::new(&system, "Endpoint", FieldRowValue::Plain("localhost:8080"))
+  .label_cols(12)
+  .annotation("active");`,
   },
   Gauge: {
     description: 'Gauge widget.',

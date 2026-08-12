@@ -33,12 +33,10 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{
-            ColumnModel, ColumnPin, DataDensity, LoadState, SelectionModel, SortSpec, VirtualWindow,
-        },
+        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
         tree::TreeNodeStatus,
     },
 };
@@ -282,6 +280,8 @@ pub struct TreeTableState<Id: Clone + Ord, ColId: Clone + PartialEq> {
     pub cursor_row: usize,
     /// Cursor column among visible columns (0 = hierarchy/primary).
     pub cursor_col: usize,
+    /// Row currently under the pointer.
+    pub hovered: Option<Id>,
     /// Horizontal content scroll.
     pub h_offset: u16,
     /// Nav mode.
@@ -289,7 +289,7 @@ pub struct TreeTableState<Id: Clone + Ord, ColId: Clone + PartialEq> {
     /// Load chrome.
     pub load: LoadState,
     /// Density.
-    pub density: DataDensity,
+    pub density: Density,
     /// Active sort (data columns).
     pub sort: Option<SortSpec<ColId>>,
     /// Striped body.
@@ -322,10 +322,11 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             window: VirtualWindow::default(),
             cursor_row: 0,
             cursor_col: 0,
+            hovered: None,
             h_offset: 0,
             nav_mode: TreeTableNavMode::Hierarchy,
             load: LoadState::Ready { count: 0 },
-            density: DataDensity::Comfortable,
+            density: Density::Comfortable,
             sort: None,
             striped: false,
             ascii: false,
@@ -809,6 +810,17 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             height: self.body_rows.max(1),
         };
         match event.kind {
+            MouseEventKind::Moved => {
+                let next = self
+                    .row_regions
+                    .iter()
+                    .find(|region| region.area.contains(event.position))
+                    .map(|region| region.id.clone());
+                if self.hovered != next {
+                    self.hovered = next;
+                }
+                TreeTableOutcome::Ignored
+            }
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
                     TreeTableOutcome::Scrolled
@@ -1231,8 +1243,22 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let selected = state.selected.as_ref() == Some(&row.id);
     let checked = state.multi && state.selection.is_row_selected(&row.id);
     let cursor = state.cursor_row == row_index;
+    let hovered = state.hovered.as_ref() == Some(&row.id);
+    let loading = matches!(row.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
+    let recipe = table
+        .system
+        .clone()
+        .selection(crate::style::SelectionChrome::Tint)
+        .resolve_list_row(ListRowVisualState {
+            selected,
+            focused: surface_focused && selected,
+            hovered,
+            enabled: row.enabled,
+            loading,
+            checked,
+        });
 
-    let base_style = match row.status {
+    let mut base_style = match row.status {
         TreeNodeStatus::Error => table.system.style(Role::Danger),
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => table.system.style(Role::TextMuted),
         TreeNodeStatus::Ready if !row.enabled => table.system.style(Role::TextDisabled),
@@ -1247,20 +1273,26 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 .style(Role::TextStrong)
                 .add_modifier(Modifier::BOLD)
         }
-        TreeNodeStatus::Ready if selected && surface_focused => match table.system.selection {
-            SelectionChrome::Fill => table.system.style(Role::Selection),
-            SelectionChrome::Tint => table.system.style(Role::Focus),
-            SelectionChrome::Gutter => table
-                .system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD),
-        },
-        TreeNodeStatus::Ready if selected => table.system.style(Role::TextStrong),
+        TreeNodeStatus::Ready if selected => recipe.label,
         TreeNodeStatus::Ready if state.striped && row_index % 2 == 1 => {
             table.system.style(Role::TextMuted)
         }
         TreeNodeStatus::Ready => table.system.style(Role::Text),
     };
+    if selected && surface_focused {
+        base_style = base_style.add_modifier(Modifier::BOLD);
+    } else if hovered && row.enabled {
+        base_style = recipe.hover;
+    }
+
+    let row_area = Rect::new(area.x, y, area.width, 1);
+    if recipe.use_fill && selected {
+        buffer.set_style(row_area, base_style);
+    } else if recipe.use_tint && selected {
+        buffer.set_style(row_area, recipe.tint);
+    } else if recipe.hover_fill {
+        buffer.set_style(row_area, recipe.hover_wash);
+    }
 
     let gutter = if checked {
         if state.ascii { "*" } else { "▌" }
@@ -1287,8 +1319,6 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let h_off = i32::from(state.h_offset);
     let mut logical = 0i32;
     let mut disclosure_rect = None;
-    let row_area = Rect::new(area.x, y, area.width, 1);
-
     if matches!(row.kind, TreeTableRowKind::Group) {
         let mark = if row.expanded {
             if state.ascii { "v " } else { "▾ " }
@@ -1675,6 +1705,29 @@ mod tests {
             &columns,
         );
         assert!(matches!(out, TreeTableOutcome::ExpandToggled("r")));
+    }
+
+    #[test]
+    fn pointer_move_tracks_hovered_row() {
+        let system = DesignSystem::default();
+        let columns = cols();
+        let cells: &[&str] = &["root", "0", "0"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let mut state = TreeTableState::<&str, &str>::new(None);
+        let area = Rect::new(0, 0, 40, 6);
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+        let row = state.row_regions[0].area;
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position { x: row.x, y: row.y },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &columns,
+        );
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.hovered, Some("r"));
     }
 
     #[test]

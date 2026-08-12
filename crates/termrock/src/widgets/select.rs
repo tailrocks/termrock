@@ -34,7 +34,7 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1057,12 +1057,27 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_val = state.value.as_ref() == Some(&opt.id);
+                    let recipe = self
+                        .system
+                        .clone()
+                        .selection(crate::style::SelectionChrome::Tint)
+                        .resolve_list_row(ListRowVisualState {
+                            selected: is_hi,
+                            focused: is_hi && state.focused,
+                            hovered: false,
+                            enabled: !opt.disabled,
+                            loading: false,
+                            checked: is_val,
+                        });
+                    if recipe.use_fill {
+                        buffer.set_style(rect, recipe.label);
+                    } else if recipe.use_tint {
+                        buffer.set_style(rect, recipe.tint);
+                    }
                     let mut style = if opt.disabled {
                         self.system.style(Role::TextDisabled)
                     } else if is_hi {
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED)
+                        recipe.label
                     } else {
                         self.system.style(Role::Text)
                     };

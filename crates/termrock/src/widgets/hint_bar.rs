@@ -7,7 +7,7 @@ use ratatui_core::{
     text::{Line, Span},
     widgets::Widget,
 };
-use ratatui_widgets::paragraph::{Paragraph, Wrap};
+use ratatui_widgets::paragraph::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
 /// One footer-hint span shared by terminal surfaces.
@@ -65,6 +65,7 @@ pub struct Hint<'a> {
 pub struct HintBar<'a> {
     hints: &'a [Hint<'a>],
     separator: &'a str,
+    leading_spacer: bool,
     system: &'a DesignSystem,
 }
 
@@ -75,6 +76,7 @@ impl<'a> HintBar<'a> {
         Self {
             hints,
             separator: " · ",
+            leading_spacer: false,
             system,
         }
     }
@@ -85,25 +87,78 @@ impl<'a> HintBar<'a> {
         self.separator = separator;
         self
     }
-}
 
-impl Widget for &HintBar<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+    /// Adds one painted blank row before the hints.
+    #[must_use]
+    pub const fn leading_spacer(mut self, leading_spacer: bool) -> Self {
+        self.leading_spacer = leading_spacer;
+        self
+    }
+
+    /// Returns the rows required to paint this bar at `width`.
+    #[must_use]
+    pub fn measured_height(&self, width: u16) -> u16 {
+        let rows = u16::try_from(self.lines(width).len()).unwrap_or(u16::MAX);
+        rows.saturating_add(u16::from(self.leading_spacer))
+    }
+
+    fn lines(&self, width: u16) -> Vec<Line<'a>> {
+        let limit = usize::from(width);
+        let separator_width = UnicodeWidthStr::width(self.separator);
+        let mut lines = Vec::new();
         let mut spans = Vec::new();
+        let mut row_width = 0usize;
+
         for hint in self.hints.iter().filter(|hint| hint.visible) {
+            let hint_width = UnicodeWidthStr::width(hint.chord)
+                .saturating_add(1)
+                .saturating_add(UnicodeWidthStr::width(hint.label));
+            let joined_width = row_width
+                .saturating_add(separator_width)
+                .saturating_add(hint_width);
+            if !spans.is_empty() && joined_width > limit {
+                lines.push(Line::from(std::mem::take(&mut spans)));
+                row_width = 0;
+            }
             if !spans.is_empty() {
                 spans.push(Span::styled(
                     self.separator,
                     self.system.style(Role::HintSeparator),
                 ));
+                row_width = row_width.saturating_add(separator_width);
             }
             spans.push(Span::styled(hint.chord, self.system.style(Role::HintKey)));
             spans.push(Span::styled(" ", self.system.style(Role::HintText)));
             spans.push(Span::styled(hint.label, self.system.style(Role::HintText)));
+            row_width = row_width.saturating_add(hint_width);
         }
-        Paragraph::new(Line::from(spans))
-            .wrap(Wrap { trim: false })
-            .render(area, buffer);
+        if !spans.is_empty() {
+            lines.push(Line::from(spans));
+        }
+        if lines.is_empty() {
+            lines.push(Line::raw(""));
+        }
+        lines
+    }
+}
+
+impl Widget for &HintBar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let spacer_rows = u16::from(self.leading_spacer).min(area.height);
+        if spacer_rows > 0 {
+            for x in area.left()..area.right() {
+                buffer[(x, area.top())]
+                    .set_symbol(" ")
+                    .set_style(self.system.style(Role::HintText));
+            }
+        }
+        let body = Rect::new(
+            area.x,
+            area.y.saturating_add(spacer_rows),
+            area.width,
+            area.height.saturating_sub(spacer_rows),
+        );
+        Paragraph::new(self.lines(area.width)).render(body, buffer);
     }
 }
 
@@ -286,5 +341,53 @@ mod tests {
             hint_row_cols(&[HintSpan::Key("↵"), HintSpan::Text("go"), HintSpan::Sep]),
             7
         );
+    }
+
+    #[test]
+    fn measured_height_decreases_as_width_grows() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [
+            Hint {
+                chord: "Enter",
+                label: "select",
+                priority: 1,
+                visible: true,
+            },
+            Hint {
+                chord: "Esc",
+                label: "cancel",
+                priority: 2,
+                visible: true,
+            },
+            Hint {
+                chord: "?",
+                label: "help",
+                priority: 3,
+                visible: true,
+            },
+        ];
+        let bar = HintBar::new(&hints, &system);
+        let heights = [20, 40, 80].map(|width| bar.measured_height(width));
+        assert!(heights.windows(2).all(|pair| pair[0] >= pair[1]));
+        assert_eq!(heights[2], 1);
+    }
+
+    #[test]
+    fn leading_spacer_is_measured_and_painted() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "close",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system).leading_spacer(true);
+        assert_eq!(bar.measured_height(40), 2);
+
+        let area = Rect::new(0, 0, 40, 2);
+        let mut buffer = Buffer::filled(area, ratatui_core::buffer::Cell::new("x"));
+        (&bar).render(area, &mut buffer);
+        assert!((area.left()..area.right()).all(|x| buffer[(x, area.top())].symbol() == " "));
+        assert_eq!(buffer[(0, 1)].symbol(), "E");
     }
 }

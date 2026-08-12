@@ -25,9 +25,9 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Glyph, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
-    widgets::{agent::ToolStatus, card::Card},
+    widgets::{AccentRail, agent::ToolStatus, card::Card},
 };
 
 /// Overlay id for fullscreen tool detail.
@@ -709,6 +709,7 @@ pub struct ToolCallCard<'a> {
     system: &'a DesignSystem,
     ascii: bool,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> ToolCallCard<'a> {
@@ -720,6 +721,7 @@ impl<'a> ToolCallCard<'a> {
             system,
             ascii: false,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -737,6 +739,13 @@ impl<'a> ToolCallCard<'a> {
         self
     }
 
+    /// Supplies the host-owned deterministic paint tick.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
+        self
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
         state.action_hits.clear();
@@ -744,6 +753,83 @@ impl<'a> ToolCallCard<'a> {
             return;
         }
         let call = self.call;
+        let running = matches!(call.status, ToolStatus::Running | ToolStatus::Streaming);
+        let rail = AccentRail::new(self.system, Role::ActorTool)
+            .active(running)
+            .tick(self.tick)
+            .collapsed(!state.is_expanded());
+        let content_area = rail.paint(area, buffer);
+        state.header_hit = Rect {
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: 1.min(area.height),
+        };
+        if content_area.is_empty() {
+            return;
+        }
+
+        if !state.is_expanded() {
+            let diamond = Glyph::DiamondFilled.resolve(self.system.glyphs).text;
+            let disclosure = self.system.glyphs.disclosure_closed();
+            let pulse = if running {
+                if matches!(self.system.motion, Motion::Full) {
+                    SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
+                } else if self.ascii || self.colorless {
+                    "o"
+                } else {
+                    "●"
+                }
+            } else {
+                ""
+            };
+            let prefix = format!("{disclosure} {diamond} ");
+            buffer.set_stringn(
+                content_area.x,
+                content_area.y,
+                &prefix,
+                usize::from(content_area.width),
+                self.system.style(Role::ActorTool),
+            );
+            let verb_x = content_area.x.saturating_add(display_cols(&prefix) as u16);
+            let verb = take_display_cols(
+                &call.verb,
+                usize::from(content_area.right().saturating_sub(verb_x)),
+            );
+            buffer.set_stringn(
+                verb_x,
+                content_area.y,
+                &verb,
+                usize::from(content_area.right().saturating_sub(verb_x)),
+                self.system.style(Role::TextStrong),
+            );
+            let detail_x = verb_x
+                .saturating_add(display_cols(&verb) as u16)
+                .saturating_add(1);
+            if detail_x < content_area.right() {
+                let details = if call.args_summary.is_empty() {
+                    call.result_summary.as_deref().unwrap_or("")
+                } else {
+                    call.args_summary.as_str()
+                };
+                let parenthetical = if pulse.is_empty() {
+                    format!("({details})")
+                } else {
+                    format!("({pulse} {details})")
+                };
+                buffer.set_stringn(
+                    detail_x,
+                    content_area.y,
+                    take_display_cols(
+                        &parenthetical,
+                        usize::from(content_area.right().saturating_sub(detail_x)),
+                    ),
+                    usize::from(content_area.right().saturating_sub(detail_x)),
+                    self.system.style(Role::TextMuted),
+                );
+            }
+            return;
+        }
         let status_label = if self.ascii || self.colorless {
             // letter badge
             let mut s = String::new();
@@ -790,16 +876,15 @@ impl<'a> ToolCallCard<'a> {
             .badge(status_label.as_str())
             .subtitle(subtitle.as_str())
             .emphasis(emphasis);
-        let body = card.paint(area, buffer, None);
-        state.header_hit = Rect {
-            x: area.x,
-            y: area.y,
-            width: area.width,
-            height: 1.min(area.height),
-        };
+        let body = card.paint(content_area, buffer, None);
 
         if body.is_empty() {
             return;
+        }
+        for y in body.top()..body.bottom() {
+            for x in body.left()..body.right() {
+                buffer[(x, y)].set_style(self.system.style(Role::Sunken));
+            }
         }
         let mut y = body.y;
         let max_y = body.bottom();
@@ -1084,6 +1169,47 @@ mod tests {
             st.presentation = ToolCallPresentation::Expanded;
             ToolCallCard::new(&call, &system).paint(area, &mut buf, &mut st);
         }
+    }
+
+    #[test]
+    fn collapsed_row_shape_uses_diamond_verb_and_dim_details() {
+        let system = DesignSystem::default();
+        let call = ToolCall::new("t", "bash", "Run tests")
+            .status(ToolStatus::Success)
+            .args_summary("cargo test");
+        let area = Rect::new(0, 0, 48, 1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = ToolCallCardState::new();
+        ToolCallCard::new(&call, &system).paint(area, &mut buffer, &mut state);
+        let text = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains(Glyph::DiamondFilled.resolve(system.glyphs).text));
+        assert!(text.contains("Run tests"));
+        assert!(text.contains("(cargo test)"));
+        let detail_x = text.find('(').unwrap() as u16;
+        assert_eq!(
+            buffer[(detail_x, 0)].fg,
+            system.style(Role::TextMuted).fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn reduced_motion_running_card_is_tick_static() {
+        let system = DesignSystem::default().motion(Motion::Reduced);
+        let call = ToolCall::new("t", "bash", "Run tests").args_summary("cargo test");
+        let render = |tick| {
+            let area = Rect::new(0, 0, 48, 1);
+            let mut buffer = Buffer::empty(area);
+            let mut state = ToolCallCardState::new();
+            ToolCallCard::new(&call, &system)
+                .tick(tick)
+                .paint(area, &mut buffer, &mut state);
+            buffer
+        };
+        assert_eq!(render(0), render(31));
     }
 
     #[test]

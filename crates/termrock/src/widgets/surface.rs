@@ -204,6 +204,7 @@ pub struct Surface<'a> {
     system: &'a DesignSystem,
     recipe: SurfaceRecipe,
     bordered: Option<bool>,
+    border_style: Option<Style>,
     fill: SurfaceFill,
     pad_x: Option<u16>,
     pad_y: Option<u16>,
@@ -219,6 +220,7 @@ impl<'a> Surface<'a> {
             system,
             recipe: SurfaceRecipe::Inset,
             bordered: None,
+            border_style: None,
             fill: SurfaceFill::Auto,
             pad_x: None,
             pad_y: None,
@@ -244,6 +246,13 @@ impl<'a> Surface<'a> {
     #[must_use]
     pub const fn bordered(mut self, bordered: bool) -> Self {
         self.bordered = Some(bordered);
+        self
+    }
+
+    /// Override semantic border style while preserving shared geometry.
+    #[must_use]
+    pub const fn border_style(mut self, style: Style) -> Self {
+        self.border_style = Some(style);
         self
     }
 
@@ -287,6 +296,11 @@ impl<'a> Surface<'a> {
         let bordered = self.bordered.unwrap_or(self.recipe.default_bordered());
         if !bordered {
             plan.border = None;
+        } else if plan.border.is_none() {
+            plan.border = Some(self.system.style(Role::Border));
+        }
+        if bordered && let Some(style) = self.border_style {
+            plan.border = Some(style);
         }
         // No-color / monochrome: never rely on chromatic fill alone.
         if matches!(self.system.capability, ColorCapability::Monochrome)
@@ -343,7 +357,10 @@ impl<'a> Surface<'a> {
             fill_rect(buffer, area, fill);
         }
         if let Some(border) = plan.border {
-            Block::bordered().border_style(border).render(area, buffer);
+            Block::bordered()
+                .border_style(border)
+                .border_set(self.system.border_set())
+                .render(area, buffer);
             // Re-fill content interior so border paint does not leave title gaps;
             // children own content cells.
             if let Some(fill) = plan.fill
@@ -594,12 +611,27 @@ mod tests {
     }
 
     #[test]
-    fn phosphor_raised_skips_empty_elevated_fill() {
+    fn phosphor_surface_ladder_is_populated() {
+        let system = DesignSystem::default();
+        for role in [
+            Role::Canvas,
+            Role::Surface,
+            Role::Raised,
+            Role::Elevated,
+            Role::Sunken,
+            Role::StatusBar,
+            Role::SelectionTint,
+            Role::HoverTint,
+        ] {
+            assert!(system.style(role).bg.is_some(), "{role:?} must carry bg");
+        }
+    }
+
+    #[test]
+    fn phosphor_raised_fill_is_painted() {
         let system = DesignSystem::default();
         let plan = system.surface_recipe(SurfaceRecipe::Raised);
-        // Phosphor Elevated is intentionally empty (terminal-default compatible).
-        assert!(system.style(Role::Elevated).bg.is_none());
-        assert!(plan.fill.is_none());
+        assert_eq!(plan.fill, Some(system.style(Role::Elevated)));
         assert!(plan.border.is_some());
     }
 }

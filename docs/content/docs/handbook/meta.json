@@ -37,6 +37,7 @@
     "model-selector",
     "permission-prompt",
     "agent-workbench",
+    "agent-parity",
     "text-area",
     "transcript",
     "overlay-stack",

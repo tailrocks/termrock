@@ -36,7 +36,7 @@ use crate::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{Density, DesignSystem, Role},
+    style::{Density, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HelpEntry, Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
@@ -1195,12 +1195,7 @@ impl PromptComposerState {
         if self.policy.large_paste_as_chip && text.len() >= LARGE_PASTE_THRESHOLD {
             let id = format!("paste-{}", self.next_chip_id);
             self.next_chip_id = self.next_chip_id.saturating_add(1);
-            let preview: String = text.chars().take(32).collect();
-            let preview = if text.chars().count() > 32 {
-                format!("{preview}…")
-            } else {
-                preview
-            };
+            let preview = crate::text::truncate_cols(text, 32, "…").into_owned();
             self.chips
                 .push(ComposerChip::paste_with_body(id, preview, text.to_string()));
             return PromptComposerOutcome::Changed;
@@ -1740,14 +1735,9 @@ pub fn submit_history_to_entries(history: &[String]) -> Vec<HistoryEntry<String>
         .rev()
         .enumerate()
         .map(|(rank, text)| {
-            let preview: String = text.chars().take(80).collect();
             let mut e =
                 HistoryEntry::new(format!("h-{rank}"), text.clone()).kind(HistoryKind::Prompt);
-            e.display = if text.chars().count() > 80 {
-                format!("{preview}…")
-            } else {
-                preview
-            };
+            e.display = crate::text::truncate_cols(text, 80, "…").into_owned();
             e.preview = Some(text.clone());
             e.recency = rank as u64;
             e
@@ -1826,7 +1816,13 @@ fn layout_composer(area: Rect, state: &PromptComposerState) -> PromptComposerLay
         .saturating_sub(valid_h)
         .max(1);
 
-    layout.editor = Rect::new(area.x, y, area.width, editor_h);
+    let prompt_gutter = area.width.min(2);
+    layout.editor = Rect::new(
+        area.x.saturating_add(prompt_gutter),
+        y,
+        area.width.saturating_sub(prompt_gutter),
+        editor_h,
+    );
     y = y.saturating_add(editor_h);
     if status_h > 0 {
         layout.status = Rect::new(area.x, y, area.width, 1);
@@ -1985,6 +1981,17 @@ impl StatefulWidget for &PromptComposer<'_> {
 
         // Editor
         if !layout.editor.is_empty() {
+            let editor_surface =
+                Rect::new(area.x, layout.editor.y, area.width, layout.editor.height);
+            buffer.set_style(editor_surface, self.system.style(Role::Sunken));
+            let prompt = Glyph::Prompt.resolve(self.system.glyphs).text;
+            buffer.set_stringn(
+                area.x,
+                layout.editor.y,
+                prompt,
+                usize::from(area.width.min(1)),
+                self.system.style(Role::Accent),
+            );
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(
                 &TextArea::new(self.system).placeholder(placeholder),
@@ -2505,6 +2512,21 @@ mod tests {
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
         PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+    }
+
+    #[test]
+    fn editor_paints_sunken_prompt_gutter() {
+        let system = DesignSystem::default();
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buffer = Buffer::empty(area);
+        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(0, 0)].symbol(),
+            Glyph::Prompt.resolve(system.glyphs).text
+        );
+        assert_eq!(buffer[(1, 0)].bg, system.style(Role::Sunken).bg.unwrap());
     }
 
     #[test]

@@ -11,54 +11,13 @@
 //! - [`ColumnModel`] — width, pin, visibility, responsive priority
 //! - [`VirtualWindow`] — offset + viewport for O(visible) paint
 //! - [`LoadState`] — empty / loading / partial / error / ready
-//! - [`DataDensity`] — compact vs comfortable row chrome
+//! - [`Density`] — compact vs comfortable row chrome
 //! - [`CopyPayload`] — cell/range copy requests (consumer writes clipboard)
 //!
 //! See `docs/design/data-presentation.md` for the full component redesign.
 
 use std::collections::BTreeSet;
 use std::num::NonZeroU16;
-
-use crate::style::Density;
-
-// ── Density ─────────────────────────────────────────────────────────────────
-
-/// Row chrome density for data surfaces (orthogonal to global [`Density`] gaps).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum DataDensity {
-    /// Tighter rows (ops / dense grids).
-    Compact,
-    /// Default readable row padding.
-    #[default]
-    Comfortable,
-}
-
-impl DataDensity {
-    /// Extra horizontal pad cells inside a cell.
-    #[must_use]
-    pub const fn cell_pad_x(self) -> u16 {
-        match self {
-            Self::Compact => 0,
-            Self::Comfortable => 1,
-        }
-    }
-
-    /// Body row height in terminal rows (1 = single-line cells).
-    #[must_use]
-    pub const fn row_height(self) -> u16 {
-        1
-    }
-
-    /// Maps from design-system density.
-    #[must_use]
-    pub const fn from_design(density: Density) -> Self {
-        match density {
-            Density::Comfortable => Self::Comfortable,
-            Density::Compact | Density::Dashboard => Self::Compact,
-        }
-    }
-}
 
 // ── Load / empty / error ────────────────────────────────────────────────────
 

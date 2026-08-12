@@ -5,9 +5,11 @@ description: Compact-to-expanded agent tool execution with redaction and typed o
 
 # ToolCallCard
 
-Interactive tool-call chrome for agent transcripts: full lifecycle status, verb,
-actor, args/result, risk/egress, inline expand, and fullscreen zoom. Host owns
-execution, cancel, and permission policy. Never binds a provider protocol.
+Interactive tool-call chrome for agent transcripts: a semantic actor rail,
+compact diamond/verb/details row, sunken expanded output, full lifecycle status,
+risk/egress, inline expand, and fullscreen zoom. Host owns execution, cancel,
+permission policy, and the deterministic paint tick. Never binds a provider
+protocol.
 
 ## Live terminal (Ghostty-class)
 
@@ -53,10 +55,12 @@ let call = ToolCall::new("t1", "bash", "ran tests")
     .args_summary("cargo test")
     .risk(ToolRisk::Read);
 let mut st = ToolCallCardState::new();
-// ToolCallCard::new(&call, &system).paint(area, buf, &mut st);
+// ToolCallCard::new(&call, &system)
+//     .tick(frame_tick)
+//     .paint(area, buf, &mut st);
 let _ = (call, st);
 ```
 
 ## Related
 
-ToolCard · TerminalOutput · PermissionPrompt · MessageThread · migration `0219`
+ToolCard · TerminalOutput · PermissionPrompt · MessageThread · migrations `0219`, `0270`

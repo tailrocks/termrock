@@ -16,6 +16,8 @@ use crate::{
     text::take_display_cols,
 };
 
+use super::{Surface, SurfaceFill, SurfaceRecipe};
+
 /// Graphics protocol the consumer intends to use outside the cell grid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -129,42 +131,12 @@ impl Widget for &ImageSurface<'_> {
         if area.is_empty() {
             return;
         }
-        let border = self.system.style(Role::Border);
-        for x in area.x..area.right() {
-            buffer[(x, area.y)].set_symbol("─").set_style(border);
-            if area.height > 1 {
-                buffer[(x, area.bottom() - 1)]
-                    .set_symbol("─")
-                    .set_style(border);
-            }
-        }
-        for y in area.y..area.bottom() {
-            buffer[(area.x, y)].set_symbol("│").set_style(border);
-            if area.width > 1 {
-                buffer[(area.right() - 1, y)]
-                    .set_symbol("│")
-                    .set_style(border);
-            }
-        }
-        if area.width > 1 && area.height > 1 {
-            buffer[(area.x, area.y)].set_symbol("┌").set_style(border);
-            buffer[(area.right() - 1, area.y)]
-                .set_symbol("┐")
-                .set_style(border);
-            buffer[(area.x, area.bottom() - 1)]
-                .set_symbol("└")
-                .set_style(border);
-            buffer[(area.right() - 1, area.bottom() - 1)]
-                .set_symbol("┘")
-                .set_style(border);
-        }
-
-        let inner = Rect {
-            x: area.x.saturating_add(1),
-            y: area.y.saturating_add(1),
-            width: area.width.saturating_sub(2),
-            height: area.height.saturating_sub(2),
-        };
+        let inner = Surface::new(self.system)
+            .recipe(SurfaceRecipe::Inset)
+            .bordered(true)
+            .fill(SurfaceFill::Transparent)
+            .padding(0, 0)
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }

@@ -35,7 +35,7 @@ use crate::{
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
     style::{Density, DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
-    widgets::{Panel, PanelChrome},
+    widgets::{AccentRail, Action, ActionBar, ActionBarState, Panel, PanelChrome},
 };
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
@@ -1474,16 +1474,16 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             risk.label(),
             req.action
         );
-        let emphasis = if risk.is_destructive() {
-            PanelChrome::Danger
-        } else if surface {
+        let emphasis = if surface {
             PanelChrome::Focused
         } else {
             PanelChrome::Normal
         };
+        let rail = AccentRail::new(self.system, risk.role());
+        let content_area = rail.paint(area, buffer);
         let panel = Panel::new(&tokens).title(title.as_str()).emphasis(emphasis);
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
+        let inner = panel.inner(content_area);
+        Widget::render(&panel, content_area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1707,7 +1707,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             y = y.saturating_add(1);
         }
 
-        // Actions on last line(s); narrow stacks vertically when width tight.
+        // Shared action-chip row; narrow stacks vertically.
         let narrow = area.width < 36;
         if y < inner.bottom() || inner.height >= 1 {
             let action_rows = if narrow {
@@ -1723,76 +1723,42 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 1
             };
             let start_y = inner.bottom().saturating_sub(action_rows).max(inner.y);
-            if narrow && action_rows > 1 {
-                let mut ay = start_y;
-                for action in &state.available {
-                    if ay >= inner.bottom() {
-                        break;
-                    }
-                    let on_cursor = *action == state.action_cursor();
-                    let mark = if on_cursor {
-                        if self.ascii { "> " } else { "› " }
-                    } else {
-                        "  "
-                    };
-                    let label = format!("{mark}{}", action.label());
-                    let rect = Rect::new(inner.x, ay, inner.width, 1);
-                    let style = if on_cursor && surface {
-                        self.system.style(Role::ActionFocused)
-                    } else if on_cursor {
-                        self.system.style(Role::TextStrong)
-                    } else if action.grants() && risk.is_destructive() {
-                        self.system.style(Role::Danger)
-                    } else {
-                        self.system.style(Role::Text)
-                    };
-                    paint_line(
-                        buffer,
-                        rect.x,
-                        rect.y,
-                        usize::from(rect.width),
-                        &label,
-                        style,
-                    );
-                    state.action_regions.push(PermissionActionRegion {
-                        action: *action,
-                        area: rect,
-                    });
-                    ay = ay.saturating_add(1);
-                }
-            } else {
-                let action_y = start_y;
-                let mut x = inner.x;
-                for action in &state.available {
-                    let on_cursor = *action == state.action_cursor();
-                    let mark = if on_cursor {
-                        if self.ascii { ">" } else { "›" }
-                    } else {
-                        " "
-                    };
-                    let label = format!("{mark}{} ", action.label());
-                    let width = (display_cols(&label) as u16).max(1);
-                    if x.saturating_add(width) > inner.right() {
-                        break;
-                    }
-                    let rect = Rect::new(x, action_y, width, 1);
-                    let style = if on_cursor && surface {
-                        self.system.style(Role::ActionFocused)
-                    } else if on_cursor {
-                        self.system.style(Role::TextStrong)
-                    } else if action.grants() && risk.is_destructive() {
-                        self.system.style(Role::Danger)
-                    } else {
-                        self.system.style(Role::Text)
-                    };
-                    buffer.set_stringn(rect.x, rect.y, &label, usize::from(rect.width), style);
-                    state.action_regions.push(PermissionActionRegion {
-                        action: *action,
-                        area: rect,
-                    });
-                    x = x.saturating_add(width.saturating_add(1));
-                }
-            }
+            let actions: Vec<_> = state
+                .available
+                .iter()
+                .map(|action| Action {
+                    id: *action,
+                    label: action.label(),
+                    enabled: true,
+                    style: (action.grants() && risk.is_destructive())
+                        .then(|| self.system.style(Role::Danger)),
+                })
+                .collect();
+            let mut action_state = ActionBarState {
+                cursor: surface.then(|| state.action_cursor()),
+                regions: Vec::new(),
+            };
+            let action_area = Rect::new(inner.x, start_y, inner.width, action_rows);
+            StatefulWidget::render(
+                &ActionBar::new(&actions, self.system)
+                    .ascii(self.ascii)
+                    .colorless(self.colorless)
+                    .vertical(narrow),
+                action_area,
+                buffer,
+                &mut action_state,
+            );
+            state
+                .action_regions
+                .extend(
+                    action_state
+                        .regions
+                        .into_iter()
+                        .map(|hit| PermissionActionRegion {
+                            action: hit.id,
+                            area: hit.area,
+                        }),
+                );
         }
     }
 }
@@ -2559,6 +2525,19 @@ mod tests {
             assert!(text.contains(needle), "missing {needle} in:\n{text}");
         }
         assert!(text.contains("EGRESS") || text.contains("egress") || text.contains("DATA"));
+    }
+
+    #[test]
+    fn trust_surface_uses_severity_rail_and_action_bar_regions() {
+        let system = DesignSystem::default();
+        let prompt = PermissionPrompt::new(&system);
+        let mut state = PermissionPromptState::new();
+        state.enqueue(destructive_shell());
+        let area = Rect::new(0, 0, 64, 18);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&prompt, area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Danger).fg.unwrap());
+        assert!(!state.action_regions.is_empty());
     }
 
     #[test]

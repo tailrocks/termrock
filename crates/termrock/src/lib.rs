@@ -83,6 +83,36 @@ mod focus_authority_policy {
 
 #[cfg(test)]
 mod paint_authority_policy {
+    use std::path::Path;
+
+    fn production_source(source: &str) -> &str {
+        source.split("#[cfg(test)]").next().unwrap_or(source)
+    }
+
+    fn assert_visual_authorities(dir: &Path) {
+        for entry in std::fs::read_dir(dir).expect("widget source directory must be readable") {
+            let path = entry.expect("widget source entry must be readable").path();
+            if path.extension().and_then(|ext| ext.to_str()) != Some("rs") {
+                continue;
+            }
+            if path.file_name().and_then(|name| name.to_str()) == Some("tests.rs") {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).expect("widget source must be readable");
+            let production = production_source(&source);
+            assert!(
+                !production.contains(concat!("bg = ", "None")),
+                "widget must not erase recipe backgrounds: {}",
+                path.display()
+            );
+            assert!(
+                !production.contains("\"┌\"") && !production.contains("\"╭\""),
+                "widget must route box chrome through Surface: {}",
+                path.display()
+            );
+        }
+    }
+
     /// Break B / migration 0061: dual paint types must not re-enter public style API.
     #[test]
     fn dual_paint_types_are_gone() {
@@ -108,6 +138,16 @@ mod paint_authority_policy {
         assert!(
             !panel.contains("pub enum PanelEmphasis"),
             "PanelEmphasis must be PanelChrome only"
+        );
+    }
+
+    /// Visual-richness series: widgets cannot fork shared fill or shell paint.
+    #[test]
+    fn widgets_use_shared_visual_authorities() {
+        assert_visual_authorities(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src/widgets")
+                .as_path(),
         );
     }
 }

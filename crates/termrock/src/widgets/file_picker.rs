@@ -32,7 +32,7 @@ use crate::{
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1434,6 +1434,24 @@ impl<'a> FilePicker<'a> {
             let rect = Rect::new(area.x, y, area.width, 1);
             let is_hi = state.collection.active() == Some(&entry.id);
             let is_sel = state.selection.is_checked(&entry.id);
+            let active = is_hi && matches!(state.pane, FilePickerPane::List);
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active && state.focused,
+                    hovered: false,
+                    enabled: entry.error.is_none(),
+                    loading: false,
+                    checked: is_sel,
+                });
+            if recipe.use_fill {
+                buffer.set_style(rect, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(rect, recipe.tint);
+            }
             let kind_mark = if self.ascii {
                 match entry.kind {
                     FileEntryKind::Directory | FileEntryKind::SymlinkDir => "d",
@@ -1472,10 +1490,8 @@ impl<'a> FilePicker<'a> {
             };
             let style = if entry.error.is_some() {
                 self.system.style(Role::Danger)
-            } else if is_hi && matches!(state.pane, FilePickerPane::List) {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
+            } else if active {
+                recipe.label
             } else if is_sel {
                 self.system.style(Role::TextStrong)
             } else {

@@ -333,6 +333,40 @@ impl<'a, Id> DetailTable<'a, Id> {
         self.content_revision = revision;
         self
     }
+
+    /// Returns the table's unconstrained content width and row count.
+    ///
+    /// This natural size is independent of viewport wrapping. Hosts can use
+    /// it to allocate a panel, then enable wrapping when the available width
+    /// is smaller than the measured width.
+    #[must_use]
+    pub fn measure(&self) -> (u16, u16) {
+        let label_width = if self.label_width == 0 {
+            self.rows
+                .iter()
+                .map(|row| crate::text::display_cols(row.label))
+                .max()
+                .unwrap_or(0)
+        } else {
+            usize::from(self.label_width)
+        };
+        let width = self
+            .rows
+            .iter()
+            .map(|row| {
+                crate::text::display_cols(SELECTED_MARKER)
+                    .saturating_add(label_width)
+                    .saturating_add(crate::text::display_cols(SEPARATOR))
+                    .saturating_add(crate::text::display_cols(row.value))
+                    .saturating_add(affordance_width(row, false))
+            })
+            .max()
+            .unwrap_or(0);
+        (
+            u16::try_from(width).unwrap_or(u16::MAX),
+            u16::try_from(self.rows.len()).unwrap_or(u16::MAX),
+        )
+    }
 }
 
 impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
@@ -750,6 +784,37 @@ mod tests {
                 style: None,
             },
         ]
+    }
+
+    #[test]
+    fn measure_matches_unconstrained_painted_extent() {
+        let rows = rows();
+        let system = crate::style::DesignSystem::default();
+        let table = DetailTable::new(&rows, &system);
+        let measured = table.measure();
+        let area = Rect::new(0, 0, measured.0, measured.1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DetailTableState::default();
+        (&table).render(area, &mut buffer, &mut state);
+
+        let painted_width = (0..area.width)
+            .rev()
+            .find(|&x| (0..area.height).any(|y| buffer[(x, y)].symbol() != " "))
+            .map_or(0, |x| x + 1);
+        let painted_height = (0..area.height)
+            .rev()
+            .find(|&y| (0..area.width).any(|x| buffer[(x, y)].symbol() != " "))
+            .map_or(0, |y| y + 1);
+        assert_eq!((painted_width, painted_height), measured);
+        assert_eq!(state.content_width, usize::from(measured.0));
+        assert_eq!(state.content_height, usize::from(measured.1));
+    }
+
+    #[test]
+    fn empty_table_measures_zero() {
+        let rows: [DetailRow<'_, &str>; 0] = [];
+        let system = crate::style::DesignSystem::default();
+        assert_eq!(DetailTable::new(&rows, &system).measure(), (0, 0));
     }
 
     #[test]

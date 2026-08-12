@@ -727,19 +727,6 @@ impl<'a> Popover<'a> {
         }
         state.slots.root = area;
 
-        // Elevated fill
-        let fill = if self.colorless {
-            self.system.style(Role::Surface)
-        } else {
-            self.system.style(Role::Elevated)
-        };
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                buffer[(x, y)].set_style(fill);
-                buffer[(x, y)].set_symbol(" ");
-            }
-        }
-
         let border_role = if state.focused && !self.colorless {
             Role::BorderFocused
         } else {
@@ -747,51 +734,12 @@ impl<'a> Popover<'a> {
         };
         let border_style = self.system.style(border_role);
 
-        let mut inner = area;
-        if self.border && area.width >= 2 && area.height >= 2 {
-            let (tl, tr, bl, br, h, v) = if self.ascii {
-                ("+", "+", "+", "+", "-", "|")
-            } else {
-                ("┌", "┐", "└", "┘", "─", "│")
-            };
-            buffer.set_stringn(area.x, area.y, tl, 1, border_style);
-            buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border_style);
-            buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border_style);
-            buffer.set_stringn(
-                area.right().saturating_sub(1),
-                area.bottom().saturating_sub(1),
-                br,
-                1,
-                border_style,
-            );
-            if area.width > 2 {
-                let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.y,
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.bottom().saturating_sub(1),
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-            }
-            for y in area.y + 1..area.bottom().saturating_sub(1) {
-                buffer.set_stringn(area.x, y, v, 1, border_style);
-                buffer.set_stringn(area.right().saturating_sub(1), y, v, 1, border_style);
-            }
-            inner = Rect {
-                x: area.x.saturating_add(1),
-                y: area.y.saturating_add(1),
-                width: area.width.saturating_sub(2),
-                height: area.height.saturating_sub(2),
-            };
-        }
+        let inner = super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(self.border)
+            .border_style(border_style)
+            .padding(0, 0)
+            .paint(area, buffer);
 
         if inner.is_empty() {
             state.slots.header = Rect::default();

@@ -37,11 +37,11 @@ use crate::{
         EventResult, HitRegion, OverlayRequest, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_button_intent, default_list_intent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::Action;
+use super::{Action, Surface, SurfaceFill, SurfaceRecipe};
 
 // ── Tone / recipe ───────────────────────────────────────────────────────────
 
@@ -380,48 +380,20 @@ fn paint_feedback<Id: Clone + PartialEq>(
     // Optional outer border for section recipe (no full-surface fill).
     let mut inner = area;
     if section && area.width >= 2 && area.height >= 2 {
-        let (tl, tr, bl, br, h, v) = if args.ascii {
-            ("+", "+", "+", "+", "-", "|")
+        let ascii_system;
+        let surface_system = if args.ascii {
+            ascii_system = args.system.clone().glyphs(GlyphSet::Ascii);
+            &ascii_system
         } else {
-            ("┌", "┐", "└", "┘", "─", "│")
+            args.system
         };
-        buffer.set_stringn(area.x, area.y, tl, 1, border_style);
-        buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border_style);
-        buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border_style);
-        buffer.set_stringn(
-            area.right().saturating_sub(1),
-            area.bottom().saturating_sub(1),
-            br,
-            1,
-            border_style,
-        );
-        if area.width > 2 {
-            let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-            buffer.set_stringn(
-                area.x + 1,
-                area.y,
-                &hz,
-                usize::from(area.width - 2),
-                border_style,
-            );
-            buffer.set_stringn(
-                area.x + 1,
-                area.bottom().saturating_sub(1),
-                &hz,
-                usize::from(area.width - 2),
-                border_style,
-            );
-        }
-        for y in area.y + 1..area.bottom().saturating_sub(1) {
-            buffer.set_stringn(area.x, y, v, 1, border_style);
-            buffer.set_stringn(area.right().saturating_sub(1), y, v, 1, border_style);
-        }
-        inner = Rect {
-            x: area.x.saturating_add(1),
-            y: area.y.saturating_add(1),
-            width: area.width.saturating_sub(2),
-            height: area.height.saturating_sub(2),
-        };
+        inner = Surface::new(surface_system)
+            .recipe(SurfaceRecipe::Inset)
+            .bordered(true)
+            .border_style(border_style)
+            .fill(SurfaceFill::Transparent)
+            .padding(0, 0)
+            .paint(area, buffer);
     }
     if inner.is_empty() {
         return slots;
@@ -1425,7 +1397,7 @@ mod tests {
             .source("diag")
             .paint(area, &mut buf);
         assert!(!slots.root.is_empty());
-        assert_eq!(buf[(0, 0)].symbol(), "┌");
+        assert_eq!(buf[(0, 0)].symbol(), "\u{250c}");
     }
 
     #[test]

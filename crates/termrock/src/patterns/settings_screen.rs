@@ -928,14 +928,14 @@ pub fn filter_settings_fieldsets<'a>(
             let fields: Vec<Field<'a, &'static str>> = fs
                 .fields
                 .iter()
-                .copied()
                 .filter(|f| {
                     legend_hit
                         || f.label.to_ascii_lowercase().contains(&q)
-                        || f.value.to_ascii_lowercase().contains(&q)
+                        || f.value.searchable_text().to_ascii_lowercase().contains(&q)
                         || f.description
                             .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
                 })
+                .cloned()
                 .collect();
             if fields.is_empty() && !legend_hit {
                 None
@@ -948,14 +948,14 @@ pub fn filter_settings_fieldsets<'a>(
                 } else {
                     // Fieldset needs &'a [Field] — can't return owned vec as ref easily.
                     // Host should filter; this helper returns matching fieldsets wholesale when any field hits.
-                    Some(*fs)
+                    Some(fs.clone())
                 }
             }
         })
         .filter(|fs| {
             fs.fields.iter().any(|f| {
                 f.label.to_ascii_lowercase().contains(&q)
-                    || f.value.to_ascii_lowercase().contains(&q)
+                    || f.value.searchable_text().to_ascii_lowercase().contains(&q)
                     || f.description
                         .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
             }) || fs.legend.to_ascii_lowercase().contains(&q)
@@ -977,7 +977,7 @@ pub fn settings_query_matches(fieldsets: &[Fieldset<'_, &'static str>], query: &
                 .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
             || fs.fields.iter().any(|f| {
                 f.label.to_ascii_lowercase().contains(&q)
-                    || f.value.to_ascii_lowercase().contains(&q)
+                    || f.value.searchable_text().to_ascii_lowercase().contains(&q)
                     || f.description
                         .as_ref()
                         .is_some_and(|d| d.to_ascii_lowercase().contains(&q))

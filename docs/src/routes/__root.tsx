@@ -13,7 +13,10 @@ export const Route = createRootRoute({
       },
       { title: 'TermRock' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    ],
   }),
   component: RootComponent,
 })

@@ -27,7 +27,7 @@
 use ratatui_core::layout::Rect;
 
 use crate::interaction::NavigationMove;
-use crate::style::Density;
+use crate::style::{Density, DesignSystem};
 
 use super::stack::OverflowPolicy;
 
@@ -211,6 +211,18 @@ impl Default for GridSpec {
 }
 
 impl GridSpec {
+    /// Resolves gaps and padding from the frame design system.
+    #[must_use]
+    pub fn from_system(system: &DesignSystem) -> Self {
+        Self {
+            column_gap: system.spacing.gap,
+            row_gap: system.spacing.gap,
+            pad_x: system.spacing.pad_x,
+            pad_y: system.spacing.pad_y,
+            ..Self::default()
+        }
+    }
+
     /// N equal fractional columns.
     #[must_use]
     pub fn columns_fr(n: u16) -> Self {
