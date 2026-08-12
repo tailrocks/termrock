@@ -1,17 +1,22 @@
 ---
 title: SeparatorLine
 description: 'Horizontal or vertical separator rule using border role paint.'
+component: SeparatorLine
+demo: separator/basic
+interaction: passive-paint
+actions: []
+expectedOutcomes: []
+source: crates/termrock/src/widgets/separator.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
-
-<TerminalPreview story="separator/basic" interactive caption="SeparatorLine · separator/basic — focus surface; keys/click for states" />
+This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
 
 ## `separator/basic`
 
 Separator
+
+<TerminalPreview story="separator/basic" interactive caption="SeparatorLine · shared Rust demo" />
 
 ## Usage
 
@@ -45,3 +50,30 @@ let sep = SeparatorLine::horizontal(&tokens);
 | `separator/section-break` | Separator section break | section break |
 | `separator/vertical` | Separator vertical | vertical |
 | `separator/focus-zone` | Separator focus zone | focus zone |
+
+
+## Try it
+
+- No actions. This component is passive in this demo; the page remains navigable.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `separator/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/separator.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/separator.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `separator/basic`

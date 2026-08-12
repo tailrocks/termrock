@@ -319,7 +319,7 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 {
   "stories": ["list/selection", "list/narrow"],
   "tests": ["list::tests::keyboard_moves"],
-  "snapshots": ["docs/public/component-previews/list-selection.svg"],
+  "snapshots": ["docs/public/preview-posters/list-selection.json"],
   "benches": ["list_paint_10k"],
   "recordings": ["stories/list/selection.rec.json"],
   "notes": "optional free text"
@@ -433,8 +433,9 @@ bun run docs/scripts/check-catalog.ts
 # v2 schema rules + example + optional v2 catalog + static key lint
 bun run docs/scripts/check-contracts.ts
 
-# SVG drift
-cargo run -p termrock-lookbook -- check --dir docs/public/component-previews
+# deterministic no-JS fallback posters
+bun --cwd docs run build:preview-posters
+bun --cwd docs run check:catalog
 
 # mise
 mise run contracts

@@ -24,7 +24,7 @@ use termrock::{
 use crate::stories::{Story, stories};
 
 /// Uniform charcoal padding around story paint (matches SVG export).
-const STORY_PAD: u16 = 1;
+pub const STORY_PAD: u16 = 1;
 
 /// One terminal cell with true-color RGB (Ghostty-class 24-bit).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,10 +82,13 @@ pub struct PreviewKey {
     /// `ctrl`, `alt`, `shift`, `meta` flags.
     #[serde(default)]
     pub ctrl: bool,
+    /// Alt/Option modifier.
     #[serde(default)]
     pub alt: bool,
+    /// Shift modifier.
     #[serde(default)]
     pub shift: bool,
+    /// Meta/Super modifier.
     #[serde(default)]
     pub meta: bool,
 }
@@ -279,141 +282,9 @@ pub fn paint_story_frame(
         story_cols,
         story_rows,
         cells,
-        interactive: probe_interactive(story),
+        interactive: story.interactive,
         theme: "phosphor".into(),
     }
-}
-
-/// Keys tried when probing whether a story interactor accepts navigation.
-const PROBE_KEY_CODES: &[KeyCode] = &[
-    KeyCode::Down,
-    KeyCode::Right,
-    KeyCode::Left,
-    KeyCode::Up,
-    KeyCode::Char('j'),
-    KeyCode::Tab,
-];
-
-fn probe_key_event(code: KeyCode) -> KeyEvent {
-    KeyEvent {
-        code,
-        modifiers: KeyModifiers::NONE,
-        kind: KeyEventKind::Press,
-        state: Default::default(),
-    }
-}
-
-/// True when any common navigation key is accepted by the story interactor.
-#[must_use]
-pub fn probe_interactive(story: Story) -> bool {
-    preferred_step_key(story).is_some()
-}
-
-/// Prefer the first probe key that the interactor accepts (for multi-step export).
-#[must_use]
-pub fn preferred_step_key(story: Story) -> Option<&'static str> {
-    for code in PROBE_KEY_CODES {
-        let mut inter = story.make_interactor();
-        if inter.handle_key(probe_key_event(*code)) {
-            return Some(match code {
-                KeyCode::Down => "ArrowDown",
-                KeyCode::Right => "ArrowRight",
-                KeyCode::Left => "ArrowLeft",
-                KeyCode::Up => "ArrowUp",
-                KeyCode::Char('j') => "j",
-                KeyCode::Tab => "Tab",
-                _ => continue,
-            });
-        }
-    }
-    None
-}
-
-/// Multi-scene composite tours: one pack id → several real story paints as steps.
-/// Used when a surface is product-important but has no single multi-state interactor.
-#[must_use]
-pub fn composite_tour_stories(pack_story_id: &str) -> Option<&'static [&'static str]> {
-    match pack_story_id {
-        "agent-workbench/basic" => Some(&[
-            "agent-workbench/basic",
-            "agent-workbench/tool-running",
-            "agent-workbench/permission",
-            "agent-workbench/plan",
-            "agent-workbench/diff",
-            "agent-workbench/session",
-        ]),
-        _ => None,
-    }
-}
-
-/// Axis-ish story tails preferred when auto-building a variant tour (one Ghostty
-/// surface cycling lookbook states instead of N static screens).
-const VARIANT_TOUR_AXIS_ORDER: &[&str] = &[
-    "narrow",
-    "unicode",
-    "empty",
-    "loading",
-    "disabled",
-    "error",
-    "failed",
-    "compact",
-    "tiny",
-    "ascii",
-    "open",
-    "multi",
-    "focused",
-    "basic",
-    "destructive",
-    "dialog",
-];
-
-fn variant_tour_rank(story_id: &str, primary_id: &str) -> (u8, u8) {
-    if story_id == primary_id {
-        return (0, 0);
-    }
-    let tail = story_id.rsplit('/').next().unwrap_or(story_id);
-    for (i, axis) in VARIANT_TOUR_AXIS_ORDER.iter().enumerate() {
-        if tail == *axis || tail.starts_with(&format!("{axis}-")) {
-            return (1, i as u8);
-        }
-    }
-    (2, 0)
-}
-
-/// Resolve multi-scene tour for export: fixed composite tours first; otherwise
-/// when the pack story has no keyboard interactor, tour sibling lookbook stories
-/// for the same component (up to 6) so docs can step states on one surface.
-#[must_use]
-pub fn resolve_export_tour(pack_story_id: &str) -> Option<Vec<&'static str>> {
-    if let Some(fixed) = composite_tour_stories(pack_story_id) {
-        return Some(fixed.to_vec());
-    }
-    let primary = story_by_id(pack_story_id)?;
-    let primary_id: &'static str = primary.id;
-    // Key-driven interactor packs already multi-step without a story tour.
-    if preferred_step_key(primary).is_some() {
-        return None;
-    }
-    let mut siblings: Vec<&'static str> = stories()
-        .into_iter()
-        .filter(|s| s.component == primary.component)
-        .map(|s| s.id)
-        .collect();
-    if siblings.len() < 2 {
-        return None;
-    }
-    siblings.sort_by(|a, b| {
-        variant_tour_rank(a, primary_id)
-            .cmp(&variant_tour_rank(b, primary_id))
-            .then_with(|| (*a).cmp(*b))
-    });
-    // Primary first (rank 0); cap length for pack size.
-    siblings.truncate(6);
-    if !siblings.contains(&primary_id) {
-        siblings.insert(0, primary_id);
-        siblings.truncate(6);
-    }
-    Some(siblings)
 }
 
 /// Paint after applying a sequence of keys through the real story interactor.
@@ -681,96 +552,5 @@ mod tests {
             nonempty > 40,
             "composite must fill terminal, nonempty={nonempty}"
         );
-    }
-
-    #[test]
-    fn preferred_step_key_detects_tabs_right_or_down() {
-        let story = story_by_id("tabs/status").expect("tabs/status");
-        let key = preferred_step_key(story).expect("tabs must accept a nav key");
-        assert!(
-            matches!(
-                key,
-                "ArrowRight" | "ArrowDown" | "ArrowLeft" | "ArrowUp" | "j" | "Tab"
-            ),
-            "unexpected step key {key}"
-        );
-        assert!(probe_interactive(story));
-        let theme = RolePalette::default();
-        let base = paint_story_after_keys(story, &theme, Some(40), Some(4), &[]);
-        let after = paint_story_after_keys(
-            story,
-            &theme,
-            Some(40),
-            Some(4),
-            &[PreviewKey {
-                key: key.into(),
-                ctrl: false,
-                alt: false,
-                shift: false,
-                meta: false,
-            }],
-        );
-        assert_ne!(
-            base.cells, after.cells,
-            "tabs preferred key must change paint"
-        );
-    }
-
-    #[test]
-    fn composite_tour_agent_workbench_multi_scene() {
-        let tour = composite_tour_stories("agent-workbench/basic").expect("tour");
-        assert_eq!(tour.len(), 6);
-        let theme = RolePalette::default();
-        let mut frames = Vec::new();
-        for id in tour {
-            let story = story_by_id(id).unwrap_or_else(|| panic!("missing tour story {id}"));
-            let f = paint_story_frame(story, &theme, Some(56), Some(12));
-            assert_eq!(f.component, "AgentWorkbench");
-            frames.push(f);
-        }
-        // At least two tour scenes must paint differently (not a static mock).
-        let distinct = frames
-            .windows(2)
-            .filter(|w| w[0].cells != w[1].cells)
-            .count();
-        assert!(
-            distinct >= 2,
-            "workbench tour must include multiple distinct scenes, distinct_pairs={distinct}"
-        );
-    }
-
-    #[test]
-    fn resolve_export_tour_builds_button_variant_scenes() {
-        // Static button has no key interactor — export must tour sibling stories
-        // so one Ghostty surface can step states (not N SVG screens).
-        let tour = resolve_export_tour("button/activation").expect("button tour");
-        assert!(
-            tour.len() >= 3,
-            "button tour needs multiple scenes, got {}",
-            tour.len()
-        );
-        assert_eq!(tour[0], "button/activation");
-        assert!(tour.iter().any(|id| id.contains("narrow")
-            || id.contains("disabled")
-            || id.contains("loading")
-            || id.contains("destructive")));
-        let theme = RolePalette::default();
-        let frames: Vec<_> = tour
-            .iter()
-            .map(|id| paint_story_frame(story_by_id(id).unwrap(), &theme, Some(40), Some(8)))
-            .collect();
-        let base = &frames[0].cells;
-        let distinct = frames.iter().skip(1).filter(|f| f.cells != *base).count();
-        assert!(
-            distinct >= 1,
-            "button tour must change paint for ≥1 scene beyond primary, distinct={distinct}"
-        );
-    }
-
-    #[test]
-    fn resolve_export_tour_skips_key_driven_list() {
-        // list/selection is key-interactive — no sibling tour (ArrowDown steps).
-        assert!(resolve_export_tour("list/selection").is_none());
-        assert!(preferred_step_key(story_by_id("list/selection").unwrap()).is_some());
     }
 }

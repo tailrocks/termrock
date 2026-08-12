@@ -1,19 +1,30 @@
 ---
 title: SessionPicker
 description: 'Agent session selector — create, resume, search, rename, archive, delete.'
+component: SessionPicker
+demo: session-picker/basic
+interaction: activation
+actions:
+  - 'Enter open action'
+  - 'click trigger'
+  - 'S toggle sidebar region'
+  - '↑↓/wheel select row'
+  - '/ filter'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/mod.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
-
-<TerminalPreview story="session-picker/basic" interactive caption="SessionPicker · session-picker/basic — focus surface; keys/click for states" />
+This is a persistent sample-application demo. Navigate rows, filter through a real TextInput, toggle the sidebar region, and open the effect-free action dialog.
 
 ## `session-picker/basic`
 
 ### `session-picker/confirm`
 
 ### `session-picker/narrow`
+
+<TerminalPreview story="session-picker/basic" interactive caption="SessionPicker · shared Rust demo" />
 
 ## Usage
 
@@ -54,3 +65,69 @@ match state.handle_key(key) {
 | `session-picker/empty` | SessionPicker empty | empty |
 | `session-picker/narrow` | Narrow SessionPicker | narrow |
 | `session-picker/unicode` | Unicode SessionPicker | unicode |
+
+
+## Try it
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog.
+- `S toggle sidebar region` changes visible chrome.
+- `↑↓/wheel select row` changes persistent selection.
+- `/ filter` focuses a real TextInput; type or paste, then apply with Enter.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `session-picker/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `session-picker/basic`
+
+## Migrated handbook guidance
+
+# SessionPicker
+
+Session lifecycle selector. Outcomes are **requests only**. Cancel never clears
+PromptComposer draft or app context.
+
+
+## When to use / when not
+
+| Use SessionPicker | Prefer |
+|-------------------|--------|
+| Agent threads / sessions | — |
+| Generic query+list | [Picker](/docs/components) if documented |
+| Value/command history | HistoryPicker |
+| Commands | CommandPalette |
+
+## Features
+
+- Project · branch · status · recency · model/mode · summary
+- Unread / action-required · pin · remote/multi-device
+- Search (local + provider flag) · preview pane
+- Create · rename · pin · archive · delete (safe confirm)
+- Popover / fullscreen presentation requests
+- Windowed list + `LoadMore` for large catalogs
+
+## Keys
+
+type search · j/k · Enter open · n new · r rename · p pin · a archive · del delete · f fullscreen · esc cancel
+
+Confirm: ←/→ · Enter · **Cancel default** · y unbound
+
+## Related
+
+HistoryPicker · Picker · migration `0230`

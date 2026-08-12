@@ -22,7 +22,7 @@ use ratatui::{
 };
 use termrock::style::{DesignSystem, PREVIEW_CARD, RolePalette};
 
-use crate::stories::{Story, stories};
+use termrock_lookbook::stories::{Story, stories};
 
 /// Uniform charcoal padding ring around every exported story, in cells. Mirrors
 /// the interactive preview's 1-cell `Margin` so a component floats inside the
@@ -138,7 +138,7 @@ pub(crate) fn check_svgs(dir: PathBuf) -> Result<(), Box<dyn std::error::Error>>
         Err(concat!(
             "lookbook SVG check out of date; regenerate with ",
             "`cargo run -p termrock-lookbook -- render --out target/render-check` ",
-            "(docs product path is Ghostty export-frames → docs/public/preview-frames, not SVG)",
+            "(docs product path is the shared Rust/WASM DemoSession, not SVG)",
         )
         .into())
     }
@@ -363,7 +363,7 @@ mod color_tests {
 
     #[test]
     fn button_disabled_svg_body_differs_from_activation() {
-        use crate::stories::stories;
+        use termrock_lookbook::stories::stories;
         let theme = RolePalette::default();
         let act = stories()
             .into_iter()
@@ -393,7 +393,7 @@ mod color_tests {
 
     #[test]
     fn button_unicode_svg_contains_english_and_emoji() {
-        use crate::stories::stories;
+        use termrock_lookbook::stories::stories;
         let theme = RolePalette::default();
         let story = stories()
             .into_iter()

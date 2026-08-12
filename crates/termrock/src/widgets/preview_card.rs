@@ -26,7 +26,8 @@
 //! Research: IDE quick previews, hover cards, Yazi previews, QuickOpen panels.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use web_time::Instant;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 

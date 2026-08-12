@@ -1,1 +1,0 @@
-{"cellHeightPx":18,"cellWidthPx":9,"component":"AnsiText","defaultSize":"40x8","interactive":true,"padCells":1,"sizes":["28x6","40x8","56x12","72x16","80x24"],"stepKey":null,"steps":6,"storyId":"ansi-text/basic","title":"AnsiText SGR","tour":["ansi-text/basic","ansi-text/narrow","ansi-text/unicode","ansi-text/cr-bs","ansi-text/hyperlink","ansi-text/no-color"]}

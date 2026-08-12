@@ -34,8 +34,10 @@ use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
     focus::{FocusId, is_focused, panel_chrome},
     host_frame::HostFrame,
+};
+use termrock_lookbook::{
     interactors::StoryInteraction,
-    stories::gallery_stories,
+    stories::{gallery_stories, is_pattern_demo},
 };
 
 const PROTOTYPE_TOAST_TTL: Duration = Duration::from_secs(2);
@@ -90,6 +92,8 @@ pub(crate) struct Lookbook {
     sidebar_viewport_items: usize,
     preview_viewport_rows: usize,
     knob_selected: usize,
+    demo_outcome: Option<String>,
+    full_preview: bool,
     prototype_toast: ToastState,
     /// Domain state for the focus-trap prototype dialog.
     prototype_modal: Option<PrototypeModal>,
@@ -113,6 +117,8 @@ impl Lookbook {
             sidebar_viewport_items: 1,
             preview_viewport_rows: 1,
             knob_selected: 0,
+            demo_outcome: None,
+            full_preview: false,
             prototype_toast: ToastState::new(ToastLifetime::ExpiresAfter(PROTOTYPE_TOAST_TTL)),
             prototype_modal: None,
         }
@@ -123,6 +129,21 @@ impl Lookbook {
     }
 
     pub(crate) fn render_at(&mut self, frame: &mut Frame<'_>, tick: FrameTick) {
+        let elapsed_ms = u64::try_from(tick.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let _ = self.interactor.handle_tick(elapsed_ms);
+        self.capture_demo_outcome();
+        if self.full_preview {
+            let [preview, hints] =
+                Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).areas(frame.area());
+            self.host.frame_bounds = frame.area();
+            self.host.begin_shell_frame(false);
+            self.host.register_shell(FocusId::Preview, preview, true);
+            self.host.reconcile();
+            self.host.focus(FocusId::Preview);
+            self.render_preview(frame, preview);
+            self.render_hints(frame, hints);
+            return;
+        }
         let [brand_area, main_area, _, hint_area] = Layout::vertical([
             Constraint::Length(2),
             Constraint::Min(1),
@@ -217,7 +238,7 @@ impl Lookbook {
         let panel_tokens = self.host.system();
         let catalog = gallery_stories();
         let block = Panel::new(&panel_tokens)
-            .title("Stories")
+            .title("Components · Application patterns")
             .emphasis(panel_chrome(&self.host.scene, FocusId::Sidebar))
             .block();
         let inner = block.inner(area);
@@ -234,15 +255,17 @@ impl Lookbook {
         let items = catalog
             .iter()
             .map(|story| {
+                let kind = if is_pattern_demo(story.id) {
+                    "application pattern"
+                } else {
+                    story.id
+                };
                 ListItem::new(vec![
                     Line::from(Span::styled(
                         story.component,
                         self.host.theme.style(Role::Text),
                     )),
-                    Line::from(Span::styled(
-                        story.id,
-                        self.host.theme.style(Role::TextMuted),
-                    )),
+                    Line::from(Span::styled(kind, self.host.theme.style(Role::TextMuted))),
                 ])
             })
             .collect::<Vec<_>>();
@@ -443,6 +466,28 @@ impl Lookbook {
             );
             return;
         }
+        if is_focused(&self.host.scene, FocusId::Preview) {
+            let hints = self.interactor.hints();
+            if !hints.is_empty() || self.demo_outcome.is_some() {
+                let mut parts = hints.join(" · ");
+                if !parts.is_empty() {
+                    parts.push_str(" · ");
+                }
+                parts.push_str(if self.full_preview {
+                    "Z exit full preview"
+                } else {
+                    "Z full preview"
+                });
+                if let Some(outcome) = &self.demo_outcome {
+                    if !parts.is_empty() {
+                        parts.push_str("   │   ");
+                    }
+                    parts.push_str(outcome);
+                }
+                frame.render_widget(Paragraph::new(parts), area);
+                return;
+            }
+        }
         let spans = match self.host.focused() {
             Some(FocusId::Preview) => PREVIEW_KEYMAP.hint_spans(),
             Some(FocusId::Sidebar) | None => SIDEBAR_KEYMAP.hint_spans(),
@@ -480,6 +525,15 @@ impl Lookbook {
             Event::Mouse(mouse) => self.handle_mouse(mouse),
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 return self.handle_key(key, tick);
+            }
+            Event::Key(key) if is_focused(&self.host.scene, FocusId::Preview) => {
+                self.interactor.handle_key(key);
+                self.capture_demo_outcome();
+            }
+            Event::Paste(text) if is_focused(&self.host.scene, FocusId::Preview) => {
+                self.interactor
+                    .handle_event(Event::Paste(text), self.component_area);
+                self.capture_demo_outcome();
             }
             Event::Resize { .. } | Event::FocusGained | Event::FocusLost => {}
             Event::Key(_) | Event::Paste(_) | Event::Unknown => {}
@@ -523,6 +577,7 @@ impl Lookbook {
                     self.interactor = gallery_stories()[self.selected].make_interactor();
                     self.interactor.set_theme(self.host.theme.clone());
                     self.knob_selected = 0;
+                    self.demo_outcome = None;
                 }
             }
             MouseEventKind::ScrollUp
@@ -555,6 +610,7 @@ impl Lookbook {
         }
         if self.component_area.contains(mouse.position) {
             self.interactor.handle_mouse(mouse, self.component_area);
+            self.capture_demo_outcome();
         }
     }
 
@@ -566,6 +622,11 @@ impl Lookbook {
             Some(FocusId::Sidebar) | None => false,
             Some(FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel) => false,
         };
+        if key.code == KeyCode::Char('z') && !captures_text {
+            self.full_preview = !self.full_preview;
+            self.host.focus(FocusId::Preview);
+            return ControlFlow::Continue(());
+        }
         if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
             let out = self.host.handle_scene_key(key);
             if !matches!(out, termrock::interaction::InteractionOutcome::Ignored) {
@@ -600,6 +661,11 @@ impl Lookbook {
 
     fn handle_preview_key(&mut self, key: KeyEvent, chord: KeyChord) {
         if chord.key == KeyCode::Esc && self.interactor.handle_preview_escape(key) {
+            self.capture_demo_outcome();
+            return;
+        }
+        if chord.key == KeyCode::Esc && self.full_preview {
+            self.full_preview = false;
             return;
         }
         let content = usize::from(gallery_stories()[self.selected].height);
@@ -620,6 +686,7 @@ impl Lookbook {
             }
             PreviewAction::Forward => {
                 self.interactor.handle_key(key);
+                self.capture_demo_outcome();
             }
         }
     }
@@ -639,6 +706,7 @@ impl Lookbook {
                 if changed && gallery_stories()[self.selected].component == "Toast" {
                     self.prototype_toast.show(tick);
                 }
+                self.capture_demo_outcome();
             }
         }
     }
@@ -677,7 +745,14 @@ impl Lookbook {
             self.interactor.set_theme(self.host.theme.clone());
             self.preview_scroll = 0;
             self.knob_selected = 0;
+            self.demo_outcome = None;
             self.selected = selected;
+        }
+    }
+
+    fn capture_demo_outcome(&mut self) {
+        if let Some(outcome) = self.interactor.take_outcome() {
+            self.demo_outcome = Some(outcome);
         }
     }
 

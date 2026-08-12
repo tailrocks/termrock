@@ -1,17 +1,28 @@
 ---
 title: PlanReview
 description: 'Agent plan document review — Markdown, comments, safe approve paths.'
+component: PlanReview
+demo: plan-review/basic
+interaction: activation
+actions:
+  - 'Enter open action'
+  - 'click trigger'
+  - 'S toggle sidebar region'
+  - '↑↓/wheel select row'
+  - '/ filter'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/mod.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
-
-<TerminalPreview story="plan-review/basic" interactive caption="PlanReview · plan-review/basic — focus surface; keys/click for states" />
+This is a persistent sample-application demo. Navigate rows, filter through a real TextInput, toggle the sidebar region, and open the effect-free action dialog.
 
 ## `plan-review/basic`
 
 Plan review
+
+<TerminalPreview story="plan-review/basic" interactive caption="PlanReview · shared Rust demo" />
 
 ## Usage
 
@@ -53,3 +64,74 @@ match state.handle_key(key) {
 | `plan-review/comments` | PlanReview comments | comments |
 | `plan-review/narrow` | Narrow PlanReview | narrow |
 | `plan-review/unicode` | Unicode PlanReview | unicode |
+
+
+## Try it
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog.
+- `S toggle sidebar region` changes visible chrome.
+- `↑↓/wheel select row` changes persistent selection.
+- `/ filter` focuses a real TextInput; type or paste, then apply with Enter.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `plan-review/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `plan-review/basic`
+
+## Migrated handbook guidance
+
+# PlanReview
+
+Interactive review for agent-generated plans. Host owns execution policy;
+outcomes are **requests only**. Approve is never the initial focus.
+The plan-gold rail and title establish document identity; task fields and
+decision chips reuse the shared composition vocabulary.
+
+
+## When to use / when not
+
+| Use PlanReview | Prefer |
+|----------------|--------|
+| Approve/revise agent plan before work | — |
+| Single tool/shell trust gate | [PermissionPrompt](/docs/components/permission-prompt) |
+| Patch/hunk accept | [DiffReview](/docs/components/diff-review) |
+| Multi-question interview | [QuestionFlow](/docs/components/question-flow) |
+| Live pipeline progress | [ProgressSteps](/docs/components/progress-steps) (if present) |
+
+## Domain
+
+- `PlanDocument` — body, sections, tasks, risks, assumptions, files, refs, risk, previous
+- `PlanComment` + `PlanCommentAnchor` — line/range/section/task/file/orphan
+- `remap_plan_comments` / `update_plan` — preserve stable anchors across revisions
+
+## Actions (safe focus)
+
+Abandon · Revise · Feedback · Approve… · Approve
+
+Default: `RequestRevision` (low/medium) or `Abandon` (high/critical). Enter
+confirms focus only. Bare `a` moves focus — does not grant.
+
+## Keys
+
+j/k · Tab panes · ←/→ actions · Enter · m comment · d diff · [] section · Esc cancel
+
+## Related
+
+PermissionPrompt · DiffReview · QuestionFlow · migrations `0228`, `0273`

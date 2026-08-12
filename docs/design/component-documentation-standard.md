@@ -1,190 +1,116 @@
-# Component documentation standard
+# Canonical component documentation standard
 
-| Field | Value |
-|-------|-------|
-| **Status** | Binding for public component pages |
-| **Bar** | Comparable to [shadcn/ui docs](https://ui.shadcn.com/docs) — purpose-first, copy-paste examples, ownership clarity |
-| **Rule** | Do **not** restate field names. Explain **why** and **when** to use each pattern |
-| **Applied** | Button · List · DataTable · Dialog · CommandPalette · PromptComposer · PermissionPrompt |
+| Field | Rule |
+|---|---|
+| Status | Binding for every canonical component route |
+| Route | `/docs/components/<slug>` |
+| Source of truth | Checked-in MDX, never generated prose |
+| Preview | One persistent Rust demo mounted by stable ID |
+| Duplicate docs | Forbidden; there is no separate Component Handbook |
 
----
+## Completeness law
 
-## 1. Completeness law
+A public widget is incomplete until the generated API inventory maps it to one
+canonical page and one shared Lookbook demo. A page is complete only when:
 
-A component documentation page is complete only when:
+1. Frontmatter declares `component`, `demo`, `interaction`, `actions`,
+   `expectedOutcomes`, and an existing Rust `source` path.
+2. It embeds exactly one matching `<TerminalPreview>`.
+3. Its behavior recipe names only events accepted by that mounted demo.
+4. Interactive demos expose current hints and a visible outcome; passive demos
+   expose neither fake actions nor a fake cursor.
+5. Usage uses public TermRock APIs and the snippet checks accept it.
+6. State ownership separates widget state, host policy, and external effects.
+7. Story IDs name deterministic visual coverage without presenting variants as
+   runtime steps.
 
-1. Every **required section** below is present (or explicitly N/A with one line).  
-2. **Basic** and **interactive** Rust examples use **public APIs only**.  
-3. Those examples are mirrored in `crates/termrock/tests/documentation_examples.rs` and pass CI.  
-4. Lookbook/Studio story ids are named for visual proof.  
-5. Writing answers *when/why*, not only *what exists*.  
-6. **Exactly one** Ghostty-class `<TerminalPreview story="…/…" />` embed per handbook
-   page (primary lookbook story + multi-step interactivity). **Never** SVG,
-   `component-previews/`, or multi-image galleries.
+The current inventory contains 135 public `Widget`/`StatefulWidget`
+implementations and 165 canonical component routes. Some routes document public
+component types that are not themselves Ratatui widget implementations. Both
+numbers are checked; neither may be substituted for the other.
 
-Thin generated inventory pages (`docs/content/docs/components/`) are **not** a substitute for handbook pages.
+## Required frontmatter
 
----
-
-## 2. Required page template (order fixed)
-
-| # | Section | Content rules |
-|---|---------|----------------|
-| 1 | **Purpose** | One-line + short paragraph: problem solved in a terminal UI |
-| 1b | **Live terminal (Ghostty-class)** | One `<TerminalPreview>` for the primary story; no SVG |
-| 2 | **When to use / when not** | Table vs alternatives |
-| 3 | **Installation** | Crate pin and/or `termrock add …` |
-| 4 | **Source files** | Crate paths or registry install list |
-| 5 | **Basic example** | Minimal public API; compiles in CI |
-| 6 | **Interactive example** | Key/mouse → outcome; compiles in CI |
-| 7 | **Anatomy** | Named parts; primary survives contraction |
-| 8 | **Public API** | Constructors/methods **with intent** (why call them) |
-| 9 | **State ownership** | TermRock vs consumer table |
-| 10 | **Typed outcomes** | Variants + who runs effects |
-| 11 | **Variants** | Modes / emphasis / kinds |
-| 12 | **Sizes** | Min usable, preferred, fullscreen/overlay |
-| 13 | **Density** | Comfortable / compact / dashboard |
-| 14 | **Keyboard** | Chords/intents; Esc law |
-| 15 | **Mouse** | Hits, wheel, drag |
-| 16 | **Focus** | Entry/exit, trap, opener restore |
-| 17 | **Responsive** | Narrow/tiny drop order |
-| 18 | **Accessibility / colorless** | Non-color cues |
-| 19 | **Unicode** | CJK, combining, emoji, ASCII fallback |
-| 20 | **Composition** | Nesting with Panel/Overlay/Workbench |
-| 21 | **Theming** | Roles used (not hex dumps) |
-| 22 | **Custom recipe** | Tokens/recipe override with intent |
-| 23 | **Common mistakes** | Anti-patterns (why they break) |
-| 24 | **Performance** | Viewport, alloc, stream notes |
-| 25 | **Testing** | Story ids, unit tests, contracts |
-| 26 | **Migration** | Link `migrations/00xx` or “none yet” |
-| 27 | **Related components** | Siblings with one-line reason |
-| 28 | **Complete application example** | Small shell loop sketch |
-
-Frontmatter: `title`, `description` (purpose-oriented).
-
----
-
-## 3. Markdown skeleton (copy for new pages)
-
-```markdown
+```yaml
 ---
 title: ComponentName
-description: Purpose-first one-liner.
+description: 'Purpose-first sentence.'
+component: ComponentName
+demo: component-name/basic
+interaction: selection-navigation
+actions:
+  - 'ArrowDown select'
+expectedOutcomes:
+  - 'Selection changes and the status reports the typed outcome.'
+source: crates/termrock/src/widgets/component_name.rs
 ---
-
-# ComponentName
-
-**Purpose.** …
-
-## When to use / when not
-| Use | Prefer instead |
-|-----|----------------|
-
-## Installation
-## Source files
-## Basic example
-## Interactive example
-## Anatomy
-## Public API
-## State ownership
-## Typed outcomes
-## Variants
-## Sizes
-## Density
-## Keyboard
-## Mouse
-## Focus
-## Responsive
-## Accessibility / colorless
-## Unicode
-## Composition
-## Theming
-## Custom recipe
-## Common mistakes
-## Performance
-## Testing
-## Migration
-## Related
-## Complete application example
 ```
 
----
+Valid interaction families are `passive-paint`, `activation`,
+`selection-navigation`, `editor-form`, `disclosure-overlay`,
+`scrolling-virtualization`, `drag-continuous-value`, and `timed-state`.
+Use `passive-paint` when no input belongs to the component. Configuration and
+variant changes are not runtime interaction.
 
-## 4. Writing rules
+## Required page order
 
-1. **Why before what.** Open with a scenario, not a struct dump.  
-2. **Public API only** in fenced `rust` blocks that CI compiles.  
-3. **Borrowing:** show `&rows` / projections, not fake owned mega-models.  
-4. **Outcomes ≠ effects:** “returns `Activated(id)`; consumer navigates.”  
-5. **Ownership table** on every page.  
-6. **Stories** listed with backticks for catalog CI (`list/narrow`).  
-7. **No changelog filler** in body — history under Migration.  
-8. **Density/responsive** describe *what drops first*, not “has a width field.”  
-9. Prefer **tables** for parallel comparisons; prose for judgment.
+1. Live terminal and one-sentence behavior recipe.
+2. Usage with public APIs.
+3. Interaction contract: keyboard, mouse, focus, non-color, Unicode, narrow,
+   motion, and caret where applicable.
+4. Stories, with one primary demo and clearly labeled visual variants.
+5. Try it: exact current actions and observable result.
+6. State and typed outcomes: widget-owned versus host-owned.
+7. Common mistakes.
+8. Deterministic test recipe.
+9. Source and related material.
+10. Migrated deep guidance when the old Handbook held useful material.
 
----
+## Preview law
 
-## 5. File layout
+The website and native Lookbook mount the same `DemoSession` factory. Browser
+input is normalized into backend-neutral TermRock events and sent to persistent
+Rust state. The web host does not implement component behavior.
 
-| Artifact | Path |
-|----------|------|
-| Standard | `docs/design/component-documentation-standard.md` |
-| Handbook (shadcn depth) | `docs/content/docs/handbook/*.mdx` |
-| Generated inventory | `docs/content/docs/components/*.mdx` |
-| Compilable examples | `crates/termrock/tests/documentation_examples.rs` |
-| Thin usage snippets | `docs/scripts/component-docs.ts` → `check-component-snippets.ts` |
+- Hover, click, typing, paste, key press/repeat/release, wheel, drag, focus,
+  resize, and host-controlled time are forwarded only when supported.
+- Dialogs, menus, drawers, and toasts begin from a trigger and appear or
+  disappear because the Rust demo accepted an event.
+- Editors paint their real widget caret. Passive previews never receive a
+  synthetic caret or cursor.
+- Timed demos use injected elapsed time and pause offscreen or under reduced
+  motion.
+- Static poster JSON is fallback paint only. It never defines behavior.
 
----
+## Writing rules
 
-## 6. Installation wording
+- Explain why and when before listing methods.
+- Name concrete actions and concrete outcomes. Avoid “click for states.”
+- Outcomes are not effects: the demo may show `Activated(id)`; the consumer
+  decides whether to navigate, execute, authenticate, or mutate external data.
+- Prefer borrowed/projection examples over owned product models.
+- State contraction order and non-color cues rather than claiming
+  “responsive” or “accessible” without evidence.
+- Product-noun assemblies belong under `/docs/patterns`, not Components.
 
-**Crate (today):**
+## Tooling and enforcement
 
-```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "PIN" }
+| Tool | Contract |
+|---|---|
+| `docs/api/component-routes.json` | Stable component → route → primary demo mapping |
+| `docs/api/handbook-route-migration.json` | Exactly one destination for each removed Handbook file |
+| `docs/scripts/scaffold-component-page.ts` | Creates a missing page; never overwrites authored MDX |
+| `docs/scripts/check-component-pages.ts` | Inventory, frontmatter, demo, source, and duplicate-route checks |
+| `docs/scripts/check-component-snippets.ts` | Public usage snippets remain accepted |
+| `docs/scripts/check-catalog.ts` | Cross-surface story, demo, pattern, and poster coverage |
+
+Run:
+
+```sh
+rtk bun --cwd docs run check:components
+rtk bun --cwd docs run check:snippets
+rtk bun --cwd docs run build
 ```
 
-**Registry (when item exists):**
-
-```bash
-termrock add termrock/<item>
-```
-
-List installed paths relative to `termrock.toml` `ui_root` when documenting registry skins.
-
----
-
-## 7. CI enforcement
-
-| Check | Ensures |
-|-------|---------|
-| `cargo test -p termrock --test documentation_examples` | Handbook-critical snippets compile |
-| `bun run docs/scripts/check-component-snippets.ts` | `component-docs.ts` usage blocks compile |
-| `bun run docs/scripts/check-catalog.ts` | Story ids referenced in docs exist |
-| Lookbook check | SVG previews for primary stories |
-
-Handbook authors: when adding a new fenced example that “must compile,” add a sibling test under `documentation_examples.rs`.
-
----
-
-## 8. Applied handbook set
-
-| Page | Public surface |
-|------|----------------|
-| [Button](../content/docs/handbook/button.mdx) | `Button` / `ButtonState` (+ `ActionBar` for toolbars) |
-| [List](../content/docs/handbook/list.mdx) | `List` / `ListRow` / `ListState` |
-| [DataTable](../content/docs/handbook/data-table.mdx) | `DataTable` / `Table` + `data_view` kits |
-| [Dialog](../content/docs/handbook/dialog.mdx) | `Dialog` / `ChoiceDialog` + place helpers |
-| [Command palette](../content/docs/handbook/command-palette.mdx) | `CommandPalette` + OverlayStack |
-| [Prompt composer](../content/docs/handbook/prompt-composer.mdx) | `PromptComposer` |
-| [Permission prompt](../content/docs/handbook/permission-prompt.mdx) | `PermissionPrompt` + queue |
-
----
-
-## 9. Decision summary
-
-1. Handbook is the depth layer; generated components stay inventory.  
-2. Template order is fixed for scannability (shadcn-class).  
-3. Examples are code, not aspirational pseudocode.  
-4. Ownership and outcomes are first-class sections.  
-5. Mistakes and performance prevent cargo-cult copy-paste.
+New widgets and breaking interaction changes update the page, shared demo,
+deterministic trace, public inventory, and migration documentation together.

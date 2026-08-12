@@ -4,7 +4,7 @@
 
 //! Executable mirrors of public documentation and handbook examples.
 //!
-//! Handbook pages under `docs/content/docs/handbook/` must stay aligned with
+//! Canonical pages under `docs/content/docs/components/` must stay aligned with
 //! these tests (component documentation standard).
 
 use ratatui_core::{

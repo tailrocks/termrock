@@ -1,17 +1,22 @@
 ---
 title: Combobox
 description: 'An editable input with CompletionMenu suggestions, async generation gating, and separate draft/active/value.'
+component: Combobox
+demo: combobox/basic
+interaction: passive-paint
+actions: []
+expectedOutcomes: []
+source: crates/termrock/src/widgets/combobox.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
-
-<TerminalPreview story="combobox/basic" interactive caption="Combobox · combobox/basic — focus surface; keys/click for states" />
+This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
 
 ## `combobox/basic`
 
 Combobox
+
+<TerminalPreview story="combobox/basic" interactive caption="Combobox · shared Rust demo" />
 
 ## Usage
 
@@ -45,3 +50,68 @@ let _ = Combobox::new(&system).label("Language");
 | `combobox/open` | Combobox open | open |
 | `combobox/loading` | Combobox loading | loading |
 | `autocomplete/basic` | Autocomplete | basic |
+
+
+## Try it
+
+- No actions. This component is passive in this demo; the page remains navigable.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `combobox/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/combobox.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/combobox.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `combobox/basic`
+
+## Migrated handbook guidance
+
+# Combobox & Autocomplete
+
+**Purpose.** Free-form or constrained values with suggestions. TermRock owns
+draft typing, menu navigation, and race-safe apply. Hosts own fetch/rank and
+OverlayStack.
+
+
+## Three values
+
+| Value | API |
+|-------|-----|
+| Draft | `draft()` |
+| Active suggestion | `active_suggestion()` |
+| Committed | `value()` / `value_label()` |
+
+## Async race gate
+
+```rust
+// on DraftChanged { generation }
+host.fetch(text, generation);
+
+// on response
+if state.apply_suggestions(generation, &cands) {
+    // fresh
+} // stale generation → false, ignored
+```
+
+## Modes
+
+- **Combobox** — `ComboboxState::new()`: exact-required, not creatable by default  
+- **Autocomplete** — `ComboboxState::autocomplete()`: creatable free text  
+
+## Related
+
+CompletionMenu · TextInput · Select · migration `0147`

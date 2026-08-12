@@ -1,0 +1,103 @@
+---
+title: Process Table
+description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
+pattern: ProcessTable
+demo: process-table/basic
+interaction: activation
+source: crates/termrock/src/patterns/process_table.rs
+classification: composite
+---
+
+This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
+
+## Live application preview
+
+<TerminalPreview story="process-table/basic" interactive caption="Process Table · shared Rust demo" />
+
+## Classification and composition
+
+**composite** · default grid 72×14
+
+Composed public building blocks: `ColumnModel`, `DataColumn`, `DataColumnWidth`, `SortSpec`, `VirtualWindow`.
+
+## Workflow
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
+- `S toggle sidebar region` changes the visible application chrome.
+- `↑↓/wheel select row` changes the persistent row selection.
+- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+
+The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+
+## Ownership
+
+TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
+
+## Source
+
+- Pattern recipe: [`crates/termrock/src/patterns/process_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/process_table.rs)
+- Demo: `process-table/basic`
+
+## Migrated handbook guidance
+
+# ProcessTable
+
+Process / task monitoring table (btop/htop/procs class). Host projects
+`ProcessRow` snapshots; TermRock paints, navigates, sorts/filters, and emits
+**signal / refresh / details requests** — never enumerates processes or
+sends signals itself.
+
+
+## When to use / when not
+
+| Use ProcessTable | Prefer |
+|------------------|--------|
+| Live process / task monitor | — |
+| Generic multi-column hierarchy | [TreeTable](/docs/components/tree-table) |
+| Flat data grid | [DataTable](/docs/components/data-table) |
+| Log / output streams | [LogStream](/docs/components/log-stream) / [TerminalOutput](/docs/components/terminal-output) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Enumerate processes, metrics, kill/signal | Host |
+| Cursor, multi-check, filter, sort, confirm chrome | `ProcessTableState` |
+| Stable identity across PID reuse | Host supplies `ProcessKey` (pid + start marker) |
+
+## Stable identity
+
+Selection and multi-check key on `ProcessKey { pid, start_ms }`, **never PID
+alone**. When a process exits and its PID is recycled, the start marker differs
+so selection does not silently retarget.
+
+On host refresh, call `state.reconcile(&live_rows)`: matching keys are kept;
+missing selection falls to nearest-neighbor; checked set drops dead keys.
+
+## Outcomes (requests)
+
+- `SelectionChanged` · `CheckToggled` · `ExpandToggled`
+- `DetailsRequested` · `SortChanged` · `ViewModeChanged`
+- `FilterChanged` · user/status filters
+- `SignalRequested { keys, signal }` (after confirm when destructive/multi)
+- `ConfirmRequired` / `ConfirmCancelled`
+- `RefreshRequested` · `CopyCommand` · `Scrolled`
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · arrows · page · home/end | Navigate |
+| `/` | Filter |
+| `s` / `S` | Sort key / direction |
+| `t` | Flat ↔ tree |
+| `r` | Refresh |
+| `x` · `K` · `C-9` | TERM / KILL (confirm) |
+| `i` · Enter | Details |
+| `y` | Copy command |
+| Space | Multi-check |
+| `+` / `-` | Refresh cadence chrome |
+
+## Related
+
+TreeTable · DataTable · VirtualWindow · migration `0203`

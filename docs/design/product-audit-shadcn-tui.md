@@ -209,7 +209,7 @@ Fixtures under `registry/fixtures/*` prove packaging; not yet flagship product e
 | Record/replay traces (`.trock`) | P2 |
 | Design linter (color-only state, missing gutter, clipped primary) | P1 |
 | Public-api ownership budget (forbid dual types) | P0 |
-| Compilable handbook examples CI | P1 |
+| Compilable canonical component examples CI | P1 |
 
 ---
 

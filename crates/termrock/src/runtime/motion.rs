@@ -7,7 +7,9 @@
 //! poll [`AnimationDemand`] / [`Presence::next_deadline`] and only wake when
 //! something timed is active and [`crate::style::Motion`] allows motion.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use super::Instant;
 
 use crate::style::Motion;
 

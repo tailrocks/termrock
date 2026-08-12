@@ -1,13 +1,18 @@
 ---
 title: IconButton
 description: 'Compact glyph action with mandatory accessible label and hit slop.'
+component: IconButton
+demo: button/icon
+interaction: passive-paint
+actions: []
+expectedOutcomes: []
+source: crates/termrock/src/widgets/primitives.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Other variants are in the **Stories** table —
-interactivity replaces multi-image galleries.
+This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
 
-<TerminalPreview story="button/icon" interactive caption="IconButton · button/icon — focus surface; keys/click for states" />
+<TerminalPreview story="button/icon" interactive caption="IconButton · shared Rust demo" />
 
 ## Usage
 
@@ -26,6 +31,17 @@ IconButton::new("×", "Close", &system)
 // Toolbar: toolbar_icon_action(id, "×", "Close")
 ```
 
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
 ## Stories
 
 | Story | Title | Focus |
@@ -37,3 +53,30 @@ IconButton::new("×", "Close", &system)
 | `icon-button/row` | IconButton data row | row |
 | `icon-button/narrow` | Narrow IconButton | narrow |
 | `icon-button/unicode` | Unicode IconButton | unicode |
+
+
+## Try it
+
+- No actions. This component is passive in this demo; the page remains navigable.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `button/icon`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/primitives.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/primitives.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `button/icon`

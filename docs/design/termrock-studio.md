@@ -753,8 +753,9 @@ Browse mode still works for in-tree stories. Registry tabs show “CLI not insta
 
 | Artifact | Generator |
 |----------|-----------|
-| SVG previews | existing lookbook `render` / `check` |
-| MDX/docs pages | story frontmatter → `docs/content/...` |
+| Live previews | shared Lookbook demo catalog mounted by native and web hosts |
+| No-JS fallback | one deterministic JSON poster per embedded demo |
+| MDX/docs pages | checked-in canonical pages under `docs/content/...` |
 | Contract matrix | merge story `expect.contract_axes` × PASS/FAIL |
 | API inventory | rustdoc / public-api (existing) + story coverage % |
 | Interaction recipes | script ops → readable steps |
@@ -764,8 +765,8 @@ Browse mode still works for in-tree stories. Registry tabs show “CLI not insta
 ```markdown
 # List
 ## Anatomy / contraction
-## Stories
-- ![selection](…)
+## Live terminal
+- mounted shared Rust demo with current hints, Reset, and typed outcomes
 ## Contracts
 | Axis | Evidence story | Status |
 ## Install
@@ -777,8 +778,9 @@ Browse mode still works for in-tree stories. Registry tabs show “CLI not insta
 ### 9.3 Command
 
 ```bash
-termrock-studio docs --out docs/public/component-previews
-termrock-studio docs --mdx --out docs/content/docs/components
+bun --cwd docs run build:preview-posters
+bun --cwd docs run check:components
+bun --cwd docs run build
 ```
 
 ---

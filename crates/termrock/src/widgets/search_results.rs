@@ -1462,7 +1462,7 @@ mod tests {
                 .kind(SearchResultKind::File),
             SearchResultItem::new("d1", "SearchResults")
                 .group("docs")
-                .source("docs/handbook/search-results.mdx")
+                .source("docs/components/search-results.mdx")
                 .snippet("grouped navigable search results")
                 .kind(SearchResultKind::Doc),
             SearchResultItem::new("c1", "termrock search")

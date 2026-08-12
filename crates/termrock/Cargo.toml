@@ -30,6 +30,7 @@ serde = { workspace = true, optional = true }
 tui-scrollbar.workspace = true
 unicode-segmentation.workspace = true
 unicode-width.workspace = true
+web-time.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

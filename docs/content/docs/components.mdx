@@ -5,9 +5,10 @@ description: Product-neutral terminal building blocks with explicit interaction 
 
 TermRock components accept consumer-owned wording and domain state while owning reusable terminal rendering, focus behavior, hit geometry, Unicode safety, narrow-terminal behavior, and non-color cues.
 
-Each component page embeds **one** Ghostty-class [`TerminalPreview`](/docs) (primary
-lookbook story). Additional variants are a **stories table** — interactivity replaces
-the old multi-SVG state gallery. SVG snapshots are not used.
+Each component page embeds one persistent [`TerminalPreview`](/docs). Its
+keyboard, pointer, paste, resize, and time events are dispatched to the same
+Rust state machine used by the native Lookbook. Additional stories document
+responsive and capability variants; they are not runtime slides.
 
 | Component | Purpose |
 |---|---|

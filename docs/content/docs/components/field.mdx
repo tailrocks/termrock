@@ -1,13 +1,23 @@
 ---
 title: Field
 description: 'Single form field projection — label, value, status, dirty/touched.'
+component: Field
+demo: text-input/basic
+interaction: editor-form
+actions:
+  - 'type Unicode'
+  - 'paste'
+  - '←→ move caret'
+  - 'click place caret'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/form.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
+This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
 
-<TerminalPreview story="text-input/basic" interactive caption="Field · text-input/basic — focus surface; keys/click for states" />
+<TerminalPreview story="text-input/basic" interactive caption="Field · shared Rust demo" />
 
 ## Usage
 
@@ -31,11 +41,22 @@ Field::new("email", "Email", value)
 | `Error` | Blocking validation |
 | `Pending` | Async validation |
 
-Compose inside [`Fieldset`](./fieldset) / [`Form`](./form). Caption-only chrome without a value row: [`FieldCaption`](./label) (Label + Description).
+Compose inside [`Fieldset`](/docs/components/fieldset) / [`Form`](/docs/components/form). Caption-only chrome without a value row: [`FieldCaption`](/docs/components/field-caption) (Label + Description).
 
 ## Migration
 
 See `migrations/0137-v0.13.0-form-field-fieldset.md`.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
 
 ## Stories
 
@@ -47,3 +68,32 @@ See `migrations/0137-v0.13.0-form-field-fieldset.md`.
 | `text-input/secret` | TextInput secret | secret |
 | `text-input/invalid` | TextInput invalid | invalid |
 | `text-input/prefix` | TextInput prefix/suffix | prefix |
+
+
+## Try it
+
+- `arrow keys`: dispatches through the public TermRock interaction API.
+- `Enter activate`: dispatches through the public TermRock interaction API.
+- `click`: dispatches through the public TermRock interaction API.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `text-input/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/form.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/form.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `text-input/basic`

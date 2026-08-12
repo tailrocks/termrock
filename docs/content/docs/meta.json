@@ -2,9 +2,10 @@
   "pages": [
     "index",
     "components",
-    "handbook",
-    "application-patterns",
+    "patterns",
+    "runtime",
     "interaction",
+    "interaction-notes",
     "quality-migrations"
   ]
 }

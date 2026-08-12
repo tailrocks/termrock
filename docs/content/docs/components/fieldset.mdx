@@ -1,13 +1,23 @@
 ---
 title: Fieldset
 description: 'Grouped form fields with legend and optional description.'
+component: Fieldset
+demo: form/responsive
+interaction: editor-form
+actions:
+  - 'click to focus'
+  - 'type to edit'
+  - 'paste'
+  - 'arrow keys'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/form.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Variants are listed in **Stories** — interactivity
-replaces multi-image galleries.
+This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
 
-<TerminalPreview story="form/responsive" interactive caption="Fieldset · form/responsive — focus surface; keys/click for states" />
+<TerminalPreview story="form/responsive" interactive caption="Fieldset · shared Rust demo" />
 
 ## Usage
 
@@ -24,6 +34,17 @@ Historical alias: `FormSection`.
 
 See `migrations/0137-v0.13.0-form-field-fieldset.md`.
 
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | not-applicable |
+| Mouse | not-applicable |
+| Focus | not-applicable |
+| Non-color cues | covered |
+| Unicode | covered |
+| Narrow terminal | covered |
+
 ## Stories
 
 | Story | Title | Focus |
@@ -33,3 +54,33 @@ See `migrations/0137-v0.13.0-form-field-fieldset.md`.
 | `form/validation` | Form validation | validation |
 | `form/narrow` | Narrow form | narrow |
 | `form/unicode` | Unicode Form | unicode |
+
+
+## Try it
+
+- `click to focus`: dispatches through the public TermRock interaction API.
+- `type to edit`: dispatches through the public TermRock interaction API.
+- `paste`: dispatches through the public TermRock interaction API.
+- `arrow keys`: dispatches through the public TermRock interaction API.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `form/responsive`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/form.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/form.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `form/responsive`

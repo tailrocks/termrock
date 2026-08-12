@@ -29,7 +29,7 @@ jobs:
   docs:
     if: github.event_name != 'schedule'
     name: Docs (${{ matrix.config.lane }})
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
       pages: write
@@ -76,21 +76,32 @@ jobs:
           key: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-${{ github.sha }}
           restore-keys: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: rustup toolchain install nightly --profile minimal
+      - run: rustup target add wasm32-unknown-unknown
       - working-directory: docs
         run: bun install --frozen-lockfile
       - working-directory: docs
         run: bun run types:check
       - working-directory: docs
         run: bun run build
-      # Docs product path is Ghostty frame packs (check:catalog inside bun build).
-      # Offline lookbook SVG render remains for paint-determinism only (target/, not docs/public).
-      - name: Assert no SVG docs product tree
+      - name: Install browser test runtime
+        working-directory: docs
+        run: bunx playwright install --with-deps chromium
+      - name: Verify live component and pattern behavior
+        working-directory: docs
+        run: bun run test:browser
+      # Docs use the live Rust/WASM runtime. One frame per demo is retained only
+      # as a fallback for browsers where WebAssembly cannot initialize.
+      - name: Assert live-preview asset shape
         run: |
           if [ -d docs/public/component-previews ]; then
-            echo 'docs/public/component-previews must not ship; use preview-frames + TerminalPreview' >&2
+            echo 'docs/public/component-previews must not ship; use TerminalPreview' >&2
             exit 1
           fi
-          test -f docs/public/preview-frames/list-selection/manifest.json
+          if [ -d docs/public/preview-frames ]; then
+            echo 'multi-step preview frame packs are forbidden' >&2
+            exit 1
+          fi
+          test -f docs/public/preview-posters/list-selection.json
       - run: rm -rf target/render-a target/render-b
       - run: cargo run -p termrock-lookbook -- render --out target/render-a >/dev/null
       - run: cargo run -p termrock-lookbook -- render --out target/render-b >/dev/null

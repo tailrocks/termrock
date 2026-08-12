@@ -1,13 +1,24 @@
 ---
 title: AgentStatusHeader
 description: 'Compact agent/session status with StatusBar contraction.'
+component: AgentStatusHeader
+demo: agent-status-header/basic
+interaction: activation
+actions:
+  - 'Enter open action'
+  - 'click trigger'
+  - 'S toggle sidebar region'
+  - '↑↓/wheel select row'
+  - '/ filter'
+expectedOutcomes:
+  - 'The preview status reports the typed Rust outcome after each accepted action.'
+source: crates/termrock/src/widgets/mod.rs
 ---
 ## Live terminal (Ghostty-class)
 
-One focused interactive surface. Other variants are in the **Stories** table —
-interactivity replaces multi-image galleries.
+This is a persistent sample-application demo. Navigate rows, filter through a real TextInput, toggle the sidebar region, and open the effect-free action dialog.
 
-<TerminalPreview story="agent-status-header/basic" interactive caption="AgentStatusHeader · agent-status-header/basic — focus surface; keys/click for states" />
+<TerminalPreview story="agent-status-header/basic" interactive caption="AgentStatusHeader · shared Rust demo" />
 
 ## Usage
 
@@ -46,3 +57,68 @@ match state.handle_key(key) {
 | `agent-status-header/idle` | AgentStatusHeader idle | idle |
 | `agent-status-header/narrow` | AgentStatusHeader narrow | narrow |
 | `agent-status-header/unicode` | Unicode AgentStatusHeader | unicode |
+
+
+## Try it
+
+- `Enter open action` or `click trigger` opens a real ChoiceDialog.
+- `S toggle sidebar region` changes visible chrome.
+- `↑↓/wheel select row` changes persistent selection.
+- `/ filter` focuses a real TextInput; type or paste, then apply with Enter.
+
+Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `agent-status-header/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `agent-status-header/basic`
+
+## Migrated handbook guidance
+
+# AgentStatusHeader
+
+Top-level chrome for project/session, branch, mode/model, connection, work
+status, context, cost/time, and action-required. **Provider-neutral.**
+
+
+## When to use / when not
+
+| Use AgentStatusHeader | Prefer |
+|-----------------------|--------|
+| Agent workbench header | — |
+| Generic L/C/R slots | [StatusBar](/docs/components) if documented |
+| Full token budget UI | [ContextMeter](/docs/interaction-notes) |
+
+## Presentation
+
+| Form | When |
+|------|------|
+| Header (1–2 rows) | Wide (≥56 cols default) |
+| StatusBar | Narrow auto-contract |
+
+## Priority
+
+Action-required / connection issues paint before decorative cost/time.
+
+## Quick actions
+
+Sessions · Model · Tasks · Help (+ Acknowledge when attention needed)
+
+## Related
+
+StatusBar · ModeRibbon · ContextMeter · migration `0232`
