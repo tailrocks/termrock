@@ -36,7 +36,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | DONE |
 | 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | DONE |
 | 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | DONE |
-| 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | TODO |
+| 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | IN PROGRESS |
 | 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | TODO |
 | 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | TODO |
 
@@ -52,6 +52,8 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 007: allocated migration 0267 at the breaking Tree slice; later plans shift sequentially.
 - 2026-08-12 — Plan 007: recorded additive composition replacements in migration 0268 and aligned branch policy with the operator's single-branch/PR instruction.
 - 2026-08-12 — Plan 007: retained Tree's zero-allocation/250 ms invariants after ten clean runs proved external machine contention caused the STOP.
+- 2026-08-12 — Plan 008: shifted migration 0268→0269, added generated/browser Scope, and accepted a paint-only Transcript tick builder.
+- 2026-08-12 — Plan 008: allocated migration 0269 at the breaking Transcript slice; later breaking slices advance sequentially.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

@@ -18455,20 +18455,31 @@ fn tool_card(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let user = ["Run the suite", "with unicode: sample 🚀"];
-    let assistant = [
-        "Sure — preparing the environment.",
-        "Running tests…",
-        "All green.",
+    let user = [
+        "Run the release suite",
+        "include docs and capability checks",
     ];
-    let tool = ["cargo test — passed"];
+    let assistant = [
+        "I’ll verify the full workspace.",
+        "The dependency graph is clean.",
+    ];
+    let thinking = [
+        "Inspecting affected surfaces…",
+        "Checking migration order…",
+        "Comparing deterministic frames…",
+        "Hidden reasoning beyond preview.",
+    ];
+    let tool = ["mise run check", "2,968 tests · all green"];
     let blocks = [
         TranscriptBlock::new("u1", TranscriptKind::User, &user),
         TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
-        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).folded(false),
+        TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+            .folded(true)
+            .summary("Reasoning through the verification plan"),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
     ];
     let mut state = TranscriptState::new();
-    frame.render_stateful_widget(&Transcript::new(&blocks, system), area, &mut state);
+    frame.render_stateful_widget(&Transcript::new(&blocks, system).tick(7), area, &mut state);
 }
 
 fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -95,6 +95,8 @@ Design constraints (design SoT `docs/design/component-visual-richness-plan.md`
 - Lookbook stories for every touched surface + 3 new Grok-parity stories
 - `migrations/0268-*.md` + `MIGRATING.md`
 - `plans/README.md`
+- Generated component MDX/API inventory, affected preview frames, and
+  `artifacts/visual-qa/plan-008/`
 
 **Out of scope**:
 
@@ -185,7 +187,7 @@ If any story needs a hack (hardcoded color, private import), that is a STOP
 
 ### Step 7: Migration + gate
 
-`migrations/0268-v0.13.0-agent-surfaces-actor-accents.md`: transcript block
+`migrations/0269-v0.13.0-agent-surfaces-actor-accents.md`: transcript block
 chrome change (border→rail), tool-card row shape, composer/permission
 chrome, reduced-motion contract; before/after per surface. Link from
 `MIGRATING.md`.
@@ -204,7 +206,7 @@ paint tests on the widget's existing test module.
 - [ ] `grep -rn "AccentRail" crates/termrock/src/widgets/transcript.rs crates/termrock/src/widgets/tool_call_card.rs` → present
 - [ ] 3 parity stories exist and use only public API (`grep -n "use termrock::" crates/termrock-lookbook/src/stories.rs` style imports only)
 - [ ] Reduced-motion determinism test passes
-- [ ] `migrations/0268-*.md` exists, linked
+- [ ] `migrations/0269-*.md` exists, linked
 - [ ] `plans/README.md` updated
 
 ## STOP conditions
@@ -223,3 +225,25 @@ paint tests on the widget's existing test module.
 - Consumer note for the migration: Jackin's transcript-adjacent surfaces
   should adopt rails on next pin; its spinner-frame copy becomes deletable
   after plan 006.
+
+## Amendments
+
+- 2026-08-12: Shifted this plan's migration from 0268 to 0269 because Plan
+  007 truthfully allocated 0268 to additive composition replacements. Reusing
+  or rewriting 0268 violates sequential migration law; 0269 preserves history
+  with zero implementation blast radius.
+- 2026-08-12: Added generated component MDX/API/frame outputs and responsive
+  `agent-browser` review artifacts omitted from Scope. Every changed public
+  surface is a catalog/docs surface, and repo cross-surface law plus the
+  standing browser/designer gates require those outputs in each independently
+  green widget slice.
+- 2026-08-12: Live Transcript has no tick today, but a paint-only `tick(u64)`
+  builder is sufficient and does not require kernel/runtime work. Existing
+  widget builders already carry paint-time state; the design SoT requires
+  deterministic active rails, and `AccentRail` accepts a raw tick. This is
+  ordinary code drift resolution, not the STOP condition's kernel expansion.
+- 2026-08-12: Allocated migration 0269 to the Transcript slice instead of
+  deferring it to Step 7. Adding `TranscriptBlock::active` breaks external
+  struct literals and actor rails change default chrome; repo migration law
+  requires same-commit documentation. Later Plan 008 breaking slices take the
+  next sequential number rather than rewriting this boundary.

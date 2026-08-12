@@ -1005,15 +1005,16 @@ let system = DesignSystem::default();
 let meter = TokenMeter::new(128_000, 200_000, &system);`,
   },
   Transcript: {
-    description: 'Variable-height streaming transcript with stable visual anchors.',
+    description:
+      'Variable-height streaming transcript with stable visual anchors, semantic actor rails, and deterministic active presence.',
     primaryStory: 'transcript/basic',
     usage: `use termrock::{style::DesignSystem, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
 
 let system = DesignSystem::default();
 let lines = ["hello", "world"];
-let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+let blocks = [TranscriptBlock::new("b1", TranscriptKind::Assistant, &lines).active(true)];
 let mut state: TranscriptState<&str> = TranscriptState::new();
-let view = Transcript::new(&blocks, &system);
+let view = Transcript::new(&blocks, &system).tick(7);
 let _ = (&mut state, view);`,
   },
   ToolCard: {

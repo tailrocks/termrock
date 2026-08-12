@@ -1099,25 +1099,62 @@ impl TranscriptInteractor {
 
 impl StoryInteraction for TranscriptInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let lines = ["hello from user", "assistant reply"];
+        let user = [
+            "Run the release suite",
+            "include docs and capability checks",
+        ];
+        let assistant = [
+            "I’ll verify the full workspace.",
+            "The dependency graph is clean.",
+        ];
+        let thinking = [
+            "Inspecting affected surfaces…",
+            "Checking migration order…",
+            "Comparing deterministic frames…",
+            "Hidden reasoning beyond preview.",
+        ];
+        let tool = ["mise run check", "2,968 tests · all green"];
         let blocks = [
-            TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
-            TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
+            TranscriptBlock::new("u1", TranscriptKind::User, &user),
+            TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+            TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+                .folded(true)
+                .summary("Reasoning through the verification plan"),
+            TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
         ];
         self.state.set_focused(true);
         frame.render_stateful_widget(
             &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone()))
-                .focused(true),
+                .focused(true)
+                .tick(7),
             area,
             &mut self.state,
         );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let lines = ["hello from user", "assistant reply"];
+        let user = [
+            "Run the release suite",
+            "include docs and capability checks",
+        ];
+        let assistant = [
+            "I’ll verify the full workspace.",
+            "The dependency graph is clean.",
+        ];
+        let thinking = [
+            "Inspecting affected surfaces…",
+            "Checking migration order…",
+            "Comparing deterministic frames…",
+            "Hidden reasoning beyond preview.",
+        ];
+        let tool = ["mise run check", "2,968 tests · all green"];
         let blocks = [
-            TranscriptBlock::new("u1", TranscriptKind::User, &lines[..1]),
-            TranscriptBlock::new("a1", TranscriptKind::Assistant, &lines[1..]),
+            TranscriptBlock::new("u1", TranscriptKind::User, &user),
+            TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+            TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+                .folded(true)
+                .summary("Reasoning through the verification plan"),
+            TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
         ];
         self.state.set_focused(true);
         !matches!(

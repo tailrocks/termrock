@@ -87276,6 +87276,7 @@ pub const fn termrock::widgets::Transcript<'a, Id>::colorless(self, bool) -> Sel
 pub const fn termrock::widgets::Transcript<'a, Id>::empty_label(self, &'a str) -> Self
 pub const fn termrock::widgets::Transcript<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Transcript<'a, Id>::new(&'a [termrock::widgets::TranscriptBlock<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Transcript<'a, Id>::tick(self, u64) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Transcript<'a, Id>
 pub fn termrock::widgets::Transcript<'a, Id>::clone(&self) -> termrock::widgets::Transcript<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Transcript<'a, Id>
@@ -87361,6 +87362,7 @@ impl<T> core::convert::From<T> for termrock::widgets::TranscriptAnchor<Id>
 pub fn termrock::widgets::TranscriptAnchor<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TranscriptAnchor<Id>
 pub struct termrock::widgets::TranscriptBlock<'a, Id>
+pub termrock::widgets::TranscriptBlock::active: bool
 pub termrock::widgets::TranscriptBlock::enabled: bool
 pub termrock::widgets::TranscriptBlock::folded: bool
 pub termrock::widgets::TranscriptBlock::id: Id
@@ -87369,6 +87371,7 @@ pub termrock::widgets::TranscriptBlock::lines: &'a [&'a str]
 pub termrock::widgets::TranscriptBlock::revision: u64
 pub termrock::widgets::TranscriptBlock::summary: core::option::Option<&'a str>
 impl<'a, Id> termrock::widgets::TranscriptBlock<'a, Id>
+pub const fn termrock::widgets::TranscriptBlock<'a, Id>::active(self, bool) -> Self
 pub const fn termrock::widgets::TranscriptBlock<'a, Id>::enabled(self, bool) -> Self
 pub const fn termrock::widgets::TranscriptBlock<'a, Id>::folded(self, bool) -> Self
 pub fn termrock::widgets::TranscriptBlock<'a, Id>::height(&self) -> u16
