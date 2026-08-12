@@ -135,7 +135,7 @@ pub enum SelectionChrome {
     Fill,
     /// Leading gutter glyph only (quieter).
     Gutter,
-    /// Tint via `Role::Focus` without full fill.
+    /// Tint via `Role::SelectionTint` without full fill.
     Tint,
 }
 
@@ -779,6 +779,9 @@ impl DesignSystem {
             self.style(Role::TextDisabled)
         } else if state.selected && matches!(self.selection, SelectionChrome::Fill) {
             self.style(Role::Selection)
+        } else if state.selected && matches!(self.selection, SelectionChrome::Tint) {
+            self.style(Role::TextStrong)
+                .patch(self.style(Role::SelectionTint))
         } else if state.selected {
             self.style(Role::TextStrong)
         } else if state.loading {
@@ -897,6 +900,19 @@ mod tests {
         assert!(!gutter.use_fill);
         assert!(gutter.gutter.is_some());
         assert_ne!(fill.label, gutter.label);
+    }
+
+    #[test]
+    fn tint_recipe_keeps_wash_when_label_repaints_cells() {
+        let system = DesignSystem::phosphor();
+        let recipe = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: true,
+            enabled: true,
+            ..Default::default()
+        });
+        assert!(recipe.use_tint);
+        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
     }
 
     #[test]

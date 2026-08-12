@@ -289,6 +289,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0273 | `v0.13.0` | [Plan review golden composition chrome](migrations/0273-v0.13.0-plan-review-golden-chrome.md) |
 | 0274 | `v0.13.0` | [Table recipe rows and raised headers](migrations/0274-v0.13.0-table-recipe-rows.md) |
 | 0275 | `v0.13.0` | [TreeTable recipe rows and pointer hover](migrations/0275-v0.13.0-tree-table-recipe-rows.md) |
+| 0276 | `v0.13.0` | [Overlay and picker recipe rows](migrations/0276-v0.13.0-overlay-picker-recipe-rows.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

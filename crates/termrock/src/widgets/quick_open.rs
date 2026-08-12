@@ -41,7 +41,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, JumpTarget, MatchRanges, MatchTruncate, Panel,
@@ -1636,6 +1636,23 @@ impl<'a, Id> QuickOpen<'a, Id> {
             let active = i == cursor && surface;
             let row = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row));
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: false,
+                    enabled: true,
+                    loading: false,
+                    checked: false,
+                });
+            if recipe.use_fill {
+                buffer.set_style(row, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(row, recipe.tint);
+            }
 
             let gutter = if active {
                 if self.ascii { "> " } else { "› " }
@@ -1652,7 +1669,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     self.system.style(Role::Text)
                 }
             } else if active {
-                self.system.style(Role::Selection)
+                recipe.label
             } else {
                 self.system.style(Role::Text)
             };

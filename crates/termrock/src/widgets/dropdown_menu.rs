@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1254,6 +1254,27 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: false,
+                    enabled: item.enabled,
+                    loading: false,
+                    checked: matches!(
+                        item.kind,
+                        MenuRowKind::Checkbox { checked: true }
+                            | MenuRowKind::Radio { selected: true, .. }
+                    ),
+                });
+            if recipe.use_fill {
+                buffer.set_style(hit, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(hit, recipe.tint);
+            }
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -1267,7 +1288,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             } else if item.destructive && !active {
                 self.system.style(Role::Danger)
             } else if active {
-                self.system.style(Role::Selection)
+                recipe.label
             } else {
                 self.system.style(Role::Text)
             };

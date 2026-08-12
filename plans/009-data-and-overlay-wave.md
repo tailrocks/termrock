@@ -77,7 +77,8 @@ Design constraints (design SoT §7, §8 wave 3):
 
 ## Scope
 
-**In scope**: the widget files listed above + their lookbook stories +
+**In scope**: the widget files listed above + the shared
+`crates/termrock/src/style/tokens.rs` list-row recipe + their lookbook stories +
 sequential Plan 009 migration files beginning at `migrations/0274-*.md` +
 `MIGRATING.md` + generated component/API/frame outputs + responsive
 `agent-browser` evidence under `artifacts/visual-qa/plan-009/` +
@@ -165,7 +166,8 @@ capability stories re-verified per widget.
 
 - [ ] `mise run check` + `mise run gate` exit 0
 - [ ] `grep -c '"┌"' crates/termrock/src/widgets/{menu_bar,command_palette}.rs` → 0 each
-- [ ] Table/tree/menu/palette/picker rows all route through `resolve_list_row` (grep each file for `resolve_list_row` → ≥1)
+- [ ] Row owners route through `resolve_list_row`; delegating wrappers (`Picker`
+  → `List`, `Combobox` → `CompletionMenu`) retain one canonical paint owner
 - [ ] Diff full-row tint + quantize tests pass
 - [ ] `migrations/0269-*.md` exists, linked
 - [ ] `plans/README.md` updated
@@ -208,3 +210,15 @@ capability stories re-verified per widget.
   swapping styles could not satisfy the shared hover-wash contract. The
   additive state follows Tree's precedent and keeps paint in
   `resolve_list_row` rather than introducing a second row recipe.
+- 2026-08-12: Replaced the Step 3/done-criteria demand for a literal
+  `resolve_list_row` call in every wrapper with ownership-aware verification.
+  Live `Picker` delegates rows to `List`, and `Combobox` delegates its popup to
+  `CompletionMenu`; duplicating recipe calls would fork canonical paint. Direct
+  row owners use the recipe, while wrappers are verified through delegation.
+  Migration 0276 records the visible overlay/picker default change.
+- 2026-08-12: Added the shared list-row recipe to Scope after browser/designer
+  proof showed row text repainting erased `SelectionTint` backgrounds. Options
+  were per-widget style patching, buffer-order tricks, or making the recipe's
+  selected label carry its tint. The shared recipe fix best matches repo law,
+  design intent, and smallest long-term blast radius; it removes the enabling
+  condition for the defect across every consumer.

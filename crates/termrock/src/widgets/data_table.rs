@@ -1443,14 +1443,18 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let expanded = state.expand.expanded.contains(id);
     let logical_row = state.window.offset.saturating_add(row_index as u64);
 
-    let recipe = table.system.resolve_list_row(ListRowVisualState {
-        selected,
-        focused: cursor && surface_focused,
-        hovered: false,
-        enabled: true,
-        loading: false,
-        checked: selected,
-    });
+    let recipe = table
+        .system
+        .clone()
+        .selection(crate::style::SelectionChrome::Tint)
+        .resolve_list_row(ListRowVisualState {
+            selected,
+            focused: cursor && surface_focused,
+            hovered: false,
+            enabled: true,
+            loading: false,
+            checked: selected,
+        });
     let style = if state.colorless {
         if selected || (cursor && surface_focused) {
             table.system.style(Role::TextStrong)

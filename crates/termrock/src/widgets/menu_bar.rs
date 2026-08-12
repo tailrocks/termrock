@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1508,62 +1508,12 @@ impl<'a, Id> MenuBar<'a, Id> {
             Role::Border
         };
         let border_style = self.system.style(border);
-        let surface = self.system.style(Role::Surface);
-        // Fill
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                if let Some(cell) = buffer.cell_mut((x, y)) {
-                    cell.set_style(surface);
-                    cell.set_symbol(" ");
-                }
-            }
-        }
-        // Border
-        let (tl, tr, bl, br, h, v) = if self.ascii {
-            ("+", "+", "+", "+", "-", "|")
-        } else {
-            ("┌", "┐", "└", "┘", "─", "│")
-        };
-        if area.width >= 2 && area.height >= 2 {
-            buffer.set_stringn(area.x, area.y, tl, 1, border_style);
-            buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border_style);
-            buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border_style);
-            buffer.set_stringn(
-                area.right().saturating_sub(1),
-                area.bottom().saturating_sub(1),
-                br,
-                1,
-                border_style,
-            );
-            let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-            if area.width > 2 {
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.y,
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.bottom().saturating_sub(1),
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-            }
-            for y in area.y + 1..area.bottom().saturating_sub(1) {
-                buffer.set_stringn(area.x, y, v, 1, border_style);
-                buffer.set_stringn(area.right().saturating_sub(1), y, v, 1, border_style);
-            }
-        }
-
-        let inner = Rect {
-            x: area.x.saturating_add(1),
-            y: area.y.saturating_add(1),
-            width: area.width.saturating_sub(2),
-            height: area.height.saturating_sub(2),
-        };
+        let inner = super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(border_style)
+            .padding(0, 0)
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1648,6 +1598,28 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
+            let recipe = self
+                .system
+                .clone()
+                .selection(crate::style::SelectionChrome::Tint)
+                .resolve_list_row(ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: false,
+                    enabled: item.enabled,
+                    loading: false,
+                    checked: matches!(
+                        item.kind,
+                        MenuRowKind::Checkbox { checked: true }
+                            | MenuRowKind::Radio { selected: true, .. }
+                    ),
+                });
+            let row = Rect::new(inner.x, y, inner.width, 1);
+            if recipe.use_fill {
+                buffer.set_style(row, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(row, recipe.tint);
+            }
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -1661,7 +1633,7 @@ impl<'a, Id> MenuBar<'a, Id> {
             } else if item.destructive && !active {
                 self.system.style(Role::Danger)
             } else if active {
-                self.system.style(Role::Selection)
+                recipe.label
             } else {
                 self.system.style(Role::Text)
             };
