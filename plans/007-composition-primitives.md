@@ -229,13 +229,13 @@ Per-step tests named above (12+ new tests). Model widget tests on
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` + `mise run contracts` exit 0
-- [ ] `grep -n "pub struct FieldRow\|pub struct AccentRail" crates/termrock/src/widgets/*.rs` → both found
-- [ ] `grep -n "panel_stack" crates/termrock/src/layout/` → found + exported
-- [ ] `measured_height` on hint bar and `measure` on DetailTable exist with tests
-- [ ] Every new primitive has a lookbook story and registry/contract entries
-- [ ] `migrations/0267-*.md` exists, linked
-- [ ] `plans/README.md` updated
+- [x] `mise run check` + `mise run gate` + `mise run contracts` exit 0
+- [x] `grep -n "pub struct FieldRow\|pub struct AccentRail" crates/termrock/src/widgets/*.rs` → both found
+- [x] `grep -n "panel_stack" crates/termrock/src/layout/` → found + exported
+- [x] `measured_height` on hint bar and `measure` on DetailTable exist with tests
+- [x] Every new primitive has a lookbook story and registry/contract entries
+- [x] `migrations/0267-*.md` exists, linked
+- [x] `plans/README.md` updated
 
 ## STOP conditions
 
@@ -278,3 +278,17 @@ Per-step tests named above (12+ new tests). Model widget tests on
   migrations preserve truthful independently-green commits with minimal
   blast radius. Tree ownership research confirmed `Tree` owns single-column
   data paint, `TreeNavigation` routes, and `TreeTable` columns.
+- 2026-08-12: Added migration 0268 for the additive composition primitives
+  and corrected the series branch policy to the operator's newer explicit
+  single-branch/PR instruction. Evidence: the goal requires canonical
+  consumer replacements, repo migration law requires discoverable forward
+  adoption, and the operator instruction supersedes the older main-only
+  workflow text. This records the APIs without rewriting historical 0267.
+- 2026-08-12: Resolved a closeout-gate STOP as external machine contention,
+  not a Tree regression. Two full runs exceeded the 250 ms wall-clock budget
+  at 315/444 ms while another repository's Cargo gate was active. Ten clean
+  isolated `tree_hot_path` runs all reported exactly zero allocations and
+  completed in 190–242 ms; this slice does not touch Tree paint. Nextest already
+  reserves every local test thread for hot-path binaries, so preserving both
+  budgets and rerunning after external load ended scored above relaxing the
+  invariant or changing an unrelated test, with zero code blast radius.

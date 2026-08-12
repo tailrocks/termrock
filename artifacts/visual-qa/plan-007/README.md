@@ -76,3 +76,20 @@ Evidence: [desktop](hint-bar-desktop-1440x900.png),
 [paper](hint-bar-paper-1440x900.png),
 [mobile](hint-bar-mobile-375x812.png), and
 [tablet](hint-bar-tablet-768x1024.png).
+
+## DetailTable measurement
+
+Validated the generated DetailTable page and natural-extent preview with
+`agent-browser` at 375×812, 768×1024, and 1440×900 plus paper/reduced-motion
+desktop. Keyboard focus/navigation worked; no page overflow, console errors,
+failed requests, or broken links occurred.
+
+Designer verdict: **iterated 1 time, pass** — expanded the initial two-row
+debug probe into a five-row operational detail set with one selected link,
+copy affordances, neutral metadata, and explicit measured extent. The selected
+row is the focal point; label/value columns scan cleanly; cyan link semantics
+and phosphor structure stay disciplined in dark and paper shells. Evidence:
+[desktop](detail-table-desktop-1440x900.png),
+[paper](detail-table-paper-1440x900.png),
+[mobile](detail-table-mobile-375x812.png), and
+[tablet](detail-table-tablet-768x1024.png).

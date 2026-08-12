@@ -13,9 +13,9 @@ starting, honor its STOP conditions, and update your row when done.
 
 ## Branch / refactoring policy (operator instruction + repo law)
 
-- **One branch:** repo law (`AGENTS.md`) mandates all work directly on
-  `main` with no feature branches — the requested "single branch" IS
-  `main`. Execute plans 001→010 sequentially on `main`.
+- **One branch:** operator instruction requires the complete series on
+  `feat/component-visual-richness-series`, pushed to one PR. Execute plans
+  001→010 sequentially without splitting branches.
 - **Full refactoring, forward-only:** no compatibility shims, no deprecated
   aliases, no dual paths (repo law). Old shapes are deleted in the same
   commit their replacement lands. Every visible default change ships its
@@ -35,7 +35,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 004 | Enforce recipes — chips, badges, tinted selection, meters | P1 | L | 001, 003 | DONE |
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | DONE |
 | 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | DONE |
-| 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | IN PROGRESS |
+| 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | DONE |
 | 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | TODO |
 | 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | TODO |
 | 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | TODO |
@@ -50,6 +50,8 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 007: added required generated docs/API/frame/browser outputs to Scope.
 - 2026-08-12 — Plan 007: reordered each primitive as a complete independently-green cross-surface slice.
 - 2026-08-12 — Plan 007: allocated migration 0267 at the breaking Tree slice; later plans shift sequentially.
+- 2026-08-12 — Plan 007: recorded additive composition replacements in migration 0268 and aligned branch policy with the operator's single-branch/PR instruction.
+- 2026-08-12 — Plan 007: retained Tree's zero-allocation/250 ms invariants after ten clean runs proved external machine contention caused the STOP.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

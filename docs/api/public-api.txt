@@ -62813,6 +62813,7 @@ pub struct termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id> termrock::widgets::DetailTable<'a, Id>
 pub const fn termrock::widgets::DetailTable<'a, Id>::content_revision(self, u64) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::label_width(self, u16) -> Self
+pub fn termrock::widgets::DetailTable<'a, Id>::measure(&self) -> (u16, u16)
 pub const fn termrock::widgets::DetailTable<'a, Id>::new(&'a [termrock::widgets::DetailRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::wrap(self, bool) -> Self
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::DetailTable<'_, Id>

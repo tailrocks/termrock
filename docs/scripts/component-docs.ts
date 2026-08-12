@@ -118,13 +118,15 @@ let frame = DesignInspectorFrame {
 let _inspector = DesignInspector::new(frame, &system);`,
   },
   DetailTable: {
-    description: 'A selectable key/value table with stable rows and typed activation capabilities.',
+    description:
+      'A measurable selectable key/value table with stable rows and typed activation capabilities.',
     primaryStory: 'detail-table/basic',
     usage: `use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTable, DetailTableState}};
 
 let system = DesignSystem::default();
 let rows = [DetailRow { id: "url", label: "URL", value: "https://example.com", href: Some("https://example.com"), capability: DetailCapability::Link, emphasis: false, style: None }];
 let table = DetailTable::new(&rows, &system).wrap(true);
+let natural_extent = table.measure();
 let mut state = DetailTableState::<&str>::default();
 let outcome = state.select_next(&rows);`,
   },

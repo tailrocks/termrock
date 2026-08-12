@@ -13234,13 +13234,54 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             emphasis: false,
             style: None,
         },
+        DetailRow {
+            id: "region",
+            label: "Region",
+            value: "ap-southeast-1",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "updated",
+            label: "Updated",
+            value: "moments ago",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "owner",
+            label: "Owner",
+            value: "platform / runtime",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
     ];
-    let mut state = DetailTableState::default();
-    frame.render_stateful_widget(
-        &DetailTable::new(&rows, system).label_width(14).wrap(true),
-        area,
-        &mut state,
+    let table = DetailTable::new(&rows, system).label_width(14).wrap(true);
+    let measured = table.measure();
+    if area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            format!("NATURAL EXTENT  {} × {}", measured.0, measured.1),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let table_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width.min(measured.0),
+        area.height.saturating_sub(2).min(measured.1),
     );
+    let mut state = DetailTableState::default();
+    state.selected = Some("link");
+    frame.render_stateful_widget(&table, table_area, &mut state);
 }
 
 fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
