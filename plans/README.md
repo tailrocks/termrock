@@ -64,6 +64,7 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 008: placed parity stories on a dedicated one-preview handbook page to satisfy the docs catalog contract.
 - 2026-08-12 — Plan 009: advanced stale migration 0269→0274+, added generated/browser Scope, and reconciled live shell drift.
 - 2026-08-12 — Plan 009: allocated migration 0274 to shared Table/DataTable row and header defaults.
+- 2026-08-12 — Plan 009: allocated 0275 and added TreeTable pointer-hover state so shared row recipes can own its hover wash.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

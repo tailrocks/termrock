@@ -203,3 +203,8 @@ capability stories re-verified per widget.
 - 2026-08-12: Allocated migration 0274 to the table cluster. Table and
   DataTable share one recipe/header default and ship as one independently green
   boundary; later visible clusters advance sequentially.
+- 2026-08-12: Allocated migration 0275 to TreeTable and added
+  `TreeTableState::hovered`. Live code had no pointer-hover identity, so merely
+  swapping styles could not satisfy the shared hover-wash contract. The
+  additive state follows Tree's precedent and keeps paint in
+  `resolve_list_row` rather than introducing a second row recipe.

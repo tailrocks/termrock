@@ -88102,6 +88102,7 @@ pub termrock::widgets::TreeTableState::cursor_row: usize
 pub termrock::widgets::TreeTableState::density: termrock::style::Density
 pub termrock::widgets::TreeTableState::h_offset: u16
 pub termrock::widgets::TreeTableState::header_regions: alloc::vec::Vec<termrock::widgets::TreeTableHeaderRegion<ColId>>
+pub termrock::widgets::TreeTableState::hovered: core::option::Option<Id>
 pub termrock::widgets::TreeTableState::load: termrock::widgets::LoadState
 pub termrock::widgets::TreeTableState::nav_mode: termrock::widgets::TreeTableNavMode
 pub termrock::widgets::TreeTableState::row_regions: alloc::vec::Vec<termrock::widgets::TreeTableRowRegion<Id>>

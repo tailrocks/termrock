@@ -23482,6 +23482,7 @@ fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         TreeTableRow::new(1902, 4, r4).parent(1888),
     ];
     let mut state = TreeTableState::new(Some(1888));
+    state.hovered = Some(1204);
     state.load = LoadState::Ready { count: 5 };
     state.sort = Some(SortSpec {
         column: "cpu",
