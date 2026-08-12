@@ -33,6 +33,9 @@ if (catalogResult.exitCode !== 0) throw new Error(catalogResult.stderr.toString(
 const demos = new Map(
   (JSON.parse(catalogResult.stdout.toString()) as Demo[]).map((demo) => [demo.id, demo]),
 )
+const demoCode = JSON.parse(
+  await Bun.file(join(root, 'docs', 'public', 'demo-code.json')).text(),
+) as Record<string, string>
 if (patterns.length !== 35) throw new Error(`pattern catalog drift: ${patterns.length}`)
 if (new Set(patterns.map((entry) => entry.slug)).size !== patterns.length) {
   throw new Error('duplicate pattern slug')
@@ -95,6 +98,13 @@ for (const pattern of patterns) {
   }
   for (const heading of ['## Live application preview', '## Classification and composition', '## Workflow', '## Ownership', '## Source']) {
     if (!body.includes(heading)) throw new Error(`${pattern.slug}: missing ${heading}`)
+  }
+  if (!body.includes('same persistent pattern instance in web docs and native Lookbook')) {
+    throw new Error(`${pattern.slug}: workflow does not promise cross-host persistent state`)
+  }
+  const code = demoCode[pattern.demo] ?? ''
+  if (!code.includes('Exact ') || code.includes('Public recipe source:')) {
+    throw new Error(`${pattern.slug}: Code view is not tied to the exact shared Rust demo`)
   }
 }
 

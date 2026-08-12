@@ -234,49 +234,93 @@ impl DemoSession {
         self.outcome = Some("Demo reset".to_owned());
     }
 
+    /// Replace the semantic palette used by both preview hosts.
+    pub fn set_theme(&mut self, theme: RolePalette) {
+        self.theme = theme.clone();
+        self.interactor.set_theme(theme);
+    }
+
     /// Dispatch one normalized host event.
     pub fn dispatch(&mut self, event: DemoEvent) -> Result<DemoUpdate, String> {
         if let DemoEvent::Tick { elapsed_ms } = event {
-            let changed = self.interactor.handle_tick(elapsed_ms)
-                || (self.elapsed_ms != elapsed_ms && timed_component(self.story.component));
-            self.elapsed_ms = elapsed_ms;
-            if let Some(outcome) = self.interactor.take_outcome() {
-                self.outcome = Some(outcome);
-            }
-            return Ok(self.update(changed));
+            return Ok(self.tick(elapsed_ms));
         }
         let neutral = self.decode_event(event)?;
-        let changed = match neutral {
-            Some(Event::Resize { width, height }) => {
+        Ok(match neutral {
+            Some(event) => self.dispatch_event(event),
+            None => self.update(false),
+        })
+    }
+
+    /// Dispatch one already-normalized TermRock event.
+    ///
+    /// Native Lookbook uses this path; the WASM adapter decodes browser JSON
+    /// into the same event vocabulary before reaching the same state machine.
+    pub fn dispatch_event(&mut self, event: Event) -> DemoUpdate {
+        self.dispatch_event_in(event, self.preview_area())
+    }
+
+    /// Dispatch a normalized event using the host's actual paint area.
+    ///
+    /// This keeps native absolute hit geometry and the browser's padded local
+    /// geometry on one state machine without translating widget hit logic.
+    pub fn dispatch_event_in(&mut self, event: Event, preview_area: Rect) -> DemoUpdate {
+        let (changed, announce_fallback) = match event {
+            Event::Resize { width, height } => {
                 let next_cols = width.max(8);
                 let next_rows = height.max(4);
                 let changed = (self.cols, self.rows) != (next_cols, next_rows);
                 self.cols = next_cols;
                 self.rows = next_rows;
-                changed
+                (changed, false)
             }
-            Some(Event::FocusGained) => {
+            Event::FocusGained => {
                 let changed = !self.focused;
                 self.focused = true;
-                changed
+                (changed, false)
             }
-            Some(Event::FocusLost) => {
+            Event::FocusLost => {
                 let changed = self.focused;
                 self.focused = false;
-                changed
+                (changed, false)
             }
-            Some(event) if self.story.interactive => {
-                let area = self.preview_area();
-                self.interactor.handle_event(event, area)
+            Event::Mouse(mouse) if self.story.interactive => {
+                let announce_fallback = !matches!(mouse.kind, MouseEventKind::Moved);
+                (
+                    self.interactor
+                        .handle_event(Event::Mouse(mouse), preview_area),
+                    announce_fallback,
+                )
             }
-            Some(_) | None => false,
+            Event::Key(key) if self.story.interactive => {
+                let announce_fallback = key.kind != KeyEventKind::Release;
+                (
+                    self.interactor.handle_event(Event::Key(key), preview_area),
+                    announce_fallback,
+                )
+            }
+            event if self.story.interactive => {
+                (self.interactor.handle_event(event, preview_area), true)
+            }
+            _ => (false, false),
         };
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
-        } else if changed && self.outcome.is_none() {
+        } else if changed && announce_fallback && self.outcome.is_none() {
             self.outcome = Some(format!("{} updated", self.story.component));
         }
-        Ok(self.update(changed))
+        self.update(changed)
+    }
+
+    /// Advance this demo using host-injected monotonic time.
+    pub fn tick(&mut self, elapsed_ms: u64) -> DemoUpdate {
+        let changed = self.interactor.handle_tick(elapsed_ms)
+            || (self.elapsed_ms != elapsed_ms && timed_component(self.story.component));
+        self.elapsed_ms = elapsed_ms;
+        if let Some(outcome) = self.interactor.take_outcome() {
+            self.outcome = Some(outcome);
+        }
+        self.update(changed)
     }
 
     /// Paint current persistent state into the existing truecolor cell format.
@@ -295,11 +339,7 @@ impl DemoSession {
                 );
                 let inner = self.preview_area();
                 frame.render_widget(Clear, inner);
-                RENDER_ELAPSED_MS.with(|elapsed| {
-                    let previous = elapsed.replace(Some(self.elapsed_ms));
-                    self.interactor.render(frame, inner);
-                    elapsed.set(previous);
-                });
+                self.render_into(frame, inner);
             })
             .expect("in-memory draw");
         let (cols, rows, cells) = encode_buffer(terminal.backend().buffer());
@@ -315,6 +355,67 @@ impl DemoSession {
             interactive: self.story.interactive,
             theme: "phosphor".into(),
         }
+    }
+
+    /// Paint the mounted demo directly into a native Ratatui frame.
+    pub fn render_into(&mut self, frame: &mut ratatui::Frame<'_>, area: Rect) {
+        RENDER_ELAPSED_MS.with(|elapsed| {
+            let previous = elapsed.replace(Some(self.elapsed_ms));
+            self.interactor.render(frame, area);
+            elapsed.set(previous);
+        });
+    }
+
+    /// Current deterministic configuration controls used by native Lookbook.
+    #[must_use]
+    pub fn knobs(&self) -> &[crate::knobs::Knob] {
+        self.interactor.knobs()
+    }
+
+    /// Edit one selected native configuration control.
+    pub fn handle_knob_key(&mut self, selected: usize, key: KeyEvent) -> DemoUpdate {
+        let changed = self.interactor.handle_knob_key(selected, key);
+        if let Some(outcome) = self.interactor.take_outcome() {
+            self.outcome = Some(outcome);
+        }
+        self.update(changed)
+    }
+
+    /// Paint the rich editor for one selected native configuration control.
+    pub fn render_knob_editor(
+        &mut self,
+        selected: usize,
+        frame: &mut ratatui::Frame<'_>,
+        area: Rect,
+    ) {
+        self.interactor.render_knob_editor(selected, frame, area);
+    }
+
+    /// Let the mounted demo consume Escape before native shell navigation.
+    pub fn dispatch_preview_escape(&mut self, key: KeyEvent) -> DemoUpdate {
+        let changed = self.interactor.handle_preview_escape(key);
+        if let Some(outcome) = self.interactor.take_outcome() {
+            self.outcome = Some(outcome);
+        }
+        self.update(changed)
+    }
+
+    /// Whether literal text and paste currently belong to the mounted demo.
+    #[must_use]
+    pub fn captures_text_input(&self) -> bool {
+        self.interactor.captures_text_input()
+    }
+
+    /// Whether the selected native control currently captures literal text.
+    #[must_use]
+    pub fn knob_captures_text_input(&self, selected: usize) -> bool {
+        self.interactor.knob_captures_text_input(selected)
+    }
+
+    /// Current state-aware hints and visible outcome without mutating state.
+    #[must_use]
+    pub fn current_update(&self) -> DemoUpdate {
+        self.update(false)
     }
 
     fn preview_area(&self) -> Rect {
@@ -614,12 +715,33 @@ mod tests {
     fn action_link_hover_and_activation_are_real_state() {
         let mut session = DemoSession::mount("action-link/basic", Some(40), Some(3)).unwrap();
         let before = session.frame();
-        assert!(session.dispatch(pointer("move", 2, 1)).unwrap().changed);
+        let hovered = session.dispatch(pointer("move", 2, 1)).unwrap();
+        assert!(hovered.changed);
+        assert_eq!(
+            hovered.outcome, None,
+            "hover is state, not an action outcome"
+        );
         assert_ne!(before.cells, session.frame().cells);
         let clicked = session.dispatch(pointer("down", 2, 1)).unwrap();
         assert_eq!(
             clicked.outcome.as_deref(),
             Some("Action activated: cargo test")
+        );
+    }
+
+    #[test]
+    fn host_lifecycle_events_never_invent_user_outcomes() {
+        let mut session = DemoSession::mount("dialog/message", Some(48), Some(12)).unwrap();
+        for event in [
+            DemoEvent::Resize { cols: 72, rows: 11 },
+            DemoEvent::Focus { focused: true },
+            DemoEvent::Focus { focused: false },
+        ] {
+            assert_eq!(session.dispatch(event).unwrap().outcome, None);
+        }
+        assert_eq!(
+            session.dispatch(key("Enter")).unwrap().outcome.as_deref(),
+            Some("Dialog opened")
         );
     }
 
@@ -1089,51 +1211,304 @@ mod tests {
     }
 
     #[test]
-    fn every_pattern_demo_mounts_and_effect_free_flows_are_stateful() {
+    fn every_pattern_demo_is_real_interactive_state_without_sample_app_fallbacks() {
+        const BANNED: &[&str] = &[
+            "Enter open action",
+            "Application row",
+            "Application filter",
+            "Sample application",
+            "Sidebar region collapsed",
+        ];
         for id in PATTERN_DEMO_IDS {
             let mut session = DemoSession::mount(id, Some(72), Some(20))
                 .unwrap_or_else(|error| panic!("{id}: {error}"));
-            let before = session.frame();
-            if !session.descriptor().hints.contains(&"Enter open action") {
-                continue;
-            }
-            let collapsed = session.dispatch(key("s")).unwrap();
-            assert_eq!(
-                collapsed.outcome.as_deref(),
-                Some("Sidebar region collapsed"),
-                "{id}"
+            let descriptor = session.descriptor();
+            assert!(descriptor.interactive, "{id}");
+            assert!(!descriptor.hints.is_empty(), "{id}");
+            let contract = format!("{} {:?}", descriptor.description, descriptor.hints);
+            assert!(
+                BANNED.iter().all(|fake| !contract.contains(fake)),
+                "{id}: {contract}"
             );
-            let selected = session.dispatch(key("ArrowDown")).unwrap();
-            assert_eq!(
-                selected.outcome.as_deref(),
-                Some("Application row 2 selected"),
-                "{id}"
-            );
-            let filter = session.dispatch(key("/")).unwrap();
-            assert!(filter.captures_text_input, "{id}");
-            let pasted = session
-                .dispatch(DemoEvent::Paste {
-                    text: "λ-project".to_owned(),
-                })
-                .unwrap();
-            assert!(pasted.changed, "{id}");
-            let applied = session.dispatch(key("Enter")).unwrap();
-            assert_eq!(
-                applied.outcome.as_deref(),
-                Some("Application filter applied: λ-project"),
-                "{id}"
-            );
-            assert_eq!(
-                session.dispatch(key("Enter")).unwrap().outcome.as_deref(),
-                Some("Sample application action opened"),
-                "{id}"
-            );
-            assert_eq!(
-                session.dispatch(key("Enter")).unwrap().outcome.as_deref(),
-                Some("Sample application action confirmed (no external effect)"),
-                "{id}"
-            );
-            assert_ne!(before.cells, session.frame().cells, "{id}");
+            assert!(!session.frame().cells.is_empty(), "{id}");
         }
+    }
+
+    #[test]
+    fn representative_pattern_flows_change_public_pattern_state() {
+        let flows = [
+            ("activity-shelf/statuses", "ArrowRight"),
+            ("agent-workbench/basic", "o"),
+            ("app-shell/workbench", "s"),
+            ("approval-queue/basic", "ArrowDown"),
+            ("auth-entry/basic", "a"),
+            ("connection-manager/full", "ArrowDown"),
+            ("database-workbench/basic", "Tab"),
+            ("file-manager/basic", "ArrowDown"),
+            ("git-workbench/basic", "?"),
+            ("metrics-dashboard/basic", "ArrowRight"),
+            ("plan-review/basic", "Tab"),
+            ("process-table/basic", "ArrowDown"),
+            ("prompt-queue/compact", "Enter"),
+            ("query-editor/basic", "x"),
+            ("result-grid/basic", "ArrowRight"),
+            ("session-picker/basic", "ArrowDown"),
+            ("setup-wizard/welcome", "Enter"),
+            ("terminal-run-card/running", "Enter"),
+        ];
+        for (id, input) in flows {
+            let mut session = DemoSession::mount(id, None, None).unwrap();
+            let before = session.frame();
+            let update = session.dispatch(key(input)).unwrap();
+            let after = session.frame();
+            assert!(update.changed, "{id}: {input} was ignored");
+            assert!(update.outcome.is_some(), "{id}: missing typed outcome");
+            assert_ne!(before.cells, after.cells, "{id}: frame stayed static");
+        }
+    }
+
+    #[test]
+    fn browser_and_native_event_paths_have_identical_state_and_frames() {
+        fn native_key(value: &str, kind: KeyEventKind) -> Event {
+            let code = decode_key_code(value).expect("test key must decode");
+            Event::Key(KeyEvent {
+                code,
+                modifiers: KeyModifiers::NONE,
+                kind,
+                state: KeyEventState::NONE,
+            })
+        }
+
+        fn native_pointer(kind: MouseEventKind, x: u16, y: u16) -> Event {
+            Event::Mouse(MouseEvent {
+                kind,
+                position: Position::new(x, y),
+                modifiers: KeyModifiers::NONE,
+            })
+        }
+
+        fn same(
+            browser: &mut DemoSession,
+            native: &mut DemoSession,
+            browser_event: DemoEvent,
+            native_event: Event,
+        ) {
+            let browser_update = browser.dispatch(browser_event).unwrap();
+            let native_update = native.dispatch_event(native_event);
+            assert_eq!(browser_update, native_update);
+            assert_eq!(browser.frame(), native.frame());
+        }
+
+        let mut browser = DemoSession::mount("text-input/basic", Some(40), Some(4)).unwrap();
+        let mut native = DemoSession::mount("text-input/basic", Some(40), Some(4)).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Focus { focused: true },
+            Event::FocusGained,
+        );
+        same(
+            &mut browser,
+            &mut native,
+            key("λ"),
+            native_key("λ", KeyEventKind::Press),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Key {
+                key: "λ".to_owned(),
+                kind: "repeat".to_owned(),
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            },
+            native_key("λ", KeyEventKind::Repeat),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Paste {
+                text: "-paste".to_owned(),
+            },
+            Event::Paste("-paste".to_owned()),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Resize { cols: 48, rows: 5 },
+            Event::Resize {
+                width: 48,
+                height: 5,
+            },
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Key {
+                key: "λ".to_owned(),
+                kind: "release".to_owned(),
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            },
+            native_key("λ", KeyEventKind::Release),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Focus { focused: false },
+            Event::FocusLost,
+        );
+
+        let mut browser = DemoSession::mount("action-link/basic", Some(40), Some(3)).unwrap();
+        let mut native = DemoSession::mount("action-link/basic", Some(40), Some(3)).unwrap();
+        let _ = browser.frame();
+        let _ = native.frame();
+        same(
+            &mut browser,
+            &mut native,
+            pointer("move", 2, 1),
+            native_pointer(MouseEventKind::Moved, 2, 1),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            pointer("down", 2, 1),
+            native_pointer(MouseEventKind::Down(MouseButton::Left), 2, 1),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            pointer("up", 2, 1),
+            native_pointer(MouseEventKind::Up(MouseButton::Left), 2, 1),
+        );
+
+        let mut browser = DemoSession::mount("dialog/message", Some(48), Some(12)).unwrap();
+        let mut native = DemoSession::mount("dialog/message", Some(48), Some(12)).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            key("Enter"),
+            native_key("Enter", KeyEventKind::Press),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            key("Escape"),
+            native_key("Escape", KeyEventKind::Press),
+        );
+
+        let mut browser = DemoSession::mount("split-pane/horizontal", Some(52), Some(10)).unwrap();
+        let mut native = DemoSession::mount("split-pane/horizontal", Some(52), Some(10)).unwrap();
+        let _ = browser.frame();
+        let _ = native.frame();
+        same(
+            &mut browser,
+            &mut native,
+            key("ArrowRight"),
+            native_key("ArrowRight", KeyEventKind::Press),
+        );
+        for (browser_event, native_event) in [
+            (
+                pointer("move", 22, 5),
+                native_pointer(MouseEventKind::Moved, 22, 5),
+            ),
+            (
+                pointer("down", 22, 5),
+                native_pointer(MouseEventKind::Down(MouseButton::Left), 22, 5),
+            ),
+            (
+                pointer("drag", 29, 5),
+                native_pointer(MouseEventKind::Drag(MouseButton::Left), 29, 5),
+            ),
+            (
+                pointer("up", 29, 5),
+                native_pointer(MouseEventKind::Up(MouseButton::Left), 29, 5),
+            ),
+        ] {
+            same(&mut browser, &mut native, browser_event, native_event);
+        }
+
+        let mut browser = DemoSession::mount("tree-table/process", Some(64), Some(12)).unwrap();
+        let mut native = DemoSession::mount("tree-table/process", Some(64), Some(12)).unwrap();
+        for value in ["ArrowLeft", "ArrowRight"] {
+            same(
+                &mut browser,
+                &mut native,
+                key(value),
+                native_key(value, KeyEventKind::Press),
+            );
+        }
+
+        let mut browser = DemoSession::mount("virtual-list/million", Some(52), Some(16)).unwrap();
+        let mut native = DemoSession::mount("virtual-list/million", Some(52), Some(16)).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Wheel {
+                delta_x: 0,
+                delta_y: 1,
+                x: 2,
+                y: 4,
+            },
+            native_pointer(MouseEventKind::ScrollDown, 2, 4),
+        );
+
+        let mut browser = DemoSession::mount("spinner/labeled", Some(24), Some(4)).unwrap();
+        let mut native = DemoSession::mount("spinner/labeled", Some(24), Some(4)).unwrap();
+        assert_eq!(
+            browser
+                .dispatch(DemoEvent::Tick { elapsed_ms: 400 })
+                .unwrap(),
+            native.tick(400)
+        );
+        assert_eq!(browser.frame(), native.frame());
+
+        let mut browser = DemoSession::mount("toast/success", Some(44), Some(8)).unwrap();
+        let mut native = DemoSession::mount("toast/success", Some(44), Some(8)).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            key("Enter"),
+            native_key("Enter", KeyEventKind::Press),
+        );
+        assert_eq!(
+            browser
+                .dispatch(DemoEvent::Tick { elapsed_ms: 2_100 })
+                .unwrap(),
+            native.tick(2_100)
+        );
+        assert_eq!(browser.frame(), native.frame());
+
+        let mut browser =
+            DemoSession::mount("connection-manager/full", Some(72), Some(18)).unwrap();
+        let mut native = DemoSession::mount("connection-manager/full", Some(72), Some(18)).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            key("ArrowDown"),
+            native_key("ArrowDown", KeyEventKind::Press),
+        );
+        same(
+            &mut browser,
+            &mut native,
+            DemoEvent::Resize { cols: 36, rows: 18 },
+            Event::Resize {
+                width: 36,
+                height: 18,
+            },
+        );
+
+        let mut browser = DemoSession::mount("accent-rail/actors", None, None).unwrap();
+        let mut native = DemoSession::mount("accent-rail/actors", None, None).unwrap();
+        same(
+            &mut browser,
+            &mut native,
+            key("ArrowDown"),
+            native_key("ArrowDown", KeyEventKind::Press),
+        );
     }
 }

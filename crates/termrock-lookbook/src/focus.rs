@@ -14,16 +14,12 @@ pub(crate) enum FocusId {
     Sidebar,
     Preview,
     Controls,
-    ModalContinue,
-    ModalDisabled,
-    ModalCancel,
 }
 
-/// Scene layers (root shell vs focus-trap modal).
+/// Root scene layer for native Lookbook chrome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum LayerId {
     Root,
-    Modal,
 }
 
 /// Panel chrome from scene focus (BorderFocused role via Panel).

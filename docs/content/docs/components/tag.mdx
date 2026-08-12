@@ -10,28 +10,68 @@ actions:
   - "Delete remove"
   - "click"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"Delete remove\" action updates visible mounted state and reports its typed outcome."
 source: crates/termrock/src/widgets/tag_chip.rs
 ---
 
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="tag/removable" interactive caption="Tag · shared Rust demo" />
+<TerminalPreview story="tag/removable" interactive caption="Tag · Tag removable — live shared Rust state" />
+
+## Try it
+
+- `←→ choose remove`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Delete remove`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+
+## Interaction contract
+
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
 
 ## Usage
 
+The Code view above and this source excerpt use the exact paint setup registered for `tag/removable`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
 ```rust
-use termrock::widgets::{Tag, TagState, TokenPart, remove_label};
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-let tag = Tag::removable_tag("p1", "paste.txt", &system);
-let mut state = TagState::new();
-state.set_focused(true);
-// Right → focus remove; Enter/Delete → remove
-tag.paint(area, buf, &mut state);
-
-assert_eq!(remove_label("paste.txt"), "remove paste.txt");
+// Exact paint setup used by the shared catalog story.
+fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Tag, TagState};
+    let chunks = Layout::horizontal([Constraint::Length(18), Constraint::Min(12)]).split(area);
+    let tag = Tag::removable_tag("f1", "paste-body.txt", system);
+    let mut st = TagState::new();
+    st.set_focused(true);
+    st.set_part(termrock::widgets::TokenPart::Remove);
+    let _ = tag.paint(chunks[0], frame.buffer_mut(), &mut st);
+    let tag2 = Tag::new("s", "static-entity", system);
+    let mut st2 = TagState::new();
+    let _ = tag2.paint(chunks[1], frame.buffer_mut(), &mut st2);
+}
 ```
 
 ## Focus
@@ -50,35 +90,6 @@ assert_eq!(remove_label("paste.txt"), "remove paste.txt");
 
 See `migrations/0119-v0.13.0-tag-chip.md`.
 
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
-| Narrow terminal | covered |
-
-## Stories
-
-| Story | Title | Focus |
-|---|---|---|
-| `tag/removable` | Tag removable | **Primary (live preview)** |
-
-
-## Try it
-
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
 ## Common mistakes
 
 - Do not treat separate Lookbook stories as runtime states or a slide sequence.
@@ -88,6 +99,12 @@ The mounted widget owns interaction state, focus chrome, hit geometry, and typed
 ## Test recipe
 
 Mount `tag/removable`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `tag/removable` | Tag removable | **Primary (live preview)** |
 
 ## Source and related material
 

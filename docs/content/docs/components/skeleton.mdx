@@ -9,33 +9,72 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/skeleton.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="skeleton/basic" interactive caption="Skeleton · Skeleton lines — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="skeleton/basic" interactive caption="Skeleton · Skeleton lines — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{Skeleton, SkeletonRecipe};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let system = DesignSystem::default();
-let skeleton = Skeleton::new(4, &system);
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | caller-owned |
-| Mouse | caller-owned |
-| Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | covered |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `skeleton/ascii` | Skeleton ASCII | paint-only |
+| `skeleton/basic` | Skeleton lines | paint-only |
+| `skeleton/card` | Skeleton card | paint-only |
+| `skeleton/narrow` | Narrow Skeleton | paint-only |
+| `skeleton/table` | Skeleton table | paint-only |
+| `skeleton/tiny` | Skeleton tiny | paint-only |
+| `skeleton/unicode` | Unicode Skeleton | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `skeleton/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn skeleton(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(Skeleton::new(4, system), area);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `skeleton/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -52,27 +91,6 @@ a static multi-image gallery.
 | `skeleton/table` | Skeleton table | table |
 | `skeleton/tiny` | Skeleton tiny | Tiny viewport |
 | `skeleton/unicode` | Unicode Skeleton | Unicode / wide glyphs |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `skeleton/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

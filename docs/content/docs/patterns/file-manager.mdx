@@ -22,12 +22,14 @@ Composed public building blocks: `AlertDialog`, `AlertScope`, `BreadcrumbItem`, 
 
 ## Workflow
 
-- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
-- `S toggle sidebar region` changes the visible application chrome.
-- `↑↓/wheel select row` changes the persistent row selection.
-- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+- `↑↓ navigate tree`: move visible focus, selection, pane, or hierarchy state for the next action.
+- `←→ collapse/expand`: forward this normalized action to the mounted public pattern state.
+- `Enter open`: invoke the focused public state-machine action and inspect its typed request.
+- `/ filter`: focus the real field and edit its persistent Unicode-safe draft.
+- `Ctrl+P quick open`: invoke the focused public state-machine action and inspect its typed request.
+- `Tab panes`: move visible focus, selection, pane, or hierarchy state for the next action.
 
-The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
 
 ## Ownership
 

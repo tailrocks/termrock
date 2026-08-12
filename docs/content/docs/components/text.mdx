@@ -1,6 +1,6 @@
 ---
 title: Text
-description: 'Text widget.'
+description: "Semantic body text with preserve-bg paint."
 component: Text
 demo: text/basic
 interaction: passive-paint
@@ -9,31 +9,74 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/text.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="text/basic" interactive caption="Text · Text basic — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="text/basic" interactive caption="Text · Text basic — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::Text;
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-// See handbook / lookbook story text/basic.
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `text/basic` | Text basic | paint-only |
+| `text/narrow` | Text narrow | paint-only |
+| `text/spans` | Text spans | paint-only |
+| `text/truncate` | Text truncate | paint-only |
+| `text/unicode` | Text unicode | paint-only |
+| `text/wrap` | Text wrap | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `text/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Text;
+    let _ = Text::new("Semantic body text through DesignSystem roles.", system)
+        .copyable()
+        .paint(area, frame.buffer_mut());
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `text/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -49,27 +92,6 @@ a static multi-image gallery.
 | `text/truncate` | Text truncate | truncate |
 | `text/unicode` | Text unicode | Unicode / wide glyphs |
 | `text/wrap` | Text wrap | wrap |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `text/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

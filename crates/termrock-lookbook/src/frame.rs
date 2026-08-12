@@ -18,7 +18,7 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, PREVIEW_CARD, RolePalette},
+    style::{PREVIEW_CARD, RolePalette},
 };
 
 use crate::stories::{Story, stories};
@@ -253,7 +253,8 @@ pub fn paint_story_frame(
     let height = story_rows.saturating_add(STORY_PAD * 2);
     let backend = TestBackend::new(width, height);
     let mut terminal = Terminal::new(backend).expect("test terminal");
-    let system = DesignSystem::from_palette(theme.clone());
+    let mut interactor = story.make_interactor();
+    interactor.set_theme(theme.clone());
     terminal
         .draw(|frame| {
             let area = frame.area();
@@ -268,7 +269,7 @@ pub fn paint_story_frame(
                 height: story_rows,
             };
             frame.render_widget(Clear, inner);
-            story.render(frame, inner, &system);
+            interactor.render(frame, inner);
         })
         .expect("draw");
     let buffer = terminal.backend().buffer().clone();
@@ -552,5 +553,13 @@ mod tests {
             nonempty > 40,
             "composite must fill terminal, nonempty={nonempty}"
         );
+    }
+
+    #[test]
+    fn poster_frame_uses_the_same_mounted_demo_as_native_and_web_hosts() {
+        let story = story_by_id("connection-manager/full").expect("pattern story");
+        let poster = paint_story_frame(story, &RolePalette::default(), None, None);
+        let mut session = crate::demo::DemoSession::mount(story.id, None, None).unwrap();
+        assert_eq!(poster, session.frame());
     }
 }

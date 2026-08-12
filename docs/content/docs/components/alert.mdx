@@ -10,46 +10,84 @@ actions:
   - "D toggle details"
   - "Esc dismiss"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
 source: crates/termrock/src/widgets/callout.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="alert/danger" interactive caption="Alert · Alert danger — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="alert/danger" interactive caption="Alert · Alert danger — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{Alert, AlertState, AlertTone, Action};
+- `←→ choose action`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `D toggle details`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Esc dismiss`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
 
-let system = DesignSystem::default();
-let mut state = AlertState::new();
-state.set_focused(true);
-let actions = [Action { id: "retry", label: "Retry", enabled: true, style: None }];
-Alert::new("Deploy failed", &system)
-    .tone(AlertTone::Danger)
-    .body("Rollout aborted")
-    .source("pipeline #42")
-    .actions(&actions)
-    .banner()
-    .paint(area, buf, &mut state);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | covered |
+| Mouse | not-applicable in primary demo |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `alert/banner` | Alert banner | paint-only |
+| `alert/compact` | Alert compact | paint-only |
+| `alert/danger` | Alert danger | interactive |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `alert/danger`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn alert_danger_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertState::<()>::new();
+    state.set_focused(true);
+    Alert::new("Deploy failed", system)
+        .tone(AlertTone::Danger)
+        .body("Rollout aborted at step 3.")
+        .details("timeout waiting for health check")
+        .source("pipeline #42")
+        .banner()
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `alert/danger`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -62,28 +100,6 @@ a static multi-image gallery.
 | `alert/danger` | Alert danger | **Primary (live preview)** |
 | `alert/banner` | Alert banner | banner |
 | `alert/compact` | Alert compact | Compact density |
-
-
-## Try it
-
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `alert/danger`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

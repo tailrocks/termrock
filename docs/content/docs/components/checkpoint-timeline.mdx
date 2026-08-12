@@ -13,34 +13,36 @@ actions:
   - "F follow"
   - "click row"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"R restore\" action updates visible mounted state and reports its typed outcome."
+  - "The \"W rewind\" action updates visible mounted state and reports its typed outcome."
+  - "The \"C compare\" action updates visible mounted state and reports its typed outcome."
+  - "The \"F follow\" action updates visible mounted state and reports its typed outcome."
 source: crates/termrock/src/widgets/checkpoint_timeline.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="checkpoint-timeline/basic" interactive caption="CheckpointTimeline · CheckpointTimeline — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="checkpoint-timeline/basic" interactive caption="CheckpointTimeline · CheckpointTimeline — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{
-    example_checkpoints, CheckpointTimeline, CheckpointTimelineState,
-    CheckpointTimelineOutcome,
-};
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter preview/confirm`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `R restore`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `W rewind`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `C compare`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `F follow`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click row`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let mut state = CheckpointTimelineState::new();
-state.set_checkpoints(example_checkpoints());
-CheckpointTimeline::new(&system).paint(area, buf, &mut state);
-match state.handle_key(key) {
-    CheckpointTimelineOutcome::RestoreRequested { id } => { let _ = id; }
-    CheckpointTimelineOutcome::Cancelled => {}
-    _ => {}
-}
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -49,52 +51,42 @@ match state.handle_key(key) {
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `checkpoint-timeline/basic` | CheckpointTimeline | **Primary (live preview)** |
-| `checkpoint-timeline/boundaries` | CheckpointTimeline boundaries | boundaries |
-| `checkpoint-timeline/confirm` | CheckpointTimeline confirm | confirm |
-| `checkpoint-timeline/narrow` | Narrow CheckpointTimeline | Narrow terminal |
-| `checkpoint-timeline/preview` | CheckpointTimeline preview | preview |
-| `checkpoint-timeline/unicode` | Unicode CheckpointTimeline | Unicode / wide glyphs |
+| `checkpoint-timeline/basic` | CheckpointTimeline | interactive |
+| `checkpoint-timeline/boundaries` | CheckpointTimeline boundaries | paint-only |
+| `checkpoint-timeline/confirm` | CheckpointTimeline confirm | paint-only |
+| `checkpoint-timeline/narrow` | Narrow CheckpointTimeline | paint-only |
+| `checkpoint-timeline/preview` | CheckpointTimeline preview | paint-only |
+| `checkpoint-timeline/unicode` | Unicode CheckpointTimeline | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `checkpoint-timeline/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `checkpoint-timeline/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/checkpoint_timeline.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/checkpoint_timeline.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `checkpoint-timeline/basic`
+// Exact paint setup used by the shared catalog story.
+fn checkpoint_timeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{CheckpointTimeline, CheckpointTimelineState, example_checkpoints};
+    let mut state = CheckpointTimelineState::new();
+    state.set_checkpoints(example_checkpoints());
+    state.focused = true;
+    frame.render_stateful_widget(&CheckpointTimeline::new(system), area, &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -134,3 +126,34 @@ j/k · Enter preview · r restore · w rewind · c compare · Esc · confirm ←
 ## Related
 
 Timeline · DiffReview · migration `0229`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `checkpoint-timeline/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `checkpoint-timeline/basic` | CheckpointTimeline | **Primary (live preview)** |
+| `checkpoint-timeline/boundaries` | CheckpointTimeline boundaries | boundaries |
+| `checkpoint-timeline/confirm` | CheckpointTimeline confirm | confirm |
+| `checkpoint-timeline/narrow` | Narrow CheckpointTimeline | Narrow terminal |
+| `checkpoint-timeline/preview` | CheckpointTimeline preview | preview |
+| `checkpoint-timeline/unicode` | Unicode CheckpointTimeline | Unicode / wide glyphs |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/checkpoint_timeline.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/checkpoint_timeline.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `checkpoint-timeline/basic`

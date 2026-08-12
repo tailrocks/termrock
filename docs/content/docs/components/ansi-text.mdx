@@ -8,41 +8,81 @@ actions: []
 expectedOutcomes: []
 source: crates/termrock/src/widgets/mod.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="ansi-text/basic" interactive caption="AnsiText · shared Rust demo" />
+<TerminalPreview story="ansi-text/basic" interactive caption="AnsiText · AnsiText SGR — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{
-    AnsiStream, AnsiText, AnsiTextState, AnsiParseOptions, lines_for_log, parse_lines,
-};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-// Streaming tool / PTY output
-let mut stream = AnsiStream::new(AnsiParseOptions::for_system(&system))
-    .with_max_lines(10_000);
-stream.feed(bytes);
-stream.drain_into_lines(|line| log_pane.append(line));
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
 
-// Paint pre-parsed lines
-let lines = parse_lines(src, &AnsiParseOptions::for_system(&system));
-let mut state = AnsiTextState::new();
-AnsiText::lines(&lines, &system).paint(area, buf, &mut state);
-```
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `ansi-text/basic` | AnsiText SGR | paint-only |
+| `ansi-text/cr-bs` | AnsiText CR/BS | paint-only |
+| `ansi-text/hyperlink` | AnsiText OSC-8 | paint-only |
+| `ansi-text/narrow` | Narrow AnsiText | paint-only |
+| `ansi-text/no-color` | AnsiText no-color | paint-only |
+| `ansi-text/unicode` | Unicode AnsiText | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `ansi-text/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn ansi_text_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::parse_lines;
+    let src = "\
+\x1b[1mbuild\x1b[0m \x1b[32mok\x1b[0m
+\x1b[33mwarn\x1b[0m unused
+\x1b[31merror\x1b[0m failed
+plain trailing
+";
+    let lines = parse_lines(src, &AnsiParseOptions::for_system(system));
+    let mut state = AnsiTextState::new();
+    AnsiText::lines(&lines, system).paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `ansi-text/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -54,27 +94,6 @@ AnsiText::lines(&lines, &system).paint(area, buf, &mut state);
 | `ansi-text/hyperlink` | AnsiText OSC-8 | hyperlink |
 | `ansi-text/narrow` | Narrow AnsiText | narrow |
 | `ansi-text/unicode` | Unicode AnsiText | unicode |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `ansi-text/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

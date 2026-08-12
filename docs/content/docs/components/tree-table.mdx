@@ -1,6 +1,6 @@
 ---
 title: TreeTable
-description: 'TreeTable widget.'
+description: "Process tree with CPU/MEM columns; hierarchy nav."
 component: TreeTable
 demo: tree-table/process
 interaction: selection-navigation
@@ -11,24 +11,33 @@ actions:
   - "click row"
   - "wheel scroll"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "The \"← collapse\" action updates visible mounted state and reports its typed outcome."
+  - "The \"→ expand\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
 source: crates/termrock/src/widgets/tree_table.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="tree-table/process" interactive caption="TreeTable · TreeTable process — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="tree-table/process" interactive caption="TreeTable · TreeTable process — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::TreeTable;
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `← collapse`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `→ expand`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click row`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
 
-// See handbook / lookbook story tree-table/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -37,53 +46,78 @@ use termrock::widgets::TreeTable;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `tree-table/process` | TreeTable process | **Primary (live preview)** |
-| `tree-table/aggregate` | TreeTable aggregate | aggregate |
-| `tree-table/deps` | TreeTable dependencies | deps |
-| `tree-table/narrow` | TreeTable narrow | Narrow terminal |
-| `tree-table/schema` | TreeTable schema | schema |
-| `tree-table/tasks` | TreeTable tasks | tasks |
+| `tree-table/aggregate` | TreeTable aggregate | paint-only |
+| `tree-table/deps` | TreeTable dependencies | paint-only |
+| `tree-table/narrow` | TreeTable narrow | paint-only |
+| `tree-table/process` | TreeTable process | interactive |
+| `tree-table/schema` | TreeTable schema | paint-only |
+| `tree-table/tasks` | TreeTable tasks | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `tree-table/process`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `tree-table/process`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/tree_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/tree_table.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `tree-table/process`
+// Exact paint setup used by the shared catalog story.
+fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState, SortSpec};
+    let tokens = system.clone().density(Density::Compact);
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("name", "PROCESS", DataColumnWidth::Min(14)).priority(100),
+        DataColumn::new("pid", "PID", DataColumnWidth::Fixed(6))
+            .priority(90)
+            .sortable(),
+        DataColumn::new("cpu", "CPU%", DataColumnWidth::Fixed(6))
+            .priority(70)
+            .sortable(),
+        DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(7)).priority(50),
+    ]);
+    let r0: &[&str] = &["systemd", "1", "0.1", "4.2M"];
+    let r1: &[&str] = &["sshd", "482", "0.0", "8.1M"];
+    let r2: &[&str] = &["bash", "1204", "1.2", "12M"];
+    let r3: &[&str] = &["cargo", "1888", "42.0", "640M"];
+    let r4: &[&str] = &["rustc", "1902", "88.4", "1.1G"];
+    let rows = [
+        TreeTableRow::new(1u64, 0, r0).branch().expanded(),
+        TreeTableRow::new(482, 1, r1).branch().expanded().parent(1),
+        TreeTableRow::new(1204, 2, r2)
+            .branch()
+            .expanded()
+            .parent(482),
+        TreeTableRow::new(1888, 3, r3)
+            .branch()
+            .expanded()
+            .parent(1204),
+        TreeTableRow::new(1902, 4, r4).parent(1888),
+    ];
+    let mut state = TreeTableState::new(Some(1888));
+    state.hovered = Some(1204);
+    state.load = LoadState::Ready { count: 5 };
+    state.sort = Some(SortSpec {
+        column: "cpu",
+        ascending: false,
+    });
+    TreeTable::new(&tokens, &columns, &rows)
+        .focused(true)
+        .compact_indent(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -157,3 +191,34 @@ group bands · aggregate rows (`=` marker) · footer (`nav:` mode)
 
 - Migration `0190-v0.13.0-tree-table`
 - `TreeNodeStatus` for lazy / loading / error branches
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `tree-table/process`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `tree-table/process` | TreeTable process | **Primary (live preview)** |
+| `tree-table/aggregate` | TreeTable aggregate | aggregate |
+| `tree-table/deps` | TreeTable dependencies | deps |
+| `tree-table/narrow` | TreeTable narrow | Narrow terminal |
+| `tree-table/schema` | TreeTable schema | schema |
+| `tree-table/tasks` | TreeTable tasks | tasks |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/tree_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/tree_table.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `tree-table/process`

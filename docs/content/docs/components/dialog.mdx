@@ -8,92 +8,94 @@ actions:
   - "Enter open"
   - "click Open dialog"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/dialog.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="dialog/message" interactive caption="Dialog · Message dialog — persistent Rust preview; available actions appear below" />
-
-## Usage
-
-```rust
-use ratatui_core::text::Text;
-use termrock::interaction::OverlayStack;
-use termrock::style::DesignSystem;
-use termrock::widgets::{
-    Dialog, DialogRecipe, DialogSize, DialogState, open_dialog_overlay,
-};
-
-let system = DesignSystem::default();
-let mut state = DialogState::<&str>::new();
-state.set_recipe(DialogRecipe::Normal);
-let mut stack = OverlayStack::<&str>::new();
-let _ = state.open_on_stack(&mut stack, bounds, DialogSize::default(), Some("trigger"));
-Dialog::new("Notice", Text::from("Saved"), &system)
-    .description("Write completed.")
-    .recipe(DialogRecipe::Normal)
-    .footer_hint("esc dismiss")
-    .paint(entry.rect, buf, &mut state, 0);
-```
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | caller-owned |
-| Mouse | caller-owned |
-| Focus | caller-owned |
-| Non-color cues | covered |
-| Unicode | covered |
-| Narrow terminal | covered |
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `dialog/message` | Message dialog | **Primary (live preview)** |
-| `dialog/compact` | Compact dialog | Compact density |
-| `dialog/destructive` | Destructive dialog | destructive |
-| `dialog/narrow` | Narrow dialog | Narrow terminal |
-| `dialog/unicode` | Unicode Dialog | Unicode / wide glyphs |
-
+<TerminalPreview story="dialog/message" interactive caption="Dialog · Message dialog — live shared Rust state" />
 
 ## Try it
 
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
+- `Enter open`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click Open dialog`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
 
 ## State and typed outcomes
 
 The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
-## Common mistakes
+## Interaction contract
 
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
+| Axis | Status |
+|---|---|
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Test recipe
+## Configuration and variants
 
-Mount `dialog/message`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-## Source and related material
+| Demo | Configuration | Input |
+|---|---|---|
+| `dialog/compact` | Compact dialog | paint-only |
+| `dialog/destructive` | Destructive dialog | paint-only |
+| `dialog/message` | Message dialog | interactive |
+| `dialog/narrow` | Narrow dialog | paint-only |
+| `dialog/unicode` | Unicode Dialog | paint-only |
 
-- Rust source: [`crates/termrock/src/widgets/dialog.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/dialog.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `dialog/message`
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `dialog/message`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
+    let dialog_area = termrock::layout::resolve_dialog(
+        area,
+        termrock::layout::DialogSpec {
+            min_width: 32,
+            preferred_width: 48,
+            preferred_reference_pct: None,
+            max_width: 72,
+            min_height: 8,
+            preferred_height: 10,
+            max_height: 12,
+            horizontal_margin: 4,
+            vertical_margin: 2,
+            placement: termrock::layout::Placement::Centered,
+        }
+        .preferred_pct_of_reference(40),
+    );
+    frame.render_widget(
+        Dialog::new(
+            "Notice",
+            Line::from("The operation completed.").into(),
+            &tokens,
+        )
+        .description("All changes were written successfully.")
+        .style(Style::new())
+        .emphasis(termrock::widgets::PanelChrome::Focused)
+        .recipe(DialogRecipe::Normal)
+        .footer_hint("esc dismiss"),
+        dialog_area,
+    );
+}
+```
 
 ## Migrated handbook guidance
 
@@ -204,3 +206,33 @@ let _ = choice;
 ## Related
 
 OverlayStack · ActionBar · migration `0073` · design `dialog-action-cursor.md`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `dialog/message`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `dialog/message` | Message dialog | **Primary (live preview)** |
+| `dialog/compact` | Compact dialog | Compact density |
+| `dialog/destructive` | Destructive dialog | destructive |
+| `dialog/narrow` | Narrow dialog | Narrow terminal |
+| `dialog/unicode` | Unicode Dialog | Unicode / wide glyphs |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/dialog.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/dialog.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `dialog/message`

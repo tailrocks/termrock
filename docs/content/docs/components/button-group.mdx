@@ -1,6 +1,6 @@
 ---
 title: ButtonGroup
-description: 'ButtonGroup widget.'
+description: "Cancel + Save primary + Delete; Enter submits Save."
 component: ButtonGroup
 demo: button-group/dialog
 interaction: selection-navigation
@@ -10,24 +10,28 @@ actions:
   - "Enter submit Save"
   - "click action"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/button_group.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="button-group/dialog" interactive caption="ButtonGroup · ButtonGroup dialog — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="button-group/dialog" interactive caption="ButtonGroup · ButtonGroup dialog — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::ButtonGroup;
+- `←→ choose`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Space activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Enter submit Save`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click action`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story button-group/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -36,9 +40,59 @@ use termrock::widgets::ButtonGroup;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `button-group/connected` | ButtonGroup connected | paint-only |
+| `button-group/dialog` | ButtonGroup dialog | interactive |
+| `button-group/loading` | ButtonGroup loading | paint-only |
+| `button-group/narrow` | Narrow ButtonGroup | paint-only |
+| `button-group/overflow` | ButtonGroup overflow | paint-only |
+| `button-group/unicode` | Unicode ButtonGroup | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `button-group/dialog`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn button_group_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        ButtonGroupItem::new("cancel", "Cancel"),
+        ButtonGroupItem::destructive("delete", "Delete"),
+        ButtonGroupItem::primary("save", "Save").leading("✓"),
+    ];
+    let mut state = ButtonGroupState::new();
+    state.set_surface_focused(true);
+    state.cursor = Some("save");
+    let _ =
+        ButtonGroup::new(&items, system)
+            .separated()
+            .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `button-group/dialog`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -54,28 +108,6 @@ a static multi-image gallery.
 | `button-group/narrow` | Narrow ButtonGroup | Narrow terminal |
 | `button-group/overflow` | ButtonGroup overflow | Overflow |
 | `button-group/unicode` | Unicode ButtonGroup | Unicode / wide glyphs |
-
-
-## Try it
-
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `button-group/dialog`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

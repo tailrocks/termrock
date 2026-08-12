@@ -8,58 +8,82 @@ actions: []
 expectedOutcomes: []
 source: crates/termrock/src/widgets/mod.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="stack/vertical" interactive caption="Stack / Inline · shared Rust demo" />
+<TerminalPreview story="stack/vertical" interactive caption="Stack / Inline · Stack vertical — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::layout::{
-    Stack, Inline, FlexSize, Align, Justify, OverflowPolicy, direction_for_width,
-};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let layout = Stack::new().gap(1).layout(area, &[
-    FlexSize::Fixed(2),
-    FlexSize::fill(),
-    FlexSize::Fixed(1),
-]);
-let body = layout.get(1).unwrap();
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
 
-let chips = Inline::new().wrap(true).gap(1).layout(area, &[
-    FlexSize::Fixed(6),
-    FlexSize::Fixed(6),
-]);
+## State and typed outcomes
 
-// Responsive: stack when narrow, inline when wide
-let layout = Stack::new()
-    .responsive(area.width, 60)
-    .gap(1)
-    .layout(area, &[FlexSize::fill(), FlexSize::fill()]);
-
-// Clip tail under pressure
-let tight = Stack::new()
-    .overflow(OverflowPolicy::ClipTail)
-    .layout(area, &[FlexSize::Fixed(3), FlexSize::Fixed(3), FlexSize::Fixed(3)]);
-
-// Intrinsic cross-axis size (non-stretch)
-let row = Inline::new()
-    .align(Align::Center)
-    .layout_with_cross(area, &[FlexSize::Fixed(8)], &[1]);
-```
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `stack/vertical`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn stack_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{FlexSize, Stack};
+    use termrock::widgets::{Panel, PanelChrome};
+    let layout = Stack::new().gap(1).layout(
+        area,
+        &[FlexSize::Fixed(2), FlexSize::Weight(1), FlexSize::Fixed(2)],
+    );
+    for (i, label) in ["header", "body", "footer"].iter().enumerate() {
+        if let Some(r) = layout.get(i) {
+            let chrome = if *label == "body" {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            };
+            let _ =
+                Panel::new(system)
+                    .title(label)
+                    .emphasis(chrome)
+                    .paint(r, frame.buffer_mut(), None);
+        }
+    }
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `stack/vertical`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -72,27 +96,6 @@ let row = Inline::new()
 | `stack/narrow` | Stack narrow overflow | narrow |
 | `stack/overflow-clip` | Stack overflow clip-tail | overflow clip |
 | `stack/justify` | Inline space-around | justify |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `stack/vertical`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

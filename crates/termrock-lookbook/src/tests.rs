@@ -214,58 +214,41 @@ fn sidebar_hints_advertise_navigate_and_quit() {
 // ── PREVIEW ───────────────────────────────────────────────────────────────────
 
 #[test]
-fn preview_esc_tab_backtab_dispatch_back_to_list() {
-    for chord in [
-        KeyChord::plain(KeyCode::Esc),
-        KeyChord::plain(KeyCode::Tab),
-        KeyChord::plain(KeyCode::BackTab),
-    ] {
-        assert_eq!(
-            PREVIEW_KEYMAP.dispatch(chord),
-            Some(PreviewAction::BackToList),
-            "preview back-to-list must dispatch {chord:?}"
-        );
-    }
+fn preview_esc_dispatches_back_to_list() {
+    assert_eq!(
+        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::Esc)),
+        Some(PreviewAction::BackToList)
+    );
 }
 
 #[test]
-fn preview_arrows_dispatch_forward() {
+fn preview_component_keys_are_not_stolen_by_shell_keymap() {
     for chord in [
         KeyChord::plain(KeyCode::Up),
         KeyChord::plain(KeyCode::Down),
         KeyChord::plain(KeyCode::Left),
         KeyChord::plain(KeyCode::Right),
+        KeyChord::plain(KeyCode::Tab),
+        KeyChord::plain(KeyCode::BackTab),
     ] {
         assert_eq!(
             PREVIEW_KEYMAP.dispatch(chord),
-            Some(PreviewAction::Forward),
-            "preview must forward {chord:?}"
+            None,
+            "preview shell must leave {chord:?} to mounted demo"
         );
     }
 }
 
 #[test]
-fn preview_page_keys_dispatch() {
-    assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::PageDown)),
-        Some(PreviewAction::PageDown)
-    );
-    assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::PageUp)),
-        Some(PreviewAction::PageUp)
-    );
-}
-
-#[test]
-fn preview_shift_j_k_dispatch_move_preview() {
-    assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('J'))),
-        Some(PreviewAction::MovePreviewDown)
-    );
-    assert_eq!(
-        PREVIEW_KEYMAP.dispatch(KeyChord::plain(KeyCode::Char('K'))),
-        Some(PreviewAction::MovePreviewUp)
-    );
+fn preview_page_and_shift_keys_are_not_stolen_from_demo() {
+    for chord in [
+        KeyChord::plain(KeyCode::PageDown),
+        KeyChord::plain(KeyCode::PageUp),
+        KeyChord::plain(KeyCode::Char('J')),
+        KeyChord::plain(KeyCode::Char('K')),
+    ] {
+        assert_eq!(PREVIEW_KEYMAP.dispatch(chord), None);
+    }
 }
 
 #[test]
@@ -286,7 +269,7 @@ fn preview_non_registered_keys_return_none() {
 }
 
 #[test]
-fn preview_hints_advertise_back_and_interact() {
+fn preview_shell_hints_advertise_only_back() {
     let spans = PREVIEW_KEYMAP.hint_spans();
     let text: String = spans
         .iter()
@@ -298,14 +281,14 @@ fn preview_hints_advertise_back_and_interact() {
         .join(" ");
     assert!(text.contains("Esc"), "must advertise Esc back: {text}");
     assert!(text.contains("back to list"), "must label back: {text}");
-    assert!(text.contains("↑↓"), "must advertise arrow interact: {text}");
+    assert!(!text.contains("↑↓"), "demo owns interaction hints: {text}");
     assert!(
-        text.contains("J/K"),
-        "must advertise J/K move preview: {text}"
+        !text.contains("J/K"),
+        "preview scrolling must not steal component keys: {text}"
     );
     assert!(
-        text.contains(glyph::PGUP_PGDN),
-        "must advertise page: {text}"
+        !text.contains(glyph::PGUP_PGDN),
+        "preview paging must not steal component keys: {text}"
     );
     // BackTab is HiddenAlias — must NOT appear in hint bar separately
     assert!(
@@ -350,14 +333,14 @@ fn production_source(s: &str) -> String {
 fn no_modal_stack_in_lookbook_sources() {
     let app_p = production_source(include_str!("app.rs"));
     let host_p = production_source(include_str!("host_frame.rs"));
-    assert!(!app_p.contains("ModalStack"), "app must use OverlayStack");
+    assert!(!app_p.contains("ModalStack"));
     assert!(
         !host_p.contains("ModalStack"),
         "host_frame must not import ModalStack"
     );
     assert!(
-        app_p.contains("HostFrame") && host_p.contains("OverlayStack"),
-        "lookbook must dogfood HostFrame/OverlayStack"
+        app_p.contains("HostFrame") && host_p.contains("InteractionScene"),
+        "lookbook chrome must use HostFrame/InteractionScene; demo overlays stay in DemoSession"
     );
 }
 

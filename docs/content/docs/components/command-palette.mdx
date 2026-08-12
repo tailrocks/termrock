@@ -10,90 +10,87 @@ actions:
   - "paste"
   - "arrow keys"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
 source: crates/termrock/src/widgets/command_palette.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="command-palette/basic" interactive caption="CommandPalette · Command palette — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="command-palette/basic" interactive caption="CommandPalette · Command palette — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{CommandPalette, CommandPaletteState, example_command_catalog};
+- `click to focus`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `type to edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `paste`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
 
-let system = DesignSystem::default();
-let catalog = example_command_catalog();
-let mut state = CommandPaletteState::new(None);
-state.set_focused(true);
-let visible = state.refilter(&catalog);
-CommandPalette::new("Commands", &visible, &system).paint(area, buf, &mut state);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | caller-owned |
+| Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `command-palette/basic` | Command palette | **Primary (live preview)** |
-| `command-palette/args` | Command palette arguments | args |
-| `command-palette/ascii` | Command palette ASCII | ASCII / low capability |
-| `command-palette/empty` | Command palette empty | Empty state |
-| `command-palette/fuzzy` | Command palette fuzzy | fuzzy |
-| `command-palette/loading` | Command palette loading | Loading state |
-| `command-palette/narrow` | Narrow CommandPalette | Narrow terminal |
-| `command-palette/nested` | Command palette nested page | nested |
-| `command-palette/no-result` | Command palette no result | no result |
-| `command-palette/unicode` | Unicode CommandPalette | Unicode / wide glyphs |
+| `command-palette/args` | Command palette arguments | paint-only |
+| `command-palette/ascii` | Command palette ASCII | paint-only |
+| `command-palette/basic` | Command palette | interactive |
+| `command-palette/empty` | Command palette empty | paint-only |
+| `command-palette/fuzzy` | Command palette fuzzy | paint-only |
+| `command-palette/loading` | Command palette loading | paint-only |
+| `command-palette/narrow` | Narrow CommandPalette | paint-only |
+| `command-palette/nested` | Command palette nested page | paint-only |
+| `command-palette/no-result` | Command palette no result | paint-only |
+| `command-palette/unicode` | Unicode CommandPalette | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `command-palette/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `click to focus`: dispatches through the public TermRock interaction API.
-- `type to edit`: dispatches through the public TermRock interaction API.
-- `paste`: dispatches through the public TermRock interaction API.
-- `arrow keys`: dispatches through the public TermRock interaction API.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `command-palette/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/command_palette.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/command_palette.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `command-palette/basic`
+// Exact paint setup used by the shared catalog story.
+fn command_palette(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = CommandPaletteState::new(None);
+    state.set_focused(true);
+    let mut entries = example_command_catalog();
+    entries.push(
+        CommandEntry::new("tokyo", "Open region workspace")
+            .group("Navigation")
+            .keywords(["tokyo", "region"]),
+    );
+    let visible = state.refilter(&entries);
+    frame.render_stateful_widget(
+        &CommandPalette::new("Commands", &visible, system),
+        area,
+        &mut state,
+    );
+}
+```
 
 ## Migrated handbook guidance
 
@@ -194,3 +191,38 @@ let _ = CommandPalette::new("Commands", &rows, &system);
 ## Related
 
 Picker · OverlayStack · Dialog · migration `0074` · design `command-palette-premium.md`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `command-palette/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `command-palette/basic` | Command palette | **Primary (live preview)** |
+| `command-palette/args` | Command palette arguments | args |
+| `command-palette/ascii` | Command palette ASCII | ASCII / low capability |
+| `command-palette/empty` | Command palette empty | Empty state |
+| `command-palette/fuzzy` | Command palette fuzzy | fuzzy |
+| `command-palette/loading` | Command palette loading | Loading state |
+| `command-palette/narrow` | Narrow CommandPalette | Narrow terminal |
+| `command-palette/nested` | Command palette nested page | nested |
+| `command-palette/no-result` | Command palette no result | no result |
+| `command-palette/unicode` | Unicode CommandPalette | Unicode / wide glyphs |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/command_palette.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/command_palette.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `command-palette/basic`

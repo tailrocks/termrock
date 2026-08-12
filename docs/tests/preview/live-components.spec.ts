@@ -248,3 +248,19 @@ test('passive paint does not trap page input or invent a cursor', async ({ page 
   await expect(figure.locator('[role="img"]')).toHaveAttribute('tabindex', '-1')
   await expect(figure.locator('[data-termrock-hints="1"]')).toContainText('No input')
 })
+
+test('Preview, Code, and Variant controls use the selected canonical demo', async ({ page }) => {
+  let figure = await preview(page, 'button', 'button/activation')
+  await figure.getByRole('button', { name: 'Code' }).click()
+  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('fn button_story')
+  await expect(figure.locator('canvas')).toBeHidden()
+  await figure.getByRole('button', { name: 'Preview' }).click()
+  await expect(figure.locator('canvas')).toBeVisible()
+
+  await figure.getByLabel('Preview variant').selectOption('button/disabled')
+  figure = page.locator('[data-termrock-preview="button/disabled"]')
+  await expect(figure).toHaveAttribute('data-preview-interactive', 'false')
+  await expect(figure.locator('[role="img"]')).toBeVisible()
+  await figure.getByRole('button', { name: 'Code' }).click()
+  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('fn button_disabled_story')
+})

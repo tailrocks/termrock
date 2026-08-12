@@ -218,7 +218,9 @@ impl Story {
     }
     /// Create a fresh persistent interactor for this story.
     pub fn make_interactor(&self) -> Box<dyn StoryInteraction> {
-        (self.interactor)(self.render)
+        let mut interactor = (self.interactor)(self.render);
+        interactor.set_demo_id(self.id);
+        interactor
     }
 }
 

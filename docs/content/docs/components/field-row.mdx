@@ -9,55 +9,76 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/field_row.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="field-row/states" interactive caption="FieldRow · Field row states — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="field-row/states" interactive caption="FieldRow · Field row states — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::{FieldRow, FieldRowValue}};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let system = DesignSystem::phosphor();
-let row = FieldRow::new(&system, "Endpoint", FieldRowValue::Plain("localhost:8080"))
-  .label_cols(12)
-  .annotation("active");
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | caller-owned |
-| Focus | caller-owned |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
 
-| Story | Title | Focus |
-|---|---|---|
-| `field-row/states` | Field row states | **Primary (live preview)** |
+## Usage
 
+The Code view above and this source excerpt use the exact paint setup registered for `field-row/states`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-## Try it
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+// Exact paint setup used by the shared catalog story.
+fn field_row_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FieldRow, FieldRowValue};
+    let rows = Layout::vertical([Constraint::Length(1); 5]).split(area);
+    let labels = ["Workspace", "API token", "Endpoint", "Mode", "Owner"];
+    let label_cols = FieldRow::label_cols_for(labels.into_iter());
+    FieldRow::new(system, labels[0], FieldRowValue::Plain("termrock"))
+        .label_cols(label_cols)
+        .marker("◆")
+        .paint(rows[0], frame.buffer_mut());
+    FieldRow::new(system, labels[1], FieldRowValue::Masked { len: 8 })
+        .label_cols(label_cols)
+        .annotation("stored locally")
+        .annotation_italic(true)
+        .paint(rows[1], frame.buffer_mut());
+    FieldRow::new(system, labels[2], FieldRowValue::Unset { hint: "required" })
+        .label_cols(label_cols)
+        .required(true)
+        .paint(rows[2], frame.buffer_mut());
+    FieldRow::new(system, labels[3], FieldRowValue::Plain("Focused"))
+        .label_cols(label_cols)
+        .selected(true)
+        .paint(rows[3], frame.buffer_mut());
+    FieldRow::new(system, labels[4], FieldRowValue::Plain("Tailrocks"))
+        .label_cols(label_cols)
+        .hovered(true)
+        .paint(rows[4], frame.buffer_mut());
+}
+```
 
 ## Common mistakes
 
@@ -68,6 +89,16 @@ The widget owns deterministic paint and layout. The host owns all surrounding st
 ## Test recipe
 
 Mount `field-row/states`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `field-row/states` | Field row states | **Primary (live preview)** |
 
 ## Source and related material
 

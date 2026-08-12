@@ -14,7 +14,7 @@ use app::Lookbook;
 use svg::{check_svgs, write_story_svgs};
 use termrock::{
     input::KeyCode,
-    keymap::{KeyBinding, KeyChord, Keymap, Visibility, glyph},
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     style::RolePalette,
 };
 use termrock_lookbook::demo::catalog;
@@ -35,11 +35,7 @@ enum SidebarAction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PreviewAction {
     BackToList,
-    MovePreviewDown,
-    MovePreviewUp,
-    PageDown,
-    PageUp,
-    // Arrow keys and all other keys are forwarded to the active interactor.
+    // All component keys are forwarded to the shared demo session.
     Forward,
 }
 
@@ -91,59 +87,13 @@ static SIDEBAR_BINDINGS: &[KeyBinding<SidebarAction>] = &[
 ];
 static SIDEBAR_KEYMAP: Keymap<SidebarAction> = Keymap::from_static(SIDEBAR_BINDINGS);
 
-static PREVIEW_BINDINGS: &[KeyBinding<PreviewAction>] = &[
-    KeyBinding::borrowed(
-        &[
-            KeyChord::plain(KeyCode::Esc),
-            KeyChord::plain(KeyCode::Tab),
-            KeyChord::plain(KeyCode::BackTab),
-        ],
-        PreviewAction::BackToList,
-        Some("back to list"),
-        Visibility::Shown,
-        Some("Esc/⇥"),
-    ),
-    KeyBinding::borrowed(
-        &[
-            KeyChord::plain(KeyCode::Up),
-            KeyChord::plain(KeyCode::Down),
-            KeyChord::plain(KeyCode::Left),
-            KeyChord::plain(KeyCode::Right),
-        ],
-        PreviewAction::Forward,
-        Some("interact"),
-        Visibility::Shown,
-        Some(glyph::ALL_ARROWS),
-    ),
-    KeyBinding::borrowed(
-        &[KeyChord::plain(KeyCode::PageDown)],
-        PreviewAction::PageDown,
-        Some("page"),
-        Visibility::Shown,
-        Some(glyph::PGUP_PGDN),
-    ),
-    KeyBinding::borrowed(
-        &[KeyChord::plain(KeyCode::PageUp)],
-        PreviewAction::PageUp,
-        None,
-        Visibility::HiddenAlias,
-        None,
-    ),
-    KeyBinding::borrowed(
-        &[KeyChord::plain(KeyCode::Char('J'))],
-        PreviewAction::MovePreviewDown,
-        Some("move preview"),
-        Visibility::Shown,
-        Some("J/K"),
-    ),
-    KeyBinding::borrowed(
-        &[KeyChord::plain(KeyCode::Char('K'))],
-        PreviewAction::MovePreviewUp,
-        None,
-        Visibility::HiddenAlias,
-        None,
-    ),
-];
+static PREVIEW_BINDINGS: &[KeyBinding<PreviewAction>] = &[KeyBinding::borrowed(
+    &[KeyChord::plain(KeyCode::Esc)],
+    PreviewAction::BackToList,
+    Some("back to list"),
+    Visibility::Shown,
+    Some("Esc"),
+)];
 static PREVIEW_KEYMAP: Keymap<PreviewAction> = Keymap::from_static(PREVIEW_BINDINGS);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -153,10 +103,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if first == OsStr::new("terminal") {
-        if args.next().is_some() {
-            return Err("usage: termrock-lookbook terminal".into());
+        let usage = "usage: termrock-lookbook terminal [--story <id>]";
+        let mut story = None;
+        while let Some(flag) = args.next() {
+            if flag == OsStr::new("--story") && story.is_none() {
+                let Some(value) = args.next().and_then(|value| value.into_string().ok()) else {
+                    return Err(usage.into());
+                };
+                story = Some(value);
+            } else {
+                return Err(usage.into());
+            }
         }
-        return run_terminal();
+        return run_terminal(story.as_deref());
     }
 
     if first == OsStr::new("list") {
@@ -324,8 +283,12 @@ fn cmd_export_posters(
     Ok(())
 }
 
-fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
-    let mut app = Lookbook::new();
+fn run_terminal(story_id: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut app = if let Some(story_id) = story_id {
+        Lookbook::for_story(Some(story_id))?
+    } else {
+        Lookbook::new()
+    };
     termrock::runtime::run(
         &mut app,
         termrock::runtime::RunOptions::default(),

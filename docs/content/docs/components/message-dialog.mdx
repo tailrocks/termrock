@@ -9,36 +9,158 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/dialog.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="message-dialog/details" interactive caption="MessageDialog · Detailed message dialog — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="message-dialog/details" interactive caption="MessageDialog · Detailed message dialog — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::text::Text;
-use termrock::{style::DesignSystem, widgets::{DetailCapability, DetailRow, DetailTableState, Dialog, MessageDialog}};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let system = DesignSystem::default();
-let details = [DetailRow { id: "stage", label: "Stage", value: "Build", href: None, capability: DetailCapability::None, emphasis: false, style: None }];
-let dialog = MessageDialog::new(Dialog::new("Failure", Text::from("Build failed"), &system), &details, &system).wrap(true);
-let mut state = DetailTableState::<&str>::default();
-let outcome = state.select_next(&details);
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | caller-owned |
-| Mouse | caller-owned |
-| Focus | caller-owned |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `message-dialog/details` | Detailed message dialog | paint-only |
+| `message-dialog/narrow` | Narrow MessageDialog | paint-only |
+| `message-dialog/unicode` | Unicode MessageDialog | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `message-dialog/details`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
+    let details = [
+        DetailRow {
+            id: "state",
+            label: "State",
+            value: "Ready",
+            href: None,
+            capability: DetailCapability::None,
+            emphasis: false,
+            style: None,
+        },
+        DetailRow {
+            id: "reference",
+            label: "Reference",
+            value: "example-42",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        },
+    ];
+    let mut state = DetailTableState::default();
+    frame.render_stateful_widget(
+        &MessageDialog::new(
+            Dialog::new(
+                "Result",
+                Line::from("The operation completed.").into(),
+                &tokens,
+            )
+            .style(Style::new())
+            .emphasis(termrock::widgets::PanelChrome::Focused),
+            &details,
+            system,
+        )
+        .label_width(14)
+        .wrap(true),
+        area,
+        &mut state,
+    );
+}
+
+pub(crate) fn diff_sample_lines() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
+    let lines = vec![
+        DiffLine::file_header("f", "diff --git a/main.rs b/main.rs").file_id("main.rs"),
+        DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@")
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::context("c1", "fn main() {")
+            .old_no(1)
+            .new_no(1)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::removed("r1", "    println!(\"hi\");")
+            .old_no(2)
+            .file_id("main.rs")
+            .hunk_id("h0")
+            .trailing_ws(true),
+        DiffLine::added("a1", "    println!(\"hello region\");")
+            .new_no(2)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::added("a2", "    // ready 🧪")
+            .new_no(3)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::context("c2", "}")
+            .old_no(3)
+            .new_no(4)
+            .file_id("main.rs")
+            .hunk_id("h0"),
+        DiffLine::hunk_header("h1", "@@ -20,2 +21,2 @@")
+            .file_id("main.rs")
+            .hunk_id("h1"),
+        DiffLine::removed("r2", "old_path")
+            .old_no(20)
+            .file_id("main.rs")
+            .hunk_id("h1"),
+        DiffLine::added("a3", "new_path")
+            .new_no(21)
+            .file_id("main.rs")
+            .hunk_id("h1"),
+    ];
+    let hunks = [
+        DiffHunk::new(1, 6, "@@ -1,4 +1,5 @@")
+            .id("h0")
+            .file_id("main.rs"),
+        DiffHunk::new(7, 3, "@@ -20,2 +21,2 @@")
+            .id("h1")
+            .file_id("main.rs"),
+    ];
+    (lines, hunks)
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `message-dialog/details`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -51,27 +173,6 @@ a static multi-image gallery.
 | `message-dialog/details` | Detailed message dialog | **Primary (live preview)** |
 | `message-dialog/narrow` | Narrow MessageDialog | Narrow terminal |
 | `message-dialog/unicode` | Unicode MessageDialog | Unicode / wide glyphs |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `message-dialog/details`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

@@ -12,32 +12,33 @@ actions:
   - "wheel scroll"
   - "click cell"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "The \"PgUp/PgDn move viewport\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
 source: crates/termrock/src/widgets/virtual_grid.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="virtual-grid/basic" interactive caption="VirtualGrid · Virtual grid — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="virtual-grid/basic" interactive caption="VirtualGrid · Virtual grid — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::{GridCell, GridColumn, GridRow, VirtualGrid, VirtualGridState}};
+- `arrows move cell`: Move through the real focus/selection model; the next action uses the new target.
+- `PgUp/PgDn move viewport`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Shift+arrows select range`: Move through the real focus/selection model; the next action uses the new target.
+- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `click cell`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let columns = [
-  GridColumn::fixed("id", "ID", 8),
-  GridColumn::min("name", "Name", 16),
-];
-let cells = [GridCell::text("42"), GridCell::text("termrock")];
-let rows = [GridRow::new("row-42", 42, &cells)];
-let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(1_000_000);
-let state = VirtualGridState::<&str, &str>::new();
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -46,9 +47,46 @@ let state = VirtualGridState::<&str, &str>::new();
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `virtual-grid/basic` | Virtual grid | interactive |
+| `virtual-grid/million` | Virtual grid million-row window | paint-only |
+| `virtual-grid/narrow` | Virtual grid narrow | paint-only |
+| `virtual-grid/unicode` | Virtual grid Unicode | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `virtual-grid/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn virtual_grid_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    render_virtual_grid(frame, area, system, 20);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `virtual-grid/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -62,28 +100,6 @@ a static multi-image gallery.
 | `virtual-grid/million` | Virtual grid million-row window | million |
 | `virtual-grid/narrow` | Virtual grid narrow | Narrow terminal |
 | `virtual-grid/unicode` | Virtual grid Unicode | Unicode / wide glyphs |
-
-
-## Try it
-
-- `wheel to scroll`: dispatches through the public TermRock interaction API.
-- `↑↓ navigate`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `virtual-grid/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

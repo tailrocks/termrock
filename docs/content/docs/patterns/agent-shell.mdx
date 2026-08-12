@@ -22,12 +22,11 @@ Composed public building blocks: `Layout`.
 
 ## Workflow
 
-- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
-- `S toggle sidebar region` changes the visible application chrome.
-- `↑↓/wheel select row` changes the persistent row selection.
-- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+- `Tab/arrow traverse zones`: move visible focus, selection, pane, or hierarchy state for the next action.
+- `S toggle sidebar`: forward this normalized action to the mounted public pattern state.
+- `resize host`: change the same mounted layout/value; no alternate screenshot is mounted.
 
-The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
 
 ## Ownership
 

@@ -5,92 +5,79 @@ component: WorkingStateCard
 demo: working-state-card/basic
 interaction: activation
 actions:
-  - "Enter open action"
-  - "click trigger"
-  - "S toggle sidebar region"
-  - "↑↓/wheel select row"
-  - "/ filter"
+  - "Enter expand/collapse"
+  - "S stop request"
+  - "L logs"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"S stop request\" action updates visible mounted state and reports its typed outcome."
+  - "The \"L logs\" action updates visible mounted state and reports its typed outcome."
 source: crates/termrock/src/widgets/mod.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This is a persistent sample-application demo. Navigate rows, filter through a real TextInput, toggle the sidebar region, and open the effect-free action dialog.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="working-state-card/basic" interactive caption="WorkingStateCard · shared Rust demo" />
+<TerminalPreview story="working-state-card/basic" interactive caption="WorkingStateCard · WorkingStateCard — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{
-    example_working_state, WorkingStateCard, WorkingStateCardState,
-    WorkingStateOutcome,
-};
+- `Enter expand/collapse`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `S stop request`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `L logs`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
 
-let mut state = WorkingStateCardState::new();
-state.set_work(Some(example_working_state()));
-WorkingStateCard::new(&system).paint(area, buf, &mut state);
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
 
-match state.handle_key(key) {
-    WorkingStateOutcome::CancelRequested { id } => { let _ = id; }
-    WorkingStateOutcome::Collapsed => {
-        let _ = state.to_activity_item(); // ActivityShelf
-    }
-    _ => {}
-}
-```
+## State and typed outcomes
+
+The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | covered |
+| Mouse | not-applicable in primary demo |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-| Story | Title | Focus |
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
 |---|---|---|
-| `working-state-card/basic` | WorkingStateCard | **Primary (live preview)** |
-| `working-state-card/waiting` | WorkingStateCard waiting | waiting |
-| `working-state-card/collapsed` | WorkingStateCard collapsed | collapsed |
-| `working-state-card/narrow` | Narrow WorkingStateCard | narrow |
-| `working-state-card/unicode` | Unicode WorkingStateCard | unicode |
+| `working-state-card/basic` | WorkingStateCard | interactive |
+| `working-state-card/collapsed` | WorkingStateCard collapsed | paint-only |
+| `working-state-card/narrow` | Narrow WorkingStateCard | paint-only |
+| `working-state-card/unicode` | Unicode WorkingStateCard | paint-only |
+| `working-state-card/waiting` | WorkingStateCard waiting | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `working-state-card/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `Enter open action` or `click trigger` opens a real ChoiceDialog.
-- `S toggle sidebar region` changes visible chrome.
-- `↑↓/wheel select row` changes persistent selection.
-- `/ filter` focuses a real TextInput; type or paste, then apply with Enter.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `working-state-card/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `working-state-card/basic`
+// Exact paint setup used by the shared catalog story.
+fn working_state_card_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{
+        WorkingStateCard, WorkingStateCardState, WorkingStatePresentation, example_working_state,
+    };
+    let mut state = WorkingStateCardState::new();
+    state.set_work(Some(example_working_state()));
+    state.presentation = WorkingStatePresentation::Expanded;
+    state.focused = true;
+    frame.render_stateful_widget(&WorkingStateCard::new(system).tick(3), area, &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -125,3 +112,29 @@ Planning · Searching · Editing · Running · Waiting · Reviewing
 ## Related
 
 ActivityShelf · ThinkingBlock · migrations `0234`, `0271`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `working-state-card/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `working-state-card/basic` | WorkingStateCard | **Primary (live preview)** |
+| `working-state-card/waiting` | WorkingStateCard waiting | waiting |
+| `working-state-card/collapsed` | WorkingStateCard collapsed | collapsed |
+| `working-state-card/narrow` | Narrow WorkingStateCard | narrow |
+| `working-state-card/unicode` | Unicode WorkingStateCard | unicode |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `working-state-card/basic`

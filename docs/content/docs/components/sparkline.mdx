@@ -9,33 +9,75 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/charts.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="sparkline/basic" interactive caption="Sparkline · Sparkline — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="sparkline/basic" interactive caption="Sparkline · Sparkline — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::Sparkline};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let system = DesignSystem::default();
-let samples = [0.1, 0.5, 0.9];
-let spark = Sparkline::new(&samples, &system);
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `sparkline/basic` | Sparkline | paint-only |
+| `sparkline/narrow` | Narrow Sparkline | paint-only |
+| `sparkline/unicode` | Unicode Sparkline | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `sparkline/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn sparkline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let samples = [0.1, 0.3, 0.2, 0.7, 0.9, f64::NAN, 0.8, 0.4, 0.6, 0.95];
+    frame.render_widget(
+        Sparkline::new(&samples, system)
+            .pre_normalized(true)
+            .threshold(0.75)
+            .selected(4),
+        area,
+    );
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `sparkline/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -48,27 +90,6 @@ a static multi-image gallery.
 | `sparkline/basic` | Sparkline | **Primary (live preview)** |
 | `sparkline/narrow` | Narrow Sparkline | Narrow terminal |
 | `sparkline/unicode` | Unicode Sparkline | Unicode / wide glyphs |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `sparkline/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

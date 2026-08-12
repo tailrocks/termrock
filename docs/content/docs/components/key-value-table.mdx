@@ -1,6 +1,6 @@
 ---
 title: KeyValueTable
-description: 'KeyValueTable widget.'
+description: "Request headers with secret redaction and types."
 component: KeyValueTable
 demo: key-value-table/http
 interaction: editor-form
@@ -14,24 +14,38 @@ actions:
   - "wheel scroll"
   - "click row"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "The \"R reveal\" action updates visible mounted state and reports its typed outcome."
+  - "The \"C copy\" action updates visible mounted state and reports its typed outcome."
+  - "The \"D compare\" action updates visible mounted state and reports its typed outcome."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/key_value_table.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="key-value-table/http" interactive caption="KeyValueTable · KeyValueTable HTTP — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="key-value-table/http" interactive caption="KeyValueTable · KeyValueTable HTTP — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::KeyValueTable;
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `E edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `R reveal`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `C copy`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `D compare`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `click row`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story key-value-table/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -40,53 +54,70 @@ use termrock::widgets::KeyValueTable;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `key-value-table/http` | KeyValueTable HTTP | **Primary (live preview)** |
-| `key-value-table/agent` | KeyValueTable agent | agent |
-| `key-value-table/compare` | KeyValueTable compare | compare |
-| `key-value-table/database` | KeyValueTable database | database |
-| `key-value-table/narrow` | KeyValueTable narrow | Narrow terminal |
-| `key-value-table/permission` | KeyValueTable permission | permission |
-| `key-value-table/process` | KeyValueTable process | process |
+| `key-value-table/agent` | KeyValueTable agent | paint-only |
+| `key-value-table/compare` | KeyValueTable compare | paint-only |
+| `key-value-table/database` | KeyValueTable database | paint-only |
+| `key-value-table/http` | KeyValueTable HTTP | interactive |
+| `key-value-table/narrow` | KeyValueTable narrow | paint-only |
+| `key-value-table/permission` | KeyValueTable permission | paint-only |
+| `key-value-table/process` | KeyValueTable process | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `key-value-table/http`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `key-value-table/http`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/key_value_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/key_value_table.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `key-value-table/http`
+// Exact paint setup used by the shared catalog story.
+fn key_value_table_http(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::LoadState;
+    let fields = [
+        KvtField::group("g", "Request"),
+        KvtField::pair("m", "method", "GET")
+            .value_type("string")
+            .source("line")
+            .copyable()
+            .depth(1),
+        KvtField::pair("h", "host", "api.tailrocks.dev")
+            .value_type("host")
+            .source("header")
+            .copyable()
+            .depth(1),
+        KvtField::pair("a", "authorization", "Bearer sk-live-…")
+            .value_type("secret")
+            .source("header")
+            .secret()
+            .copyable()
+            .depth(1),
+        KvtField::pair("c", "content-type", "application/json")
+            .value_type("mime")
+            .source("header")
+            .editable()
+            .depth(1),
+        KvtField::pair("u", "user-agent", "termrock/0.11")
+            .value_type("string")
+            .source("header")
+            .depth(1),
+    ];
+    let mut state = KeyValueTableState::new().with_cursor("h");
+    state.load = LoadState::Ready { count: 5 };
+    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -146,3 +177,35 @@ let _ = (fields, &mut state);
 
 - Migration `0191-v0.13.0-key-value-table`
 - Reuses `KvDensity` / `KvLayout` / `KvStatus` from KeyValueList
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `key-value-table/http`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `key-value-table/http` | KeyValueTable HTTP | **Primary (live preview)** |
+| `key-value-table/agent` | KeyValueTable agent | agent |
+| `key-value-table/compare` | KeyValueTable compare | compare |
+| `key-value-table/database` | KeyValueTable database | database |
+| `key-value-table/narrow` | KeyValueTable narrow | Narrow terminal |
+| `key-value-table/permission` | KeyValueTable permission | permission |
+| `key-value-table/process` | KeyValueTable process | process |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/key_value_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/key_value_table.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `key-value-table/http`

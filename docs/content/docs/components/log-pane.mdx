@@ -9,56 +9,85 @@ actions:
   - "End follow tail"
   - "wheel scroll"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
 source: crates/termrock/src/widgets/log_pane.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="log-pane/follow" interactive caption="LogPane · Following log pane — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="log-pane/follow" interactive caption="LogPane · Following log pane — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
-use termrock::{
-  DesignSystem,
-  ansi_text::line_from_ansi,
-  style::Role,
-  widgets::{LogPane, LogPaneState},
-};
+- `↑↓/PageUp/PageDown scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `End follow tail`: Move through the real focus/selection model; the next action uses the new target.
+- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
 
-let system = DesignSystem::default();
-let pane = LogPane::new(&system).title("Build");
-let mut state = LogPaneState::new().with_max_lines(1_000);
-state.append(line_from_ansi("\u{1b}[32mready\u{1b}[0m", theme.style(Role::Text)));
-let area = Rect::new(0, 0, 80, 24);
-let mut buffer = Buffer::empty(area);
-(&pane).render(area, &mut buffer, &mut state);
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
 
-// Wheel navigation uses geometry recorded by render. Oldest navigation can
-// also be requested before first render and resolves when geometry is known.
-let changed = state.scroll_by(-1);
-state.scroll_to_oldest();
-state.follow();
+## State and typed outcomes
 
-// Unbounded retention is an explicit opt-in when the caller owns the policy.
-let unbounded = LogPaneState::new().unbounded();
-```
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | caller-owned |
-| Focus | caller-owned |
-| Non-color cues | covered |
-| Unicode | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `log-pane/follow` | Following log pane | interactive |
+| `log-pane/narrow` | Narrow LogPane | paint-only |
+| `log-pane/scrolled` | Frozen log scrollback | paint-only |
+| `log-pane/unicode` | Unicode LogPane | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `log-pane/follow`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn log_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LogPaneState::new().with_max_lines(200);
+    for line in [
+        "[12:04:01] resolving workspace",
+        "[12:04:02] compiling termrock",
+        "[12:04:03] running 205 tests",
+        "[12:04:04] result: ok ✓",
+    ] {
+        state.append(line);
+    }
+    frame.render_stateful_widget(&LogPane::new(system).title("Build log"), area, &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `log-pane/follow`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -72,28 +101,6 @@ a static multi-image gallery.
 | `log-pane/narrow` | Narrow LogPane | Narrow terminal |
 | `log-pane/scrolled` | Frozen log scrollback | scrolled |
 | `log-pane/unicode` | Unicode LogPane | Unicode / wide glyphs |
-
-
-## Try it
-
-- `wheel to scroll`: dispatches through the public TermRock interaction API.
-- `↑↓ navigate`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `log-pane/follow`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

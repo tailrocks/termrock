@@ -1,6 +1,6 @@
 ---
 title: HexViewer
-description: 'HexViewer widget.'
+description: "Offset + hex + ASCII with cursor brackets."
 component: HexViewer
 demo: hex-viewer/basic
 interaction: scrolling-virtualization
@@ -12,24 +12,34 @@ actions:
   - "I inspector"
   - "B bookmark"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"I inspector\" action updates visible mounted state and reports its typed outcome."
+  - "The \"B bookmark\" action updates visible mounted state and reports its typed outcome."
 source: crates/termrock/src/widgets/hex_viewer.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="hex-viewer/basic" interactive caption="HexViewer · HexViewer basic — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="hex-viewer/basic" interactive caption="HexViewer · HexViewer basic — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::HexViewer;
+- `arrows move byte`: Move through the real focus/selection model; the next action uses the new target.
+- `Shift+arrows select`: Move through the real focus/selection model; the next action uses the new target.
+- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `click byte`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `I inspector`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `B bookmark`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
 
-// See handbook / lookbook story hex-viewer/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -38,53 +48,46 @@ use termrock::widgets::HexViewer;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `hex-viewer/basic` | HexViewer basic | **Primary (live preview)** |
-| `hex-viewer/ascii` | HexViewer ASCII | ASCII / low capability |
-| `hex-viewer/empty` | HexViewer empty | Empty state |
-| `hex-viewer/inspector` | HexViewer inspector | inspector |
-| `hex-viewer/narrow` | HexViewer narrow | Narrow terminal |
-| `hex-viewer/search` | HexViewer search | Search / filter |
-| `hex-viewer/selection` | HexViewer selection | selection |
+| `hex-viewer/ascii` | HexViewer ASCII | paint-only |
+| `hex-viewer/basic` | HexViewer basic | interactive |
+| `hex-viewer/empty` | HexViewer empty | paint-only |
+| `hex-viewer/inspector` | HexViewer inspector | paint-only |
+| `hex-viewer/narrow` | HexViewer narrow | paint-only |
+| `hex-viewer/search` | HexViewer search | paint-only |
+| `hex-viewer/selection` | HexViewer selection | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `hex-viewer/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `hex-viewer/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/hex_viewer.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/hex_viewer.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `hex-viewer/basic`
+// Exact paint setup used by the shared catalog story.
+fn hex_viewer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let data = hex_viewer_sample();
+    let win = HexWindow::new(0, &data, data.len() as u64);
+    let mut state = HexViewerState::new();
+    state.bytes_per_row = 16;
+    state.cursor = 0x10;
+    HexViewer::new(win, system)
+        .title("blob.bin")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -145,3 +148,35 @@ let _ = (win, state);
 ## Related
 
 CodeBlock · FullscreenViewer · migration `0200`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `hex-viewer/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `hex-viewer/basic` | HexViewer basic | **Primary (live preview)** |
+| `hex-viewer/ascii` | HexViewer ASCII | ASCII / low capability |
+| `hex-viewer/empty` | HexViewer empty | Empty state |
+| `hex-viewer/inspector` | HexViewer inspector | inspector |
+| `hex-viewer/narrow` | HexViewer narrow | Narrow terminal |
+| `hex-viewer/search` | HexViewer search | Search / filter |
+| `hex-viewer/selection` | HexViewer selection | selection |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/hex_viewer.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/hex_viewer.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `hex-viewer/basic`
