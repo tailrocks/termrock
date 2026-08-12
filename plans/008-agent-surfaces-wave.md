@@ -93,7 +93,7 @@ Design constraints (design SoT `docs/design/component-visual-richness-plan.md`
   `agent_workbench.rs` (story-level integration only — patterns compose
   widgets)
 - Lookbook stories for every touched surface + 3 new Grok-parity stories
-- `migrations/0268-*.md` + `MIGRATING.md`
+- sequential Plan 008 migration files + `MIGRATING.md`
 - `plans/README.md`
 - Generated component MDX/API inventory, affected preview frames, and
   `artifacts/visual-qa/plan-008/`
@@ -247,3 +247,14 @@ paint tests on the widget's existing test module.
   struct literals and actor rails change default chrome; repo migration law
   requires same-commit documentation. Later Plan 008 breaking slices take the
   next sequential number rather than rewriting this boundary.
+- 2026-08-12: Allocated migration 0270 to the ToolCallCard slice. Its compact
+  row and expanded output well change visible defaults independently of the
+  Transcript commit, so migration law requires a separate same-commit boundary.
+  The original single migration filename was a plan defect; sequential files
+  preserve independently green commits and historical truth.
+- 2026-08-12: Added `docs/src/styles/app.css` to this slice after mandatory
+  browser review proved the light-theme switch applied near-black text over an
+  obsidian background. A screenshot-only workaround would fail the goal, and
+  removing light mode would contradict the docs design SoT. Splitting the
+  shared CSS tokens into Rust-paper-equivalent `:root` values and phosphor
+  `.dark` values is cross-surface, minimal, and keeps both themes readable.

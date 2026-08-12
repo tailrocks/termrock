@@ -86568,6 +86568,7 @@ pub const fn termrock::widgets::ToolCallCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ToolCallCard<'a>::new(&'a termrock::widgets::ToolCall, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ToolCallCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
 pub fn termrock::widgets::ToolCallCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
+pub const fn termrock::widgets::ToolCallCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ToolCallCard<'a>
 pub fn termrock::widgets::ToolCallCard<'a>::clone(&self) -> termrock::widgets::ToolCallCard<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ToolCallCard<'a>

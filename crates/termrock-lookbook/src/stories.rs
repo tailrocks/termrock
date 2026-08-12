@@ -5750,9 +5750,9 @@ pub(crate) fn stories() -> Vec<Story> {
             "tool-call-card/running",
             "ToolCallCard running",
             "ToolCallCard",
-            "Running tool with risk and actor.",
-            48,
-            6,
+            "Running tool in compact and expanded actor-rail states.",
+            56,
+            12,
             tool_call_card_running_story,
         ),
         Story::new(
@@ -20847,10 +20847,25 @@ fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     };
     let calls = example_tool_calls();
     let call = calls.iter().find(|c| c.id == "t2").unwrap_or(&calls[1]);
-    let mut st = ToolCallCardState::new();
-    st.focused = true;
-    st.presentation = ToolCallPresentation::Compact;
-    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
+    let compact_area = Rect::new(area.x, area.y, area.width, 1);
+    let expanded_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width,
+        area.height.saturating_sub(2),
+    );
+    let mut compact = ToolCallCardState::new();
+    compact.focused = true;
+    compact.presentation = ToolCallPresentation::Compact;
+    ToolCallCard::new(call, system)
+        .tick(3)
+        .paint(compact_area, frame.buffer_mut(), &mut compact);
+    let mut expanded = ToolCallCardState::new();
+    expanded.focused = true;
+    expanded.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(call, system)
+        .tick(3)
+        .paint(expanded_area, frame.buffer_mut(), &mut expanded);
 }
 
 fn tool_call_card_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
