@@ -67,13 +67,17 @@ function exactPatternDemo(demo: string): string | undefined {
 }
 
 async function mdxFiles(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true })
+  // Filesystem enumeration order is not portable (APFS and ext4 commonly
+  // disagree). Keep candidate resolution deterministic when multiple public
+  // pages intentionally mount the same shared demo ID.
+  const entries = (await readdir(directory, { withFileTypes: true }))
+    .sort((left, right) => left.name.localeCompare(right.name))
   const nested = await Promise.all(entries.map(async (entry) => {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) return mdxFiles(path)
     return entry.isFile() && entry.name.endsWith('.mdx') ? [path] : []
   }))
-  return nested.flat()
+  return nested.flat().sort()
 }
 
 const snippets: Record<string, string> = {}
