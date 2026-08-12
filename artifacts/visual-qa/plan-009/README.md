@@ -76,3 +76,16 @@ quiet secondary plane while gutters/text preserve focus. The full 540-image
 review set is in [selection-tint-cascade](selection-tint-cascade/); grouped
 catalog entries without standalone pages are covered by their generated frames
 and owning composite pages.
+
+## Diff full-row semantic tints
+
+Validated DiffView and DiffReview with `agent-browser` at mobile, tablet, and
+desktop plus paper/reduced-motion. Keyboard navigation responded; page overflow
+and page errors stayed zero.
+
+Designer verdict — DiffView/DiffReview: **pass** — added/removed tone now spans
+the complete scan row, while gutters, hunk separators, collapsed counts,
+context, and cursor remain distinct in unified/split, narrow, ASCII, and paper
+states. Evidence: [DiffView desktop](diff-view-desktop-1440x900.png),
+[DiffReview desktop](diff-review-desktop-1440x900.png), plus adjacent viewport
+and paper captures.

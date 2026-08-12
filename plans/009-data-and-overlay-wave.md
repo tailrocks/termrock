@@ -222,3 +222,7 @@ capability stories re-verified per widget.
   selected label carry its tint. The shared recipe fix best matches repo law,
   design intent, and smallest long-term blast radius; it removes the enabling
   condition for the defect across every consumer.
+- 2026-08-12: Allocated migration 0277 to Diff's full-row semantic tint
+  boundary. Live hunk headers and folded summaries already use the documented
+  muted/added/removed roles, so the smallest correct change fills the complete
+  added/removed row before existing span paint.
