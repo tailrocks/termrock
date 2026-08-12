@@ -87,6 +87,8 @@ APIs this plan composes (verify each exists before starting):
 - Registry/catalog entries + contract matrix rows (whatever
   `mise run contracts` and `docs-quality` tasks enforce — run them and
   follow errors)
+- Generated component MDX, public API inventory, affected preview frames, and
+  `artifacts/visual-qa/plan-007/`
 - `migrations/0267-*.md` + `MIGRATING.md` (additive; migration documents new
   canonical paths replacing consumer workarounds)
 - `plans/README.md`
@@ -252,3 +254,19 @@ Per-step tests named above (12+ new tests). Model widget tests on
   after this plan ripple; coordinate via plans/README.
 - Reviewers: FieldRow + AccentRail must not duplicate `ListRow` slot logic —
   they compose `resolve_list_row`; flag any second styling path.
+
+## Amendments
+
+- 2026-08-12: Added generated component MDX/API/frame outputs and
+  agent-browser review artifacts omitted from Scope. These primitives are
+  public catalog surfaces; repo cross-surface law and the standing browser
+  gate require their generated docs and responsive evidence in the same
+  independently-green commits.
+- 2026-08-12: Moved each primitive's story, contract, generated docs, preview,
+  and browser review into that primitive's commit instead of deferring all
+  cross-surface work to Step 6. The original order contradicts its own
+  independently-green commit rule and repo law requiring every public widget
+  to have catalog coverage. Deferral fails those authorities; one large commit
+  discards the requested isolation; complete vertical slices satisfy both with
+  the smallest process-only change. The shared migration/index remains in the
+  final slice.

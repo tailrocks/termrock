@@ -38433,6 +38433,47 @@ pub unsafe fn termrock::widgets::ExtentPolicy::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ExtentPolicy
 pub fn termrock::widgets::ExtentPolicy::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ExtentPolicy
+#[non_exhaustive] pub enum termrock::widgets::FieldRowValue<'a>
+pub termrock::widgets::FieldRowValue::Composed(ratatui_core::text::line::Line<'a>)
+pub termrock::widgets::FieldRowValue::Masked
+pub termrock::widgets::FieldRowValue::Masked::len: usize
+pub termrock::widgets::FieldRowValue::Plain(&'a str)
+pub termrock::widgets::FieldRowValue::Unset
+pub termrock::widgets::FieldRowValue::Unset::hint: &'a str
+impl<'a> core::clone::Clone for termrock::widgets::FieldRowValue<'a>
+pub fn termrock::widgets::FieldRowValue<'a>::clone(&self) -> termrock::widgets::FieldRowValue<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::FieldRowValue<'a>
+pub fn termrock::widgets::FieldRowValue<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::marker::Send for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::marker::Sync for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FieldRowValue<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::FieldRowValue<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::FieldRowValue<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FieldRowValue<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::FieldRowValue<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::FieldRowValue<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FieldRowValue<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FieldRowValue<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FieldRowValue<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FieldRowValue<'a> where T: core::clone::Clone
+pub type termrock::widgets::FieldRowValue<'a>::Owned = T
+pub fn termrock::widgets::FieldRowValue<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FieldRowValue<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FieldRowValue<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FieldRowValue<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FieldRowValue<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldRowValue<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FieldRowValue<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldRowValue<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FieldRowValue<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FieldRowValue<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FieldRowValue<'a>
+pub fn termrock::widgets::FieldRowValue<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FieldRowValue<'a>
 #[non_exhaustive] pub enum termrock::widgets::FieldStatus<'a>
 pub termrock::widgets::FieldStatus::Error(&'a str)
 pub termrock::widgets::FieldStatus::Help(&'a str)
@@ -65119,6 +65160,55 @@ pub unsafe fn termrock::widgets::FieldCaption<'a, Id>::clone_to_uninit(&self, *m
 impl<T> core::convert::From<T> for termrock::widgets::FieldCaption<'a, Id>
 pub fn termrock::widgets::FieldCaption<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::FieldCaption<'a, Id>
+pub struct termrock::widgets::FieldRow<'a>
+impl<'a> termrock::widgets::FieldRow<'a>
+pub const fn termrock::widgets::FieldRow<'a>::annotation(self, &'a str) -> Self
+pub const fn termrock::widgets::FieldRow<'a>::annotation_italic(self, bool) -> Self
+pub const fn termrock::widgets::FieldRow<'a>::enabled(self, bool) -> Self
+pub const fn termrock::widgets::FieldRow<'a>::hovered(self, bool) -> Self
+pub fn termrock::widgets::FieldRow<'a>::label_cols(self, u16) -> Self
+pub fn termrock::widgets::FieldRow<'a>::label_cols_for<'b>(impl core::iter::traits::iterator::Iterator<Item = &'b str>) -> u16
+pub const fn termrock::widgets::FieldRow<'a>::marker(self, &'a str) -> Self
+pub fn termrock::widgets::FieldRow<'a>::new(&'a termrock::style::DesignSystem, &'a str, termrock::widgets::FieldRowValue<'a>) -> Self
+pub fn termrock::widgets::FieldRow<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+pub const fn termrock::widgets::FieldRow<'a>::required(self, bool) -> Self
+pub const fn termrock::widgets::FieldRow<'a>::selected(self, bool) -> Self
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::FieldRow<'_>
+pub fn termrock::widgets::FieldRow<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::FieldRow<'a>
+pub fn termrock::widgets::FieldRow<'a>::clone(&self) -> termrock::widgets::FieldRow<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::FieldRow<'a>
+pub fn termrock::widgets::FieldRow<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Freeze for termrock::widgets::FieldRow<'a>
+impl<'a> core::marker::Send for termrock::widgets::FieldRow<'a>
+impl<'a> core::marker::Sync for termrock::widgets::FieldRow<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::FieldRow<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::FieldRow<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FieldRow<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FieldRow<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::FieldRow<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::FieldRow<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FieldRow<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::FieldRow<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::FieldRow<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::FieldRow<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::FieldRow<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::FieldRow<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::FieldRow<'a> where T: core::clone::Clone
+pub type termrock::widgets::FieldRow<'a>::Owned = T
+pub fn termrock::widgets::FieldRow<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::FieldRow<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::FieldRow<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::FieldRow<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::FieldRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldRow<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::FieldRow<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::FieldRow<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::FieldRow<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::FieldRow<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::FieldRow<'a>
+pub fn termrock::widgets::FieldRow<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::FieldRow<'a>
 pub struct termrock::widgets::FieldToken<Id>
 pub termrock::widgets::FieldToken::disabled: bool
 pub termrock::widgets::FieldToken::id: Id

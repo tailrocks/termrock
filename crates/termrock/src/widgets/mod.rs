@@ -58,6 +58,7 @@ mod edit_core;
 mod empty_state;
 mod error_state;
 mod event_stream;
+mod field_row;
 mod file_picker;
 mod file_tree;
 mod form;
@@ -370,6 +371,7 @@ pub use dropdown_menu::{
     flatten_menu_nodes, measure_menu_panel, menu_items_to_nodes, open_context_menu_overlay,
     open_dropdown_menu_overlay, open_menu_submenu_overlay, place_context_menu, place_dropdown_menu,
 };
+pub use field_row::{FieldRow, FieldRowValue};
 pub use form::{
     Field, FieldStatus, Fieldset, Form, FormField, FormFieldRegion, FormLayout, FormOutcome,
     FormSection, FormState, any_dirty, any_touched, collect_errors, first_invalid_id,

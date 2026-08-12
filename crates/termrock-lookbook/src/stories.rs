@@ -6341,6 +6341,15 @@ pub(crate) fn stories() -> Vec<Story> {
             label_basic_story,
         ),
         Story::new(
+            "field-row/states",
+            "Field row states",
+            "FieldRow",
+            "Plain, masked, required-unset, selected, and annotated rows.",
+            56,
+            7,
+            field_row_states_story,
+        ),
+        Story::new(
             "label/states",
             "Label states",
             "Label",
@@ -21720,6 +21729,34 @@ fn label_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .required()
         .help("Shown in the session list")
         .paint(area, frame.buffer_mut());
+}
+
+fn field_row_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{FieldRow, FieldRowValue};
+    let rows = Layout::vertical([Constraint::Length(1); 5]).split(area);
+    let labels = ["Workspace", "API token", "Endpoint", "Mode", "Owner"];
+    let label_cols = FieldRow::label_cols_for(labels.into_iter());
+    FieldRow::new(system, labels[0], FieldRowValue::Plain("termrock"))
+        .label_cols(label_cols)
+        .marker("◆")
+        .paint(rows[0], frame.buffer_mut());
+    FieldRow::new(system, labels[1], FieldRowValue::Masked { len: 8 })
+        .label_cols(label_cols)
+        .annotation("stored locally")
+        .annotation_italic(true)
+        .paint(rows[1], frame.buffer_mut());
+    FieldRow::new(system, labels[2], FieldRowValue::Unset { hint: "required" })
+        .label_cols(label_cols)
+        .required(true)
+        .paint(rows[2], frame.buffer_mut());
+    FieldRow::new(system, labels[3], FieldRowValue::Plain("Focused"))
+        .label_cols(label_cols)
+        .selected(true)
+        .paint(rows[3], frame.buffer_mut());
+    FieldRow::new(system, labels[4], FieldRowValue::Plain("Tailrocks"))
+        .label_cols(label_cols)
+        .hovered(true)
+        .paint(rows[4], frame.buffer_mut());
 }
 
 fn label_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

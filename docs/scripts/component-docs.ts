@@ -1379,6 +1379,16 @@ Surface::new(&system).recipe(SurfaceRecipe::Canvas).fill(SurfaceFill::TerminalDe
 
 // See handbook / lookbook story field-caption/basic.`,
   },
+  FieldRow: {
+    description: 'A density-aware composed field row with shared label columns, semantic selection chrome, masked and unset values, markers, and annotations.',
+    primaryStory: 'field-row/states',
+    usage: `use termrock::{style::DesignSystem, widgets::{FieldRow, FieldRowValue}};
+
+let system = DesignSystem::phosphor();
+let row = FieldRow::new(&system, "Endpoint", FieldRowValue::Plain("localhost:8080"))
+  .label_cols(12)
+  .annotation("active");`,
+  },
   Gauge: {
     description: 'Gauge widget.',
     primaryStory: 'gauge/basic',

@@ -1,0 +1,301 @@
+// SPDX-FileCopyrightText: 2026 Alexey Zhokhov
+// SPDX-License-Identifier: Apache-2.0
+
+//! Composed label/value rows for forms and detail surfaces.
+
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::Widget};
+
+use crate::{
+    style::{DesignSystem, ListRowVisualState, Role},
+    text::{display_cols, truncate_cols},
+};
+
+/// Value content painted by a [`FieldRow`].
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub enum FieldRowValue<'a> {
+    /// Ordinary text.
+    Plain(&'a str),
+    /// Secret-shaped content rendered without exposing its value.
+    Masked {
+        /// Number of mask glyphs to paint.
+        len: usize,
+    },
+    /// Caller-styled content such as breadcrumbs.
+    Composed(Line<'a>),
+    /// Missing content with explanatory text.
+    Unset {
+        /// Explanatory placeholder for the missing value.
+        hint: &'a str,
+    },
+}
+
+impl Widget for FieldRow<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
+/// A density-aware composed field row.
+#[derive(Debug, Clone)]
+pub struct FieldRow<'a> {
+    system: &'a DesignSystem,
+    label: &'a str,
+    value: FieldRowValue<'a>,
+    marker: Option<&'a str>,
+    annotation: Option<&'a str>,
+    annotation_italic: bool,
+    label_cols: u16,
+    required: bool,
+    selected: bool,
+    hovered: bool,
+    enabled: bool,
+}
+
+impl<'a> FieldRow<'a> {
+    /// Creates a field row with an eight-column minimum label band.
+    #[must_use]
+    pub fn new(system: &'a DesignSystem, label: &'a str, value: FieldRowValue<'a>) -> Self {
+        Self {
+            system,
+            label,
+            value,
+            marker: None,
+            annotation: None,
+            annotation_italic: false,
+            label_cols: 8,
+            required: false,
+            selected: false,
+            hovered: false,
+            enabled: true,
+        }
+    }
+
+    /// Measures a shared label band, with an eight-column minimum.
+    #[must_use]
+    pub fn label_cols_for<'b>(labels: impl Iterator<Item = &'b str>) -> u16 {
+        labels
+            .map(display_cols)
+            .max()
+            .unwrap_or(0)
+            .max(8)
+            .try_into()
+            .unwrap_or(u16::MAX)
+    }
+
+    /// Sets the shared label-band width.
+    #[must_use]
+    pub fn label_cols(mut self, cols: u16) -> Self {
+        self.label_cols = cols.max(8);
+        self
+    }
+
+    /// Adds a marker between selection gutter and label.
+    #[must_use]
+    pub const fn marker(mut self, marker: &'a str) -> Self {
+        self.marker = Some(marker);
+        self
+    }
+
+    /// Adds quiet trailing annotation text.
+    #[must_use]
+    pub const fn annotation(mut self, annotation: &'a str) -> Self {
+        self.annotation = Some(annotation);
+        self
+    }
+
+    /// Renders annotation text in italic when supported.
+    #[must_use]
+    pub const fn annotation_italic(mut self, italic: bool) -> Self {
+        self.annotation_italic = italic;
+        self
+    }
+
+    /// Marks an unset value as required/dangerous.
+    #[must_use]
+    pub const fn required(mut self, required: bool) -> Self {
+        self.required = required;
+        self
+    }
+
+    /// Applies selection state.
+    #[must_use]
+    pub const fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+
+    /// Applies pointer-hover state.
+    #[must_use]
+    pub const fn hovered(mut self, hovered: bool) -> Self {
+        self.hovered = hovered;
+        self
+    }
+
+    /// Applies enabled state.
+    #[must_use]
+    pub const fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    /// Paints this row into one terminal line.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        if area.is_empty() {
+            return;
+        }
+        let recipe = self.system.resolve_list_row(ListRowVisualState {
+            selected: self.selected,
+            focused: self.selected,
+            hovered: self.hovered,
+            enabled: self.enabled,
+            loading: false,
+            checked: false,
+        });
+        let row = Rect::new(area.x, area.y, area.width, 1);
+        if recipe.use_fill {
+            buffer.set_style(row, recipe.label);
+        } else if recipe.use_tint {
+            buffer.set_style(row, recipe.tint);
+        } else if recipe.hover_fill {
+            buffer.set_style(row, recipe.hover_wash);
+        }
+
+        let mut x = area.x;
+        if let Some((glyph, style)) = recipe.gutter {
+            buffer.set_stringn(x, area.y, glyph, 1, style);
+        }
+        x = x.saturating_add(2);
+        if let Some(marker) = self.marker {
+            let marker_width =
+                display_cols(marker).min(usize::from(area.right().saturating_sub(x)));
+            buffer.set_stringn(x, area.y, marker, marker_width, recipe.secondary);
+            x = x.saturating_add(u16::try_from(marker_width).unwrap_or(u16::MAX));
+            x = x.saturating_add(self.system.spacing.gap);
+        }
+
+        let remaining = area.right().saturating_sub(x);
+        let label_width = self.label_cols.min(remaining);
+        let label = truncate_cols(self.label, usize::from(label_width), "…");
+        buffer.set_stringn(
+            x,
+            area.y,
+            &label,
+            usize::from(label_width),
+            recipe.secondary,
+        );
+        x = x.saturating_add(label_width);
+        x = x.saturating_add(self.system.spacing.gap);
+        if x >= area.right() {
+            return;
+        }
+
+        let annotation_width = self.annotation.map_or(0, |text| {
+            display_cols(text).saturating_add(usize::from(self.system.spacing.gap))
+        });
+        let value_width =
+            usize::from(area.right().saturating_sub(x)).saturating_sub(annotation_width);
+        match &self.value {
+            FieldRowValue::Plain(value) => {
+                let text = truncate_cols(value, value_width, "…");
+                buffer.set_stringn(x, area.y, &text, value_width, recipe.label);
+            }
+            FieldRowValue::Masked { len } => {
+                let glyph = if self.system.glyphs.is_ascii() {
+                    "*"
+                } else {
+                    "●"
+                };
+                let text = glyph.repeat((*len).min(value_width));
+                buffer.set_stringn(x, area.y, &text, value_width, recipe.label);
+            }
+            FieldRowValue::Composed(line) => {
+                buffer.set_line(
+                    x,
+                    area.y,
+                    line,
+                    u16::try_from(value_width).unwrap_or(u16::MAX),
+                );
+            }
+            FieldRowValue::Unset { hint } => {
+                let role = if self.required {
+                    Role::Danger
+                } else {
+                    Role::TextMuted
+                };
+                let text = truncate_cols(hint, value_width, "…");
+                buffer.set_stringn(x, area.y, &text, value_width, self.system.style(role));
+            }
+        }
+
+        if let Some(annotation) = self.annotation {
+            let used = match &self.value {
+                FieldRowValue::Plain(value) => display_cols(value),
+                FieldRowValue::Masked { len } => *len,
+                FieldRowValue::Composed(line) => line.width(),
+                FieldRowValue::Unset { hint } => display_cols(hint),
+            }
+            .min(value_width);
+            let annotation_x = x
+                .saturating_add(u16::try_from(used).unwrap_or(u16::MAX))
+                .saturating_add(self.system.spacing.gap);
+            if annotation_x < area.right() {
+                let mut style = self.system.style(Role::TextMuted);
+                if self.annotation_italic {
+                    style = style.add_modifier(Modifier::ITALIC);
+                }
+                buffer.set_stringn(
+                    annotation_x,
+                    area.y,
+                    annotation,
+                    usize::from(area.right().saturating_sub(annotation_x)),
+                    style,
+                );
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui_core::{buffer::Buffer, layout::Rect};
+
+    use super::*;
+
+    #[test]
+    fn label_measurement_is_wide_glyph_correct_with_minimum() {
+        assert_eq!(FieldRow::label_cols_for(["id", "日本語"].into_iter()), 8);
+        assert_eq!(FieldRow::label_cols_for(["日本語日本"].into_iter()), 10);
+    }
+
+    #[test]
+    fn masked_value_has_requested_display_width() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Token", FieldRowValue::Masked { len: 5 }).paint(area, &mut buffer);
+        let row = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(row.contains("●●●●●"));
+    }
+
+    #[test]
+    fn required_unset_uses_danger_role() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Token", FieldRowValue::Unset { hint: "required" })
+            .required(true)
+            .paint(area, &mut buffer);
+        let expected = system.style(Role::Danger).fg;
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .any(|cell| Some(cell.fg) == expected)
+        );
+    }
+}
