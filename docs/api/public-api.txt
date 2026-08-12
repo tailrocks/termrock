@@ -67522,6 +67522,8 @@ pub fn termrock::widgets::Hint<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Hint<'a>
 pub struct termrock::widgets::HintBar<'a>
 impl<'a> termrock::widgets::HintBar<'a>
+pub const fn termrock::widgets::HintBar<'a>::leading_spacer(self, bool) -> Self
+pub fn termrock::widgets::HintBar<'a>::measured_height(&self, u16) -> u16
 pub const fn termrock::widgets::HintBar<'a>::new(&'a [termrock::widgets::Hint<'a>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::HintBar<'a>::separator(self, &'a str) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::HintBar<'_>

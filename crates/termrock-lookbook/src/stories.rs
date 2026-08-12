@@ -1439,11 +1439,11 @@ pub(crate) fn stories() -> Vec<Story> {
         ),
         Story::new(
             "hint-bar/wrapped",
-            "Hint bar",
+            "Measured hint bar",
             "HintBar",
-            "Prioritized caller-defined hints.",
+            "Measured wrapping with an intentional leading spacer band.",
             42,
-            2,
+            12,
             hint_bar,
         ),
         Story::new(
@@ -12822,7 +12822,51 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             visible: true,
         },
     ];
-    frame.render_widget(HintBar::new(&hints, &system).separator("  "), area);
+    let bar = HintBar::new(&hints, &system)
+        .separator("  ")
+        .leading_spacer(true);
+    let narrow_bar = HintBar::new(&hints, &system).separator("  ");
+    if area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            format!("WIDE BUDGET  ·  {} ROWS", bar.measured_height(area.width)),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let wide_y = area.y.saturating_add(1);
+    let wide_height = bar
+        .measured_height(area.width)
+        .min(area.bottom().saturating_sub(wide_y));
+    frame.render_widget(&bar, Rect::new(area.x, wide_y, area.width, wide_height));
+
+    let narrow_width = area.width.min(20);
+    let narrow_y = wide_y.saturating_add(wide_height).saturating_add(1);
+    if narrow_y < area.bottom() {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            narrow_y,
+            format!(
+                "NARROW 20 COL  ·  {} ROWS",
+                narrow_bar.measured_height(narrow_width)
+            ),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let narrow_bar_y = narrow_y.saturating_add(1);
+    frame.render_widget(
+        &narrow_bar,
+        Rect::new(
+            area.x,
+            narrow_bar_y,
+            narrow_width,
+            narrow_bar
+                .measured_height(narrow_width)
+                .min(area.bottom().saturating_sub(narrow_bar_y)),
+        ),
+    );
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

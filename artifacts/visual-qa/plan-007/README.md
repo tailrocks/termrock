@@ -59,3 +59,20 @@ focus border preserve the phosphor surface ladder. Evidence:
 [paper](panel-stack-paper-1440x900.png),
 [mobile](panel-stack-mobile-375x812.png), and
 [tablet](panel-stack-tablet-768x1024.png).
+
+## HintBar v2
+
+Validated the generated HintBar page and measured wrap preview with
+`agent-browser` at 375×812, 768×1024, and 1440×900 plus paper/reduced-motion
+desktop. The preview accepted keyboard focus/navigation; page overflow,
+console errors, failed requests, and broken links were absent.
+
+Designer verdict: **iterated 2 times, pass** — replaced the sparse initial
+story with explicit wide/narrow measurement tiers, then removed a spacer from
+the narrow sample so all three wrapped commands remain visible at 40×8. Key,
+label, and measurement tiers scan cleanly; spacing is deliberate; neutral text
+and phosphor measurement labels remain calm in dark and paper shells.
+Evidence: [desktop](hint-bar-desktop-1440x900.png),
+[paper](hint-bar-paper-1440x900.png),
+[mobile](hint-bar-mobile-375x812.png), and
+[tablet](hint-bar-tablet-768x1024.png).

@@ -208,14 +208,18 @@ let mut state = FormState::new(Some("name"));
 let outcome = state.handle_key(&sections, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));`,
   },
   HintBar: {
-    description: 'A wrapping row of prioritized keyboard hints with semantic styling.',
+    description:
+      'A measured wrapping row of prioritized keyboard hints with semantic styling and an optional leading spacer band.',
     primaryStory: 'hint-bar/wrapped',
     usage: `use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use termrock::{style::DesignSystem, widgets::{Hint, HintBar}};
 
 let system = DesignSystem::default();
 let hints = [Hint { chord: "Enter", label: "open", priority: 0, visible: true }];
-let bar = HintBar::new(&hints, &system).separator(" · ");
+let bar = HintBar::new(&hints, &system)
+    .separator(" · ")
+    .leading_spacer(true);
+let required_rows = bar.measured_height(40);
 let area = Rect::new(0, 0, 40, 2);
 bar.render(area, &mut Buffer::empty(area));`,
   },
