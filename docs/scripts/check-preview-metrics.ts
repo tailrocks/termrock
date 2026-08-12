@@ -499,17 +499,16 @@ function loadPackCells(slug: string, size: string, step: number): {
   return { cells: fr.cells, cols: fr.cols, rows: fr.rows }
 }
 
-// form-responsive: right-edge █ scrollbar + decorative › — must fall back, not (40,1)
+// form-responsive: right-edge █ scrollbar + canonical left focus rail.
 {
   const { cells, cols: fc, rows: fr } = loadPackCells('form-responsive', '40x8', 0)
   const hasBar = cells.some((c) => c.ch === '█')
-  const hasDeco = cells.some((c) => c.ch === '›')
+  const hasFocusRail = cells.some((c) => c.ch === '▌')
   assert(hasBar, 'form pack fixture has █ scrollbar cells')
-  assert(hasDeco, 'form pack fixture has › glyph')
+  assert(hasFocusRail, 'form pack fixture has ▌ focus rail')
   const cur = inferCursorFromFrame(cells, fc, fr, 1, 0)
   assert(cur.x !== 40, `form must not pin to scrollbar col 40, got ${cur.x},${cur.y}`)
-  // No underline/reversed/leftmost-▌ in step0 form → step+pad fallback (1,1)
-  assert(cur.x === 1 && cur.y === 1, `form step0 fallback (1,1) got ${cur.x},${cur.y}`)
+  assert(cur.x === 1 && cur.y === 5, `form step0 focus rail (1,5) got ${cur.x},${cur.y}`)
 }
 
 // agent-workbench: decorative › in transcript — must not sticky (5,2)

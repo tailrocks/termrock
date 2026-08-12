@@ -38495,10 +38495,17 @@ pub termrock::widgets::FieldRowValue::Masked::len: usize
 pub termrock::widgets::FieldRowValue::Plain(&'a str)
 pub termrock::widgets::FieldRowValue::Unset
 pub termrock::widgets::FieldRowValue::Unset::hint: &'a str
+impl termrock::widgets::FieldRowValue<'_>
+pub fn termrock::widgets::FieldRowValue<'_>::is_set(&self) -> bool
+pub fn termrock::widgets::FieldRowValue<'_>::searchable_text(&self) -> &str
 impl<'a> core::clone::Clone for termrock::widgets::FieldRowValue<'a>
 pub fn termrock::widgets::FieldRowValue<'a>::clone(&self) -> termrock::widgets::FieldRowValue<'a>
+impl<'a> core::cmp::Eq for termrock::widgets::FieldRowValue<'a>
+impl<'a> core::cmp::PartialEq for termrock::widgets::FieldRowValue<'a>
+pub fn termrock::widgets::FieldRowValue<'a>::eq(&self, &termrock::widgets::FieldRowValue<'a>) -> bool
 impl<'a> core::fmt::Debug for termrock::widgets::FieldRowValue<'a>
 pub fn termrock::widgets::FieldRowValue<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::StructuralPartialEq for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::marker::Send for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::marker::Sync for termrock::widgets::FieldRowValue<'a>
@@ -38506,6 +38513,8 @@ impl<'a> core::marker::Unpin for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::marker::UnsafeUnpin for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::FieldRowValue<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::FieldRowValue<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::FieldRowValue<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::FieldRowValue<'a>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::FieldRowValue<'a> where U: core::convert::From<T>
 pub fn termrock::widgets::FieldRowValue<'a>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::widgets::FieldRowValue<'a> where U: core::convert::Into<T>
@@ -65193,7 +65202,7 @@ pub termrock::widgets::Field::required: bool
 pub termrock::widgets::Field::show_optional: bool
 pub termrock::widgets::Field::status: termrock::widgets::FieldStatus<'a>
 pub termrock::widgets::Field::touched: bool
-pub termrock::widgets::Field::value: &'a str
+pub termrock::widgets::Field::value: termrock::widgets::FieldRowValue<'a>
 impl<'a, Id> termrock::widgets::Field<'a, Id>
 pub const fn termrock::widgets::Field<'a, Id>::can_activate(&self) -> bool
 pub const fn termrock::widgets::Field<'a, Id>::description(self, &'a str) -> Self
@@ -65202,6 +65211,7 @@ pub const fn termrock::widgets::Field<'a, Id>::enabled(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::error(self, &'a str) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::help(self, &'a str) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::is_invalid(&self) -> bool
+pub fn termrock::widgets::Field<'a, Id>::masked(self, usize) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::new(Id, &'a str, &'a str) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::optional(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::pending(self, &'a str) -> Self
@@ -65209,6 +65219,7 @@ pub const fn termrock::widgets::Field<'a, Id>::read_only(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::required(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::status(self, termrock::widgets::FieldStatus<'a>) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::touched(self, bool) -> Self
+pub fn termrock::widgets::Field<'a, Id>::unset(self, &'a str) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::warning(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Field<'a, Id>
 pub fn termrock::widgets::Field<'a, Id>::clone(&self) -> termrock::widgets::Field<'a, Id>
@@ -65218,7 +65229,6 @@ pub fn termrock::widgets::Field<'a, Id>::eq(&self, &termrock::widgets::Field<'a,
 impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Field<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Field<'a, Id>
 pub fn termrock::widgets::Field<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Field<'a, Id>
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Field<'a, Id> where Id: core::marker::Freeze
 impl<'a, Id> core::marker::Send for termrock::widgets::Field<'a, Id> where Id: core::marker::Send
 impl<'a, Id> core::marker::Sync for termrock::widgets::Field<'a, Id> where Id: core::marker::Sync
@@ -65318,6 +65328,7 @@ pub const fn termrock::widgets::FieldRow<'a>::annotation(self, &'a str) -> Self
 pub const fn termrock::widgets::FieldRow<'a>::annotation_italic(self, bool) -> Self
 pub const fn termrock::widgets::FieldRow<'a>::enabled(self, bool) -> Self
 pub const fn termrock::widgets::FieldRow<'a>::hovered(self, bool) -> Self
+pub const fn termrock::widgets::FieldRow<'a>::invalid(self, bool) -> Self
 pub fn termrock::widgets::FieldRow<'a>::label_cols(self, u16) -> Self
 pub fn termrock::widgets::FieldRow<'a>::label_cols_for<'b>(impl core::iter::traits::iterator::Iterator<Item = &'b str>) -> u16
 pub const fn termrock::widgets::FieldRow<'a>::marker(self, &'a str) -> Self
@@ -65429,7 +65440,6 @@ pub fn termrock::widgets::Fieldset<'a, Id>::eq(&self, &termrock::widgets::Fields
 impl<'a, Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Fieldset<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Fieldset<'a, Id>
 pub fn termrock::widgets::Fieldset<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a, Id: core::marker::Copy> core::marker::Copy for termrock::widgets::Fieldset<'a, Id>
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Fieldset<'a, Id>
 impl<'a, Id> core::marker::Send for termrock::widgets::Fieldset<'a, Id> where Id: core::marker::Sync
 impl<'a, Id> core::marker::Sync for termrock::widgets::Fieldset<'a, Id> where Id: core::marker::Sync
