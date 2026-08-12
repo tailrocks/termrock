@@ -5,10 +5,10 @@ component: Transcript
 demo: transcript/basic
 interaction: scrolling-virtualization
 actions:
-  - 'wheel to scroll'
-  - '↑↓ navigate'
+  - "wheel to scroll"
+  - "↑↓ navigate"
 expectedOutcomes:
-  - 'The preview status reports the typed Rust outcome after each accepted action.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/transcript.rs
 ---
 
@@ -79,7 +79,7 @@ The demo owns ephemeral widget state between events. The widget owns painted geo
 
 ## Test recipe
 
-Mount `transcript/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `transcript/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

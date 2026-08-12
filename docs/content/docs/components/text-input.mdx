@@ -5,12 +5,12 @@ component: TextInput
 demo: text-input/basic
 interaction: editor-form
 actions:
-  - 'type Unicode'
-  - 'paste'
-  - '←→ move caret'
-  - 'click place caret'
+  - "type Unicode"
+  - "paste"
+  - "←→ move caret"
+  - "click place caret"
 expectedOutcomes:
-  - 'Text, caret position, and the latest edit outcome update in the same TextInputState.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/text_input.rs
 ---
 

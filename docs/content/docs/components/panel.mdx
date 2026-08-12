@@ -5,11 +5,12 @@ component: Panel
 demo: panel/focused
 interaction: activation
 actions:
-  - 'arrow keys'
-  - 'Enter activate'
-  - 'click'
+  - "Enter/Space toggle"
+  - "← collapse"
+  - "→ expand"
+  - "click header/body"
 expectedOutcomes:
-  - 'Focus movement changes the focused panel; Enter or click reports the activated panel.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/panel.rs
 ---
 

@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -272,7 +273,7 @@ export function loadPreviewRuntime(): Promise<PreviewRuntime> {
 export function shouldCapturePreviewKey(
   key: string,
   descriptor: DemoDescriptor | null,
-  capturesTextInput = false,
+  _capturesTextInput = false,
 ): boolean {
   if (!descriptor?.interactive) return false
   const navigation = new Set([
@@ -292,13 +293,7 @@ export function shouldCapturePreviewKey(
     ' ',
   ])
   if (navigation.has(key)) return true
-  return (
-    key.length === 1 &&
-    (capturesTextInput ||
-      ['editor-form', 'activation', 'selection-navigation'].includes(
-        descriptor.interactionKind,
-      ))
-  )
+  return key.length === 1
 }
 
 export function pointerCell(
@@ -623,6 +618,11 @@ export function TerminalPreview({
   const canInteract = Boolean(interactive && descriptor?.interactive)
   const animated = descriptor?.interactionKind === 'timed-state'
   const capturesTextInput = Boolean(update?.capturesTextInput)
+
+  useLayoutEffect(() => {
+    if (!capturesTextInput || !focused) return
+    textSinkRef.current?.focus({ preventScroll: true })
+  }, [capturesTextInput, focused])
 
   const keyEvent = (
     event: ReactKeyboardEvent,

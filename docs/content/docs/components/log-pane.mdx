@@ -5,10 +5,11 @@ component: LogPane
 demo: log-pane/follow
 interaction: scrolling-virtualization
 actions:
-  - 'wheel to scroll'
-  - '↑↓ navigate'
+  - "↑↓/PageUp/PageDown scroll"
+  - "End follow tail"
+  - "wheel scroll"
 expectedOutcomes:
-  - 'The preview status reports the typed Rust outcome after each accepted action.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/log_pane.rs
 ---
 
@@ -92,7 +93,7 @@ The demo owns ephemeral widget state between events. The widget owns painted geo
 
 ## Test recipe
 
-Mount `log-pane/follow`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `log-pane/follow`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

@@ -126,17 +126,31 @@ use termrock::{
 };
 
 use crate::interactors::{
-    AccordionInteractor, ActionLinkInteractor, AlertDialogInteractor, ButtonInteractor,
-    CheckboxInteractor, ChoiceDialogInteractor, CollapsibleInteractor, CommandPaletteInteractor,
-    DesignInspectorInteractor, DialogInteractor, DropdownMenuInteractor, FormInteractor,
-    FormWizardInteractor, ListInteractor, LogPaneInteractor, MenuInteractor, MultiSelectInteractor,
-    NumberInputInteractor, PaginationInteractor, PanelInteractor, PasswordInputInteractor,
-    PatternAppInteractor, PickerInteractor, PopoverInteractor, PromptComposerInteractor,
-    RangeSliderInteractor, ResizablePanelGroupInteractor, SegmentedControlInteractor,
-    SelectInteractor, SidebarInteractor, SliderInteractor, SplitPaneInteractor, StaticStory,
-    StoryInteraction, SwitchInteractor, TableInteractor, TabsInteractor, TextAreaInteractor,
-    TextInputInteractor, ThemePickerInteractor, ToastInteractor, ToggleGroupInteractor,
-    ToggleInteractor, TranscriptInteractor, TreeInteractor, TreeTableInteractor,
+    AccordionInteractor, ActionLinkInteractor, AlertDialogInteractor, AlertInteractor,
+    BadgeInteractor, BreadcrumbsInteractor, ButtonGroupInteractor, ButtonInteractor,
+    CheckboxInteractor, CheckpointTimelineInteractor, ChipInteractor, ChoiceDialogInteractor,
+    CodeBlockInteractor, CollapsibleInteractor, ComboboxInteractor, CommandPaletteInteractor,
+    CompletionMenuInteractor, DataTableInteractor, DateTimePickerInteractor,
+    DesignInspectorInteractor, DetailTableInteractor, DiagnosticViewInteractor, DialogInteractor,
+    DiffReviewInteractor, DiffViewInteractor, DrawerInteractor, DropdownMenuInteractor,
+    EmptyStateInteractor, ErrorStateInteractor, EventStreamInteractor, FilePickerInteractor,
+    FormInteractor, FormWizardInteractor, FullscreenViewerInteractor, HexViewerInteractor,
+    HistoryPickerInteractor, IconButtonInteractor, JumpOverlayInteractor, KeyValueListInteractor,
+    KeyValueTableInteractor, KeybindingRecorderInteractor, KeyboardHelpInteractor, LinkInteractor,
+    ListInteractor, LogPaneInteractor, LogStreamInteractor, MarkdownViewInteractor,
+    MenuBarInteractor, MenuInteractor, ModeRibbonInteractor, MultiSelectInteractor,
+    NavigationListInteractor, NotificationCenterInteractor, NumberInputInteractor,
+    ObjectInspectorInteractor, OfflineBannerInteractor, PaginationInteractor, PanelInteractor,
+    PasswordInputInteractor, PathInputInteractor, PatternAppInteractor, PermissionPromptInteractor,
+    PickerInteractor, PopoverInteractor, PreviewCardInteractor, ProgressStepsInteractor,
+    PromptComposerInteractor, QuestionFlowInteractor, QuickOpenInteractor, RadioGroupInteractor,
+    RangeSliderInteractor, ResizablePanelGroupInteractor, SearchInputInteractor, SectionInteractor,
+    SegmentedControlInteractor, SelectInteractor, SidebarInteractor, SliderInteractor,
+    SplitPaneInteractor, StaticStory, StepperInteractor, StoryInteraction, SwitchInteractor,
+    TableInteractor, TabsInteractor, TagInteractor, TerminalOutputInteractor, TextAreaInteractor,
+    TextInputInteractor, ThemePickerInteractor, TimelineInteractor, ToastInteractor,
+    ToggleGroupInteractor, ToggleInteractor, TokenFieldInteractor, ToolbarInteractor,
+    TranscriptInteractor, TreeInteractor, TreeNavigationInteractor, TreeTableInteractor,
     VirtualGridInteractor, VirtualListInteractor,
 };
 
@@ -433,6 +447,80 @@ fn virtual_list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(VirtualListInteractor::new())
 }
 
+macro_rules! interactor_factory {
+    ($name:ident, $interactor:ty) => {
+        fn $name(_render: RenderFn) -> Box<dyn StoryInteraction> {
+            Box::new(<$interactor>::new())
+        }
+    };
+}
+
+interactor_factory!(search_input_interactor, SearchInputInteractor);
+interactor_factory!(path_input_interactor, PathInputInteractor);
+interactor_factory!(combobox_interactor, ComboboxInteractor);
+interactor_factory!(completion_menu_interactor, CompletionMenuInteractor);
+interactor_factory!(data_table_interactor, DataTableInteractor);
+interactor_factory!(date_time_picker_interactor, DateTimePickerInteractor);
+interactor_factory!(file_picker_interactor, FilePickerInteractor);
+interactor_factory!(quick_open_interactor, QuickOpenInteractor);
+interactor_factory!(menu_bar_interactor, MenuBarInteractor);
+interactor_factory!(tree_navigation_interactor, TreeNavigationInteractor);
+interactor_factory!(notification_center_interactor, NotificationCenterInteractor);
+interactor_factory!(alert_interactor, AlertInteractor);
+interactor_factory!(badge_interactor, BadgeInteractor);
+interactor_factory!(breadcrumbs_interactor, BreadcrumbsInteractor);
+interactor_factory!(button_group_interactor, ButtonGroupInteractor);
+interactor_factory!(chip_interactor, ChipInteractor);
+interactor_factory!(tag_interactor, TagInteractor);
+interactor_factory!(icon_button_interactor, IconButtonInteractor);
+interactor_factory!(radio_group_interactor, RadioGroupInteractor);
+interactor_factory!(section_interactor, SectionInteractor);
+interactor_factory!(toolbar_interactor, ToolbarInteractor);
+interactor_factory!(navigation_list_interactor, NavigationListInteractor);
+interactor_factory!(link_interactor, LinkInteractor);
+interactor_factory!(code_block_interactor, CodeBlockInteractor);
+interactor_factory!(detail_table_interactor, DetailTableInteractor);
+interactor_factory!(diagnostic_view_interactor, DiagnosticViewInteractor);
+interactor_factory!(diff_view_interactor, DiffViewInteractor);
+interactor_factory!(event_stream_interactor, EventStreamInteractor);
+interactor_factory!(hex_viewer_interactor, HexViewerInteractor);
+interactor_factory!(history_picker_interactor, HistoryPickerInteractor);
+interactor_factory!(keyboard_help_interactor, KeyboardHelpInteractor);
+interactor_factory!(log_stream_interactor, LogStreamInteractor);
+interactor_factory!(markdown_view_interactor, MarkdownViewInteractor);
+interactor_factory!(object_inspector_interactor, ObjectInspectorInteractor);
+interactor_factory!(terminal_output_interactor, TerminalOutputInteractor);
+interactor_factory!(timeline_interactor, TimelineInteractor);
+interactor_factory!(progress_steps_interactor, ProgressStepsInteractor);
+interactor_factory!(stepper_interactor, StepperInteractor);
+interactor_factory!(keybinding_recorder_interactor, KeybindingRecorderInteractor);
+interactor_factory!(question_flow_interactor, QuestionFlowInteractor);
+interactor_factory!(token_field_interactor, TokenFieldInteractor);
+interactor_factory!(permission_prompt_interactor, PermissionPromptInteractor);
+interactor_factory!(jump_overlay_interactor, JumpOverlayInteractor);
+interactor_factory!(empty_state_interactor, EmptyStateInteractor);
+interactor_factory!(error_state_interactor, ErrorStateInteractor);
+interactor_factory!(fullscreen_viewer_interactor, FullscreenViewerInteractor);
+interactor_factory!(mode_ribbon_interactor, ModeRibbonInteractor);
+interactor_factory!(offline_banner_interactor, OfflineBannerInteractor);
+interactor_factory!(preview_card_interactor, PreviewCardInteractor);
+interactor_factory!(checkpoint_timeline_interactor, CheckpointTimelineInteractor);
+interactor_factory!(diff_review_interactor, DiffReviewInteractor);
+interactor_factory!(key_value_list_interactor, KeyValueListInteractor);
+interactor_factory!(key_value_table_interactor, KeyValueTableInteractor);
+
+fn drawer_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DrawerInteractor::drawer())
+}
+
+fn sheet_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DrawerInteractor::sheet())
+}
+
+fn offline_surface_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(OfflineBannerInteractor::surface())
+}
+
 /// Return the full shared story catalog.
 pub fn stories() -> Vec<Story> {
     let mut catalog = vec![
@@ -696,7 +784,8 @@ pub fn stories() -> Vec<Story> {
             48,
             8,
             section_quiet_story,
-        ),
+        )
+        .with_interactor(section_interactor),
         Story::new(
             "section/emphasized",
             "Section emphasized",
@@ -859,7 +948,8 @@ pub fn stories() -> Vec<Story> {
             48,
             3,
             button_group_dialog_story,
-        ),
+        )
+        .with_interactor(button_group_interactor),
         Story::new(
             "button-group/connected",
             "ButtonGroup connected",
@@ -1061,7 +1151,8 @@ pub fn stories() -> Vec<Story> {
             64,
             1,
             toolbar_basic_story,
-        ),
+        )
+        .with_interactor(toolbar_interactor),
         Story::new(
             "toolbar/overflow",
             "Toolbar overflow",
@@ -1134,7 +1225,8 @@ pub fn stories() -> Vec<Story> {
             28,
             12,
             navigation_list_basic_story,
-        ),
+        )
+        .with_interactor(navigation_list_interactor),
         Story::new(
             "pagination/full",
             "Pagination full",
@@ -1189,7 +1281,8 @@ pub fn stories() -> Vec<Story> {
             72,
             2,
             stepper_horizontal_story,
-        ),
+        )
+        .with_interactor(stepper_interactor),
         Story::new(
             "stepper/vertical",
             "Stepper vertical",
@@ -1243,7 +1336,8 @@ pub fn stories() -> Vec<Story> {
             64,
             16,
             history_picker_basic,
-        ),
+        )
+        .with_interactor(history_picker_interactor),
         Story::new(
             "history-picker/search",
             "HistoryPicker search",
@@ -1293,11 +1387,12 @@ pub fn stories() -> Vec<Story> {
             "keyboard-help/footer",
             "KeyboardHelp footer",
             "KeyboardHelp",
-            "Compact footer generated from live keymap.",
+            "Compact footer opens a categorized, searchable help dialog.",
             72,
-            1,
+            16,
             keyboard_help_footer,
-        ),
+        )
+        .with_interactor(keyboard_help_interactor),
         Story::new(
             "keyboard-help/modal",
             "KeyboardHelp modal",
@@ -1424,7 +1519,8 @@ pub fn stories() -> Vec<Story> {
             64,
             3,
             menu_bar_basic_story,
-        ),
+        )
+        .with_interactor(menu_bar_interactor),
         Story::new(
             "menu-bar/open",
             "MenuBar open cascade",
@@ -1487,7 +1583,8 @@ pub fn stories() -> Vec<Story> {
             48,
             1,
             breadcrumbs_path_story,
-        ),
+        )
+        .with_interactor(breadcrumbs_interactor),
         Story::new(
             "breadcrumbs/collapsed",
             "Breadcrumbs collapsed",
@@ -1532,7 +1629,8 @@ pub fn stories() -> Vec<Story> {
             36,
             14,
             tree_navigation_project_story,
-        ),
+        )
+        .with_interactor(tree_navigation_interactor),
         Story::new(
             "tree-navigation/schema",
             "TreeNavigation schema",
@@ -1778,7 +1876,8 @@ pub fn stories() -> Vec<Story> {
             48,
             12,
             progress_steps_pipeline_story,
-        ),
+        )
+        .with_interactor(progress_steps_interactor),
         Story::new(
             "progress-steps/agent",
             "ProgressSteps agent plan",
@@ -1945,7 +2044,8 @@ pub fn stories() -> Vec<Story> {
             54,
             5,
             detail_table,
-        ),
+        )
+        .with_interactor(detail_table_interactor),
         Story::new(
             "object-inspector/flat",
             "Object inspector flat",
@@ -1954,7 +2054,8 @@ pub fn stories() -> Vec<Story> {
             48,
             6,
             object_inspector_flat,
-        ),
+        )
+        .with_interactor(object_inspector_interactor),
         Story::new(
             "object-inspector/nested",
             "Object inspector nested",
@@ -2035,7 +2136,8 @@ pub fn stories() -> Vec<Story> {
             72,
             10,
             log_stream_follow,
-        ),
+        )
+        .with_interactor(log_stream_interactor),
         Story::new(
             "log-stream/structured",
             "Log stream detailed",
@@ -2098,7 +2200,8 @@ pub fn stories() -> Vec<Story> {
             80,
             12,
             event_stream_basic,
-        ),
+        )
+        .with_interactor(event_stream_interactor),
         Story::new(
             "event-stream/burst",
             "EventStream burst",
@@ -2143,7 +2246,8 @@ pub fn stories() -> Vec<Story> {
             80,
             16,
             diff_review_hunks,
-        ),
+        )
+        .with_interactor(diff_review_interactor),
         Story::new(
             "diff-review/decisions",
             "Diff review decisions",
@@ -2206,7 +2310,8 @@ pub fn stories() -> Vec<Story> {
             72,
             10,
             diagnostic_list,
-        ),
+        )
+        .with_interactor(diagnostic_view_interactor),
         Story::new(
             "diagnostic/full",
             "Diagnostic code frame",
@@ -2269,7 +2374,8 @@ pub fn stories() -> Vec<Story> {
             72,
             14,
             terminal_output_running,
-        ),
+        )
+        .with_interactor(terminal_output_interactor),
         Story::new(
             "terminal-output/failed",
             "TerminalOutput failed",
@@ -2341,7 +2447,8 @@ pub fn stories() -> Vec<Story> {
             72,
             14,
             hex_viewer_basic,
-        ),
+        )
+        .with_interactor(hex_viewer_interactor),
         Story::new(
             "hex-viewer/selection",
             "HexViewer selection",
@@ -2989,7 +3096,8 @@ pub fn stories() -> Vec<Story> {
             56,
             12,
             completion_menu_basic,
-        ),
+        )
+        .with_interactor(completion_menu_interactor),
         Story::new(
             "completion-menu/loading",
             "Completion menu loading",
@@ -3744,7 +3852,8 @@ pub fn stories() -> Vec<Story> {
             72,
             12,
             diff_basic,
-        ),
+        )
+        .with_interactor(diff_view_interactor),
         Story::new(
             "diff/split",
             "Diff view split",
@@ -3817,7 +3926,8 @@ pub fn stories() -> Vec<Story> {
             56,
             18,
             notification_center_drawer_story,
-        ),
+        )
+        .with_interactor(notification_center_interactor),
         Story::new(
             "notification-center/full-page",
             "NotificationCenter full page",
@@ -4042,7 +4152,8 @@ pub fn stories() -> Vec<Story> {
             40,
             10,
             empty_state,
-        ),
+        )
+        .with_interactor(empty_state_interactor),
         Story::new(
             "empty-state/first-use",
             "EmptyState first-use",
@@ -4150,7 +4261,8 @@ pub fn stories() -> Vec<Story> {
             56,
             1,
             connectivity_banner_story,
-        ),
+        )
+        .with_interactor(offline_banner_interactor),
         Story::new(
             "connectivity/reconnecting",
             "Reconnecting full",
@@ -4159,7 +4271,8 @@ pub fn stories() -> Vec<Story> {
             52,
             14,
             connectivity_reconnecting_story,
-        ),
+        )
+        .with_interactor(offline_surface_interactor),
         Story::new(
             "connectivity/auth",
             "Auth required",
@@ -4213,7 +4326,8 @@ pub fn stories() -> Vec<Story> {
             48,
             12,
             error_state_network_story,
-        ),
+        )
+        .with_interactor(error_state_interactor),
         Story::new(
             "error-state/validation",
             "ErrorState validation",
@@ -4330,7 +4444,8 @@ pub fn stories() -> Vec<Story> {
             40,
             6,
             jump_overlay,
-        ),
+        )
+        .with_interactor(jump_overlay_interactor),
         Story::new(
             "jump-mode/multi",
             "JumpMode multi-key",
@@ -4339,7 +4454,8 @@ pub fn stories() -> Vec<Story> {
             48,
             14,
             jump_mode_multi,
-        ),
+        )
+        .with_interactor(jump_overlay_interactor),
         Story::new(
             "jump-mode/filter",
             "JumpMode role filter",
@@ -4448,7 +4564,8 @@ pub fn stories() -> Vec<Story> {
             72,
             18,
             quick_open_basic,
-        ),
+        )
+        .with_interactor(quick_open_interactor),
         Story::new(
             "quick-open/symbols",
             "QuickOpen symbols",
@@ -4511,7 +4628,8 @@ pub fn stories() -> Vec<Story> {
             48,
             6,
             code_block,
-        ),
+        )
+        .with_interactor(code_block_interactor),
         Story::new(
             "code-block/no-color",
             "CodeBlock no-color",
@@ -4556,7 +4674,8 @@ pub fn stories() -> Vec<Story> {
             48,
             14,
             markdown_view,
-        ),
+        )
+        .with_interactor(markdown_view_interactor),
         Story::new(
             "markdown-view/streaming",
             "Markdown streaming fence",
@@ -4764,7 +4883,8 @@ pub fn stories() -> Vec<Story> {
             64,
             10,
             timeline,
-        ),
+        )
+        .with_interactor(timeline_interactor),
         Story::new(
             "timeline/rail",
             "Timeline rail",
@@ -4809,7 +4929,8 @@ pub fn stories() -> Vec<Story> {
             64,
             16,
             checkpoint_timeline_story,
-        ),
+        )
+        .with_interactor(checkpoint_timeline_interactor),
         Story::new(
             "checkpoint-timeline/preview",
             "CheckpointTimeline preview",
@@ -5091,7 +5212,8 @@ pub fn stories() -> Vec<Story> {
             12,
             3,
             button_icon_story,
-        ),
+        )
+        .with_interactor(icon_button_interactor),
         Story::new(
             "icon-button/toolbar",
             "IconButton toolbar",
@@ -5348,7 +5470,8 @@ pub fn stories() -> Vec<Story> {
             44,
             8,
             radio_group_basic_story,
-        ),
+        )
+        .with_interactor(radio_group_interactor),
         Story::new(
             "radio-group/horizontal",
             "RadioGroup horizontal",
@@ -5384,7 +5507,8 @@ pub fn stories() -> Vec<Story> {
             60,
             10,
             data_table_story,
-        ),
+        )
+        .with_interactor(data_table_interactor),
         Story::new(
             "data-table/rows-10",
             "DataTable 10 rows",
@@ -5529,7 +5653,8 @@ pub fn stories() -> Vec<Story> {
             36,
             2,
             tag_removable_story,
-        ),
+        )
+        .with_interactor(tag_interactor),
         Story::new(
             "chip/filter",
             "Chip filter",
@@ -5538,7 +5663,8 @@ pub fn stories() -> Vec<Story> {
             48,
             3,
             chip_filter_story,
-        ),
+        )
+        .with_interactor(chip_interactor),
         Story::new(
             "chip/error-loading",
             "Chip error and loading",
@@ -6078,7 +6204,8 @@ pub fn stories() -> Vec<Story> {
             48,
             8,
             badge_story,
-        ),
+        )
+        .with_interactor(badge_interactor),
         Story::new(
             "badge/table",
             "Badge in table context",
@@ -6150,7 +6277,8 @@ pub fn stories() -> Vec<Story> {
             52,
             8,
             alert_danger_story,
-        ),
+        )
+        .with_interactor(alert_interactor),
         Story::new(
             "alert/banner",
             "Alert banner",
@@ -6177,7 +6305,8 @@ pub fn stories() -> Vec<Story> {
             28,
             14,
             drawer_story,
-        ),
+        )
+        .with_interactor(drawer_interactor),
         Story::new(
             "drawer/left",
             "Drawer left",
@@ -6195,7 +6324,8 @@ pub fn stories() -> Vec<Story> {
             48,
             10,
             drawer_sheet_story,
-        ),
+        )
+        .with_interactor(sheet_interactor),
         Story::new(
             "drawer/non-modal",
             "Drawer non-modal",
@@ -6213,7 +6343,8 @@ pub fn stories() -> Vec<Story> {
             56,
             18,
             fullscreen_viewer_code_story,
-        ),
+        )
+        .with_interactor(fullscreen_viewer_interactor),
         Story::new(
             "fullscreen-viewer/diff",
             "FullscreenViewer diff",
@@ -6267,7 +6398,8 @@ pub fn stories() -> Vec<Story> {
             44,
             12,
             preview_card_file_story,
-        ),
+        )
+        .with_interactor(preview_card_interactor),
         Story::new(
             "preview-card/command",
             "PreviewCard command",
@@ -6618,7 +6750,8 @@ pub fn stories() -> Vec<Story> {
             48,
             12,
             key_value_list_basic_story,
-        ),
+        )
+        .with_interactor(key_value_list_interactor),
         Story::new(
             "key-value-list/dense",
             "KeyValueList dense",
@@ -6663,7 +6796,8 @@ pub fn stories() -> Vec<Story> {
             56,
             3,
             link_basic_story,
-        ),
+        )
+        .with_interactor(link_interactor),
         Story::new(
             "link/no-hyperlink",
             "Link no-hyperlink",
@@ -7448,7 +7582,8 @@ pub fn stories() -> Vec<Story> {
             48,
             10,
             permission_prompt_story,
-        ),
+        )
+        .with_interactor(permission_prompt_interactor),
         Story::new(
             "permission-prompt/low-read",
             "Permission low-risk read",
@@ -7484,7 +7619,8 @@ pub fn stories() -> Vec<Story> {
             48,
             3,
             mode_ribbon_story,
-        ),
+        )
+        .with_interactor(mode_ribbon_interactor),
         Story::new(
             "plan-review/basic",
             "Plan review",
@@ -7556,7 +7692,8 @@ pub fn stories() -> Vec<Story> {
             52,
             14,
             question_flow_story,
-        ),
+        )
+        .with_interactor(question_flow_interactor),
         Story::new(
             "question-flow/review",
             "QuestionFlow review",
@@ -9575,7 +9712,8 @@ pub fn stories() -> Vec<Story> {
             72,
             14,
             key_value_table_http,
-        ),
+        )
+        .with_interactor(key_value_table_interactor),
         Story::new(
             "key-value-table/database",
             "KeyValueTable database",
@@ -9731,7 +9869,8 @@ pub fn stories() -> Vec<Story> {
             48,
             2,
             search_input_basic_story,
-        ),
+        )
+        .with_interactor(search_input_interactor),
         Story::new(
             "search-input/searching",
             "Search searching",
@@ -9767,7 +9906,8 @@ pub fn stories() -> Vec<Story> {
             52,
             2,
             path_input_basic_story,
-        ),
+        )
+        .with_interactor(path_input_interactor),
         Story::new(
             "path-input/missing",
             "Path missing",
@@ -9803,7 +9943,8 @@ pub fn stories() -> Vec<Story> {
             52,
             2,
             token_field_basic_story,
-        ),
+        )
+        .with_interactor(token_field_interactor),
         Story::new(
             "token-field/overflow",
             "Token field overflow",
@@ -9913,7 +10054,8 @@ pub fn stories() -> Vec<Story> {
             48,
             8,
             keybinding_recorder_idle_story,
-        ),
+        )
+        .with_interactor(keybinding_recorder_interactor),
         Story::new(
             "keybinding-recorder/recording",
             "KeybindingRecorder recording",
@@ -9949,7 +10091,8 @@ pub fn stories() -> Vec<Story> {
             48,
             16,
             date_time_picker_date_story,
-        ),
+        )
+        .with_interactor(date_time_picker_interactor),
         Story::new(
             "date-time-picker/time",
             "DateTimePicker time",
@@ -9985,7 +10128,8 @@ pub fn stories() -> Vec<Story> {
             72,
             18,
             file_picker_unix_story,
-        ),
+        )
+        .with_interactor(file_picker_interactor),
         Story::new(
             "file-picker/windows",
             "FilePicker Windows",
@@ -10021,7 +10165,8 @@ pub fn stories() -> Vec<Story> {
             36,
             2,
             combobox_basic_story,
-        ),
+        )
+        .with_interactor(combobox_interactor),
         Story::new(
             "combobox/open",
             "Combobox open",
@@ -13735,7 +13880,7 @@ fn object_inspector_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &Desig
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn log_stream_sample_lines() -> [LogLine<'static>; 8] {
+pub(crate) fn log_stream_sample_lines() -> [LogLine<'static>; 8] {
     [
         LogLine::new("1", LogLevel::Info, "scheduler start")
             .timestamp("12:00:00")
@@ -13835,7 +13980,7 @@ fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn event_stream_sample() -> Vec<StreamEvent<'static, &'static str>> {
+pub(crate) fn event_stream_sample() -> Vec<StreamEvent<'static, &'static str>> {
     vec![
         StreamEvent::group("ns", "kube-system"),
         StreamEvent::with_id("e1", "Normal", "12:01:00", "Scheduled pod api-7")
@@ -13937,7 +14082,7 @@ fn event_stream_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn diff_review_sample() -> (
+pub(crate) fn diff_review_sample() -> (
     Vec<DiffLine<'static>>,
     [DiffHunk; 2],
     [DiffReviewFileRow<'static>; 2],
@@ -14211,7 +14356,7 @@ fn diagnostic_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
+pub(crate) fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
     [
         TerminalLine::system("s0", "spawned pid 4242"),
         TerminalLine::stdout("o1", "running 3 tests"),
@@ -14329,7 +14474,7 @@ fn terminal_output_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn hex_viewer_sample() -> Vec<u8> {
+pub(crate) fn hex_viewer_sample() -> Vec<u8> {
     let mut v: Vec<u8> = (0..48u8).collect();
     v.extend_from_slice(b"Hello, xxd!\n");
     v.extend_from_slice("region🧪".as_bytes());
@@ -17509,7 +17654,7 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
-fn diff_sample_lines() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
+pub(crate) fn diff_sample_lines() -> (Vec<DiffLine<'static>>, [DiffHunk; 2]) {
     let lines = vec![
         DiffLine::file_header("f", "diff --git a/main.rs b/main.rs").file_id("main.rs"),
         DiffLine::hunk_header("h0", "@@ -1,4 +1,5 @@")

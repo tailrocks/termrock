@@ -162,6 +162,86 @@ test('spinner advances only from host-injected time', async ({ page }) => {
   expect(after.equals(before)).toBeFalsy()
 })
 
+test('alert dismissal persists until the user explicitly reopens it', async ({ page }) => {
+  const figure = await preview(page, 'alert', 'alert/danger')
+  await focusPreview(figure)
+  await page.keyboard.press('Escape')
+  await expect(figure).toHaveAttribute('data-preview-outcome', 'Alert: Dismissed')
+  await expect(figure.locator('[data-termrock-hints="1"]')).toContainText('O show alert')
+  await page.keyboard.press('o')
+  await expect(figure).toHaveAttribute('data-preview-outcome', 'Alert: Shown')
+})
+
+test('drawer and fullscreen viewer use trigger-open-close lifecycles', async ({ page }) => {
+  const drawer = await preview(page, 'drawer', 'drawer/basic')
+  await focusPreview(drawer)
+  await page.keyboard.press('Enter')
+  await expect(drawer).toHaveAttribute('data-preview-outcome', 'Drawer: Opened')
+  await page.keyboard.press('Escape')
+  await expect(drawer).toHaveAttribute('data-preview-outcome', 'Drawer: Closed')
+
+  const viewer = await preview(page, 'fullscreen-viewer', 'fullscreen-viewer/basic')
+  await focusPreview(viewer)
+  await page.keyboard.press('Enter')
+  await expect(viewer).toHaveAttribute('data-preview-outcome', /FullscreenViewer: Opened/)
+  await page.keyboard.press('Escape')
+  await expect(viewer).toHaveAttribute('data-preview-outcome', /FullscreenViewer: (Closed|Demoted)/)
+})
+
+test('checkpoint and diff review expose persistent navigation outcomes', async ({ page }) => {
+  const checkpoints = await preview(
+    page,
+    'checkpoint-timeline',
+    'checkpoint-timeline/basic',
+  )
+  await focusPreview(checkpoints)
+  await page.keyboard.press('ArrowUp')
+  await expect(checkpoints).toHaveAttribute(
+    'data-preview-outcome',
+    /CheckpointTimeline: Selected/,
+  )
+  await page.keyboard.press('Enter')
+  await expect(checkpoints).toHaveAttribute(
+    'data-preview-outcome',
+    /CheckpointTimeline: PreviewOpened/,
+  )
+
+  const review = await preview(page, 'diff-review', 'diff-review/hunks')
+  await focusPreview(review)
+  await page.keyboard.press('ArrowDown')
+  await expect(review).toHaveAttribute('data-preview-outcome', /DiffReview: /)
+  await page.keyboard.press(' ')
+  await expect(review).toHaveAttribute('data-preview-outcome', /SelectionChanged/)
+})
+
+test('key-value filtering and permission decisions remain real state', async ({ page }) => {
+  const table = await preview(page, 'key-value-table', 'key-value-table/http')
+  await focusPreview(table)
+  await page.keyboard.press('/')
+  await page.keyboard.type('host')
+  await expect(table).toHaveAttribute(
+    'data-preview-outcome',
+    /KeyValueTable: FilterChanged\("host"\)/,
+  )
+
+  const permission = await preview(
+    page,
+    'permission-prompt',
+    'permission-prompt/basic',
+  )
+  await focusPreview(permission)
+  await page.keyboard.press('Enter')
+  await expect(permission).toHaveAttribute('data-preview-outcome', /PermissionPrompt: Decided/)
+  await expect(permission.locator('[data-termrock-hints="1"]')).toContainText(
+    'O enqueue request',
+  )
+  await page.keyboard.press('o')
+  await expect(permission).toHaveAttribute(
+    'data-preview-outcome',
+    'PermissionPrompt: Enqueued',
+  )
+})
+
 test('passive paint does not trap page input or invent a cursor', async ({ page }) => {
   const figure = await preview(page, 'accent-rail', 'accent-rail/actors')
   await expect(figure).toHaveAttribute('data-preview-interactive', 'false')

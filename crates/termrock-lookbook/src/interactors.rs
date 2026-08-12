@@ -3,6 +3,17 @@
 
 //! Stateful demo interactors implemented only through public TermRock APIs.
 
+mod catalog;
+mod extended;
+mod remaining;
+mod viewers;
+mod workflows;
+pub(crate) use catalog::*;
+pub(crate) use extended::*;
+pub(crate) use remaining::*;
+pub(crate) use viewers::*;
+pub(crate) use workflows::*;
+
 use ratatui::text::Line;
 use ratatui::{
     Frame,
@@ -13,7 +24,7 @@ use std::num::NonZeroU16;
 use termrock::{
     input::{Event, KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{Outcome, OverlaySize},
-    style::{BorderShape, ColorCapability, Density, DesignSystem, Role, RolePalette},
+    style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
         Accordion, AccordionItem, AccordionOutcome, AccordionState, Action, ActionLink,
         ActionLinkOutcome, ActivationOutcome, AlertDialog, AlertDialogOutcome, AlertDialogState,
@@ -28,14 +39,14 @@ use termrock::{
         Menu, MenuItem, MenuNode, MenuOutcome, MenuState, ModeIndicator, ModelIndicator,
         MultiSelect, MultiSelectOutcome, MultiSelectState, NavItem, NumberConstraints, NumberInput,
         NumberInputOutcome, NumberInputState, PageTotal, Pagination, PaginationOutcome,
-        PaginationState, Panel, PasswordInput, PasswordInputOutcome, PasswordInputParts,
-        PasswordInputState, PasswordStrengthHint, Picker, PickerOutcome, PickerState, Popover,
-        PopoverOutcome, PopoverState, PromptComposer, PromptComposerOutcome, PromptComposerState,
-        RangeSlider, RangeSliderOutcome, RangeSliderState, ResizablePanelGroup,
-        ResizablePanelGroupState, ResizablePanelOutcome, ResizablePanelSpec, SegmentedControl,
-        SegmentedControlOutcome, SegmentedControlState, SegmentedItem, Select, SelectOption,
-        SelectOutcome, SelectRecipe, SelectState, Severity, Sidebar, SidebarOutcome, SidebarState,
-        Slider, SliderBounds, SliderOutcome, SliderState, SplitDirection, SplitPane,
+        PaginationState, Panel, PanelState, PanelVariant, PasswordInput, PasswordInputOutcome,
+        PasswordInputParts, PasswordInputState, PasswordStrengthHint, Picker, PickerOutcome,
+        PickerState, Popover, PopoverOutcome, PopoverState, PromptComposer, PromptComposerOutcome,
+        PromptComposerState, RangeSlider, RangeSliderOutcome, RangeSliderState,
+        ResizablePanelGroup, ResizablePanelGroupState, ResizablePanelOutcome, ResizablePanelSpec,
+        SegmentedControl, SegmentedControlOutcome, SegmentedControlState, SegmentedItem, Select,
+        SelectOption, SelectOutcome, SelectRecipe, SelectState, Severity, Sidebar, SidebarOutcome,
+        SidebarState, Slider, SliderBounds, SliderOutcome, SliderState, SplitDirection, SplitPane,
         SplitPaneOutcome, SplitPaneState, SplitRatio, StickyRegion, Switch, SwitchOutcome,
         SwitchState, Tab, Table, TableOutcome, TableRow, TableState, Tabs, TabsState, TextArea,
         TextAreaOutcome, TextAreaState, TextInput, TextInputOutcome, TextInputState, ThemePicker,
@@ -381,70 +392,68 @@ impl StoryInteraction for PatternAppInteractor {
 }
 
 pub(crate) struct PanelInteractor {
-    render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem),
-    knobs: Vec<Knob>,
+    state: PanelState,
     theme: RolePalette,
+    outcome: Option<String>,
 }
 
 impl PanelInteractor {
-    pub(crate) fn new(render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem)) -> Self {
+    pub(crate) fn new(_render_fn: fn(&mut Frame<'_>, Rect, &DesignSystem)) -> Self {
+        let mut state = PanelState::new();
+        state.set_focused(true);
         Self {
-            render_fn,
-            knobs: vec![Knob {
-                id: "border-shape",
-                label: "Border shape",
-                value: KnobValue::Choice(0),
-                choices: &["Square", "Rounded"],
-            }],
+            state,
             theme: RolePalette::default(),
+            outcome: None,
         }
     }
 }
 
 impl StoryInteraction for PanelInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let shape = if matches!(self.knobs[0].value, KnobValue::Choice(1)) {
-            BorderShape::Rounded
-        } else {
-            BorderShape::Square
-        };
-        (self.render_fn)(
-            frame,
-            area,
-            &DesignSystem::from_palette(self.theme.clone()).border_shape(shape),
-        );
+        let system = DesignSystem::from_palette(self.theme.clone());
+        let body = Panel::new(&system)
+            .title("Summary")
+            .variant(PanelVariant::Interactive)
+            .collapsible(true)
+            .paint(area, frame.buffer_mut(), Some(&mut self.state));
+        if !self.state.is_collapsed() && !body.is_empty() {
+            frame.buffer_mut().set_stringn(
+                body.x,
+                body.y,
+                "State Ready · Mode Interactive",
+                usize::from(body.width),
+                system.style(Role::Text),
+            );
+        }
     }
 
-    fn handle_key(&mut self, _key: KeyEvent) -> bool {
-        false
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let outcome = self.state.handle_key(key, true, true);
+        extended::record(&mut self.outcome, "Panel", outcome)
     }
 
-    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
-        false
+    fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
+        let before = self.state.clone();
+        let outcome = self.state.handle_mouse(mouse, true, true);
+        extended::record(&mut self.outcome, "Panel", outcome) || self.state != before
     }
 
     fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
     }
 
-    fn knobs(&self) -> &[Knob] {
-        &self.knobs
+    fn hints(&self) -> Vec<&'static str> {
+        vec![
+            "Enter/Space toggle",
+            "← collapse",
+            "→ expand",
+            "click header/body",
+        ]
     }
 
-    fn handle_knob_key(&mut self, selected: usize, key: KeyEvent) -> bool {
-        let Some(Knob {
-            value: KnobValue::Choice(index),
-            choices,
-            ..
-        }) = self.knobs.get_mut(selected)
-        else {
-            return false;
-        };
-        if !matches!(key.code, KeyCode::Left | KeyCode::Right) {
-            return false;
-        }
-        *index = usize::from(key.code == KeyCode::Right) % choices.len();
-        true
+    fn take_outcome(&mut self) -> Option<String> {
+        self.outcome.take()
     }
 }
 
@@ -764,6 +773,7 @@ impl PointerTarget for PickerInteractor {
 pub(crate) struct LogPaneInteractor {
     state: LogPaneState,
     theme: RolePalette,
+    outcome: Option<String>,
 }
 
 impl LogPaneInteractor {
@@ -776,12 +786,19 @@ impl LogPaneInteractor {
             "[12:04:04] result: ok ✓",
             "[12:04:05] preview ready",
             "[12:04:06] waiting for changes",
+            "[12:04:07] file changed: src/lib.rs",
+            "[12:04:08] compiling incremental graph",
+            "[12:04:09] running widget tests",
+            "[12:04:10] running docs tests",
+            "[12:04:11] all checks passed",
+            "[12:04:12] watching workspace",
         ] {
             state.append(line);
         }
         Self {
             state,
             theme: RolePalette::default(),
+            outcome: None,
         }
     }
 }
@@ -796,15 +813,50 @@ impl StoryInteraction for LogPaneInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        !matches!(self.state.handle_key(key), Outcome::Ignored)
+        let outcome = self.state.handle_key(key);
+        if matches!(outcome, Outcome::Ignored) {
+            return false;
+        }
+        self.outcome = Some(format!(
+            "LogPane: {outcome:?}; {}",
+            if self.state.is_following() {
+                "following"
+            } else {
+                "scrollback paused"
+            }
+        ));
+        true
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        route_pointer(self, mouse, preview_area)
+        let changed = route_pointer(self, mouse, preview_area);
+        if changed {
+            self.outcome = Some(format!(
+                "LogPane: scrolled; {}",
+                if self.state.is_following() {
+                    "following"
+                } else {
+                    "scrollback paused"
+                }
+            ));
+        }
+        changed
     }
 
     fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme;
+    }
+
+    fn hints(&self) -> Vec<&'static str> {
+        vec![
+            "↑↓/PageUp/PageDown scroll",
+            "End follow tail",
+            "wheel scroll",
+        ]
+    }
+
+    fn take_outcome(&mut self) -> Option<String> {
+        self.outcome.take()
     }
 }
 

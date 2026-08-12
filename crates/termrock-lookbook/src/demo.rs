@@ -69,6 +69,7 @@ pub struct DemoDescriptor {
 
 impl From<Story> for DemoDescriptor {
     fn from(story: Story) -> Self {
+        let interactor_hints = story.make_interactor().hints();
         Self {
             id: story.id,
             title: story.title,
@@ -78,7 +79,11 @@ impl From<Story> for DemoDescriptor {
             rows: story.height,
             interactive: story.interactive,
             interaction_kind: interaction_kind(story.component, story.interactive),
-            hints: hints_for(story.component, story.interactive),
+            hints: if interactor_hints.is_empty() {
+                hints_for(story.component, story.interactive)
+            } else {
+                interactor_hints
+            },
         }
     }
 }
@@ -488,14 +493,27 @@ fn interaction_kind(component: &str, interactive: bool) -> &'static str {
         return "passive-paint";
     }
     match component {
-        "TextArea" | "TextInput" | "PasswordInput" | "NumberInput" | "Form" | "FormWizard"
-        | "PromptComposer" | "CommandPalette" => "editor-form",
+        "TextArea" | "TextInput" | "PasswordInput" | "NumberInput" | "SearchInput"
+        | "PathInput" | "Combobox" | "QuickOpen" | "Form" | "FormWizard" | "PromptComposer"
+        | "CommandPalette" | "HistoryPicker" | "KeybindingRecorder" | "QuestionFlow"
+        | "TokenField" | "ObjectInspector" => "editor-form",
         "ChoiceDialog" | "Dialog" | "AlertDialog" | "DropdownMenu" | "Popover" | "Accordion"
-        | "Collapsible" | "Select" | "MultiSelect" => "disclosure-overlay",
+        | "Collapsible" | "Select" | "MultiSelect" | "DateTimePicker" | "FilePicker"
+        | "KeyboardHelp" | "JumpOverlay" | "JumpMode" | "PermissionPrompt" | "Drawer" | "Sheet"
+        | "FullscreenViewer" | "EmptyState" | "ErrorState" | "OfflineBanner" | "OfflineSurface"
+        | "PreviewCard" => "disclosure-overlay",
         "SplitPane" | "Slider" | "RangeSlider" | "ResizablePanelGroup" => "drag-continuous-value",
-        "Tree" | "TreeTable" | "List" | "Picker" | "Table" | "Tabs" | "ThemePicker" | "Menu"
-        | "Sidebar" | "ToggleGroup" | "SegmentedControl" | "Pagination" => "selection-navigation",
-        "LogPane" | "Transcript" | "VirtualGrid" | "VirtualList" => "scrolling-virtualization",
+        "Tree" | "TreeTable" | "TreeNavigation" | "List" | "Picker" | "Table" | "DataTable"
+        | "Tabs" | "ThemePicker" | "Menu" | "MenuBar" | "CompletionMenu" | "NotificationCenter"
+        | "Sidebar" | "ToggleGroup" | "SegmentedControl" | "Pagination" | "NavigationList"
+        | "RadioGroup" | "Breadcrumbs" | "Toolbar" | "ButtonGroup" | "ProgressSteps"
+        | "Stepper" | "CheckpointTimeline" | "DiffReview" | "KeyValueList" | "ModeRibbon" => {
+            "selection-navigation"
+        }
+        "KeyValueTable" => "editor-form",
+        "LogPane" | "Transcript" | "VirtualGrid" | "VirtualList" | "CodeBlock" | "DiffView"
+        | "DiagnosticView" | "EventStream" | "HexViewer" | "LogStream" | "MarkdownView"
+        | "TerminalOutput" | "Timeline" | "DetailTable" => "scrolling-virtualization",
         "Toast" => "timed-state",
         _ => "activation",
     }
@@ -530,7 +548,7 @@ fn timed_component(component: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stories::PATTERN_DEMO_IDS;
+    use crate::stories::{PATTERN_DEMO_IDS, stories};
 
     fn key(value: &str) -> DemoEvent {
         DemoEvent::Key {
@@ -863,6 +881,211 @@ mod tests {
             .dispatch(DemoEvent::Tick { elapsed_ms: 2_100 })
             .unwrap();
         assert_eq!(expired.outcome.as_deref(), Some("Toast expired"));
+    }
+
+    #[test]
+    fn rich_catalog_widgets_use_persistent_public_interactors() {
+        for (id, event) in [
+            ("search-input/basic", key("x")),
+            ("path-input/basic", key("x")),
+            ("combobox/basic", key("ArrowDown")),
+            ("completion-menu/basic", key("ArrowDown")),
+            ("data-table/toolbar", key("ArrowDown")),
+            (
+                "date-time-picker/date",
+                DemoEvent::Key {
+                    key: "ArrowDown".to_owned(),
+                    kind: "press".to_owned(),
+                    shift: false,
+                    ctrl: false,
+                    alt: true,
+                    meta: false,
+                },
+            ),
+            ("file-picker/unix", key("ArrowDown")),
+            ("quick-open/basic", key("ArrowDown")),
+            ("menu-bar/basic", key("Enter")),
+            ("tree-navigation/project", key("ArrowDown")),
+            ("notification-center/drawer", key("ArrowDown")),
+        ] {
+            let mut session = DemoSession::mount(id, None, None).unwrap();
+            assert!(session.descriptor().interactive, "{id}");
+            let before = session.frame();
+            let update = session.dispatch(event).unwrap();
+            assert!(update.changed, "{id}");
+            assert!(update.outcome.is_some(), "{id}");
+            assert_ne!(before.cells, session.frame().cells, "{id}");
+        }
+    }
+
+    #[test]
+    fn complete_public_interaction_catalog_accepts_real_widget_events() {
+        for (id, event) in [
+            ("section/quiet", key("Enter")),
+            ("button-group/dialog", key("ArrowRight")),
+            ("toolbar/basic", key("Enter")),
+            ("navigation-list/basic", key("ArrowDown")),
+            ("stepper/horizontal", key("ArrowRight")),
+            ("history-picker/basic", key("ArrowDown")),
+            ("keyboard-help/footer", key("?")),
+            ("breadcrumbs/path", key("ArrowRight")),
+            ("progress-steps/pipeline", key("ArrowDown")),
+            ("detail-table/basic", key("ArrowDown")),
+            ("object-inspector/flat", key("ArrowDown")),
+            ("log-stream/follow", key("f")),
+            ("event-stream/basic", key("ArrowDown")),
+            ("diff-review/hunks", key("ArrowDown")),
+            ("diagnostic/list", key("ArrowDown")),
+            ("terminal-output/running", key("f")),
+            ("hex-viewer/basic", key("ArrowRight")),
+            ("diff/basic", key("ArrowDown")),
+            ("empty-state/basic", key("Enter")),
+            ("connectivity/banner", key("r")),
+            ("connectivity/reconnecting", key("r")),
+            ("error-state/network", key("d")),
+            ("jump-overlay/basic", key("f")),
+            ("jump-mode/multi", key("f")),
+            ("code-block/basic", key("ArrowDown")),
+            ("markdown-view/basic", key("ArrowDown")),
+            ("timeline/basic", key("ArrowDown")),
+            ("checkpoint-timeline/basic", key("ArrowUp")),
+            ("button/icon", key("Enter")),
+            ("radio-group/basic", key("ArrowDown")),
+            ("tag/removable", key("ArrowRight")),
+            ("chip/filter", key("Enter")),
+            ("badge/basic", key("Enter")),
+            ("alert/danger", key("d")),
+            ("drawer/basic", key("Enter")),
+            ("drawer/sheet", key("Enter")),
+            ("fullscreen-viewer/basic", key("Enter")),
+            ("preview-card/file", key("p")),
+            ("key-value-list/basic", key("ArrowDown")),
+            ("link/basic", key("Enter")),
+            ("permission-prompt/basic", key("ArrowRight")),
+            ("mode-ribbon/basic", key("ArrowRight")),
+            ("question-flow/basic", key("Enter")),
+            ("key-value-table/http", key("ArrowDown")),
+            (
+                "token-field/basic",
+                DemoEvent::Paste {
+                    text: "bob@example.com".into(),
+                },
+            ),
+            ("keybinding-recorder/idle", key("Enter")),
+        ] {
+            let mut session = DemoSession::mount(id, None, None).unwrap();
+            assert!(session.descriptor().interactive, "{id}");
+            let _ = session.frame();
+            let update = session.dispatch(event).unwrap();
+            assert!(update.changed, "{id} must accept its advertised action");
+            assert!(
+                update.outcome.is_some(),
+                "{id} must expose its typed outcome"
+            );
+        }
+    }
+
+    #[test]
+    fn dismissible_demo_lifecycles_stay_closed_until_explicitly_reopened() {
+        let mut alert = DemoSession::mount("alert/danger", None, None).unwrap();
+        assert!(alert.dispatch(key("Escape")).unwrap().changed);
+        assert!(!alert.dispatch(key("Enter")).unwrap().changed);
+        assert_eq!(
+            alert.dispatch(key("o")).unwrap().outcome.as_deref(),
+            Some("Alert: Shown")
+        );
+
+        let mut chip = DemoSession::mount("chip/filter", None, None).unwrap();
+        assert!(chip.dispatch(key("Delete")).unwrap().changed);
+        assert!(!chip.dispatch(key("Enter")).unwrap().changed);
+        assert_eq!(
+            chip.dispatch(key("r")).unwrap().outcome.as_deref(),
+            Some("Chip: Restored")
+        );
+
+        let mut drawer = DemoSession::mount("drawer/basic", None, None).unwrap();
+        assert!(drawer.dispatch(key("Enter")).unwrap().changed);
+        assert!(drawer.dispatch(key("Escape")).unwrap().changed);
+        assert!(drawer.dispatch(key("Enter")).unwrap().changed);
+    }
+
+    #[test]
+    fn every_interactive_story_has_an_executable_typed_outcome_path() {
+        let key_candidates = [
+            "Enter",
+            "ArrowDown",
+            "ArrowRight",
+            "ArrowUp",
+            "ArrowLeft",
+            "Tab",
+            " ",
+            "/",
+            "?",
+            "f",
+            "d",
+            "r",
+            "o",
+            "p",
+            "s",
+            "c",
+            "e",
+            "x",
+            "1",
+            "Escape",
+        ];
+        let mut missing = Vec::new();
+
+        for story in stories().into_iter().filter(|story| story.interactive) {
+            let mut accepted = false;
+            for value in key_candidates {
+                let mut session = DemoSession::mount(story.id, None, None).unwrap();
+                let _ = session.frame();
+                let update = session.dispatch(key(value)).unwrap();
+                if update.changed && update.outcome.is_some() {
+                    accepted = true;
+                    break;
+                }
+            }
+            if !accepted {
+                let mut session = DemoSession::mount(story.id, None, None).unwrap();
+                let _ = session.frame();
+                let update = session
+                    .dispatch(DemoEvent::Paste {
+                        text: "λ demo".into(),
+                    })
+                    .unwrap();
+                accepted = update.changed && update.outcome.is_some();
+            }
+            if !accepted {
+                let points = [
+                    (2, 2),
+                    (story.width / 4 + 1, story.height / 4 + 1),
+                    (story.width / 2 + 1, story.height / 2 + 1),
+                    (
+                        story.width.saturating_sub(1),
+                        story.height.saturating_sub(1),
+                    ),
+                ];
+                for (x, y) in points {
+                    let mut session = DemoSession::mount(story.id, None, None).unwrap();
+                    let _ = session.frame();
+                    let update = session.dispatch(pointer("down", x, y)).unwrap();
+                    if update.changed && update.outcome.is_some() {
+                        accepted = true;
+                        break;
+                    }
+                }
+            }
+            if !accepted {
+                missing.push(story.id);
+            }
+        }
+
+        assert!(
+            missing.is_empty(),
+            "interactive stories without an executable typed outcome path: {}",
+            missing.join(", ")
+        );
     }
 
     #[test]

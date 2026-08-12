@@ -5,10 +5,10 @@ component: DropdownMenu
 demo: dropdown-menu/basic
 interaction: disclosure-overlay
 actions:
-  - 'Enter open menu'
-  - 'click Actions'
+  - "Enter open menu"
+  - "click Actions"
 expectedOutcomes:
-  - 'The trigger opens a live cascade; navigation, submenu, activation, and dismissal emit DropdownMenuOutcome values.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/dropdown_menu.rs
 ---
 
@@ -82,7 +82,7 @@ Accepted actions update the same mounted Rust value. The status line shows the l
 
 ## Test recipe
 
-Mount `dropdown-menu/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `dropdown-menu/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

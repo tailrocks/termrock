@@ -11,7 +11,7 @@
 
 ## Status
 
-- **Execution:** IN PROGRESS on `feat/live-interactive-docs`
+- **Execution:** DONE on `feat/live-interactive-docs`
 - **Priority:** P1
 - **Effort:** L
 - **Risk:** MED; broad demo coverage but no external side effects
@@ -170,15 +170,15 @@ Run pattern checks, shared tests, browser tests, site build, then full gate.
 
 ## Done criteria
 
-- [ ] All 35 public patterns have explicit classification and a canonical page.
-- [ ] Every application/composite page mounts the same Rust demo as Lookbook.
-- [ ] Native and web hosts expose identical actions, outcomes, time, and paint.
-- [ ] Real app flows open/close overlays, type, select, drag, scroll, and resize
+- [x] All 35 public patterns have explicit classification and a canonical page.
+- [x] Every application/composite page mounts the same Rust demo as Lookbook.
+- [x] Native and web hosts expose identical actions, outcomes, time, and paint.
+- [x] Real app flows open/close overlays, type, select, drag, scroll, and resize
       wherever the public pattern supports them.
-- [ ] Layout-only helpers are demonstrated honestly inside a parent application.
-- [ ] No demo performs external effects or reimplements widget behavior.
-- [ ] Pattern inventory, parity, browser, site, and full gates pass.
-- [ ] `plans/README.md` marks Plan 003 `DONE`.
+- [x] Layout-only helpers are demonstrated honestly inside a parent application.
+- [x] No demo performs external effects or reimplements widget behavior.
+- [x] Pattern inventory, parity, browser, site, and full gates pass.
+- [x] `plans/README.md` marks Plan 003 `DONE`.
 
 ## STOP conditions
 

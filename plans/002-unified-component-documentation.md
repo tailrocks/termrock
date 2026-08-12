@@ -11,7 +11,7 @@
 
 ## Status
 
-- **Execution:** IN PROGRESS on `feat/live-interactive-docs`
+- **Execution:** DONE on `feat/live-interactive-docs`
 - **Priority:** P1
 - **Effort:** L
 - **Risk:** MED; large content move with generated-route checks
@@ -212,14 +212,14 @@ Run snippets, site build, then the full gate.
 
 ## Done criteria
 
-- [ ] Exactly 165 public components have one canonical route and one shared demo.
-- [ ] All 84 old handbook files are mapped and their useful content preserved.
-- [ ] No Component handbook section, orphan page, or duplicate component route remains.
-- [ ] Every active component has real actions and machine-tested outcomes.
-- [ ] Passive components make no false interaction or cursor claims.
-- [ ] Preview code matches the shared Rust demo's public API.
-- [ ] Component, snippet, site, parity, and full repository gates pass.
-- [ ] `plans/README.md` marks Plan 002 `DONE`.
+- [x] Exactly 165 public components have one canonical route and one shared demo.
+- [x] All 84 old handbook files are mapped and their useful content preserved.
+- [x] No Component handbook section, orphan page, or duplicate component route remains.
+- [x] Every active component has real actions and machine-tested outcomes.
+- [x] Passive components make no false interaction or cursor claims.
+- [x] Preview code matches the shared Rust demo's public API.
+- [x] Component, snippet, site, parity, and full repository gates pass.
+- [x] `plans/README.md` marks Plan 002 `DONE`.
 
 ## STOP conditions
 

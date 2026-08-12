@@ -5,13 +5,13 @@ component: SessionPicker
 demo: session-picker/basic
 interaction: activation
 actions:
-  - 'Enter open action'
-  - 'click trigger'
-  - 'S toggle sidebar region'
-  - '↑↓/wheel select row'
-  - '/ filter'
+  - "Enter open action"
+  - "click trigger"
+  - "S toggle sidebar region"
+  - "↑↓/wheel select row"
+  - "/ filter"
 expectedOutcomes:
-  - 'The preview status reports the typed Rust outcome after each accepted action.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/mod.rs
 ---
 ## Live terminal (Ghostty-class)
@@ -88,7 +88,7 @@ The mounted Rust demo owns deterministic sample state. The component/pattern own
 
 ## Test recipe
 
-Mount `session-picker/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `session-picker/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

@@ -7,9 +7,9 @@ plan fully, honor its STOP conditions, and update its row after completion.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |---|---|---|---|---|---|
-| [001](001-live-preview-runtime.md) | Replace preview slides with one live Rust demo runtime | P1 | L | — | IN PROGRESS |
-| [002](002-unified-component-documentation.md) | Merge the handbook into canonical interactive component pages | P1 | L | 001 | IN PROGRESS |
-| [003](003-interactive-pattern-gallery.md) | Publish every application pattern as the same live demo in web and Lookbook | P1 | L | 001, 002 | IN PROGRESS |
+| [001](001-live-preview-runtime.md) | Replace preview slides with one live Rust demo runtime | P1 | L | — | DONE |
+| [002](002-unified-component-documentation.md) | Merge the handbook into canonical interactive component pages | P1 | L | 001 | DONE |
+| [003](003-interactive-pattern-gallery.md) | Publish every application pattern as the same live demo in web and Lookbook | P1 | L | 001, 002 | DONE |
 
 Status values: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED` (with reason), or
 `REJECTED` (with rationale).

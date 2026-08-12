@@ -5,10 +5,10 @@ component: AlertDialog
 demo: alert-dialog/delete
 interaction: disclosure-overlay
 actions:
-  - 'Enter open alert'
-  - 'click Delete project'
+  - "Enter open alert"
+  - "click Delete project"
 expectedOutcomes:
-  - 'The alert opens on the safe Cancel action; choosing or cancelling closes it with a typed result.'
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/alert_dialog.rs
 ---
 
@@ -86,7 +86,7 @@ Accepted actions update the same mounted Rust value. The status line shows the l
 
 ## Test recipe
 
-Mount `alert-dialog/delete`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `alert-dialog/delete`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

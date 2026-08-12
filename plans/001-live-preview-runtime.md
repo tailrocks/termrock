@@ -12,7 +12,7 @@
 
 ## Status
 
-- **Execution:** IN PROGRESS on `feat/live-interactive-docs`
+- **Execution:** DONE on `feat/live-interactive-docs`
 - **Priority:** P1
 - **Effort:** L
 - **Risk:** HIGH; changes the preview runtime and browser build pipeline
@@ -250,15 +250,15 @@ Expected: no production slide/runtime matches; old multi-step tree absent.
 
 ## Done criteria
 
-- [ ] Website and native Lookbook mount the same Rust demo factory by stable ID.
-- [ ] Real browser events mutate persistent Rust state and typed outcomes.
-- [ ] Current canvas rendering quality and responsive paint remain unchanged.
-- [ ] Hints and visible feedback come from current demo state.
-- [ ] No synthetic cursor appears on non-editable components.
-- [ ] Timed animation uses injected time and stops offscreen.
-- [ ] One poster per demo is the only static fallback; slide packs are gone.
-- [ ] Ten browser acceptance flows and native/web parity tests pass.
-- [ ] `rtk mise run gate` passes and the plan row is `DONE`.
+- [x] Website and native Lookbook mount the same Rust demo factory by stable ID.
+- [x] Real browser events mutate persistent Rust state and typed outcomes.
+- [x] Current canvas rendering quality and responsive paint remain unchanged.
+- [x] Hints and visible feedback come from current demo state.
+- [x] No synthetic cursor appears on non-editable components.
+- [x] Timed animation uses injected time and stops offscreen.
+- [x] One poster per demo is the only static fallback; slide packs are gone.
+- [x] Ten browser acceptance flows and native/web parity tests pass.
+- [x] `rtk mise run gate` passes and the plan row is `DONE`.
 
 ## STOP conditions
 

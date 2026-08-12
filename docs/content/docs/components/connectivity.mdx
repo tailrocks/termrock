@@ -3,14 +3,20 @@ title: Offline / ReconnectingState
 description: 'Connectivity for remote sessions — banner, full recovery, StatusBar and NotificationCenter projection.'
 component: Offline / ReconnectingState
 demo: connectivity/banner
-interaction: passive-paint
-actions: []
-expectedOutcomes: []
+interaction: disclosure-overlay
+actions:
+  - "R retry"
+  - "O work offline"
+  - "Q view queue"
+  - "Esc dismiss"
+  - "click retry"
+expectedOutcomes:
+  - "Typed widget outcomes appear in the preview status and state persists until Reset."
 source: crates/termrock/src/widgets/mod.rs
 ---
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
 
 <TerminalPreview story="connectivity/banner" interactive caption="Offline / ReconnectingState · shared Rust demo" />
 
@@ -67,13 +73,14 @@ center.ingest_item(conn.to_notification_item("conn-1"));
 
 ## Try it
 
-- No actions. This component is passive in this demo; the page remains navigable.
+- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
+- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
 
 Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
 
 ## State and typed outcomes
 
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Common mistakes
 
@@ -83,7 +90,7 @@ The widget owns deterministic paint and layout. The host owns all surrounding st
 
 ## Test recipe
 
-Mount `connectivity/banner`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+Mount `connectivity/banner`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 
