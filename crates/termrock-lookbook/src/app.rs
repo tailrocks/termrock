@@ -55,13 +55,25 @@ pub(crate) struct Lookbook {
 
 impl Lookbook {
     pub(crate) fn new() -> Self {
+        Self::for_story(None).expect("catalog must contain its first demo")
+    }
+
+    pub(crate) fn for_story(story_id: Option<&str>) -> Result<Self, String> {
         let theme = RolePalette::default();
-        let first = gallery_stories()[0];
-        let mut demo = DemoSession::mount(first.id, Some(first.width), Some(first.height))
+        let catalog = gallery_stories();
+        let selected = match story_id {
+            Some(id) => catalog
+                .iter()
+                .position(|story| story.id == id)
+                .ok_or_else(|| format!("unknown story: {id}"))?,
+            None => 0,
+        };
+        let story = catalog[selected];
+        let mut demo = DemoSession::mount(story.id, Some(story.width), Some(story.height))
             .expect("catalog demo must mount");
         demo.set_theme(theme.clone());
-        Self {
-            selected: 0,
+        Ok(Self {
+            selected,
             preview_scroll: 0,
             sidebar_scroll: 0,
             host: HostFrame::new(theme),
@@ -76,7 +88,7 @@ impl Lookbook {
             demo_outcome: None,
             full_preview: false,
             next_demo_deadline: None,
-        }
+        })
     }
 
     pub(crate) fn next_deadline(&self) -> Option<std::time::Instant> {
@@ -709,6 +721,16 @@ mod tests {
     fn render_app(app: &mut Lookbook, tick: FrameTick) {
         let mut terminal = Terminal::new(TestBackend::new(100, 30)).unwrap();
         terminal.draw(|frame| app.render_at(frame, tick)).unwrap();
+    }
+
+    #[test]
+    fn direct_story_launch_mounts_exact_component_or_application_demo() {
+        for id in ["dialog/message", "connection-manager/full"] {
+            let app = Lookbook::for_story(Some(id)).unwrap();
+            assert_eq!(gallery_stories()[app.selected].id, id);
+            assert_eq!(app.demo.descriptor().id, id);
+        }
+        assert!(Lookbook::for_story(Some("missing/story")).is_err());
     }
 
     #[test]

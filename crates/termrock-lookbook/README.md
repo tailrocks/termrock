@@ -36,7 +36,7 @@ cargo run -p termrock-lookbook -- export-posters --out docs/public/preview-poste
 
 ## Native terminal host
 
-Run `cargo run -p termrock-lookbook -- terminal`. The mounted demo receives its documented keys first, including Tab and application shortcuts. Native chrome uses reserved chords: `Ctrl+Alt+Z` toggles full preview, `Ctrl+Alt+R` resets the mounted session, and `Ctrl+Alt+T` changes theme. Escape reaches an open demo overlay first and returns to the catalog only when the demo does not consume it.
+Run `cargo run -p termrock-lookbook -- terminal`. Launch a catalog ID directly with `cargo run -p termrock-lookbook -- terminal --story dialog/message`; `list` prints every valid ID. The mounted demo receives its documented keys first, including Tab and application shortcuts. Native chrome uses reserved chords: `Ctrl+Alt+Z` toggles full preview, `Ctrl+Alt+R` resets the mounted session, and `Ctrl+Alt+T` changes theme. Escape reaches an open demo overlay first and returns to the catalog only when the demo does not consume it.
 
 ## How to verify
 

@@ -981,10 +981,23 @@ export function TerminalPreview({
               />
             ))}
           </span>
-          <span style={{ color: '#c8d6c8' }}>Ghostty</span>
-          <span>· TermRock —</span>
-          <span style={{ color: '#39ff14' }}>{activeStory}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11 }}>
+          <span style={{ color: '#c8d6c8', flexShrink: 0 }}>Ghostty</span>
+          <span className="hidden sm:inline">· TermRock —</span>
+          <span
+            style={{
+              color: '#39ff14',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {activeStory}
+          </span>
+          <span
+            className="hidden sm:inline"
+            style={{ marginLeft: 'auto', fontSize: 11, flexShrink: 0 }}
+          >
             {frame
               ? String(frame.cols) + '×' + String(frame.rows) + ' · RGB24'
               : 'mounting Rust…'}

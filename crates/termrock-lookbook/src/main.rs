@@ -103,10 +103,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if first == OsStr::new("terminal") {
-        if args.next().is_some() {
-            return Err("usage: termrock-lookbook terminal".into());
+        let usage = "usage: termrock-lookbook terminal [--story <id>]";
+        let mut story = None;
+        while let Some(flag) = args.next() {
+            if flag == OsStr::new("--story") && story.is_none() {
+                let Some(value) = args.next().and_then(|value| value.into_string().ok()) else {
+                    return Err(usage.into());
+                };
+                story = Some(value);
+            } else {
+                return Err(usage.into());
+            }
         }
-        return run_terminal();
+        return run_terminal(story.as_deref());
     }
 
     if first == OsStr::new("list") {
@@ -274,8 +283,12 @@ fn cmd_export_posters(
     Ok(())
 }
 
-fn run_terminal() -> Result<(), Box<dyn std::error::Error>> {
-    let mut app = Lookbook::new();
+fn run_terminal(story_id: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut app = if let Some(story_id) = story_id {
+        Lookbook::for_story(Some(story_id))?
+    } else {
+        Lookbook::new()
+    };
     termrock::runtime::run(
         &mut app,
         termrock::runtime::RunOptions::default(),
