@@ -57,15 +57,19 @@ them):
 
 **In scope**: all remaining `crates/termrock/src/widgets/*.rs` and
 `crates/termrock/src/patterns/*.rs` not upgraded by 004/005/008/009;
-lookbook stories; `migrations/0270-*.md` (or next free) + `MIGRATING.md`;
+lookbook stories and harness; `crates/termrock/src/lib.rs` policy tests;
+`migrations/0279-*.md` + `MIGRATING.md`; generated catalog/API/frame outputs;
+responsive `agent-browser` evidence under `artifacts/visual-qa/plan-010/`;
 `plans/README.md`.
 
 **Out of scope**: kernel modules (`interaction/`, `runtime/`, `keymap/`,
-`input/`), `termrock-cli`, docs site.
+`input/`), `termrock-cli`, hand-authored docs-site features. Generated docs
+outputs and browser validation remain required cross-surface evidence.
 
 ## Git workflow
 
-`main`, `git commit -s`, commit per widget cluster (~8–12 commits). Each
+`feat/component-visual-richness-series`, `git commit -s`, commit per coherent
+cluster. Each
 commit independently green under `mise run check` (repo law).
 
 ## Steps
@@ -184,3 +188,24 @@ expectation updates. No new visual-decision tests — decisions belong to
   Jackin adoption pass (consumer-side, tracked in Jackin's repo — the
   workaround-deletion checklist lives in
   `docs/design/component-visual-richness-plan.md` §9).
+
+## Amendments
+
+- 2026-08-12: Added `lib.rs`, lookbook harness, generated outputs, and
+  responsive `agent-browser` evidence to Scope. Step 4 explicitly requires
+  repo policy tests and lookbook capability rendering, while repo
+  cross-surface law and standing browser rules require generated/docs-visible
+  proof; their omission was a plan defect.
+- 2026-08-12: Replaced the stale `main` workflow with the operator-required
+  single `feat/component-visual-richness-series` branch and one PR. This is a
+  direct instruction override; DCO, independent green commits, and immediate
+  push remain unchanged.
+- 2026-08-12: Allocated migration 0279 because Plans 007–009 truthfully used
+  0267–0278 across independently visible boundaries. Rewriting immutable
+  history would violate repo migration law.
+- 2026-08-12: Scoped `bg = None` enforcement to widget/pattern paint sources.
+  The sole repo-wide match is `ansi_text::filter_style`, which must erase ANSI
+  color under `NO_COLOR`; forbidding it conflicts with accessibility and the
+  design SoT. Options were weakening NO_COLOR, string-exempting that line, or
+  testing the intended widget boundary. Boundary-scoped policy best advances
+  the goal without sacrificing capability sanitation.

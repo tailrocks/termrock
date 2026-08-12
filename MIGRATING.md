@@ -292,6 +292,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0276 | `v0.13.0` | [Overlay and picker recipe rows](migrations/0276-v0.13.0-overlay-picker-recipe-rows.md) |
 | 0277 | `v0.13.0` | [Full-row diff semantic tints](migrations/0277-v0.13.0-diff-row-tints.md) |
 | 0278 | `v0.13.0` | [Typed Form values through FieldRow](migrations/0278-v0.13.0-form-field-row-values.md) |
+| 0279 | `v0.13.0` | [Visual cascade completion](migrations/0279-v0.13.0-visual-cascade-completion.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

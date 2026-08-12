@@ -38,9 +38,11 @@ use crate::{
         place_overlay,
     },
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, GlyphSet, Motion, Role},
     text::{display_cols, take_display_cols},
 };
+
+use super::{Surface, SurfaceRecipe};
 
 /// Default overlay id.
 pub const PREVIEW_CARD_OVERLAY_ID: &str = "termrock.preview-card";
@@ -1109,70 +1111,29 @@ impl<'a> PreviewCard<'a> {
         }
 
         let ascii = self.ascii || state.ascii;
-        let fill = if self.colorless {
-            self.system.style(Role::Surface)
-        } else {
-            self.system.style(Role::Elevated)
-        };
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                buffer[(x, y)].set_style(fill);
-                buffer[(x, y)].set_symbol(" ");
-            }
-        }
-
         let border = if state.pinned && !self.colorless {
             Role::BorderFocused
         } else {
             Role::Border
         };
-        let border_style = self.system.style(border);
-        let (tl, tr, bl, br, h, v) = if ascii {
-            ("+", "+", "+", "+", "-", "|")
+        let ascii_system;
+        let surface_system = if ascii {
+            ascii_system = self.system.clone().glyphs(GlyphSet::Ascii);
+            &ascii_system
         } else {
-            ("┌", "┐", "└", "┘", "─", "│")
+            self.system
         };
-        if area.width >= 2 && area.height >= 2 {
-            buffer.set_stringn(area.x, area.y, tl, 1, border_style);
-            buffer.set_stringn(area.right().saturating_sub(1), area.y, tr, 1, border_style);
-            buffer.set_stringn(area.x, area.bottom().saturating_sub(1), bl, 1, border_style);
-            buffer.set_stringn(
-                area.right().saturating_sub(1),
-                area.bottom().saturating_sub(1),
-                br,
-                1,
-                border_style,
-            );
-            if area.width > 2 {
-                let hz = h.repeat(usize::from(area.width.saturating_sub(2)));
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.y,
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-                buffer.set_stringn(
-                    area.x + 1,
-                    area.bottom().saturating_sub(1),
-                    &hz,
-                    usize::from(area.width - 2),
-                    border_style,
-                );
-            }
-            for y in area.y + 1..area.bottom().saturating_sub(1) {
-                buffer.set_stringn(area.x, y, v, 1, border_style);
-                buffer.set_stringn(area.right().saturating_sub(1), y, v, 1, border_style);
-            }
-        }
-
         state.slots.root = area;
-        let inner = Rect {
-            x: area.x.saturating_add(1),
-            y: area.y.saturating_add(1),
-            width: area.width.saturating_sub(2),
-            height: area.height.saturating_sub(2),
-        };
+        let inner = Surface::new(surface_system)
+            .recipe(if self.colorless {
+                SurfaceRecipe::Inset
+            } else {
+                SurfaceRecipe::Overlay
+            })
+            .bordered(true)
+            .border_style(self.system.style(border))
+            .padding(0, 0)
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }

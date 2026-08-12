@@ -41,6 +41,10 @@ fn stderr_line(args: Arguments<'_>) {
 
 /// Render the story into a ratatui test buffer and return it.
 pub(crate) fn render_story_to_buffer(story: Story, theme: &RolePalette) -> Buffer {
+    render_story_to_buffer_with_system(story, &DesignSystem::from_palette(theme.clone()))
+}
+
+pub(crate) fn render_story_to_buffer_with_system(story: Story, system: &DesignSystem) -> Buffer {
     let width = story.width.saturating_add(STORY_PAD * 2);
     let height = story.height.saturating_add(STORY_PAD * 2);
     let backend = TestBackend::new(width, height);
@@ -67,8 +71,7 @@ pub(crate) fn render_story_to_buffer(story: Story, theme: &RolePalette) -> Buffe
         // renders on the same surface as the real app, with PREVIEW_CARD only
         // as the surround — identical to the interactive preview.
         frame.render_widget(Clear, inner);
-        let system = DesignSystem::from_palette(theme.clone());
-        story.render(frame, inner, &system);
+        story.render(frame, inner, system);
     }) {
         Ok(_) => {}
         Err(error) => match error {},

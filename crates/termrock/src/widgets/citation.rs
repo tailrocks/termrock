@@ -840,12 +840,7 @@ fn effective_availability(source: &CitationSource, offline: bool) -> CitationAva
 }
 
 fn truncate_dest(dest: &str, max_cols: usize) -> String {
-    let t = take_display_cols(dest, max_cols);
-    if display_cols(dest) > max_cols {
-        format!("{t}…")
-    } else {
-        t
-    }
+    crate::text::truncate_cols(dest, max_cols, "…").into_owned()
 }
 
 // ── CitationList ────────────────────────────────────────────────────────────

@@ -278,15 +278,10 @@ impl PromptQueueItem {
 
     /// One-line preview.
     #[must_use]
-    pub fn preview(&self, max_chars: usize) -> String {
+    pub fn preview(&self, max_cols: usize) -> String {
         let t = self.text.replace('\n', " ");
         let t = t.trim();
-        if t.chars().count() <= max_chars {
-            return t.to_string();
-        }
-        let mut out: String = t.chars().take(max_chars.saturating_sub(1)).collect();
-        out.push('…');
-        out
+        crate::text::truncate_cols(t, max_cols, "…").into_owned()
     }
 }
 

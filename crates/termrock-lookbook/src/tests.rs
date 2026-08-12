@@ -2,11 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use termrock::keymap::glyph;
-use termrock::{input::KeyCode, keymap::KeyChord, style::RolePalette};
+use termrock::{
+    input::KeyCode,
+    keymap::KeyChord,
+    style::{ColorCapability, DesignSystem, GlyphSet, RolePalette},
+};
 
 use crate::{
-    PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction, stories::stories,
-    svg::render_story_to_buffer,
+    PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
+    stories::stories,
+    svg::{render_story_to_buffer, render_story_to_buffer_with_system},
 };
 
 #[test]
@@ -29,6 +34,65 @@ fn list_story_visibly_uses_the_selected_theme() {
                 && (left.fg, left.bg, left.modifier) != (right.fg, right.bg, right.modifier)),
         "list cells must visibly differ between themes"
     );
+}
+
+#[test]
+fn every_preset_survives_capability_ladder() {
+    let story_set = stories();
+    let representatives: Vec<_> = ["surface/basic", "list/selection", "button/variants"]
+        .into_iter()
+        .map(|id| {
+            story_set
+                .iter()
+                .copied()
+                .find(|story| story.id == id)
+                .unwrap_or_else(|| panic!("representative story missing: {id}"))
+        })
+        .collect();
+    let presets = [
+        DesignSystem::phosphor(),
+        DesignSystem::slate(),
+        DesignSystem::paper(),
+        DesignSystem::ansi(),
+        DesignSystem::high_contrast(),
+    ];
+    for preset in presets {
+        for capability in [
+            ColorCapability::Truecolor,
+            ColorCapability::Indexed256,
+            ColorCapability::Ansi16,
+            ColorCapability::Monochrome,
+        ] {
+            let system = preset.clone().quantize(capability).glyphs(
+                if matches!(capability, ColorCapability::Monochrome) {
+                    GlyphSet::Ascii
+                } else {
+                    preset.glyphs
+                },
+            );
+            for story in &representatives {
+                let buffer = render_story_to_buffer_with_system(*story, &system);
+                assert!(
+                    buffer
+                        .content()
+                        .iter()
+                        .any(|cell| !cell.symbol().trim().is_empty()),
+                    "{} rendered empty at {capability:?}",
+                    story.id
+                );
+            }
+        }
+        let no_color = preset.no_color().glyphs(GlyphSet::Ascii);
+        for story in &representatives {
+            let buffer = render_story_to_buffer_with_system(*story, &no_color);
+            assert!(
+                buffer
+                    .content()
+                    .iter()
+                    .any(|cell| !cell.symbol().trim().is_empty())
+            );
+        }
+    }
 }
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────

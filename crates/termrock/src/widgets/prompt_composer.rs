@@ -1195,12 +1195,7 @@ impl PromptComposerState {
         if self.policy.large_paste_as_chip && text.len() >= LARGE_PASTE_THRESHOLD {
             let id = format!("paste-{}", self.next_chip_id);
             self.next_chip_id = self.next_chip_id.saturating_add(1);
-            let preview: String = text.chars().take(32).collect();
-            let preview = if text.chars().count() > 32 {
-                format!("{preview}…")
-            } else {
-                preview
-            };
+            let preview = crate::text::truncate_cols(text, 32, "…").into_owned();
             self.chips
                 .push(ComposerChip::paste_with_body(id, preview, text.to_string()));
             return PromptComposerOutcome::Changed;
@@ -1740,14 +1735,9 @@ pub fn submit_history_to_entries(history: &[String]) -> Vec<HistoryEntry<String>
         .rev()
         .enumerate()
         .map(|(rank, text)| {
-            let preview: String = text.chars().take(80).collect();
             let mut e =
                 HistoryEntry::new(format!("h-{rank}"), text.clone()).kind(HistoryKind::Prompt);
-            e.display = if text.chars().count() > 80 {
-                format!("{preview}…")
-            } else {
-                preview
-            };
+            e.display = crate::text::truncate_cols(text, 80, "…").into_owned();
             e.preview = Some(text.clone());
             e.recency = rank as u64;
             e
