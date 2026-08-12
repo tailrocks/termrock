@@ -3338,6 +3338,15 @@ pub(crate) fn stories() -> Vec<Story> {
             spinner_phases_story,
         ),
         Story::new(
+            "motion/presence",
+            "Motion presence kit",
+            "Spinner",
+            "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
+            48,
+            8,
+            motion_presence_story,
+        ),
+        Story::new(
             "spinner/compact",
             "Spinner compact embedded",
             "Spinner",
@@ -16351,6 +16360,45 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     }
 }
 
+fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tick = 11;
+    let canvas = system
+        .style(Role::Canvas)
+        .bg
+        .unwrap_or(ratatui::style::Color::Black);
+    let accent = system.style(Role::Accent);
+    for row in 0..area.height.min(6) {
+        let alpha = termrock::style::wave_brightness(tick, row, 16, 0.5);
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y.saturating_add(row),
+            "│",
+            1,
+            termrock::style::fade_style(accent, alpha, canvas),
+        );
+    }
+    let pulse = termrock::style::pulse_brightness(tick, 16);
+    frame.buffer_mut().set_stringn(
+        area.x.saturating_add(3),
+        area.y,
+        termrock::style::SPINNER_DOT_PULSE_FRAMES[2],
+        1,
+        termrock::style::fade_style(accent, pulse, canvas),
+    );
+    let label = "Presence travels without breaking terminal rhythm";
+    let width = area.width.saturating_sub(3).min(44);
+    for (col, ch) in label.chars().take(usize::from(width)).enumerate() {
+        let alpha = termrock::style::edge_fade(col as u16, width, 5);
+        frame.buffer_mut().set_stringn(
+            area.x.saturating_add(3).saturating_add(col as u16),
+            area.y.saturating_add(3),
+            ch.to_string(),
+            1,
+            termrock::style::fade_style(system.style(Role::Text), alpha, canvas),
+        );
+    }
+}
+
 fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use std::time::{Duration, Instant};
     use termrock::runtime::FrameTick;
@@ -16441,58 +16489,6 @@ fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
         .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
-}
-
-fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
-    use termrock::runtime::{FrameClock, FrameTick, Presence, spinner_demand};
-    use termrock::style::Motion;
-    use termrock::widgets::{Panel, PanelChrome, Spinner};
-
-    frame.render_widget(
-        Panel::new(system)
-            .title("FrameClock · Presence · Motion")
-            .chrome(PanelChrome::Focused),
-        area,
-    );
-    let inner = Rect::new(
-        area.x.saturating_add(1),
-        area.y.saturating_add(1),
-        area.width.saturating_sub(2),
-        area.height.saturating_sub(2),
-    );
-    let start = Instant::now();
-    let mut clock = FrameClock::from_start(start);
-    let tick = clock.tick_at(start + Duration::from_millis(560));
-    let spin_full = Spinner::new(system).frame_glyph(tick, Motion::Full);
-    let spin_off = Spinner::new(system).frame_glyph(tick, Motion::Off);
-    let mut toast = Presence::toast(Duration::from_secs(2));
-    toast.request_show(FrameTick::manual(start, Duration::ZERO, Duration::ZERO));
-    let demand = spinner_demand(tick, Motion::Full, true);
-    let idle = spinner_demand(tick, Motion::Full, false);
-    let lines = [
-        format!("spinner Full={spin_full} Off={spin_off}"),
-        format!(
-            "toast visible={} focusable={}",
-            toast.is_visible(),
-            toast.is_focusable()
-        ),
-        format!(
-            "demand active={} idle={}",
-            demand.needs_redraw, idle.needs_redraw
-        ),
-    ];
-    let mut y = inner.y;
-    for line in lines {
-        frame.buffer_mut().set_stringn(
-            inner.x,
-            y,
-            &line,
-            usize::from(inner.width),
-            system.style(termrock::style::Role::Text),
-        );
-        y = y.saturating_add(1);
-    }
 }
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

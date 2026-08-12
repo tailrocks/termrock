@@ -15,6 +15,12 @@ use crate::text::display_cols;
 
 /// Shared vertical block ramp from empty through a full cell.
 pub const BLOCK_RAMP: &[char; 9] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+/// Shared braille density ramp.
+pub const BRAILLE_RAMP: &[char; 5] = &[' ', '⣀', '⣤', '⣶', '⣿'];
+/// Canonical deterministic braille spinner.
+pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+/// Quiet four-step presence pulse; every frame is one display cell.
+pub const SPINNER_DOT_PULSE_FRAMES: &[&str] = &["⋅", ":", "⸬", "⁙"];
 
 /// Semantic family for browsing and docs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -153,6 +159,16 @@ pub enum Glyph {
     EmptyCircle,
     /// Disabled mark.
     DisabledMark,
+    /// Filled diamond accent.
+    DiamondFilled,
+    /// Diamond with center mark.
+    DiamondDouble,
+    /// Hollow status dot.
+    StatusDotHollow,
+    /// Target status dot.
+    StatusDotTarget,
+    /// Ringed status dot.
+    StatusDotRing,
 }
 
 impl Glyph {
@@ -205,6 +221,11 @@ impl Glyph {
             Self::FocusDiamond => "focus-diamond",
             Self::EmptyCircle => "empty-circle",
             Self::DisabledMark => "disabled-mark",
+            Self::DiamondFilled => "diamond-filled",
+            Self::DiamondDouble => "diamond-double",
+            Self::StatusDotHollow => "status-dot-hollow",
+            Self::StatusDotTarget => "status-dot-target",
+            Self::StatusDotRing => "status-dot-ring",
         }
     }
 
@@ -257,6 +278,11 @@ impl Glyph {
             Self::FocusDiamond => "focus",
             Self::EmptyCircle => "empty",
             Self::DisabledMark => "disabled",
+            Self::DiamondFilled => "accent",
+            Self::DiamondDouble => "emphasis",
+            Self::StatusDotHollow => "inactive status",
+            Self::StatusDotTarget => "active status",
+            Self::StatusDotRing => "ring status",
         }
     }
 
@@ -305,7 +331,12 @@ impl Glyph {
             | Self::SelectionMark
             | Self::FocusDiamond
             | Self::EmptyCircle
-            | Self::DisabledMark => GlyphGroup::Chrome,
+            | Self::DisabledMark
+            | Self::DiamondFilled
+            | Self::DiamondDouble
+            | Self::StatusDotHollow
+            | Self::StatusDotTarget
+            | Self::StatusDotRing => GlyphGroup::Chrome,
         }
     }
 
@@ -356,6 +387,11 @@ impl Glyph {
         Self::FocusDiamond,
         Self::EmptyCircle,
         Self::DisabledMark,
+        Self::DiamondFilled,
+        Self::DiamondDouble,
+        Self::StatusDotHollow,
+        Self::StatusDotTarget,
+        Self::StatusDotRing,
     ];
 
     /// Glyphs in a group.
@@ -439,6 +475,11 @@ impl Glyph {
             Self::FocusDiamond => ("◇", "+", "◇"),
             Self::EmptyCircle => ("○", "o", "○"),
             Self::DisabledMark => ("⊘", "x", "⊘"),
+            Self::DiamondFilled => ("◆", "*", "◆"),
+            Self::DiamondDouble => ("◈", "#", "◈"),
+            Self::StatusDotHollow => ("○", "o", "○"),
+            Self::StatusDotTarget => ("◉", "@", "◉"),
+            Self::StatusDotRing => ("◎", "O", "◎"),
         }
     }
 
@@ -461,12 +502,7 @@ impl Glyph {
 
     const fn enhanced_cols(self) -> u16 {
         match self {
-            Self::File
-            | Self::Folder
-            | Self::FolderOpen
-            | Self::Search
-            | Self::Warning
-            | Self::Info => 2,
+            Self::File | Self::Folder | Self::FolderOpen | Self::Search => 2,
             Self::CheckOn | Self::CheckOff | Self::CheckMixed => 1,
             Self::Loading | Self::Ellipsis => 1,
             _ => 1,
@@ -528,6 +564,22 @@ mod tests {
             assert!(!g.id().is_empty(), "{g:?}");
             assert!(!g.meaning().is_empty(), "{g:?}");
             assert!(!g.resolve(GlyphSet::Unicode).text.is_empty() || g.id().contains("rule"));
+        }
+    }
+
+    #[test]
+    fn every_catalog_encoding_matches_declared_width() {
+        for glyph in Glyph::ALL {
+            for set in [GlyphSet::Unicode, GlyphSet::Ascii, GlyphSet::Enhanced] {
+                let resolved = glyph.resolve(set);
+                assert_eq!(resolved.display_width(), resolved.cols, "{glyph:?} {set:?}");
+            }
+        }
+        for frame in SPINNER_BRAILLE_FRAMES
+            .iter()
+            .chain(SPINNER_DOT_PULSE_FRAMES)
+        {
+            assert_eq!(display_cols(frame), 1, "{frame:?}");
         }
     }
 

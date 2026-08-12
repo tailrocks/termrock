@@ -13,6 +13,7 @@ use ratatui_core::style::{Color, Modifier, Style};
 mod appearance;
 mod density;
 mod glyph;
+mod motion;
 mod palette;
 mod preview_host;
 mod quantize;
@@ -20,7 +21,14 @@ mod tokens;
 
 pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
-pub use glyph::{BLOCK_RAMP, Glyph, GlyphGroup, GlyphResolved, glyph_by_id};
+pub use glyph::{
+    BLOCK_RAMP, BRAILLE_RAMP, Glyph, GlyphGroup, GlyphResolved, SPINNER_BRAILLE_FRAMES,
+    SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
+};
+pub use motion::{
+    blend_toward, coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness,
+    smoothstep, wave_brightness,
+};
 pub use palette::Rgb;
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,
@@ -103,17 +111,7 @@ pub(crate) const DANGER: Style = Style::new().fg(DANGER_RED).add_modifier(Modifi
 #[must_use]
 /// Blends this color toward the canvas for subdued content.
 pub fn faded(color: Color, alpha: f32) -> Color {
-    match color {
-        Color::Rgb(r, g, b) => {
-            #[expect(
-                clippy::cast_sign_loss,
-                reason = "alpha clamped to 0.0..=1.0; product stays in u8 range"
-            )]
-            let scale = |component: u8| (f32::from(component) * alpha.clamp(0.0, 1.0)) as u8;
-            Color::Rgb(scale(r), scale(g), scale(b))
-        }
-        other => other,
-    }
+    blend_toward(color, Color::Rgb(0, 0, 0), 1.0 - alpha.clamp(0.0, 1.0))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

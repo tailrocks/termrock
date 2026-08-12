@@ -33,8 +33,7 @@ use crate::{
 
 /// Default frame period (ms) for Full motion — matches historic Spinner/Progress.
 pub const SPINNER_DEFAULT_PERIOD_MS: u64 = 80;
-/// Braille sequence (Unicode capability).
-pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+pub use crate::style::{SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES};
 /// ASCII sequence.
 pub const SPINNER_ASCII_FRAMES: &[&str] = &["|", "/", "-", "\\"];
 /// Waiting phase pulse (Unicode).
@@ -132,6 +131,8 @@ pub enum SpinnerGlyphSet {
     Braille,
     /// ASCII `|/-\\`.
     Ascii,
+    /// Quiet one-cell dot pulse for presence indicators.
+    DotPulse,
     /// Auto: Braille unless `ascii` flag / Motion prefers static.
     Auto,
 }
@@ -143,6 +144,7 @@ impl SpinnerGlyphSet {
         match self {
             Self::Braille => "braille",
             Self::Ascii => "ascii",
+            Self::DotPulse => "dot-pulse",
             Self::Auto => "auto",
         }
     }
@@ -309,6 +311,8 @@ impl SpinnerState {
             ActivityPhase::Indeterminate => {
                 if use_ascii {
                     SPINNER_ASCII_FRAMES
+                } else if matches!(self.glyph_set, SpinnerGlyphSet::DotPulse) {
+                    SPINNER_DOT_PULSE_FRAMES
                 } else {
                     SPINNER_BRAILLE_FRAMES
                 }

@@ -34,7 +34,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 003 | Activate the spacing system (padding, gaps, dialog rhythm) | P1 | L | 001 | DONE |
 | 004 | Enforce recipes — chips, badges, tinted selection, meters | P1 | L | 001, 003 | DONE |
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | DONE |
-| 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | TODO |
+| 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | DONE |
 | 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | TODO |
 | 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | TODO |
 | 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | TODO |
@@ -44,6 +44,9 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
 
 ## Amendments log
+
+- 2026-08-12 — Plan 006: added required public API/frame/browser outputs to Scope.
+- 2026-08-12 — Plan 006: added generated Spinner component MDX required by the docs gate.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

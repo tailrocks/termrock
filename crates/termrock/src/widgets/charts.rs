@@ -239,7 +239,7 @@ impl VizGlyphSet {
             Self::Ascii => &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'],
             Self::Block | Self::Auto => crate::style::BLOCK_RAMP,
             // Braille vertical density approximation (single cell heights)
-            Self::Braille => &[' ', '⣀', '⣤', '⣶', '⣿'],
+            Self::Braille => crate::style::BRAILLE_RAMP,
         }
     }
 

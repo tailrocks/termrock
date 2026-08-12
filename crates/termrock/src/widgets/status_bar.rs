@@ -781,7 +781,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
             area.y,
             &shown,
             usize::from(need),
-            fade_style(self.system.style(Role::Warning), self.alpha),
+            apply_alpha(self.system, self.system.style(Role::Warning), self.alpha),
         );
     }
 }
@@ -796,7 +796,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
         }
         buffer.set_style(
             area,
-            fade_style(self.system.style(Role::StatusBar), self.alpha),
+            apply_alpha(self.system, self.system.style(Role::StatusBar), self.alpha),
         );
         state.regions.clear();
         let placements = self.placements(area, Some(state));
@@ -823,7 +823,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                     placement.area.y,
                     separator,
                     1,
-                    fade_style(self.system.style(Role::TextMuted), self.alpha),
+                    apply_alpha(self.system, self.system.style(Role::TextMuted), self.alpha),
                 );
                 content_area.x = content_area.x.saturating_add(2);
                 content_area.width = content_area.width.saturating_sub(2);
@@ -840,7 +840,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 content_area.y,
                 &content,
                 usize::from(content_area.width),
-                fade_style(style, self.alpha),
+                apply_alpha(self.system, style, self.alpha),
             );
             state.regions.push(HitRegion {
                 id: placement.id.clone(),
@@ -940,17 +940,12 @@ const fn side_rank(side: Side) -> u8 {
     }
 }
 
-fn fade_style(mut style: Style, alpha: f32) -> Style {
-    if let Some(foreground) = style.fg {
-        style = style.fg(faded(foreground, alpha));
-    }
-    if let Some(background) = style.bg {
-        style = style.bg(faded(background, alpha));
-    }
-    if let Some(underline) = style.underline_color {
-        style = style.underline_color(faded(underline, alpha));
-    }
-    style
+fn apply_alpha(system: &DesignSystem, style: Style, alpha: f32) -> Style {
+    let canvas = system
+        .style(Role::Canvas)
+        .bg
+        .unwrap_or(ratatui_core::style::Color::Black);
+    crate::style::fade_style(style, alpha, canvas)
 }
 
 #[cfg(test)]
@@ -1031,7 +1026,12 @@ mod tests {
         assert_eq!(state.hover(position), Some(&"activity"));
         (&bar).render(area, &mut buffer, &mut state);
         assert_eq!(state.click(position), Outcome::Activated("activity"));
-        assert_eq!(buffer[(area.x, area.y)].bg, Color::Rgb(40, 40, 40));
+        let expected = crate::style::blend_toward(
+            Color::Rgb(80, 80, 80),
+            system.style(Role::Canvas).bg.unwrap(),
+            0.5,
+        );
+        assert_eq!(buffer[(area.x, area.y)].bg, expected);
     }
 
     #[test]

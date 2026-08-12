@@ -84,6 +84,8 @@ source — reimplement, do not copy code):
 - `crates/termrock/src/perf/` — only if cell-run coalescing best lives there; decide by reading `perf/` module docs first
 - `crates/termrock-lookbook/src/stories.rs` (motion demo story)
 - `registry/` + docs inventory regen if the build checks demand it (`mise run contracts` — see mise.toml task)
+- `docs/api/public-api.txt`, `docs/content/docs/components/spinner.mdx`, affected
+  `docs/public/preview-frames/`, and `artifacts/visual-qa/plan-006/`
 - `migrations/0266-*.md` + `MIGRATING.md` (only the `faded`/`fade_style` consolidation is breaking; otherwise additive note)
 - `plans/README.md`
 
@@ -199,13 +201,22 @@ tests in `style/` modules.
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` exit 0
-- [ ] `grep -n "fn fade_style" crates/termrock/src/widgets/status_bar.rs` → 0 matches (moved to shared kit)
-- [ ] Glyph width test sweeps the whole catalog and passes
-- [ ] `truncate_cols` exists in `crates/termrock/src/text/` with passing property tests
-- [ ] Motion story renders deterministically in lookbook
-- [ ] `migrations/0266-*.md` exists, linked
-- [ ] `plans/README.md` updated
+- [x] `mise run check` + `mise run gate` exit 0
+- [x] `grep -n "fn fade_style" crates/termrock/src/widgets/status_bar.rs` → 0 matches (moved to shared kit)
+- [x] Glyph width test sweeps the whole catalog and passes
+- [x] `truncate_cols` exists in `crates/termrock/src/text/` with passing property tests
+- [x] Motion story renders deterministically in lookbook
+- [x] `migrations/0266-*.md` exists, linked
+- [x] `plans/README.md` updated
+
+## Visual QA
+
+- Spinner and deterministic motion/presence story: **pass** across dark/paper
+  and mobile, tablet, and desktop viewports; keyboard interaction, console,
+  requests, and horizontal overflow all clean.
+- Designer-eye verdict: **pass** — shared ramps and restrained dot-pulse cues
+  add presence without competing with the primary status hierarchy.
+- Evidence: [`artifacts/visual-qa/plan-006/README.md`](../artifacts/visual-qa/plan-006/README.md).
 
 ## STOP conditions
 
@@ -223,3 +234,16 @@ tests in `style/` modules.
   change).
 - Reviewers: verify no `Instant::now()`/wall-clock sneaks into paint paths —
   determinism is a repo-level contract for previews.
+
+## Amendments
+
+- 2026-08-12: Added generated public API/frame output and agent-browser QA
+  artifacts omitted from Scope. The new kit is public and its deterministic
+  story is docs-visible; repo catalog law and the standing responsive browser
+  gate require these direct outputs in the same green commit.
+- 2026-08-12: Added generated Spinner component MDX after the docs gate found
+  it stale. This is a plan defect: the goal requires public component coverage
+  and repo cross-surface law requires docs to track story/API changes. Options
+  were suppressing the generator check, omitting the story, or regenerating the
+  canonical page; regeneration best matches the goal/design authorities, has
+  the smallest blast radius, and keeps the commit independently green.
