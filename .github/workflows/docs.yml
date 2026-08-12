@@ -80,8 +80,13 @@ jobs:
       - working-directory: docs
         run: bun install --frozen-lockfile
       - working-directory: docs
+        # The native mold linker flag is invalid for wasm32's rust-lld.
+        env:
+          RUSTFLAGS: ""
         run: bun run types:check
       - working-directory: docs
+        env:
+          RUSTFLAGS: ""
         run: bun run build
       - name: Install browser test runtime
         working-directory: docs
