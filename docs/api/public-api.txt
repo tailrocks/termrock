@@ -28501,6 +28501,7 @@ pub termrock::style::Glyph::StatusDotRing
 pub termrock::style::Glyph::StatusDotTarget
 pub termrock::style::Glyph::Stop
 pub termrock::style::Glyph::Success
+pub termrock::style::Glyph::Token
 pub termrock::style::Glyph::Warning
 impl termrock::style::Glyph
 pub const termrock::style::Glyph::ALL: &'static [Self]

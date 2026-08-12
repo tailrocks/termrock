@@ -111,3 +111,21 @@ and reduced-motion paths remain legible. Evidence:
 [paper](plan-review-paper-reduced-motion-1440x900.png),
 [mobile](plan-review-mobile-375x812.png), and
 [tablet](plan-review-tablet-768x1024.png).
+
+## Public-API agent parity stories
+
+Validated the dedicated Agent Parity handbook's three-scene preview with
+`agent-browser` at 375×812, 768×1024, and 1440×900 plus paper/reduced-motion
+desktop. Every preview accepted keyboard scene navigation; page overflow stayed
+zero while narrow terminal content remained locally scrollable; all page-local
+links resolved and console/page errors stayed clean.
+
+Designer verdict — tool block, plan approval, and turn status: **iterated 1
+time, pass** — shortened the active verb after narrow review so elapsed, token,
+and stop tiers remain distinct at 40 columns. Tool and plan rails provide clear
+focal identity; metadata stays muted; the danger stop chip remains deliberate;
+paper, Unicode/ASCII, and reduced-motion paths use public semantic APIs only.
+Evidence: [desktop](parity-stories-desktop-1440x900.png),
+[paper](parity-stories-paper-reduced-motion-1440x900.png),
+[mobile](parity-stories-mobile-375x812.png), and
+[tablet](parity-stories-tablet-768x1024.png).

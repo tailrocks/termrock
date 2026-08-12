@@ -1,0 +1,30 @@
+---
+title: Agent parity anchors
+description: Public-API regression stories for premium agent tool, plan, and turn-status surfaces.
+---
+
+# Agent parity anchors
+
+These acceptance stories compose only exported TermRock building blocks and
+patterns. They are permanent regression anchors for premium agent surfaces,
+not new product-specific widgets.
+
+## Live terminal (Ghostty-class)
+
+One focused three-scene tour covers the running tool block, golden plan
+approval, and compact turn status. Use arrow keys or click to move between
+scenes.
+
+<TerminalPreview story="agent/tool-block-parity" interactive caption="Agent parity · tool block, plan approval, and turn status" />
+
+## Composition proof
+
+- `agent/tool-block-parity`: public `ToolCallCard`, compact and expanded.
+- `agent/plan-approval-parity`: public `patterns::PlanReview` task approval.
+- `agent/turn-status-parity`: public `Spinner`, `Glyph::Token`, and `ActionBar`.
+
+No hardcoded color, private helper, or product model participates.
+
+## Related
+
+[AgentWorkbench](/docs/handbook/agent-workbench) · [ToolCallCard](/docs/handbook/tool-call-card) · [PlanReview](/docs/handbook/plan-review)

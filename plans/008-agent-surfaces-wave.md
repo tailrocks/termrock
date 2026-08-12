@@ -273,3 +273,12 @@ paint tests on the widget's existing test module.
   chrome. The original Step 7 single-file migration conflicted with the
   independently green commit rule after earlier slices shipped; a sequential
   same-commit boundary preserves the visible default and migration history.
+- 2026-08-12: Added catalog-owned `Glyph::Token` to Step 6 scope after the
+  required turn-status token marker proved absent from Plan 006. Hardcoding or
+  repurposing an emphasis diamond would violate semantic glyph ownership; the
+  additive glyph is the smallest public-API fix and lets the parity story stay
+  entirely on supported composition paths.
+- 2026-08-12: Moved the three parity previews from AgentWorkbench into a
+  dedicated one-preview Agent Parity handbook page. The live docs contract
+  requires exactly one `TerminalPreview` per handbook page; one grouped
+  three-scene tour preserves browser coverage without weakening catalog law.

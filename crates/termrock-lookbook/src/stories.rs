@@ -7331,6 +7331,33 @@ pub(crate) fn stories() -> Vec<Story> {
             plan_review_comments_story,
         ),
         Story::new(
+            "agent/tool-block-parity",
+            "Agent tool block parity",
+            "AgentParity",
+            "Public ToolCallCard compact and expanded running states.",
+            56,
+            12,
+            agent_tool_block_parity_story,
+        ),
+        Story::new(
+            "agent/plan-approval-parity",
+            "Agent plan approval parity",
+            "AgentParity",
+            "Public PlanReview golden plan and approval composition.",
+            56,
+            16,
+            agent_plan_approval_parity_story,
+        ),
+        Story::new(
+            "agent/turn-status-parity",
+            "Agent turn status parity",
+            "AgentParity",
+            "Public spinner, token glyph, elapsed meta, and stop chip.",
+            56,
+            3,
+            agent_turn_status_parity_story,
+        ),
+        Story::new(
             "question-flow/basic",
             "Question flow",
             "QuestionFlow",
@@ -22826,6 +22853,98 @@ fn plan_review_comments_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     state.pane = PlanReviewPane::Comments;
     state.focused = true;
     frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn agent_tool_block_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{
+        ToolCall, ToolCallCard, ToolCallCardState, ToolCallPresentation, ToolStatus,
+    };
+    let call = ToolCall::new("parity-tool", "search", "Search")
+        .status(ToolStatus::Running)
+        .args_summary("component recipes")
+        .args_detail("docs/design + crates/termrock/src")
+        .result_summary("Scanning public surfaces");
+    let compact_area = Rect::new(area.x, area.y, area.width, 1);
+    let expanded_area = Rect::new(
+        area.x,
+        area.y.saturating_add(2),
+        area.width,
+        area.height.saturating_sub(2),
+    );
+    let mut compact = ToolCallCardState::new();
+    compact.presentation = ToolCallPresentation::Compact;
+    let mut expanded = ToolCallCardState::new();
+    expanded.focused = true;
+    expanded.presentation = ToolCallPresentation::Expanded;
+    ToolCallCard::new(&call, system)
+        .tick(7)
+        .paint(compact_area, frame.buffer_mut(), &mut compact);
+    ToolCallCard::new(&call, system).tick(7).paint(
+        expanded_area,
+        frame.buffer_mut(),
+        &mut expanded,
+    );
+}
+
+fn agent_plan_approval_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{PlanReview, PlanReviewPane, PlanReviewState, example_plan_document};
+    let mut state = PlanReviewState::new();
+    state.open(example_plan_document());
+    state.pane = PlanReviewPane::Tasks;
+    state.focused = true;
+    frame.render_stateful_widget(&PlanReview::new(system), area, &mut state);
+}
+
+fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use std::time::{Duration, Instant};
+    use termrock::{
+        runtime::FrameTick,
+        style::Glyph,
+        widgets::{Action, ActionBar, ActionBarState, Spinner, SpinnerGlyphSet, SpinnerState},
+    };
+    let tick = FrameTick::manual(
+        Instant::now(),
+        Duration::from_millis(2_400),
+        Duration::from_millis(16),
+    );
+    let spinner_area = Rect::new(area.x, area.y, area.width.saturating_sub(22), 1);
+    let mut spinner_state = SpinnerState::new();
+    spinner_state.set_glyph_set(SpinnerGlyphSet::DotPulse);
+    Spinner::labeled("Building catalog", system)
+        .role(Role::ActorAssistant)
+        .paint(
+            spinner_area,
+            frame.buffer_mut(),
+            &spinner_state,
+            tick,
+            system.motion,
+        );
+    let token = Glyph::Token.resolve(system.glyphs).text;
+    let meta = format!("2.4s  {token} 12.8k");
+    let meta_width = 14_u16.min(area.width);
+    let meta_x = area.right().saturating_sub(meta_width.saturating_add(7));
+    frame.buffer_mut().set_stringn(
+        meta_x,
+        area.y,
+        meta,
+        usize::from(meta_width),
+        system.style(Role::TextMuted),
+    );
+    let actions = [Action {
+        id: "stop",
+        label: "Stop",
+        enabled: true,
+        style: Some(system.style(Role::Danger)),
+    }];
+    let mut action_state = ActionBarState {
+        cursor: Some("stop"),
+        regions: Vec::new(),
+    };
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system),
+        Rect::new(area.right().saturating_sub(7), area.y, 7, 1),
+        &mut action_state,
+    );
 }
 
 fn question_flow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
