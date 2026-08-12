@@ -226,6 +226,33 @@ paint tests on the widget's existing test module.
   should adopt rails on next pin; its spinner-frame copy becomes deletable
   after plan 006.
 
+## Completion summary
+
+Completed all seven steps in independently green commits. Transcript,
+ToolCallCard, SubagentCard, TerminalRunCard, WorkingStateCard, PromptComposer,
+PermissionPrompt, and PlanReview now share semantic actor/severity rails,
+surface layering, quiet presence motion, field rows, and action chips. Three
+public-API-only parity stories permanently cover the flagship tool, plan, and
+turn-status compositions. `mise run check` and `mise run gate` passed after the
+final story slice.
+
+Amendment rationale: migration numbers advanced per independently shipped
+visible boundary; generated docs/frame/browser artifacts entered scope under
+cross-surface law; live code proved paint-only Transcript ticks sufficient;
+mandatory browser review exposed and fixed paper-theme token ownership; Plan
+006 had omitted semantic prompt/token glyphs, so the shared catalog gained
+`Glyph::Prompt` and `Glyph::Token`; and the docs one-preview contract required
+the grouped parity tour to live on its own handbook page. Each choice followed
+the goal/design SoT with the smallest green blast radius rather than preserving
+defective plan text.
+
+Designer verdicts: Transcript **iterated 1, pass**; ToolCallCard **iterated 2,
+pass**; SubagentCard **pass**; TerminalRunCard **pass**; WorkingStateCard
+**pass**; PromptComposer **pass**; PermissionPrompt **pass**; PlanReview
+**pass**; parity tool/plan/status set **iterated 1, pass**. Responsive dark,
+paper, reduced-motion, keyboard, console, network, and screenshot evidence is
+indexed in `artifacts/visual-qa/plan-008/README.md`.
+
 ## Amendments
 
 - 2026-08-12: Shifted this plan's migration from 0268 to 0269 because Plan

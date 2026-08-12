@@ -36,7 +36,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 005 | Overlay elevation — dialogs, backdrop, status band, toast | P1 | M | 001, 003 | DONE |
 | 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | DONE |
 | 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | DONE |
-| 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | IN PROGRESS |
+| 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | DONE |
 | 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | TODO |
 | 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | TODO |
 
