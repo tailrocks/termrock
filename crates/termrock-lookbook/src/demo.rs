@@ -268,7 +268,7 @@ impl DemoSession {
         };
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
-        } else if changed {
+        } else if changed && self.outcome.is_none() {
             self.outcome = Some(format!("{} updated", self.story.component));
         }
         Ok(self.update(changed))
@@ -328,8 +328,13 @@ impl DemoSession {
             },
             interactive: self.story.interactive,
             captures_text_input: self.interactor.captures_text_input(),
-            next_deadline_ms: timed_component(self.story.component)
-                .then_some(self.elapsed_ms.saturating_add(100)),
+            next_deadline_ms: self
+                .interactor
+                .next_deadline_ms(self.elapsed_ms)
+                .or_else(|| {
+                    timed_component(self.story.component)
+                        .then_some(self.elapsed_ms.saturating_add(100))
+                }),
         }
     }
 
@@ -350,10 +355,12 @@ impl DemoSession {
                 if shift {
                     modifiers |= KeyModifiers::SHIFT;
                 }
-                if ctrl {
+                // Browser Command is the platform accelerator equivalent of
+                // terminal Control for editor shortcuts. Option remains Alt.
+                if ctrl || meta {
                     modifiers |= KeyModifiers::CONTROL;
                 }
-                if alt || meta {
+                if alt {
                     modifiers |= KeyModifiers::ALT;
                 }
                 let kind = match kind.as_str() {
@@ -565,6 +572,27 @@ mod tests {
     }
 
     #[test]
+    fn browser_meta_maps_to_terminal_control_without_inventing_alt() {
+        let mut session = DemoSession::mount("text-input/basic", None, None).unwrap();
+        let event = session
+            .decode_event(DemoEvent::Key {
+                key: "a".to_owned(),
+                kind: "press".to_owned(),
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: true,
+            })
+            .unwrap()
+            .unwrap();
+        let Event::Key(key) = event else {
+            panic!("expected key event");
+        };
+        assert!(key.modifiers.contains(KeyModifiers::CONTROL));
+        assert!(!key.modifiers.contains(KeyModifiers::ALT));
+    }
+
+    #[test]
     fn action_link_hover_and_activation_are_real_state() {
         let mut session = DemoSession::mount("action-link/basic", Some(40), Some(3)).unwrap();
         let before = session.frame();
@@ -583,12 +611,19 @@ mod tests {
         let activated = session.dispatch(key("Enter")).unwrap();
         assert_eq!(activated.outcome.as_deref(), Some("Save started"));
         assert!(activated.hints.iter().any(|hint| hint.contains("loading")));
+        assert_eq!(activated.next_deadline_ms, Some(100));
         let blocked = session.dispatch(key("Enter")).unwrap();
         assert!(!blocked.changed);
+        let started = session
+            .dispatch(DemoEvent::Tick { elapsed_ms: 100 })
+            .unwrap();
+        assert!(!started.changed);
+        assert_eq!(started.next_deadline_ms, Some(900));
         let completed = session
             .dispatch(DemoEvent::Tick { elapsed_ms: 900 })
             .unwrap();
         assert_eq!(completed.outcome.as_deref(), Some("Saved successfully"));
+        assert_eq!(completed.next_deadline_ms, None);
     }
 
     #[test]

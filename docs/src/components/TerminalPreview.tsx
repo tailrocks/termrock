@@ -341,6 +341,7 @@ export function TerminalPreview({
 }: TerminalPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
+  const textSinkRef = useRef<HTMLTextAreaElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<PreviewRuntime | null>(null)
   const handleRef = useRef<number | null>(null)
@@ -562,7 +563,10 @@ export function TerminalPreview({
   }, [])
 
   useEffect(() => {
-    if (descriptor?.interactionKind !== 'timed-state') return
+    if (
+      descriptor?.interactionKind !== 'timed-state' &&
+      update?.nextDeadlineMs == null
+    ) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduced) return
     let raf = 0
@@ -580,7 +584,7 @@ export function TerminalPreview({
     }
     raf = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(raf)
-  }, [descriptor, dispatch])
+  }, [descriptor?.interactionKind, dispatch, update?.nextDeadlineMs])
 
   useEffect(() => {
     const host = hostRef.current
@@ -618,11 +622,32 @@ export function TerminalPreview({
 
   const canInteract = Boolean(interactive && descriptor?.interactive)
   const animated = descriptor?.interactionKind === 'timed-state'
+  const capturesTextInput = Boolean(update?.capturesTextInput)
 
   const keyEvent = (
     event: ReactKeyboardEvent,
     kind: 'press' | 'repeat' | 'release',
   ) => {
+    if (
+      capturesTextInput &&
+      (event.ctrlKey || event.metaKey) &&
+      event.key.toLowerCase() === 'v'
+    ) {
+      // Preserve the browser's trusted paste event; its clipboardData is the
+      // source of truth forwarded through the normalized paste event below.
+      return
+    }
+    if (
+      capturesTextInput &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey
+    ) {
+      // Let the real textarea emit beforeinput so Unicode and IME text arrive
+      // once as text, rather than being guessed from keyboard layout keys.
+      return
+    }
     if (
       !canInteract ||
       !shouldCapturePreviewKey(
@@ -680,7 +705,8 @@ export function TerminalPreview({
     if (!canInteract || event.button !== 0) return
     const cell = eventCell(event)
     if (!cell) return
-    hostRef.current?.focus()
+    if (capturesTextInput) textSinkRef.current?.focus()
+    else hostRef.current?.focus()
     event.currentTarget.setPointerCapture(event.pointerId)
     dragRef.current = true
     dispatch({ type: 'pointer', kind: 'down', x: cell.x, y: cell.y })
@@ -718,14 +744,10 @@ export function TerminalPreview({
       mountedAtRef.current = performance.now()
       frameRef.current = next
       setFrame(next)
-      setUpdate({
-        changed: true,
-        outcome: 'Demo reset',
-        hints: descriptor?.hints ?? [],
-        interactive: descriptor?.interactive ?? false,
-        capturesTextInput: false,
-        nextDeadlineMs: animated ? 100 : null,
-      })
+      dispatch(
+        { type: 'resize', cols: next.story_cols, rows: next.story_rows },
+        true,
+      )
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     }
@@ -799,13 +821,37 @@ export function TerminalPreview({
         onFocus={() => {
           setFocused(true)
           dispatch({ type: 'focus', focused: true })
+          if (capturesTextInput && document.activeElement === hostRef.current) {
+            textSinkRef.current?.focus()
+          }
         }}
-        onBlur={() => {
+        onBlur={(event) => {
+          if (event.currentTarget.contains(event.relatedTarget)) return
           setFocused(false)
           dispatch({ type: 'focus', focused: false })
         }}
         style={chrome}
       >
+        {capturesTextInput ? (
+          <textarea
+            ref={textSinkRef}
+            aria-label="Terminal preview text input"
+            tabIndex={-1}
+            defaultValue=""
+            autoCapitalize="off"
+            autoComplete="off"
+            spellCheck={false}
+            style={{
+              position: 'fixed',
+              left: -10_000,
+              top: 0,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        ) : null}
         <div
           id={labelId}
           style={{

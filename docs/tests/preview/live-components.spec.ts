@@ -103,8 +103,13 @@ test('slider and split pane respond to keys and pointer drag', async ({ page }) 
   const splitBox = await splitCanvas.boundingBox()
   expect(splitBox).not.toBeNull()
   if (splitBox) {
+    const cols = Number(await split.getAttribute('data-preview-cols'))
+    const storyCols = cols - 2
+    const available = storyCols - 1
+    const dividerCell = 1 + Math.round(available * 0.405)
+    const dividerX = splitBox.x + ((dividerCell + 0.5) / cols) * splitBox.width
     const y = splitBox.y + splitBox.height / 2
-    await page.mouse.move(splitBox.x + splitBox.width * 0.38, y)
+    await page.mouse.move(dividerX, y)
     await page.mouse.down()
     await page.mouse.move(splitBox.x + splitBox.width * 0.55, y)
     await page.mouse.up()

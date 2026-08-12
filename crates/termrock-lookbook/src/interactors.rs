@@ -130,6 +130,10 @@ pub trait StoryInteraction {
     fn handle_tick(&mut self, _elapsed_ms: u64) -> bool {
         false
     }
+    /// Earliest deterministic host-time wakeup required by current state.
+    fn next_deadline_ms(&self, _elapsed_ms: u64) -> Option<u64> {
+        None
+    }
     /// Deterministic controls exposed by native Lookbook.
     fn knobs(&self) -> &[Knob] {
         &[]
@@ -1327,7 +1331,11 @@ impl TabsInteractor {
         match outcome {
             TabsOutcome::Ignored => false,
             TabsOutcome::FocusChanged { id } => {
-                self.outcome = Some(format!("Tab focus: {}", id.unwrap_or("none")));
+                let selected = self.state.selected().copied().unwrap_or("none");
+                self.outcome = Some(format!(
+                    "Tab selected: {selected}; focus: {}",
+                    id.unwrap_or("none")
+                ));
                 true
             }
             TabsOutcome::SelectionChanged { id } => {
@@ -1822,7 +1830,6 @@ pub(crate) struct ButtonInteractor {
     state: ButtonState,
     theme: RolePalette,
     loading_since_ms: Option<u64>,
-    elapsed_ms: u64,
     outcome: Option<String>,
 }
 
@@ -1834,7 +1841,6 @@ impl ButtonInteractor {
             state,
             theme: RolePalette::default(),
             loading_since_ms: None,
-            elapsed_ms: 0,
             outcome: None,
         }
     }
@@ -1844,7 +1850,10 @@ impl ButtonInteractor {
             ActivationOutcome::Ignored => false,
             ActivationOutcome::Pressed => true,
             ActivationOutcome::Activated => {
-                self.loading_since_ms = Some(self.elapsed_ms);
+                // Establish the start from the first host tick. Non-animated
+                // demos are not polled before activation, so their cached
+                // elapsed value is intentionally not a wall-clock guess.
+                self.loading_since_ms = None;
                 self.state.activation.set_loading(true);
                 self.outcome = Some("Save started".to_owned());
                 true
@@ -1899,8 +1908,11 @@ impl StoryInteraction for ButtonInteractor {
     }
 
     fn handle_tick(&mut self, elapsed_ms: u64) -> bool {
-        self.elapsed_ms = elapsed_ms;
+        if !self.state.activation.is_loading() {
+            return false;
+        }
         let Some(started) = self.loading_since_ms else {
+            self.loading_since_ms = Some(elapsed_ms);
             return false;
         };
         if elapsed_ms.saturating_sub(started) < 800 {
@@ -1910,6 +1922,13 @@ impl StoryInteraction for ButtonInteractor {
         self.state.activation.set_loading(false);
         self.outcome = Some("Saved successfully".to_owned());
         true
+    }
+
+    fn next_deadline_ms(&self, elapsed_ms: u64) -> Option<u64> {
+        self.state.activation.is_loading().then(|| {
+            self.loading_since_ms
+                .map_or_else(|| elapsed_ms.saturating_add(100), |started| started + 800)
+        })
     }
 }
 
