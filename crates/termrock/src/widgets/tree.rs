@@ -1076,9 +1076,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: body.width.saturating_sub(u16::from(show_scrollbar)),
             height: body.height,
         };
+        let paint_offset = if state.virtual_total > 0 {
+            0
+        } else {
+            state.offset
+        };
         state.content_width = self
             .nodes
             .iter()
+            .skip(paint_offset)
+            .take(usize::from(body.height))
             .map(|node| u16::try_from(node.label.width()).unwrap_or(u16::MAX))
             .max()
             .unwrap_or(0);
@@ -1091,11 +1098,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             0..=7 => 0,
             8..=11 => 1,
             _ => self.tokens.density.tree_indent().max(1),
-        };
-        let paint_offset = if state.virtual_total > 0 {
-            0
-        } else {
-            state.offset
         };
         for (visible, node) in self
             .nodes
