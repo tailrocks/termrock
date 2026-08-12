@@ -293,7 +293,7 @@ Legend: ● strong · ◐ partial · ○ weak/absent · — N/A
 | Large virtual tables | ◐ | ◐ | ● | ◐ | ◐ | ● kits + path |
 | Streaming / coalesce / budgets | ○ | ○ | ◐ | ◐ | ○ | ● perf |
 | Capability profiles + doctor | ○ | ◐ | ◐ | ○ | ○ | ● capability |
-| Docs depth (shadcn-class) | ◐ | ● | ● | ● | ◐ | ● handbook |
+| Docs depth (shadcn-class) | ◐ | ● | ● | ● | ◐ | ● canonical component docs |
 | Product-neutral mandate | ● | ○ | ● | ● | ● | ● |
 | Hero app polish | — | ● (apps) | ● | — | — | via consumers |
 
@@ -390,7 +390,7 @@ Browser has DOM inspectors; terminals have print debugging.
 
 ### 10. **Handbook that teaches when/why**
 Charm/Textual win on docs; Ratatui wins on control.  
-**Exceed by:** handbook standard + compilable examples + ownership tables (started).
+**Exceed by:** canonical documentation standard + compilable examples + ownership tables (started).
 
 ---
 
@@ -404,7 +404,7 @@ Charm/Textual win on docs; Ratatui wins on control.
 | P1 | DataTable D1–D5 on data_view |
 | P1 | Agent workbench block on public APIs only |
 | P2 | Doctor CLI + capability stories |
-| P2 | Finish handbook coverage for all public widgets |
+| P2 | Finish canonical interactive documentation for all public widgets |
 | P3 | Metrics/dashboard blocks (btop-class density as recipe, not core identity) |
 
 **Positioning line:**

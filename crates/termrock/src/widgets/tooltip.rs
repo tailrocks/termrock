@@ -15,7 +15,8 @@
 //!
 //! Research: Radix Tooltip, desktop tooltips, terminal-adapted hover semantics.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use web_time::Instant;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 

@@ -13,7 +13,7 @@
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/basic"],
-            "snapshots": ["docs/public/preview-frames/permission-prompt-basic/manifest.json"]
+            "snapshots": ["docs/public/preview-posters/permission-prompt-basic.json"]
           }
         },
         "keyboard": {
@@ -67,7 +67,7 @@
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/narrow"],
-            "snapshots": ["docs/public/preview-frames/permission-prompt-narrow/manifest.json"]
+            "snapshots": ["docs/public/preview-posters/permission-prompt-basic.json"]
           }
         },
         "tiny_terminal": {
@@ -75,14 +75,14 @@
           "reason": "narrow story covers contraction; dedicated tiny matrix pending",
           "evidence": {
             "stories": ["permission-prompt/narrow"],
-            "snapshots": ["docs/public/preview-frames/permission-prompt-narrow/manifest.json"]
+            "snapshots": ["docs/public/preview-posters/permission-prompt-basic.json"]
           }
         },
         "unicode": {
           "status": "covered",
           "evidence": {
             "stories": ["permission-prompt/unicode"],
-            "snapshots": ["docs/public/preview-frames/permission-prompt-unicode/manifest.json"]
+            "snapshots": ["docs/public/preview-posters/permission-prompt-basic.json"]
           }
         },
         "cjk": {

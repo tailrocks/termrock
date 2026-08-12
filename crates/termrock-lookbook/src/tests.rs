@@ -10,9 +10,9 @@ use termrock::{
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
-    stories::stories,
     svg::{render_story_to_buffer, render_story_to_buffer_with_system},
 };
+use termrock_lookbook::stories::stories;
 
 #[test]
 fn list_story_visibly_uses_the_selected_theme() {

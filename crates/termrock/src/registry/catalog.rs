@@ -69,7 +69,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             files: vec![
                 file("crates/termrock/src/widgets/panel.rs", ContractFileRole::Primary),
                 file(
-                    "docs/public/preview-frames/panel-variants/manifest.json",
+                    "docs/public/preview-posters/panel-stack-omission.json",
                     ContractFileRole::Fixture,
                 ),
             ],
@@ -723,7 +723,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     ContractFileRole::Primary,
                 ),
                 file(
-                    "docs/public/preview-frames/card-basic/manifest.json",
+                    "docs/public/preview-posters/card-basic.json",
                     ContractFileRole::Fixture,
                 ),
             ],
@@ -773,7 +773,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     ContractFileRole::Primary,
                 ),
                 file(
-                    "docs/public/preview-frames/surface-ladder/manifest.json",
+                    "docs/public/preview-posters/surface-ladder.json",
                     ContractFileRole::Fixture,
                 ),
             ],
@@ -867,7 +867,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     ContractFileRole::Primary,
                 ),
                 file(
-                    "docs/public/preview-frames/app-shell-workbench/manifest.json",
+                    "docs/public/preview-posters/app-shell-workbench.json",
                     ContractFileRole::Fixture,
                 ),
             ],

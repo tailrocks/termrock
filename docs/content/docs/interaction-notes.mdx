@@ -1,0 +1,1010 @@
+---
+title: Interaction architecture notes
+description: Cross-component guidance retained from the former Component Handbook.
+---
+
+These notes describe shared host, interaction, overlay, and composition contracts. Component-specific material now lives on the canonical component page; application recipes live under Application patterns.
+
+## agent-mode-selector
+
+# AgentModeSelector
+
+Autonomy / safety mode dial (Ask · Plan · Edit · Auto · FullAuto). Changes
+**permission chrome expectations**, not model weights. FullAuto always uses
+warning role and `needs_confirm` on change.
+
+
+## When to use / when not
+
+| Use AgentModeSelector | Prefer |
+|-----------------------|--------|
+| Composer mode badge / ribbon | — |
+| Model pick | [ModelSelector](/docs/interaction-notes) |
+| Generic workbench modes | ModeRibbon + host ids |
+
+## Presentations
+
+| Mode | Chrome |
+|------|--------|
+| Compact | `[EDIT]` badge |
+| Ribbon | horizontal short labels |
+| Menu | list + consequence text |
+
+## Related
+
+ModelSelector · ModeRibbon · PermissionPrompt · migration `0215`
+
+## agent-parity
+
+# Agent parity anchors
+
+These acceptance stories compose only exported TermRock building blocks and
+patterns. They are permanent regression anchors for premium agent surfaces,
+not new product-specific widgets.
+
+
+## Composition proof
+
+- `agent/tool-block-parity`: public `ToolCallCard`, compact and expanded.
+- `agent/plan-approval-parity`: public `patterns::PlanReview` task approval.
+- `agent/turn-status-parity`: public `Spinner`, `Glyph::Token`, and `ActionBar`.
+
+No hardcoded color, private helper, or product model participates.
+
+## Related
+
+[AgentWorkbench](/docs/patterns/agent-workbench) · [ToolCallCard](/docs/interaction-notes) · [PlanReview](/docs/components/plan-review)
+
+## attachment-chip
+
+# AttachmentChip
+
+Structured compact attachment for PromptComposer and permission / data-egress
+flows. Host projects [`AttachmentItem`]; TermRock paints type, name, size/lines,
+status/progress, and remove chrome. Outcomes only — no upload I/O.
+
+
+## When to use / when not
+
+| Use AttachmentChip | Prefer |
+|--------------------|--------|
+| File / image / URL / code on a prompt | — |
+| Filter toggles | [Chip](/docs/components/tag) (selectable Chip) |
+| Large pasted text | [PasteChip](/docs/interaction-notes) |
+| Entity labels without attach lifecycle | [Tag](/docs/components/tag) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Path, upload, open, index | Host |
+| Display name, status, progress projection | Host `AttachmentItem` |
+| Paint, remove/open/preview/retry requests | AttachmentChip |
+| Sensitive path redaction in summaries | `sensitive` + `attachment_semantic_summary` |
+
+## Outcomes
+
+- `Activated` · `Removed`
+- `OpenRequested` · `PreviewRequested` · `RetryRequested`
+- `PartChanged` (Body ↔ Remove)
+
+## Compose
+
+```rust
+use termrock::widgets::{
+    AttachmentItem, AttachmentStatus, AttachmentChip, AttachmentChipState,
+    ComposerChip, paint_attachment_strip, TokenStripLayout, TokenStripState,
+};
+
+let item = AttachmentItem::file("f1", "main.rs")
+    .bytes(4200)
+    .status(AttachmentStatus::Uploading { progress: 40 });
+// PromptComposer list model
+let chip = ComposerChip::from_attachment(&item);
+// Or paint directly
+let mut st = AttachmentChipState::new();
+AttachmentChip::new(&item, &system).paint(area, buf, &mut st);
+```
+
+## Related
+
+PasteChip · Tag · TokenStrip · PromptComposer · migration `0212`
+
+## charts
+
+# Charts visualization family
+
+Shared **scale** (`ScaleMode`: Auto / Fixed / Log) and **glyphs**
+(`VizGlyphSet`: Auto / Block / Braille / ASCII) across:
+
+| Widget | Role |
+|--------|------|
+| [Sparkline](#sparkline) | One-row density / stream window |
+| [Chart](#chart) | Multi-series plot + legend/axes |
+| [Gauge](#gauge) | Single value + thresholds |
+| [Histogram](#histogram) | Buckets |
+| BarSeries | Labeled horizontal bars |
+| SegmentedMeter | Stacked share row |
+
+
+## Scale semantics
+
+- **Auto** — finite samples only (NaN = missing)
+- **Fixed** — `[min, max]`
+- **Log** — positive finite values; optional fixed domain
+- **window(n)** — last N samples for streaming
+
+## Capability / no-color
+
+| Glyph set | When |
+|-----------|------|
+| Block / Braille | Unicode / Enhanced |
+| ASCII ` .:-=+*#%@` | `GlyphSet::Ascii` or forced |
+| Series markers | `*+xo#` / `●◆▲■○` ordered by series index |
+
+No-color mode prefers markers + density over hue.
+
+## Sparkline
+
+```rust
+Sparkline::new(&samples, &system)
+    .pre_normalized(true) // legacy 0..=1
+    .threshold(0.8)
+    .selected(i)
+    .window(60);
+```
+
+## Chart
+
+```rust
+Chart::new(&[ChartSeries::new("cpu", &cpu)], &system)
+    .title("host")
+    .thresholds(&[90.0])
+    .scale(ScaleMode::Fixed { min: 0.0, max: 100.0 });
+```
+
+## Gauge
+
+```rust
+Gauge::percent(72.0, &system).label("cpu").unit("%").thresholds(&[70.0, 90.0]);
+```
+
+## Histogram
+
+```rust
+Histogram::new(&[HistBucket::new("0", 1.0), HistBucket::new("1", 4.0)], &system)
+    .selected(1);
+```
+
+## Related
+
+TokenMeter (usage) · migration `0201`
+
+## citation-list
+
+# CitationList
+
+Expandable list under agent output: summary when collapsed, navigable rows with
+type/meta/destination when expanded. Groups duplicate destinations.
+
+
+## Related
+
+SourceCitation · migration `0218`
+
+## context-meter
+
+# ContextMeter
+
+Budget meter for model context and other resources. Never claims 100% without a
+known limit. Approximate estimates use `~` and coarse percentages.
+
+
+## When to use / when not
+
+| Use ContextMeter | Prefer |
+|------------------|--------|
+| Composer/status context usage | — |
+| Simple exact tokens only | TokenMeter (thin) |
+| Generic chart series | Gauge / SegmentedMeter |
+
+## Forms
+
+| Presentation | Use |
+|--------------|-----|
+| Compact | Status bar / composer strip |
+| Expanded | Inline breakdown |
+| Popover | Host overlay detail |
+
+## Keys
+
+Enter activate · e expand · c compact · r reduce · b breakdown
+
+## Related
+
+TokenMeter · PromptComposer · migration `0225`
+
+## dependency-graph
+
+# DependencyGraph
+
+Terminal-constrained dependency viewer. Host projects nodes and directed edges;
+TermRock applies a **deterministic layered layout** (or falls back to tree/list
+when the canvas is unreadable) and emits selection/detail outcomes.
+
+
+## When to use / when not
+
+| Use DependencyGraph | Prefer |
+|---------------------|--------|
+| Package / service / schema / task deps | — |
+| Pure hierarchy without edges | [Tree](/docs/components/tree) / [TreeTable](/docs/components/tree-table) |
+| Catalog browser | [SchemaBrowser](/docs/patterns/schema-browser) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Resolve packages / build graph | Host |
+| Layout, pan, view mode, filter | `DependencyGraphState` |
+| Details side panel | Host via `DetailsRequested` |
+
+## Readability fallback
+
+Graph view is **not** a general drawing engine. Auto-fallback to **Tree** when:
+
+- width ≤ 40, or  
+- node count > 48, or  
+- `force_tree`
+
+Host may still force List via `preferred_view`.
+
+## Layout honesty
+
+Layered placement is deterministic topological layering — good enough for
+moderate DAGs and service maps, not for dense cyclic graphs. Cycles get residual
+layer assignment by id order.
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · Enter | Select · details |
+| Ctrl+V | Cycle Graph/Tree/List |
+| [ ] · wheel | Pan |
+
+## Related
+
+TreeTable · ObjectInspector · SchemaBrowser · migration `0210`
+
+## diagnostic
+
+# Diagnostic and CodeFrame
+
+Structured diagnostics (rustc/miette-class) with list, inline, and full
+code-frame recipes. Severity always includes letter/glyph — never color alone.
+
+
+## When to use / when not
+
+| Use Diagnostic | Prefer |
+|----------------|--------|
+| Build / compiler / linter problems | — |
+| Form field one-liner | Inline recipe |
+| Recoverable app failure UI | [ErrorState](/docs/components/error-state) |
+| Full file editor body | [CodeBlock](/docs/components/code-block) + highlight bridge |
+
+## Model
+
+- `Diagnostic` — severity, code, message, source, file, labels, related, notes, help, docs, fixes
+- `SourceRange` / `SourceLabel` — 1-based lines, display columns (tabs expanded)
+- `CodeFrame` / `CodeFrameLine` — standalone snippet paint with carets
+- Recipes: `List` · `Inline` · `Full`
+
+## Non-color severity
+
+| Severity | Letter | ASCII glyph |
+|----------|--------|-------------|
+| Error | E | E |
+| Warning | W | W |
+| Info | I | I |
+| Hint | H | H |
+| Note | N | N |
+| Help | ? | ? |
+
+## Outcomes
+
+- `CursorMoved` · `Expanded` · `Activated`
+- `CopyDetails` · `ApplyFixRequested` · `OpenDocsRequested` · `FixSelected`
+- Host owns clipboard, apply, and browser open
+
+## Integration
+
+```rust
+// CodeBlock
+.highlights(&diagnostics_to_highlights(&items))
+.gutter_marks(&diagnostics_to_gutter_marks(&items, ascii))
+
+// ErrorState copy-diagnostics payload
+format_diagnostics_plain(&items)
+```
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k | Cursor |
+| Space / o | Expand |
+| c | Copy one · C-c copy all |
+| a | Apply fix |
+| [ ] | Fix cursor |
+| d | Open docs |
+| Enter | Activate (open location) |
+
+## Related
+
+CodeBlock · ErrorState · migration `0198`
+
+## entity-mention
+
+# EntityMention
+
+Inline structured tokens for **agents, tools, sessions, resources, and users**.
+Same substrate as FileMention (`MentionRef`, `MentionDraft`, `InlineMention`)
+with entity type glyphs and family-filtered completion.
+
+
+## When to use / when not
+
+| Use EntityMention | Prefer |
+|-------------------|--------|
+| `@agent` / tool / session references | — |
+| Files and symbols | [FileMention](/docs/interaction-notes) |
+| Permission subjects | domain host models |
+
+## Types
+
+`MentionType::{Agent, Tool, Session, Resource, User, Other}`
+
+## Example
+
+```rust
+use termrock::widgets::{EntityMention, InlineMention, InlineMentionState, MentionValidity};
+
+let mut s = EntityMention::session("s1", "chat-42", "session:42");
+s.as_mut().validity = MentionValidity::Stale;
+let mut st = InlineMentionState::new();
+InlineMention::entity(&s, &system).paint(area, buf, &mut st);
+```
+
+## Semantic safety
+
+`mention_semantic_description` never embeds provider payloads; set
+`sensitive` to redact path-like canonical tails for recordings.
+
+## Related
+
+FileMention · CompletionMenu · migration `0213`
+
+## file-mention
+
+# FileMention
+
+Inline structured tokens for **files, directories, and symbols**. Host projects
+paths and ranks completion candidates; TermRock owns atomic draft cursor chrome,
+inline paint, disambiguation UI, and semantic summaries — never filesystem or
+LSP lookup.
+
+
+## When to use / when not
+
+| Use FileMention | Prefer |
+|-----------------|--------|
+| `@` path / symbol in agent prompts | — |
+| Agents / tools / sessions | [EntityMention](/docs/interaction-notes) |
+| Attachment chips (not inline) | [AttachmentChip](/docs/interaction-notes) |
+| Generic completion list only | [CompletionMenu](/docs/components/completion-menu) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Path resolve, fuzzy rank, LSP | Host |
+| Validity (missing/stale/ambiguous) | Host projection |
+| Atomic cursor · paint · outcomes | FileMention / MentionDraft / InlineMention |
+| Candidate rows | Host → `MentionCandidate` → CompletionMenu |
+
+## Atomic draft
+
+`MentionDraft` stores text segments and mention tokens. Left/Right and Backspace
+treat a mention as one unit — caret never sits “inside” a token label.
+
+## Completion
+
+```rust
+let mut st = FileMentionState::new();
+st.sync_from_draft(&text, cursor);
+if let Some(q) = &st.query {
+    let hits = filter_mention_candidates(&cands, &q.query, Some(MentionFamily::File));
+    let next = apply_mention_insert(&text, q, &hits[0].insert_markup());
+}
+```
+
+## Related
+
+EntityMention · CompletionMenu · PromptComposer · migration `0213`
+
+## file-tree
+
+# FileTree
+
+Filesystem-specialized explorer on top of [Tree](/docs/components/tree). Host
+projects flattened visible rows (`FileTreeEntry`); TermRock paints and emits
+**requests** only — no filesystem or Git I/O.
+
+
+## When to use / when not
+
+| Use FileTree | Prefer |
+|--------------|--------|
+| Repo / project explorer | — |
+| Generic hierarchy | [Tree](/docs/components/tree) |
+| Single-directory picker dialog | [FilePicker](/docs/components/file-picker) |
+| Fuzzy jump | [QuickOpen](/docs/components/quick-open) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| FS reads, git status, expansion | Host |
+| Cursor, multi-select, filter chrome | `FileTreeState` |
+| Open/rename/delete/create | Host via outcomes |
+
+## Outcomes (requests)
+
+- `OpenRequested` · `PreviewRequested` · `LoadChildrenRequested`
+- `CreateFileRequested` · `CreateDirRequested` · `RenameRequested`
+- `DeleteRequested` / `ConfirmRequired` (safe multi-delete)
+- `CopyPathRequested` · `RevealOsRequested` · `QuickOpenRequested`
+- `BreadcrumbsPath` · filter / hidden / ignored toggles
+
+## Integration
+
+```rust
+// Breadcrumbs from selection path
+breadcrumbs_from_path(entry.path)
+
+// QuickOpen flat list
+file_tree_to_quick_open_items(&entries, true)
+```
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| `/` `.` `i` | Filter · hidden · ignored |
+| `n` `N` `r` `d` | New file · new dir · rename · delete |
+| `y` `p` `C-o` | Copy path · preview · QuickOpen |
+| `g` `G` | Breadcrumbs · OS reveal |
+
+## Related
+
+Tree · QuickOpen · Breadcrumbs · FilePicker · migration `0202`
+
+## host-frame
+
+# HostFrame (lookbook host)
+
+How TermRock’s **lookbook** owns a frame after Break K partial. Not a public widget — a **host recipe** apps should mirror.
+
+
+## Authorities (only these)
+
+| Concern | Type |
+|---------|------|
+| Paint | `DesignSystem` / `RolePalette` |
+| Focus / hit / layers | `InteractionScene` |
+| Floating UI | `OverlayStack` |
+| Domain modal body | App-owned state (`Option<…>`) |
+
+**Deleted:** lookbook `host_focus` FocusRing fork.
+
+## Frame loop
+
+1. `scene.begin_frame()` (+ ensure root layer).  
+2. Register shell controls with painted `Rect`s.  
+3. If a modal is open: ensure modal layer (`owns_input`), register actions.  
+4. `scene.reconcile()`.  
+5. Paint panels with `PanelChrome::Focused` only for `scene.focused()`.  
+6. `overlays.reflow` + optional `render_backdrop` when policy ≠ None.  
+7. Paint overlay content into stack geometry.
+
+## Esc order
+
+1. `OverlayStack::handle_escape` (if stack non-empty).  
+2. `InteractionScene::handle_escape` (dismissible layers).  
+3. Host quit / bubble — never implicit.
+
+## Tab
+
+`scene.handle_key_tab_esc` — candidates limited to the top input-owning layer.
+
+## Related
+
+OverlayStack · InteractionScene · AgentWorkbench · migration `0066`
+
+## index
+
+# Component handbook
+
+These pages follow the binding standard at
+`docs/design/component-documentation-standard.md` (shadcn/ui-class structure:
+purpose → install → examples → anatomy → ownership → interaction → a11y →
+composition → mistakes → perf → testing).
+
+They go beyond the thin inventory pages under **Components** (generated from the
+public API). Use the handbook when you need **when/why**, full anatomy,
+outcomes, and a small application sketch.
+
+Each handbook page embeds **one** Ghostty-class `TerminalPreview` (truecolor
+lookbook frame pack) — never SVG, never multi-image galleries.
+
+| Page | Use when |
+|------|----------|
+| [Button](/docs/components/button) | Single activatable control or toolbar actions |
+| [List](/docs/components/list) | Stable-ID vertical collections |
+| [DataTable](/docs/components/data-table) | Virtualized / multi-column data |
+| [Dialog](/docs/components/dialog) | Modal confirmations and messages |
+| [Command palette](/docs/components/command-palette) | Fuzzy jump across commands |
+| [Prompt composer](/docs/components/prompt-composer) | Agent-style multi-line input |
+| [AttachmentChip](/docs/interaction-notes) | File/image/URL/code attachment tokens |
+| [PasteChip](/docs/interaction-notes) | Collapsed large-paste tokens |
+| [FileMention](/docs/interaction-notes) | Inline file/symbol mention tokens |
+| [EntityMention](/docs/interaction-notes) | Inline agent/tool/session mentions |
+| [SlashCommandMenu](/docs/interaction-notes) | Composer `/` command completion |
+| [ModelSelector](/docs/interaction-notes) | Model pick with cost/context meta |
+| [AgentModeSelector](/docs/interaction-notes) | Safety mode dial (FullAuto warn) |
+| [MessageThread](/docs/interaction-notes) | Virtualized agent conversation |
+| [StreamingMarkdown](/docs/interaction-notes) | Streaming-safe Markdown fences |
+| [SourceCitation](/docs/interaction-notes) | Inline citation chips |
+| [CitationList](/docs/interaction-notes) | Expandable source list |
+| [ToolCallCard](/docs/interaction-notes) | Interactive agent tool execution card |
+| [TerminalRunCard](/docs/patterns/terminal-run-card) | Shell run card · proposed vs executed |
+| [ActivityShelf](/docs/patterns/activity-shelf) | Concurrent active/blocked ops strip |
+| [TaskRail](/docs/components/task-rail) | Grouped task/agent activity side panel |
+| [SubagentCard](/docs/patterns/subagent-card) | Delegated agent run · live vs result |
+| [BackgroundTaskPanel](/docs/patterns/background-task-panel) | Detached jobs · watchers · servers |
+| [ContextMeter](/docs/interaction-notes) | Context/token/resource budget meter |
+| [QuestionFlow](/docs/components/question-flow) | Multi-question agent HITL + review |
+| [PlanReview](/docs/components/plan-review) | Plan document review + safe action focus |
+| [CheckpointTimeline](/docs/components/checkpoint-timeline) | Session restore/rewind history |
+| [SessionPicker](/docs/components/session-picker) | Create/resume/archive agent sessions |
+| [PromptQueue](/docs/components/prompt-queue) | Queued prompts behind busy agent work |
+| [AgentStatusHeader](/docs/components/agent-status-header) | Agent/session top status chrome |
+| [IntegrationStatus](/docs/components/integration-status) | MCP/plugin/extension health |
+| [WorkingStateCard](/docs/components/working-state-card) | Privacy-safe current agent work |
+| [ApprovalQueue](/docs/components/approval-queue) | Pending permissions/questions/plans/diffs |
+| [Permission prompt](/docs/components/permission-prompt) | Trust gates with provenance and risk |
+| [ObjectInspector](/docs/components/object-inspector) | Key/value field projection + cursor |
+| [LogStream](/docs/components/log-stream) | Professional follow/filter/export log viewer |
+| [DiffView](/docs/components/diff-view) | Professional unified/split read-only diffs |
+| [DiffReview](/docs/components/diff-review) | Hunk activate veneer over DiffView |
+| [Diagnostic](/docs/interaction-notes) | Structured diagnostics + CodeFrame |
+| [TerminalOutput](/docs/components/terminal-output) | Safe command output (request-only) |
+| [HexViewer](/docs/components/hex-viewer) | Virtualized binary inspector |
+| [Charts](/docs/interaction-notes) | Sparkline · Chart · Gauge · Histogram |
+| [FileTree](/docs/interaction-notes) | FS explorer with typed op requests |
+| [ProcessTable](/docs/patterns/process-table) | Process/task monitor (tree + flat) |
+| [QueryEditor](/docs/patterns/query-editor) | SQL/logs/search query workbench |
+| [ResultGrid](/docs/patterns/result-grid) | Typed query results on DataTable |
+| [SchemaBrowser](/docs/patterns/schema-browser) | DB catalog hierarchy navigator |
+| [SearchResults](/docs/interaction-notes) | Grouped search hits + match walk |
+| [MetricsDashboard](/docs/patterns/metrics-dashboard) | Metric cards · sparklines · alerts |
+| [TraceWaterfall](/docs/interaction-notes) | Nested span latency waterfall |
+| [DependencyGraph](/docs/interaction-notes) | Package/service dependency map |
+
+**CI:** fenced examples that claim to compile are mirrored in
+`crates/termrock/tests/documentation_examples.rs` and must stay green.
+
+## message-thread
+
+# MessageThread
+
+Long-running agent sessions: heterogeneous entries projected to lines over
+kernel `Transcript` (virtualization, anchors, follow). Host owns payloads and
+run effects; TermRock owns viewport, zoom, search, and typed outcomes.
+
+
+## When to use / when not
+
+| Use MessageThread | Prefer |
+|-------------------|--------|
+| Agent conversation center pane | — |
+| Raw log tail | [LogStream](/docs/components/log-stream) |
+| Low-level measure/follow only | Transcript |
+
+## v1 law
+
+No nested StatefulWidgets in the viewport. Activate → host expands lines or
+opens overlay detail.
+
+## Streaming
+
+```rust
+entries.push(next);
+state.on_entries_len(entries.len()); // unread if not following
+MessageThread::new(&entries, &system).paint(area, buf, &mut state);
+```
+
+## Related
+
+Transcript · AgentWorkbench · migration `0216`
+
+## model-selector
+
+# ModelSelector
+
+Pick a model id from a **host-supplied** catalog. TermRock paints compact status
+and an expandable searchable list (capabilities, context, cost/latency hints,
+availability, warnings). No provider SDK or network.
+
+
+## When to use / when not
+
+| Use ModelSelector | Prefer |
+|-------------------|--------|
+| Composer model badge / menu | — |
+| Agent safety mode | [AgentModeSelector](/docs/interaction-notes) |
+| Generic form select | Select |
+
+## Compact vs expanded
+
+- **Compact** — one-line status for PromptComposer (`label/provider ctx $`)
+- **Expanded** — filterable list; Enter confirms; Esc restores prior selection
+
+## Consequences
+
+`Confirmed { warning }` surfaces deprecation/cost strings for host dialogs.
+
+## Related
+
+AgentModeSelector · PromptComposer · migration `0215`
+
+## overlay-stack
+
+# OverlayStack
+
+**Sole** public authority for floating UI: dialogs, palettes, completion, drawers, tooltips, permission traps.
+
+
+## Law
+
+- Escape peels **exactly one** conceptual layer (top).
+- Trap kinds (`AlertDialog`, high-risk permission) return `Ignored` — host must cancel domain state separately.
+- Outside-click follows per-kind policy (`Dismissible` vs `Trap`).
+- Paint backdrop only when `backdrop_policy() != None` via `render_backdrop`.
+
+## Do not use
+
+- `ModalStack` (removed from public API — migration `0065`)
+- Ad-hoc modal paint without `stack.open`
+
+## Open helpers
+
+`open_dialog_overlay`, `open_command_palette_overlay`, `open_completion_overlay`, permission `open_overlay`, drawer/popover/tooltip/jump helpers.
+
+## Related
+
+InteractionScene · PermissionPrompt · CommandPalette · Dialog · AgentWorkbench
+
+## paste-chip
+
+# PasteChip
+
+Large paste summarized as a chip so multi-KB text never floods the editor wrap
+path. Preview + size/lines on the chrome; full body stays host-held (or in
+`PastePayload.body` for submit). Semantic summaries **never** include the body.
+
+
+## When to use / when not
+
+| Use PasteChip | Prefer |
+|---------------|--------|
+| Bracketed paste over threshold | — |
+| File attachments | [AttachmentChip](/docs/interaction-notes) |
+| Inline short paste | PromptComposer `insert_text` |
+
+## Collapse / inspect / copy
+
+| Action | Behavior |
+|--------|----------|
+| Enter | Expand / collapse preview |
+| Esc | Collapse only |
+| Ctrl+C | `CopyRequested { id }` — host copies body |
+| Ctrl+I | `InsertRequested` — `needs_confirm` when binary |
+| Delete | Remove |
+
+## Binary
+
+`PastePayload::binary` never auto-inserts as text; insert outcome sets
+`needs_confirm: true`.
+
+## Example
+
+```rust
+use termrock::widgets::{PastePayload, PasteChip, PasteChipState, paste_semantic_summary};
+
+let paste = PastePayload::from_body("p1", huge);
+assert!(!paste_semantic_summary(&paste).contains("secret-from-body"));
+let mut st = PasteChipState::new();
+PasteChip::new(&paste, &system).paint(area, buf, &mut st);
+```
+
+## Related
+
+AttachmentChip · PromptComposer (`LARGE_PASTE_THRESHOLD`) · migration `0212`
+
+## search-results
+
+# SearchResults
+
+Grouped, keyboard-navigable search results for files, logs, objects, commands,
+and docs. Host runs the search; TermRock paints groups, match highlights, and
+emits open/preview/page/cancel **requests**.
+
+
+## When to use / when not
+
+| Use SearchResults | Prefer |
+|-------------------|--------|
+| Workspace / log / doc search pane | — |
+| Query field alone | [SearchInput](/docs/components/search-input) |
+| Fuzzy jump palette | [QuickOpen](/docs/components/quick-open) |
+| Command palette | [CommandPalette](/docs/components/command-palette) |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Search execution, ranking, async | Host |
+| Generation gate, cursor, collapse, match walk | `SearchResultsState` |
+| Open / preview / fullscreen targets | Host via outcomes |
+
+## Async generation
+
+```rust
+let gen = state.begin_search();
+// spawn search tagged with gen…
+state.apply_results(gen, status, page_len);
+// older gen → SearchResultsStatus::Stale
+```
+
+## Match visibility
+
+Snippets use `keep_first_match_slice` / `MatchTruncate::KeepFirstMatch` so the
+first match stays visible under narrow width. `n`/`N` walk title and snippet
+matches.
+
+## Compose
+
+| Piece | How |
+|-------|-----|
+| SearchInput | Host: debounce → `begin_search` / re-query |
+| QuickOpen | `search_results_to_quick_open(&items)` |
+| FullscreenViewer | `FullscreenRequested { id }` |
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · n/N | Navigate · next/prev match |
+| Enter · Space | Open / preview · group toggle |
+| Esc | Cancel in-flight search |
+| Ctrl+O · Ctrl+Shift+F | QuickOpen · fullscreen |
+
+## Related
+
+SearchInput · HighlightedText · QuickOpen · FullscreenViewer · migration `0207`
+
+## slash-command-menu
+
+# SlashCommandMenu
+
+`/` command completion optimized for PromptComposer. Host owns the catalog
+(composer-specific + global `CommandEntry` bridge) and execution. TermRock owns
+detect, filter, nested argument phase, caret-anchored paint, and draft-local
+token replace.
+
+
+## When to use / when not
+
+| Use SlashCommandMenu | Prefer |
+|----------------------|--------|
+| Composer `/` commands | — |
+| App-wide command search | [CommandPalette](/docs/components/command-palette) |
+| Code completion | [CompletionMenu](/docs/components/completion-menu) |
+| File `@` mentions | [FileMention](/docs/interaction-notes) |
+
+## Draft law
+
+Only `trigger_byte..cursor_byte` is replaced via `apply_slash_insert`. Esc
+dismisses the menu without touching the draft.
+
+## Phases
+
+1. **Command** — filter by name/aliases (`/pl` → plan)
+2. **Argument** — nested values (`/model fa` → fast)
+
+## Async plugins
+
+```rust
+let gen = state.begin_async();
+// host fetches plugin commands
+state.apply_async_commands(gen, &plugin_rows);
+```
+
+## Related
+
+PromptComposer · CompletionMenu · CommandPalette · migration `0214`
+
+## source-citation
+
+# SourceCitation
+
+Inline `[n]` citation for agent answers. Always keeps raw path/URL available for
+copy and (by policy) paint. Offline/no-hyperlink disable open; preview still works.
+
+
+## Keys
+
+Enter open · `p` preview · `c` copy · `g` jump markdown anchor
+
+## Related
+
+CitationList · Link · StreamingMarkdown · migration `0218`
+
+## streaming-markdown
+
+# StreamingMarkdown
+
+Token-by-token AI Markdown: unfinished fences/lists/tables without thrashing
+layout. Paints through `MarkdownView`; projects `plain_lines` for MessageThread.
+
+
+## When to use / when not
+
+| Use StreamingMarkdown | Prefer |
+|-----------------------|--------|
+| Assistant stream body | — |
+| Static docs | [MarkdownView](/docs/components/markdown-view) |
+| Conversation chrome | [MessageThread](/docs/interaction-notes) |
+
+## Stable prefix
+
+`committed` only grows on deltas. `tail` is the reparse window. `finish()` flushes.
+
+## Batching
+
+```rust
+state.coalesce_deltas = 8;
+state.push_delta(token); // may wait
+state.apply_pending();   // force
+```
+
+## Related
+
+MarkdownView · MessageThread · migration `0217`
+
+## tool-call-card
+
+# ToolCallCard
+
+Interactive tool-call chrome for agent transcripts: a semantic actor rail,
+compact diamond/verb/details row, sunken expanded output, full lifecycle status,
+risk/egress, inline expand, and fullscreen zoom. Host owns execution, cancel,
+permission policy, and the deterministic paint tick. Never binds a provider
+protocol.
+
+
+## When to use / when not
+
+| Use ToolCallCard | Prefer |
+|------------------|--------|
+| Interactive tool rows in agent UI | — |
+| Paint-only one-shot summary | [ToolCard](/docs/components/tool-card) if present / thin Card |
+| Full command stdout chrome | [TerminalOutput](/docs/components/terminal-output) |
+| Permission grant UI | [Permission prompt](/docs/components/permission-prompt) |
+
+## Status lifecycle
+
+`Queued` · `Preparing` · `Running` · `WaitingInput` · `WaitingPermission` ·
+`Streaming` · `Success` · `Warning` · `Failed` · `Cancelled` · `Detached`
+
+## Safety
+
+- `redact_tool_secrets` on copy/paint paths (host should still pre-redact)
+- Egress note paints with warning role when present
+- Outcomes are **requests only** — no process spawn/kill
+
+## Keys
+
+Enter expand · `c` cancel · `r` retry · `p` permission · `f` fullscreen · Esc exit zoom · Ctrl+A/C copy
+
+## Example
+
+```rust
+use termrock::widgets::{
+    ToolCall, ToolCallCard, ToolCallCardState, ToolStatus, ToolRisk,
+};
+
+let call = ToolCall::new("t1", "bash", "ran tests")
+    .status(ToolStatus::Success)
+    .args_summary("cargo test")
+    .risk(ToolRisk::Read);
+let mut st = ToolCallCardState::new();
+// ToolCallCard::new(&call, &system)
+//     .tick(frame_tick)
+//     .paint(area, buf, &mut st);
+let _ = (call, st);
+```
+
+## Related
+
+ToolCard · TerminalOutput · PermissionPrompt · MessageThread · migrations `0219`, `0270`
+
+## trace-waterfall
+
+# TraceWaterfall
+
+Nested span visualization with duration bars on a shared time axis. Host
+projects flattened visible hierarchy; TermRock paints name column + waterfall
+bars, zoom/pan chrome, and emits selection/expand/detail **requests**.
+
+
+## When to use / when not
+
+| Use TraceWaterfall | Prefer |
+|--------------------|--------|
+| Distributed trace / agent tool spans | — |
+| Chronological event list | [Timeline](/docs/components/timeline) |
+| Process latency only | [ProcessTable](/docs/patterns/process-table) / Metrics |
+
+## Ownership
+
+| Concern | Owner |
+|---------|--------|
+| Trace fetch, span tree expansion data | Host |
+| Zoom/pan window, selection, filter | `TraceWaterfallState` |
+| Detail side panel | Host via `DetailsRequested` + ObjectInspector |
+
+## Hierarchy vs timeline nav
+
+| Mode | h/l | j/k |
+|------|-----|-----|
+| **Hierarchy** (default) | Collapse/expand or parent | Select spans |
+| **Timeline** (`Ctrl+\`) | Pan time window | Select spans |
+
+Vertical scroll and time pan are independent (Shift+wheel pans time).
+
+## Compose
+
+```rust
+// ObjectInspector fields
+span_to_inspector_fields(span)
+
+// Timeline export (host formats when/duration labels)
+span_to_timeline_event(span, &when_buf, &dur_buf)
+```
+
+## Keys
+
+| Key | Action |
+|-----|--------|
+| j/k · h/l | Nav (mode-dependent) |
+| Ctrl+= − 0 · [ ] | Zoom / fit / pan |
+| / · Ctrl+P | Filter · critical path |
+| Enter · i | Expand / details |
+
+## Related
+
+Timeline · ObjectInspector · migration `0209`

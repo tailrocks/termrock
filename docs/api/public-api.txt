@@ -27167,6 +27167,7 @@ pub fn termrock::registry::official_kernel_contracts() -> alloc::vec::Vec<termro
 pub fn termrock::registry::validate_contract(&termrock::registry::ComponentContract) -> termrock::registry::ValidationReport
 pub fn termrock::registry::validate_contracts(&[termrock::registry::ComponentContract]) -> termrock::registry::ValidationReport
 pub mod termrock::runtime
+pub use termrock::runtime::Instant
 #[non_exhaustive] pub enum termrock::runtime::PresenceChange
 pub termrock::runtime::PresenceChange::BecameHidden
 pub termrock::runtime::PresenceChange::BecameVisible

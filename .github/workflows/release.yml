@@ -70,6 +70,7 @@ jobs:
           restore-keys: cargo-target-${{ matrix.config.lane }}-${{ runner.os }}-${{ github.job }}-${{ hashFiles('rust-toolchain.toml', '.cargo/config.toml', '**/Cargo.toml', '**/Cargo.lock') }}-
       - run: test "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="termrock") | .version')" = "${{ inputs.tag }}"
       - run: cargo nextest run --workspace --all-features --locked
+      - run: rustup target add wasm32-unknown-unknown
       - run: cargo package -p termrock --locked
       - working-directory: docs
         run: bun install --frozen-lockfile && bun run build

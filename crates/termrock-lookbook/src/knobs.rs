@@ -1,27 +1,34 @@
 //! Story-owned deterministic controls rendered by the gallery.
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[expect(
-    dead_code,
-    reason = "Bool and Number are designed for the full story rollout"
-)]
-pub(crate) enum KnobValue {
+/// Host-editable value for one deterministic demo control.
+pub enum KnobValue {
+    /// On/off value.
     Bool(bool),
+    /// Selected index into [`Knob::choices`].
     Choice(usize),
+    /// Editable text value.
     Text(String),
+    /// Signed numeric value.
     Number(i64),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Knob {
-    pub(crate) id: &'static str,
-    pub(crate) label: &'static str,
-    pub(crate) value: KnobValue,
-    pub(crate) choices: &'static [&'static str],
+/// One deterministic control exposed beside a live demo.
+pub struct Knob {
+    /// Stable control identifier.
+    pub id: &'static str,
+    /// Human-readable label.
+    pub label: &'static str,
+    /// Current value.
+    pub value: KnobValue,
+    /// Valid labels for a choice value.
+    pub choices: &'static [&'static str],
 }
 
 impl Knob {
-    pub(crate) fn display_value(&self) -> String {
+    /// Format the current value for native Lookbook chrome.
+    pub fn display_value(&self) -> String {
         match &self.value {
             KnobValue::Bool(value) => if *value { "on" } else { "off" }.to_owned(),
             KnobValue::Choice(index) => self.choices.get(*index).copied().unwrap_or("").to_owned(),

@@ -126,33 +126,53 @@ use termrock::{
 };
 
 use crate::interactors::{
-    ChoiceDialogInteractor, CommandPaletteInteractor, DesignInspectorInteractor, FormInteractor,
-    ListInteractor, LogPaneInteractor, PanelInteractor, PickerInteractor, PromptComposerInteractor,
-    SplitPaneInteractor, StaticStory, StoryInteraction, TableInteractor, TabsInteractor,
-    TextAreaInteractor, ThemePickerInteractor, ToastInteractor, TranscriptInteractor,
-    TreeInteractor, VirtualGridInteractor,
+    AccordionInteractor, ActionLinkInteractor, AlertDialogInteractor, ButtonInteractor,
+    CheckboxInteractor, ChoiceDialogInteractor, CollapsibleInteractor, CommandPaletteInteractor,
+    DesignInspectorInteractor, DialogInteractor, DropdownMenuInteractor, FormInteractor,
+    FormWizardInteractor, ListInteractor, LogPaneInteractor, MenuInteractor, MultiSelectInteractor,
+    NumberInputInteractor, PaginationInteractor, PanelInteractor, PasswordInputInteractor,
+    PatternAppInteractor, PickerInteractor, PopoverInteractor, PromptComposerInteractor,
+    RangeSliderInteractor, ResizablePanelGroupInteractor, SegmentedControlInteractor,
+    SelectInteractor, SidebarInteractor, SliderInteractor, SplitPaneInteractor, StaticStory,
+    StoryInteraction, SwitchInteractor, TableInteractor, TabsInteractor, TextAreaInteractor,
+    TextInputInteractor, ThemePickerInteractor, ToastInteractor, ToggleGroupInteractor,
+    ToggleInteractor, TranscriptInteractor, TreeInteractor, TreeTableInteractor,
+    VirtualGridInteractor, VirtualListInteractor,
 };
 
-type RenderFn = fn(&mut Frame<'_>, Rect, &DesignSystem);
+/// Static story paint function using only public TermRock APIs.
+pub type RenderFn = fn(&mut Frame<'_>, Rect, &DesignSystem);
 type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
 
-pub(crate) const SPLIT_PANE_MIN: u16 = 12;
-pub(crate) const SPLIT_PANE_MAX: u16 = 16;
+/// Demo minimum width of the first split-pane region.
+pub const SPLIT_PANE_MIN: u16 = 12;
+/// Demo minimum width of the second split-pane region.
+pub const SPLIT_PANE_MAX: u16 = 16;
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct Story {
+/// One registered public-API demo and its persistent-state factory.
+pub struct Story {
+    /// Stable catalog identifier.
     pub id: &'static str,
+    /// Human-readable variant title.
     pub title: &'static str,
+    /// Public component or pattern type demonstrated.
     pub component: &'static str,
+    /// Concise purpose statement.
     pub description: &'static str,
+    /// Preferred inner width in terminal cells.
     pub width: u16,
+    /// Preferred inner height in terminal cells.
     pub height: u16,
+    /// Whether this story owns persistent interactive state.
+    pub interactive: bool,
     render: RenderFn,
     interactor: InteractorFactory,
 }
 
 impl Story {
-    pub(crate) const fn new(
+    /// Register a passive paint story.
+    pub const fn new(
         id: &'static str,
         title: &'static str,
         component: &'static str,
@@ -168,18 +188,22 @@ impl Story {
             description,
             width,
             height,
+            interactive: false,
             render,
             interactor: static_interactor,
         }
     }
     const fn with_interactor(mut self, interactor: InteractorFactory) -> Self {
         self.interactor = interactor;
+        self.interactive = true;
         self
     }
-    pub(crate) fn render(self, frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    /// Paint the passive story with a supplied design system.
+    pub fn render(self, frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         (self.render)(frame, area, system);
     }
-    pub(crate) fn make_interactor(&self) -> Box<dyn StoryInteraction> {
+    /// Create a fresh persistent interactor for this story.
+    pub fn make_interactor(&self) -> Box<dyn StoryInteraction> {
         (self.interactor)(self.render)
     }
 }
@@ -190,6 +214,44 @@ fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
         theme: RolePalette::default(),
     })
 }
+
+fn pattern_app_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PatternAppInteractor::new(render))
+}
+
+pub(crate) const PATTERN_DEMO_IDS: &[&str] = &[
+    "activity-shelf/statuses",
+    "agent-status-header/basic",
+    "agent-workbench/basic",
+    "app-shell/workbench",
+    "approval-queue/basic",
+    "auth-entry/basic",
+    "background-tasks/mixed-statuses",
+    "connection-manager/full",
+    "database-workbench/basic",
+    "design-inspector/basic",
+    "error-recovery/basic",
+    "file-manager/basic",
+    "git-workbench/basic",
+    "help-center/basic",
+    "integration-status/list",
+    "metrics-dashboard/basic",
+    "observability-dashboard/basic",
+    "plan-review/basic",
+    "process-table/basic",
+    "project-launcher/basic",
+    "prompt-queue/compact",
+    "query-editor/basic",
+    "result-grid/basic",
+    "schema-browser/basic",
+    "session-picker/basic",
+    "settings-screen/basic",
+    "setup-wizard/welcome",
+    "subagent-card/running",
+    "task-rail/basic",
+    "terminal-run-card/running",
+    "working-state-card/basic",
+];
 
 fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(PanelInteractor::new(render))
@@ -263,8 +325,117 @@ fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(VirtualGridInteractor::new())
 }
 
-pub(crate) fn stories() -> Vec<Story> {
-    vec![
+fn action_link_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ActionLinkInteractor::new())
+}
+
+fn button_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ButtonInteractor::new())
+}
+
+fn dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DialogInteractor::new())
+}
+
+fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TextInputInteractor::new())
+}
+
+fn slider_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SliderInteractor::new())
+}
+
+fn range_slider_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(RangeSliderInteractor::new())
+}
+
+fn password_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PasswordInputInteractor::new())
+}
+
+fn alert_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(AlertDialogInteractor::new())
+}
+
+fn popover_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PopoverInteractor::new())
+}
+
+fn dropdown_menu_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(DropdownMenuInteractor::new())
+}
+
+fn menu_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(MenuInteractor::new())
+}
+
+fn sidebar_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SidebarInteractor::new())
+}
+
+fn resizable_panel_group_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ResizablePanelGroupInteractor::new())
+}
+
+fn form_wizard_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(FormWizardInteractor::new())
+}
+
+fn checkbox_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(CheckboxInteractor::new())
+}
+
+fn accordion_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(AccordionInteractor::new())
+}
+
+fn collapsible_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(CollapsibleInteractor::new())
+}
+
+fn number_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(NumberInputInteractor::new())
+}
+
+fn select_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SelectInteractor::new())
+}
+
+fn pagination_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(PaginationInteractor::new())
+}
+
+fn multi_select_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(MultiSelectInteractor::new())
+}
+
+fn switch_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SwitchInteractor::new())
+}
+
+fn toggle_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ToggleInteractor::new())
+}
+
+fn toggle_group_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(ToggleGroupInteractor::new())
+}
+
+fn segmented_control_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(SegmentedControlInteractor::new())
+}
+
+fn tree_table_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(TreeTableInteractor::new())
+}
+
+fn virtual_list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+    Box::new(VirtualListInteractor::new())
+}
+
+/// Return the full shared story catalog.
+pub fn stories() -> Vec<Story> {
+    let mut catalog = vec![
         Story::new(
             "ui-context/frame",
             "UiContext frame",
@@ -724,7 +895,8 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             3,
             toggle_pressed_story,
-        ),
+        )
+        .with_interactor(toggle_interactor),
         Story::new(
             "toggle/icon",
             "Toggle icon-only",
@@ -751,7 +923,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             toggle_group_format_story,
-        ),
+        )
+        .with_interactor(toggle_group_interactor),
         Story::new(
             "toggle-group/align",
             "ToggleGroup single align",
@@ -778,7 +951,8 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             14,
             accordion_section_story,
-        ),
+        )
+        .with_interactor(accordion_interactor),
         Story::new(
             "accordion/settings",
             "Accordion settings",
@@ -832,7 +1006,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             6,
             collapsible_inline_story,
-        ),
+        )
+        .with_interactor(collapsible_interactor),
         Story::new(
             "collapsible/section",
             "Collapsible section",
@@ -922,7 +1097,8 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             14,
             sidebar_settings_story,
-        ),
+        )
+        .with_interactor(sidebar_interactor),
         Story::new(
             "sidebar/database",
             "Sidebar database",
@@ -967,7 +1143,8 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             1,
             pagination_full_story,
-        ),
+        )
+        .with_interactor(pagination_interactor),
         Story::new(
             "pagination/unknown",
             "Pagination unknown total",
@@ -1201,7 +1378,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             14,
             dropdown_menu_basic_story,
-        ),
+        )
+        .with_interactor(dropdown_menu_interactor),
         Story::new(
             "dropdown-menu/nested",
             "DropdownMenu nested",
@@ -1711,7 +1889,8 @@ pub(crate) fn stories() -> Vec<Story> {
             80,
             16,
             resizable_workbench_story,
-        ),
+        )
+        .with_interactor(resizable_panel_group_interactor),
         Story::new(
             "resizable-panel-group/dashboard",
             "ResizablePanelGroup dashboard",
@@ -3255,7 +3434,8 @@ pub(crate) fn stories() -> Vec<Story> {
             52,
             16,
             virtual_list_million_story,
-        ),
+        )
+        .with_interactor(virtual_list_interactor),
         Story::new(
             "virtual-list/follow-tail",
             "VirtualList follow-tail",
@@ -3471,7 +3651,8 @@ pub(crate) fn stories() -> Vec<Story> {
             48,
             9,
             dialog,
-        ),
+        )
+        .with_interactor(dialog_interactor),
         Story::new(
             "dialog/destructive",
             "Destructive dialog",
@@ -3498,7 +3679,8 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             16,
             alert_dialog_delete_story,
-        ),
+        )
+        .with_interactor(alert_dialog_interactor),
         Story::new(
             "alert-dialog/overwrite",
             "AlertDialog overwrite",
@@ -4872,7 +5054,8 @@ pub(crate) fn stories() -> Vec<Story> {
             28,
             3,
             button_story,
-        ),
+        )
+        .with_interactor(button_interactor),
         Story::new(
             "button/variants",
             "Button variants",
@@ -4998,7 +5181,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             4,
             checkbox_switch_story,
-        ),
+        )
+        .with_interactor(checkbox_interactor),
         Story::new(
             "checkbox/states",
             "Checkbox states",
@@ -5043,7 +5227,8 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             3,
             slider_basic_story,
-        ),
+        )
+        .with_interactor(slider_interactor),
         Story::new(
             "slider/marks",
             "Slider marks",
@@ -5079,7 +5264,8 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             3,
             range_slider_basic_story,
-        ),
+        )
+        .with_interactor(range_slider_interactor),
         Story::new(
             "segmented-control/basic",
             "SegmentedControl basic",
@@ -5088,7 +5274,8 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             3,
             segmented_control_basic_story,
-        ),
+        )
+        .with_interactor(segmented_control_interactor),
         Story::new(
             "segmented-control/icons",
             "SegmentedControl icons",
@@ -5124,7 +5311,8 @@ pub(crate) fn stories() -> Vec<Story> {
             44,
             3,
             switch_basic_story,
-        ),
+        )
+        .with_interactor(switch_interactor),
         Story::new(
             "switch/loading",
             "Switch loading",
@@ -5331,7 +5519,8 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             8,
             menu_story,
-        ),
+        )
+        .with_interactor(menu_interactor),
         Story::new(
             "tag/removable",
             "Tag removable",
@@ -6510,7 +6699,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             3,
             action_link_story,
-        ),
+        )
+        .with_interactor(action_link_interactor),
         Story::new(
             "ansi-text/basic",
             "AnsiText SGR",
@@ -6708,7 +6898,8 @@ pub(crate) fn stories() -> Vec<Story> {
             32,
             10,
             popover_story,
-        ),
+        )
+        .with_interactor(popover_interactor),
         Story::new(
             "popover/slots",
             "Popover slots",
@@ -7680,7 +7871,8 @@ pub(crate) fn stories() -> Vec<Story> {
             56,
             12,
             form_wizard_story,
-        ),
+        )
+        .with_interactor(form_wizard_interactor),
         Story::new(
             "form-wizard/review",
             "FormWizard review",
@@ -9328,7 +9520,8 @@ pub(crate) fn stories() -> Vec<Story> {
             64,
             12,
             tree_table_process,
-        ),
+        )
+        .with_interactor(tree_table_interactor),
         Story::new(
             "tree-table/schema",
             "TreeTable schema",
@@ -9445,7 +9638,8 @@ pub(crate) fn stories() -> Vec<Story> {
             40,
             2,
             text_input_basic_story,
-        ),
+        )
+        .with_interactor(text_input_interactor),
         Story::new(
             "text-input/secret",
             "TextInput secret",
@@ -9463,7 +9657,8 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             2,
             password_input_basic_story,
-        ),
+        )
+        .with_interactor(password_input_interactor),
         Story::new(
             "password-input/reveal",
             "Password reveal",
@@ -9499,7 +9694,8 @@ pub(crate) fn stories() -> Vec<Story> {
             36,
             2,
             number_input_basic_story,
-        ),
+        )
+        .with_interactor(number_input_interactor),
         Story::new(
             "number-input/decimal",
             "Number decimal",
@@ -9641,9 +9837,10 @@ pub(crate) fn stories() -> Vec<Story> {
             "Select",
             "Closed form select with value.",
             36,
-            2,
+            12,
             select_basic_story,
-        ),
+        )
+        .with_interactor(select_interactor),
         Story::new(
             "select/open",
             "Select open",
@@ -9677,9 +9874,10 @@ pub(crate) fn stories() -> Vec<Story> {
             "MultiSelect",
             "Closed summary with chips.",
             40,
-            2,
+            12,
             multi_select_basic_story,
-        ),
+        )
+        .with_interactor(multi_select_interactor),
         Story::new(
             "multi-select/open",
             "MultiSelect open",
@@ -9869,13 +10067,29 @@ pub(crate) fn stories() -> Vec<Story> {
             2,
             text_input_prefix_story,
         ),
-    ]
+    ];
+    for story in &mut catalog {
+        if PATTERN_DEMO_IDS.contains(&story.id) && !story.interactive {
+            story.interactor = pattern_app_interactor;
+            story.interactive = true;
+        }
+    }
+    catalog
 }
 
 /// Interactive-gallery entries, including compile-proven design prototypes.
 /// Catalog generation deliberately uses [`stories`] instead.
-pub(crate) fn gallery_stories() -> Vec<Story> {
-    stories()
+/// Return stories in native gallery order.
+pub fn gallery_stories() -> Vec<Story> {
+    let mut catalog = stories();
+    catalog.sort_by_key(|story| is_pattern_demo(story.id));
+    catalog
+}
+
+/// Whether a story is the canonical mounted demo for an application pattern.
+#[must_use]
+pub fn is_pattern_demo(id: &str) -> bool {
+    PATTERN_DEMO_IDS.contains(&id)
 }
 
 fn ui_context_frame_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11056,8 +11270,9 @@ fn progress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     use termrock::widgets::{ProgressBar, ProgressBarState, ProgressRecipe, ProgressStatus};
     let mut state = ProgressBarState::transfer(12_582_912, 31_457_280);
@@ -11669,7 +11884,8 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
-pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
+/// Deterministic tree fixture shared by the static and interactive stories.
+pub fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
     vec![
         TreeNode {
             id: "workspace",
@@ -11742,7 +11958,8 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
     ]
 }
 
-pub(crate) fn form_fields() -> Vec<Field<'static, &'static str>> {
+/// Deterministic form fixture shared by the static and interactive stories.
+pub fn form_fields() -> Vec<Field<'static, &'static str>> {
     vec![
         Field::new("name", "Name", "Example profile")
             .help("A recognizable display name")
@@ -12422,8 +12639,9 @@ fn keyboard_help_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn tooltip_visible_state() -> TooltipState {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     let mut state = TooltipState::with_delay(Duration::ZERO);
     state.set_pointer_over(true);
@@ -14815,7 +15033,7 @@ fn search_results_sample() -> (Vec<SearchResultGroup>, Vec<SearchResultItem<'sta
             .kind(SearchResultKind::File),
         SearchResultItem::new("d1", "SearchResults")
             .group("docs")
-            .source("docs/handbook/search-results.mdx")
+            .source("docs/components/search-results.mdx")
             .snippet("grouped navigable search results")
             .kind(SearchResultKind::Doc),
         SearchResultItem::new("c1", "termrock search")
@@ -16658,11 +16876,12 @@ fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     let state = SpinnerState::new();
-    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(400), Duration::ZERO);
+    let tick = crate::demo::demo_tick(400);
     Spinner::labeled("Fetching packages", system).paint(
         area,
         frame.buffer_mut(),
@@ -16673,10 +16892,11 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
-    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(320), Duration::ZERO);
+    let tick = crate::demo::demo_tick(320);
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -16707,14 +16927,15 @@ fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     use termrock::widgets::SpinnerVariant;
     let mut state = SpinnerState::new();
     state.set_embedded_in_labeled_control(true);
     state.set_variant(SpinnerVariant::CompactInline);
-    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(240), Duration::ZERO);
+    let tick = crate::demo::demo_tick(240);
     Spinner::new(system)
         .embedded(true)
         .variant(SpinnerVariant::CompactInline)
@@ -16722,12 +16943,13 @@ fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     let mut state = SpinnerState::new();
     state.set_ascii(true);
-    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(160), Duration::ZERO);
+    let tick = crate::demo::demo_tick(160);
     Spinner::labeled("Loading", system).ascii(true).paint(
         area,
         frame.buffer_mut(),
@@ -16738,12 +16960,13 @@ fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::style::Motion;
     let mut state = SpinnerState::new();
     state.set_phase(ActivityPhase::Reconnecting);
-    let tick = FrameTick::manual(Instant::now(), Duration::from_millis(200), Duration::ZERO);
+    let tick = crate::demo::demo_tick(200);
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
         .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
@@ -17407,8 +17630,9 @@ fn toast(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::widgets::{ToastKind, ToastQueue, ToastSpec, ToastStack};
     let mut q = ToastQueue::new();
     q.set_anchor(Anchor::TopRight);
@@ -17441,8 +17665,9 @@ fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn toast_stack_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
     use termrock::runtime::FrameTick;
+    use termrock::runtime::Instant;
     use termrock::widgets::{ToastPriority, ToastQueue, ToastSpec, ToastStack};
     let mut q = ToastQueue::new();
     q.set_max_visible(4);
@@ -17590,7 +17815,8 @@ fn loading_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn loading_tick() -> termrock::runtime::FrameTick {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
+    use termrock::runtime::Instant;
     termrock::runtime::FrameTick::manual(
         Instant::now(),
         Duration::from_millis(400),
@@ -22900,7 +23126,8 @@ fn agent_plan_approval_parity_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
+    use termrock::runtime::Instant;
     use termrock::{
         runtime::FrameTick,
         style::Glyph,

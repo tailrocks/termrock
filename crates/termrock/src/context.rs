@@ -26,7 +26,7 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 use std::hash::Hash;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::capability::CapabilityProfile;
 use crate::capability::{CapabilityBoundary, TerminalCapabilities};
@@ -36,7 +36,7 @@ use crate::interaction::{
     SemanticScene, SemanticSnapshot, UiIntent,
 };
 use crate::keymap::{KeyChord, Keymap};
-use crate::runtime::{FrameClock, FrameTick};
+use crate::runtime::{FrameClock, FrameTick, Instant};
 use crate::style::DesignSystem;
 
 /// Lightweight diagnostics collected for Studio / tests (not a retained DOM).

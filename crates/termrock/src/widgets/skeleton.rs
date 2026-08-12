@@ -469,7 +469,7 @@ impl<'a> Skeleton<'a> {
             buffer,
             &SkeletonState::new(),
             FrameTick::manual(
-                std::time::Instant::now(),
+                crate::runtime::Instant::now(),
                 std::time::Duration::ZERO,
                 std::time::Duration::ZERO,
             ),

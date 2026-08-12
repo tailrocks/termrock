@@ -1,1 +1,0 @@
-{"cellHeightPx":18,"cellWidthPx":9,"component":"MenuBar","defaultSize":"40x8","interactive":true,"padCells":1,"sizes":["28x6","40x8","56x12","72x16","80x24"],"stepKey":null,"steps":6,"storyId":"menu-bar/basic","title":"MenuBar basic","tour":["menu-bar/basic","menu-bar/narrow","menu-bar/unicode","menu-bar/ascii","menu-bar/open","menu-bar/mnemonic"]}

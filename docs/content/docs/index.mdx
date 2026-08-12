@@ -18,7 +18,7 @@ to terminal geometry, focus, and Unicode safety.
 | **Widgets** | List, Table, Dialog, PromptComposer, PermissionPrompt, Tree, … with stable IDs and borrowed render data |
 | **Interaction** | `InteractionScene`, `OverlayStack`, `UiIntent`, keymaps — Esc law and focus traps |
 | **Design system** | Semantic `Role` palette, density, glyphs, recipes (phosphor default) |
-| **Lookbook** | Ghostty-class interactive truecolor frame packs for every catalog story — same paint path as the TUI CLI |
+| **Lookbook** | Persistent native and browser demos driven by the same Rust state machines and Ratatui paint path |
 
 TermRock owns reusable rendering, layout, theme roles, focus/navigation, hit
 geometry, narrow-terminal behavior, and non-color cues. **Your app owns** domain
@@ -26,23 +26,24 @@ state, wording, effects, secrets, process policy, and projections into widgets.
 
 ## Browse the catalog
 
-1. **[Components](/docs/components)** — every public widget with **Ghostty
-   terminal previews** for all lookbook states (basic, narrow, unicode, …).
-2. **[Handbook](/docs/handbook)** — deeper guides for flagship surfaces.
+1. **[Components](/docs/components)** — one canonical page per component with
+   a live terminal demo, public API, behavior recipe, and interaction contract.
+2. **[Application patterns](/docs/patterns)** — all 35 repository recipes as
+   complete terminal applications composed from public building blocks.
 3. **[Interaction](/docs/interaction)** — scene, overlays, and session lifecycle.
 4. **[Quality & migrations](/docs/quality-migrations)** — contracts and breaking-change index.
 
-Previews on this site are **not mockups and not SVGs**. They are truecolor cell
-packs regenerated from:
+Previews on this site are **not mockups, slides, or SVGs**. The browser loads
+the shared Rust Lookbook runtime as WebAssembly, mounts persistent state, sends
+real keyboard/pointer/paste/resize/time events, and paints returned truecolor
+Ratatui cells. Run the same catalog natively with:
 
 ```bash
-cargo run -p termrock-lookbook -- export-frames --out docs/public/preview-frames
-# or: mise run export-preview-frames
+cargo run -p termrock-lookbook -- terminal
 ```
 
-The docs host (`TerminalPreview`) paints those packs with Ghostty-class chrome,
-responsive size remapping, and keyboard/click stepping when the story is
-interactive — the same TermRock paint path as the lookbook TUI.
+When WebAssembly is unavailable, the host displays one static fallback poster
+without claiming interactivity. It never substitutes precomputed state tours.
 
 ## Quick start
 

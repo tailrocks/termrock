@@ -1,4 +1,6 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+pub use web_time::Instant;
 
 /// Immutable monotonic time sampled once for one application frame.
 ///

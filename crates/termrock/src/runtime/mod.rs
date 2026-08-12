@@ -16,4 +16,4 @@ pub use motion::{
 };
 #[cfg(feature = "crossterm")]
 pub use runner::{RunOptions, run};
-pub use time::{FrameClock, FrameTick};
+pub use time::{FrameClock, FrameTick, Instant};

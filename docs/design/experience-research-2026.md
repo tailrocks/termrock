@@ -300,7 +300,7 @@ layout engine on Ratatui.
 | Scene inspector (focus/hits/layers) | Terminal DevTools |
 | Contract PASS/FAIL per component | shadcn quality + a11y gates |
 | Record/replay frames | CI twin of headless |
-| Theme photography export | Marketing + handbook truth |
+| Theme photography export | Marketing + canonical component-doc truth |
 | Capability simulation knobs | Ghostty → dumb mux proof |
 
 ### 6.5 Distribution concepts (shadcn path)
@@ -328,7 +328,7 @@ These should become **contracts**, not taste:
 7. **Unicode width correctness or it is a bug**  
 8. **Motion respects reduced-motion**  
 9. **Empty/loading/error are first-class states, not missing paint**  
-10. **Every public widget: story + contract + SVG + handbook when/why**  
+10. **Every public widget: story + contract + live preview + canonical docs when/why**  
 
 Phosphor remains the **loved default identity**. Neutrality means others can
 retheme fully — not that defaults are bland.

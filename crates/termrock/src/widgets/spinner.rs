@@ -719,7 +719,11 @@ impl<'a> ActivityIndicator<'a> {
 impl Widget for &Spinner<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         // Static fallback when host has no tick in Widget path.
-        let tick = FrameTick::manual(std::time::Instant::now(), Duration::ZERO, Duration::ZERO);
+        let tick = FrameTick::manual(
+            crate::runtime::Instant::now(),
+            Duration::ZERO,
+            Duration::ZERO,
+        );
         self.render(area, buffer, tick, Motion::Off);
     }
 }

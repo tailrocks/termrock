@@ -21,7 +21,8 @@
 //! task updates.
 
 use std::collections::VecDeque;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use web_time::Instant;
 
 use ratatui_core::{
     buffer::Buffer,

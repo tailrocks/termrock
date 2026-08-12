@@ -1,1 +1,0 @@
-{"cellHeightPx":18,"cellWidthPx":9,"component":"EmptyState","defaultSize":"40x8","interactive":true,"padCells":1,"sizes":["28x6","40x8","56x12","72x16","80x24"],"stepKey":null,"steps":6,"storyId":"empty-state/basic","title":"Empty state","tour":["empty-state/basic","empty-state/narrow","empty-state/unicode","empty-state/first-use","empty-state/inline","empty-state/logs"]}
