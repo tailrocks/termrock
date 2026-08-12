@@ -166,13 +166,13 @@ capability stories re-verified per widget.
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` exit 0
-- [ ] `grep -c '"┌"' crates/termrock/src/widgets/{menu_bar,command_palette}.rs` → 0 each
-- [ ] Row owners route through `resolve_list_row`; delegating wrappers (`Picker`
+- [x] `mise run check` + `mise run gate` exit 0
+- [x] `grep -c '"┌"' crates/termrock/src/widgets/{menu_bar,command_palette}.rs` → 0 each
+- [x] Row owners route through `resolve_list_row`; delegating wrappers (`Picker`
   → `List`, `Combobox` → `CompletionMenu`) retain one canonical paint owner
-- [ ] Diff full-row tint + quantize tests pass
-- [ ] `migrations/0269-*.md` exists, linked
-- [ ] `plans/README.md` updated
+- [x] Diff full-row tint + quantize tests pass
+- [x] Sequential migrations `0274`–`0278` exist and are linked
+- [x] `plans/README.md` updated
 
 ## STOP conditions
 
@@ -189,6 +189,32 @@ capability stories re-verified per widget.
 - Zebra flag interacts with future virtualization work — note in review if
   `virtual_grid`/`virtual_list` need the same flag later (deferred to 010
   sweep or beyond).
+
+## Completion summary
+
+Completed all six steps in independently green commits. Table, DataTable,
+TreeTable, menu and picker row owners now share `resolve_list_row`; Picker and
+Combobox retain canonical delegation to List and CompletionMenu. Diff paints
+full-row semantic added/removed tints. Form projects typed Plain, Masked, and
+Unset values through FieldRow, including SettingsScreen's non-leaking search
+migration. `mise run check`, `mise run gate`, targeted diff/quantize/form tests,
+literal-shell greps, generated docs, and browser validation all passed.
+
+Amendment rationale: live migration history required allocations 0274–0278;
+cross-surface law brought generated outputs and `agent-browser` evidence into
+scope; TreeTable needed pointer-hover identity; wrapper ownership required
+delegation-aware verification; browser proof moved selected-label tint into
+the shared row recipe; and Form's string-only model required canonical
+FieldRowValue plus its SettingsScreen migration. Each amendment removed a plan
+defect against higher-authority repo/design contracts while keeping every
+commit independently green.
+
+Designer verdicts: Table/DataTable **pass**; TreeTable **iterated 1, pass**;
+overlay/picker set **iterated 2, pass**; shared SelectionTint cascade
+**iterated 2, pass**; DiffView/DiffReview **pass**; Form **iterated 1, pass**;
+FormWizard **pass**; FieldRow **iterated 1, pass**. Responsive dark, paper,
+reduced-motion, keyboard, console, network, and screenshot evidence is indexed
+in `artifacts/visual-qa/plan-009/README.md`.
 
 ## Amendments
 
