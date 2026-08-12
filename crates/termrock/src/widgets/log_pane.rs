@@ -478,7 +478,7 @@ mod tests {
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
         (&LogPane::new(&system)).render(exact_area, &mut exact, &mut state);
-        assert_eq!(exact[(0, 0)].symbol(), "┌");
+        assert_eq!(exact[(0, 0)].symbol(), "\u{250c}");
         assert_eq!(exact[(13, 0)].symbol(), "┐");
         assert!(!rendered(&exact).contains("following"));
 

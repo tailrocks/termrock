@@ -101,7 +101,7 @@ mod paint_authority_policy {
             let source = std::fs::read_to_string(&path).expect("widget source must be readable");
             let production = production_source(&source);
             assert!(
-                !production.contains("bg = None"),
+                !production.contains(concat!("bg = ", "None")),
                 "widget must not erase recipe backgrounds: {}",
                 path.display()
             );

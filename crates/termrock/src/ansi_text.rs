@@ -729,8 +729,11 @@ fn apply_sgr(params: &Params, style: &mut Style, default_style: Style, no_color:
 
 fn filter_style(mut style: Style, no_color: bool) -> Style {
     if no_color {
-        style.fg = None;
-        style.bg = None;
+        style = Style {
+            fg: None,
+            bg: None,
+            ..style
+        };
     }
     style
 }

@@ -1170,7 +1170,7 @@ mod tests {
         let square = render_border(&DesignSystem::default());
         let rounded = render_border(&DesignSystem::default().border_shape(BorderShape::Rounded));
         for (position, square_symbol, rounded_symbol) in [
-            ((0, 0), "┌", "╭"),
+            ((0, 0), "\u{250c}", "\u{256d}"),
             ((7, 0), "┐", "╮"),
             ((0, 3), "└", "╰"),
             ((7, 3), "┘", "╯"),

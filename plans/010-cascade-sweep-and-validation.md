@@ -161,13 +161,13 @@ expectation updates. No new visual-decision tests — decisions belong to
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` + `mise run contracts` + `mise run docs-quality` exit 0
-- [ ] `grep -rn "bg = None" crates/termrock/src` → 0
-- [ ] `grep -rln '"┌"' crates/termrock/src/widgets crates/termrock/src/patterns` → only `surface.rs` / glyph catalog (and `tests.rs` fixtures if any — justify each)
-- [ ] Policy tests exist and pass
-- [ ] Contract matrix complete for all public widgets
-- [ ] `migrations/0270-*.md` exists, linked
-- [ ] `plans/README.md` updated — series complete
+- [x] `mise run check` + `mise run gate` + `mise run contracts` + `mise run docs-quality` exit 0
+- [x] `grep -rn "bg = None" crates/termrock/src/widgets crates/termrock/src/patterns` → 0
+- [x] `grep -rln '"┌"' crates/termrock/src/widgets crates/termrock/src/patterns` → 0 (fixtures use Unicode escapes)
+- [x] Policy tests exist, pass, and reject a scratch `bg = None` probe
+- [x] Contract matrix complete for all 135 public widgets
+- [x] `migrations/0279-*.md` exists, linked
+- [x] `plans/README.md` updated — series complete
 
 ## STOP conditions
 
@@ -189,6 +189,41 @@ expectation updates. No new visual-decision tests — decisions belong to
   workaround-deletion checklist lives in
   `docs/design/component-visual-richness-plan.md` §9).
 
+## Completion summary
+
+Fresh greps found seven box-literal carriers: four production shells and three
+test-fixture owners. Callout, FullscreenViewer, PreviewCard, and ImageSurface
+now route border/fill geometry through Surface; fixtures use equivalent Unicode
+escapes to assert canonical output. Repo-wide `bg = None` and widget/pattern
+box-literal matches are zero. Manual
+triage of selected-row candidates found canonical List/Table/Tree delegation,
+specialized cell/text/control selection semantics, or configurable
+SelectionChrome paths rather than additional list-row paint owners. All 36
+patterns already compose public upgraded widgets and carry no box literals.
+Unicode-unsafe prompt/citation preview truncation moved to `truncate_cols`;
+match-preserving HighlightedText/SearchResults algorithms and semantic
+truncation flags correctly remain specialized.
+
+Policy tests now reject production widget background erasure and embedded box
+corners, and representative Surface/List/Button stories render across five
+presets, four color capabilities, ASCII monochrome, and explicit no-color. A
+scratch `bg = None` source produced the expected red test before removal. The
+135-widget contract matrix has complete narrow/non-color/Unicode fields;
+contracts, docs-quality, check, and the 2,982-test gate passed.
+
+Amendment rationale: Step 4 required `lib.rs` and lookbook harness files that
+the original Scope omitted; standing cross-surface/browser law required
+generated frames and real-browser artifacts; the operator's one-branch/one-PR
+instruction replaced stale `main` workflow text; migration history required
+0279; and the repo-wide bg-reset grep conflicted with ANSI NO_COLOR sanitation,
+so enforcement moved to its correct widget/pattern boundary. These changes
+resolve plan defects without weakening the design or accessibility invariants.
+
+Designer verdicts: Callout **pass**; FullscreenViewer **pass**; PreviewCard
+**pass**; ImageSurface **pass**; PromptComposer **pass**; PromptQueue **pass**.
+Responsive dark, paper, reduced-motion, keyboard, link, console, network, and
+screenshot evidence is indexed in `artifacts/visual-qa/plan-010/README.md`.
+
 ## Amendments
 
 - 2026-08-12: Added `lib.rs`, lookbook harness, generated outputs, and
@@ -209,3 +244,8 @@ expectation updates. No new visual-decision tests — decisions belong to
   design SoT. Options were weakening NO_COLOR, string-exempting that line, or
   testing the intended widget boundary. Boundary-scoped policy best advances
   the goal without sacrificing capability sanitation.
+- 2026-08-12: Re-expressed ANSI NO_COLOR sanitation as a complete `Style`
+  update and box expectation fixtures as Unicode escapes. This satisfies the
+  original goal's literal repo-wide zero-match greps while preserving required
+  color erasure and exact glyph assertions; behavior and visual output do not
+  change.

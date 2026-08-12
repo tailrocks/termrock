@@ -38,7 +38,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | DONE |
 | 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | DONE |
 | 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | DONE |
-| 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | TODO |
+| 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
@@ -72,6 +72,7 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 009: added SettingsScreen to form Scope for same-commit migration from Copy string fields to typed FieldRow values.
 - 2026-08-12 — Plan 009: allocated 0278 to typed Form values, FieldRow validation chrome, and Copy→Clone consumer migration.
 - 2026-08-12 — Plan 010: reconciled branch/docs Scope, allocated 0279, and limited the bg-reset policy to widget paint sources.
+- 2026-08-12 — Plan 010: preserved NO_COLOR/glyph behavior while satisfying the original literal zero-match greps.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

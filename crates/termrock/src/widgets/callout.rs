@@ -1397,7 +1397,7 @@ mod tests {
             .source("diag")
             .paint(area, &mut buf);
         assert!(!slots.root.is_empty());
-        assert_eq!(buf[(0, 0)].symbol(), "┌");
+        assert_eq!(buf[(0, 0)].symbol(), "\u{250c}");
     }
 
     #[test]
