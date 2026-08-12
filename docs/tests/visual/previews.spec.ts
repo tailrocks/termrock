@@ -58,6 +58,7 @@ for (const [route, story] of [
     const host = preview.locator('[role="application"]')
     await host.focus()
     if (story === 'text-input/basic') await page.keyboard.type('λ')
+    else if (story === 'connection-manager/full') await page.keyboard.press('ArrowDown')
     else await page.keyboard.press('Enter')
     await expect(preview).not.toHaveAttribute('data-preview-outcome', 'Demo reset')
     await settlePaint(page)

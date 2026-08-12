@@ -11,53 +11,75 @@ actions:
   - "Esc dismiss"
   - "click retry"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"R retry\" action updates visible mounted state and reports its typed outcome."
+  - "The \"O work offline\" action updates visible mounted state and reports its typed outcome."
+  - "The \"Q view queue\" action updates visible mounted state and reports its typed outcome."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/mod.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="connectivity/banner" interactive caption="Offline / ReconnectingState · shared Rust demo" />
+<TerminalPreview story="connectivity/banner" interactive caption="Offline / ReconnectingState · Offline banner — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{
-    ReconnectingState, OfflineBanner, OfflineSurface, ConnectivityPresentation,
-    StatusSlot, StatusBar,
-};
+- `R retry`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `O work offline`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Q view queue`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Esc dismiss`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
+- `click retry`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let mut conn = ReconnectingState::new("agent://prod-1");
-conn.begin_reconnect(3);
-conn.set_now_secs(now);
-conn.set_last_success_secs(Some(last_ok));
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
 
-// StatusBar
-let label = conn.status_bar_content();
-let right = [conn.status_slot_template("c", &label)];
+## State and typed outcomes
 
-// Banner
-OfflineBanner::new(&conn, &system).paint(banner_row, buf);
-
-// Full recovery
-conn.set_presentation(ConnectivityPresentation::Full);
-OfflineSurface::new(&system).paint(area, buf, &mut conn);
-
-// Notifications
-center.ingest_item(conn.to_notification_item("conn-1"));
-```
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | covered (r/a/o/q, Tab, Esc, Enter) |
-| Mouse | covered (banner click, action bands) |
-| Focus | covered (full surface actions) |
-| Non-color cues | covered (glyph + labels) |
-| Unicode | covered |
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `connectivity/banner`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn connectivity_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let s = example_reconnecting_agent();
+    OfflineBanner::new(&s, system).paint(area, frame.buffer_mut());
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `connectivity/banner`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -69,28 +91,6 @@ center.ingest_item(conn.to_notification_item("conn-1"));
 | `connectivity/unavailable` | Server unavailable | unavailable |
 | `connectivity/status-bar` | Connectivity StatusBar | status bar |
 | `connectivity/notification` | Connectivity notification | notification |
-
-
-## Try it
-
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `connectivity/banner`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

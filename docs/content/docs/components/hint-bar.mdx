@@ -9,39 +9,145 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/hint_bar.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="hint-bar/wrapped" interactive caption="HintBar · Measured hint bar — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="hint-bar/wrapped" interactive caption="HintBar · Measured hint bar — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
-use termrock::{style::DesignSystem, widgets::{Hint, HintBar}};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let system = DesignSystem::default();
-let hints = [Hint { chord: "Enter", label: "open", priority: 0, visible: true }];
-let bar = HintBar::new(&hints, &system)
-    .separator(" · ")
-    .leading_spacer(true);
-let required_rows = bar.measured_height(40);
-let area = Rect::new(0, 0, 40, 2);
-bar.render(area, &mut Buffer::empty(area));
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `hint-bar/narrow` | Narrow HintBar | paint-only |
+| `hint-bar/unicode` | Unicode HintBar | paint-only |
+| `hint-bar/wrapped` | Measured hint bar | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `hint-bar/wrapped`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
+        DesignSystem::from_palette(
+            system
+                .palette()
+                .clone()
+                .with_role(Role::HintKey, Style::new().bold())
+                .with_role(Role::HintText, Style::new())
+                .with_role(Role::HintDim, Style::new())
+                .with_role(Role::HintSeparator, Style::new()),
+        )
+    } else {
+        system.clone()
+    };
+    let hints = [
+        Hint {
+            chord: "↑↓",
+            label: "navigate",
+            priority: 1,
+            visible: true,
+        },
+        Hint {
+            chord: "Enter",
+            label: "choose",
+            priority: 1,
+            visible: true,
+        },
+        Hint {
+            chord: "Esc",
+            label: "close",
+            priority: 2,
+            visible: true,
+        },
+    ];
+    let bar = HintBar::new(&hints, &system)
+        .separator("  ")
+        .leading_spacer(true);
+    let narrow_bar = HintBar::new(&hints, &system).separator("  ");
+    if area.height > 0 {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y,
+            format!("WIDE BUDGET  ·  {} ROWS", bar.measured_height(area.width)),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let wide_y = area.y.saturating_add(1);
+    let wide_height = bar
+        .measured_height(area.width)
+        .min(area.bottom().saturating_sub(wide_y));
+    frame.render_widget(&bar, Rect::new(area.x, wide_y, area.width, wide_height));
+
+    let narrow_width = area.width.min(20);
+    let narrow_y = wide_y.saturating_add(wide_height).saturating_add(1);
+    if narrow_y < area.bottom() {
+        frame.buffer_mut().set_stringn(
+            area.x,
+            narrow_y,
+            format!(
+                "NARROW 20 COL  ·  {} ROWS",
+                narrow_bar.measured_height(narrow_width)
+            ),
+            usize::from(area.width),
+            system.style(Role::TextMuted),
+        );
+    }
+    let narrow_bar_y = narrow_y.saturating_add(1);
+    frame.render_widget(
+        &narrow_bar,
+        Rect::new(
+            area.x,
+            narrow_bar_y,
+            narrow_width,
+            narrow_bar
+                .measured_height(narrow_width)
+                .min(area.bottom().saturating_sub(narrow_bar_y)),
+        ),
+    );
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `hint-bar/wrapped`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -54,27 +160,6 @@ a static multi-image gallery.
 | `hint-bar/wrapped` | Measured hint bar | **Primary (live preview)** |
 | `hint-bar/narrow` | Narrow HintBar | Narrow terminal |
 | `hint-bar/unicode` | Unicode HintBar | Unicode / wide glyphs |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `hint-bar/wrapped`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

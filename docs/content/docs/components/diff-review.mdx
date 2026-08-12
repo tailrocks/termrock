@@ -1,6 +1,6 @@
 ---
 title: DiffReview
-description: 'DiffReview widget.'
+description: "File tree, decisions, summary strip over DiffView."
 component: DiffReview
 demo: diff-review/hunks
 interaction: selection-navigation
@@ -14,24 +14,38 @@ actions:
   - "/ search"
   - "click row"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"↑↓ navigate\" action updates visible mounted state and reports its typed outcome."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"A approve\" action updates visible mounted state and reports its typed outcome."
+  - "The \"X reject\" action updates visible mounted state and reports its typed outcome."
+  - "The \"C comment\" action updates visible mounted state and reports its typed outcome."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
 source: crates/termrock/src/widgets/review.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="diff-review/hunks" interactive caption="DiffReview · Diff review workbench — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="diff-review/hunks" interactive caption="DiffReview · Diff review workbench — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::DiffReview;
+- `↑↓ navigate`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Tab region`: Move through the real focus/selection model; the next action uses the new target.
+- `Space select`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `A approve`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `X reject`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `C comment`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `/ search`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `click row`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story diff-review/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -40,53 +54,46 @@ use termrock::widgets::DiffReview;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `diff-review/hunks` | Diff review workbench | **Primary (live preview)** |
-| `diff-review/ascii` | Diff review ASCII | ASCII / low capability |
-| `diff-review/comments` | Diff review comments | comments |
-| `diff-review/confirm` | Diff review confirm | confirm |
-| `diff-review/decisions` | Diff review decisions | decisions |
-| `diff-review/empty` | Diff review empty | Empty state |
-| `diff-review/narrow` | Diff review narrow | Narrow terminal |
+| `diff-review/ascii` | Diff review ASCII | paint-only |
+| `diff-review/comments` | Diff review comments | paint-only |
+| `diff-review/confirm` | Diff review confirm | paint-only |
+| `diff-review/decisions` | Diff review decisions | paint-only |
+| `diff-review/empty` | Diff review empty | paint-only |
+| `diff-review/hunks` | Diff review workbench | interactive |
+| `diff-review/narrow` | Diff review narrow | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `diff-review/hunks`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `diff-review/hunks`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/review.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/review.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `diff-review/hunks`
+// Exact paint setup used by the shared catalog story.
+fn diff_review_hunks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let (lines, hunks, files) = diff_review_sample();
+    let mut state = DiffReviewState::new();
+    state.set_hunk_cursor(0);
+    DiffReview::new(&lines, system)
+        .hunks(&hunks)
+        .files(&files)
+        .title("PR · agent review")
+        .render(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -160,3 +167,35 @@ let _ = (files, state);
 ## Related
 
 DiffView · PlanReview · migration `0197`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `diff-review/hunks`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `diff-review/hunks` | Diff review workbench | **Primary (live preview)** |
+| `diff-review/ascii` | Diff review ASCII | ASCII / low capability |
+| `diff-review/comments` | Diff review comments | comments |
+| `diff-review/confirm` | Diff review confirm | confirm |
+| `diff-review/decisions` | Diff review decisions | decisions |
+| `diff-review/empty` | Diff review empty | Empty state |
+| `diff-review/narrow` | Diff review narrow | Narrow terminal |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/review.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/review.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `diff-review/hunks`

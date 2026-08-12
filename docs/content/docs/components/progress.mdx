@@ -8,39 +8,82 @@ actions: []
 expectedOutcomes: []
 source: crates/termrock/src/widgets/progress.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="progress/determinate" interactive caption="Progress · shared Rust demo" />
+<TerminalPreview story="progress/determinate" interactive caption="Progress · Progress — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{Progress, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe};
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-Progress::new(ProgressKind::Determinate { fraction: 0.72 }, &system)
-    .label("Indexing")
-    .paint(area, buf);
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
 
-let mut state = ProgressBarState::transfer(12_000_000, 30_000_000);
-state.set_label("Download");
-state.set_rate(Some(2_000_000.0));
-state.recompute_eta();
-state.set_recipe(ProgressRecipe::Detailed);
-ProgressBar::paint_state(&system, area, buf, &mut state, tick, motion);
-```
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | caller-owned |
-| Mouse | caller-owned |
-| Focus | covered (never focusable) |
-| Non-color cues | covered (glyphs + %) |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
 | Unicode | covered |
-| Narrow terminal | covered (% elided under 16 cols) |
+| Non-color cues | covered |
+| Motion / time | covered |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `progress/detailed` | ProgressBar detailed | paint-only |
+| `progress/determinate` | Progress | paint-only |
+| `progress/failed` | ProgressBar failed | paint-only |
+| `progress/multi-line` | ProgressBar multi-line | paint-only |
+| `progress/narrow` | Narrow progress | paint-only |
+| `progress/unicode` | Unicode progress labels | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `progress/determinate`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn progress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
+    frame.render_widget(
+        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Processing"),
+        determinate,
+    );
+    if area.height > 1 {
+        frame.render_widget(
+            Progress::new(ProgressKind::Indeterminate { tick: 3 }, system).label("Waiting"),
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        );
+    }
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `progress/determinate`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -52,27 +95,6 @@ ProgressBar::paint_state(&system, area, buf, &mut state, tick, motion);
 | `progress/failed` | ProgressBar failed | failed |
 | `progress/narrow` | Narrow progress | narrow |
 | `progress/unicode` | Unicode progress labels | unicode |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `progress/determinate`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

@@ -11,26 +11,32 @@ actions:
   - "/ filter"
   - "click row"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"↑↓ move\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"←→ collapse/expand\" action updates visible mounted state and reports its typed outcome."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
 source: crates/termrock/src/widgets/sidebar.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="navigation-list/basic" interactive caption="NavigationList · NavigationList — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="navigation-list/basic" interactive caption="NavigationList · NavigationList — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{NavItem, NavigationList, NavigationListState};
+- `↑↓ move`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Enter open`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `←→ collapse/expand`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `click row`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let items = [NavItem::new("a", "Inbox"), NavItem::new("b", "Starred")];
-let mut state = NavigationListState::new(Some("a"));
-state.set_focused(true);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -39,31 +45,46 @@ state.set_focused(true);
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
 
-| Story | Title | Focus |
-|---|---|---|
-| `navigation-list/basic` | NavigationList | **Primary (live preview)** |
+## Usage
 
+The Code view above and this source excerpt use the exact paint setup registered for `navigation-list/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-## Try it
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+// Exact paint setup used by the shared catalog story.
+fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        NavItem::new("a", "Inbox").badge("3"),
+        NavItem::new("b", "Starred"),
+        NavItem::new("c", "Archive"),
+    ];
+    let mut state = NavigationListState::new(Some("a"));
+    state.set_focused(true);
+    // focus moved to b, route still a
+    let _ = state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Down,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    NavigationList::new(&items, system)
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Common mistakes
 
@@ -74,6 +95,16 @@ The mounted widget owns interaction state, focus chrome, hit geometry, and typed
 ## Test recipe
 
 Mount `navigation-list/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `navigation-list/basic` | NavigationList | **Primary (live preview)** |
 
 ## Source and related material
 

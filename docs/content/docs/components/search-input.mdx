@@ -10,31 +10,31 @@ actions:
   - "Esc clear"
   - "click clear"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "The \"←→ move caret\" action updates visible mounted state and reports its typed outcome."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/search_input.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="search-input/basic" interactive caption="SearchInput · Search input — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="search-input/basic" interactive caption="SearchInput · Search input — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{SearchInput, SearchInputState, SearchStatus};
+- `type or paste query`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `←→ move caret`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Esc clear`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
+- `click clear`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let mut state = SearchInputState::new().with_query("table");
-state.set_focused(true);
-// each frame: state.poll(tick) → DebouncedQuery
-let _ = SearchInput::new(&system)
-    .status(SearchStatus::Results { count: 12 })
-    .placeholder("Search…");
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -43,50 +43,42 @@ let _ = SearchInput::new(&system)
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `search-input/basic` | Search input | **Primary (live preview)** |
-| `search-input/empty` | Search empty | Empty state |
-| `search-input/filters` | Search filters | filters |
-| `search-input/searching` | Search searching | searching |
+| `search-input/basic` | Search input | interactive |
+| `search-input/empty` | Search empty | paint-only |
+| `search-input/filters` | Search filters | paint-only |
+| `search-input/searching` | Search searching | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `search-input/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `search-input/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/search_input.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/search_input.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `search-input/basic`
+// Exact paint setup used by the shared catalog story.
+fn search_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = SearchInputState::new().with_query("table");
+    state.set_focused(true);
+    let _ = SearchInput::new(system)
+        .placeholder("Search…")
+        .status(SearchStatus::Results { count: 12 })
+        .ascii(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -142,3 +134,32 @@ let _ = SearchInput::new(&system)
 ## Related
 
 TextInput · Picker · CommandPalette · migration `0142`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `search-input/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `search-input/basic` | Search input | **Primary (live preview)** |
+| `search-input/empty` | Search empty | Empty state |
+| `search-input/filters` | Search filters | filters |
+| `search-input/searching` | Search searching | searching |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/search_input.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/search_input.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `search-input/basic`

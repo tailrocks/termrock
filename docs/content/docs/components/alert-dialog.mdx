@@ -8,38 +8,26 @@ actions:
   - "Enter open alert"
   - "click Delete project"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/alert_dialog.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-Activate the destructive trigger, then choose with arrows, Enter, Escape, or the action buttons. The demo never deletes external data.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="alert-dialog/delete" interactive caption="AlertDialog · AlertDialog delete — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="alert-dialog/delete" interactive caption="AlertDialog · AlertDialog delete — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{
-    AlertDialog, AlertDialogState, AlertKind, AlertScope, AlertConfirmGates,
-    open_alert_dialog_widget_overlay,
-};
+- `Enter open alert`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click Delete project`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let mut state = AlertDialogState::new(
-    AlertKind::Delete,
-    AlertScope::example_delete(),
-    "delete",
-    "keep",
-);
-state.set_gates(AlertConfirmGates::typed("prod-db.customers"));
-// open: state.open_on_stack(&mut stack, bounds, Some("trigger"));
-// Enter on safe focus cancels; move to confirm only after gates pass.
-AlertDialog::new(&system).paint(area, buf, &mut state);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+`AlertDialogState` owns safe focus, action hit regions, and typed outcomes. The demo closes on the outcome and reports it; destructive external effects remain host-owned and are intentionally absent.
 
 ## Interaction contract
 
@@ -48,9 +36,53 @@ AlertDialog::new(&system).paint(area, buf, &mut state);
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `alert-dialog/delete` | AlertDialog delete | interactive |
+| `alert-dialog/egress` | AlertDialog data egress | paint-only |
+| `alert-dialog/locked` | AlertDialog locked critical | paint-only |
+| `alert-dialog/overwrite` | AlertDialog overwrite | paint-only |
+| `alert-dialog/terminate` | AlertDialog terminate | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `alert-dialog/delete`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn alert_dialog_delete_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = AlertDialogState::new(
+        AlertKind::Delete,
+        AlertScope::example_delete(),
+        "delete",
+        "keep",
+    );
+    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `alert-dialog/delete`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -65,28 +97,6 @@ a static multi-image gallery.
 | `alert-dialog/locked` | AlertDialog locked critical | locked |
 | `alert-dialog/overwrite` | AlertDialog overwrite | overwrite |
 | `alert-dialog/terminate` | AlertDialog terminate | terminate |
-
-
-## Try it
-
-- `Enter open alert` or click **Delete project** to mount the alert.
-- Once open, use `←→`, Enter, Escape, or click an action; safe Cancel owns initial focus.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-`AlertDialogState` owns safe focus, action hit regions, and typed outcomes. The demo closes on the outcome and reports it; destructive external effects remain host-owned and are intentionally absent.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `alert-dialog/delete`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

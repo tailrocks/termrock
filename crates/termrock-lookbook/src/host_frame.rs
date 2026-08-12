@@ -4,27 +4,24 @@
 //! Production-shaped host shell for lookbook (Break K partial).
 //!
 //! Uses **only** public TermRock authorities: [`DesignSystem`], [`InteractionScene`],
-//! [`OverlayStack`], [`FocusGraph`]. No FocusRing fork.
+//! [`FocusGraph`]. No FocusRing fork.
 //!
 //! Canonical coordination for new hosts is [`termrock::context::UiHost`] /
 //! [`termrock::context::UiContext`]. This lookbook shell mirrors the same
-//! authorities with gallery-specific modal layer policy.
+//! authorities for gallery chrome while the mounted demo owns its overlays.
 
 use ratatui::layout::Rect;
 use termrock::{
     interaction::{
         FocusGraph, InteractionElement, InteractionLayer, InteractionScene, LayerDismissPolicy,
-        LayerKind, OverlayId, OverlaySize, OverlaySpec, OverlayStack, SemanticRole,
+        LayerKind, SemanticRole,
     },
     style::{DesignSystem, RolePalette},
 };
 
 use crate::focus::{FocusId, LayerId};
 
-/// Default overlay id for the lookbook focus-trap prototype.
-pub(crate) const FOCUS_TRAP_OVERLAY_ID: &str = "lookbook.focus_trap";
-
-/// Host frame: paint system + scene focus + overlay stack.
+/// Host frame: paint system + scene focus for native gallery chrome.
 #[derive(Debug)]
 pub(crate) struct HostFrame {
     /// Role palette (lookbook theme toggle).
@@ -33,10 +30,6 @@ pub(crate) struct HostFrame {
     pub scene: InteractionScene<FocusId, LayerId, ()>,
     /// Sole public focus graph (tab / spatial / traps); synced from scene.
     pub focus: FocusGraph<FocusId>,
-    /// Sole floating UI authority.
-    pub overlays: OverlayStack<()>,
-    /// Last full-frame bounds for overlay placement.
-    pub frame_bounds: Rect,
 }
 
 impl HostFrame {
@@ -58,8 +51,6 @@ impl HostFrame {
             theme,
             scene,
             focus,
-            overlays: OverlayStack::new(),
-            frame_bounds: Rect::default(),
         }
     }
 
@@ -69,8 +60,8 @@ impl HostFrame {
         DesignSystem::from_palette(self.theme.clone())
     }
 
-    /// Begin a frame: clear elements, ensure root, optional modal layer.
-    pub(crate) fn begin_shell_frame(&mut self, modal_open: bool) {
+    /// Begin a frame: clear elements and ensure the root shell layer.
+    pub(crate) fn begin_shell_frame(&mut self) {
         self.scene.begin_frame();
         self.scene.ensure_root(InteractionLayer {
             id: LayerId::Root,
@@ -80,52 +71,12 @@ impl HostFrame {
             outside: LayerDismissPolicy::Ignore,
             focus_return: None,
         });
-        if modal_open {
-            if !self
-                .scene
-                .layers()
-                .iter()
-                .any(|layer| layer.id == LayerId::Modal)
-            {
-                let return_to = self
-                    .scene
-                    .focused()
-                    .copied()
-                    .filter(|id| {
-                        !matches!(
-                            id,
-                            FocusId::ModalContinue | FocusId::ModalDisabled | FocusId::ModalCancel
-                        )
-                    })
-                    .unwrap_or(FocusId::Preview);
-                self.scene.push_layer(InteractionLayer {
-                    id: LayerId::Modal,
-                    kind: LayerKind::Card,
-                    owns_input: true,
-                    esc: LayerDismissPolicy::Dismissible,
-                    outside: LayerDismissPolicy::Trap,
-                    focus_return: Some(return_to),
-                });
-            }
-        } else {
-            let _ = self.scene.remove_layer(&LayerId::Modal);
-        }
     }
 
     /// Register a root shell control.
     pub(crate) fn register_shell(&mut self, id: FocusId, area: Rect, enabled: bool) {
         let _ = self.scene.register(
             InteractionElement::control(id, LayerId::Root, area)
-                .role(SemanticRole::Control)
-                .enabled(enabled)
-                .focusable(enabled),
-        );
-    }
-
-    /// Register a modal action control (must be on Modal layer).
-    pub(crate) fn register_modal_action(&mut self, id: FocusId, area: Rect, enabled: bool) {
-        let _ = self.scene.register(
-            InteractionElement::control(id, LayerId::Modal, area)
                 .role(SemanticRole::Control)
                 .enabled(enabled)
                 .focusable(enabled),
@@ -174,46 +125,5 @@ impl HostFrame {
             }
         }
         self.scene.handle_key_tab_esc(key)
-    }
-
-    /// Open focus-trap overlay + ensure modal scene layer next frame.
-    pub(crate) fn open_focus_trap(&mut self) {
-        let bounds = if self.frame_bounds.width > 0 {
-            self.frame_bounds
-        } else {
-            Rect::new(0, 0, 80, 24)
-        };
-        let _ = self.overlays.open(
-            bounds,
-            OverlaySpec::dialog(
-                OverlayId::from_static(FOCUS_TRAP_OVERLAY_ID),
-                OverlaySize::dialog(52, 9),
-                None,
-            ),
-        );
-    }
-
-    pub(crate) fn close_focus_trap(&mut self) {
-        let return_to = self
-            .scene
-            .layers()
-            .iter()
-            .find(|layer| layer.id == LayerId::Modal)
-            .and_then(|layer| layer.focus_return);
-        let _ = self
-            .overlays
-            .dismiss(&OverlayId::from_static(FOCUS_TRAP_OVERLAY_ID));
-        let _ = self.scene.remove_layer(&LayerId::Modal);
-        if let Some(id) = return_to {
-            let _ = self.scene.focus(id);
-        } else {
-            self.scene.reconcile();
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn focus_trap_open(&self) -> bool {
-        self.overlays
-            .contains(&OverlayId::from_static(FOCUS_TRAP_OVERLAY_ID))
     }
 }

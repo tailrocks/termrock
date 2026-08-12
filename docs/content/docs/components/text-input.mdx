@@ -10,40 +10,85 @@ actions:
   - "←→ move caret"
   - "click place caret"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "The \"←→ move caret\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/text_input.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview owns a persistent `TextInputState`. Type or paste Unicode, move the caret, and click to place it; Reset clears the draft.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="text-input/basic" interactive caption="TextInput · Type, paste, move, and place the real caret" />
+<TerminalPreview story="text-input/basic" interactive caption="TextInput · Text input — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::{EditAction, TextInput, TextInputState, Validation}};
+- `type Unicode`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `paste`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `←→ move caret`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click place caret`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let input = TextInput::new("Filter", &system)
-    .placeholder("type to filter")
-    .validation(Validation::Valid);
-let mut state = TextInputState::new("").with_max_graphemes(80);
-let changed = state.apply(EditAction::Insert('a'));
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+`TextInputState` owns the draft, grapheme-safe caret, selection, and validation. The host owns submission effects. The browser paints only the caret emitted by the Rust widget buffer.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | caller-owned |
+| Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `text-input/basic` | Text input | interactive |
+| `text-input/invalid` | TextInput invalid | paint-only |
+| `text-input/narrow` | Narrow TextInput | paint-only |
+| `text-input/prefix` | TextInput prefix/suffix | paint-only |
+| `text-input/secret` | TextInput secret | paint-only |
+| `text-input/unicode` | Unicode text input | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `text-input/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("filter term");
+    state.set_focused(true);
+    let _ = TextInput::new("Query", system)
+        .placeholder("Search…")
+        .show_clear(true)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `text-input/basic`, dispatch Unicode typing, paste, caret movement, and pointer placement, then assert both state outcomes and changed Ratatui cells.
 
 ## Stories
 
@@ -59,30 +104,6 @@ a static multi-image gallery.
 | `text-input/narrow` | Narrow TextInput | Narrow terminal |
 | `text-input/prefix` | TextInput prefix/suffix | prefix |
 | `text-input/secret` | TextInput secret | secret |
-
-
-## Try it
-
-- `type Unicode`: insert browser text through the backend-neutral key event.
-- `paste`: dispatch `Event::Paste` into the same Rust state.
-- `←→ move caret`: move by grapheme, not byte.
-- `click place caret`: use widget hit geometry to reposition the caret.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-`TextInputState` owns the draft, grapheme-safe caret, selection, and validation. The host owns submission effects. The browser paints only the caret emitted by the Rust widget buffer.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `text-input/basic`, dispatch Unicode typing, paste, caret movement, and pointer placement, then assert both state outcomes and changed Ratatui cells.
 
 ## Source and related material
 

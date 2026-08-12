@@ -9,32 +9,29 @@ actions:
   - "click target"
   - "Esc dismiss"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"F/M jump\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
 source: crates/termrock/src/widgets/jump_overlay.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="jump-mode/multi" interactive caption="JumpMode · shared Rust demo" />
+<TerminalPreview story="jump-mode/multi" interactive caption="JumpMode · JumpMode multi-key — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{
-    JumpFilter, JumpOverlay, JumpOverlayState, assign_jump_labels_from_semantics,
-};
-use termrock::interaction::SemanticRole;
+- `F/M jump`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click target`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Esc dismiss`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
 
-let targets = assign_jump_labels_from_semantics(
-    &scene,
-    &JumpFilter::new().roles([SemanticRole::Button]),
-);
-let mut state = JumpOverlayState::new();
-state.open_on_stack(&mut stack, bounds, Some(focus_id));
-// handle_key → Activated / Prefix / Dismissed
-JumpOverlay::from_state(&targets, &system, &state).render(area, buf);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -42,31 +39,77 @@ JumpOverlay::from_state(&targets, &system, &state).render(area, buf);
 |---|---|
 | Keyboard | covered |
 | Mouse | covered |
-| Multi-key prefix | covered |
-| Role/action filter | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
+| Narrow terminal | covered |
+| Unicode | covered |
 | Non-color cues | covered |
-| Deterministic labels | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-| Story | Title | Focus |
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
 |---|---|---|
-| `jump-mode/multi` | JumpMode multi-key | **Primary (live preview)** |
-| `jump-mode/filter` | JumpMode role filter | filter |
-| `jump-mode/ascii` | JumpMode ASCII | ascii |
-| `jump-overlay/basic` | Jump overlay | basic |
+| `jump-mode/ascii` | JumpMode ASCII | paint-only |
+| `jump-mode/filter` | JumpMode role filter | paint-only |
+| `jump-mode/multi` | JumpMode multi-key | interactive |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `jump-mode/multi`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
+// Exact paint setup used by the shared catalog story.
+fn jump_mode_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame.render_widget(
+        Panel::new(system)
+            .title("Jump multi-key")
+            .emphasis(PanelChrome::Normal),
+        area,
+    );
+    let labels = generate_jump_labels(30);
+    let targets: Vec<_> = labels
+        .iter()
+        .enumerate()
+        .map(|(i, k)| {
+            let row = (i as u16) % area.height.saturating_sub(2).max(1);
+            let col = ((i as u16) / area.height.saturating_sub(2).max(1)) * 6;
+            JumpTarget::new(
+                i,
+                Rect::new(
+                    area.x.saturating_add(1).saturating_add(col),
+                    area.y.saturating_add(1).saturating_add(row),
+                    5,
+                    1,
+                ),
+                k.clone(),
+            )
+        })
+        .collect();
+    let mut state = JumpOverlayState::new();
+    state.open();
+    // Prefix first letter of a multi-key label for dim demo
+    if let Some(t) = targets.iter().find(|t| t.keys.len() >= 2) {
+        let ch = t.keys.chars().next().unwrap();
+        let _ = state.handle_key(
+            termrock::input::KeyEvent::new(
+                termrock::input::KeyCode::Char(ch),
+                termrock::input::KeyModifiers::NONE,
+            ),
+            &targets,
+        );
+    }
+    frame.render_widget(
+        JumpOverlay::from_state(&targets, system, &state).ascii(false),
+        area,
+    );
+}
+```
 
 ## Common mistakes
 
@@ -77,6 +120,15 @@ The mounted widget owns interaction state, focus chrome, hit geometry, and typed
 ## Test recipe
 
 Mount `jump-mode/multi`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `jump-mode/multi` | JumpMode multi-key | **Primary (live preview)** |
+| `jump-mode/filter` | JumpMode role filter | filter |
+| `jump-mode/ascii` | JumpMode ASCII | ascii |
+| `jump-overlay/basic` | Jump overlay | basic |
 
 ## Source and related material
 

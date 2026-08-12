@@ -9,33 +9,28 @@ actions:
   - "Enter activate"
   - "click"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/list.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="list/selection" interactive caption="List · List — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="list/selection" interactive caption="List · List — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::text::Line;
-use termrock::style::DesignSystem;
-use termrock::widgets::{List, ListRow, ListState, ListSelectionMode};
+- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let rows = [
-    ListRow::group_header("g", Line::from("Running")),
-    ListRow::item("a", Line::from("Build")).secondary(Line::from("src")).status(Line::from("ok")),
-];
-let mut state = ListState::new(Some("a"));
-state.set_selection_mode(ListSelectionMode::Range);
-List::new(&rows, &system).comfortable().empty_message(Line::from("No items"));
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -44,61 +39,51 @@ List::new(&rows, &system).comfortable().empty_message(Line::from("No items"));
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `list/selection` | List | **Primary (live preview)** |
-| `capability/ascii-glyphs` | Capability ASCII glyphs | ascii glyphs |
-| `list/ascii` | ASCII list glyphs | ASCII / low capability |
-| `list/comfortable` | List comfortable density | Comfortable density |
-| `list/composed-row` | Composed list anatomy | composed row |
-| `list/disabled` | Disabled list rows | Disabled |
-| `list/empty` | Empty list | Empty state |
-| `list/groups` | List group headers | groups |
-| `list/loading` | Loading list rows | Loading state |
-| `list/multi` | Multi-select list | Multi-select |
-| `list/narrow` | Narrow list | Narrow terminal |
-| `list/search` | List search strip | Search / filter |
-| `list/tiny` | Tiny list | Tiny viewport |
-| `list/unicode` | Unicode list | Unicode / wide glyphs |
+| `capability/ascii-glyphs` | Capability ASCII glyphs | paint-only |
+| `list/ascii` | ASCII list glyphs | paint-only |
+| `list/comfortable` | List comfortable density | paint-only |
+| `list/composed-row` | Composed list anatomy | paint-only |
+| `list/disabled` | Disabled list rows | paint-only |
+| `list/empty` | Empty list | paint-only |
+| `list/groups` | List group headers | paint-only |
+| `list/loading` | Loading list rows | paint-only |
+| `list/multi` | Multi-select list | paint-only |
+| `list/narrow` | Narrow list | paint-only |
+| `list/search` | List search strip | paint-only |
+| `list/selection` | List | interactive |
+| `list/tiny` | Tiny list | paint-only |
+| `list/unicode` | Unicode list | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `list/selection`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `list/selection`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/list.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/list.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `list/selection`
+// Exact paint setup used by the shared catalog story.
+fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let tokens = system.clone().density(termrock::style::Density::default());
+    let rows = list_rows();
+    let mut state = ListState::new(Some("beta"));
+    state.enable_multi_select();
+    state.selection_mut().unwrap().toggle(&"alpha");
+    frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -259,12 +244,6 @@ Sidebar, TaskRail, Picker results, SessionPicker body, CommandPalette body.
 Use `DesignTokens` density + `GlyphSet::Ascii` under Minimal profile; avoid
 per-row RGB for selection.
 
-## Common mistakes
-
-- Rebuilding ids every frame (breaks selection).  
-- Cloning the full dataset into the list each paint.  
-- Secondary meta that must survive when primary is clipped (wrong priority).
-
 ## Performance
 
 Paint O(visible rows). For 10k+ keep only the viewport projection; see
@@ -291,3 +270,48 @@ filter domain → project visible ListRow[] → List::render
 on Activated(id) → open detail / start tool
 on resize → keep selected id, clamp scroll
 ```
+
+## Common mistakes
+
+- Rebuilding ids every frame (breaks selection).
+- Cloning the full dataset into the list each paint.
+- Secondary meta that must survive when primary is clipped (wrong priority).
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `list/selection`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `list/selection` | List | **Primary (live preview)** |
+| `capability/ascii-glyphs` | Capability ASCII glyphs | ascii glyphs |
+| `list/ascii` | ASCII list glyphs | ASCII / low capability |
+| `list/comfortable` | List comfortable density | Comfortable density |
+| `list/composed-row` | Composed list anatomy | composed row |
+| `list/disabled` | Disabled list rows | Disabled |
+| `list/empty` | Empty list | Empty state |
+| `list/groups` | List group headers | groups |
+| `list/loading` | Loading list rows | Loading state |
+| `list/multi` | Multi-select list | Multi-select |
+| `list/narrow` | Narrow list | Narrow terminal |
+| `list/search` | List search strip | Search / filter |
+| `list/tiny` | Tiny list | Tiny viewport |
+| `list/unicode` | Unicode list | Unicode / wide glyphs |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/list.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/list.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `list/selection`

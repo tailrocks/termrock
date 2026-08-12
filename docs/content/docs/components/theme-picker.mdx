@@ -9,38 +9,80 @@ actions:
   - "Enter activate"
   - "click"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/theme_picker.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="system-picker/basic" interactive caption="ThemePicker · Theme picker — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="system-picker/basic" interactive caption="ThemePicker · Theme picker — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::{BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerState, theme_from_preset_id}};
+- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &system);
-let mut state = ThemePickerState::new(0);
-let preview = theme_from_preset_id("slate");
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | caller-owned |
+| Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `system-picker/basic` | Theme picker | interactive |
+| `system-picker/narrow` | Narrow ThemePicker | paint-only |
+| `system-picker/unicode` | Unicode ThemePicker | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `system-picker/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn theme_picker(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = ThemePickerState::new(0);
+    frame.render_stateful_widget(
+        &ThemePicker::new(BUILTIN_THEME_PRESETS, system),
+        area,
+        &mut state,
+    );
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `system-picker/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -53,29 +95,6 @@ a static multi-image gallery.
 | `system-picker/basic` | Theme picker | **Primary (live preview)** |
 | `system-picker/narrow` | Narrow ThemePicker | Narrow terminal |
 | `system-picker/unicode` | Unicode ThemePicker | Unicode / wide glyphs |
-
-
-## Try it
-
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `system-picker/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

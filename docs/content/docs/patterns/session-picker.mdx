@@ -22,12 +22,13 @@ Composed public building blocks: `Panel`, `StatefulWidget`, `Widget`.
 
 ## Workflow
 
-- `Enter open action` or `click trigger` opens a real ChoiceDialog; confirm/cancel produce different outcomes.
-- `S toggle sidebar region` changes the visible application chrome.
-- `↑↓/wheel select row` changes the persistent row selection.
-- `/ filter` focuses a real TextInput; type or paste, then Enter applies or Escape cancels.
+- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
+- `/ search`: focus the real field and edit its persistent Unicode-safe draft.
+- `Enter resume`: invoke the focused public state-machine action and inspect its typed request.
+- `D delete dialog`: forward this normalized action to the mounted public pattern state.
+- `Esc cancel`: peel or cancel the current transient layer and preserve underlying state.
 
-The preview and native Lookbook instantiate the same Rust story and state machine. Outcomes appear in the preview status line.
+Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
 
 ## Ownership
 

@@ -10,42 +10,30 @@ actions:
   - "Esc dismiss"
   - "click candidate"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
 source: crates/termrock/src/widgets/completion_menu.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="completion-menu/basic" interactive caption="CompletionMenu · Completion menu — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="completion-menu/basic" interactive caption="CompletionMenu · Completion menu — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::layout::Rect;
-use termrock::style::DesignSystem;
-use termrock::widgets::{
-    CompletionCandidate, CompletionMenu, CompletionMenuSize, CompletionMenuState,
-    open_completion_overlay,
-};
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter/Tab commit`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `Esc dismiss`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
+- `click candidate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let candidates = [
-    CompletionCandidate::new("select", "SELECT")
-        .kind("keyword")
-        .group("Keywords")
-        .documentation("Select rows."),
-];
-let mut state = CompletionMenuState::new(Some("select"));
-state.set_commit_characters("().");
-// async: let gen = state.begin_async(); … state.apply_results(gen, &candidates);
-let bounds = Rect::new(0, 0, 80, 24);
-let anchor = Rect::new(12, 6, 1, 1);
-let _ = open_completion_overlay(&mut stack, bounds, anchor, CompletionMenuSize::default(), Some("editor"));
-CompletionMenu::new(&candidates, &system, bounds, anchor).paint(area, buf, &mut state);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -54,9 +42,82 @@ CompletionMenu::new(&candidates, &system, bounds, anchor).paint(area, buf, &mut 
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `completion-menu/basic` | Completion menu | interactive |
+| `completion-menu/docs` | Completion menu docs | paint-only |
+| `completion-menu/edge` | Completion menu edge flip | paint-only |
+| `completion-menu/loading` | Completion menu loading | paint-only |
+| `completion-menu/narrow` | Completion menu narrow | paint-only |
+| `completion-menu/unicode` | Completion menu Unicode | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `completion-menu/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let panel_tokens = system.clone().density(Density::default());
+    frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
+    let candidates = [
+        CompletionCandidate::new("select", "SELECT")
+            .kind("keyword")
+            .kind_glyph("⌘")
+            .group("Keywords")
+            .documentation("Select rows from a relation."),
+        CompletionCandidate::new("from", "FROM")
+            .kind("keyword")
+            .group("Keywords"),
+        CompletionCandidate::new("users", "users")
+            .kind("table")
+            .detail("public")
+            .group("Tables"),
+        CompletionCandidate::new("orders", "orders")
+            .kind("table")
+            .group("Tables"),
+        CompletionCandidate::new("where", "WHERE")
+            .kind("keyword")
+            .group("Keywords"),
+    ];
+    let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
+    let mut state = CompletionMenuState::new(Some("select"));
+    state.set_show_docs(true);
+    frame.render_stateful_widget(
+        &CompletionMenu::new(&candidates, system, area, anchor).preferred_size(
+            CompletionMenuSize {
+                width: 48,
+                height: 8,
+            },
+        ),
+        area,
+        &mut state,
+    );
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `completion-menu/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -72,28 +133,6 @@ a static multi-image gallery.
 | `completion-menu/loading` | Completion menu loading | Loading state |
 | `completion-menu/narrow` | Completion menu narrow | Narrow terminal |
 | `completion-menu/unicode` | Completion menu Unicode | Unicode / wide glyphs |
-
-
-## Try it
-
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `completion-menu/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

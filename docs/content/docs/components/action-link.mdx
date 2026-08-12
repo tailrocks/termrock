@@ -1,6 +1,6 @@
 ---
 title: ActionLink
-description: 'ActionLink widget.'
+description: "Inline action with link chrome and visible risk note."
 component: ActionLink
 demo: action-link/basic
 interaction: activation
@@ -9,24 +9,28 @@ actions:
   - "Enter activate"
   - "click action"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Pointer movement updates visible hover chrome without activating the control."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/link.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="action-link/basic" interactive caption="ActionLink · ActionLink — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="action-link/basic" interactive caption="ActionLink · ActionLink — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::ActionLink;
+- `hover to highlight`: Move the pointer over the target; hover chrome changes without activation.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click action`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story action-link/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -35,9 +39,49 @@ use termrock::widgets::ActionLink;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `action-link/basic` | ActionLink | interactive |
+| `action-link/narrow` | Narrow ActionLink | paint-only |
+| `action-link/unicode` | Unicode ActionLink | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `action-link/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn action_link_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = LinkState::new();
+    state.set_focused(true);
+    let _ = ActionLink::new("Run tests", system)
+        .risk_note("cargo test")
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `action-link/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -50,29 +94,6 @@ a static multi-image gallery.
 | `action-link/basic` | ActionLink | **Primary (live preview)** |
 | `action-link/narrow` | Narrow ActionLink | Narrow terminal |
 | `action-link/unicode` | Unicode ActionLink | Unicode / wide glyphs |
-
-
-## Try it
-
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `action-link/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

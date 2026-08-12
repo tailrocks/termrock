@@ -6,11 +6,9 @@
     "demo": "activity-shelf/statuses",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "←→ select",
+      "Enter activate",
+      "wheel navigate"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -32,11 +30,9 @@
     "demo": "app-shell/workbench",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab/arrow traverse zones",
+      "S toggle sidebar",
+      "resize host"
     ],
     "classification": "layout-helper",
     "buildingBlocks": [
@@ -54,11 +50,9 @@
     "demo": "agent-status-header/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "←→ action",
+      "Enter activate",
+      "click action"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -82,11 +76,10 @@
     "demo": "agent-workbench/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle panes",
+      "type in prompt",
+      "O open session overlay",
+      "Esc peel top layer"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -126,11 +119,11 @@
     "demo": "metrics-dashboard/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "arrows select metric",
+      "Enter inspect",
+      "Tab focus region",
+      "Ctrl+T range",
+      "Ctrl+R refresh"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -152,11 +145,9 @@
     "demo": "app-shell/workbench",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab/arrow traverse zones",
+      "S toggle sidebar",
+      "resize host"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -174,11 +165,11 @@
     "demo": "approval-queue/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "Enter inspect",
+      "A approve",
+      "D deny",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -202,11 +193,11 @@
     "demo": "auth-entry/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "type/paste field",
+      "Tab next field",
+      "Ctrl+Enter submit",
+      "Ctrl+G switch mode",
+      "Esc cancel"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -229,11 +220,10 @@
     "demo": "background-tasks/mixed-statuses",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "Enter inspect",
+      "S stop request",
+      "C clear completed"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -264,11 +254,11 @@
     "demo": "connection-manager/full",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓/wheel select",
+      "Enter connect",
+      "/ filter",
+      "D delete dialog",
+      "N new"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -291,11 +281,12 @@
     "demo": "database-workbench/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle panes",
+      "type SQL",
+      "Ctrl+Enter run",
+      "Ctrl+P palette",
+      "Ctrl+H history",
+      "Esc close layer"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -326,11 +317,10 @@
     "demo": "error-recovery/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ action",
+      "Enter request",
+      "Tab panes",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -359,11 +349,12 @@
     "demo": "file-manager/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ navigate tree",
+      "←→ collapse/expand",
+      "Enter open",
+      "/ filter",
+      "Ctrl+P quick open",
+      "Tab panes"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -401,11 +392,11 @@
     "demo": "git-workbench/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle panes",
+      "↑↓ navigate",
+      "T stage/unstage",
+      "? help overlay",
+      "Ctrl+F full diff"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -447,11 +438,11 @@
     "demo": "help-center/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "Enter open",
+      "/ filter",
+      "Tab panes",
+      "D diagnostics"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -482,11 +473,10 @@
     "demo": "integration-status/list",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "Enter inspect",
+      "R reconnect",
+      "Tab details"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -506,11 +496,11 @@
     "demo": "metrics-dashboard/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "arrows select metric",
+      "Enter inspect",
+      "Tab focus region",
+      "Ctrl+T range",
+      "Ctrl+R refresh"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -532,11 +522,11 @@
     "demo": "observability-dashboard/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle panes",
+      "↑↓ navigate",
+      "Space pause/resume",
+      "Ctrl+R reconnect",
+      "/ search"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -568,11 +558,11 @@
     "demo": "observability-dashboard/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle panes",
+      "↑↓ navigate",
+      "Space pause/resume",
+      "Ctrl+R reconnect",
+      "/ search"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -592,11 +582,11 @@
     "demo": "plan-review/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab panes",
+      "↑↓ select",
+      "Enter inspect",
+      "A approve",
+      "R reject"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -622,11 +612,11 @@
     "demo": "process-table/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "←→ tree",
+      "/ filter",
+      "K signal",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -648,11 +638,11 @@
     "demo": "project-launcher/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select project",
+      "Enter open",
+      "/ filter",
+      "Ctrl+P quick open",
+      "Tab panes"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -685,11 +675,10 @@
     "demo": "prompt-queue/compact",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "Enter edit",
+      "D remove",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -712,11 +701,10 @@
     "demo": "query-editor/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "type/paste query",
+      "Ctrl+Enter run",
+      "Tab panes",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -746,10 +734,9 @@
     "demo": "schema-browser/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
+      "↑↓ select",
+      "←→ collapse/expand",
+      "Enter activate",
       "/ filter"
     ],
     "classification": "application",
@@ -768,11 +755,10 @@
     "demo": "result-grid/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "arrows select cell",
+      "Enter edit",
+      "C copy",
+      "E export"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -800,10 +786,9 @@
     "demo": "schema-browser/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
+      "↑↓ select",
+      "←→ collapse/expand",
+      "Enter activate",
       "/ filter"
     ],
     "classification": "composite",
@@ -828,11 +813,11 @@
     "demo": "session-picker/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "/ search",
+      "Enter resume",
+      "D delete dialog",
+      "Esc cancel"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -852,11 +837,12 @@
     "demo": "settings-screen/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Tab cycle regions",
+      "↑↓ select/edit",
+      "/ search",
+      "Ctrl+B drawer",
+      "Ctrl+S save",
+      "? help"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -891,11 +877,10 @@
     "demo": "setup-wizard/welcome",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Enter/→ next",
+      "← back",
+      "S skip optional",
+      "Esc cancel"
     ],
     "classification": "application",
     "buildingBlocks": [
@@ -946,11 +931,9 @@
     "demo": "subagent-card/running",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Enter expand/collapse",
+      "S stop request",
+      "F full view"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -970,11 +953,10 @@
     "demo": "task-rail/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "↑↓ select",
+      "←→ collapse/expand",
+      "/ filter",
+      "Enter activate"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -1000,11 +982,10 @@
     "demo": "terminal-run-card/running",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Enter expand/collapse",
+      "wheel/↑↓ scroll",
+      "S stop request",
+      "F full view"
     ],
     "classification": "composite",
     "buildingBlocks": [
@@ -1032,11 +1013,9 @@
     "demo": "working-state-card/basic",
     "interaction": "activation",
     "actions": [
-      "Enter open action",
-      "click trigger",
-      "S toggle sidebar region",
-      "↑↓/wheel select row",
-      "/ filter"
+      "Enter expand/collapse",
+      "S stop request",
+      "L logs"
     ],
     "classification": "composite",
     "buildingBlocks": [

@@ -9,45 +9,111 @@ actions:
   - "Enter activate"
   - "click"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/design_inspector.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="design-inspector/basic" interactive caption="DesignInspector · Design inspector — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="design-inspector/basic" interactive caption="DesignInspector · Design inspector — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::{ColorCapability, DesignSystem}, widgets::{DesignInspector, DesignInspectorFrame}};
+- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `click`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let frame = DesignInspectorFrame {
-    focused: Some("list"),
-    layer: Some("root"),
-    capability: ColorCapability::Truecolor,
-    density: "comfortable",
-    layers: &[],
-    recipes: &[],
-    selection_chrome: "gutter",
-};
-let _inspector = DesignInspector::new(frame, &system);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | covered |
+| Mouse | covered |
+| Focus | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `capability/color-ladder` | Capability color ladder | paint-only |
+| `capability/headless` | Capability headless doctor | paint-only |
+| `capability/no-color` | Capability no-color | paint-only |
+| `design-inspector/basic` | Design inspector | interactive |
+| `design-inspector/narrow` | Narrow DesignInspector | paint-only |
+| `design-inspector/unicode` | Unicode DesignInspector | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `design-inspector/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let layers = ["root"];
+    let recipes = ["list_row", "panel"];
+    let mut semantic = termrock::interaction::SemanticScene::<&str>::new();
+    let _ = semantic.register(
+        termrock::interaction::SemanticNode::content("list", area)
+            .role(termrock::interaction::SemanticRole::List)
+            .label("Files"),
+    );
+    let _ = semantic.register_child(
+        "list",
+        termrock::interaction::SemanticNode::control(
+            "row0",
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+        )
+        .role(termrock::interaction::SemanticRole::ListItem)
+        .label("a.rs"),
+    );
+    let summary = semantic.snapshot().summary_lines(8);
+    let semantics: Vec<&str> = summary.iter().map(String::as_str).collect();
+    let snap = DesignInspectorFrame {
+        focused: Some("row0"),
+        layer: Some("root"),
+        capability: ColorCapability::Truecolor,
+        density: "comfortable",
+        layers: &layers,
+        recipes: &recipes,
+        selection_chrome: "gutter",
+        semantics: &semantics,
+        focus_graph: &[],
+    };
+    frame.render_widget(
+        DesignInspector::new(snap, system).panel(InspectorPanel::Semantics),
+        area,
+    );
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `design-inspector/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -63,29 +129,6 @@ a static multi-image gallery.
 | `capability/no-color` | Capability no-color | no color |
 | `design-inspector/narrow` | Narrow DesignInspector | Narrow terminal |
 | `design-inspector/unicode` | Unicode DesignInspector | Unicode / wide glyphs |
-
-
-## Try it
-
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `design-inspector/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

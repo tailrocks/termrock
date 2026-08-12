@@ -8,29 +8,27 @@ actions:
   - "wheel to scroll"
   - "↑↓ navigate"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+  - "The \"↑↓ navigate\" action updates visible mounted state and reports its typed outcome."
 source: crates/termrock/src/widgets/transcript.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="transcript/basic" interactive caption="Transcript · Transcript — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="transcript/basic" interactive caption="Transcript · Transcript — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::{style::DesignSystem, widgets::{Transcript, TranscriptBlock, TranscriptKind, TranscriptState}};
+- `wheel to scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `↑↓ navigate`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
 
-let system = DesignSystem::default();
-let lines = ["hello", "world"];
-let blocks = [TranscriptBlock::new("b1", TranscriptKind::Assistant, &lines).active(true)];
-let mut state: TranscriptState<&str> = TranscriptState::new();
-let view = Transcript::new(&blocks, &system).tick(7);
-let _ = (&mut state, view);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -39,53 +37,63 @@ let _ = (&mut state, view);
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `transcript/basic` | Transcript | **Primary (live preview)** |
-| `transcript/ascii-colorless` | Transcript ASCII colorless | ascii colorless |
-| `transcript/empty` | Transcript empty | Empty state |
-| `transcript/folded-follow` | Transcript folded follow | folded follow |
-| `transcript/narrow` | Transcript narrow | Narrow terminal |
-| `transcript/tiny` | Transcript tiny | Tiny viewport |
-| `transcript/unicode` | Transcript unicode | Unicode / wide glyphs |
+| `transcript/ascii-colorless` | Transcript ASCII colorless | paint-only |
+| `transcript/basic` | Transcript | interactive |
+| `transcript/empty` | Transcript empty | paint-only |
+| `transcript/folded-follow` | Transcript folded follow | paint-only |
+| `transcript/narrow` | Transcript narrow | paint-only |
+| `transcript/tiny` | Transcript tiny | paint-only |
+| `transcript/unicode` | Transcript unicode | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `transcript/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `wheel to scroll`: dispatches through the public TermRock interaction API.
-- `↑↓ navigate`: dispatches through the public TermRock interaction API.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `transcript/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/transcript.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/transcript.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `transcript/basic`
+// Exact paint setup used by the shared catalog story.
+fn transcript_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let user = [
+        "Run the release suite",
+        "include docs and capability checks",
+    ];
+    let assistant = [
+        "I’ll verify the full workspace.",
+        "The dependency graph is clean.",
+    ];
+    let thinking = [
+        "Inspecting affected surfaces…",
+        "Checking migration order…",
+        "Comparing deterministic frames…",
+        "Hidden reasoning beyond preview.",
+    ];
+    let tool = ["mise run check", "2,968 tests · all green"];
+    let blocks = [
+        TranscriptBlock::new("u1", TranscriptKind::User, &user),
+        TranscriptBlock::new("a1", TranscriptKind::Assistant, &assistant),
+        TranscriptBlock::new("th1", TranscriptKind::Thinking, &thinking)
+            .folded(true)
+            .summary("Reasoning through the verification plan"),
+        TranscriptBlock::new("t1", TranscriptKind::Tool, &tool).active(true),
+    ];
+    let mut state = TranscriptState::new();
+    frame.render_stateful_widget(&Transcript::new(&blocks, system).tick(7), area, &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -127,10 +135,42 @@ let _ = Transcript::new(&blocks, &system).focused(true).ascii(false);
 
 `default_transcript_intent` → `handle_intent`: Move, Page, Activate, Toggle fold, Expand/Collapse, Cancel.
 
+## Related
+
+AgentWorkbench · PromptComposer · PermissionPrompt · Stream coalesce kits (perf)
+
 ## Stories
 
 `transcript/basic`, `narrow`, `unicode`, `empty`, `folded-follow`, `ascii-colorless`, `tiny`.
 
-## Related
+## Common mistakes
 
-AgentWorkbench · PromptComposer · PermissionPrompt · Stream coalesce kits (perf)
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `transcript/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `transcript/basic` | Transcript | **Primary (live preview)** |
+| `transcript/ascii-colorless` | Transcript ASCII colorless | ascii colorless |
+| `transcript/empty` | Transcript empty | Empty state |
+| `transcript/folded-follow` | Transcript folded follow | folded follow |
+| `transcript/narrow` | Transcript narrow | Narrow terminal |
+| `transcript/tiny` | Transcript tiny | Tiny viewport |
+| `transcript/unicode` | Transcript unicode | Unicode / wide glyphs |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/transcript.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/transcript.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `transcript/basic`

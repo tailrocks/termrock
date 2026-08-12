@@ -10,31 +10,30 @@ actions:
   - "PageUp/PageDown"
   - "Home/End"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+  - "The \"↑↓ navigate\" action updates visible mounted state and reports its typed outcome."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
 source: crates/termrock/src/widgets/virtual_list.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="virtual-list/million" interactive caption="VirtualList · VirtualList million-row — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="virtual-list/million" interactive caption="VirtualList · VirtualList million-row — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::{VirtualList, VirtualListState, VirtualListItem, ListRow};
-use ratatui_core::text::Line;
+- `wheel to scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `↑↓ navigate`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `PageUp/PageDown`: Scroll over the preview; its own viewport moves while the docs page stays put.
+- `Home/End`: Move through the real focus/selection model; the next action uses the new target.
 
-let mut state = VirtualListState::million_fixed();
-let mut idx = Vec::new();
-state.projection_indices(&mut idx);
-let projected: Vec<_> = idx.iter().map(|&i| {
-    VirtualListItem::new(i, ListRow::item(i, Line::from(format!("row {i}"))))
-}).collect();
-VirtualList::new(&projected, &system).show_diagnostics(true).paint(area, buf, &mut state);
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
 
 ## Interaction contract
 
@@ -43,9 +42,85 @@ VirtualList::new(&projected, &system).show_diagnostics(true).paint(area, buf, &m
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `virtual-list/follow-tail` | VirtualList follow-tail | paint-only |
+| `virtual-list/loading` | VirtualList page loading | paint-only |
+| `virtual-list/million` | VirtualList million-row | interactive |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `virtual-list/million`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn virtual_list_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Panel, PanelChrome, VIRTUAL_LIST_BENCH_ROWS};
+    let mut state = VirtualListState::<u64>::million_fixed();
+    state.set_sticky(StickyRegion {
+        leading: 1,
+        trailing: 0,
+    });
+    state.set_offset(250_000);
+    state.set_viewport_extent(area.height.saturating_sub(2).max(8));
+    let mut idx = Vec::new();
+    state.projection_indices(&mut idx);
+    let projected: Vec<_> = idx
+        .iter()
+        .map(|&i| {
+            let label: &'static str = if i == 0 {
+                "★ sticky header"
+            } else {
+                // Stable short labels without leak: format into owned via Box::leak for story
+                Box::leak(format!("row {i:>9} · O(viewport)").into_boxed_str())
+            };
+            let row = if i == 0 {
+                ListRow::group_header(i, Line::from(label))
+            } else {
+                ListRow::item(i, Line::from(label))
+            };
+            VirtualListItem::new(i, row)
+        })
+        .collect();
+    let title = format!("VirtualList · {VIRTUAL_LIST_BENCH_ROWS} logical");
+    let _ = Panel::new(system)
+        .title(title.as_str())
+        .chrome(PanelChrome::Focused)
+        .paint(area, frame.buffer_mut(), None);
+    let inner = Rect::new(
+        area.x.saturating_add(1),
+        area.y.saturating_add(1),
+        area.width.saturating_sub(2),
+        area.height.saturating_sub(2),
+    );
+    VirtualList::new(&projected, system)
+        .show_diagnostics(true)
+        .paint(inner, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `virtual-list/million`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Stories
 
@@ -58,29 +133,6 @@ a static multi-image gallery.
 | `virtual-list/million` | VirtualList million-row | **Primary (live preview)** |
 | `virtual-list/follow-tail` | VirtualList follow-tail | follow tail |
 | `virtual-list/loading` | VirtualList page loading | Loading state |
-
-
-## Try it
-
-- `arrow keys`: dispatches through the public TermRock interaction API.
-- `Enter activate`: dispatches through the public TermRock interaction API.
-- `click`: dispatches through the public TermRock interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `virtual-list/million`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
 
 ## Source and related material
 

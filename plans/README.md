@@ -22,6 +22,17 @@ Status values: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED` (with reason), or
 - 003 reuses 001 and follows 002 so the final navigation has one Components
   surface and one Application patterns surface, with no Handbook duplicate.
 
+## Completion evidence
+
+- `rtk mise run gate` passes, including Rust tests, Clippy, feature checks,
+  packaging, poster regeneration, and the production docs build.
+- `cd docs && rtk bun run test:browser` passes 29 persistent-session browser
+  flows, including four deterministic visual previews.
+- Catalog checks report 135/135 public widgets, 165/165 canonical component
+  routes, 84/84 handbook migrations, 35/35 patterns, and 183 live demos.
+- Native Lookbook smoke rendering and native/web event-frame parity pass; both
+  hosts mount `DemoSession` by the same stable demo ID.
+
 ## Findings considered and rejected
 
 - Replacing the accepted canvas renderer with a Ghostty/VT renderer: rejected as

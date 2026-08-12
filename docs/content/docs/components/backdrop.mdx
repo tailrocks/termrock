@@ -9,36 +9,73 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/dialog.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="backdrop/basic" interactive caption="Backdrop · Backdrop — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="backdrop/basic" interactive caption="Backdrop · Backdrop — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use ratatui_core::{buffer::Buffer, layout::Rect, style::{Color, Style}, widgets::Widget};
-use termrock::widgets::Backdrop;
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-let backdrop = Backdrop::new()
-    .symbol('░')
-    .style(Style::new().bg(Color::Black));
-let area = Rect::new(0, 0, 80, 24);
-backdrop.render(area, &mut Buffer::empty(area));
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `backdrop/basic` | Backdrop | paint-only |
+| `backdrop/narrow` | Narrow Backdrop | paint-only |
+| `backdrop/unicode` | Unicode Backdrop | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `backdrop/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
+        Style::new().dim()
+    } else {
+        system.style(Role::Backdrop)
+    };
+    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `backdrop/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Stories
 
@@ -51,27 +88,6 @@ a static multi-image gallery.
 | `backdrop/basic` | Backdrop | **Primary (live preview)** |
 | `backdrop/narrow` | Narrow Backdrop | Narrow terminal |
 | `backdrop/unicode` | Unicode Backdrop | Unicode / wide glyphs |
-
-
-## Try it
-
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `backdrop/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
 
 ## Source and related material
 

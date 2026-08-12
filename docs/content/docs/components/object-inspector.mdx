@@ -1,6 +1,6 @@
 ---
 title: ObjectInspector
-description: 'ObjectInspector widget.'
+description: "Flat key/value fields with list-local cursor gutter."
 component: ObjectInspector
 demo: object-inspector/flat
 interaction: editor-form
@@ -12,24 +12,34 @@ actions:
   - "C copy"
   - "click field"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"↑↓ move\" action updates visible mounted state and reports its typed outcome."
+  - "The \"←→ collapse/expand\" action updates visible mounted state and reports its typed outcome."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "The \"C copy\" action updates visible mounted state and reports its typed outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/object_inspector.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview mounts one persistent Rust component instance. Use the listed keyboard and pointer actions; each accepted action updates the same state and reports its typed outcome.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="object-inspector/flat" interactive caption="ObjectInspector · Object inspector flat — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="object-inspector/flat" interactive caption="ObjectInspector · Object inspector flat — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::ObjectInspector;
+- `↑↓ move`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `←→ collapse/expand`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `E edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `/ search`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `C copy`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `click field`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story object-inspector/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
 
 ## Interaction contract
 
@@ -38,55 +48,58 @@ use termrock::widgets::ObjectInspector;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `object-inspector/flat` | Object inspector flat | **Primary (live preview)** |
-| `object-inspector/ascii` | Object inspector ASCII | ASCII / low capability |
-| `object-inspector/compare` | Object inspector compare | compare |
-| `object-inspector/empty` | Object inspector empty | Empty state |
-| `object-inspector/fullscreen` | Object inspector fullscreen | fullscreen |
-| `object-inspector/json` | Object inspector JSON | json |
-| `object-inspector/lazy` | Object inspector lazy | lazy |
-| `object-inspector/narrow` | Object inspector narrow | Narrow terminal |
-| `object-inspector/nested` | Object inspector nested | nested |
+| `object-inspector/ascii` | Object inspector ASCII | paint-only |
+| `object-inspector/compare` | Object inspector compare | paint-only |
+| `object-inspector/empty` | Object inspector empty | paint-only |
+| `object-inspector/flat` | Object inspector flat | interactive |
+| `object-inspector/fullscreen` | Object inspector fullscreen | paint-only |
+| `object-inspector/json` | Object inspector JSON | paint-only |
+| `object-inspector/lazy` | Object inspector lazy | paint-only |
+| `object-inspector/narrow` | Object inspector narrow | paint-only |
+| `object-inspector/nested` | Object inspector nested | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `object-inspector/flat`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Use the actions shown beside the terminal; mouse, keyboard, paste, drag, and resize are forwarded only when the component supports them.
-- Confirm the visual state and typed outcome, then use **Reset** to mount a fresh instance.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `object-inspector/flat`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/object_inspector.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/object_inspector.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `object-inspector/flat`
+// Exact paint setup used by the shared catalog story.
+fn object_inspector_flat(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::InspectKind;
+    let fields = [
+        InspectorField::new("id", "pod-7f3a")
+            .path("id")
+            .kind(InspectKind::String),
+        InspectorField::new("name", "api-gateway")
+            .path("name")
+            .kind(InspectKind::String),
+        InspectorField::new("status", "Running")
+            .path("status")
+            .kind(InspectKind::String),
+        InspectorField::new("restarts", "0")
+            .path("restarts")
+            .kind(InspectKind::Number),
+    ];
+    let mut state = ObjectInspectorState::new();
+    state.set_cursor(1);
+    ObjectInspector::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -151,3 +164,37 @@ ObjectInspector::new(&fields, &system).render(area, buf, &mut state);
 ## Related
 
 - Migration `0192-v0.13.0-object-inspector`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `object-inspector/flat`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `object-inspector/flat` | Object inspector flat | **Primary (live preview)** |
+| `object-inspector/ascii` | Object inspector ASCII | ASCII / low capability |
+| `object-inspector/compare` | Object inspector compare | compare |
+| `object-inspector/empty` | Object inspector empty | Empty state |
+| `object-inspector/fullscreen` | Object inspector fullscreen | fullscreen |
+| `object-inspector/json` | Object inspector JSON | json |
+| `object-inspector/lazy` | Object inspector lazy | lazy |
+| `object-inspector/narrow` | Object inspector narrow | Narrow terminal |
+| `object-inspector/nested` | Object inspector nested | nested |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/object_inspector.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/object_inspector.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `object-inspector/flat`

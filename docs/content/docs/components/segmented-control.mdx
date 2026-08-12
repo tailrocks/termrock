@@ -1,6 +1,6 @@
 ---
 title: SegmentedControl
-description: 'SegmentedControl widget.'
+description: "View mode List/Grid/Table exclusive segments."
 component: SegmentedControl
 demo: segmented-control/basic
 interaction: selection-navigation
@@ -9,24 +9,29 @@ actions:
   - "Home/End"
   - "click segment"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "The \"←→ change view\" action updates visible mounted state and reports its typed outcome."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/segmented_control.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This preview is a persistent Rust demo. Focus it, then use the exact actions shown below; Reset remounts fresh state.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="segmented-control/basic" interactive caption="SegmentedControl · SegmentedControl basic — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="segmented-control/basic" interactive caption="SegmentedControl · SegmentedControl basic — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::SegmentedControl;
+- `←→ change view`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Home/End`: Move through the real focus/selection model; the next action uses the new target.
+- `click segment`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-// See handbook / lookbook story segmented-control/basic.
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+The demo preserves widget state between events. The component owns hit geometry, focus/selection mechanics, and typed outcomes; the host applies domain effects.
 
 ## Interaction contract
 
@@ -35,9 +40,57 @@ use termrock::widgets::SegmentedControl;
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
+
+## Configuration and variants
+
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
+|---|---|---|
+| `segmented-control/basic` | SegmentedControl basic | interactive |
+| `segmented-control/collapsed` | SegmentedControl collapsed | paint-only |
+| `segmented-control/icons` | SegmentedControl icons | paint-only |
+| `segmented-control/narrow` | Narrow SegmentedControl | paint-only |
+| `segmented-control/overflow` | SegmentedControl overflow | paint-only |
+| `segmented-control/unicode` | Unicode SegmentedControl | paint-only |
+
+## Usage
+
+The Code view above and this source excerpt use the exact paint setup registered for `segmented-control/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
+
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
+
+// Exact paint setup used by the shared catalog story.
+fn segmented_control_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        SegmentedItem::new("list", "List").priority(90),
+        SegmentedItem::new("grid", "Grid").priority(80),
+        SegmentedItem::new("table", "Table").priority(70),
+    ];
+    let mut state = SegmentedControlState::new(Some("grid"));
+    state.set_surface_focused(true);
+    let _ = SegmentedControl::new(&items, system)
+        .collapse_below(0)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+```
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `segmented-control/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Unsupported input remains ignored without trapping page navigation.
 
 ## Stories
 
@@ -53,29 +106,6 @@ a static multi-image gallery.
 | `segmented-control/narrow` | Narrow SegmentedControl | Narrow terminal |
 | `segmented-control/overflow` | SegmentedControl overflow | Overflow |
 | `segmented-control/unicode` | Unicode SegmentedControl | Unicode / wide glyphs |
-
-
-## Try it
-
-- `←→ change view`: routes through the component public interaction API.
-- `Home/End`: routes through the component public interaction API.
-- `click segment`: routes through the component public interaction API.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo preserves widget state between events. The component owns hit geometry, focus/selection mechanics, and typed outcomes; the host applies domain effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `segmented-control/basic`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Unsupported input remains ignored without trapping page navigation.
 
 ## Source and related material
 

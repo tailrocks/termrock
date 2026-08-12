@@ -3,12 +3,16 @@
 
 //! Stateful demo interactors implemented only through public TermRock APIs.
 
+mod applications;
 mod catalog;
+mod composites;
 mod extended;
 mod remaining;
 mod viewers;
 mod workflows;
+pub(crate) use applications::*;
 pub(crate) use catalog::*;
+pub(crate) use composites::*;
 pub(crate) use extended::*;
 pub(crate) use remaining::*;
 pub(crate) use viewers::*;
@@ -98,6 +102,8 @@ fn route_pointer(target: &mut impl PointerTarget, mouse: MouseEvent, preview_are
 pub trait StoryInteraction {
     /// Paint the current state into the supplied preview area.
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect);
+    /// Select the stable catalog id when one factory serves multiple stories.
+    fn set_demo_id(&mut self, _id: &'static str) {}
     /// Forward a backend-neutral key and report whether state changed.
     fn handle_key(&mut self, key: KeyEvent) -> bool;
     /// Forward a backend-neutral pointer event and report whether state changed.
@@ -174,220 +180,84 @@ pub(crate) struct StaticStory {
     pub(crate) theme: RolePalette,
 }
 
-/// Stateful, effect-free application harness used by pattern stories.
-///
-/// The underlying recipe still paints through its public pattern API. This
-/// harness adds a real public Button → ChoiceDialog lifecycle so application
-/// pages start from a trigger and expose typed confirm/cancel outcomes instead
-/// of cycling through static story variants.
+/// Factory shell that requires every pattern story to install its real public
+/// pattern state machine before use.
 pub(crate) struct PatternAppInteractor {
-    render_fn: RenderFn,
-    choice: ChoiceDialogState<&'static str>,
-    trigger: ButtonState,
-    filter: TextInputState,
-    editing: bool,
-    selection: usize,
-    open: bool,
-    compact: bool,
     theme: RolePalette,
-    outcome: Option<String>,
+    delegate: Option<Box<dyn StoryInteraction>>,
 }
 
 impl PatternAppInteractor {
-    pub(crate) fn new(render_fn: RenderFn) -> Self {
-        let mut trigger = ButtonState::new();
-        trigger.activation.set_accepts_input(true);
+    pub(crate) fn new(_render_fn: RenderFn) -> Self {
         Self {
-            render_fn,
-            choice: ChoiceDialogState::new(Some("continue")),
-            trigger,
-            filter: {
-                let mut state = TextInputState::new("");
-                state.set_focused(true);
-                state
-            },
-            editing: false,
-            selection: 0,
-            open: false,
-            compact: false,
             theme: RolePalette::default(),
-            outcome: None,
+            delegate: None,
         }
     }
 
-    fn resolve(&mut self, outcome: Outcome<&'static str>) -> bool {
-        match outcome {
-            Outcome::Activated("continue") => {
-                self.open = false;
-                self.outcome =
-                    Some("Sample application action confirmed (no external effect)".into());
-                true
-            }
-            Outcome::Activated(_) | Outcome::Cancelled => {
-                self.open = false;
-                self.outcome = Some("Sample application action cancelled".into());
-                true
-            }
-            Outcome::Changed => true,
-            Outcome::Ignored => false,
-            _ => false,
-        }
+    fn delegate_mut(&mut self) -> &mut dyn StoryInteraction {
+        self.delegate
+            .as_deref_mut()
+            .expect("pattern demo must install a public state-machine delegate")
+    }
+
+    fn delegate(&self) -> &dyn StoryInteraction {
+        self.delegate
+            .as_deref()
+            .expect("pattern demo must install a public state-machine delegate")
     }
 }
 
 impl StoryInteraction for PatternAppInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
-        (self.render_fn)(frame, area, &system);
-        if self.open {
-            render_choice_dialog(frame, area, &mut self.choice, &system);
-            return;
-        }
-        if self.editing {
-            let editor = Rect::new(
-                area.x,
-                area.bottom().saturating_sub(2),
-                area.width,
-                2.min(area.height),
-            );
-            let _ = TextInput::new("Filter", &system)
-                .placeholder("type to filter")
-                .show_clear(true)
-                .paint(editor, frame.buffer_mut(), &mut self.filter);
-            return;
-        }
-        let label = if self.compact {
-            format!("Open action · compact · row {}", self.selection + 1)
-        } else {
-            format!("Open sample action · row {}", self.selection + 1)
-        };
-        Button::new(&label, &system)
-            .variant(ButtonVariant::Primary)
-            .render(
-                Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
-                frame.buffer_mut(),
-                &mut self.trigger,
-            );
+        self.delegate_mut().render(frame, area);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if self.open {
-            let outcome = self.choice.handle_key(&choice_actions(), key);
-            return self.resolve(outcome);
-        }
-        if self.editing {
-            if key.code == KeyCode::Esc {
-                self.editing = false;
-                self.outcome = Some("Application filter cancelled".into());
-                return true;
-            }
-            if key.code == KeyCode::Enter {
-                self.editing = false;
-                self.outcome = Some(format!(
-                    "Application filter applied: {}",
-                    self.filter.value()
-                ));
-                return true;
-            }
-            let changed = !matches!(self.filter.handle_key(key), TextInputOutcome::Ignored);
-            if changed {
-                self.outcome = Some(format!("Filter draft: {}", self.filter.value()));
-            }
-            return changed;
-        }
-        if key.code == KeyCode::Char('/') {
-            self.editing = true;
-            self.outcome = Some("Application filter focused".into());
-            return true;
-        }
-        if matches!(key.code, KeyCode::Up | KeyCode::Down) {
-            self.selection = match key.code {
-                KeyCode::Up => self.selection.saturating_sub(1),
-                _ => (self.selection + 1).min(99),
-            };
-            self.outcome = Some(format!("Application row {} selected", self.selection + 1));
-            return true;
-        }
-        if key.code == KeyCode::Char('s') {
-            self.compact = !self.compact;
-            self.outcome = Some(if self.compact {
-                "Sidebar region collapsed".into()
-            } else {
-                "Sidebar region expanded".into()
-            });
-            return true;
-        }
-        if matches!(self.trigger.handle_key(key), ActivationOutcome::Activated) {
-            self.open = true;
-            self.outcome = Some("Sample application action opened".into());
-            return true;
-        }
-        false
+        self.delegate_mut().handle_key(key)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        if self.open {
-            if preview_area.contains(mouse.position)
-                && mouse.kind == MouseEventKind::Down(MouseButton::Left)
-            {
-                let outcome = self.choice.click(mouse.position);
-                return self.resolve(outcome);
-            }
-            return false;
-        }
-        if matches!(
-            mouse.kind,
-            MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
-        ) {
-            self.selection = match mouse.kind {
-                MouseEventKind::ScrollUp => self.selection.saturating_sub(1),
-                _ => (self.selection + 1).min(99),
-            };
-            self.outcome = Some(format!("Application row {} selected", self.selection + 1));
-            return true;
-        }
-        let before = self.trigger.hovered;
-        if matches!(
-            self.trigger.handle_mouse(mouse),
-            ActivationOutcome::Activated
-        ) {
-            self.open = true;
-            self.outcome = Some("Sample application action opened".into());
-            return true;
-        }
-        self.trigger.hovered != before
+        self.delegate_mut().handle_mouse(mouse, preview_area)
     }
 
     fn set_theme(&mut self, theme: RolePalette) {
+        if let Some(delegate) = self.delegate.as_mut() {
+            delegate.set_theme(theme.clone());
+        }
         self.theme = theme;
     }
 
     fn hints(&self) -> Vec<&'static str> {
-        if self.open {
-            vec!["←→ choose", "Enter confirm", "Esc cancel", "click action"]
-        } else if self.editing {
-            vec!["type filter", "paste", "Enter apply", "Esc cancel filter"]
-        } else {
-            vec![
-                "Enter open action",
-                "click trigger",
-                "S toggle sidebar region",
-                "↑↓/wheel select row",
-                "/ filter",
-            ]
-        }
+        self.delegate().hints()
     }
 
     fn take_outcome(&mut self) -> Option<String> {
-        self.outcome.take()
+        self.delegate_mut().take_outcome()
     }
 
     fn handle_preview_escape(&mut self, key: KeyEvent) -> bool {
-        (self.open || self.editing) && self.handle_key(key)
+        self.delegate_mut().handle_preview_escape(key)
     }
 
     fn captures_text_input(&self) -> bool {
-        self.editing
+        self.delegate().captures_text_input()
+    }
+
+    fn handle_tick(&mut self, elapsed_ms: u64) -> bool {
+        self.delegate_mut().handle_tick(elapsed_ms)
+    }
+
+    fn next_deadline_ms(&self, elapsed_ms: u64) -> Option<u64> {
+        self.delegate().next_deadline_ms(elapsed_ms)
+    }
+
+    fn set_demo_id(&mut self, id: &'static str) {
+        let mut delegate = application_interactor(id)
+            .or_else(|| composite_interactor(id))
+            .unwrap_or_else(|| panic!("pattern demo {id} has no public state-machine delegate"));
+        delegate.set_theme(self.theme.clone());
+        self.delegate = Some(delegate);
     }
 }
 

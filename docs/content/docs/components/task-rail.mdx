@@ -5,88 +5,84 @@ component: TaskRail
 demo: task-rail/basic
 interaction: activation
 actions:
-  - "Enter open action"
-  - "click trigger"
-  - "S toggle sidebar region"
-  - "↑↓/wheel select row"
+  - "↑↓ select"
+  - "←→ collapse/expand"
   - "/ filter"
+  - "Enter activate"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Navigation moves visible focus or selection and preserves it for the next event."
+  - "The \"←→ collapse/expand\" action updates visible mounted state and reports its typed outcome."
+  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
 source: crates/termrock/src/widgets/mod.rs
 ---
+
 ## Live terminal (Ghostty-class)
 
-This is a persistent sample-application demo. Navigate rows, filter through a real TextInput, toggle the sidebar region, and open the effect-free action dialog.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-## `task-rail/basic`
+<TerminalPreview story="task-rail/basic" interactive caption="TaskRail · Task rail — live shared Rust state" />
 
-Task rail
+## Try it
 
-<TerminalPreview story="task-rail/basic" interactive caption="TaskRail · shared Rust demo" />
+- `↑↓ select`: Move through the real focus/selection model; the next action uses the new target.
+- `←→ collapse/expand`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
+- `Enter activate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-## Usage
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
 
-```rust
-use ratatui_core::text::Line;
-use termrock::{style::DesignTokens, widgets::{ListRow, RowRole, TaskRail}};
+## State and typed outcomes
 
-let tokens = DesignTokens::default();
-let rows = [ListRow { id: "t1", label: Line::from("Task"), leading: None, secondary: None, badge: None, shortcut: None, trailing: None, role: RowRole::Item, enabled: true, loading: false }];
-let rail = TaskRail::new(&rows, &tokens, "Tasks");
-```
+The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
 | Keyboard | covered |
-| Mouse | covered |
+| Mouse | not-applicable in primary demo |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-| Story | Title | Focus |
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
+
+| Demo | Configuration | Input |
 |---|---|---|
-| `task-rail/basic` | Task rail | **Primary (live preview)** |
-| `task-rail/narrow` | Narrow TaskRail | narrow |
-| `task-rail/unicode` | Unicode TaskRail | unicode |
-| `task-rail/input` | TaskRail needs input | input |
-| `task-rail/filter` | TaskRail filter | filter |
-| `task-rail/drawer-narrow` | TaskRail drawer-narrow | drawer narrow |
-| `task-rail/statusbar` | TaskRail StatusBar | statusbar |
+| `task-rail/basic` | Task rail | interactive |
+| `task-rail/drawer-narrow` | TaskRail drawer-narrow | paint-only |
+| `task-rail/filter` | TaskRail filter | paint-only |
+| `task-rail/input` | TaskRail needs input | paint-only |
+| `task-rail/narrow` | Narrow TaskRail | paint-only |
+| `task-rail/statusbar` | TaskRail StatusBar | paint-only |
+| `task-rail/unicode` | Unicode TaskRail | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `task-rail/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- `Enter open action` or `click trigger` opens a real ChoiceDialog.
-- `S toggle sidebar region` changes visible chrome.
-- `↑↓/wheel select row` changes persistent selection.
-- `/ filter` focuses a real TextInput; type or paste, then apply with Enter.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted Rust demo owns deterministic sample state. The component/pattern owns its reusable paint and interaction contracts; the consuming host owns domain policy and every external effect.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `task-rail/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `task-rail/basic`
+// Exact paint setup used by the shared catalog story.
+fn task_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::patterns::{TaskRail, TaskRailState, example_activity_models};
+    let items = example_activity_models();
+    let mut st = TaskRailState::new();
+    st.focused = true;
+    st.list.select(Some("p1".into()));
+    TaskRail::new(&items, system)
+        .title("Tasks")
+        .paint(area, frame.buffer_mut(), &mut st);
+}
+```
 
 ## Migrated handbook guidance
 
@@ -126,3 +122,31 @@ j/k navigate · Enter open · Tab next input · `/` filter · x cancel · r retr
 ## Related
 
 ActivityShelf · StatusBar · Drawer · List · migration `0222`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `task-rail/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+| Story | Title | Focus |
+|---|---|---|
+| `task-rail/basic` | Task rail | **Primary (live preview)** |
+| `task-rail/narrow` | Narrow TaskRail | narrow |
+| `task-rail/unicode` | Unicode TaskRail | unicode |
+| `task-rail/input` | TaskRail needs input | input |
+| `task-rail/filter` | TaskRail filter | filter |
+| `task-rail/drawer-narrow` | TaskRail drawer-narrow | drawer narrow |
+| `task-rail/statusbar` | TaskRail StatusBar | statusbar |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/mod.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/mod.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `task-rail/basic`

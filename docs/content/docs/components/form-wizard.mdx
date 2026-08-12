@@ -11,31 +11,32 @@ actions:
   - "Esc cancel"
   - "click nav"
 expectedOutcomes:
-  - "Typed widget outcomes appear in the preview status and state persists until Reset."
+  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+  - "The \"← back\" action updates visible mounted state and reports its typed outcome."
+  - "The \"S skip optional\" action updates visible mounted state and reports its typed outcome."
+  - "Cancel or close removes the transient state without performing a host-owned effect."
 source: crates/termrock/src/widgets/form_wizard.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-Drive the multi-step flow with its real navigation state. Domain fields are represented by deterministic host-owned content inside the wizard body slot.
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-<TerminalPreview story="blocks/form-wizard" interactive caption="FormWizard · FormWizard — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="blocks/form-wizard" interactive caption="FormWizard · FormWizard — live shared Rust state" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::style::DesignSystem;
-use termrock::widgets::{FormWizard, FormWizardState, WizardStep};
+- `Enter/→ next`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
+- `← back`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `S skip optional`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
+- `Esc cancel`: Open the transient state first, then cancel it; focus and the underlying state are preserved.
+- `click nav`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
 
-let system = DesignSystem::default();
-let mut state = FormWizardState::with_steps([
-    WizardStep::new("account", "Account"),
-    WizardStep::new("confirm", "Confirm"),
-]);
-state.set_focused(true);
-let _ = FormWizard::new(&system).title("Setup");
-```
+Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
+
+## State and typed outcomes
+
+`FormWizardState` owns step chrome, gates, review, failure, and progress outcomes. The host owns field values, validation messages, persistence, and submission effects.
 
 ## Interaction contract
 
@@ -44,52 +45,48 @@ let _ = FormWizard::new(&system).title("Setup");
 | Keyboard | covered |
 | Mouse | covered |
 | Focus | covered |
-| Non-color cues | covered |
-| Unicode | covered |
+| Cursor / caret | covered |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
 
-| Story | Title | Focus |
+| Demo | Configuration | Input |
 |---|---|---|
-| `blocks/form-wizard` | FormWizard | **Primary (live preview)** |
-| `blocks/narrow` | Narrow FormWizard | Narrow terminal |
-| `blocks/unicode` | Unicode FormWizard | Unicode / wide glyphs |
-| `form-wizard/failure` | FormWizard failure | failure |
-| `form-wizard/resume` | FormWizard resume | resume |
-| `form-wizard/review` | FormWizard review | review |
+| `blocks/form-wizard` | FormWizard | interactive |
+| `blocks/narrow` | Narrow FormWizard | paint-only |
+| `blocks/unicode` | Unicode FormWizard | paint-only |
+| `form-wizard/failure` | FormWizard failure | paint-only |
+| `form-wizard/resume` | FormWizard resume | paint-only |
+| `form-wizard/review` | FormWizard review | paint-only |
 
+## Usage
 
-## Try it
+The Code view above and this source excerpt use the exact paint setup registered for `blocks/form-wizard`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-- Enter/Right advances, Left goes back, and `S` skips an optional step.
-- Escape cancels; nav buttons and step hits accept pointer input.
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-`FormWizardState` owns step chrome, gates, review, failure, and progress outcomes. The host owns field values, validation messages, persistence, and submission effects.
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `blocks/form-wizard`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/form_wizard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/form_wizard.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `blocks/form-wizard`
+// Exact paint setup used by the shared catalog story.
+fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = FormWizardState::with_steps([
+        WizardStep::new("account", "Account"),
+        WizardStep::new("region", "Region").optional(true),
+        WizardStep::new("confirm", "Confirm"),
+    ]);
+    state.set_focused(true);
+    FormWizard::new(system).title("Connect").ascii(true).paint(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
+}
+```
 
 ## Migrated handbook guidance
 
@@ -135,3 +132,34 @@ Width `< 36` → single-step title (no full stepper strip).
 ## Related
 
 Form · Field · migration `0151`
+
+## Common mistakes
+
+- Do not treat separate Lookbook stories as runtime states or a slide sequence.
+- Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not infer an action from visual styling; handle the widget's typed outcome.
+
+## Test recipe
+
+Mount `blocks/form-wizard`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `blocks/form-wizard` | FormWizard | **Primary (live preview)** |
+| `blocks/narrow` | Narrow FormWizard | Narrow terminal |
+| `blocks/unicode` | Unicode FormWizard | Unicode / wide glyphs |
+| `form-wizard/failure` | FormWizard failure | failure |
+| `form-wizard/resume` | FormWizard resume | resume |
+| `form-wizard/review` | FormWizard review | review |
+
+## Source and related material
+
+- Rust source: [`crates/termrock/src/widgets/form_wizard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/form_wizard.rs)
+- Native preview: `cargo run -p termrock-lookbook -- terminal`
+- Demo id: `blocks/form-wizard`

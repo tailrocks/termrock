@@ -30,6 +30,16 @@ import {
   underlineSpans,
 } from '@/components/preview-metrics'
 
+let demoCodePromise: Promise<Record<string, string>> | undefined
+
+function loadDemoCode(): Promise<Record<string, string>> {
+  demoCodePromise ??= fetch('/demo-code.json').then((response) => {
+    if (!response.ok) throw new Error(`demo code ${response.status}`)
+    return response.json() as Promise<Record<string, string>>
+  })
+  return demoCodePromise
+}
+
 /** Cell payload from the shared Rust demo runtime (truecolor RGB). */
 export type FrameCell = {
   ch: string
@@ -356,7 +366,15 @@ export function TerminalPreview({
   const [loading, setLoading] = useState(true)
   const [poster, setPoster] = useState(false)
   const [zen, setZen] = useState(false)
+  const [view, setView] = useState<'preview' | 'code'>('preview')
+  const [catalog, setCatalog] = useState<DemoDescriptor[]>([])
+  const [activeStory, setActiveStory] = useState(story)
   const labelId = useId()
+
+  useEffect(() => {
+    setActiveStory(story)
+    setView('preview')
+  }, [story])
 
   frameRef.current = frame
   descriptorRef.current = descriptor
@@ -405,10 +423,11 @@ export function TerminalPreview({
       .then((runtime) => {
         if (cancelled) return
         const catalog = JSON.parse(runtime.catalog_json()) as DemoDescriptor[]
-        const nextDescriptor = catalog.find((entry) => entry.id === story)
-        if (!nextDescriptor) throw new Error('unknown TermRock demo: ' + story)
+        setCatalog(catalog)
+        const nextDescriptor = catalog.find((entry) => entry.id === activeStory)
+        if (!nextDescriptor) throw new Error('unknown TermRock demo: ' + activeStory)
         const handle = runtime.mount_demo(
-          story,
+          activeStory,
           Math.max(8, nextDescriptor.cols),
           Math.max(4, nextDescriptor.rows),
         )
@@ -445,13 +464,13 @@ export function TerminalPreview({
       .catch(async (reason: unknown) => {
         if (cancelled) return
         try {
-          const slug = story.replaceAll('/', '-')
+          const slug = activeStory.replaceAll('/', '-')
           const response = await fetch(`/preview-posters/${slug}.json`)
           if (!response.ok) throw new Error(`poster ${response.status}`)
           const fallback = (await response.json()) as TerminalFrame
           if (cancelled) return
           const fallbackDescriptor: DemoDescriptor = {
-            id: story,
+            id: activeStory,
             title: fallback.title,
             component: fallback.component,
             description: 'Static fallback for environments without WebAssembly.',
@@ -487,7 +506,7 @@ export function TerminalPreview({
       }
       if (handleRef.current === mountedHandle) handleRef.current = null
     }
-  }, [story])
+  }, [activeStory])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -511,7 +530,7 @@ export function TerminalPreview({
 
   useEffect(() => {
     const stage = stageRef.current
-    if (!stage || !descriptor) return
+    if (!stage || !descriptor || view !== 'preview') return
     let raf = 0
     const resize = () => {
       const width = Math.max(72, stage.clientWidth - 24)
@@ -542,7 +561,7 @@ export function TerminalPreview({
       cancelAnimationFrame(raf)
       observer.disconnect()
     }
-  }, [descriptor, dispatch, maxHeight])
+  }, [descriptor, dispatch, maxHeight, view])
 
   useEffect(() => {
     const host = hostRef.current
@@ -559,6 +578,7 @@ export function TerminalPreview({
 
   useEffect(() => {
     if (
+      view !== 'preview' ||
       descriptor?.interactionKind !== 'timed-state' &&
       update?.nextDeadlineMs == null
     ) return
@@ -579,7 +599,7 @@ export function TerminalPreview({
     }
     raf = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(raf)
-  }, [descriptor?.interactionKind, dispatch, update?.nextDeadlineMs])
+  }, [descriptor?.interactionKind, dispatch, update?.nextDeadlineMs, view])
 
   useEffect(() => {
     const host = hostRef.current
@@ -618,6 +638,31 @@ export function TerminalPreview({
   const canInteract = Boolean(interactive && descriptor?.interactive)
   const animated = descriptor?.interactionKind === 'timed-state'
   const capturesTextInput = Boolean(update?.capturesTextInput)
+  const variants = descriptor
+    ? catalog.filter((entry) => entry.component === descriptor.component)
+    : []
+  const [sourceCode, setSourceCode] = useState('// Loading exact shared Rust source…')
+
+  useEffect(() => {
+    if (view !== 'code') return
+    let cancelled = false
+    setSourceCode('// Loading exact shared Rust source…')
+    void loadDemoCode()
+      .then((code) => {
+        if (cancelled) return
+        setSourceCode(
+          code[activeStory] ??
+            code[story] ??
+            `// Source setup is documented on the canonical ${descriptor?.component ?? 'component'} page.`,
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setSourceCode('// Exact shared source could not be loaded.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeStory, descriptor?.component, story, view])
 
   useLayoutEffect(() => {
     if (!capturesTextInput || !focused) return
@@ -791,7 +836,7 @@ export function TerminalPreview({
   return (
     <figure
       className="not-prose my-6"
-      data-termrock-preview={story}
+      data-termrock-preview={activeStory}
       data-preview-live={poster ? 'static-poster' : 'rust-wasm'}
       data-preview-interactive={canInteract ? 'true' : 'false'}
       data-preview-focused={focused ? 'true' : 'false'}
@@ -801,11 +846,72 @@ export function TerminalPreview({
       data-preview-hover={hover ? String(hover.x) + ',' + String(hover.y) : ''}
     >
       <div
+        data-termrock-preview-controls="1"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 8,
+          marginBottom: 8,
+          fontFamily: PREVIEW_MONO_STACK,
+          fontSize: 12,
+        }}
+      >
+        {(['preview', 'code'] as const).map((item) => (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={view === item}
+            onClick={() => setView(item)}
+            style={{
+              border: `1px solid ${view === item ? '#39ff14' : '#334033'}`,
+              borderRadius: 6,
+              background: view === item ? '#132013' : '#0c100c',
+              color: view === item ? '#d8ffd8' : '#91a091',
+              padding: '4px 10px',
+              font: 'inherit',
+              cursor: 'pointer',
+              textTransform: 'capitalize',
+            }}
+          >
+            {item}
+          </button>
+        ))}
+        {variants.length > 1 ? (
+          <label style={{ marginLeft: 'auto', color: '#91a091' }}>
+            Variant{' '}
+            <select
+              aria-label="Preview variant"
+              value={activeStory}
+              onChange={(event) => {
+                setActiveStory(event.target.value)
+                setView('preview')
+              }}
+              style={{
+                marginLeft: 6,
+                border: '1px solid #334033',
+                borderRadius: 5,
+                background: '#0c100c',
+                color: '#c8d6c8',
+                padding: '3px 7px',
+                font: 'inherit',
+              }}
+            >
+              {variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+      <div
         ref={hostRef}
         role={canInteract ? 'application' : 'img'}
         tabIndex={canInteract ? 0 : -1}
         aria-labelledby={labelId}
-        aria-label={(canInteract ? 'Interactive' : 'Rendered') + ' terminal preview: ' + story}
+        aria-label={(canInteract ? 'Interactive' : 'Rendered') + ' terminal preview: ' + activeStory}
         onKeyDown={(event) =>
           keyEvent(event, event.repeat ? 'repeat' : 'press')
         }
@@ -830,7 +936,7 @@ export function TerminalPreview({
           setFocused(false)
           dispatch({ type: 'focus', focused: false })
         }}
-        style={chrome}
+        style={{ ...chrome, display: view === 'preview' ? chrome.display : 'none' }}
       >
         {capturesTextInput ? (
           <textarea
@@ -877,7 +983,7 @@ export function TerminalPreview({
           </span>
           <span style={{ color: '#c8d6c8' }}>Ghostty</span>
           <span>· TermRock —</span>
-          <span style={{ color: '#39ff14' }}>{story}</span>
+          <span style={{ color: '#39ff14' }}>{activeStory}</span>
           <span style={{ marginLeft: 'auto', fontSize: 11 }}>
             {frame
               ? String(frame.cols) + '×' + String(frame.rows) + ' · RGB24'
@@ -994,6 +1100,27 @@ export function TerminalPreview({
           </button> : null}
         </div>
       </div>
+      {view === 'code' ? (
+        <pre
+          data-termrock-code="1"
+          style={{
+            margin: 0,
+            maxHeight,
+            overflow: 'auto',
+            border: '1px solid #243024',
+            borderRadius: 10,
+            background: '#080b08',
+            color: '#c8d6c8',
+            padding: 16,
+            fontFamily: PREVIEW_MONO_STACK,
+            fontSize: 12,
+            lineHeight: 1.6,
+            whiteSpace: 'pre',
+          }}
+        >
+          <code>{sourceCode}</code>
+        </pre>
+      ) : null}
       {caption ? (
         <figcaption
           style={{

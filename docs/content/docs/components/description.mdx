@@ -1,6 +1,6 @@
 ---
 title: Description
-description: 'Description widget.'
+description: "Help, error, warning, meta descriptions."
 component: Description
 demo: description/kinds
 interaction: passive-paint
@@ -9,52 +9,67 @@ expectedOutcomes: []
 source: crates/termrock/src/widgets/label.rs
 ---
 
-
 ## Live terminal (Ghostty-class)
 
-This is an honest paint-only preview. It accepts no keyboard or pointer input; resize the page to inspect its responsive rendering.
+This preview is deterministic paint only. It traps no keyboard or pointer input; resize the page to inspect responsive rendering.
 
-<TerminalPreview story="description/kinds" interactive caption="Description · Description kinds — persistent Rust preview; available actions appear below" />
+<TerminalPreview story="description/kinds" interactive caption="Description · Description kinds — paint-only shared Rust frame" />
 
-## Usage
+## Try it
 
-```rust
-use termrock::widgets::Description;
+- No component input. Resize the host and compare its narrow-terminal, Unicode, and non-color rendering contracts.
 
-// See handbook / lookbook story description/basic.
-```
+The docs page remains fully navigable because this demo does not invent focus, a cursor, or activation.
+
+## State and typed outcomes
+
+The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
 
 ## Interaction contract
 
 | Axis | Status |
 |---|---|
-| Keyboard | not-applicable |
-| Mouse | not-applicable |
-| Focus | not-applicable |
-| Non-color cues | covered |
-| Unicode | covered |
+| Keyboard | not-applicable in primary demo |
+| Mouse | not-applicable in primary demo |
+| Focus | not-applicable in primary demo |
+| Cursor / caret | not-applicable in primary demo |
 | Narrow terminal | covered |
+| Unicode | covered |
+| Non-color cues | covered |
+| Motion / time | not-applicable in primary demo |
 
-## Stories
+## Configuration and variants
 
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
+This component has one canonical catalog setup. Resize the live host to exercise its responsive contract; **Reset** remounts the same configuration.
 
-| Story | Title | Focus |
-|---|---|---|
-| `description/kinds` | Description kinds | **Primary (live preview)** |
+## Usage
 
+The Code view above and this source excerpt use the exact paint setup registered for `description/kinds`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
 
-## Try it
+```rust
+use ratatui::prelude::*;
+use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
-- No actions. This component is passive in this demo; the page remains navigable.
-
-Accepted actions update the same mounted Rust value. The status line shows the latest outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The widget owns deterministic paint and layout. The host owns all surrounding state and effects; this demo intentionally exposes no fake cursor, click, or keyboard behavior.
+// Exact paint setup used by the shared catalog story.
+fn description_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::Description;
+    let chunks = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(area);
+    let _ = Description::<()>::new("Help: use a stable hostname", system)
+        .paint(chunks[0], frame.buffer_mut());
+    let _ = Description::<()>::error("Error: value is required", system)
+        .paint(chunks[1], frame.buffer_mut());
+    let _ = Description::<()>::warning("Warning: deprecated flag", system)
+        .paint(chunks[2], frame.buffer_mut());
+    let _ = Description::<()>::meta("Meta: last synced 2m ago", system)
+        .paint(chunks[3], frame.buffer_mut());
+}
+```
 
 ## Common mistakes
 
@@ -65,6 +80,16 @@ The widget owns deterministic paint and layout. The host owns all surrounding st
 ## Test recipe
 
 Mount `description/kinds`, dispatch only the actions listed above, and assert both the returned outcome and changed Ratatui cells. Passive demos must reject input without trapping page navigation.
+
+## Stories
+
+Lookbook coverage for this component. Only the **primary** story is embedded above;
+use the interactive preview (and Studio lookbook) to explore transitions instead of
+a static multi-image gallery.
+
+| Story | Title | Focus |
+|---|---|---|
+| `description/kinds` | Description kinds | **Primary (live preview)** |
 
 ## Source and related material
 
