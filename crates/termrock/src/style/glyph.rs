@@ -169,6 +169,10 @@ pub enum Glyph {
     StatusDotTarget,
     /// Ringed status dot.
     StatusDotRing,
+    /// Heavy vertical accent rail.
+    RailHeavy,
+    /// Compact/collapsed vertical accent rail.
+    RailCollapsed,
 }
 
 impl Glyph {
@@ -226,6 +230,8 @@ impl Glyph {
             Self::StatusDotHollow => "status-dot-hollow",
             Self::StatusDotTarget => "status-dot-target",
             Self::StatusDotRing => "status-dot-ring",
+            Self::RailHeavy => "rail-heavy",
+            Self::RailCollapsed => "rail-collapsed",
         }
     }
 
@@ -283,6 +289,8 @@ impl Glyph {
             Self::StatusDotHollow => "inactive status",
             Self::StatusDotTarget => "active status",
             Self::StatusDotRing => "ring status",
+            Self::RailHeavy => "accent rail",
+            Self::RailCollapsed => "collapsed accent rail",
         }
     }
 
@@ -336,7 +344,9 @@ impl Glyph {
             | Self::DiamondDouble
             | Self::StatusDotHollow
             | Self::StatusDotTarget
-            | Self::StatusDotRing => GlyphGroup::Chrome,
+            | Self::StatusDotRing
+            | Self::RailHeavy
+            | Self::RailCollapsed => GlyphGroup::Chrome,
         }
     }
 
@@ -392,6 +402,8 @@ impl Glyph {
         Self::StatusDotHollow,
         Self::StatusDotTarget,
         Self::StatusDotRing,
+        Self::RailHeavy,
+        Self::RailCollapsed,
     ];
 
     /// Glyphs in a group.
@@ -480,6 +492,8 @@ impl Glyph {
             Self::StatusDotHollow => ("○", "o", "○"),
             Self::StatusDotTarget => ("◉", "@", "◉"),
             Self::StatusDotRing => ("◎", "O", "◎"),
+            Self::RailHeavy => ("┃", "|", "┃"),
+            Self::RailCollapsed => ("❙", "|", "❙"),
         }
     }
 

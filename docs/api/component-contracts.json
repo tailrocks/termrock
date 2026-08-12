@@ -1,4 +1,12 @@
 {
+  "AccentRail": {
+    "focus": "not-applicable",
+    "keyboard": "not-applicable",
+    "mouse": "not-applicable",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
   "Accordion": {
     "focus": "covered",
     "keyboard": "covered",

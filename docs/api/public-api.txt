@@ -28434,6 +28434,8 @@ pub termrock::style::Glyph::ModeDot
 pub termrock::style::Glyph::Play
 pub termrock::style::Glyph::RadioOff
 pub termrock::style::Glyph::RadioOn
+pub termrock::style::Glyph::RailCollapsed
+pub termrock::style::Glyph::RailHeavy
 pub termrock::style::Glyph::Remove
 pub termrock::style::Glyph::RuleH
 pub termrock::style::Glyph::RuleHStrong
@@ -55263,6 +55265,53 @@ pub unsafe fn termrock::widgets::ZoomLevel::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ZoomLevel
 pub fn termrock::widgets::ZoomLevel::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ZoomLevel
+pub struct termrock::widgets::AccentRail<'a>
+impl<'a> termrock::widgets::AccentRail<'a>
+pub const fn termrock::widgets::AccentRail<'a>::active(self, bool) -> Self
+pub const fn termrock::widgets::AccentRail<'a>::collapsed(self, bool) -> Self
+pub const fn termrock::widgets::AccentRail<'a>::glyph(self, termrock::style::Glyph) -> Self
+pub fn termrock::widgets::AccentRail<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> (ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect)
+pub const fn termrock::widgets::AccentRail<'a>::new(&'a termrock::style::DesignSystem, termrock::style::Role) -> Self
+pub fn termrock::widgets::AccentRail<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> ratatui_core::layout::rect::Rect
+pub const fn termrock::widgets::AccentRail<'a>::speed(self, f32) -> Self
+pub const fn termrock::widgets::AccentRail<'a>::tick(self, u64) -> Self
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::AccentRail<'_>
+pub fn termrock::widgets::AccentRail<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::AccentRail<'a>
+pub fn termrock::widgets::AccentRail<'a>::clone(&self) -> termrock::widgets::AccentRail<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::AccentRail<'a>
+pub fn termrock::widgets::AccentRail<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::AccentRail<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::AccentRail<'a>
+impl<'a> core::marker::Send for termrock::widgets::AccentRail<'a>
+impl<'a> core::marker::Sync for termrock::widgets::AccentRail<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::AccentRail<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::AccentRail<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::AccentRail<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::AccentRail<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::AccentRail<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::AccentRail<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::AccentRail<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::AccentRail<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::AccentRail<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::AccentRail<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::AccentRail<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::AccentRail<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::AccentRail<'a> where T: core::clone::Clone
+pub type termrock::widgets::AccentRail<'a>::Owned = T
+pub fn termrock::widgets::AccentRail<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::AccentRail<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::AccentRail<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::AccentRail<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::AccentRail<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccentRail<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::AccentRail<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::AccentRail<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::AccentRail<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::AccentRail<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::AccentRail<'a>
+pub fn termrock::widgets::AccentRail<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::AccentRail<'a>
 pub struct termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>

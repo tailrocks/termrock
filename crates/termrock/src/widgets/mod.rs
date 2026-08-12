@@ -17,6 +17,7 @@ pub use crate::ansi_text::{
 };
 pub use crate::interaction::Outcome;
 
+mod accent_rail;
 mod accordion;
 mod action_bar;
 mod agent;
@@ -159,6 +160,7 @@ mod virtual_list;
 mod virtualizer;
 
 pub use crate::style::PanelChrome;
+pub use accent_rail::AccentRail;
 pub use action_bar::{Action, ActionBar, ActionBarState};
 pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode};

@@ -3,6 +3,7 @@
   "pagesIndex": "../components",
   "defaultOpen": true,
   "pages": [
+    "accent-rail",
     "accordion",
     "action-bar",
     "action-link",

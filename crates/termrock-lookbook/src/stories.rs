@@ -6350,6 +6350,15 @@ pub(crate) fn stories() -> Vec<Story> {
             field_row_states_story,
         ),
         Story::new(
+            "accent-rail/actors",
+            "Accent rail actors",
+            "AccentRail",
+            "Static, active-wave, tool, and collapsed semantic rails.",
+            52,
+            12,
+            accent_rail_actors_story,
+        ),
+        Story::new(
             "label/states",
             "Label states",
             "Label",
@@ -21757,6 +21766,47 @@ fn field_row_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         .label_cols(label_cols)
         .hovered(true)
         .paint(rows[4], frame.buffer_mut());
+}
+
+fn accent_rail_actors_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::AccentRail;
+    let blocks = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(3),
+        Constraint::Length(2),
+        Constraint::Length(2),
+    ])
+    .spacing(1)
+    .split(area);
+    let cases = [
+        (Role::ActorUser, false, false, "USER  Request received"),
+        (
+            Role::ActorAssistant,
+            true,
+            false,
+            "ASSISTANT  Working with deterministic wave",
+        ),
+        (Role::ActorTool, false, false, "TOOL  Build complete"),
+        (Role::TextMuted, false, true, "COLLAPSED  3 hidden events"),
+    ];
+    for (index, (role, active, collapsed, label)) in cases.into_iter().enumerate() {
+        let content = AccentRail::new(system, role)
+            .active(active)
+            .collapsed(collapsed)
+            .tick(11)
+            .paint(blocks[index], frame.buffer_mut());
+        frame.buffer_mut().set_stringn(
+            content.x,
+            content.y,
+            label,
+            usize::from(content.width),
+            system.style(if index == 1 {
+                Role::TextStrong
+            } else {
+                Role::Text
+            }),
+        );
+    }
 }
 
 fn label_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -5,6 +5,16 @@ export interface ComponentDoc {
 }
 
 export const componentDocs = {
+  AccentRail: {
+    description: 'A semantic one-column block rail with deterministic wave motion, reduced-motion fallback, and collapsed-block glyph.',
+    primaryStory: 'accent-rail/actors',
+    usage: `use termrock::{style::{DesignSystem, Role}, widgets::AccentRail};
+
+let system = DesignSystem::phosphor();
+let rail = AccentRail::new(&system, Role::ActorAssistant)
+  .active(true)
+  .tick(11);`,
+  },
   AlertDialog: {
     description:
       'High-risk confirmation distinct from Dialog: exact scope, consequences, reversibility, target, safer alternatives; typed confirmation, justified countdown, safe initial focus, non-dismissable critical state.',
