@@ -1539,6 +1539,15 @@ pub(crate) fn stories() -> Vec<Story> {
             tree_actions_story,
         ),
         Story::new(
+            "tree/tone-scroll",
+            "Tree tone and pinned scroll",
+            "Tree",
+            "Primary/live tone tiers with fixed hierarchy prefix under horizontal scroll.",
+            38,
+            7,
+            tree_tone_scroll_story,
+        ),
+        Story::new(
             "progress/determinate",
             "Progress",
             "Progress",
@@ -11560,6 +11569,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11576,6 +11586,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11592,6 +11603,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: false,
             status: TreeNodeStatus::Loading,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -11608,6 +11620,7 @@ pub(crate) fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
     ]
@@ -11966,6 +11979,28 @@ fn tree_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             .secondary(Line::from("manifest")),
     ];
     let mut state = TreeState::new(Some("f1"));
+    frame.render_stateful_widget(&Tree::new(&nodes, system), area, &mut state);
+}
+
+fn tree_tone_scroll_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ToneTier;
+    let nodes = [
+        TreeNode::new("root", Line::from("workspace"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new(
+            "live",
+            Line::from(
+                "streaming-agent-output-with-long-label-and-build-diagnostics-from-worker-07-persistent-tail-follow-session-alpha",
+            ),
+            1,
+        )
+        .tone(ToneTier::Live),
+        TreeNode::new("dim", Line::from("queued-background-index"), 1).tone(ToneTier::LiveDim),
+        TreeNode::new("plain", Line::from("README.md"), 1),
+    ];
+    let mut state = TreeState::new(Some("live"));
+    state.set_h_offset(18);
     frame.render_stateful_widget(&Tree::new(&nodes, system), area, &mut state);
 }
 
@@ -23587,6 +23622,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             expanded: true,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
         TreeNode {
@@ -23603,6 +23639,7 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             expanded: false,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             parent: None,
         },
     ];

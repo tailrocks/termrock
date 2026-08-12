@@ -270,3 +270,11 @@ Per-step tests named above (12+ new tests). Model widget tests on
   discards the requested isolation; complete vertical slices satisfy both with
   the smallest process-only change. The shared migration/index remains in the
   final slice.
+- 2026-08-12: Split migration allocation at the Tree slice: 0267 now documents
+  the breaking `TreeNode::tone` field and pinned label-scroll API in the same
+  commit, while the remaining additive primitives use the next available
+  number only if another migration is required. Deferring 0267 violates repo
+  migration law; documenting unlanded APIs is inaccurate; sequential split
+  migrations preserve truthful independently-green commits with minimal
+  blast radius. Tree ownership research confirmed `Tree` owns single-column
+  data paint, `TreeNavigation` routes, and `TreeTable` columns.

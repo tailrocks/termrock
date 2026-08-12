@@ -29,3 +29,17 @@ the collapsed cue stays visible in ASCII/color-independent form. Evidence:
 [paper](accent-rail-paper-1440x900.png),
 [mobile](accent-rail-mobile-375x812.png), and
 [tablet](accent-rail-tablet-768x1024.png).
+
+## Tree tone tiers and pinned scroll
+
+Validated the generated Tree page with `agent-browser` at 375×812,
+768×1024, and 1440×900 plus paper/reduced-motion desktop. No page overflow,
+console errors, or failed requests occurred. The primary story visibly scrolls
+the selected long label while disclosure/indent remain pinned.
+
+Designer verdict: **iterated 2 times, pass** — lengthened the edge-case label
+until horizontal scrolling remained visible at the widest remapped preview.
+Primary/live/live-dim hierarchy reads distinctly, selection remains the single
+focal point, and the pinned prefix preserves structural orientation. Evidence:
+[desktop](tree-desktop-1440x900.png), [paper](tree-paper-1440x900.png),
+[mobile](tree-mobile-375x812.png), and [tablet](tree-tablet-768x1024.png).

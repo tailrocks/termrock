@@ -53335,6 +53335,55 @@ pub unsafe fn termrock::widgets::TokenStripOutcome<Id>::clone_to_uninit(&self, *
 impl<T> core::convert::From<T> for termrock::widgets::TokenStripOutcome<Id>
 pub fn termrock::widgets::TokenStripOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TokenStripOutcome<Id>
+#[non_exhaustive] pub enum termrock::widgets::ToneTier
+pub termrock::widgets::ToneTier::Live
+pub termrock::widgets::ToneTier::LiveDim
+pub termrock::widgets::ToneTier::Primary
+impl core::clone::Clone for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::clone(&self) -> termrock::widgets::ToneTier
+impl core::cmp::Eq for termrock::widgets::ToneTier
+impl core::cmp::PartialEq for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::eq(&self, &termrock::widgets::ToneTier) -> bool
+impl core::default::Default for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::default() -> termrock::widgets::ToneTier
+impl core::fmt::Debug for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::ToneTier
+impl core::marker::StructuralPartialEq for termrock::widgets::ToneTier
+impl core::marker::Freeze for termrock::widgets::ToneTier
+impl core::marker::Send for termrock::widgets::ToneTier
+impl core::marker::Sync for termrock::widgets::ToneTier
+impl core::marker::Unpin for termrock::widgets::ToneTier
+impl core::marker::UnsafeUnpin for termrock::widgets::ToneTier
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ToneTier
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ToneTier
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ToneTier where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ToneTier::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ToneTier where U: core::convert::From<T>
+pub fn termrock::widgets::ToneTier::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ToneTier where U: core::convert::Into<T>
+pub type termrock::widgets::ToneTier::Error = core::convert::Infallible
+pub fn termrock::widgets::ToneTier::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ToneTier where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ToneTier::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ToneTier::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ToneTier where T: core::clone::Clone
+pub type termrock::widgets::ToneTier::Owned = T
+pub fn termrock::widgets::ToneTier::clone_into(&self, &mut T)
+pub fn termrock::widgets::ToneTier::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ToneTier where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ToneTier::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ToneTier where T: ?core::marker::Sized
+pub fn termrock::widgets::ToneTier::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ToneTier where T: ?core::marker::Sized
+pub fn termrock::widgets::ToneTier::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ToneTier where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ToneTier::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ToneTier
+pub fn termrock::widgets::ToneTier::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ToneTier
 #[non_exhaustive] pub enum termrock::widgets::ToolCallAction
 pub termrock::widgets::ToolCallAction::Cancel
 pub termrock::widgets::ToolCallAction::CopyArgs
@@ -87658,6 +87707,7 @@ pub termrock::widgets::TreeNode::parent: core::option::Option<Id>
 pub termrock::widgets::TreeNode::secondary: core::option::Option<ratatui_core::text::line::Line<'a>>
 pub termrock::widgets::TreeNode::shortcut: core::option::Option<&'a str>
 pub termrock::widgets::TreeNode::status: termrock::widgets::TreeNodeStatus
+pub termrock::widgets::TreeNode::tone: termrock::widgets::ToneTier
 pub termrock::widgets::TreeNode::trailing: core::option::Option<ratatui_core::text::line::Line<'a>>
 impl<'a, Id> termrock::widgets::TreeNode<'a, Id>
 pub fn termrock::widgets::TreeNode<'a, Id>::actions(self, ratatui_core::text::line::Line<'a>) -> Self
@@ -87676,6 +87726,7 @@ pub fn termrock::widgets::TreeNode<'a, Id>::parent(self, Id) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::plain_label(&self) -> alloc::string::String
 pub fn termrock::widgets::TreeNode<'a, Id>::secondary(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::shortcut(self, &'a str) -> Self
+pub const fn termrock::widgets::TreeNode<'a, Id>::tone(self, termrock::widgets::ToneTier) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::trailing(self, ratatui_core::text::line::Line<'a>) -> Self
 pub fn termrock::widgets::TreeNode<'a, Id>::with_status(self, termrock::widgets::TreeNodeStatus) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::TreeNode<'a, Id>
@@ -87724,18 +87775,21 @@ pub fn termrock::widgets::TreeState<Id>::clear_typeahead(&mut self)
 pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::filter_query(&self) -> core::option::Option<&str>
+pub const fn termrock::widgets::TreeState<Id>::h_offset(&self) -> u16
 pub const fn termrock::widgets::TreeState<Id>::hovered(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::new(core::option::Option<Id>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::TreeState<Id>::offset(&self) -> usize
 pub fn termrock::widgets::TreeState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
 pub fn termrock::widgets::TreeState<Id>::restore_scroll_anchor(&mut self)
 pub fn termrock::widgets::TreeState<Id>::scroll_by(&mut self, isize, usize) -> bool
+pub fn termrock::widgets::TreeState<Id>::scroll_horizontal(&mut self, i16) -> bool
 pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::set_filter_query(&mut self, core::option::Option<alloc::string::String>)
+pub fn termrock::widgets::TreeState<Id>::set_h_offset(&mut self, u16)
 pub fn termrock::widgets::TreeState<Id>::set_sticky(&mut self, termrock::widgets::StickyRegion)
 pub fn termrock::widgets::TreeState<Id>::set_virtual_window(&mut self, usize, usize)
 pub fn termrock::widgets::TreeState<Id>::typeahead_buffer(&self) -> &str

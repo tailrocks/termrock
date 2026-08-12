@@ -829,7 +829,7 @@ pub use transcript::{
     TranscriptState,
 };
 pub use tree::{
-    TREE_DEFAULT_OVERSCAN, Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState,
+    TREE_DEFAULT_OVERSCAN, ToneTier, Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState,
     filter_tree_with_ancestors,
 };
 pub use tree_navigation::{

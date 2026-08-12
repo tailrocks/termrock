@@ -49,6 +49,7 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 006: added generated Spinner component MDX required by the docs gate.
 - 2026-08-12 — Plan 007: added required generated docs/API/frame/browser outputs to Scope.
 - 2026-08-12 — Plan 007: reordered each primitive as a complete independently-green cross-surface slice.
+- 2026-08-12 — Plan 007: allocated migration 0267 at the breaking Tree slice; later plans shift sequentially.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.

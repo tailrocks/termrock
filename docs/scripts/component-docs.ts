@@ -685,8 +685,8 @@ NotificationCenter::new(&system).paint(area, buf, &mut state);
   },
   Tree: {
     description:
-      'Hierarchical collection: stable IDs, lazy children, loading/error, expansion, cursor/selection/check, icons, metadata, context actions, typeahead; Left collapse/parent, Right expand/enter; ancestor-preserving filter; virtual window + scroll anchors; ASCII glyphs.',
-    primaryStory: 'tree/navigation',
+      'Hierarchical collection with stable IDs, semantic live-tone tiers, pinned-prefix horizontal label scroll, lazy children, expansion, selection/check, metadata, typeahead, virtualization, and ASCII glyphs.',
+    primaryStory: 'tree/tone-scroll',
     usage: `use ratatui_core::text::Line;
 use termrock::style::DesignSystem;
 use termrock::widgets::{Tree, TreeNode, TreeState, filter_tree_with_ancestors};

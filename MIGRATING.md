@@ -280,6 +280,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0264 | `v0.13.0` | [Recipe-enforced controls, chips, tints, and meters](migrations/0264-v0.13.0-recipe-enforcement-and-chips.md) |
 | 0265 | `v0.13.0` | [Overlay elevation and shared shells](migrations/0265-v0.13.0-overlay-elevation.md) |
 | 0266 | `v0.13.0` | [Motion, text, and glyph kit](migrations/0266-v0.13.0-motion-text-glyph-kit.md) |
+| 0267 | `v0.13.0` | [Tree tone tiers and pinned horizontal scroll](migrations/0267-v0.13.0-tree-tone-and-scroll.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

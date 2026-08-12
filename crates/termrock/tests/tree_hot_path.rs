@@ -32,6 +32,7 @@ fn warmed_large_tree_viewport_render_is_bounded_and_allocation_free() {
             expanded: id % 14 == 0,
             enabled: true,
             status: TreeNodeStatus::Ready,
+            tone: termrock::widgets::ToneTier::Primary,
             actions: None,
             parent: None,
         })
