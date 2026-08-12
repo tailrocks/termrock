@@ -1136,41 +1136,17 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         state.viewport_height = usize::from(list_body.height.max(1));
         state.reconcile(self.candidates);
 
-        // Fill
-        let bg = if self.colorless {
-            self.system.style(Role::Surface)
-        } else {
-            self.system.style(Role::Elevated)
-        };
         let border = if self.colorless {
             self.system.style(Role::Border)
         } else {
             self.system.style(Role::BorderFocused)
         };
-        for y in menu.y..menu.bottom() {
-            for x in menu.x..menu.right() {
-                if let Some(cell) = buffer.cell_mut((x, y)) {
-                    cell.set_symbol(" ");
-                    cell.set_style(bg);
-                }
-            }
-        }
-        // Corner markers
-        if menu.width >= 2 && menu.height >= 1 {
-            let (tl, tr) = if self.ascii {
-                ("+", "+")
-            } else {
-                ("┌", "┐")
-            };
-            if let Some(cell) = buffer.cell_mut((menu.x, menu.y)) {
-                cell.set_symbol(tl);
-                cell.set_style(border);
-            }
-            if let Some(cell) = buffer.cell_mut((menu.right().saturating_sub(1), menu.y)) {
-                cell.set_symbol(tr);
-                cell.set_style(border);
-            }
-        }
+        super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(border)
+            .padding(0, 0)
+            .paint(menu, buffer);
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {

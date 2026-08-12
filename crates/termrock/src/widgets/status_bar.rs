@@ -22,7 +22,7 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, GlyphSet, Role, RolePalette, faded},
+    style::{DesignSystem, Glyph, GlyphSet, Role, RolePalette, faded},
     text::{display_cols, take_display_cols},
 };
 
@@ -801,6 +801,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
         state.regions.clear();
         let placements = self.placements(area, Some(state));
         let mut content = String::new();
+        let mut seen = [false; 3];
         for placement in &placements {
             if placement.is_transient {
                 continue;
@@ -809,17 +810,36 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             let hovered = state.hovered.as_ref() == Some(&slot.id);
             let style = resolve_style(slot, hovered, self.system);
             let painted = format_slot_content(slot, self.system.glyphs);
+            let side_index = match placement.side {
+                Side::Left => 0,
+                Side::Center => 1,
+                Side::Right => 2,
+            };
+            let mut content_area = placement.area;
+            if seen[side_index] && placement.area.width > 2 {
+                let separator = self.system.glyphs.resolve(Glyph::ModeDot).text;
+                buffer.set_stringn(
+                    placement.area.x,
+                    placement.area.y,
+                    separator,
+                    1,
+                    fade_style(self.system.style(Role::TextMuted), self.alpha),
+                );
+                content_area.x = content_area.x.saturating_add(2);
+                content_area.width = content_area.width.saturating_sub(2);
+            }
+            seen[side_index] = true;
             crate::text::display_cols_slice_into(
                 &painted,
                 0,
-                usize::from(placement.area.width),
+                usize::from(content_area.width),
                 &mut content,
             );
             buffer.set_stringn(
-                placement.area.x,
-                placement.area.y,
+                content_area.x,
+                content_area.y,
                 &content,
-                usize::from(placement.area.width),
+                usize::from(content_area.width),
                 fade_style(style, self.alpha),
             );
             state.regions.push(HitRegion {
@@ -957,6 +977,21 @@ mod tests {
             glyph: None,
             style_explicit: true,
         }
+    }
+
+    #[test]
+    fn status_bar_paints_band() {
+        let system = DesignSystem::default();
+        let left = [legacy_slot("mode", "NORMAL", 1, 4)];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(19, 0)].bg,
+            system.style(Role::StatusBar).bg.unwrap()
+        );
     }
 
     #[test]

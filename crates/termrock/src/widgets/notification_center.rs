@@ -1141,63 +1141,18 @@ impl<'a> NotificationCenter<'a> {
         }
         state.slots.root = panel;
 
-        let fill = if self.colorless {
-            self.system.style(Role::Surface)
-        } else {
-            self.system.style(Role::Elevated)
-        };
-        for y in panel.y..panel.bottom() {
-            for x in panel.x..panel.right() {
-                buffer[(x, y)].set_style(fill);
-                buffer[(x, y)].set_symbol(" ");
-            }
-        }
-
         let border = if state.focused && !self.colorless {
             Role::BorderFocused
         } else {
             Role::Border
         };
         let bs = self.system.style(border);
-        let (tl, tr, bl, br, h, v) = if ascii {
-            ("+", "+", "+", "+", "-", "|")
-        } else {
-            ("┌", "┐", "└", "┘", "─", "│")
-        };
-        if panel.width >= 2 && panel.height >= 2 {
-            buffer.set_stringn(panel.x, panel.y, tl, 1, bs);
-            buffer.set_stringn(panel.right().saturating_sub(1), panel.y, tr, 1, bs);
-            buffer.set_stringn(panel.x, panel.bottom().saturating_sub(1), bl, 1, bs);
-            buffer.set_stringn(
-                panel.right().saturating_sub(1),
-                panel.bottom().saturating_sub(1),
-                br,
-                1,
-                bs,
-            );
-            if panel.width > 2 {
-                let hz = h.repeat(usize::from(panel.width.saturating_sub(2)));
-                buffer.set_stringn(panel.x + 1, panel.y, &hz, usize::from(panel.width - 2), bs);
-                buffer.set_stringn(
-                    panel.x + 1,
-                    panel.bottom().saturating_sub(1),
-                    &hz,
-                    usize::from(panel.width - 2),
-                    bs,
-                );
-            }
-            for y in panel.y + 1..panel.bottom().saturating_sub(1) {
-                buffer.set_stringn(panel.x, y, v, 1, bs);
-                buffer.set_stringn(panel.right().saturating_sub(1), y, v, 1, bs);
-            }
-        }
-
-        let inner = Rect {
-            x: panel.x.saturating_add(1),
-            y: panel.y.saturating_add(1),
-            width: panel.width.saturating_sub(2),
-            height: panel.height.saturating_sub(2),
-        };
+        let inner = super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(bs)
+            .padding(0, 0)
+            .paint(panel, buffer);
         if inner.is_empty() {
             return;
         }

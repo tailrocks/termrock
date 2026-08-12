@@ -204,6 +204,7 @@ pub struct Surface<'a> {
     system: &'a DesignSystem,
     recipe: SurfaceRecipe,
     bordered: Option<bool>,
+    border_style: Option<Style>,
     fill: SurfaceFill,
     pad_x: Option<u16>,
     pad_y: Option<u16>,
@@ -219,6 +220,7 @@ impl<'a> Surface<'a> {
             system,
             recipe: SurfaceRecipe::Inset,
             bordered: None,
+            border_style: None,
             fill: SurfaceFill::Auto,
             pad_x: None,
             pad_y: None,
@@ -244,6 +246,13 @@ impl<'a> Surface<'a> {
     #[must_use]
     pub const fn bordered(mut self, bordered: bool) -> Self {
         self.bordered = Some(bordered);
+        self
+    }
+
+    /// Override semantic border style while preserving shared geometry.
+    #[must_use]
+    pub const fn border_style(mut self, style: Style) -> Self {
+        self.border_style = Some(style);
         self
     }
 
@@ -289,6 +298,9 @@ impl<'a> Surface<'a> {
             plan.border = None;
         } else if plan.border.is_none() {
             plan.border = Some(self.system.style(Role::Border));
+        }
+        if bordered && let Some(style) = self.border_style {
+            plan.border = Some(style);
         }
         // No-color / monochrome: never rely on chromatic fill alone.
         if matches!(self.system.capability, ColorCapability::Monochrome)

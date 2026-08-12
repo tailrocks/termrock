@@ -82735,6 +82735,7 @@ pub fn termrock::widgets::SuggestedFix<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SuggestedFix<'a>
 pub struct termrock::widgets::Surface<'a>
 impl<'a> termrock::widgets::Surface<'a>
+pub const fn termrock::widgets::Surface<'a>::border_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Surface<'a>::bordered(self, bool) -> Self
 pub const fn termrock::widgets::Surface<'a>::elevation(self, termrock::widgets::SurfaceElevation) -> Self
 pub const fn termrock::widgets::Surface<'a>::fill(self, termrock::widgets::SurfaceFill) -> Self

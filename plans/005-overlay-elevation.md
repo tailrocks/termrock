@@ -117,11 +117,15 @@ fill".
   paints its own shell — check `grep -n "Clear.render\|block().render" crates/termrock/src/widgets/alert_dialog.rs`)
 - `crates/termrock/src/widgets/toast.rs`
 - `crates/termrock/src/widgets/status_bar.rs`
+- `crates/termrock/src/widgets/surface.rs` (shared semantic border-style
+  override required by focused overlay shells)
 - `crates/termrock/src/widgets/popover.rs`, `dropdown_menu.rs`,
   `completion_menu.rs`, `notification_center.rs`, `drawer.rs` (Surface
   adoption for their shells — these carry hand-drawn `"┌"` literals, verified
   by grep at `539e7d03`)
 - `crates/termrock-lookbook/src/stories.rs`
+- `docs/api/public-api.txt`, affected `docs/public/preview-frames/`, and
+  `artifacts/visual-qa/plan-005/`
 - `migrations/0265-*.md` + `MIGRATING.md`
 - `plans/README.md`
 
@@ -237,12 +241,19 @@ Mono/ASCII stories re-checked for each touched widget (capability law).
 
 ## Done criteria
 
-- [ ] `mise run check` + `mise run gate` exit 0
-- [ ] `grep -n "let _ = tokens" crates/termrock/src/widgets/dialog.rs` → 0 matches
-- [ ] `grep -c '"┌"' crates/termrock/src/widgets/{popover,dropdown_menu,completion_menu,notification_center,drawer,toast}.rs` → 0 each
-- [ ] 4 new tests pass
-- [ ] `migrations/0265-*.md` exists, linked
-- [ ] `plans/README.md` updated
+- [x] `mise run check` + `mise run gate` exit 0
+- [x] `grep -n "let _ = tokens" crates/termrock/src/widgets/dialog.rs` → 0 matches
+- [x] `grep -c '"┌"' crates/termrock/src/widgets/{popover,dropdown_menu,completion_menu,notification_center,drawer,toast}.rs` → 0 each
+- [x] 4 new tests pass
+- [x] `migrations/0265-*.md` exists, linked
+- [x] `plans/README.md` updated
+
+## Visual QA
+
+- Dialog, Toast, StatusBar, Popover, DropdownMenu, CompletionMenu,
+  NotificationCenter, Drawer: **pass** across dark/paper and three responsive
+  viewports.
+- Evidence: [`artifacts/visual-qa/plan-005/README.md`](../artifacts/visual-qa/plan-005/README.md).
 
 ## STOP conditions
 
@@ -260,3 +271,22 @@ Mono/ASCII stories re-checked for each touched widget (capability law).
   plan, Surface is proven for overlay shells.
 - Reviewers: check modal stories in `paper` (light) preset — Elevated must
   read *above* Surface in light mode too (ladder direction flips luminance).
+
+## Amendments
+
+- 2026-08-12: Accepted Plan 003's declared dialog rhythm/reference-width edits
+  as prerequisite drift. The plan depends on Plan 003, so treating those edits
+  as unexpected contradicts its dependency graph. Options were halt, revert
+  the green prerequisite, or continue from live geometry with shell-paint-only
+  scope; the last best serves goal, repo law, design intent, and minimal blast
+  radius.
+- 2026-08-12: Added generated public API/frame output and agent-browser QA
+  artifacts omitted from Scope. Overlay defaults are public visual behavior;
+  catalog consistency and the standing responsive browser gate require these
+  direct outputs in the same independently-green commit.
+- 2026-08-12: Added a focused `Surface::border_style(Style)` override after
+  Step 5's expressiveness STOP fired. Options were retain local box painters
+  (violates one chrome authority), flatten focused shells to `Role::Border`
+  (violates focus-visible law), or add the shared semantic-style override.
+  The shared override best matches repo/design law and lets every shell retain
+  existing focus semantics with minimal API and paint-path change.

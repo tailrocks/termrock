@@ -42,7 +42,8 @@ use crate::{
 };
 
 use super::{
-    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel, PanelChrome,
+    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
+    PanelChrome, Surface, SurfaceRecipe,
 };
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
@@ -506,12 +507,7 @@ pub struct Backdrop {
 
 impl Default for Backdrop {
     fn default() -> Self {
-        Self {
-            symbol: ' ',
-            style: Style::new()
-                .fg(Color::Reset)
-                .bg(crate::style::DIALOG_BACKDROP),
-        }
+        Self::dim_wash(false)
     }
 }
 
@@ -525,7 +521,12 @@ impl Backdrop {
     /// Terminal-default background (Reset).
     #[must_use]
     pub fn reset() -> Self {
-        Self::default()
+        Self {
+            symbol: ' ',
+            style: Style::new()
+                .fg(Color::Reset)
+                .bg(crate::style::DIALOG_BACKDROP),
+        }
     }
 
     /// Dim wash glyph field.
@@ -540,11 +541,16 @@ impl Backdrop {
         }
     }
 
-    /// From design tokens (Reset by default).
+    /// From design tokens (dim wash by default).
     #[must_use]
     pub fn from_tokens(tokens: &DesignSystem) -> Self {
-        let _ = tokens;
-        Self::reset()
+        Self {
+            symbol: if tokens.glyphs.is_ascii() { '.' } else { '░' },
+            style: tokens
+                .style(Role::Backdrop)
+                .bg(crate::style::DIALOG_BACKDROP)
+                .add_modifier(ratatui_core::style::Modifier::DIM),
+        }
     }
 
     /// Fill symbol.
@@ -1256,6 +1262,11 @@ impl<'a> Dialog<'a> {
         }
         state.slots.root = area;
         Clear.render(area, buffer);
+        Surface::new(self.tokens)
+            .recipe(SurfaceRecipe::Overlay)
+            .bordered(false)
+            .padding(0, 0)
+            .paint(area, buffer);
 
         let emphasis = if matches!(
             state.focus_zone,
@@ -1888,10 +1899,18 @@ mod backdrop_tests {
     };
 
     #[test]
-    fn default_backdrop_uses_terminal_background() {
+    fn default_backdrop_dims_terminal_background() {
         let backdrop = Backdrop::default();
-        assert_eq!(backdrop.symbol, ' ');
-        assert_eq!(backdrop.style.fg, Some(Color::Reset));
+        assert_eq!(backdrop.symbol, '░');
+        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+    }
+
+    #[test]
+    fn backdrop_from_tokens_dims() {
+        let system = DesignSystem::default();
+        let backdrop = Backdrop::from_tokens(&system);
+        assert_eq!(backdrop.symbol, '░');
+        assert_eq!(backdrop.style.fg, system.style(Role::Backdrop).fg);
         assert_eq!(backdrop.style.bg, Some(Color::Reset));
     }
 
@@ -2320,6 +2339,17 @@ mod backdrop_tests {
             .collect();
         assert!(text.contains("Title") || text.contains("Body"), "{text}");
         assert!(!state.slots.body.is_empty());
+    }
+
+    #[test]
+    fn dialog_paints_elevated_fill() {
+        let system = DesignSystem::default();
+        let dialog = Dialog::new("Title", Text::from("Body"), &system);
+        let mut state = DialogState::<()>::new();
+        let area = Rect::new(0, 0, 30, 8);
+        let mut buffer = Buffer::empty(area);
+        dialog.paint(area, &mut buffer, &mut state, 0);
+        assert_eq!(buffer[(2, 2)].bg, system.style(Role::Elevated).bg.unwrap());
     }
 
     #[test]
