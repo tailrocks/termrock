@@ -68,3 +68,28 @@ focus. Evidence: [desktop](working-state-card-desktop-1440x900.png),
 [paper](working-state-card-paper-reduced-motion-1440x900.png),
 [mobile](working-state-card-mobile-375x812.png),
 [tablet](working-state-card-tablet-768x1024.png).
+
+## Agent input and trust chrome
+
+Validated PromptComposer and PermissionPrompt handbook pages with
+`agent-browser` at 375×812, 768×1024, and 1440×900 plus paper/reduced-motion
+desktop. Both previews accepted keyboard scene navigation, remapped their
+terminal grids without page overflow, and retained wide cells inside the
+preview container. Consoles and networks reported no errors or failures.
+
+Designer verdict — PromptComposer: **pass** — the prompt mark anchors a clear
+entry focal point, the sunken editor separates input from attachment and info
+tiers, and the restrained green-on-obsidian palette remains legible at narrow
+widths. Evidence: [desktop](prompt-composer-desktop-1440x900.png),
+[paper](prompt-composer-paper-reduced-motion-1440x900.png),
+[mobile](prompt-composer-mobile-375x812.png), and
+[tablet](prompt-composer-tablet-768x1024.png).
+
+Designer verdict — PermissionPrompt: **pass** — the danger rail carries risk
+without changing border weight, the checklist retains scan rhythm, and shared
+action chips make the decision tier distinct. Paper, narrow, and reduced-motion
+states remain deterministic and readable. Evidence:
+[desktop](permission-prompt-desktop-1440x900.png),
+[paper](permission-prompt-paper-reduced-motion-1440x900.png),
+[mobile](permission-prompt-mobile-375x812.png), and
+[tablet](permission-prompt-tablet-768x1024.png).

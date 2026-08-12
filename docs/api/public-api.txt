@@ -28483,6 +28483,7 @@ pub termrock::style::Glyph::Info
 pub termrock::style::Glyph::Loading
 pub termrock::style::Glyph::ModeDot
 pub termrock::style::Glyph::Play
+pub termrock::style::Glyph::Prompt
 pub termrock::style::Glyph::RadioOff
 pub termrock::style::Glyph::RadioOn
 pub termrock::style::Glyph::RailCollapsed

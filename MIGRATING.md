@@ -285,6 +285,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0269 | `v0.13.0` | [Transcript actor rails and active presence](migrations/0269-v0.13.0-transcript-actor-rails.md) |
 | 0270 | `v0.13.0` | [ToolCallCard actor rail and compact row](migrations/0270-v0.13.0-tool-call-card-actor-rail.md) |
 | 0271 | `v0.13.0` | [Agent pattern-card presence](migrations/0271-v0.13.0-agent-pattern-card-presence.md) |
+| 0272 | `v0.13.0` | [Composer and permission trust chrome](migrations/0272-v0.13.0-composer-permission-chrome.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

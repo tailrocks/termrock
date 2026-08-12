@@ -161,6 +161,8 @@ pub enum Glyph {
     DisabledMark,
     /// Filled diamond accent.
     DiamondFilled,
+    /// Command / composer prompt prefix.
+    Prompt,
     /// Diamond with center mark.
     DiamondDouble,
     /// Hollow status dot.
@@ -226,6 +228,7 @@ impl Glyph {
             Self::EmptyCircle => "empty-circle",
             Self::DisabledMark => "disabled-mark",
             Self::DiamondFilled => "diamond-filled",
+            Self::Prompt => "prompt",
             Self::DiamondDouble => "diamond-double",
             Self::StatusDotHollow => "status-dot-hollow",
             Self::StatusDotTarget => "status-dot-target",
@@ -285,6 +288,7 @@ impl Glyph {
             Self::EmptyCircle => "empty",
             Self::DisabledMark => "disabled",
             Self::DiamondFilled => "accent",
+            Self::Prompt => "prompt",
             Self::DiamondDouble => "emphasis",
             Self::StatusDotHollow => "inactive status",
             Self::StatusDotTarget => "active status",
@@ -341,6 +345,7 @@ impl Glyph {
             | Self::EmptyCircle
             | Self::DisabledMark
             | Self::DiamondFilled
+            | Self::Prompt
             | Self::DiamondDouble
             | Self::StatusDotHollow
             | Self::StatusDotTarget
@@ -398,6 +403,7 @@ impl Glyph {
         Self::EmptyCircle,
         Self::DisabledMark,
         Self::DiamondFilled,
+        Self::Prompt,
         Self::DiamondDouble,
         Self::StatusDotHollow,
         Self::StatusDotTarget,
@@ -488,6 +494,7 @@ impl Glyph {
             Self::EmptyCircle => ("○", "o", "○"),
             Self::DisabledMark => ("⊘", "x", "⊘"),
             Self::DiamondFilled => ("◆", "*", "◆"),
+            Self::Prompt => ("❯", ">", "❯"),
             Self::DiamondDouble => ("◈", "#", "◈"),
             Self::StatusDotHollow => ("○", "o", "○"),
             Self::StatusDotTarget => ("◉", "@", "◉"),

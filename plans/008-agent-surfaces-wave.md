@@ -262,3 +262,10 @@ paint tests on the widget's existing test module.
   Step 3. They share one public visual vocabulary and ship in one independently
   green slice; documenting them together is narrower than three redundant
   migrations while remaining historically exact.
+- 2026-08-12: Added `style/glyph.rs` to Step 4 scope because the required `❯`
+  composer prompt was absent from Plan 006's catalog. Hardcoding violates the
+  glyph SoT and substituting a directional chevron changes the intended mark;
+  the additive `Glyph::Prompt` entry is the smallest cross-surface fix.
+- 2026-08-12: Allocated migration 0272 to the coordinated composer/permission
+  visual defaults. Both are trust-adjacent input surfaces shipped by Step 4;
+  one migration keeps their shared prompt/rail/chip vocabulary discoverable.
