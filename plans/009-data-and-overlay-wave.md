@@ -79,6 +79,8 @@ Design constraints (design SoT §7, §8 wave 3):
 
 **In scope**: the widget files listed above + the shared
 `crates/termrock/src/style/tokens.rs` list-row recipe + their lookbook stories +
+`crates/termrock/src/widgets/field_row.rs` canonical value/validation recipe +
+`crates/termrock/src/patterns/settings_screen.rs` same-commit Form consumer migration +
 sequential Plan 009 migration files beginning at `migrations/0274-*.md` +
 `MIGRATING.md` + generated component/API/frame outputs + responsive
 `agent-browser` evidence under `artifacts/visual-qa/plan-009/` +
@@ -226,3 +228,16 @@ capability stories re-verified per widget.
   boundary. Live hunk headers and folded summaries already use the documented
   muted/added/removed roles, so the smallest correct change fills the complete
   added/removed row before existing span paint.
+- 2026-08-12: Added `field_row.rs` to Scope for Step 5. Live `Field` stores
+  only `&str`, so it cannot satisfy the plan's explicit Plain/Masked/Unset
+  projection, while the canonical enum lives in FieldRow. Options considered:
+  infer kinds from strings (ambiguous), add a duplicate Form-only enum
+  (violates shared-abstraction law), or project Form through FieldRow's typed
+  value. The canonical typed projection best matches repo law and design SoT.
+- 2026-08-12: Added `patterns/settings_screen.rs` for the required same-commit
+  consumer migration. Moving Form from a Copy string projection to canonical
+  `FieldRowValue` necessarily changes filtering/cloning; repo migration law
+  forbids leaving the in-repo composite on the removed shape.
+- 2026-08-12: Allocated migration 0278 to the typed Form/FieldRow boundary.
+  The migration records Copy→Clone projection changes and the non-leaking
+  searchable-text contract for masked/composed values.

@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// Value content painted by a [`FieldRow`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FieldRowValue<'a> {
     /// Ordinary text.
@@ -28,6 +28,28 @@ pub enum FieldRowValue<'a> {
         /// Explanatory placeholder for the missing value.
         hint: &'a str,
     },
+}
+
+impl FieldRowValue<'_> {
+    /// Searchable plain text; masked and composed values never leak content.
+    #[must_use]
+    pub fn searchable_text(&self) -> &str {
+        match self {
+            Self::Plain(value) | Self::Unset { hint: value } => value,
+            Self::Masked { .. } | Self::Composed(_) => "",
+        }
+    }
+
+    /// Whether this projection represents a present value.
+    #[must_use]
+    pub fn is_set(&self) -> bool {
+        match self {
+            Self::Plain(value) => !value.trim().is_empty(),
+            Self::Masked { len } => *len > 0,
+            Self::Composed(line) => line.width() > 0,
+            Self::Unset { .. } => false,
+        }
+    }
 }
 
 impl Widget for FieldRow<'_> {
@@ -50,6 +72,7 @@ pub struct FieldRow<'a> {
     selected: bool,
     hovered: bool,
     enabled: bool,
+    invalid: bool,
 }
 
 impl<'a> FieldRow<'a> {
@@ -68,6 +91,7 @@ impl<'a> FieldRow<'a> {
             selected: false,
             hovered: false,
             enabled: true,
+            invalid: false,
         }
     }
 
@@ -139,6 +163,13 @@ impl<'a> FieldRow<'a> {
         self
     }
 
+    /// Applies invalid value chrome.
+    #[must_use]
+    pub const fn invalid(mut self, invalid: bool) -> Self {
+        self.invalid = invalid;
+        self
+    }
+
     /// Paints this row into one terminal line.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
@@ -195,10 +226,15 @@ impl<'a> FieldRow<'a> {
         });
         let value_width =
             usize::from(area.right().saturating_sub(x)).saturating_sub(annotation_width);
+        let value_style = if self.invalid {
+            self.system.style(Role::InputInvalid)
+        } else {
+            recipe.label
+        };
         match &self.value {
             FieldRowValue::Plain(value) => {
                 let text = truncate_cols(value, value_width, "…");
-                buffer.set_stringn(x, area.y, &text, value_width, recipe.label);
+                buffer.set_stringn(x, area.y, &text, value_width, value_style);
             }
             FieldRowValue::Masked { len } => {
                 let glyph = if self.system.glyphs.is_ascii() {
@@ -207,7 +243,7 @@ impl<'a> FieldRow<'a> {
                     "●"
                 };
                 let text = glyph.repeat((*len).min(value_width));
-                buffer.set_stringn(x, area.y, &text, value_width, recipe.label);
+                buffer.set_stringn(x, area.y, &text, value_width, value_style);
             }
             FieldRowValue::Composed(line) => {
                 buffer.set_line(
@@ -296,6 +332,23 @@ mod tests {
                 .content()
                 .iter()
                 .any(|cell| Some(cell.fg) == expected)
+        );
+    }
+
+    #[test]
+    fn invalid_value_uses_input_invalid_role() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Email", FieldRowValue::Plain("bad"))
+            .invalid(true)
+            .paint(area, &mut buffer);
+        let expected = system.style(Role::InputInvalid);
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .any(|cell| cell.fg == expected.fg.unwrap())
         );
     }
 }

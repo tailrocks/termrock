@@ -11787,8 +11787,12 @@ fn form_validation_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             .error("invalid email")
             .required(true)
             .touched(true),
-        Field::new("token", "Token", "")
+        Field::new("token", "Token", "ignored")
+            .masked(8)
             .pending("checking…")
+            .required(true),
+        Field::new("region", "Region", "")
+            .unset("required")
             .required(true),
         Field::new("note", "Note", "ok").warning("optional warning"),
     ];

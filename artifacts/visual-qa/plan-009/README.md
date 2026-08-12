@@ -89,3 +89,29 @@ context, and cursor remain distinct in unified/split, narrow, ASCII, and paper
 states. Evidence: [DiffView desktop](diff-view-desktop-1440x900.png),
 [DiffReview desktop](diff-review-desktop-1440x900.png), plus adjacent viewport
 and paper captures.
+
+## Typed form rows
+
+Validated Form, FormWizard, and FieldRow with `agent-browser` at 375×812,
+768×1024, and 1440×900 plus paper/reduced-motion desktop. Keyboard and pointer
+input changed interactive previews; every page retained zero horizontal page
+overflow, narrow terminal overflow stayed inside its preview, frame requests
+returned successfully, and console/page errors remained clean. SettingsScreen
+has no generated component page; its Form migration is covered by focused Rust
+tests rather than a nonexistent docs route.
+
+- Designer verdict — Form: **pass after 1 iteration** — shared label bands,
+  typed masked/unset values, required and dirty markers, focused tint, and
+  validation copy now form one scannable hierarchy without changing stable hit
+  geometry. [desktop](form-desktop-1440x900.png),
+  [mobile](form-mobile-375x812.png)
+- Designer verdict — FormWizard: **pass** — existing canonical stepper remains
+  clear focal chrome; panel layering, actions, narrow clipping, paper contrast,
+  and reduced-motion output remain disciplined. [desktop](form-wizard-desktop-1440x900.png)
+- Designer verdict — FieldRow: **pass after 1 iteration** — canonical label,
+  value, marker, annotation, invalid, selected, disabled, masked, and unset
+  states remain distinct across dark, paper, and narrow layouts.
+  [desktop](field-row-desktop-1440x900.png)
+
+Each component also has adjacent `mobile-375x812`, `tablet-768x1024`, and
+`paper-reduced-motion-1440x900` screenshots in this directory.
