@@ -287,6 +287,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0271 | `v0.13.0` | [Agent pattern-card presence](migrations/0271-v0.13.0-agent-pattern-card-presence.md) |
 | 0272 | `v0.13.0` | [Composer and permission trust chrome](migrations/0272-v0.13.0-composer-permission-chrome.md) |
 | 0273 | `v0.13.0` | [Plan review golden composition chrome](migrations/0273-v0.13.0-plan-review-golden-chrome.md) |
+| 0274 | `v0.13.0` | [Table recipe rows and raised headers](migrations/0274-v0.13.0-table-recipe-rows.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

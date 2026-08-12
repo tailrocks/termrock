@@ -78,7 +78,10 @@ Design constraints (design SoT §7, §8 wave 3):
 ## Scope
 
 **In scope**: the widget files listed above + their lookbook stories +
-`migrations/0269-*.md` + `MIGRATING.md` + `plans/README.md`.
+sequential Plan 009 migration files beginning at `migrations/0274-*.md` +
+`MIGRATING.md` + generated component/API/frame outputs + responsive
+`agent-browser` evidence under `artifacts/visual-qa/plan-009/` +
+`plans/README.md`.
 
 **Out of scope**: charts (already the richest module), remaining sweep
 widgets (010), kernel, patterns other than story updates.
@@ -182,3 +185,21 @@ capability stories re-verified per widget.
 - Zebra flag interacts with future virtualization work — note in review if
   `virtual_grid`/`virtual_list` need the same flag later (deferred to 010
   sweep or beyond).
+
+## Amendments
+
+- 2026-08-12: Replaced the stale 0269 migration allocation with sequential
+  Plan 009 migrations beginning at 0274. Plans 008 independently and
+  truthfully consumed 0269–0273; rewriting them violates immutable migration
+  history. Each visible cluster receives its same-commit boundary.
+- 2026-08-12: Added generated catalog/API/frame outputs and mandatory
+  responsive `agent-browser`/designer evidence to Scope. Cross-surface repo law
+  and standing browser gates make these outputs part of every changed public
+  surface; omitting them was a plan defect.
+- 2026-08-12: Drift audit found all named widgets present. Only DataTable had
+  direct churn since 539e7d03; CommandPalette's historic `"┌"` literal is
+  already gone, while MenuBar still owns one literal tuple. Steps therefore
+  test live paint paths instead of assuming both stale excerpts remain.
+- 2026-08-12: Allocated migration 0274 to the table cluster. Table and
+  DataTable share one recipe/header default and ship as one independently green
+  boundary; later visible clusters advance sequentially.

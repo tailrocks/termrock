@@ -37,7 +37,7 @@ starting, honor its STOP conditions, and update your row when done.
 | 006 | Motion, text-effect, and glyph-catalog kit | P2 | M | 001 | DONE |
 | 007 | Composition primitives — FieldRow, AccentRail, TreeList, PanelStack, HintBar v2 | P2 | L | 001, 003, 006 | DONE |
 | 008 | Agent-surface wave — actor accents, rails, presence motion | P2 | L | 001, 004–007 | DONE |
-| 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | TODO |
+| 009 | Data + overlay wave — tables, menus, palette, diff, forms | P2 | L | 001, 003–007 | IN PROGRESS |
 | 010 | Cascade sweep, consistency audit, policy enforcement | P3 | L | 001–009 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
@@ -62,6 +62,8 @@ REJECTED (with one-line rationale).
 - 2026-08-12 — Plan 008: allocated migration 0273 to PlanReview's golden rail, field-row, and action-chip defaults.
 - 2026-08-12 — Plan 008: added missing catalog-owned `Glyph::Token` required by the turn-status parity story.
 - 2026-08-12 — Plan 008: placed parity stories on a dedicated one-preview handbook page to satisfy the docs catalog contract.
+- 2026-08-12 — Plan 009: advanced stale migration 0269→0274+, added generated/browser Scope, and reconciled live shell drift.
+- 2026-08-12 — Plan 009: allocated migration 0274 to shared Table/DataTable row and header defaults.
 
 - 2026-08-12 — Plan 005: accepted Plan 003 dialog geometry and added required generated/API/browser outputs to Scope.
 - 2026-08-12 — Plan 005: added shared Surface border-style override required to preserve focused overlay semantics.
