@@ -293,11 +293,14 @@ let outcome = state.select_next(&details);`,
   },
   Panel: {
     description:
-      'Composable container with variants, body modes, collapsible/interactive state; focus ≠ selection.',
-    primaryStory: 'panel/variants',
-    usage: `use termrock::{style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
+      'Composable container with variants, body modes, and content-measured vertical stacking; focus ≠ selection.',
+    primaryStory: 'panel-stack/omission',
+    usage: `use termrock::{layout::{panel_stack, PanelStackBlock}, style::{DesignSystem, PanelChrome}, widgets::{Panel, PanelBody, PanelVariant}};
 
 let system = DesignSystem::default();
+let rows = panel_stack(area, &[PanelStackBlock {
+    content_rows: 3, chrome_rows: 2, min: 3, max: 8, visible: true,
+}], 1);
 let body = Panel::new(&system)
     .title("Inbox")
     .variant(PanelVariant::Bordered)

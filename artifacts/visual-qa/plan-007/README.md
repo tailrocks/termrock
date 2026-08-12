@@ -43,3 +43,19 @@ Primary/live/live-dim hierarchy reads distinctly, selection remains the single
 focal point, and the pinned prefix preserves structural orientation. Evidence:
 [desktop](tree-desktop-1440x900.png), [paper](tree-paper-1440x900.png),
 [mobile](tree-mobile-375x812.png), and [tablet](tree-tablet-768x1024.png).
+
+## PanelStack
+
+Validated the generated Panel page and `panel-stack/omission` preview with
+`agent-browser` at 375×812, 768×1024, and 1440×900 plus paper desktop.
+The preview accepted keyboard focus and navigation; no page overflow, console
+errors, failed requests, or broken links occurred.
+
+Designer verdict: **pass** — the focused activity block is the clear focal
+point; content-sized summary and action blocks establish a compact rhythm;
+the omitted block leaves no dead gap; neutral borders and one semantic green
+focus border preserve the phosphor surface ladder. Evidence:
+[desktop](panel-stack-desktop-1440x900.png),
+[paper](panel-stack-paper-1440x900.png),
+[mobile](panel-stack-mobile-375x812.png), and
+[tablet](panel-stack-tablet-768x1024.png).

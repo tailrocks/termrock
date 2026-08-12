@@ -8209,6 +8209,53 @@ pub unsafe fn termrock::layout::PaneId::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::layout::PaneId
 pub fn termrock::layout::PaneId::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::PaneId
+pub struct termrock::layout::PanelStackBlock
+pub termrock::layout::PanelStackBlock::chrome_rows: u16
+pub termrock::layout::PanelStackBlock::content_rows: u16
+pub termrock::layout::PanelStackBlock::max: u16
+pub termrock::layout::PanelStackBlock::min: u16
+pub termrock::layout::PanelStackBlock::visible: bool
+impl core::clone::Clone for termrock::layout::PanelStackBlock
+pub fn termrock::layout::PanelStackBlock::clone(&self) -> termrock::layout::PanelStackBlock
+impl core::cmp::Eq for termrock::layout::PanelStackBlock
+impl core::cmp::PartialEq for termrock::layout::PanelStackBlock
+pub fn termrock::layout::PanelStackBlock::eq(&self, &termrock::layout::PanelStackBlock) -> bool
+impl core::fmt::Debug for termrock::layout::PanelStackBlock
+pub fn termrock::layout::PanelStackBlock::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::layout::PanelStackBlock
+impl core::marker::StructuralPartialEq for termrock::layout::PanelStackBlock
+impl core::marker::Freeze for termrock::layout::PanelStackBlock
+impl core::marker::Send for termrock::layout::PanelStackBlock
+impl core::marker::Sync for termrock::layout::PanelStackBlock
+impl core::marker::Unpin for termrock::layout::PanelStackBlock
+impl core::marker::UnsafeUnpin for termrock::layout::PanelStackBlock
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::PanelStackBlock
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::PanelStackBlock
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::PanelStackBlock where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::PanelStackBlock::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::PanelStackBlock where U: core::convert::From<T>
+pub fn termrock::layout::PanelStackBlock::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::PanelStackBlock where U: core::convert::Into<T>
+pub type termrock::layout::PanelStackBlock::Error = core::convert::Infallible
+pub fn termrock::layout::PanelStackBlock::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::PanelStackBlock where U: core::convert::TryFrom<T>
+pub type termrock::layout::PanelStackBlock::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::PanelStackBlock::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::PanelStackBlock where T: core::clone::Clone
+pub type termrock::layout::PanelStackBlock::Owned = T
+pub fn termrock::layout::PanelStackBlock::clone_into(&self, &mut T)
+pub fn termrock::layout::PanelStackBlock::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::PanelStackBlock where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::PanelStackBlock::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::PanelStackBlock where T: ?core::marker::Sized
+pub fn termrock::layout::PanelStackBlock::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::PanelStackBlock where T: ?core::marker::Sized
+pub fn termrock::layout::PanelStackBlock::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::PanelStackBlock where T: core::clone::Clone
+pub unsafe fn termrock::layout::PanelStackBlock::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::PanelStackBlock
+pub fn termrock::layout::PanelStackBlock::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::PanelStackBlock
 pub struct termrock::layout::RegionId(pub alloc::string::String)
 impl termrock::layout::RegionId
 pub fn termrock::layout::RegionId::from_static(&'static str) -> Self
@@ -8995,6 +9042,7 @@ pub fn termrock::layout::layout_stack(ratatui_core::layout::rect::Rect, &termroc
 pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::layout_stack_into_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>, &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::layout_stack_with_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>) -> termrock::layout::StackLayout
+pub fn termrock::layout::panel_stack(ratatui_core::layout::rect::Rect, &[termrock::layout::PanelStackBlock], u16) -> alloc::vec::Vec<core::option::Option<ratatui_core::layout::rect::Rect>>
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect

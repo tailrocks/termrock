@@ -6,6 +6,7 @@
 mod center;
 mod dialog;
 mod grid;
+mod panel_stack;
 mod responsive;
 mod stack;
 mod work_surface;
@@ -25,6 +26,7 @@ pub use grid::{
     grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns,
     settings_grid_template,
 };
+pub use panel_stack::{PanelStackBlock, panel_stack};
 pub use responsive::{
     AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
     OverflowAction, OverflowBehavior, ResponsiveRecipe, ResponsiveSnapshot, ResponsiveSurface,

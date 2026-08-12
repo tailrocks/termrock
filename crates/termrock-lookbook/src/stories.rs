@@ -591,6 +591,15 @@ pub(crate) fn stories() -> Vec<Story> {
             panel_variants_story,
         ),
         Story::new(
+            "panel-stack/omission",
+            "Measured panel stack",
+            "Panel",
+            "Content-sized panels; hidden blocks consume neither rows nor gaps.",
+            56,
+            17,
+            panel_stack_omission_story,
+        ),
+        Story::new(
             "panel/empty",
             "Panel empty body",
             "Panel",
@@ -10728,6 +10737,86 @@ fn panel_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
                 v.id(),
                 usize::from(body.width),
                 system.style(Role::TextMuted),
+            );
+        }
+    }
+}
+
+fn panel_stack_omission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{PanelStackBlock, panel_stack};
+    use termrock::widgets::{Panel, PanelChrome};
+
+    let blocks = [
+        PanelStackBlock {
+            content_rows: 2,
+            chrome_rows: 2,
+            min: 3,
+            max: 6,
+            visible: true,
+        },
+        PanelStackBlock {
+            content_rows: 8,
+            chrome_rows: 2,
+            min: 4,
+            max: 7,
+            visible: true,
+        },
+        PanelStackBlock {
+            content_rows: 3,
+            chrome_rows: 2,
+            min: 3,
+            max: 5,
+            visible: false,
+        },
+        PanelStackBlock {
+            content_rows: 2,
+            chrome_rows: 2,
+            min: 3,
+            max: 5,
+            visible: true,
+        },
+    ];
+    let titles = [
+        "Summary · measured 2",
+        "Activity · capped 7",
+        "Hidden",
+        "Actions · measured 2",
+    ];
+    let details = [
+        "3 checks passing\nupdated moments ago",
+        "build  completed\ntests  2,961 passed\ndocs   verified\npush   ready",
+        "omitted",
+        "enter inspect\nesc close",
+    ];
+
+    for (index, rect) in panel_stack(area, &blocks, 1).into_iter().enumerate() {
+        let Some(rect) = rect.filter(|rect| rect.height > 0) else {
+            continue;
+        };
+        let emphasis = if index == 1 {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::default()
+        };
+        let body = Panel::new(system)
+            .title(titles[index])
+            .emphasis(emphasis)
+            .paint(rect, frame.buffer_mut(), None);
+        for (line, text) in details[index].lines().enumerate() {
+            let y = body.y.saturating_add(line as u16);
+            if y >= body.bottom() {
+                break;
+            }
+            frame.buffer_mut().set_stringn(
+                body.x,
+                y,
+                text,
+                usize::from(body.width),
+                system.style(if index == 1 && line == 0 {
+                    Role::Success
+                } else {
+                    Role::TextMuted
+                }),
             );
         }
     }
