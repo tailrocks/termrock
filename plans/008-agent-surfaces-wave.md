@@ -269,3 +269,7 @@ paint tests on the widget's existing test module.
 - 2026-08-12: Allocated migration 0272 to the coordinated composer/permission
   visual defaults. Both are trust-adjacent input surfaces shipped by Step 4;
   one migration keeps their shared prompt/rail/chip vocabulary discoverable.
+- 2026-08-12: Allocated migration 0273 to PlanReview's golden composition
+  chrome. The original Step 7 single-file migration conflicted with the
+  independently green commit rule after earlier slices shipped; a sequential
+  same-commit boundary preserves the visible default and migration history.

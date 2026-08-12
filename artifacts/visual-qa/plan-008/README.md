@@ -93,3 +93,21 @@ states remain deterministic and readable. Evidence:
 [paper](permission-prompt-paper-reduced-motion-1440x900.png),
 [mobile](permission-prompt-mobile-375x812.png), and
 [tablet](permission-prompt-tablet-768x1024.png).
+
+## PlanReview golden composition
+
+Validated the PlanReview handbook page with `agent-browser` at 375×812,
+768×1024, and 1440×900 plus paper/reduced-motion desktop. Keyboard focus and
+scene navigation worked; every page-local link returned below 400; page
+overflow stayed zero while the mobile terminal retained its own 81-cell
+overflow. Consoles and page errors remained clean.
+
+Designer verdict — PlanReview: **pass** — the gold rail/title creates one
+decisive plan focal point, document and metadata tiers remain calm, and shared
+action chips separate the approval tier without weakening safe focus. The
+single-line square frame, neutral ground, narrow clipping, paper host, Unicode,
+and reduced-motion paths remain legible. Evidence:
+[desktop](plan-review-desktop-1440x900.png),
+[paper](plan-review-paper-reduced-motion-1440x900.png),
+[mobile](plan-review-mobile-375x812.png), and
+[tablet](plan-review-tablet-768x1024.png).

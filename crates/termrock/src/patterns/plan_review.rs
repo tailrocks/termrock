@@ -33,8 +33,10 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
-    widgets::PermissionRisk,
+    widgets::{
+        AccentRail, Action, ActionBar, ActionBarState, FieldRow, FieldRowValue, Panel,
+        PermissionRisk,
+    },
 };
 
 /// Overlay id for fullscreen plan review.
@@ -1593,12 +1595,28 @@ impl<'a> PlanReview<'a> {
         } else {
             PanelChrome::Normal
         };
+        let rail = AccentRail::new(self.system, Role::ActorPlan);
+        let panel_area = rail.layout(area).1;
+        use ratatui_core::widgets::Widget;
+        Widget::render(rail, area, buffer);
         let panel = Panel::new(self.system)
             .title(title.as_str())
             .emphasis(emphasis);
-        let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        let inner = panel.inner(panel_area);
+        Widget::render(&panel, panel_area, buffer);
+        let title_x = panel_area.x.saturating_add(2);
+        let title_width = panel_area.right().saturating_sub(title_x).saturating_sub(1);
+        if title_width > 0 {
+            buffer.set_stringn(
+                title_x,
+                panel_area.y,
+                take_display_cols(&title, usize::from(title_width)),
+                usize::from(title_width),
+                self.system
+                    .style(Role::ActorPlan)
+                    .add_modifier(Modifier::BOLD),
+            );
+        }
         if inner.is_empty() {
             state.plan = Some(plan);
             return;
@@ -1821,24 +1839,18 @@ impl<'a> PlanReview<'a> {
             } else {
                 task.status.glyph()
             };
-            let detail = task
-                .detail
-                .as_ref()
-                .map(|d| format!(" — {d}"))
-                .unwrap_or_default();
-            let text = format!(
-                "{}{} {}{}",
-                if selected { "›" } else { " " },
-                g,
-                task.title,
-                detail
-            );
-            let style = if selected {
-                self.system.style(Role::Accent)
-            } else {
-                self.system.style(Role::Text)
-            };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            let label = format!("Step {}", i.saturating_add(1));
+            let mut row = FieldRow::new(
+                self.system,
+                label.as_str(),
+                FieldRowValue::Plain(task.title.as_str()),
+            )
+            .marker(g)
+            .selected(selected);
+            if let Some(detail) = task.detail.as_deref() {
+                row = row.annotation(detail).annotation_italic(true);
+            }
+            row.paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if plan.tasks.is_empty() && y < max_y {
@@ -2162,43 +2174,33 @@ impl<'a> PlanReview<'a> {
             }
             a
         };
-        let mut col = x;
-        let end = x.saturating_add(w as u16);
-        for action in actions {
-            let focused = state.action_cursor == action;
-            let label = action.label();
-            let text = if focused {
-                format!("[{label}]")
-            } else {
-                format!(" {label} ")
-            };
-            let tw = display_cols(&text) as u16;
-            if col.saturating_add(tw) > end {
-                break;
-            }
-            let style = if focused {
-                if action.grants() {
-                    self.system.style(Role::Danger).add_modifier(Modifier::BOLD)
-                } else {
-                    self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-                }
-            } else if action.grants() {
-                self.system.style(Role::Warning)
-            } else {
-                self.system.style(Role::TextMuted)
-            };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
-            state.action_regions.push((
-                action,
-                Rect {
-                    x: col,
-                    y,
-                    width: tw,
-                    height: 1,
-                },
-            ));
-            col = col.saturating_add(tw.saturating_add(1));
-        }
+        let items: Vec<_> = actions
+            .iter()
+            .map(|action| Action {
+                id: *action,
+                label: action.label(),
+                enabled: true,
+                style: action.grants().then(|| self.system.style(Role::Warning)),
+            })
+            .collect();
+        let mut bar_state = ActionBarState {
+            cursor: Some(state.action_cursor),
+            regions: Vec::new(),
+        };
+        let bar = ActionBar::new(&items, self.system)
+            .ascii(self.ascii)
+            .colorless(self.colorless);
+        StatefulWidget::render(
+            &bar,
+            Rect::new(x, y, u16::try_from(w).unwrap_or(u16::MAX), 1),
+            buffer,
+            &mut bar_state,
+        );
+        state.action_regions = bar_state
+            .regions
+            .into_iter()
+            .map(|region| (region.id, region.area))
+            .collect();
     }
 }
 
@@ -2600,6 +2602,30 @@ mod tests {
             .colorless(true)
             .paint(area, &mut buf, &mut st);
         assert!(st.is_open());
+    }
+
+    #[test]
+    fn plan_chrome_uses_golden_rail_field_rows_and_action_chips() {
+        let system = DesignSystem::default();
+        let mut st = PlanReviewState::new();
+        st.open(example_plan_document());
+        st.pane = PlanReviewPane::Tasks;
+        let area = Rect::new(0, 0, 72, 18);
+        let mut buf = Buffer::empty(area);
+
+        PlanReview::new(&system).paint(area, &mut buf, &mut st);
+
+        let plan_fg = system.style(Role::ActorPlan).fg;
+        assert_eq!(buf[(0, 0)].fg, plan_fg.unwrap());
+        assert_eq!(buf[(4, 0)].fg, plan_fg.unwrap());
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(text.contains("Step 1"));
+        assert!(!st.action_regions.is_empty());
     }
 
     #[test]
