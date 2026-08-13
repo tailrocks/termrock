@@ -107,12 +107,12 @@ List recipes and table paint diverge; Theme default vs DesignSystem phosphor div
 
 1. **Quiet canvas, bright intent.** Structure is graphite and mute. Phosphor appears for *current intent only*: keyboard focus owner, primary live action, running/live badge—not every selected row.
 2. **Accent is rare and meaningful.** Default count of phosphor-heavy regions per viewport ≤ **2** (e.g. focused panel border + one live status).
-3. **Selection ≠ focus.** Selection = gutter glyph and/or deep green tint + strong text. Focus-visible = underline and/or focused border on the **owner** container.
+3. **Selection ≠ focus.** Selection = gutter glyph and/or deep green tint + strong text. Focus-visible = bold/strong emphasis + tint on the focused row, and the focused border on the **owner** container. *(Erratum 2026-08: underline is retired from the state vocabulary — see [`tui-design-research-2026-08.md`](./tui-design-research-2026-08.md) §5.3.)*
 4. **Borders mark ownership.** Single-line only. Inactive = gray; focused owner = phosphor border. No double-line. No border on every list row.
 5. **Primary content dominates.** White/soft-green body for primary; muted for secondary; faint for meta.
 6. **Active operations show state + verb.** e.g. `running · apply patch`, not only a green spinner.
 7. **Destructive states show scope.** Danger border + body names the target (`Delete 3 files`), not only a red button.
-8. **Color is never the only cue.** Glyphs, bold/dim, underline, reverse (mono), status letters always present.
+8. **Color is never the only cue.** Glyphs, bold/dim, reverse (mono), status letters always present. *(Underline removed 2026-08 — reserved for hovered links only.)*
 
 ### Palette (truecolor targets — reaffirm)
 
@@ -143,7 +143,7 @@ List recipes and table paint diverge; Theme default vs DesignSystem phosphor div
 |-----------|--------|
 | Idle row | fg body; no fill |
 | Selected (list unfocused) | gutter `▌` + fg strong; optional tint bg |
-| Selected + list focused | gutter accent + **underline** primary; no full neon fill |
+| Selected + list focused | gutter accent + **bold/strong** primary + tint; no full neon fill *(underline retired — see `tui-design-research-2026-08.md` §5.3)* |
 | Multi-checked | `☑` muted accent; not full-row green |
 | Focused panel | single border `border_focused` |
 | Inactive panel | single border `border` |
@@ -178,7 +178,7 @@ Legend for mockups:
 
 ```text
   ☑  Alpha                          12 ms     ← checked muted, not selected
-▌  Beta                             28 ms     ← gutter + bold/underline if focused
+▌  Beta                             28 ms     ← gutter + bold when focused
    Gamma                            4 ms      ← idle soft white; meta muted
 ```
 
@@ -206,7 +206,7 @@ Legend for mockups:
   509  shell            region        4.4%  done
 ```
 
-**Spec:** header row `fg_muted` or bold once; sorted column: underline or `↑` muted, not green header fill; selected row gutter + optional tint; numeric columns faint/muted; status column uses status tokens + letter (`R`/`W`/`D`) for mono.
+**Spec:** header row `fg_muted` or bold once; sorted column: **bold header** or `↑` muted, not green header fill; selected row gutter + optional tint; numeric columns faint/muted; status column uses status tokens + letter (`R`/`W`/`D`) for mono.
 
 ---
 
@@ -219,14 +219,17 @@ Legend for mockups:
  ████████
 ```
 
-**After:** underline ownership; inactive quiet.
+**After:** *(revised 2026-08 — the underline-bar model below is superseded by the
+connected-tab model in `tui-design-research-2026-08.md` §5.3/§6)* active tab sits on
+the same surface fill as its content with an open bottom edge, bold fg-strong;
+inactive tabs muted on canvas; no underline bar, no solid web pill.
 
 ```text
-  Files    Search    Git
-  ─────                         ← underline border_focused / accent only under active
+  Files▐   Search    Git
+  ██████                        ← active tab on content surface fill, open bottom edge
 ```
 
-**Spec:** active = bold + underline (or bottom rule cell); inactive = muted; no solid tab chip default; optional left `▌` only if tab strip owns focus.
+**Spec:** active = surface fill + bold fg-strong, open bottom edge into content; inactive = muted on canvas; no solid tab chip, no underline bar; optional left `▌` only if tab strip owns focus.
 
 ---
 
@@ -271,7 +274,7 @@ Legend for mockups:
 
 ```text
  Name *
- › ________________        ← sunken well; cursor underline
+ › ________________        ← sunken well; block cursor
    help text muted
 
  Email  ! required
@@ -279,7 +282,7 @@ Legend for mockups:
    error: use work address   ← danger text + !; mono keeps !
 ```
 
-**Spec:** labels strong or body; help faint; error line danger + glyph; required `*` always; disabled `⊘` + dim; focus = field underline or border_focused on active field only, not all fields.
+**Spec:** labels strong or body; help faint; error line danger + glyph; required `*` always; disabled `⊘` + dim; focus = block cursor in the sunken well or border_focused on active field only, not all fields.
 
 ---
 

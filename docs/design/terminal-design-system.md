@@ -8,6 +8,11 @@
 `shadcn-tui-strategic-brief.md`  
 **Constraint:** terminal-native (cells, glyphs, modifiers, capability ladders)—not CSS-in-Rust
 
+> **Erratum 2026-08:** underline is retired from the focus/selection/tab state
+> vocabulary (reserved for hovered links only). The `focus_underline` fields in the
+> target structs below are superseded by the gutter/bold/tint focus model in
+> [`tui-design-research-2026-08.md`](./tui-design-research-2026-08.md) §5.3.
+
 ### Implementation gap (HEAD)
 
 | Spec | Tree today |
@@ -27,14 +32,14 @@ This document is the **target**. Implementation proceeds with breaking changes; 
 
 1. **Quiet canvas, bright intent.** Structure is calm (surfaces, muted text, gray borders). Phosphor (or brand accent) appears for *current* intent: keyboard focus, primary action, live/running—not every selected row.
 2. **Cells are the unit.** Spacing, insets, gaps, breakpoints, and dimensions are integer terminal cells. Never rem, never px.
-3. **Non-color always carries state.** Focus, selection, disabled, loading, success/danger remain legible under monochrome / `NO_COLOR` via glyphs, underline, reverse, bold/dim.
+3. **Non-color always carries state.** Focus, selection, disabled, loading, success/danger remain legible under monochrome / `NO_COLOR` via glyphs, reverse, bold/dim.
 4. **Semantic tokens over raw RGB in components.** Widgets resolve `Role` / recipes; only theme authors touch palette numbers.
 5. **Recipes own parts and states.** Components paint through resolved recipes, not ad-hoc `theme.style(Role::…)` soup.
 6. **Capability is progressive.** Truecolor is the design target; 256 / ANSI / monochrome are first-class projections, not afterthoughts.
 7. **Density is a product mode**, not optional padding. Comfortable / Compact / Dashboard change insets, gaps, chrome height.
 8. **Glyphs are themable.** Unicode box-drawing is default; ASCII fallback is a token set, not scattered string literals.
 9. **Motion is optional.** Spinners and soft transitions respect reduced-motion; zero motion remains correct.
-10. **Single-line borders for focus.** Border *weight* never communicates focus (AGENTS.md). Focus is role/style/underline/gutter—not double-line boxes.
+10. **Single-line borders for focus.** Border *weight* never communicates focus (AGENTS.md). Focus is role/style/gutter/tint—not double-line boxes. Underline is reserved for hovered links.
 11. **Terminal default background is sacred.** Backdrop and canvas may use `Color::Reset` so app chrome respects the user’s terminal profile.
 12. **App overrides are surgical.** Customize one list recipe without forking the whole theme.
 
@@ -142,7 +147,7 @@ Resolved **insets/gaps** depend on density:
 | Token | Glyph source | Style |
 |-------|--------------|-------|
 | `border.normal` | single box | `border` |
-| `border.focused` | **same single box** | `borderFocused` (color/underline—not weight) |
+| `border.focused` | **same single box** | `borderFocused` (color—not weight, never underline) |
 | `border.danger` | single | `borderDanger` |
 | `divider.horizontal` | `─` / `-` | `borderMuted` |
 | `divider.vertical` | `│` / `\|` | `borderMuted` |
@@ -153,9 +158,9 @@ Resolved **insets/gaps** depend on density:
 | Mechanism | Default (Phosphor Obsidian) | Mono fallback |
 |-----------|----------------------------|---------------|
 | **Focus (container)** | `borderFocused` accent on single-line border | Bold border glyph side or title `*` |
-| **Focus (row)** | underline on primary label OR left gutter accent | Underline / reverse cell |
+| **Focus (row)** | bold/strong primary + tint + left gutter accent | Reverse cell |
 | **Selection** | Gutter `▌` + muted surface tint (not full phosphor fill) | Gutter `>` + reverse |
-| **Hover** | Subtle surfaceRaised / muted fg | Underline |
+| **Hover** | Subtle surfaceRaised / muted fg | Reverse cell |
 | **Keyboard vs pointer** | Selection ≠ hover; focus-visible only for keyboard owner | Same |
 
 ### 2.6 Overlay elevation
@@ -506,7 +511,7 @@ impl DesignSystem {
 |-------|--------|
 | Idle | `fg` primary, `fg_muted` secondary, no gutter |
 | Selected (unfocused list) | Gutter glyph + `fg_strong` primary; optional `selection_muted` tint — **not** neon fill |
-| Selected + focused (list owns keys) | Gutter + underline on primary + accent gutter color |
+| Selected + focused (list owns keys) | Gutter + bold primary + tint + accent gutter color |
 | Hovered only | Subtle hover bg; does not steal selection chrome |
 | Disabled | `fg_disabled` + dim; no accent |
 | Loading | `fg_muted` + spinner glyph from catalog |
@@ -653,7 +658,7 @@ let frame = system.glyphs.spinner_frame(tick.frame_index(), system.motion);
 **Mono rules (terminal-native a11y):**
 
 - Selection: reverse or gutter ASCII `>`  
-- Focus: underline  
+- Focus: bold + gutter  
 - Danger: bold + `!` / `x` prefix from glyph catalog  
 - Disabled: dim  
 
@@ -707,7 +712,7 @@ Detection: existing `ColorCapability::detect_from_env()`; apps may force.
 
 **Selection default:** `SelectionChrome::Gutter` (not Fill).  
 **Focus container:** single-line border + `border_focused`.  
-**Focus row:** underline primary when focused+selected; gutter always if selected.  
+**Focus row:** bold primary + tint when focused+selected; gutter always if selected.  
 **Backdrop:** Reset + optional `░` at 10% visual weight (dim).
 
 ---
@@ -793,7 +798,7 @@ Preferred end state: widgets **only** take `&DesignSystem`; raw `Role` indexing 
 | `list/recipe-fill` | Selection fill |
 | `list/narrow-priority` | Parts drop order |
 | `panel/elevation` | Surface vs elevated side-by-side |
-| `focus/border-vs-row` | Container focus + row underline |
+| `focus/border-vs-row` | Container focus + row bold/gutter |
 
 ### Contract matrix additions
 
