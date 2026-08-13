@@ -29,6 +29,18 @@ cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
 """
 
+[tasks.ci]
+depends = ["check"]
+
+[tasks.test]
+run = "cargo nextest run --workspace --all-features --locked"
+
+[tasks.lint]
+run = "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings"
+
+[tasks.fmt]
+run = "cargo fmt --all -- --check"
+
 [tasks.gate]
 description = "Full pre-push gate mirroring rust-required + policy checks"
 run = """
