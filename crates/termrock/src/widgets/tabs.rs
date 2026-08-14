@@ -1170,6 +1170,14 @@ impl<'a, Id> Tabs<'a, Id> {
         };
         let mut style = self.system.style(role);
         if selected {
+            // Active cue without a rule row: bold label over a quiet
+            // selection wash. A themed `TabActive` background wins, so
+            // consumers keep full control of the strip's fill.
+            if style.bg.is_none()
+                && let Some(bg) = self.system.style(Role::SelectionTint).bg
+            {
+                style = style.bg(bg);
+            }
             style = style.add_modifier(Modifier::BOLD);
         }
         if focused_tab && !selected {
@@ -1221,23 +1229,6 @@ impl<'a, Id> Tabs<'a, Id> {
                 label_rect.y,
                 glyph,
                 label_rect.width.saturating_sub(1),
-            );
-        }
-
-        // Underline selection cue (horizontal two-row strip)
-        if selected && rect.height > 1 {
-            let underline_style = if state.focused {
-                self.system.style(Role::TabUnderlineFocused)
-            } else {
-                self.system.style(Role::TabUnderlineUnfocused)
-            };
-            let ch = if self.ascii { "-" } else { "━" };
-            buffer.set_stringn(
-                label_rect.x,
-                rect.y.saturating_add(1),
-                ch.repeat(usize::from(label_rect.width)),
-                usize::from(label_rect.width),
-                underline_style,
             );
         }
 
@@ -1367,15 +1358,9 @@ mod tests {
         let system = DesignSystem::from_palette(theme.clone());
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(3, 5)].symbol(), "━");
-        assert_eq!(
-            buffer[(3, 5)].fg,
-            theme
-                .style(Role::TabUnderlineFocused)
-                .fg
-                .expect("focused underline role has a foreground")
-        );
-        assert!(buffer[(3, 4)].modifier.contains(Modifier::UNDERLINED));
+        assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
+        // The active tab is a bold label on a wash — never a rule row.
+        assert_eq!(buffer[(3, 5)].symbol(), " ");
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }
@@ -1405,9 +1390,9 @@ mod tests {
         assert_eq!(
             buffer[(1, 0)].bg,
             theme
-                .style(Role::TabActive)
+                .style(Role::SelectionTint)
                 .bg
-                .expect("active tab role has a background")
+                .expect("the active tab wash carries a background")
         );
     }
 

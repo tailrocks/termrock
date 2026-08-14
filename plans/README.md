@@ -17,7 +17,7 @@ run its drift check, and update your row when done.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001 | Underline grammar becomes the single binding doc SoT | P1 | M | — | DONE |
-| 002 | Role palette rebuild: text ladder, accent de-collapse, named presets | P0 | L | (001 parallel-ok) | IN PROGRESS |
+| 002 | Role palette rebuild: text ladder, accent de-collapse, named presets | P0 | L | (001 parallel-ok) | DONE |
 | 003 | Capability honesty: quantize fixes, mono survival, glyph de-collision | P1 | M | 002 | DONE (2 deviations, see notes) |
 | 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | TODO |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | TODO |

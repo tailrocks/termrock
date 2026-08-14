@@ -66,19 +66,20 @@ pub fn contrast_ratio(a: Rgb, b: Rgb) -> f32 {
 }
 
 pub(crate) const PHOSPHOR_GREEN: Rgb = Rgb::new(0, 255, 65);
-pub(crate) const PHOSPHOR_DIM: Rgb = Rgb::new(0, 140, 30);
 pub(crate) const PHOSPHOR_DARK: Rgb = Rgb::new(0, 80, 18);
-pub(crate) const DIALOG_SCROLL_THUMB: Rgb = PHOSPHOR_GREEN;
-pub(crate) const DIALOG_SCROLL_TRACK: Rgb = PHOSPHOR_DARK;
+/// Non-border focus cue — one step off the brand accent so a focused row and a
+/// focused container border never resolve to the same green.
+pub(crate) const FOCUS_GREEN: Rgb = Rgb::new(51, 255, 106);
+pub(crate) const SCROLL_TRACK: Rgb = Rgb::new(22, 27, 22);
 pub(crate) const WHITE: Rgb = Rgb::new(255, 255, 255);
-pub(crate) const INPUT_BG_DIM: Rgb = Rgb::new(20, 24, 22);
-pub(crate) const TAB_BG_INACTIVE: Rgb = Rgb::new(30, 30, 30);
-pub(crate) const TAB_BG_INACTIVE_HOVER: Rgb = Rgb::new(48, 48, 48);
-pub(crate) const TAB_BG_ACTIVE: Rgb = Rgb::new(42, 42, 42);
-pub(crate) const TAB_BG_ACTIVE_HOVER: Rgb = Rgb::new(58, 58, 58);
-pub(crate) const LINK_FG: Rgb = Rgb::new(0, 200, 200);
-pub(crate) const LINK_FG_HOVER: Rgb = Rgb::new(130, 240, 240);
-pub(crate) const BORDER_GRAY: Rgb = Rgb::new(80, 80, 80);
+/// Foreground ladder: body, strong, muted, disabled/faint.
+pub(crate) const TEXT_BODY: Rgb = Rgb::new(214, 224, 214);
+pub(crate) const TEXT_STRONG: Rgb = Rgb::new(240, 245, 240);
+pub(crate) const TEXT_MUTED: Rgb = Rgb::new(122, 138, 122);
+pub(crate) const TEXT_DISABLED: Rgb = Rgb::new(74, 87, 74);
+pub(crate) const LINK_FG: Rgb = Rgb::new(94, 200, 255);
+pub(crate) const LINK_FG_HOVER: Rgb = Rgb::new(143, 216, 255);
+pub(crate) const BORDER_GRAY: Rgb = Rgb::new(42, 51, 44);
 pub(crate) const DANGER_RED: Rgb = Rgb::new(255, 94, 122);
 pub(crate) const CYAN: Rgb = Rgb::new(0, 180, 180);
 pub(crate) const WARNING_YELLOW: Rgb = Rgb::new(255, 216, 94);
@@ -91,7 +92,7 @@ pub(crate) const SUNKEN: Rgb = Rgb::new(13, 16, 13);
 pub(crate) const BACKDROP_WASH: Rgb = Rgb::new(58, 68, 58);
 pub(crate) const SELECTION_TINT: Rgb = Rgb::new(20, 51, 26);
 pub(crate) const HOVER_TINT: Rgb = Rgb::new(26, 34, 28);
-pub(crate) const SUCCESS_GREEN: Rgb = Rgb::new(61, 220, 90);
+pub(crate) const SUCCESS_GREEN: Rgb = Rgb::new(93, 255, 160);
 pub(crate) const CHART_GREEN: Rgb = Rgb::new(43, 217, 104);
 pub(crate) const ACTION_CONSTRUCTIVE: Rgb = Rgb::new(180, 255, 180);
 pub(crate) const DISCLOSURE_HEADER: Rgb = Rgb::new(255, 208, 102);

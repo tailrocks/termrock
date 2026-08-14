@@ -297,6 +297,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0281 | `v0.14.0` | [Craft helpers: label painter, path contraction, inset token](migrations/0281-v0.14.0-craft-helpers.md) |
 | 0282 | `v0.14.0` | [Honest capability ladder: quantizer, projections, glyph de-collision](migrations/0282-v0.14.0-honest-capability-ladder.md) |
 | 0283 | `v0.14.0` | [The contrast floor](migrations/0283-v0.14.0-contrast-floor.md) |
+| 0284 | `v0.14.0` | [Graphite role ladder: text tiers, accent de-collapse, retired tab-underline roles](migrations/0284-v0.14.0-graphite-role-ladder.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

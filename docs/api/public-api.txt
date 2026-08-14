@@ -28092,6 +28092,7 @@ pub termrock::style::Appearance::Light
 pub termrock::style::Appearance::Unknown
 impl termrock::style::Appearance
 pub fn termrock::style::Appearance::detect() -> Self
+pub fn termrock::style::Appearance::detect_fresh() -> Self
 pub const fn termrock::style::Appearance::theme_key(self, termrock::style::AppearanceThemeMap) -> &'static str
 impl core::clone::Clone for termrock::style::Appearance
 pub fn termrock::style::Appearance::clone(&self) -> termrock::style::Appearance
@@ -28996,6 +28997,7 @@ pub termrock::style::Role::ActorThinking
 pub termrock::style::Role::ActorTool
 pub termrock::style::Role::ActorUser
 pub termrock::style::Role::Backdrop
+pub termrock::style::Role::BackdropWash
 pub termrock::style::Role::Border
 pub termrock::style::Role::BorderFocused
 pub termrock::style::Role::Canvas
@@ -29041,10 +29043,9 @@ pub termrock::style::Role::TabActive
 pub termrock::style::Role::TabActiveHovered
 pub termrock::style::Role::TabInactive
 pub termrock::style::Role::TabInactiveHovered
-pub termrock::style::Role::TabUnderlineFocused
-pub termrock::style::Role::TabUnderlineUnfocused
 pub termrock::style::Role::Text
 pub termrock::style::Role::TextDisabled
+pub termrock::style::Role::TextFaint
 pub termrock::style::Role::TextMuted
 pub termrock::style::Role::TextStrong
 pub termrock::style::Role::Warning
