@@ -28,7 +28,7 @@ use crate::{
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
-    widgets::scroll_area::ScrollAreaState,
+    widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
 /// Default bytes per row when auto-fit is not used.
@@ -1338,6 +1338,11 @@ fn paint_hex_row(
         return;
     }
     let ow = state.offset_w;
+    // A hex row is three columns, not one string: the offset is an address
+    // you scan past, the bytes are the data, and the ASCII pane is a gloss on
+    // the bytes (plans/012 Step 3).
+    let mut gutter = String::new();
+    let mut offset_col = String::new();
     let mut s = String::new();
 
     // Bookmark / cursor gutter (non-color)
@@ -1345,16 +1350,16 @@ fn paint_hex_row(
         state.cursor >= row_off && state.cursor < row_off.saturating_add(u64::from(bpr));
     let bm = (0..bpr).any(|i| state.bookmarks.contains(&(row_off + u64::from(i))));
     if cursor_in_row && surface {
-        s.push(if ascii { '>' } else { '›' });
+        gutter.push(if ascii { '>' } else { '›' });
     } else if bm {
-        s.push(if ascii { '*' } else { '★' });
+        gutter.push(if ascii { '*' } else { '★' });
     } else {
-        s.push(' ');
+        gutter.push(' ');
     }
 
     if !tiny {
-        s.push_str(&format_offset(row_off, ow));
-        s.push_str("  ");
+        offset_col.push_str(&format_offset(row_off, ow));
+        offset_col.push_str("  ");
     }
 
     let _row_end = row_off.saturating_add(u64::from(bpr)).min(window.total_len);
@@ -1410,19 +1415,21 @@ fn paint_hex_row(
         }
     }
 
+    let mut ascii_pane = String::new();
     if !tiny {
-        s.push('|');
-        s.push_str(&ascii_col);
-        s.push('|');
+        ascii_pane.push('|');
+        ascii_pane.push_str(&ascii_col);
+        ascii_pane.push('|');
     } else {
         // compact: offset short + few hex
-        let mut compact = String::new();
+        gutter.clear();
         if cursor_in_row && surface {
-            compact.push(if ascii { '>' } else { '›' });
+            gutter.push(if ascii { '>' } else { '›' });
         } else {
-            compact.push(' ');
+            gutter.push(' ');
         }
-        compact.push_str(&format!("{:X} ", row_off));
+        offset_col = format!("{row_off:X} ");
+        let mut compact = String::new();
         for i in 0..bpr.min(4) {
             let abs = row_off + u64::from(i);
             if let Some(b) = window.get(abs) {
@@ -1459,14 +1466,28 @@ fn paint_hex_row(
     );
     let style = chrome.label_style(style);
 
+    let mut tiers = TieredRow::with_separator("");
+    tiers.push_joined(&gutter, None);
+    tiers.push_joined(
+        &offset_col,
+        (!colorless).then(|| chrome.label_style(system.style(Role::TextFaint))),
+    );
+    tiers.push_joined(&s, None);
+    tiers.push_joined(
+        &ascii_pane,
+        (!colorless).then(|| chrome.label_style(system.style(Role::TextMuted))),
+    );
+    let row = tiers.text().to_string();
+
     buffer.set_stringn(
         area.x,
         area.y,
-        take_display_cols(&s, usize::from(area.width)),
+        take_display_cols(&row, usize::from(area.width)),
         usize::from(area.width),
         style,
     );
     chrome.paint(buffer, area);
+    tiers.paint_tiers(buffer, area, 0);
 }
 
 impl StatefulWidget for &HexViewer<'_> {

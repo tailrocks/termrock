@@ -36,7 +36,9 @@ use crate::{
     style::{Density, DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
+        data_view::{
+            ColumnKind, ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow,
+        },
         tree::TreeNodeStatus,
     },
 };
@@ -1301,6 +1303,12 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         base_style = recipe.hover;
     }
 
+    // The quiet tier for this row: same ground and weight, lower voice.
+    let quiet_style = recipe
+        .secondary
+        .fg
+        .map_or(base_style, |fg| base_style.fg(fg));
+
     let row_area = Rect::new(area.x, y, area.width, 1);
     if recipe.use_fill && selected {
         buffer.set_style(row_area, base_style);
@@ -1382,7 +1390,12 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
 
-        let mut cell_style = base_style;
+        // The hierarchy column is the row's identity; it never drops a tier.
+        let mut cell_style = if ord == 0 {
+            base_style
+        } else {
+            col.kind.cell_style(base_style, quiet_style)
+        };
         if cursor && surface_focused && state.cursor_col == ord {
             // A cell cursor is a cell: reverse it.
             cell_style = cell_style.add_modifier(Modifier::REVERSED);
@@ -1515,7 +1528,7 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::data_view::{DataColumn, DataColumnWidth, bench};
+    use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
     use ratatui_core::layout::Position;
 
     fn cols() -> ColumnModel<&'static str> {
@@ -1818,6 +1831,40 @@ mod tests {
             let indent = depth.saturating_mul(INDENT_STEP).min(40);
             assert!(indent <= 40);
         }
+    }
+
+    #[test]
+    fn numeric_columns_read_quieter_than_the_hierarchy_column() {
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6))
+                .priority(40)
+                .kind(ColumnKind::Numeric),
+        ]);
+        let r0: &[&str] = &["systemd", "4096"];
+        let rows = [TreeTableRow::new(1u64, 0, r0)];
+        let mut state = TreeTableState::new(None);
+        state.load = LoadState::Ready { count: 1 };
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buffer = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('s')))
+            .expect("the data row must be painted");
+        let at = |needle: char| {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted"));
+            buffer[(x, row_y)].style().fg
+        };
+        assert_ne!(
+            at('s'),
+            at('4'),
+            "a byte count must not read as loudly as the process name"
+        );
+        assert_eq!(at('4'), system.style(Role::TextMuted).fg);
     }
 
     #[test]

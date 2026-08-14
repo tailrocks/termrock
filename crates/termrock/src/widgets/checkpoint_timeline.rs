@@ -37,6 +37,7 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
+    widgets::tiered_row::TieredRow,
     widgets::timeline::{
         Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRowKind, TimelineState,
         TimelineStatus,
@@ -1228,21 +1229,44 @@ impl<'a> CheckpointTimeline<'a> {
                 .as_ref()
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
-            let text = format!("{mark}{bound} {} {}{}{}", cp.when, cp.label, head, branch);
+            // The boundary rides its glyph and the timestamp sits under the
+            // label: a column of checkpoints reads as one column of state
+            // instead of a stack of colored sentences (plans/012 Step 3).
+            let tone = |role: Role| (!self.colorless).then(|| self.system.style(role));
+            let mut tiers = TieredRow::with_separator("");
+            tiers.push_joined(
+                mark,
+                cp.is_head
+                    .then(|| self.system.style(Role::Info))
+                    .filter(|_| !self.colorless),
+            );
+            tiers.push_joined(
+                bound,
+                cp.boundary
+                    .needs_warning()
+                    .then(|| self.system.style(cp.boundary.role()))
+                    .filter(|_| !self.colorless),
+            );
+            tiers.push_joined(" ", None);
+            tiers.push_joined(&cp.when, tone(Role::TextFaint));
+            tiers.push_joined(" ", None);
+            tiers.push_joined(&cp.label, None);
+            tiers.push_joined(head, tone(Role::Info));
+            tiers.push_joined(&branch, tone(Role::TextMuted));
+            let text = tiers.text().to_string();
             // Selection is chrome — the gutter and weight mark it; the row
             // keeps its own meaning (plans/007).
             let style = if selected {
                 self.system
                     .style(Role::TextStrong)
                     .add_modifier(Modifier::BOLD)
-            } else if cp.boundary.needs_warning() && !self.colorless {
-                self.system.style(cp.boundary.role())
-            } else if cp.is_head {
-                self.system.style(Role::Info)
             } else {
                 self.system.style(Role::Text)
             };
             buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            if !selected {
+                tiers.paint_tiers(buffer, Rect::new(area.x, y, area.width, 1), 0);
+            }
             state.row_hits.push((
                 cp.id.clone(),
                 Rect {

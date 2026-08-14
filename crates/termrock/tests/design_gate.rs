@@ -1269,3 +1269,123 @@ fn inputs_share_field_chrome() {
         );
     }
 }
+
+/// Data rows read as tiers, not as one tone.
+///
+/// The ten flat data widgets each built a row as one `format!` and painted it
+/// with one style, which makes the text ladder — primary, muted secondary,
+/// faint meta — structurally unreachable. A row that states five facts must
+/// paint them in more than one voice (plans/012).
+#[test]
+fn data_rows_have_ladder() {
+    use termrock::widgets::{
+        EventSeverity, EventStream, EventStreamState, LogLevel, LogLine, LogLineRecipe, LogStream,
+        LogStreamState, StreamEvent, TraceSpan, TraceWaterfall, TraceWaterfallState,
+    };
+
+    let system = DesignSystem::default();
+    let area = Rect::new(0, 0, 96, 12);
+    let mut frames: Vec<(&'static str, Buffer)> = Vec::new();
+
+    let log_lines = vec![
+        LogLine::new("1", LogLevel::Info, "boot complete")
+            .timestamp("12:00:00")
+            .source("main"),
+        LogLine::new("2", LogLevel::Error, "connection refused")
+            .timestamp("12:00:01")
+            .source("net"),
+    ];
+    let mut log_state = LogStreamState::new();
+    log_state.set_following(false);
+    log_state.recipe = LogLineRecipe::Detailed;
+    frames.push((
+        "LogStream",
+        painted(area, |buffer| {
+            LogStream::new(&log_lines, &system)
+                .focused(true)
+                .render(area, buffer, &mut log_state);
+        }),
+    ));
+
+    let events: Vec<StreamEvent<'_, ()>> = vec![
+        StreamEvent::with_id((), "Normal", "12:01:00", "Scheduled pod")
+            .severity(EventSeverity::Info)
+            .source("scheduler")
+            .fields("pod=api-7 node=n1"),
+        StreamEvent::with_id((), "Failed", "12:01:04", "Back-off restarting")
+            .severity(EventSeverity::Error)
+            .source("kubelet")
+            .fields("pod=api-7"),
+    ];
+    let mut event_state = EventStreamState::new();
+    event_state.set_following(false);
+    frames.push((
+        "EventStream",
+        painted(area, |buffer| {
+            EventStream::new(&events, &system)
+                .focused(true)
+                .render(area, buffer, &mut event_state);
+        }),
+    ));
+
+    let spans = vec![
+        TraceSpan::new("root", "HTTP GET /api", 0, 420)
+            .service("gateway")
+            .branch()
+            .expanded(),
+        TraceSpan::new("db", "SELECT users", 50, 180)
+            .parent("root")
+            .service("postgres")
+            .depth(1),
+    ];
+    let mut trace_state = TraceWaterfallState::new();
+    frames.push((
+        "TraceWaterfall",
+        painted(area, |buffer| {
+            TraceWaterfall::new(&spans, &system).focused(true).render(
+                area,
+                buffer,
+                &mut trace_state,
+            );
+        }),
+    ));
+
+    for (name, buffer) in &frames {
+        let rows = data_row_tones(buffer);
+        assert!(
+            !rows.is_empty(),
+            "{name} painted no data row for the gate to judge"
+        );
+        for (y, tones) in rows {
+            assert!(
+                tones >= 2,
+                "{name} paints row {y} in {tones} tone(s); a row of several \
+                 facts must not arrive as several equals"
+            );
+        }
+    }
+}
+
+/// Distinct foregrounds for every buffer row carrying a row of data.
+///
+/// A data row is one with enough content to state more than one fact; a
+/// header, a rule or a footer chip is not judged here.
+fn data_row_tones(buffer: &Buffer) -> Vec<(u16, usize)> {
+    (0..buffer.area.height)
+        .filter_map(|y| {
+            let mut seen: Vec<ratatui_core::style::Color> = Vec::new();
+            let mut content = 0usize;
+            for x in 0..buffer.area.width {
+                let cell = &buffer[(buffer.area.x + x, buffer.area.y + y)];
+                if cell.symbol().trim().is_empty() {
+                    continue;
+                }
+                content += 1;
+                if !seen.contains(&cell.fg) {
+                    seen.push(cell.fg);
+                }
+            }
+            (content >= 16).then_some((y, seen.len()))
+        })
+        .collect()
+}

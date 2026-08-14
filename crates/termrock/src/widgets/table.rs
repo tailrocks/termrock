@@ -18,6 +18,7 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 
+use super::data_view::ColumnKind;
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role, SelectionChrome},
@@ -127,6 +128,8 @@ pub struct Column<'a, Id> {
     pub sort: Option<SortDirection>,
     /// Drop priority under width pressure (higher kept longer; default 50).
     pub priority: u8,
+    /// What the column holds, which decides its tone.
+    pub kind: ColumnKind,
 }
 
 impl<'a, Id> Column<'a, Id> {
@@ -141,7 +144,18 @@ impl<'a, Id> Column<'a, Id> {
             sortable: false,
             sort: None,
             priority: 50,
+            kind: ColumnKind::Text,
         }
+    }
+
+    /// States what the column holds, which decides its tone.
+    ///
+    /// A numeric column reads quieter than the name beside it; a status
+    /// column contracts to its letter instead of to an ellipsis.
+    #[must_use]
+    pub const fn kind(mut self, kind: ColumnKind) -> Self {
+        self.kind = kind;
+        self
     }
 
     /// Sets cell and header alignment.
@@ -1030,6 +1044,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .is_some_and(|position| row_area.contains(position));
             let striped = matches!(self.recipe, TableRecipe::Striped) && painted % 2 == 1;
             let style = row_style(self.tokens, row, selected, hovered, self.focused, striped);
+            let quiet = row_quiet_style(self.tokens, row, selected, hovered, self.focused, style);
             paint_selection_gutter(self.tokens, buffer, area.x, y, selected, style);
 
             // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
@@ -1043,8 +1058,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .unwrap_or(u16::MAX)
                     .min(area.right().saturating_sub(content_x));
                 if lw > 0 {
-                    buffer.set_line(content_x, y, leading, lw);
                     buffer.set_style(Rect::new(content_x, y, lw, 1), style);
+                    buffer.set_line(content_x, y, leading, lw);
                     content_x = content_x.saturating_add(lw).saturating_add(1);
                 }
             }
@@ -1072,6 +1087,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 columns_right,
                 gap,
                 style,
+                quiet,
                 selected,
             );
             if show_badge && let Some(badge) = row.badge.as_ref() {
@@ -1080,8 +1096,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .min(area.width);
                 if bw > 0 {
                     let bx = area.right().saturating_sub(bw);
+                    buffer.set_style(Rect::new(bx, y, bw, 1), quiet);
                     buffer.set_line(bx, y, badge, bw);
-                    buffer.set_style(Rect::new(bx, y, bw, 1), style);
                 }
             }
             if owns_id && row.enabled {
@@ -1146,6 +1162,33 @@ fn row_style(
         style = style.add_modifier(Modifier::BOLD);
     }
     style
+}
+
+/// The quiet tier for a row already painted in `base`.
+///
+/// Keeps the row's ground and its weight and lowers only the voice, so a
+/// numeric column inside a selected row stays inside the selection instead of
+/// falling out of it.
+fn row_quiet_style(
+    tokens: &DesignSystem,
+    row: &TableRow<'_, impl Clone>,
+    selected: bool,
+    hovered: bool,
+    table_focused: bool,
+    base: Style,
+) -> Style {
+    if !row.enabled || row.style.is_some() {
+        return base;
+    }
+    let recipe = tokens.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: selected && table_focused,
+        hovered,
+        enabled: true,
+        loading: false,
+        checked: false,
+    });
+    recipe.secondary.fg.map_or(base, |fg| base.fg(fg))
 }
 
 fn paint_selection_gutter(
@@ -1305,6 +1348,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     columns_right: u16,
     gap: u16,
     style: Style,
+    quiet: Style,
     selected: bool,
 ) {
     let bordered = matches!(table.recipe, TableRecipe::Bordered);
@@ -1327,7 +1371,8 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .focused_column
                         .as_ref()
                         .is_some_and(|id| id == &table.columns[column_index].id);
-                let mut cell_style = style;
+                let kind = table.columns[column_index].kind;
+                let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
                     // A cell cursor is a cell: reverse it.
                     cell_style = cell_style.add_modifier(Modifier::REVERSED);
@@ -1338,12 +1383,17 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
                 if fully_left && let Some(value) = row.cells.get(column_index) {
+                    let overflow = if kind.clips_instead_of_ellipsizing() {
+                        CellOverflow::Clip
+                    } else {
+                        table.overflow
+                    };
                     render_line_overflow(
                         value,
                         rect,
                         table.columns[column_index].alignment,
                         cell_style,
-                        table.overflow,
+                        overflow,
                         buffer,
                         &mut state.scratch_text,
                         table.tokens,
@@ -1754,6 +1804,7 @@ mod tests {
                 sortable: true,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: "region",
@@ -1763,6 +1814,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: "cpu",
@@ -1772,6 +1824,7 @@ mod tests {
                 sortable: true,
                 sort: Some(SortDirection::Descending),
                 priority: 50,
+                kind: ColumnKind::Text,
             },
         ]
     }
@@ -2088,6 +2141,7 @@ mod tests {
             sortable: false,
             sort: None,
             priority: 50,
+            kind: ColumnKind::Text,
         }];
         let cells = [
             [Line::from("e\u{301}")],
@@ -2120,6 +2174,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: 1,
@@ -2129,6 +2184,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
         ];
         let rows: [TableRow<'_, u8>; 0] = [];
@@ -2295,6 +2351,53 @@ mod tests {
     }
 
     /// Property-style: layout is deterministic and never panics for narrow budgets.
+    #[test]
+    fn numeric_columns_read_quieter_than_text_columns() {
+        let tokens = DesignSystem::default();
+        let columns = [
+            Column::new("name", Line::from("Name"), ColumnWidth::Fixed(8)),
+            Column::new("size", Line::from("Size"), ColumnWidth::Fixed(6))
+                .kind(ColumnKind::Numeric),
+            Column::new("state", Line::from("S"), ColumnWidth::Fixed(3)).kind(ColumnKind::Status),
+        ];
+        let cells = [[
+            Line::from("deploy"),
+            Line::from("1024"),
+            Line::from("running"),
+        ]];
+        let rows = [TableRow::new(1, &cells[0])];
+        let mut state = TableState::default();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('d')))
+            .expect("the data row must be painted");
+        let find = |needle: char| {
+            (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted: {buffer:?}"))
+        };
+        let name = buffer[(find('d'), row_y)].style().fg;
+        let size = buffer[(find('1'), row_y)].style().fg;
+        assert_ne!(
+            name, size,
+            "a count must not read as loudly as the identity beside it"
+        );
+        assert_eq!(size, tokens.style(Role::TextMuted).fg);
+
+        // A status column contracts to its letter, never to an ellipsis.
+        let status_x = find('r');
+        let painted: String = (status_x..area.width)
+            .map(|x| buffer[(x, row_y)].symbol())
+            .collect();
+        assert!(
+            !painted.contains(tokens.glyphs.ellipsis()),
+            "status column must clip, not ellipsize: {painted:?}"
+        );
+    }
+
     #[test]
     fn layout_fuzz_narrow_budgets_are_deterministic() {
         let policies = [

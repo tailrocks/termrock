@@ -5,6 +5,7 @@
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line};
 
+use crate::style::ListRowRecipe;
 use crate::text::display_cols;
 
 /// Borrowed composed row anatomy (list/menu/tree/task-rail).
@@ -97,6 +98,44 @@ pub struct ComposedRowParts<'a> {
     pub shortcut: Option<&'a str>,
 }
 
+/// One tone per row part.
+///
+/// A row is not one thing: its label, its metadata, its badge and its chord
+/// are four facts of different weight, and the design language gives each a
+/// tier (`docs/design/termrock-design-language.md` §4.2).
+#[derive(Debug, Clone, Copy)]
+struct RowTones {
+    leading: Style,
+    primary: Style,
+    secondary: Style,
+    badge: Style,
+    shortcut: Style,
+}
+
+impl RowTones {
+    const fn uniform(style: Style) -> Self {
+        Self {
+            leading: style,
+            primary: style,
+            secondary: style,
+            badge: style,
+            shortcut: style,
+        }
+    }
+
+    fn from_recipe(recipe: &ListRowRecipe) -> Self {
+        Self {
+            leading: recipe
+                .gutter
+                .map_or(recipe.label, |(_, gutter_style)| gutter_style),
+            primary: recipe.label,
+            secondary: recipe.secondary,
+            badge: recipe.trailing,
+            shortcut: recipe.shortcut,
+        }
+    }
+}
+
 impl ComposedRowParts<'_> {
     fn part_width(line: &Line<'_>) -> u16 {
         u16::try_from(line.width()).unwrap_or(u16::MAX)
@@ -138,11 +177,30 @@ impl ComposedRowParts<'_> {
         badge.saturating_add(shortcut).saturating_add(gaps)
     }
 
-    /// Paints surviving parts into a single-row content band.
+    /// Paints surviving parts into a single-row content band, in one tone.
     ///
     /// Layout: `[leading][ ][primary…][ ][secondary] … [badge][ ][shortcut]`
     /// Primary is grapheme-clipped to the remaining middle budget.
+    ///
+    /// Kept for callers that genuinely have one tone to give. A collection
+    /// that has resolved a row recipe should use [`Self::paint_with`], which
+    /// is what lets a badge or a timestamp sit quieter than the label beside
+    /// it.
     pub fn paint(&self, buffer: &mut Buffer, area: Rect, style: Style) {
+        self.paint_parts(buffer, area, &RowTones::uniform(style));
+    }
+
+    /// Paints each part in the tone its tier earns, from a resolved recipe.
+    ///
+    /// Same layout as [`Self::paint`]; the difference is that the label keeps
+    /// `recipe.label` while the secondary, badge and shortcut drop to their
+    /// quieter tiers. One style over all five parts makes a row of five facts
+    /// arrive as five equals, which is the text ladder's failure mode.
+    pub fn paint_with(&self, buffer: &mut Buffer, area: Rect, recipe: &ListRowRecipe) {
+        self.paint_parts(buffer, area, &RowTones::from_recipe(recipe));
+    }
+
+    fn paint_parts(&self, buffer: &mut Buffer, area: Rect, tones: &RowTones) {
         if area.is_empty() || area.height == 0 {
             return;
         }
@@ -155,8 +213,8 @@ impl ComposedRowParts<'_> {
                 .unwrap_or(u16::MAX)
                 .min(right.saturating_sub(x));
             if w > 0 {
+                buffer.set_style(Rect::new(x, y, w, 1), tones.leading);
                 buffer.set_line(x, y, leading, w);
-                buffer.set_style(Rect::new(x, y, w, 1), style);
                 x = x.saturating_add(w).saturating_add(1);
             }
         }
@@ -183,11 +241,11 @@ impl ComposedRowParts<'_> {
         );
 
         if primary_budget > 0 && x < mid_end {
-            buffer.set_line(x, y, &self.primary, primary_budget);
             buffer.set_style(
                 Rect::new(x, y, primary_budget.min(mid_end.saturating_sub(x)), 1),
-                style,
+                tones.primary,
             );
+            buffer.set_line(x, y, &self.primary, primary_budget);
             x = x.saturating_add(
                 u16::try_from(self.primary.width())
                     .unwrap_or(u16::MAX)
@@ -204,8 +262,8 @@ impl ComposedRowParts<'_> {
                     .unwrap_or(u16::MAX)
                     .min(mid_end.saturating_sub(x));
                 if w > 0 {
+                    buffer.set_style(Rect::new(x, y, w, 1), tones.secondary);
                     buffer.set_line(x, y, secondary, w);
-                    buffer.set_style(Rect::new(x, y, w, 1), style);
                 }
             }
         }
@@ -218,7 +276,7 @@ impl ComposedRowParts<'_> {
                 .min(cursor.saturating_sub(area.x));
             if w > 0 {
                 cursor = cursor.saturating_sub(w);
-                buffer.set_stringn(cursor, y, shortcut, usize::from(w), style);
+                buffer.set_stringn(cursor, y, shortcut, usize::from(w), tones.shortcut);
             }
         }
         if let Some(badge) = self.badge.as_ref() {
@@ -230,8 +288,8 @@ impl ComposedRowParts<'_> {
                     cursor = cursor.saturating_sub(1);
                 }
                 cursor = cursor.saturating_sub(w);
+                buffer.set_style(Rect::new(cursor, y, w, 1), tones.badge);
                 buffer.set_line(cursor, y, badge, w);
-                buffer.set_style(Rect::new(cursor, y, w, 1), style);
             }
         }
     }
@@ -310,5 +368,98 @@ mod tests {
         );
         // shortcut dropped at width 12
         assert!(!text.contains('⌘'), "shortcut must drop: {text:?}");
+    }
+
+    #[test]
+    fn paint_with_gives_every_part_its_own_tone() {
+        use crate::style::{Density, DesignSystem, ListRowVisualState, RolePalette};
+
+        let system = DesignSystem::new(RolePalette::default(), Density::Compact);
+        let recipe = system.resolve_list_row(ListRowVisualState {
+            selected: false,
+            focused: false,
+            hovered: false,
+            enabled: true,
+            loading: false,
+            checked: false,
+        });
+        let row = ComposedRow {
+            id: "r",
+            leading: Some(Line::from("*")),
+            primary: Line::from("Identity"),
+            secondary: Some(Line::from("meta")),
+            badge: Some(Line::from("99")),
+            shortcut: Some("^K"),
+            enabled: true,
+            loading: false,
+        };
+        let area = Rect::new(0, 0, 40, 1);
+        let parts = row.parts_for_width(area.width);
+        let mut buffer = Buffer::empty(area);
+        parts.paint_with(&mut buffer, area, &recipe);
+
+        let cell_at = |buffer: &Buffer, needle: char| -> Style {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, 0)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted"));
+            buffer[(x, 0)].style()
+        };
+        let primary = cell_at(&buffer, 'I');
+        let secondary = cell_at(&buffer, 'm');
+        let badge = cell_at(&buffer, '9');
+        let shortcut = cell_at(&buffer, '^');
+
+        assert_eq!(primary.fg, recipe.label.fg);
+        assert_eq!(secondary.fg, recipe.secondary.fg);
+        assert_eq!(badge.fg, recipe.trailing.fg);
+        assert_eq!(shortcut.fg, recipe.shortcut.fg);
+        assert_ne!(
+            primary.fg, secondary.fg,
+            "the label and its metadata must not share a tone"
+        );
+        assert_ne!(
+            primary.fg, shortcut.fg,
+            "a chord is not as loud as the label it acts on"
+        );
+
+        // The single-tone path still flattens, for callers that mean it.
+        let mut flat = Buffer::empty(area);
+        parts.paint(&mut flat, area, recipe.label);
+        assert_eq!(cell_at(&flat, 'm').fg, recipe.label.fg);
+    }
+
+    #[test]
+    fn span_styles_survive_the_part_tone() {
+        use ratatui_core::style::Color;
+        use ratatui_core::text::Span;
+
+        let row = ComposedRow {
+            id: "r",
+            leading: None,
+            primary: Line::from(vec![
+                Span::styled("hot", Style::default().fg(Color::Red)),
+                Span::raw(" plain"),
+            ]),
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            enabled: true,
+            loading: false,
+        };
+        let area = Rect::new(0, 0, 20, 1);
+        let parts = row.parts_for_width(area.width);
+        let mut buffer = Buffer::empty(area);
+        let base = Style::default().fg(Color::Blue);
+        parts.paint(&mut buffer, area, base);
+        assert_eq!(
+            buffer[(0, 0)].style().fg,
+            Some(Color::Red),
+            "a span that states its own tone owns its cells"
+        );
+        assert_eq!(
+            buffer[(5, 0)].style().fg,
+            Some(Color::Blue),
+            "unstyled spans inherit the part tone"
+        );
     }
 }

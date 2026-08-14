@@ -27,7 +27,7 @@ run its drift check, and update your row when done.
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | DONE (agent C: all seven steps — migrations/0302, 0307, 0308, 0309, 0310, 0311; neon-fill gate ACTIVE and green) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
-| 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
+| 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | DONE (agent C: all five steps — `TieredRow` substrate, `ColumnKind` in 3 tables, `paint_with`, migrations/0313, `data_rows_have_ladder` green) |
 | 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
 | 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence; 4: Skeleton, Spinner, StatusIndicator, Toast entrance — see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
@@ -103,7 +103,6 @@ Write the claim here **before** writing code. Release it by deleting the row.
 |-------|-------|-------|
 | the remaining suite | agent C — sole remaining lane | 008, 010-016, 018, 019, 021, 022. The design and motion lanes' sessions ended; their claims are released here rather than left to look live. |
 | 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
-| 012 row anatomy ladder | agent C (017/022/007/009/012) | `widgets/{data_table,tree_table,detail_table,key_value_table,search_results,diff,log_stream,streaming_markdown,diagnostic,virtual_grid}.rs` + `ColumnKind` in `widgets/data_view.rs` |
 
 ## Execution notes
 

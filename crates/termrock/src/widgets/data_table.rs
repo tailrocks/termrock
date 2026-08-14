@@ -1516,7 +1516,12 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             row: logical_row,
             col: paint_ord,
         });
-        let mut cell_style = style;
+        let quiet = if state.colorless {
+            style
+        } else {
+            recipe.secondary.fg.map_or(style, |fg| style.fg(fg))
+        };
+        let mut cell_style = col.kind.cell_style(style, quiet);
         if cell_selected {
             cell_style = cell_style.patch(table.system.style(Role::SelectionTint));
         }
@@ -1577,7 +1582,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
 mod tests {
     use super::*;
     use crate::input::{MouseButton, MouseEvent, MouseEventKind};
-    use crate::widgets::data_view::{ColumnPin, DataColumn, DataColumnWidth, LoadState, bench};
+    use crate::widgets::data_view::{
+        ColumnKind, ColumnPin, DataColumn, DataColumnWidth, LoadState, bench,
+    };
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2059,6 +2066,40 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains("Cluster"), "{text}");
+    }
+
+    #[test]
+    fn numeric_columns_read_quieter_than_text_columns() {
+        let system = DesignSystem::default();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(8)).priority(100),
+            DataColumn::new("size", "Size", DataColumnWidth::Fixed(6))
+                .priority(50)
+                .kind(ColumnKind::Numeric),
+        ]);
+        let c0: &[&str] = &["deploy", "1024"];
+        let rows = [(1u64, c0)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.load = LoadState::Ready { count: 1 };
+        let area = Rect::new(0, 0, 30, 6);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('d')))
+            .expect("the data row must be painted");
+        let at = |needle: char| {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted"));
+            buffer[(x, row_y)].style().fg
+        };
+        assert_ne!(
+            at('d'),
+            at('1'),
+            "a count must not read as loudly as the identity beside it"
+        );
+        assert_eq!(at('1'), system.style(Role::TextMuted).fg);
     }
 
     #[test]

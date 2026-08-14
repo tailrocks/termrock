@@ -24,7 +24,12 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
+};
 
 use crate::{
     ansi_text::{AnsiLine, AnsiText, AnsiTextMode},
@@ -34,7 +39,7 @@ use crate::{
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
-    widgets::scroll_area::ScrollAreaState,
+    widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
 // ── Streams & status ────────────────────────────────────────────────────────
@@ -1424,16 +1429,15 @@ fn paint_line(
     let gutter = " ";
     let prefix = if tiny { "" } else { line.stream.prefix(ascii) };
 
-    let style = if colorless {
-        if cursor {
-            system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
-        } else {
-            system.style(Role::Text)
-        }
+    // The stream rides its prefix, not the whole sentence: a page of stderr
+    // is a page of readable text with a marked left edge, not a wall of red
+    // (plans/012 Step 3).
+    let style = if colorless && cursor {
+        system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
     } else {
-        // stdout stays stdout and stderr stays stderr under the cursor.
-        system.style(line.stream.role())
+        system.style(Role::Text)
     };
+    let stream_tone = (!colorless).then(|| system.style(line.stream.role()));
     let chrome = crate::widgets::row_chrome::RowChrome::resolve(
         system,
         ListRowVisualState {
@@ -1448,7 +1452,10 @@ fn paint_line(
     match paint_mode {
         TerminalPaintMode::Ansi | TerminalPaintMode::NoColor if line.ansi.is_some() => {
             // Lead with stream prefix then paint ANSI via temporary buffer segment
-            let lead = format!("{gutter}{prefix}");
+            let mut tiers = TieredRow::with_separator("");
+            tiers.push_joined(gutter, None);
+            tiers.push_joined(prefix, stream_tone);
+            let lead = tiers.text().to_string();
             let lead_w = display_cols(&lead) as u16;
             buffer.set_stringn(
                 area.x,
@@ -1457,6 +1464,7 @@ fn paint_line(
                 usize::from(area.width.min(lead_w.max(1))),
                 style,
             );
+            tiers.paint_tiers(buffer, Rect::new(area.x, area.y, area.width, 1), 0);
             if let Some(ansi) = line.ansi {
                 let rest = Rect::new(
                     area.x.saturating_add(lead_w.min(area.width)),
@@ -1475,26 +1483,37 @@ fn paint_line(
         }
         TerminalPaintMode::Raw => {
             let body = escape_raw_terminal(line.text);
-            let text = format!("{gutter}{prefix}{body}");
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&text, usize::from(area.width)),
-                usize::from(area.width),
-                style,
-            );
+            paint_stream_line(buffer, area, gutter, prefix, &body, style, stream_tone);
         }
         _ => {
-            let text = format!("{gutter}{prefix}{}", line.text);
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&text, usize::from(area.width)),
-                usize::from(area.width),
-                style,
-            );
+            paint_stream_line(buffer, area, gutter, prefix, line.text, style, stream_tone);
         }
     }
+}
+
+/// Paints `gutter + prefix + body`, with the stream tone on the prefix only.
+fn paint_stream_line(
+    buffer: &mut Buffer,
+    area: Rect,
+    gutter: &str,
+    prefix: &str,
+    body: &str,
+    style: Style,
+    stream_tone: Option<Style>,
+) {
+    let mut tiers = TieredRow::with_separator("");
+    tiers.push_joined(gutter, None);
+    tiers.push_joined(prefix, stream_tone);
+    tiers.push_joined(body, None);
+    let text = tiers.text().to_string();
+    buffer.set_stringn(
+        area.x,
+        area.y,
+        take_display_cols(&text, usize::from(area.width)),
+        usize::from(area.width),
+        style,
+    );
+    tiers.paint_tiers(buffer, Rect::new(area.x, area.y, area.width, 1), 0);
 }
 
 impl StatefulWidget for &TerminalOutput<'_> {

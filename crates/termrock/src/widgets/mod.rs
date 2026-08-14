@@ -144,6 +144,7 @@ mod text;
 mod text_area;
 mod text_input;
 mod theme_picker;
+mod tiered_row;
 mod timeline;
 mod toast;
 mod toggle;
@@ -338,9 +339,9 @@ pub use data_table::{
 };
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
-    CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataViewOutcome,
-    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
-    VirtualWindow,
+    CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth,
+    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
+    SelectionModel, SortSpec, VirtualWindow,
 };
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{

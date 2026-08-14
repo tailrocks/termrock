@@ -34,7 +34,7 @@ use crate::{
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
-    widgets::scroll_area::ScrollAreaState,
+    widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
 /// Log line severity.
@@ -1180,43 +1180,65 @@ impl<'a> LogStream<'a> {
                     escape_log_text(line.text)
                 };
 
-                // `glyph_col` is where the level glyph lands inside the row,
-                // so the level's color can be put back on that one cell.
-                let mut glyph_col: Option<usize> = None;
-                let body = match state.recipe {
-                    LogLineRecipe::Compact if tiny => plain.clone(),
-                    LogLineRecipe::Compact => {
-                        glyph_col = Some(display_cols(bm));
-                        format!("{bm}{g} {plain}{batch}")
-                    }
-                    LogLineRecipe::Detailed if tiny => plain.clone(),
-                    LogLineRecipe::Detailed if narrow => {
-                        glyph_col = Some(display_cols(bm));
-                        format!("{bm}{g} {plain}{batch}")
-                    }
-                    LogLineRecipe::Detailed => {
-                        let mut parts = Vec::new();
-                        parts.push(bm.to_string());
-                        if let Some(ts) = line.timestamp {
-                            parts.push(ts.to_string());
-                        }
-                        if let Some(src) = line.source {
-                            parts.push(src.to_string());
-                        }
-                        glyph_col = Some(
-                            parts.iter().map(|p| display_cols(p)).sum::<usize>() + parts.len(),
-                        );
-                        parts.push(g.to_string());
-                        if colorless {
-                            parts.push(format!("{}", line.level.letter()));
-                        }
-                        parts.push(plain.clone());
-                        if !batch.is_empty() {
-                            parts.push(batch);
-                        }
-                        parts.join(" ")
+                // The row is tiers, not a sentence: the timestamp and the
+                // source sit under the message, the level owns its glyph, and
+                // the batch count trails quietly (plans/012 Step 3).
+                let tone = |role: Role| {
+                    if colorless {
+                        None
+                    } else {
+                        Some(chrome.label_style(self.system.style(role)))
                     }
                 };
+                let meta = tone(Role::TextFaint);
+                let source_tone = tone(Role::TextMuted);
+                let level_tone = tone(line.level.role());
+                let mut row = TieredRow::default();
+                match state.recipe {
+                    LogLineRecipe::Compact | LogLineRecipe::Detailed if tiny => {
+                        row.push_plain(&plain);
+                    }
+                    LogLineRecipe::Detailed if narrow => {
+                        row.push_joined(bm, None);
+                        row.push_joined(g, level_tone);
+                        row.push_plain(&plain);
+                        row.push_joined(&batch, source_tone);
+                    }
+                    LogLineRecipe::Compact => {
+                        row.push_joined(bm, None);
+                        row.push_joined(g, level_tone);
+                        row.push_plain(&plain);
+                        row.push_joined(&batch, source_tone);
+                    }
+                    LogLineRecipe::Detailed => {
+                        row.push_plain(bm);
+                        if let Some(ts) = line.timestamp {
+                            match meta {
+                                Some(style) => row.push(ts, style),
+                                None => row.push_plain(ts),
+                            }
+                        }
+                        if let Some(src) = line.source {
+                            match source_tone {
+                                Some(style) => row.push(src, style),
+                                None => row.push_plain(src),
+                            }
+                        }
+                        match level_tone {
+                            Some(style) => row.push(g, style),
+                            None => row.push_plain(g),
+                        }
+                        if colorless {
+                            row.push_plain(&line.level.letter().to_string());
+                        }
+                        row.push_plain(&plain);
+                        match source_tone {
+                            Some(style) => row.push(&batch, style),
+                            None => row.push_plain(&batch),
+                        }
+                    }
+                }
+                let body = row.text().to_string();
 
                 let rows: Vec<String> = if matches!(state.wrap, LogWrap::Wrap) {
                     let inner_w = usize::from(area.width.saturating_sub(1).max(1));
@@ -1246,31 +1268,23 @@ impl<'a> LogStream<'a> {
                     );
                     if ri == 0 {
                         chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
-                        if let Some(col) = glyph_col
-                            && !colorless
-                            && matches!(state.wrap, LogWrap::Wrap)
-                                .then_some(0usize)
-                                .unwrap_or(usize::from(state.h_offset))
-                                <= col
-                        {
-                            let scrolled = if matches!(state.wrap, LogWrap::Wrap) {
-                                col
-                            } else {
-                                col.saturating_sub(usize::from(state.h_offset))
-                            };
-                            crate::widgets::row_chrome::paint_status_glyph(
-                                buffer,
-                                Rect::new(
-                                    area.x.saturating_add(1),
-                                    py,
-                                    area.width.saturating_sub(1),
-                                    1,
-                                ),
-                                u16::try_from(scrolled).unwrap_or(u16::MAX),
-                                g,
-                                self.system.style(line.level.role()),
-                            );
-                        }
+                        // Tiers ride the first row only: a wrapped
+                        // continuation is all message, and all one tone.
+                        let skip = if matches!(state.wrap, LogWrap::Wrap) {
+                            0
+                        } else {
+                            usize::from(state.h_offset)
+                        };
+                        row.paint_tiers(
+                            buffer,
+                            Rect::new(
+                                area.x.saturating_add(1),
+                                py,
+                                area.width.saturating_sub(1),
+                                1,
+                            ),
+                            skip,
+                        );
                     }
                     py = py.saturating_add(1);
                 }
@@ -1702,6 +1716,43 @@ mod tests {
             &lines,
         );
         assert_eq!(state.recipe, LogLineRecipe::Compact);
+    }
+
+    #[test]
+    fn a_detailed_row_reads_as_tiers_not_as_a_sentence() {
+        let system = DesignSystem::default();
+        let lines = sample();
+        let mut state = LogStreamState::new();
+        state.set_following(false);
+        state.recipe = LogLineRecipe::Detailed;
+        let stream = LogStream::new(&lines, &system).focused(true);
+        let area = Rect::new(0, 0, 72, 10);
+        let mut buf = Buffer::empty(area);
+        stream.render(area, &mut buf, &mut state);
+
+        let region = state.regions.first().expect("a row must be painted");
+        let y = region.area.y;
+        let row: String = (0..area.width).map(|x| buf[(x, y)].symbol()).collect();
+        let col_of = |needle: &str| {
+            u16::try_from(
+                row.find(needle)
+                    .unwrap_or_else(|| panic!("{needle:?} in {row:?}")),
+            )
+            .unwrap()
+        };
+        let timestamp = buf[(col_of("12:00:00"), y)].fg;
+        let source = buf[(col_of("main"), y)].fg;
+        let message = buf[(col_of("boot"), y)].fg;
+        assert_ne!(
+            timestamp, message,
+            "a timestamp must not read as loudly as the message"
+        );
+        assert_ne!(
+            source, message,
+            "a source must not read as loudly as the message"
+        );
+        assert_eq!(Some(timestamp), system.style(Role::TextFaint).fg);
+        assert_eq!(Some(source), system.style(Role::TextMuted).fg);
     }
 
     #[test]

@@ -32,7 +32,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         ActivityPhase, Button, ButtonState, ButtonVariant, NotificationItem, SemanticStatus,
-        StatusKind, StatusRegion, StatusSlot, ToastKind, ToastPriority,
+        StatusKind, StatusRegion, StatusSlot, ToastKind, ToastPriority, tiered_row::TieredRow,
     },
 };
 
@@ -588,18 +588,27 @@ impl ReconnectingState {
     /// Banner one-liner.
     #[must_use]
     pub fn banner_line(&self, ascii: bool) -> String {
-        let g = self.phase.glyph(ascii);
-        let mut s = format!("{g} {} · {}", self.phase.verb(), self.target);
+        let (glyph, head, meta) = self.banner_parts(ascii);
+        format!("{glyph} {head}{meta}")
+    }
+
+    /// The banner split into its tiers: state glyph, the sentence, the counts.
+    ///
+    /// One string painted in the phase role turns the whole banner into an
+    /// alarm; the phase belongs to the glyph and the counts read quietly.
+    fn banner_parts(&self, ascii: bool) -> (&'static str, String, String) {
+        let head = format!("{} · {}", self.phase.verb(), self.target);
+        let mut meta = String::new();
         if matches!(self.phase, ConnectivityPhase::Reconnecting) && self.attempt > 0 {
-            s.push_str(&format!(" · try {}", self.attempt));
+            meta.push_str(&format!(" · try {}", self.attempt));
         }
         if let Some(n) = self.next_retry_in_secs {
-            s.push_str(&format!(" · next {n}s"));
+            meta.push_str(&format!(" · next {n}s"));
         }
         if !self.queued.is_empty() {
-            s.push_str(&format!(" · {} queued", self.queued.len()));
+            meta.push_str(&format!(" · {} queued", self.queued.len()));
         }
-        s
+        (self.phase.glyph(ascii), head, meta)
     }
 
     /// Relative last-success phrase.
@@ -822,13 +831,24 @@ impl<'a> OfflineBanner<'a> {
             return;
         }
         let ascii = self.state.use_ascii(self.system);
-        let line = self.state.banner_line(ascii);
-        let style = self
-            .system
-            .style(self.state.phase.role())
-            .add_modifier(Modifier::BOLD);
+        let (glyph, head, meta) = self.state.banner_parts(ascii);
+        let mut tiers = TieredRow::with_separator("");
+        tiers.push_joined(
+            glyph,
+            Some(
+                self.system
+                    .style(self.state.phase.role())
+                    .add_modifier(Modifier::BOLD),
+            ),
+        );
+        tiers.push_joined(" ", None);
+        tiers.push_joined(&head, None);
+        tiers.push_joined(&meta, Some(self.system.style(Role::TextMuted)));
+        let line = tiers.text().to_string();
+        let style = self.system.style(Role::Text);
         let clipped = take_display_cols(&line, usize::from(area.width));
         buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
+        tiers.paint_tiers(buffer, Rect::new(area.x, area.y, area.width, 1), 0);
     }
 
     /// Semantic.

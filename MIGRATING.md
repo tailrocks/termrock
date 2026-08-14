@@ -326,6 +326,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0310 | `v0.14.0` | [Floating surfaces actually float](migrations/0310-v0.14.0-floating-surfaces-float.md) |
 | 0311 | `v0.14.0` | [Picker columns hold still, and notifications get a clock](migrations/0311-v0.14.0-picker-columns-and-a-clock.md) |
 | 0312 | `v0.14.0` | [Control chrome parity](migrations/0312-v0.14.0-control-chrome-parity.md) |
+| 0313 | `v0.14.0` | [Rows get anatomy](migrations/0313-v0.14.0-rows-get-anatomy.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

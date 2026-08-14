@@ -29,6 +29,7 @@ use crate::{
         data_view::{LoadState, VirtualWindow},
         highlighted_text::{HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate},
         quick_open::{QuickOpenItem, QuickOpenPreview},
+        tiered_row::TieredRow,
     },
 };
 
@@ -1279,7 +1280,17 @@ impl<'a> SearchResults<'a> {
                         let _ = ranges;
                         take_display_cols(item.title, title_budget).to_string()
                     };
-                    let head = format!("{mark}{glyph} {title_disp}");
+                    // The kind rides its glyph; the title is what you read
+                    // (plans/012 Step 3).
+                    let mut tiers = TieredRow::with_separator("");
+                    tiers.push_joined(mark, None);
+                    tiers.push_joined(
+                        glyph,
+                        item.enabled.then(|| self.system.style(item.kind.role())),
+                    );
+                    tiers.push_joined(" ", None);
+                    tiers.push_joined(&title_disp, None);
+                    let head = tiers.text().to_string();
                     let style = if selected && self.focused {
                         self.system.style(Role::Focus)
                     } else if !item.enabled {
@@ -1294,6 +1305,9 @@ impl<'a> SearchResults<'a> {
                         usize::from(area.width),
                         style,
                     );
+                    if !selected {
+                        tiers.paint_tiers(buffer, Rect::new(area.x, py, area.width, 1), 0);
+                    }
                     // Paint title highlights on top when not selected focus
                     if !selected {
                         let ranges = MatchRanges::from_ranges(title_ranges.iter().copied())
@@ -1358,11 +1372,7 @@ impl<'a> SearchResults<'a> {
                             py,
                             take_display_cols(&sn_line, usize::from(area.width)),
                             usize::from(area.width),
-                            if selected {
-                                self.system.style(Role::TextMuted)
-                            } else {
-                                self.system.style(Role::TextMuted)
-                            },
+                            self.system.style(Role::TextMuted),
                         );
                         if !selected {
                             let ranges = MatchRanges::from_ranges(sn_ranges.iter().copied())

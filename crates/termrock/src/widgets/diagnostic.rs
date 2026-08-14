@@ -33,6 +33,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::code_block::{CodeGutterMark, CodeHighlight, CodeHighlightKind},
     widgets::scroll_area::ScrollAreaState,
+    widgets::tiered_row::TieredRow,
 };
 
 // ── Severity ────────────────────────────────────────────────────────────────
@@ -1537,7 +1538,20 @@ fn paint_list_item(
         _ => String::new(),
     };
     let src = d.source.map(|s| format!(" ({s})")).unwrap_or_default();
-    let line = format!("{gutter}{g}{letter} {code}{}{loc}{src}", d.message);
+    // The severity rides its glyph and letter; the message is a sentence and
+    // stays readable, and the location trails quietly (plans/012 Step 3).
+    let tone = |role: Role| (!colorless).then(|| system.style(role));
+    let severity = tone(d.severity.role());
+    let mut tiers = TieredRow::with_separator("");
+    tiers.push_joined(gutter, None);
+    tiers.push_joined(g, severity);
+    tiers.push_joined(&letter.to_string(), severity);
+    tiers.push_joined(" ", None);
+    tiers.push_joined(&code, tone(Role::TextFaint));
+    tiers.push_joined(d.message, None);
+    tiers.push_joined(&loc, tone(Role::TextMuted));
+    tiers.push_joined(&src, tone(Role::TextFaint));
+    let line = tiers.text().to_string();
     let style = if colorless {
         if cursor {
             system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
@@ -1545,8 +1559,7 @@ fn paint_list_item(
             system.style(Role::Text)
         }
     } else {
-        // A selected error is still an error.
-        system.style(d.severity.role())
+        system.style(Role::Text)
     };
     let chrome = crate::widgets::row_chrome::RowChrome::resolve(
         system,
@@ -1567,6 +1580,7 @@ fn paint_list_item(
         style,
     );
     chrome.paint(buffer, row);
+    tiers.paint_tiers(buffer, row, 0);
     y = y.saturating_add(1);
 
     if !expanded && !force_frame {
