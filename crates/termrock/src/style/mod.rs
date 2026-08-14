@@ -43,7 +43,7 @@ use palette::{
     PREVIEW_CARD as PREVIEW_CARD_RGB, RAISED as RAISED_RGB, SCROLL_TRACK as SCROLL_TRACK_RGB,
     SELECTION_TINT as SELECTION_TINT_RGB, SUCCESS_GREEN as SUCCESS_GREEN_RGB, SUNKEN as SUNKEN_RGB,
     SURFACE as SURFACE_RGB, TEXT_BODY as TEXT_BODY_RGB, TEXT_DISABLED as TEXT_DISABLED_RGB,
-    TEXT_MUTED as TEXT_MUTED_RGB, TEXT_STRONG as TEXT_STRONG_RGB,
+    TEXT_FAINT as TEXT_FAINT_RGB, TEXT_MUTED as TEXT_MUTED_RGB, TEXT_STRONG as TEXT_STRONG_RGB,
     WARNING_YELLOW as WARNING_YELLOW_RGB, WHITE as WHITE_RGB,
 };
 pub use palette::{Rgb, contrast_ratio, relative_luminance};
@@ -51,7 +51,6 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
-pub(crate) use quantize::degrade_chrome as degrade_projection_chrome;
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
     BorderShape, BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ContentInset, ControlState,
@@ -84,6 +83,7 @@ pub(crate) const TEXT_BODY: Color = color(TEXT_BODY_RGB);
 pub(crate) const TEXT_STRONG: Color = color(TEXT_STRONG_RGB);
 pub(crate) const TEXT_MUTED: Color = color(TEXT_MUTED_RGB);
 pub(crate) const TEXT_DISABLED: Color = color(TEXT_DISABLED_RGB);
+pub(crate) const TEXT_FAINT: Color = color(TEXT_FAINT_RGB);
 /// Non-border focus cue, distinct from `BorderFocused`.
 pub(crate) const FOCUS_GREEN: Color = color(FOCUS_GREEN_RGB);
 /// Foreground for text on bright chips/buttons.
@@ -430,7 +430,7 @@ impl RolePalette {
             Role::ChartSeries4 => Style::new().fg(Color::Rgb(180, 120, 255)),
             Role::ChartAxis => Style::new().fg(BORDER_GRAY),
             Role::ChartGrid => Style::new().fg(Color::Rgb(50, 50, 50)),
-            Role::TextFaint => Style::new().fg(TEXT_DISABLED).add_modifier(Modifier::DIM),
+            Role::TextFaint => Style::new().fg(TEXT_FAINT).add_modifier(Modifier::DIM),
             Role::BackdropWash => {
                 Style::new().bg(blend_toward(color(CANVAS_RGB), Color::Rgb(0, 0, 0), 0.4))
             }
@@ -707,7 +707,8 @@ impl RolePalette {
         let ink = Color::Rgb(255, 255, 255);
         let body = Color::Rgb(230, 230, 230);
         let muted = Color::Rgb(192, 192, 192);
-        let disabled = Color::Rgb(138, 138, 138);
+        let faint = Color::Rgb(166, 166, 166);
+        let disabled = Color::Rgb(150, 150, 150);
         let paper = Color::Rgb(0, 0, 0);
         let accent = Color::Rgb(0, 255, 255);
         let danger = Color::Rgb(255, 64, 64);
@@ -748,13 +749,13 @@ impl RolePalette {
             Role::HintDim => Style::new().fg(ink),
             Role::HintSeparator => Style::new().fg(ink),
             Role::ActionFocused => Style::new().fg(paper).bg(accent).bold(),
-            Role::ActionDisabled => Style::new().fg(Color::Rgb(180, 180, 180)),
+            Role::ActionDisabled => Style::new().fg(disabled),
             Role::StatusBar => Style::new().fg(ink).bg(paper),
             Role::DiffAdded => Style::new().fg(ok).bg(paper).bold(),
             Role::DiffRemoved => Style::new().fg(danger).bg(paper).bold(),
             Role::SyntaxKeyword => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
             Role::SyntaxString => Style::new().fg(ok).bold(),
-            Role::SyntaxComment => Style::new().fg(Color::Rgb(180, 180, 180)),
+            Role::SyntaxComment => Style::new().fg(muted),
             Role::SyntaxNumber => Style::new().fg(warn).bold(),
             Role::SyntaxFunction => Style::new().fg(accent).bold(),
             Role::SelectionTint => Style::new().bg(Color::Rgb(0, 80, 80)),
@@ -766,7 +767,7 @@ impl RolePalette {
             Role::ActorUser => Style::new().fg(ink),
             Role::ActorAssistant => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
             Role::ActorThinking => Style::new().fg(Color::Rgb(220, 160, 255)).bold(),
-            Role::ActorTool => Style::new().fg(Color::Rgb(180, 180, 180)),
+            Role::ActorTool => Style::new().fg(muted),
             Role::ActorPlan => Style::new().fg(warn).bold(),
             Role::ActorSystem => Style::new().fg(accent).bold(),
             Role::ChartSeries1 => Style::new().fg(ok).bold(),
@@ -775,7 +776,7 @@ impl RolePalette {
             Role::ChartSeries4 => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
             Role::ChartAxis => Style::new().fg(ink),
             Role::ChartGrid => Style::new().fg(Color::Rgb(120, 120, 120)),
-            Role::TextFaint => Style::new().fg(Color::Rgb(154, 154, 154)).dim(),
+            Role::TextFaint => Style::new().fg(faint).dim(),
             Role::BackdropWash => Style::new().bg(paper),
         })
     }
@@ -1148,14 +1149,14 @@ mod tests {
                     .add_modifier(Modifier::BOLD),
             ),
             (Role::TextMuted, Style::new().fg(Color::Rgb(122, 138, 122))),
-            (Role::TextDisabled, Style::new().fg(Color::Rgb(74, 87, 74))),
+            (Role::TextDisabled, Style::new().fg(Color::Rgb(82, 96, 82))),
             (
                 Role::TextFaint,
                 Style::new()
-                    .fg(Color::Rgb(74, 87, 74))
+                    .fg(Color::Rgb(94, 109, 94))
                     .add_modifier(Modifier::DIM),
             ),
-            (Role::Border, Style::new().fg(Color::Rgb(42, 51, 44))),
+            (Role::Border, Style::new().fg(Color::Rgb(48, 58, 50))),
             (Role::BorderFocused, Style::new().fg(Color::Rgb(0, 255, 65))),
             (Role::Focus, Style::new().fg(Color::Rgb(51, 255, 106))),
             (
@@ -1172,7 +1173,7 @@ mod tests {
             ),
             (Role::Link, Style::new().fg(Color::Rgb(94, 200, 255))),
             (Role::Input, Style::new().bg(Color::Rgb(13, 16, 13))),
-            (Role::ScrollThumb, Style::new().fg(Color::Rgb(42, 51, 44))),
+            (Role::ScrollThumb, Style::new().fg(Color::Rgb(48, 58, 50))),
             (Role::ScrollTrack, Style::new().fg(Color::Rgb(22, 27, 22))),
             (
                 Role::TabActive,

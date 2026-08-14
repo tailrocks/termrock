@@ -76,10 +76,12 @@ pub(crate) const WHITE: Rgb = Rgb::new(255, 255, 255);
 pub(crate) const TEXT_BODY: Rgb = Rgb::new(214, 224, 214);
 pub(crate) const TEXT_STRONG: Rgb = Rgb::new(240, 245, 240);
 pub(crate) const TEXT_MUTED: Rgb = Rgb::new(122, 138, 122);
-pub(crate) const TEXT_DISABLED: Rgb = Rgb::new(74, 87, 74);
+pub(crate) const TEXT_DISABLED: Rgb = Rgb::new(82, 96, 82);
+/// Meta tier between muted and disabled — carries `DIM` in the role.
+pub(crate) const TEXT_FAINT: Rgb = Rgb::new(94, 109, 94);
 pub(crate) const LINK_FG: Rgb = Rgb::new(94, 200, 255);
 pub(crate) const LINK_FG_HOVER: Rgb = Rgb::new(143, 216, 255);
-pub(crate) const BORDER_GRAY: Rgb = Rgb::new(42, 51, 44);
+pub(crate) const BORDER_GRAY: Rgb = Rgb::new(48, 58, 50);
 pub(crate) const DANGER_RED: Rgb = Rgb::new(255, 94, 122);
 pub(crate) const CYAN: Rgb = Rgb::new(0, 180, 180);
 pub(crate) const WARNING_YELLOW: Rgb = Rgb::new(255, 216, 94);

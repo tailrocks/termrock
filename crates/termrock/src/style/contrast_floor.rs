@@ -58,12 +58,8 @@ impl Measured {
 ///
 /// Ratios recorded at the measurement below are the pre-002 baseline.
 const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
-    // Text ladder: muted and disabled tiers sit too close to the canvas.
-    ("phosphor", "TextMuted on Canvas"),     // 4.46 < 4.50
-    ("phosphor", "TextMuted on Surface"),    // 4.15 < 4.50
-    ("phosphor", "TextDisabled on Canvas"),  // 2.43 < 2.50
-    ("phosphor", "TextDisabled on Surface"), // 2.27 < 2.50
-    ("paper", "TextDisabled on Canvas"),     // 2.38 < 2.50
+    // Text ladder: the light preset still sits too close to its canvas.
+    ("paper", "TextDisabled on Canvas"), // 2.38 < 2.50
     // Surface ladder: the elevation steps are a rounding error apart.
     ("phosphor", "ladder Canvas->Surface"),      // 1.07 < 1.15
     ("phosphor", "ladder Surface->Raised"),      // 1.09 < 1.15
@@ -84,9 +80,6 @@ const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
     ("paper", "DiffAdded on its own tint"),    // 3.00 < 4.50
     ("paper", "DiffRemoved on its own tint"),  // 3.95 < 4.50
     ("paper", "InputInvalid on its own tint"), // 3.95 < 4.50
-    // Disabled input value inherits `TextDisabled` over the input well.
-    ("phosphor", "input Disabled/invalid=false value"), // 2.22 < 2.50
-    ("phosphor", "input Disabled/invalid=true value"),  // 2.22 < 2.50
 ];
 
 fn presets() -> Vec<(&'static str, RolePalette)> {
