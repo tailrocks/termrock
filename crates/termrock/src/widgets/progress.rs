@@ -24,7 +24,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widge
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, Motion, Role, RolePalette},
+    style::{DesignSystem, MotionPolicy, Role, RolePalette},
     text::{display_cols, take_display_cols},
 };
 
@@ -58,9 +58,9 @@ pub enum ProgressKind {
 }
 
 impl ProgressKind {
-    /// Indeterminate frame from [`FrameTick`] + [`Motion`] (deterministic).
+    /// Indeterminate frame from [`FrameTick`] + [`MotionPolicy`] (deterministic).
     #[must_use]
-    pub fn indeterminate_from(tick: FrameTick, motion: Motion) -> Self {
+    pub fn indeterminate_from(tick: FrameTick, motion: MotionPolicy) -> Self {
         let step = tick.spinner_step(DEFAULT_PROGRESS_FRAMES.len(), 80, motion) as u64;
         Self::Indeterminate { tick: step }
     }
@@ -298,7 +298,7 @@ impl ProgressBarState {
 
     /// Kind projection for legacy paint path.
     #[must_use]
-    pub fn kind(&self, tick: FrameTick, motion: Motion) -> ProgressKind {
+    pub fn kind(&self, tick: FrameTick, motion: MotionPolicy) -> ProgressKind {
         if self.is_determinate() {
             ProgressKind::Determinate {
                 fraction: self.fraction(),
@@ -348,7 +348,7 @@ impl ProgressBarState {
 
     /// Animation demand (indeterminate only).
     #[must_use]
-    pub fn animation_demand(&self, tick: FrameTick, motion: Motion) -> AnimationDemand {
+    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
         spinner_demand(tick, motion, self.is_active())
     }
 
@@ -659,7 +659,7 @@ impl<'a> ProgressBar<'a> {
         state: &ProgressBarState,
         system: &'a DesignSystem,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) -> Self {
         let kind = state.kind(tick, motion);
         let meta = state.meta_line();
@@ -743,7 +743,7 @@ impl<'a> ProgressBar<'a> {
         buffer: &mut Buffer,
         state: &mut ProgressBarState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if area.is_empty() || !state.visible {
             return;
@@ -1126,7 +1126,7 @@ fn render_indeterminate(
 
 // silence unused import warning for spinner_step if only used via FrameTick
 #[allow(dead_code)]
-fn _use_spinner_step(tick: FrameTick, motion: Motion) -> usize {
+fn _use_spinner_step(tick: FrameTick, motion: MotionPolicy) -> usize {
     spinner_step(tick, 8, 80, motion)
 }
 
@@ -1342,7 +1342,7 @@ mod tests {
             &mut buf,
             &mut s,
             FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
-            Motion::Off,
+            MotionPolicy::Off,
         );
         assert!(!s.needs_paint());
     }
@@ -1382,12 +1382,12 @@ mod tests {
     fn idle_redraw_when_determinate() {
         let s = ProgressBarState::task(1, 2);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(100), Duration::ZERO);
-        assert!(!s.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(!s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
         let mut ind = ProgressBarState::new(); // total 0
         ind.set_active(true);
-        assert!(ind.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);
         ind.set_active(false);
-        assert!(!ind.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(!ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);
     }
 
     #[test]
@@ -1472,7 +1472,7 @@ mod tests {
                             Duration::from_millis(i * 16),
                             Duration::ZERO,
                         ),
-                        Motion::Full,
+                        MotionPolicy::Full,
                     );
                 })
                 .unwrap();

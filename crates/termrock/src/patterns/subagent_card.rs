@@ -28,7 +28,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::{ActivityKind, ActivityModel, ActivityScope},
-    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, Card, SemanticStatus},
 };
@@ -1084,7 +1084,7 @@ impl<'a> SubagentCard<'a> {
     ) {
         let run = self.run;
         let pulse = if matches!(run.status, SemanticStatus::Running) {
-            if ascii || !matches!(self.system.motion, Motion::Full) {
+            if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
                 if ascii { "." } else { "●" }
             } else {
                 SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
@@ -1339,7 +1339,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let run =
             SubagentRun::new("sa", "reviewer", "review changes").status(SemanticStatus::Running);
         let render = |tick| {

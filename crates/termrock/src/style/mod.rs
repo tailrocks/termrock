@@ -21,14 +21,15 @@ mod quantize;
 mod tokens;
 
 pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
-pub use density::{Density, Motion};
+pub use density::Density;
 pub use glyph::{
     BLOCK_RAMP, BRAILLE_RAMP, GLYPH_CONTEXTS, Glyph, GlyphGroup, GlyphResolved, LEFT_BLOCK_RAMP,
     MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
 };
 pub use motion::{
+    AMBIENT_PEAK, BASIC_TRANSITION_CAP, HEARTBEAT_PERIOD_MS, MotionChannel, MotionPolicy,
     blend_toward, coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness,
-    smoothstep, wave_brightness,
+    shimmer_at, shimmer_cells, smoothstep, wave_brightness,
 };
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,

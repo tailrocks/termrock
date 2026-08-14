@@ -1145,7 +1145,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_rail_is_static() {
-        let system = system().motion(crate::style::Motion::Reduced);
+        let system = system().motion(crate::style::MotionPolicy::Basic);
         let lines = ["streaming", "response"];
         let blocks = [TranscriptBlock::new(1u32, TranscriptKind::Assistant, &lines).active(true)];
         let render = |tick| {

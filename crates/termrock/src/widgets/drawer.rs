@@ -16,7 +16,7 @@
 //! process policy. Opening a drawer must not clear host list/table selection
 //! or scroll offsets — TermRock only owns drawer-local chrome and stack geometry.
 //!
-//! **Motion.** Terminals do not slide-animate; [`Motion::Off`] / [`Motion::Reduced`]
+//! **MotionPolicy.** Terminals do not slide-animate; [`MotionPolicy::Off`] / [`MotionPolicy::Basic`]
 //! selects static chrome (ASCII handles, no spinner) as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
@@ -38,7 +38,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -442,7 +442,7 @@ pub struct DrawerState {
     footer_rows: u16,
     /// Compact handle-only mode (host collapsed).
     handle_only: bool,
-    motion: Motion,
+    motion: MotionPolicy,
 }
 
 impl Default for DrawerState {
@@ -473,7 +473,7 @@ impl DrawerState {
             header_rows: 1,
             footer_rows: 0,
             handle_only: false,
-            motion: Motion::Full,
+            motion: MotionPolicy::Full,
         }
     }
 
@@ -605,8 +605,8 @@ impl DrawerState {
         self.enabled = on;
     }
 
-    /// Motion preference (no-motion → ASCII handle chrome).
-    pub fn set_motion(&mut self, motion: Motion) {
+    /// Motion tier (no-motion → ASCII handle chrome).
+    pub fn set_motion(&mut self, motion: MotionPolicy) {
         self.motion = motion;
     }
 
@@ -928,7 +928,8 @@ impl<'a> Drawer<'a> {
             Role::Border
         };
         let border_style = self.system.style(border);
-        let no_motion = matches!(state.motion, Motion::Off | Motion::Reduced) || self.ascii;
+        let no_motion =
+            matches!(state.motion, MotionPolicy::Off | MotionPolicy::Basic) || self.ascii;
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
@@ -1395,7 +1396,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut state = DrawerState::new();
         state.open = true;
-        state.set_motion(Motion::Off);
+        state.set_motion(MotionPolicy::Off);
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
         Drawer::new("Rail", &system)

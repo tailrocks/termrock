@@ -34,7 +34,7 @@ use ratatui_core::{
 use super::{Surface, SurfaceRecipe};
 use crate::{
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -397,7 +397,7 @@ impl ToastState {
         if self.paused {
             return;
         }
-        let _ = self.presence.advance(tick, Motion::Off);
+        let _ = self.presence.advance(tick, MotionPolicy::Off);
     }
 
     /// Returns whether the toast is visible at this frame.

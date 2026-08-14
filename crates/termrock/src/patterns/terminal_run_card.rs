@@ -25,7 +25,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{
         AccentRail, Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
@@ -898,7 +898,7 @@ impl<'a> TerminalRunCard<'a> {
         if matches!(state.presentation, TerminalRunPresentation::Compact) {
             let running = matches!(run.status, TerminalRunStatus::Running);
             let marker = if running {
-                if ascii || !matches!(self.system.motion, Motion::Full) {
+                if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
                     if ascii { "." } else { "●" }
                 } else {
                     SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
@@ -1339,7 +1339,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let run = TerminalRun::new("r", "cargo test")
             .execute("cargo test")
             .status(TerminalRunStatus::Running);

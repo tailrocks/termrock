@@ -191,7 +191,7 @@ const BUDGETS: [ComponentBudget; 14] = [
     },
     ComponentBudget {
         id: "idle_motion_cadence",
-        component: "Motion",
+        component: "MotionPolicy",
         class: PerfClass::Chrome,
         kind: BudgetKind::IdleRedrawMinPeriod {
             min: Duration::from_millis(33),

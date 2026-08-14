@@ -133,7 +133,7 @@ mod tests {
     use ratatui_core::{buffer::Buffer, layout::Rect};
 
     use super::*;
-    use crate::style::Motion;
+    use crate::style::MotionPolicy;
 
     #[test]
     fn layout_is_safe_at_tiny_widths() {
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn reduced_motion_frames_are_identical() {
         let mut system = DesignSystem::phosphor();
-        system.motion = Motion::Reduced;
+        system.motion = MotionPolicy::Basic;
         let area = Rect::new(0, 0, 4, 12);
         let render = |tick| {
             let mut buffer = Buffer::empty(area);

@@ -36,7 +36,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::activity_shelf::{ActivityItem, ActivityKind},
-    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::SemanticStatus,
     widgets::{AccentRail, Panel},
@@ -803,7 +803,7 @@ impl<'a> WorkingStateCard<'a> {
         };
         let mark = if matches!(work.phase, WorkingPhase::Waiting) {
             if self.ascii { "!" } else { "●" }
-        } else if self.ascii || !matches!(self.system.motion, Motion::Full) {
+        } else if self.ascii || !matches!(self.system.motion, MotionPolicy::Full) {
             if self.ascii { "." } else { "●" }
         } else {
             SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
@@ -1257,7 +1257,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let render = |tick| {
             let area = Rect::new(0, 0, 48, 10);
             let mut buffer = Buffer::empty(area);

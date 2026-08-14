@@ -3,7 +3,7 @@
 
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
 
-use super::{ColorCapability, Density, Glyph, Motion, Role, RolePalette};
+use super::{ColorCapability, Density, Glyph, MotionPolicy, Role, RolePalette};
 use ratatui_core::style::{Modifier, Style};
 
 /// Glyph encoding profile for borders, disclosure, and status markers.
@@ -527,8 +527,8 @@ pub struct DesignSystem {
     pub palette: RolePalette,
     /// Layout density.
     pub density: Density,
-    /// Motion preference.
-    pub motion: Motion,
+    /// Motion tier for animated chrome.
+    pub motion: MotionPolicy,
     /// Glyph policy.
     pub glyphs: GlyphSet,
     /// Resolved spacing.
@@ -615,7 +615,7 @@ impl DesignSystem {
         Self {
             palette,
             density,
-            motion: Motion::default(),
+            motion: MotionPolicy::default(),
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
@@ -642,7 +642,7 @@ impl DesignSystem {
 
     /// Overrides motion.
     #[must_use]
-    pub const fn motion(mut self, motion: Motion) -> Self {
+    pub const fn motion(mut self, motion: MotionPolicy) -> Self {
         self.motion = motion;
         self
     }
@@ -1159,9 +1159,9 @@ mod tests {
     #[test]
     fn reduced_motion_is_distinct() {
         let full = DesignSystem::default();
-        let reduced = DesignSystem::default().motion(Motion::Reduced);
+        let reduced = DesignSystem::default().motion(MotionPolicy::Basic);
         assert!(full.motion.animate_spinners());
-        assert!(!Motion::Off.animate_spinners());
+        assert!(!MotionPolicy::Off.animate_spinners());
         assert_ne!(full.motion, reduced.motion);
     }
 

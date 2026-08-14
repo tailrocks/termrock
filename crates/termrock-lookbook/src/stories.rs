@@ -3622,7 +3622,7 @@ pub fn stories() -> Vec<Story> {
             "motion/presence-spinner",
             "FrameClock presence + spinner",
             "FrameClock",
-            "Motion::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
+            "MotionPolicy::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
             48,
             10,
             motion_presence_story,
@@ -3647,7 +3647,7 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "motion/presence",
-            "Motion presence kit",
+            "MotionPolicy presence kit",
             "Spinner",
             "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
             48,
@@ -3667,7 +3667,7 @@ pub fn stories() -> Vec<Story> {
             "spinner/ascii",
             "Spinner ASCII",
             "Spinner",
-            "ASCII |/-\\ frames with Motion::Off static glyph.",
+            "ASCII |/-\\ frames with MotionPolicy::Off static glyph.",
             24,
             2,
             spinner_ascii_story,
@@ -11420,7 +11420,7 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::{ProgressBar, ProgressBarState, ProgressRecipe, ProgressStatus};
     let mut state = ProgressBarState::transfer(12_582_912, 31_457_280);
     state.set_label("Download");
@@ -11434,7 +11434,7 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         frame.buffer_mut(),
         &mut state,
         FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
@@ -12789,11 +12789,11 @@ fn tooltip_visible_state() -> TooltipState {
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = TooltipState::with_delay(Duration::ZERO);
     state.set_pointer_over(true);
     let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-    let _ = state.advance(tick, Motion::Off);
+    let _ = state.advance(tick, MotionPolicy::Off);
     state
 }
 
@@ -17026,7 +17026,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let state = SpinnerState::new();
     let tick = crate::demo::demo_tick(400);
     Spinner::labeled("Fetching packages", system).paint(
@@ -17034,7 +17034,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 
@@ -17042,7 +17042,7 @@ fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let tick = crate::demo::demo_tick(320);
     let chunks = Layout::vertical([
         Constraint::Length(1),
@@ -17068,7 +17068,7 @@ fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
             frame.buffer_mut(),
             &state,
             tick,
-            Motion::Full,
+            MotionPolicy::Full,
         );
     }
 }
@@ -17077,7 +17077,7 @@ fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::SpinnerVariant;
     let mut state = SpinnerState::new();
     state.set_embedded_in_labeled_control(true);
@@ -17086,14 +17086,14 @@ fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     Spinner::new(system)
         .embedded(true)
         .variant(SpinnerVariant::CompactInline)
-        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+        .paint(area, frame.buffer_mut(), &state, tick, MotionPolicy::Full);
 }
 
 fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
     state.set_ascii(true);
     let tick = crate::demo::demo_tick(160);
@@ -17102,7 +17102,7 @@ fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 
@@ -17110,13 +17110,13 @@ fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
     state.set_phase(ActivityPhase::Reconnecting);
     let tick = crate::demo::demo_tick(200);
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
-        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+        .paint(area, frame.buffer_mut(), &state, tick, MotionPolicy::Full);
 }
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -17972,7 +17972,7 @@ fn loading_tick() -> termrock::runtime::FrameTick {
 }
 
 fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::Panel;
     let _ = Panel::new(system)
         .title("table")
@@ -17983,24 +17983,24 @@ fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &De
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_cancellable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let (overlay, mut st) = example_busy_cancellable(system);
     overlay.paint(
         area,
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_non_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(1),
@@ -18014,12 +18014,12 @@ fn loading_overlay_non_blocking_story(frame: &mut Frame<'_>, area: Rect, system:
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_optimistic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(1),
@@ -18033,12 +18033,12 @@ fn loading_overlay_optimistic_story(frame: &mut Frame<'_>, area: Rect, system: &
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(2),
@@ -18052,12 +18052,12 @@ fn loading_overlay_stale_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::Panel;
     let _ = Panel::new(system)
         .title("workbench")
@@ -18084,7 +18084,7 @@ fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         &mut child,
         system,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 

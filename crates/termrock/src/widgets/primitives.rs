@@ -21,7 +21,7 @@ use crate::{
     },
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, Motion, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 

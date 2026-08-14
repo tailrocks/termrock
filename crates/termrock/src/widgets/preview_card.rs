@@ -39,7 +39,7 @@ use crate::{
         place_overlay,
     },
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, GlyphSet, Motion, Role},
+    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -830,7 +830,7 @@ impl PreviewCardState {
         self.presence = Presence::tooltip(Duration::ZERO);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
         self.presence.request_show(tick);
-        let _ = self.presence.advance(tick, Motion::Off);
+        let _ = self.presence.advance(tick, MotionPolicy::Off);
         PreviewCardOutcome::Pinned
     }
 
@@ -856,14 +856,14 @@ impl PreviewCardState {
         }
     }
 
-    fn effective_delay(&self, motion: Motion) -> Duration {
+    fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            Motion::Off | Motion::Reduced => Duration::ZERO,
-            Motion::Full => self.delay,
+            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Full => self.delay,
         }
     }
 
-    fn rebuild_presence(&mut self, motion: Motion) {
+    fn rebuild_presence(&mut self, motion: MotionPolicy) {
         let d = self.effective_delay(motion);
         self.presence = Presence::tooltip(d);
     }
@@ -900,7 +900,7 @@ impl PreviewCardState {
             return PreviewCardOutcome::Pending;
         }
         if !self.show_requested && !self.presence.is_visible() {
-            self.rebuild_presence(Motion::Full);
+            self.rebuild_presence(MotionPolicy::Full);
             let tick = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -910,12 +910,12 @@ impl PreviewCardState {
             Duration::from_millis(self.synth_elapsed_ms),
             Duration::from_millis(delta_ms),
         );
-        let _ = self.presence.advance(tick, Motion::Full);
+        let _ = self.presence.advance(tick, MotionPolicy::Full);
         self.visibility_outcome()
     }
 
     /// FrameTick-driven advance (canonical).
-    pub fn advance(&mut self, tick: FrameTick, motion: Motion) -> PreviewCardOutcome {
+    pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> PreviewCardOutcome {
         if self.disabled {
             self.force_hide();
             return PreviewCardOutcome::Disabled;
@@ -943,7 +943,8 @@ impl PreviewCardState {
             self.show_requested = true;
         }
         let _ = self.presence.advance(tick, motion);
-        if matches!(motion, Motion::Reduced | Motion::Off) && !self.presence.is_visible() {
+        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.presence.is_visible()
+        {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -959,7 +960,7 @@ impl PreviewCardState {
         pointer_over: bool,
         focus_within: bool,
         selection_active: bool,
-        motion: Motion,
+        motion: MotionPolicy,
     ) -> PreviewCardOutcome {
         self.pointer_over = pointer_over;
         self.focus_within = focus_within;
@@ -1800,7 +1801,7 @@ mod tests {
         let mut state = PreviewCardState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let out = state.advance(tick, Motion::Reduced);
+        let out = state.advance(tick, MotionPolicy::Basic);
         assert!(
             matches!(
                 out,

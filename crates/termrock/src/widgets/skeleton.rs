@@ -9,7 +9,7 @@
 //! [`Spinner`](super::Spinner) when structure is unknown.
 //!
 //! **Motion.** Default is **static** (no shimmer). Optional pulse only under
-//! [`Motion::Full`] and when the host enables it — reduced/off motion never
+//! [`MotionPolicy::Full`] and when the host enables it — reduced/off motion never
 //! animates.
 //!
 //! Research: shadcn Skeleton, terminal loading placeholders — no gratuitous
@@ -20,7 +20,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::take_display_cols,
 };
 
@@ -344,13 +344,13 @@ impl SkeletonState {
 
     /// Whether host should schedule redraw for pulse.
     #[must_use]
-    pub fn should_tick(&self, motion: Motion) -> bool {
-        self.shimmer && self.visible && self.active && matches!(motion, Motion::Full)
+    pub fn should_tick(&self, motion: MotionPolicy) -> bool {
+        self.shimmer && self.visible && self.active && matches!(motion, MotionPolicy::Full)
     }
 
     /// Animation demand — **idle by default**.
     #[must_use]
-    pub fn animation_demand(&self, tick: FrameTick, motion: Motion) -> AnimationDemand {
+    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
         if !self.should_tick(motion) {
             return AnimationDemand::idle();
         }
@@ -364,7 +364,7 @@ impl SkeletonState {
 
     /// Pulse phase 0..3 for alternating dimness (Full + shimmer only).
     #[must_use]
-    pub fn pulse_phase(&self, tick: FrameTick, motion: Motion) -> u8 {
+    pub fn pulse_phase(&self, tick: FrameTick, motion: MotionPolicy) -> u8 {
         if !self.should_tick(motion) {
             return 0;
         }
@@ -473,7 +473,7 @@ impl<'a> Skeleton<'a> {
                 std::time::Duration::ZERO,
                 std::time::Duration::ZERO,
             ),
-            Motion::Off,
+            MotionPolicy::Off,
         );
     }
 
@@ -484,7 +484,7 @@ impl<'a> Skeleton<'a> {
         buffer: &mut Buffer,
         state: &SkeletonState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if area.is_empty() || !state.visible {
             return;
@@ -768,9 +768,13 @@ mod tests {
     fn shimmer_off_by_default_no_redraw() {
         let state = SkeletonState::new();
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        assert!(!state.should_tick(Motion::Full));
-        assert!(!state.animation_demand(tick, Motion::Full).needs_redraw);
-        assert!(!state.animation_demand(tick, Motion::Off).needs_redraw);
+        assert!(!state.should_tick(MotionPolicy::Full));
+        assert!(
+            !state
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
+        assert!(!state.animation_demand(tick, MotionPolicy::Off).needs_redraw);
     }
 
     #[test]
@@ -778,11 +782,15 @@ mod tests {
         let mut state = SkeletonState::new();
         state.set_shimmer(true);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(800), Duration::ZERO);
-        assert!(state.should_tick(Motion::Full));
-        assert!(!state.should_tick(Motion::Reduced));
-        assert!(!state.should_tick(Motion::Off));
-        assert!(state.animation_demand(tick, Motion::Full).needs_redraw);
-        let _ = state.pulse_phase(tick, Motion::Full);
+        assert!(state.should_tick(MotionPolicy::Full));
+        assert!(!state.should_tick(MotionPolicy::Basic));
+        assert!(!state.should_tick(MotionPolicy::Off));
+        assert!(
+            state
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
+        let _ = state.pulse_phase(tick, MotionPolicy::Full);
     }
 
     #[test]
