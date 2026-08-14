@@ -871,10 +871,13 @@ impl<'a> Stepper<'a> {
             };
         }
         let mut style = match status {
+            // The current step is stated by its glyph and its weight, not by a
+            // reversed slab — a solid block reads as a selection the operator
+            // made, not as where they are (plans/008 Step 4).
             StepStatus::Current => self
                 .system
-                .style(Role::Focus)
-                .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD),
             StepStatus::Complete => self.system.style(Role::Success),
             StepStatus::Error => self.system.style(Role::Danger),
             StepStatus::Disabled => self.system.style(Role::TextDisabled),

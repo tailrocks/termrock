@@ -112,6 +112,51 @@ pub enum PasswordStrengthHint {
 }
 
 impl PasswordStrengthHint {
+    /// Meter glyphs for this level, drawn from the shared block ramp.
+    ///
+    /// Strength is a quantity, so it reads as a filled meter rather than as a
+    /// word alone — three cells of `▁▃▅` say more at a glance than "fair"
+    /// (plans/008 Step 5).
+    #[must_use]
+    pub fn meter(self, ascii: bool) -> String {
+        let filled = match self {
+            Self::None | Self::Empty | Self::Pending => return String::new(),
+            Self::Weak => 1usize,
+            Self::Fair => 2,
+            Self::Good => 3,
+            Self::Strong => 4,
+        };
+        if ascii {
+            let mut out = String::from("[");
+            for i in 0..4 {
+                out.push(if i < filled { '#' } else { '-' });
+            }
+            out.push(']');
+            return out;
+        }
+        let ramp = crate::style::BLOCK_RAMP;
+        (0..4)
+            .map(|i| {
+                if i < filled {
+                    ramp[(i + 1) * 2]
+                } else {
+                    ramp[0]
+                }
+            })
+            .collect()
+    }
+
+    /// Semantic tone for this level.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Weak => Role::Danger,
+            Self::Fair => Role::Warning,
+            Self::Good | Self::Strong => Role::Success,
+            Self::None | Self::Empty | Self::Pending => Role::TextMuted,
+        }
+    }
+
     /// Short label for paint / a11y (never contains the secret).
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -794,14 +839,22 @@ impl<'a> PasswordInput<'a> {
             let rx = area.right().saturating_sub(1);
             let ry = ti_parts.field.y;
             reveal_rect = Some(Rect::new(rx, ry, 1, 1));
-            let mark = if revealed { "o" } else { "*" };
+            let mark = self
+                .system
+                .glyphs
+                .resolve(if revealed {
+                    crate::style::Glyph::EmptyCircle
+                } else {
+                    crate::style::Glyph::Mask
+                })
+                .text;
             buffer.set_stringn(
                 rx,
                 ry,
                 mark,
                 1,
                 self.system.style(if state.focused {
-                    Role::Focus
+                    Role::Accent
                 } else {
                     Role::TextMuted
                 }),
@@ -819,11 +872,29 @@ impl<'a> PasswordInput<'a> {
                     .y
                     .saturating_add(2)
                     .min(area.bottom().saturating_sub(1));
+                let meter = if state.pending {
+                    String::new()
+                } else {
+                    self.strength.meter(self.system.glyphs.is_ascii())
+                };
+                let mut x = area.x;
+                if !meter.is_empty() {
+                    let w = crate::text::display_cols(&meter) as u16;
+                    buffer.set_stringn(
+                        x,
+                        y,
+                        &meter,
+                        usize::from(w),
+                        self.system.style(self.strength.role()),
+                    );
+                    x = x.saturating_add(w.saturating_add(1));
+                }
+                let room = area.right().saturating_sub(x);
                 buffer.set_stringn(
-                    area.x,
+                    x,
                     y,
-                    take_display_cols(status, usize::from(area.width)),
-                    usize::from(area.width),
+                    take_display_cols(status, usize::from(room)),
+                    usize::from(room),
                     self.system.style(Role::TextMuted),
                 );
             }

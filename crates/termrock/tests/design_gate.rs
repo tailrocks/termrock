@@ -1183,3 +1183,89 @@ fn accent_budget() {
         over.join("\n  ")
     );
 }
+
+/// Every field in the input family wears the same chrome.
+///
+/// TextInput is the substrate for six delegating widgets. Before
+/// `input_recipe` had consumers, each of them resolved its own well, its own
+/// value tone and its own focus cue — so "focused" looked different in six
+/// places (plans/008 Step 7).
+#[test]
+fn inputs_share_field_chrome() {
+    use termrock::{
+        style::{DesignSystem, Role},
+        widgets::{
+            NumberInput, NumberInputState, PasswordInput, PasswordInputState, SearchInput,
+            SearchInputState, TextInput, TextInputState, TokenField, TokenFieldState,
+        },
+    };
+
+    let system = DesignSystem::phosphor();
+    let area = Rect::new(0, 0, 24, 2);
+    let well = system
+        .style(Role::Sunken)
+        .bg
+        .expect("the field well carries a background");
+    let cue = system
+        .style(Role::BorderFocused)
+        .fg
+        .expect("the focus role carries a foreground");
+
+    let mut frames: Vec<(&str, Buffer)> = Vec::new();
+
+    let mut text = TextInputState::new("value");
+    text.set_focused(true);
+    frames.push((
+        "TextInput",
+        painted(area, |buffer| {
+            TextInput::new("Name", &system).paint(area, buffer, &mut text);
+        }),
+    ));
+
+    let mut number = NumberInputState::new();
+    number.set_focused(true);
+    frames.push((
+        "NumberInput",
+        painted(area, |buffer| {
+            NumberInput::new("Count", &system).paint(area, buffer, &mut number);
+        }),
+    ));
+
+    let mut search = SearchInputState::new();
+    search.set_focused(true);
+    frames.push((
+        "SearchInput",
+        painted(area, |buffer| {
+            SearchInput::new(&system).paint(area, buffer, &mut search);
+        }),
+    ));
+
+    let mut password = PasswordInputState::new();
+    password.set_focused(true);
+    frames.push((
+        "PasswordInput",
+        painted(area, |buffer| {
+            PasswordInput::new("Secret", &system).paint(area, buffer, &mut password);
+        }),
+    ));
+
+    let mut tokens = TokenFieldState::new();
+    tokens.set_focused(true);
+    frames.push((
+        "TokenField",
+        painted(area, |buffer| {
+            TokenField::new(&system).paint(area, buffer, &mut tokens);
+        }),
+    ));
+
+    for (name, buffer) in &frames {
+        assert!(
+            buffer.content().iter().any(|cell| cell.bg == well),
+            "{name} does not paint the shared field well"
+        );
+        assert!(
+            buffer.content().iter().any(|cell| cell.fg == cue),
+            "{name} does not paint the shared focus cue"
+        );
+    }
+}

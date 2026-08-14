@@ -356,6 +356,54 @@ pub struct Slider<'a> {
     colorless: bool,
 }
 
+/// One chrome answer for both sliders.
+///
+/// Slider and RangeSlider disagreed: each resolved its own track, fill and
+/// thumb styles, and both flooded the *track fill* with `Role::Accent` when
+/// focused — a focused slider was a bar of brand green with a thumb hidden
+/// inside it. The fill is data, so it wears a series role; the accent is spent
+/// on the one cell the operator is moving (plans/008 Step 4).
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct SliderChrome {
+    /// Unfilled track.
+    pub(crate) track: ratatui_core::style::Style,
+    /// Filled portion of the track.
+    pub(crate) fill: ratatui_core::style::Style,
+    /// The thumb cell.
+    pub(crate) thumb: ratatui_core::style::Style,
+}
+
+pub(crate) fn slider_chrome(
+    system: &DesignSystem,
+    colorless: bool,
+    enabled: bool,
+    active: bool,
+) -> SliderChrome {
+    if !enabled {
+        let disabled = system.style(Role::TextDisabled);
+        return SliderChrome {
+            track: disabled,
+            fill: disabled,
+            thumb: disabled,
+        };
+    }
+    let mut thumb = system
+        .style(if active {
+            Role::Accent
+        } else {
+            Role::TextStrong
+        })
+        .add_modifier(Modifier::BOLD);
+    if mono(system, colorless) {
+        thumb = thumb.add_modifier(Modifier::REVERSED);
+    }
+    SliderChrome {
+        track: system.style(Role::Border),
+        fill: system.style(Role::ChartSeries1),
+        thumb,
+    }
+}
+
 impl<'a> Slider<'a> {
     /// Bounds + design system.
     #[must_use]
@@ -751,38 +799,25 @@ impl<'a> Slider<'a> {
         }
     }
 
+    fn chrome(&self, state: &SliderState) -> SliderChrome {
+        slider_chrome(
+            self.system,
+            self.colorless,
+            state.enabled,
+            state.focused || state.dragging,
+        )
+    }
+
     fn track_style(&self, state: &SliderState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            self.system.style(Role::TextDisabled)
-        } else {
-            self.system.style(Role::Border)
-        }
+        self.chrome(state).track
     }
 
     fn fill_style(&self, state: &SliderState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            self.system.style(Role::TextDisabled)
-        } else if state.focused {
-            self.system.style(Role::Accent)
-        } else {
-            self.system.style(Role::TextStrong)
-        }
+        self.chrome(state).fill
     }
 
     fn handle_style(&self, state: &SliderState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
-        let mut s = if state.focused || state.dragging {
-            self.system.style(Role::Focus)
-        } else {
-            self.system.style(Role::TextStrong)
-        };
-        s = s.add_modifier(Modifier::BOLD);
-        if mono(self.system, self.colorless) {
-            s = s.add_modifier(Modifier::REVERSED);
-        }
-        s
+        self.chrome(state).thumb
     }
 
     fn set_value(&self, state: &mut SliderState, value: f64) -> SliderOutcome {
@@ -1359,27 +1394,21 @@ impl<'a> RangeSlider<'a> {
                 RangeThumb::Start => is_start,
                 RangeThumb::End => is_end,
             };
-            let style = if (is_start || is_end) && state.focused && active {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
-            } else if is_start || is_end {
-                let mut s = self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD);
-                if mono(self.system, self.colorless) {
-                    s = s.add_modifier(Modifier::REVERSED);
-                }
-                s
+            // Same chrome answer as Slider: the thumb the operator is moving
+            // carries the accent, the range between them is data
+            // (plans/008 Step 4).
+            let chrome = slider_chrome(
+                self.system,
+                self.colorless,
+                state.enabled,
+                state.focused && active,
+            );
+            let style = if is_start || is_end {
+                chrome.thumb
             } else if in_range {
-                if state.focused {
-                    self.system.style(Role::Accent)
-                } else {
-                    self.system.style(Role::TextStrong)
-                }
+                chrome.fill
             } else {
-                self.system.style(Role::Border)
+                chrome.track
             };
             buffer.set_stringn(track.x.saturating_add(i), track.y, ch, 1, style);
         }

@@ -400,7 +400,11 @@ impl<'a> InputOtp<'a> {
                 }
             };
             let focused_slot = state.focused && i == state.cursor;
-            let style = if focused_slot {
+            // Slots are fields: they sit in the same sunken well the rest of
+            // the input family uses, so an OTP row reads as somewhere to type
+            // rather than as three loose brackets (plans/008 Step 5).
+            let well = self.system.style(Role::Sunken).bg;
+            let mut style = if focused_slot {
                 // The slot under the cursor is one cell: reverse it.
                 self.system
                     .style(Role::Accent)
@@ -410,6 +414,9 @@ impl<'a> InputOtp<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
+            if !focused_slot && let Some(bg) = well {
+                style = style.bg(bg);
+            }
             let cell = if self.ascii {
                 format!("[{ch}]")
             } else {

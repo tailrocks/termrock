@@ -23,7 +23,7 @@ run its drift check, and update your row when done.
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | DONE |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | DONE |
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | DONE (agent C: migrations/0298, 0300, 0301; gate green. Remainder routed — see Execution notes) |
-| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | IN PROGRESS (agent C: Steps 1-3 landed by the design lane before it ended; Steps 4-7 in progress) |
+| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | DONE (Steps 1-3 by the design lane; Steps 4-7 by agent C — migrations/0312, `inputs_share_field_chrome` green. Form two-line rows deferred to 015, see notes) |
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | DONE (agent C: all seven steps — migrations/0302, 0307, 0308, 0309, 0310, 0311; neon-fill gate ACTIVE and green) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
@@ -432,6 +432,25 @@ the well, value tone, placeholder and cursor while reserving the prompt column
 in **every** state so a value never shifts sideways when focus arrives. All
 input-family tests pass on it. Ask agent C for the diff, or rewrite it — it is
 one screen of code either way.
+
+### Plan 008 (done — one deferral, named)
+
+Steps 1-3 landed under the design lane (`mono()`/`ascii_glyphs()`, `TextInput`
+adopting `input_recipe` with the reserved prompt column, `paint_field_message`,
+`required`, `a_focused_field_says_so`). Agent C finished it:
+
+- **Step 4**: one `slider_chrome` for Slider and RangeSlider — the track fill
+  is a series role, not the accent, and the thumb is the one accent cell. The
+  stepper's current step loses its reversed slab.
+- **Step 5**: OTP slots sit in the field well; password strength paints a
+  block-ramp meter toned by level; the reveal toggle comes from the catalog.
+- **Step 7**: `inputs_share_field_chrome` renders five family members focused
+  and asserts they share the well and the cue.
+
+**Step 6 (form rows real) is deferred to plan 015**, which already owns
+"breathing rows" and the `FieldRow` two-line mode. Doing the row-height
+semantics twice is how 007 got executed twice; 015 has the better claim
+because it holds the adjacent chip-recipe and row-rhythm work.
 
 ### Plan 009 (done)
 
