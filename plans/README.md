@@ -24,7 +24,7 @@ run its drift check, and update your row when done.
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | DONE |
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | DONE (agent C: migrations/0298, 0300, 0301; gate green. Remainder routed — see Execution notes) |
 | 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | CLAIMED by the design lane (agent C yielded mid-Step-2; handover diff in the Execution notes) |
-| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | IN PROGRESS (agent C — claimed) |
+| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | IN PROGRESS (agent C: Step 7 gate ACTIVE and green, Step 3 affordances DONE, Step 4 completion border DONE — migrations/0302; Steps 1/2/5/6 + tooltip/drawer chrome remain, see Execution notes) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
@@ -398,6 +398,40 @@ the well, value tone, placeholder and cursor while reserving the prompt column
 in **every** state so a value never shifts sideways when focus arrives. All
 input-family tests pass on it. Ask agent C for the diff, or rewrite it — it is
 one screen of code either way.
+
+### Plan 009 (in progress — what landed and what is left)
+
+Landed (migrations/0302): Step 7's gate —
+`design_gate::no_widget_paints_selection_fill_by_default` is off `#[ignore]`
+and green, which is the end-to-end check that plans 004-007 really moved every
+collection onto the row grammar; the whole gate file now runs with nothing
+skipped. Step 3's discarded affordances: FilePicker's footer, AlertDialog's
+confirm phrase, Combobox's escalated validation and its chevron. Step 4's
+completion-menu border, which claimed `BorderFocused` while declaring itself
+non-focusable — it now takes `focused(bool)`, default false.
+
+Left, in rough order of value:
+
+1. **Step 1 — `OverlayHeader` + hint unification.** Eight overlays hand-roll
+   footer hint strings with three different separators, and titles are placed
+   four different ways. The single largest coherence win left in the widget
+   layer.
+2. **Step 5 — permission quiet danger chrome.** The information diet already
+   landed (migrations/0290): the collapsed frame keeps only safety facts and
+   `d details` opens the rest. What remains is chrome: drop the AccentRail,
+   `!` title prefix scaled by risk, provenance through `KeyValueList`.
+3. **Step 2 — empty/loading/error adoption.** `EmptyState`/`ErrorState` still
+   have zero overlay adopters; four ad-hoc `"(empty)"`-style literals remain.
+4. **Step 4 remainder — tooltip and drawer chrome.** Tooltip's `Plain` and
+   `Shortcut` variants paint bare text over live content; both need the
+   overlay fill, a pad and a quiet outline, which changes `measure_cols` and
+   ripples into hosts that size tooltips. The drawer's full four-sided border
+   plus its handle column makes a triple rule at the seam; the fix needs
+   per-side borders on `Surface`, which is shared chrome — worth doing
+   deliberately rather than as a corner of this plan.
+5. **Step 6 — picker column discipline**, including the recorded API gap:
+   `notification_center` formats `t{epoch}` and has no clock input to make it
+   relative.
 
 ## Dependency notes
 

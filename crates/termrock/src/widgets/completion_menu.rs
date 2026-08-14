@@ -954,6 +954,7 @@ pub struct CompletionMenu<'a, Id> {
     preferred: CompletionMenuSize,
     ascii: bool,
     colorless: bool,
+    focused: bool,
     /// When set, paint into this rect instead of re-placing (stack geometry).
     force_area: Option<Rect>,
 }
@@ -971,6 +972,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             candidates,
             system,
             empty_message: "No matches",
+            focused: false,
             bounds,
             anchor,
             preferred: CompletionMenuSize {
@@ -1005,6 +1007,19 @@ impl<'a, Id> CompletionMenu<'a, Id> {
     }
 
     /// Reduced-color roles.
+    #[must_use]
+    /// Whether the menu itself owns focus.
+    ///
+    /// Defaults to `false`: a completion menu floats under an editor that
+    /// keeps the keyboard, and only the interaction owner wears the focused
+    /// border.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// Forces monochrome paint (host capability override).
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
@@ -1143,10 +1158,13 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         state.viewport_height = usize::from(list_body.height.max(1));
         state.reconcile(self.candidates);
 
-        let border = if self.colorless {
-            self.system.style(Role::Border)
-        } else {
+        // The menu declares itself non-focusable — the editor keeps focus — so
+        // it must not wear the focused border. A host that gives the menu its
+        // own focus says so with `focused(true)` (plans/009 Step 4).
+        let border = if self.focused && !self.colorless {
             self.system.style(Role::BorderFocused)
+        } else {
+            self.system.style(Role::Border)
         };
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
