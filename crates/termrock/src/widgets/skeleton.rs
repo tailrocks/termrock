@@ -21,7 +21,6 @@ use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick},
     style::{DesignSystem, MotionPolicy, Role},
-    text::take_display_cols,
 };
 
 /// Default fill glyph (Unicode block).
@@ -29,7 +28,7 @@ pub const SKELETON_FILL_UNICODE: &str = "░";
 /// ASCII fill glyph.
 pub const SKELETON_FILL_ASCII: &str = "#";
 /// Default pulse period when shimmer is enabled (ms).
-pub const SKELETON_PULSE_PERIOD_MS: u64 = 400;
+pub const SKELETON_SHIMMER_PERIOD_MS: u64 = 1_500;
 
 // ── Shapes ──────────────────────────────────────────────────────────────────
 
@@ -357,19 +356,9 @@ impl SkeletonState {
         AnimationDemand {
             needs_redraw: true,
             next_deadline: Some(
-                tick.now() + std::time::Duration::from_millis(SKELETON_PULSE_PERIOD_MS),
+                tick.now() + std::time::Duration::from_millis(SKELETON_SHIMMER_PERIOD_MS),
             ),
         }
-    }
-
-    /// Pulse phase 0..3 for alternating dimness (Full + shimmer only).
-    #[must_use]
-    pub fn pulse_phase(&self, tick: FrameTick, motion: MotionPolicy) -> u8 {
-        if !self.should_tick(motion) {
-            return 0;
-        }
-        let step = tick.elapsed().as_millis() as u64 / SKELETON_PULSE_PERIOD_MS;
-        (step % 4) as u8
     }
 }
 
@@ -494,13 +483,20 @@ impl<'a> Skeleton<'a> {
         } else {
             SKELETON_FILL_UNICODE
         };
-        let base_role = Role::TextDisabled;
-        let pulse = state.pulse_phase(tick, motion);
-        let style = if pulse == 0 || pulse == 2 {
-            self.system.style(base_role)
-        } else {
-            // Subtle alternate — still TextDisabled family, not flashy
-            self.system.style(Role::TextMuted)
+        // A band travels across the shape; the block never pulses as one unit,
+        // because a whole-block pulse reads as a spinner and a skeleton must
+        // not claim work is happening at a rate (motion SoT §6).
+        let shimmer = Shimmer {
+            base: self.system.style(Role::TextDisabled),
+            raised: self.system.style(Role::TextMuted),
+            policy: if state.should_tick(motion) {
+                motion
+            } else {
+                MotionPolicy::Off
+            },
+            elapsed_ms: tick.elapsed_ms(),
+            origin_x: area.x,
+            cols: area.width,
         };
 
         let mut y = area.y;
@@ -525,7 +521,7 @@ impl<'a> Skeleton<'a> {
                 Rect::new(area.x, y, area.width, remain_h),
                 buffer,
                 fill_ch,
-                style,
+                &shimmer,
             );
         }
         // Reserved height: leave rest empty (structure hold)
@@ -572,7 +568,7 @@ fn paint_shape(
     area: Rect,
     buffer: &mut Buffer,
     fill_ch: &str,
-    style: ratatui_core::style::Style,
+    shimmer: &Shimmer,
 ) -> u16 {
     if area.is_empty() {
         return area.y;
@@ -582,7 +578,7 @@ fn paint_shape(
         | SkeletonShape::Row { indent, width_pct } => {
             if area.height > 0 {
                 paint_bar(
-                    area.x, area.y, area.width, indent, width_pct, buffer, fill_ch, style,
+                    area.x, area.y, area.width, indent, width_pct, buffer, fill_ch, shimmer,
                 );
             }
             area.y.saturating_add(1).min(area.bottom())
@@ -590,7 +586,7 @@ fn paint_shape(
         SkeletonShape::Card { header, body_lines } => {
             let mut y = area.y;
             if header && y < area.bottom() {
-                paint_bar(area.x, y, area.width, 0, 50, buffer, fill_ch, style);
+                paint_bar(area.x, y, area.width, 0, 50, buffer, fill_ch, shimmer);
                 y = y.saturating_add(1);
             }
             let n = body_lines.max(1);
@@ -599,7 +595,7 @@ fn paint_shape(
                     break;
                 }
                 let pct = if i + 1 == n { 55 } else { 90 };
-                paint_bar(area.x, y, area.width, 0, pct, buffer, fill_ch, style);
+                paint_bar(area.x, y, area.width, 0, pct, buffer, fill_ch, shimmer);
                 y = y.saturating_add(1);
             }
             y.min(area.bottom())
@@ -624,14 +620,7 @@ fn paint_shape(
                     }
                     let w = col_w.min(area.right().saturating_sub(x));
                     if w > 0 {
-                        let fill = fill_ch.repeat(usize::from(w));
-                        buffer.set_stringn(
-                            x,
-                            y,
-                            &take_display_cols(&fill, usize::from(w)),
-                            usize::from(w),
-                            style,
-                        );
+                        paint_run(x, y, w, buffer, fill_ch, shimmer);
                     }
                     x = x
                         .saturating_add(w)
@@ -658,8 +647,7 @@ fn paint_shape(
                     let x = area
                         .x
                         .saturating_add(indent.min(area.width.saturating_sub(1)));
-                    let fill = fill_ch.repeat(usize::from(w));
-                    buffer.set_stringn(x, y, &fill, usize::from(w), style);
+                    paint_run(x, y, w, buffer, fill_ch, shimmer);
                 }
                 y = y.saturating_add(1);
             }
@@ -676,7 +664,7 @@ fn paint_bar(
     width_pct: u8,
     buffer: &mut Buffer,
     fill_ch: &str,
-    style: ratatui_core::style::Style,
+    shimmer: &Shimmer,
 ) {
     if area_w == 0 {
         return;
@@ -690,8 +678,68 @@ fn paint_bar(
     let w = ((u32::from(avail) * u32::from(pct)) / 100).max(1) as u16;
     let w = w.min(avail);
     let x = origin_x.saturating_add(indent);
-    let fill = fill_ch.repeat(usize::from(w));
-    buffer.set_stringn(x, y, &fill, usize::from(w), style);
+    paint_run(x, y, w, buffer, fill_ch, shimmer);
+}
+
+/// Paint `w` filled cells at `(x, y)`, sampling the sweep per column.
+///
+/// One write per distinct style rather than one per cell: the band only changes
+/// tone every few columns, so a bar costs a handful of writes.
+fn paint_run(x: u16, y: u16, w: u16, buffer: &mut Buffer, fill_ch: &str, shimmer: &Shimmer) {
+    let cells = (0..w).map(|i| (fill_ch, shimmer.style_at(x.saturating_add(i))));
+    let mut cursor = x;
+    for (text, style) in coalesce_runs(cells) {
+        let cols = u16::try_from(text.chars().count()).unwrap_or(u16::MAX);
+        buffer.set_stringn(cursor, y, &text, usize::from(cols), style);
+        cursor = cursor.saturating_add(cols);
+    }
+}
+
+/// Merge neighbouring cells that share a style into one write.
+fn coalesce_runs<'a>(
+    cells: impl Iterator<Item = (&'a str, ratatui_core::style::Style)>,
+) -> Vec<(String, ratatui_core::style::Style)> {
+    let mut runs: Vec<(String, ratatui_core::style::Style)> = Vec::new();
+    for (text, style) in cells {
+        match runs.last_mut() {
+            Some((run, previous)) if *previous == style => run.push_str(text),
+            _ => runs.push((text.to_string(), style)),
+        }
+    }
+    runs
+}
+
+/// Samples the travelling shimmer band for one skeleton paint.
+///
+/// `policy` is already resolved against the state's shimmer opt-in, so an
+/// opted-out skeleton samples as `Off` and every cell paints the base tone.
+struct Shimmer {
+    base: ratatui_core::style::Style,
+    raised: ratatui_core::style::Style,
+    policy: MotionPolicy,
+    elapsed_ms: u64,
+    origin_x: u16,
+    cols: u16,
+}
+
+impl Shimmer {
+    fn style_at(&self, x: u16) -> ratatui_core::style::Style {
+        let alpha = crate::style::shimmer_at(
+            self.policy,
+            self.elapsed_ms,
+            x.saturating_sub(self.origin_x),
+            self.cols,
+            SKELETON_SHIMMER_PERIOD_MS,
+        );
+        if alpha <= f32::EPSILON {
+            return self.base;
+        }
+        let (Some(base), Some(raised)) = (self.base.fg, self.raised.fg) else {
+            return self.base;
+        };
+        self.base
+            .fg(crate::style::blend_toward(base, raised, alpha))
+    }
 }
 
 impl Widget for &Skeleton<'_> {
@@ -790,7 +838,74 @@ mod tests {
                 .animation_demand(tick, MotionPolicy::Full)
                 .needs_redraw
         );
-        let _ = state.pulse_phase(tick, MotionPolicy::Full);
+    }
+
+    #[test]
+    fn shimmer_sweeps_and_never_pulses_as_one_block() {
+        let system = system();
+        let mut state = SkeletonState::new();
+        state.set_shimmer(true);
+        let area = Rect::new(0, 0, 24, 1);
+        let row = |ms: u64| -> Vec<ratatui_core::style::Style> {
+            let mut buf = Buffer::empty(area);
+            Skeleton::new(1, &system).paint_with_state(
+                area,
+                &mut buf,
+                &state,
+                FrameTick::manual(
+                    Instant::now(),
+                    Duration::from_millis(ms),
+                    Duration::from_millis(16),
+                ),
+                MotionPolicy::Full,
+            );
+            (0..area.width).map(|x| buf[(x, 0)].style()).collect()
+        };
+
+        let early = row(SKELETON_SHIMMER_PERIOD_MS / 4);
+        let mid = row(SKELETON_SHIMMER_PERIOD_MS / 2);
+        assert_ne!(early, mid, "the band must travel");
+
+        // The defining property: a *band*, so one row holds more than one tone.
+        // A whole-block pulse would make every cell identical and read as a
+        // spinner, which the skeleton contract forbids.
+        let distinct = early.iter().collect::<std::collections::HashSet<_>>().len();
+        assert!(
+            distinct > 1,
+            "skeleton pulsed as one block instead of sweeping"
+        );
+    }
+
+    #[test]
+    fn shimmer_implies_no_spinner_frames() {
+        // A skeleton says "this shape is coming", never "work is happening at
+        // this rate" — so no cell may carry a spinner frame.
+        let system = system();
+        let mut state = SkeletonState::new();
+        state.set_shimmer(true);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buf = Buffer::empty(area);
+        Skeleton::card(2, &system).paint_with_state(
+            area,
+            &mut buf,
+            &state,
+            FrameTick::manual(
+                Instant::now(),
+                Duration::from_millis(320),
+                Duration::from_millis(16),
+            ),
+            MotionPolicy::Full,
+        );
+        let painted: String = buf.content().iter().map(|c| c.symbol()).collect();
+        for frame in crate::style::SPINNER_BRAILLE_FRAMES
+            .iter()
+            .chain(crate::style::SPINNER_DOT_PULSE_FRAMES)
+        {
+            assert!(
+                !painted.contains(frame),
+                "skeleton painted spinner frame {frame:?}"
+            );
+        }
     }
 
     #[test]

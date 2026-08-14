@@ -738,7 +738,7 @@ pub use sidebar::{
     sidebar_presentation_for_width,
 };
 pub use skeleton::{
-    SKELETON_FILL_ASCII, SKELETON_FILL_UNICODE, SKELETON_PULSE_PERIOD_MS, Skeleton, SkeletonLayout,
+    SKELETON_FILL_ASCII, SKELETON_FILL_UNICODE, SKELETON_SHIMMER_PERIOD_MS, Skeleton, SkeletonLayout,
     SkeletonRecipe, SkeletonShape, SkeletonState,
 };
 pub use slash_command_menu::bench as slash_command_menu_bench;

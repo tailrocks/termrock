@@ -310,6 +310,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0294 | `v0.14.0` | [Silent clips say what they held back](migrations/0294-v0.14.0-silent-clips.md) |
 | 0295 | `v0.14.0` | [Underline means "link", and nothing else](migrations/0295-v0.14.0-underline-free-interaction.md) |
 | 0296 | `v0.14.0` | [One selection language for every collection](migrations/0296-v0.14.0-one-selection-language.md) |
+| 0297 | `v0.14.0` | [Skeleton sweeps instead of pulsing](migrations/0297-v0.14.0-skeleton-shimmer-sweep.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
