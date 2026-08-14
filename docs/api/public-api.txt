@@ -36367,6 +36367,54 @@ pub unsafe fn termrock::widgets::CopyPayload::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CopyPayload
 pub fn termrock::widgets::CopyPayload::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CopyPayload
+#[non_exhaustive] pub enum termrock::widgets::DangerChrome
+pub termrock::widgets::DangerChrome::Loud
+pub termrock::widgets::DangerChrome::Quiet
+impl core::clone::Clone for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::clone(&self) -> termrock::widgets::DangerChrome
+impl core::cmp::Eq for termrock::widgets::DangerChrome
+impl core::cmp::PartialEq for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::eq(&self, &termrock::widgets::DangerChrome) -> bool
+impl core::default::Default for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::default() -> termrock::widgets::DangerChrome
+impl core::fmt::Debug for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::widgets::DangerChrome
+impl core::marker::StructuralPartialEq for termrock::widgets::DangerChrome
+impl core::marker::Freeze for termrock::widgets::DangerChrome
+impl core::marker::Send for termrock::widgets::DangerChrome
+impl core::marker::Sync for termrock::widgets::DangerChrome
+impl core::marker::Unpin for termrock::widgets::DangerChrome
+impl core::marker::UnsafeUnpin for termrock::widgets::DangerChrome
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DangerChrome
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DangerChrome
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DangerChrome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DangerChrome::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DangerChrome where U: core::convert::From<T>
+pub fn termrock::widgets::DangerChrome::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DangerChrome where U: core::convert::Into<T>
+pub type termrock::widgets::DangerChrome::Error = core::convert::Infallible
+pub fn termrock::widgets::DangerChrome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DangerChrome where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DangerChrome::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DangerChrome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DangerChrome where T: core::clone::Clone
+pub type termrock::widgets::DangerChrome::Owned = T
+pub fn termrock::widgets::DangerChrome::clone_into(&self, &mut T)
+pub fn termrock::widgets::DangerChrome::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DangerChrome where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DangerChrome::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DangerChrome where T: ?core::marker::Sized
+pub fn termrock::widgets::DangerChrome::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DangerChrome where T: ?core::marker::Sized
+pub fn termrock::widgets::DangerChrome::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DangerChrome where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DangerChrome::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DangerChrome
+pub fn termrock::widgets::DangerChrome::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DangerChrome
 #[non_exhaustive] pub enum termrock::widgets::DataColumnWidth
 pub termrock::widgets::DataColumnWidth::Fill(core::num::nonzero::NonZeroU16)
 pub termrock::widgets::DataColumnWidth::Fixed(u16)
@@ -64317,6 +64365,7 @@ pub const fn termrock::widgets::Dialog<'a>::description(self, &'a str) -> Self
 pub const fn termrock::widgets::Dialog<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Dialog<'a>::footer_hint(self, &'a str) -> Self
 pub const fn termrock::widgets::Dialog<'a>::from_system(&'a str, ratatui_core::text::text::Text<'a>, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Dialog<'a>::hints(self, &'a [termrock::widgets::Hint<'a>]) -> Self
 pub const fn termrock::widgets::Dialog<'a>::loading(self, bool) -> Self
 pub const fn termrock::widgets::Dialog<'a>::new(&'a str, ratatui_core::text::text::Text<'a>, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Dialog<'a>::paint<Id>(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DialogState<Id>, u16)
@@ -74444,6 +74493,7 @@ pub fn termrock::widgets::NotificationCenterState::set_ascii(&mut self, bool)
 pub fn termrock::widgets::NotificationCenterState::set_capacity(&mut self, usize)
 pub fn termrock::widgets::NotificationCenterState::set_filter(&mut self, termrock::widgets::NotificationFilter) -> termrock::widgets::NotificationCenterOutcome
 pub fn termrock::widgets::NotificationCenterState::set_focused(&mut self, bool)
+pub const fn termrock::widgets::NotificationCenterState::set_now_secs(&mut self, u64)
 pub fn termrock::widgets::NotificationCenterState::set_recipe(&mut self, termrock::widgets::NotificationRecipe)
 pub const fn termrock::widgets::NotificationCenterState::slots(&self) -> termrock::widgets::NotificationCenterSlots
 pub fn termrock::widgets::NotificationCenterState::status_line(&self) -> alloc::string::String
@@ -76553,6 +76603,7 @@ pub struct termrock::widgets::PermissionPrompt<'a>
 impl<'a> termrock::widgets::PermissionPrompt<'a>
 pub const fn termrock::widgets::PermissionPrompt<'a>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::PermissionPrompt<'a>::colorless(self, bool) -> Self
+pub const fn termrock::widgets::PermissionPrompt<'a>::danger_chrome(self, termrock::widgets::DangerChrome) -> Self
 pub const fn termrock::widgets::PermissionPrompt<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::PermissionPrompt<'a>::new(&'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PermissionPrompt<'_>
@@ -84122,6 +84173,7 @@ pub struct termrock::widgets::Surface<'a>
 impl<'a> termrock::widgets::Surface<'a>
 pub const fn termrock::widgets::Surface<'a>::border_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Surface<'a>::bordered(self, bool) -> Self
+pub const fn termrock::widgets::Surface<'a>::borders(self, ratatui_widgets::borders::Borders) -> Self
 pub const fn termrock::widgets::Surface<'a>::content_inset(self) -> Self
 pub const fn termrock::widgets::Surface<'a>::elevation(self, termrock::widgets::SurfaceElevation) -> Self
 pub const fn termrock::widgets::Surface<'a>::fill(self, termrock::widgets::SurfaceFill) -> Self
@@ -90221,7 +90273,7 @@ pub const termrock::widgets::MODEL_RECENT_CAP: usize
 pub const termrock::widgets::MODEL_SELECTOR_OVERLAY_ID: &str
 pub const termrock::widgets::MODE_SELECTOR_OVERLAY_ID: &str
 pub const termrock::widgets::NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize
-pub const termrock::widgets::NOTIFICATION_CENTER_HINT: &str
+pub const termrock::widgets::NOTIFICATION_CENTER_HINTS: &[termrock::widgets::Hint<'static>]
 pub const termrock::widgets::NOTIFICATION_CENTER_OVERLAY_ID: &str
 pub const termrock::widgets::PAGINATION_COMPACT_MAX_WIDTH: u16
 pub const termrock::widgets::PAGINATION_MINIMAL_MAX_WIDTH: u16
@@ -90243,7 +90295,7 @@ pub const termrock::widgets::PREVIEW_CARD_SELECTION_DEBOUNCE_MS: u64
 pub const termrock::widgets::PROGRESS_ASCII_FRAMES: [&str; 4]
 pub const termrock::widgets::PROGRESS_DEFAULT_THROTTLE_MS: u64
 pub const termrock::widgets::PROGRESS_STEPS_COMPACT_MAX_WIDTH: u16
-pub const termrock::widgets::PROGRESS_STEPS_HINT: &str
+pub const termrock::widgets::PROGRESS_STEPS_HINTS: &[termrock::widgets::Hint<'static>]
 pub const termrock::widgets::PROGRESS_STEPS_SUMMARY_MAX_WIDTH: u16
 pub const termrock::widgets::PROGRESS_UNKNOWN: u8
 pub const termrock::widgets::PROMPT_COMPLETION_OVERLAY_ID: &str
@@ -90293,6 +90345,8 @@ pub const termrock::widgets::TOAST_DEFAULT_MAX_VISIBLE: usize
 pub const termrock::widgets::TOAST_DEFAULT_TTL: core::time::Duration
 pub const termrock::widgets::TOAST_DEFAULT_V_MARGIN: u16
 pub const termrock::widgets::TOAST_STACK_GAP: u16
+pub const termrock::widgets::TOOLTIP_CHROME_COLS: u16
+pub const termrock::widgets::TOOLTIP_CHROME_ROWS: u16
 pub const termrock::widgets::TOOLTIP_DEFAULT_DELAY_MS: u64
 pub const termrock::widgets::TOOLTIP_DEFAULT_MAX_WIDTH: u16
 pub const termrock::widgets::TOOLTIP_OVERLAY_ID: &str
