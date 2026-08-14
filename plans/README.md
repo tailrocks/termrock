@@ -102,6 +102,7 @@ Write the claim here **before** writing code. Release it by deleting the row.
 | Claim | Owner | Scope |
 |-------|-------|-------|
 | 014 Step 4 motion contracts | motion lane (003/020/014) | `widgets/{spinner,toast,timeline,log_stream,status_indicator}.rs` — the `MotionChannel` layer only, on top of 007's settled status paint |
+| 008 input & form chrome | design lane (001/002/004/005/006) | `widgets/{text_input,number_input,password_input,search_input,path_input,token_field,input_otp,combobox,select,multi_select,date_time_picker,form,form_wizard,field_row,input_group,slider}.rs` + `input_recipe` in `style/tokens.rs` |
 
 ## Execution notes
 
