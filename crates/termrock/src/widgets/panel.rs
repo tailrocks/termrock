@@ -1137,7 +1137,8 @@ impl Widget for Panel<'_> {
 fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, collapsed: bool) {
     let slots = panel.slots_for_width(header.width.saturating_add(4));
     if let Some(title) = panel.title_line(slots, Some(collapsed)) {
-        let t = take_display_cols(&title, usize::from(header.width));
+        // Same rule as the bordered variants: a clipped header says so.
+        let t = panel.chrome_label(&title, header.width);
         let style = if panel.emphasis == PanelChrome::Focused {
             panel.tokens.style(Role::TextStrong)
         } else {

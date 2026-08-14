@@ -767,3 +767,117 @@ fn bordered_overlays_reserve_their_gutters() {
         "bordered overlays painting flush against their border: {flush:?}"
     );
 }
+
+// ── Scroll and truncation gates (plans/022 Step 6) ──────────────────────────
+
+#[test]
+fn one_scrollbar_language() {
+    // Thumb and track roles belong to `scroll::render`. A widget that resolves
+    // them itself is painting a second scrollbar language.
+    let mut local: Vec<String> = Vec::new();
+    for source in painted_sources() {
+        let name = source
+            .path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        for (number, line) in &source.lines {
+            if line.contains("Role::ScrollThumb") || line.contains("Role::ScrollTrack") {
+                local.push(format!("{name}:{number}"));
+            }
+        }
+    }
+    assert!(
+        local.is_empty(),
+        "widgets resolving scrollbar roles instead of calling scroll::render: {local:?}"
+    );
+}
+
+#[test]
+fn truncation_has_ellipsis() {
+    use ratatui_core::widgets::Widget;
+    use termrock::widgets::{Panel, PanelVariant};
+
+    let system = DesignSystem::default();
+    let ellipsis = system.glyphs.ellipsis();
+    // A title far wider than its chrome, in every panel variant.
+    for variant in [
+        PanelVariant::Bordered,
+        PanelVariant::Quiet,
+        PanelVariant::DividerOnly,
+    ] {
+        let area = Rect::new(0, 0, 24, 4);
+        let buffer = painted(area, |buffer| {
+            Widget::render(
+                &Panel::new(&system)
+                    .variant(variant)
+                    .title("a title far wider than the chrome it was given"),
+                area,
+                buffer,
+            );
+        });
+        let painted_text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(
+            painted_text.contains(ellipsis),
+            "{variant:?} clipped its title with no ellipsis: {painted_text:?}"
+        );
+    }
+}
+
+/// Deterministic pseudo-random sizes: a fuzz that reproduces.
+fn lcg(seed: &mut u64) -> u64 {
+    *seed = seed.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+    *seed >> 33
+}
+
+#[test]
+fn flagship_widgets_survive_tiny_and_random_geometry() {
+    use ratatui_core::widgets::{StatefulWidget, Widget};
+    use termrock::widgets::{
+        Panel, StatusBar, StatusBarState, StatusSlot, TextInput, TextInputState,
+    };
+
+    let system = DesignSystem::default();
+    let mut seed = 0x5eed_1234_u64;
+    for round in 0..200 {
+        let (width, height) = if round < 4 {
+            // The documented tiny terminal, and the degenerate cases around it.
+            [(20u16, 5u16), (1, 1), (0, 4), (3, 2)][round]
+        } else {
+            (
+                u16::try_from(lcg(&mut seed) % 60).unwrap_or(0),
+                u16::try_from(lcg(&mut seed) % 20).unwrap_or(0),
+            )
+        };
+        let area = Rect::new(0, 0, width, height);
+        let _ = painted(area, |buffer| {
+            Widget::render(
+                &Panel::new(&system).title("panel").footer("esc close"),
+                area,
+                buffer,
+            );
+        });
+        let _ = painted(area, |buffer| {
+            let mut state = TextInputState::new("a value long enough to need contraction");
+            let _ = TextInput::new("Label", &system).paint(area, buffer, &mut state);
+        });
+        let _ = painted(area, |buffer| {
+            let slots = [
+                StatusSlot::new("mode", "edit"),
+                StatusSlot::new("branch", "main"),
+            ];
+            let mut state = StatusBarState::<&str>::new();
+            StatefulWidget::render(
+                &StatusBar::new(&slots, &[], &system),
+                area,
+                buffer,
+                &mut state,
+            );
+        });
+    }
+}
