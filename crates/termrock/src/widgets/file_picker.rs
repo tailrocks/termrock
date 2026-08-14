@@ -1361,7 +1361,16 @@ impl<'a> FilePicker<'a> {
             }
         }
 
-        let body = Rect::new(inner.x, y, inner.width, inner.bottom().saturating_sub(y));
+        // Reserve the footer row before the body claims the space, so the
+        // hints have somewhere to go instead of being computed and dropped
+        // (plans/009 Step 3).
+        let footer_h = u16::from(inner.bottom().saturating_sub(y) > 2);
+        let body = Rect::new(
+            inner.x,
+            y,
+            inner.width,
+            inner.bottom().saturating_sub(y).saturating_sub(footer_h),
+        );
         if body.is_empty() {
             return;
         }
@@ -1396,15 +1405,18 @@ impl<'a> FilePicker<'a> {
         }
 
         // Footer: selection count / hints
-        if area.height > 0 {
+        if footer_h > 0 {
             let n = state.selection.checked().len();
-            let hint = if self.ascii {
-                format!("{n} sel  Enter open  Space multi  ^H hidden  Esc cancel")
-            } else {
-                format!("{n} selected · Enter open · Space multi · ^H hidden · Esc")
-            };
-            // paint on bottom border inside if possible - skip to avoid overwrite
-            let _ = hint;
+            let join = self.system.glyphs.meta_join();
+            let hint = format!("{n} selected{join}enter open{join}space multi{join}esc close");
+            let fy = inner.bottom().saturating_sub(1);
+            buffer.set_stringn(
+                inner.x,
+                fy,
+                take_display_cols(&hint, usize::from(inner.width)),
+                usize::from(inner.width),
+                self.system.style(Role::TextMuted),
+            );
         }
     }
 

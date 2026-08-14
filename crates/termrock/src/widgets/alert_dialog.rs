@@ -1055,6 +1055,18 @@ fn paint_typed_field(
         return;
     }
     let y = body.bottom().saturating_sub(1);
+    // Say what has to be typed. The phrase was computed and thrown away, so a
+    // confirmation asked the operator to guess (plans/009 Step 3).
+    if body.height >= 2 {
+        let ask = format!("type {phrase} to confirm");
+        buffer.set_stringn(
+            body.x,
+            y.saturating_sub(1),
+            &take_display_cols(&ask, usize::from(body.width)),
+            usize::from(body.width),
+            system.style(Role::TextMuted),
+        );
+    }
     let prefix = if ascii { "> " } else { "› " };
     let mark = if ok {
         if ascii { "[ok] " } else { "✓ " }
@@ -1074,8 +1086,6 @@ fn paint_typed_field(
         usize::from(body.width),
         style,
     );
-    let _ = phrase;
-    let _ = display_cols;
 }
 
 // ── Overlay helpers ─────────────────────────────────────────────────────────

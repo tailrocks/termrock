@@ -563,11 +563,10 @@ fn selection_chrome_is_not_overridden_in_widget_paint() {
 
 /// The selection fill is opt-in: no widget paints `Role::Selection` by default.
 ///
-/// Enabled by plan 009 once every collection has moved onto the row grammar
-/// (gutter + strong label + optional wash). Until then the gate documents the
-/// target and the remaining raw `Role::Selection` readers keep it red.
+/// Active as of plan 009: every collection paints the row grammar (gutter +
+/// strong label + optional wash), so the neon fill is opt-in chrome a host
+/// asks for, never what a list does on its own.
 #[test]
-#[ignore = "enable after plans 005-009 migrate the raw Role::Selection readers"]
 fn no_widget_paints_selection_fill_by_default() {
     let system = DesignSystem::phosphor();
     let fill = system
