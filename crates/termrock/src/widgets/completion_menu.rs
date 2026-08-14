@@ -1006,8 +1006,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         self
     }
 
-    /// Reduced-color roles.
-    #[must_use]
     /// Whether the menu itself owns focus.
     ///
     /// Defaults to `false`: a completion menu floats under an editor that
@@ -1019,7 +1017,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         self
     }
 
-    /// Forces monochrome paint (host capability override).
+    /// Reduced-color roles.
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
