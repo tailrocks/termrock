@@ -615,11 +615,11 @@ pub use model_mode_selectors::{
 };
 pub use multi_select::{MultiSelect, MultiSelectOutcome, MultiSelectState};
 pub use notification_center::{
-    NOTIFICATION_CENTER_DEFAULT_CAPACITY, NOTIFICATION_CENTER_HINT, NOTIFICATION_CENTER_OVERLAY_ID,
-    NotificationCenter, NotificationCenterOutcome, NotificationCenterSlots,
-    NotificationCenterState, NotificationFilter, NotificationItem, NotificationRecipe,
-    dismiss_notification_center_overlay, example_notifications, open_notification_center_drawer,
-    open_notification_center_overlay,
+    NOTIFICATION_CENTER_DEFAULT_CAPACITY, NOTIFICATION_CENTER_HINTS,
+    NOTIFICATION_CENTER_OVERLAY_ID, NotificationCenter, NotificationCenterOutcome,
+    NotificationCenterSlots, NotificationCenterState, NotificationFilter, NotificationItem,
+    NotificationRecipe, dismiss_notification_center_overlay, example_notifications,
+    open_notification_center_drawer, open_notification_center_overlay,
 };
 pub use number_input::{
     NumberConstraints, NumberInput, NumberInputOutcome, NumberInputParts, NumberInputState,
@@ -685,7 +685,7 @@ pub use progress::{
     ProgressRecipe, ProgressStatus, ProgressUnit,
 };
 pub use progress_steps::{
-    PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINT, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
+    PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
     ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsOutcome,
     ProgressStepsPresentation, ProgressStepsState, example_agent_plan_steps,
     example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_list_rows,

@@ -39,6 +39,7 @@ use crate::{
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
+    widgets::Hint,
 };
 
 use super::{
@@ -862,7 +863,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
         let rev = state.scope.reversibility.label();
         let loading = state.dialog.is_loading();
         let body = build_body_text(state, self.ascii);
-        let footer = footer_hint(state, self.ascii);
+        let footer = footer_hints(state);
         let dialog = Dialog::new(&title, body, self.system)
             .description(rev)
             .variant(DialogVariant::Danger)
@@ -870,7 +871,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
             .loading(loading)
             .ascii(self.ascii)
             .colorless(self.colorless)
-            .footer_hint(footer);
+            .hints(footer);
 
         let narrow = crate::layout::dialog_stack_actions(area.width, area.height);
         let action_rows = if narrow { 2 } else { 1 };
@@ -1031,14 +1032,73 @@ fn build_body_text<Id>(state: &AlertDialogState<Id>, ascii: bool) -> Text<'stati
     Text::from(joined)
 }
 
-fn footer_hint<Id>(state: &AlertDialogState<Id>, ascii: bool) -> &'static str {
-    let _ = (state, ascii);
+/// Footer chords when the dialog traps focus until a choice is made.
+const LOCKED_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "←→",
+        label: "choose",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "confirm",
+        priority: 20,
+        visible: true,
+    },
+];
+
+/// Footer chords for a type-to-confirm dialog.
+const TYPED_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "type",
+        label: "phrase",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "confirm",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "cancel",
+        priority: 30,
+        visible: true,
+    },
+];
+
+/// Footer chords for an ordinary alert.
+const ALERT_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "←→",
+        label: "choose",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "confirm",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "cancel",
+        priority: 30,
+        visible: true,
+    },
+];
+
+fn footer_hints<Id>(state: &AlertDialogState<Id>) -> &'static [Hint<'static>] {
     if state.locked {
-        "choose an action · esc trapped"
+        LOCKED_HINTS
     } else if state.gates.typed_phrase.is_some() {
-        "type phrase · arrows · enter · esc cancel"
+        TYPED_HINTS
     } else {
-        "arrows · enter · esc cancel"
+        ALERT_HINTS
     }
 }
 

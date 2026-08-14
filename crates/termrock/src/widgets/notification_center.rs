@@ -34,6 +34,7 @@ use crate::{
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
+    widgets::{Hint, HintBar},
 };
 
 use super::drawer::DRAWER_DEFAULT_WIDTH;
@@ -45,9 +46,43 @@ use super::toast::{
 pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
 /// Default max retained items in memory (host may trim further for disk).
 pub const NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize = 500;
-/// Hint footer.
-pub const NOTIFICATION_CENTER_HINT: &str =
-    "j/k move · enter open · u read · x dismiss · c clear · / filter · esc cancel";
+/// Footer chords, painted through [`HintBar`].
+///
+/// One separator and one alignment rule for every overlay footer; the flat
+/// sentence this replaced joined its chords by hand and picked its own
+/// spacing under ASCII (plans/009 Step 1).
+pub const NOTIFICATION_CENTER_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "j/k",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "open",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "x",
+        label: "dismiss",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "/",
+        label: "filter",
+        priority: 50,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 60,
+        visible: true,
+    },
+];
 
 // ── Models (shared kinds from Toast) ────────────────────────────────────────
 
@@ -1316,17 +1351,10 @@ impl<'a> NotificationCenter<'a> {
 
         // Footer
         state.slots.footer = Rect::new(inner.x, y, inner.width, footer_h);
-        let hint = if ascii {
-            "j/k enter u x c / esc"
-        } else {
-            NOTIFICATION_CENTER_HINT
-        };
-        buffer.set_stringn(
-            inner.x,
-            y,
-            &take_display_cols(hint, usize::from(inner.width)),
-            usize::from(inner.width),
-            self.system.style(Role::TextMuted),
+        ratatui_core::widgets::Widget::render(
+            &HintBar::new(NOTIFICATION_CENTER_HINTS, self.system),
+            Rect::new(inner.x, y, inner.width, 1),
+            buffer,
         );
     }
 

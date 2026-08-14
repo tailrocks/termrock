@@ -37,8 +37,8 @@ use crate::{
     style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome,
-        TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
+        HighlightVisual, HighlightedText, Hint, HintBar, MatchRanges, MatchTruncate, Panel,
+        PanelChrome, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
     },
 };
 
@@ -980,6 +980,43 @@ pub struct HistoryPicker<'a, Id> {
     empty_message: &'a str,
 }
 
+/// Footer chords for the history picker, painted through [`HintBar`].
+///
+/// One separator and one alignment rule for every overlay footer: the flat
+/// sentence these replaced joined its chords by hand (plans/009 Step 1).
+const HISTORY_PICKER_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "↑↓",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "apply",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "C-p",
+        label: "pin",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "C-d",
+        label: "delete",
+        priority: 50,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 60,
+        visible: true,
+    },
+];
+
 impl<'a, Id> HistoryPicker<'a, Id> {
     /// Visible entries + design system.
     #[must_use]
@@ -990,7 +1027,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             title: "History",
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ · enter apply · C-p pin · C-d delete · esc restore draft"),
+            footer_hint: None,
             empty_message: "No history yet",
         }
     }
@@ -1062,7 +1099,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
         let narrow = area.width < 36;
         let tiny = area.height < 8;
-        let show_footer = self.footer_hint.is_some() && !tiny && area.height >= 8 && !narrow;
+        let show_footer = !tiny && area.height >= 8 && !narrow;
         let show_preview = state.show_preview && !tiny && area.width >= 52 && area.height >= 10;
 
         let mut y = inner.y;
@@ -1160,13 +1197,20 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         self.paint_list(list_area, buffer, state);
 
         if show_footer {
+            let footer = Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1);
             if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
-                    inner.x,
-                    inner.bottom().saturating_sub(1),
-                    &take_display_cols(hint, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    footer.x,
+                    footer.y,
+                    &take_display_cols(hint, usize::from(footer.width)),
+                    usize::from(footer.width),
                     self.system.style(Role::TextMuted),
+                );
+            } else {
+                ratatui_core::widgets::Widget::render(
+                    &HintBar::new(HISTORY_PICKER_HINTS, self.system),
+                    footer,
+                    buffer,
                 );
             }
         }

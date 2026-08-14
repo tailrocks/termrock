@@ -37,8 +37,8 @@ use crate::{
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate,
-        Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState,
+        HighlightVisual, HighlightedText, Hint, HintBar, MatchKind, MatchRange, MatchRanges,
+        MatchTruncate, Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState,
     },
 };
 
@@ -1202,6 +1202,34 @@ pub struct CommandPalette<'a, Id> {
     show_preview: bool,
 }
 
+/// Footer chords for the command palette, painted through [`HintBar`].
+const COMMAND_PALETTE_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "↑↓",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "run",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "C-p",
+        label: "history",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 50,
+        visible: true,
+    },
+];
+
 impl<'a, Id> CommandPalette<'a, Id> {
     /// Title + visible (already filtered) entries + design system.
     #[must_use]
@@ -1217,7 +1245,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             focused: true,
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ move · enter run · esc clear/cancel · C-p history"),
+            footer_hint: None,
             empty_message: "Type to search commands",
             no_result_message: "No matching commands",
             loading_message: COMMAND_PALETTE_LOADING,
@@ -1366,7 +1394,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         let narrow = area.width < 28;
         let tiny = area.height < 6;
-        let show_footer = self.footer_hint.is_some() && !tiny && area.height >= 8 && !narrow;
+        let show_footer = !tiny && area.height >= 8 && !narrow;
         let show_preview = self.show_preview
             && !tiny
             && area.height >= 10
@@ -1500,14 +1528,20 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         // Footer.
         if show_footer {
+            let footer = Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1);
             if let Some(hint) = self.footer_hint {
-                let y = inner.bottom().saturating_sub(1);
                 buffer.set_stringn(
-                    inner.x,
-                    y,
-                    &take_display_cols(hint, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    footer.x,
+                    footer.y,
+                    &take_display_cols(hint, usize::from(footer.width)),
+                    usize::from(footer.width),
                     self.system.style(Role::TextMuted),
+                );
+            } else {
+                ratatui_core::widgets::Widget::render(
+                    &HintBar::new(COMMAND_PALETTE_HINTS, self.system),
+                    footer,
+                    buffer,
                 );
             }
         }

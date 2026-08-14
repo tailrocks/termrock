@@ -1116,6 +1116,7 @@ pub struct Dialog<'a> {
     variant: DialogVariant,
     recipe: DialogRecipe,
     footer_hint: Option<&'a str>,
+    hints: &'a [super::Hint<'a>],
     loading: bool,
     ascii: bool,
     colorless: bool,
@@ -1135,6 +1136,7 @@ impl<'a> Dialog<'a> {
             variant: DialogVariant::Default,
             recipe: DialogRecipe::Normal,
             footer_hint: None,
+            hints: &[],
             loading: false,
             ascii: false,
             colorless: false,
@@ -1194,7 +1196,19 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    /// Footer hint row.
+    /// Footer hints as chords, painted through [`super::HintBar`].
+    ///
+    /// This is the structured path: one separator from the glyph catalog, one
+    /// alignment rule, and hints that contract as a row instead of as a
+    /// sentence. Prefer it over [`Self::footer_hint`], which stays for plain
+    /// copy that is not a chord list (plans/009 Step 1).
+    #[must_use]
+    pub const fn hints(mut self, hints: &'a [super::Hint<'a>]) -> Self {
+        self.hints = hints;
+        self
+    }
+
+    /// Footer hint row as plain copy.
     #[must_use]
     pub const fn footer_hint(mut self, hint: &'a str) -> Self {
         self.footer_hint = Some(hint);
@@ -1295,7 +1309,7 @@ impl<'a> Dialog<'a> {
 
         let has_desc = self.description.is_some() && area.height >= 5;
         let has_validation = state.validation_message.is_some() && area.height >= 6;
-        let has_footer = self.footer_hint.is_some() && area.height >= 5;
+        let has_footer = (self.footer_hint.is_some() || !self.hints.is_empty()) && area.height >= 5;
         let footer_rows = u16::from(has_footer);
         let validation_rows = u16::from(has_validation);
         let desc_rows = u16::from(has_desc);
@@ -1405,7 +1419,14 @@ impl<'a> Dialog<'a> {
 
         if has_footer {
             state.slots.footer = Rect::new(content.x, y, content.width, 1);
-            if let Some(hint) = self.footer_hint {
+            let footer = Rect::new(content.x, y, content.width, 1);
+            if !self.hints.is_empty() {
+                ratatui_core::widgets::Widget::render(
+                    &super::HintBar::new(self.hints, self.tokens),
+                    footer,
+                    buffer,
+                );
+            } else if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
                     content.x,
                     y,

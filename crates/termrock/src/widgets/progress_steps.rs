@@ -39,6 +39,7 @@ use crate::{
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
+    widgets::{Hint, HintBar},
 };
 
 use super::list::ListRow;
@@ -50,7 +51,26 @@ pub const PROGRESS_STEPS_COMPACT_MAX_WIDTH: u16 = 36;
 /// Width under which only `n/total · verb` is shown.
 pub const PROGRESS_STEPS_SUMMARY_MAX_WIDTH: u16 = 22;
 /// Default hint for interactive mode.
-pub const PROGRESS_STEPS_HINT: &str = "j/k · enter retry · esc blur";
+pub const PROGRESS_STEPS_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "j/k",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "retry",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "blur",
+        priority: 30,
+        visible: true,
+    },
+];
 
 // ── Status ──────────────────────────────────────────────────────────────────
 
@@ -820,12 +840,10 @@ impl<'a> ProgressSteps<'a> {
         }
 
         if footer > 0 && y < area.bottom() {
-            buffer.set_stringn(
-                area.x,
-                area.bottom().saturating_sub(1),
-                &take_display_cols(PROGRESS_STEPS_HINT, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
+            ratatui_core::widgets::Widget::render(
+                &HintBar::new(PROGRESS_STEPS_HINTS, self.system),
+                Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
+                buffer,
             );
         }
     }
