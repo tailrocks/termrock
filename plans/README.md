@@ -29,7 +29,7 @@ run its drift check, and update your row when done.
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
 | 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
-| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE + the Presence seam; 3b/4 wait on 005/007 — see notes) |
+| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence done; 4: Skeleton done — see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | DONE (Part A: floor holds on 4 presets, 9 ladder pairs reported as a design call in migrations/0287; Part B: law §4.2 + 3 gates + 6 surface diets in migrations/0290; 4 rows deferred with reasons in Execution notes) |
@@ -141,11 +141,25 @@ Two deliberate deviations:
    them; `runtime::QuietBackend` wraps any backend and also drops empty-diff
    draws, which is where the remaining 19 idle bytes per frame were coming from.
 
-**Remaining (Step 3b and Step 4)** — every item needs plan 005 or 007, or lives
-in another agent's lane this wave:
+**Landed since 004/005/006 unblocked the seams:**
 
-- `DesignSystem::at(tick)` so all ~143 widgets get time with no signature churn,
-  and removal of `DrawerState`'s private motion copy (needs `style/tokens.rs`).
+- `DesignSystem::at(tick)` / `tick()` / `elapsed_ms()` — every widget can reach
+  frame time with no signature churn. `None` default means "paint the settled
+  frame", so snapshots stay deterministic without a test mode. `DrawerState`'s
+  private `motion` copy is gone with it: it defaulted to `Full` regardless of
+  the system painting it, so `DesignSystem::motion(Off)` alone did not stop
+  drawer animation. (migration 0299)
+- Step 4 Skeleton: sweeps a raised-cosine band instead of pulsing the whole
+  block every 400 ms. Period 400 ms → 1500 ms, `pulse_phase` removed.
+  `shimmer_implies_no_spinner_frames` is in place. (migration 0297)
+
+**Remaining (Step 3b and Step 4)** — needs plan 007, or another agent's lane:
+
+- `StatusIndicator` channels (Running `◉` Live breathe / Waiting `◐` Wait pulse
+  / heartbeat) — deliberately left to 007's executor, who is rewriting that
+  status paint now; the `MotionChannel` goes on top once it settles.
+- `Spinner` phase→channel map and `Toast` entrance/reflow — same file contention
+  this wave.
 - `Backdrop::alpha` + `BackdropPolicy::Dim` target alpha + `OverlayStack`
   opened-at (needs 009's overlay recipe).
 - `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam is
