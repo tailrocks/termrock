@@ -3,7 +3,7 @@
 
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
 
-use super::{ColorCapability, Density, Motion, Role, RolePalette};
+use super::{ColorCapability, Density, Glyph, Motion, Role, RolePalette};
 use ratatui_core::style::{Modifier, Style};
 
 /// Glyph encoding profile for borders, disclosure, and status markers.
@@ -152,9 +152,12 @@ impl GlyphSet {
 #[non_exhaustive]
 pub enum SelectionChrome {
     /// Full-row fill using `Role::Selection`.
-    #[default]
+    ///
+    /// Opt-in only; never a default. A saturated row fill outshouts every
+    /// other cue on the screen, so a theme has to ask for it explicitly.
     Fill,
     /// Leading gutter glyph only (quieter).
+    #[default]
     Gutter,
     /// Tint via `Role::SelectionTint` without full fill.
     Tint,
@@ -332,6 +335,11 @@ pub struct PanelRecipe {
     pub pad_y: u16,
     /// Optional surface fill style.
     pub surface: ratatui_core::style::Style,
+    /// Glyph the title carries when the chrome itself is a warning.
+    ///
+    /// Danger chrome must not rely on a red border alone: colorless and
+    /// low-color terminals need the mark in the title.
+    pub title_prefix: Option<&'static str>,
 }
 
 /// Elevation token → surface role mapping (not border weight).
@@ -356,7 +364,10 @@ impl Elevation {
         match self {
             Self::Canvas => Role::Canvas,
             Self::Surface => Role::Surface,
-            Self::Raised | Self::Overlay => Role::Elevated,
+            // Raised is an in-flow step; Elevated is reserved for overlays, so
+            // a card on a panel and a dialog over it never share a fill.
+            Self::Raised => Role::Raised,
+            Self::Overlay => Role::Elevated,
         }
     }
 
@@ -456,7 +467,7 @@ pub struct InputRecipe {
     pub value: Style,
     /// Placeholder style.
     pub placeholder: Style,
-    /// Border / underline style.
+    /// Border style.
     pub border: Style,
     /// Fill style.
     pub fill: Style,
@@ -544,7 +555,7 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Tint)
+        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
     }
 
     /// Terminal-default background variant of the phosphor system.
@@ -568,7 +579,7 @@ impl DesignSystem {
     /// Light paper system.
     #[must_use]
     pub fn paper() -> Self {
-        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Fill)
+        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Tint)
     }
 
     /// ANSI 16-color native system (no truecolor dependency).
@@ -583,7 +594,7 @@ impl DesignSystem {
     #[must_use]
     pub fn high_contrast() -> Self {
         Self::from_palette(RolePalette::high_contrast())
-            .selection(SelectionChrome::Fill)
+            .selection(SelectionChrome::Tint)
             .glyphs(GlyphSet::Unicode)
     }
 
@@ -786,8 +797,11 @@ impl DesignSystem {
     }
 
     /// Panel chrome recipe for single-line borders and title hierarchy.
+    ///
+    /// `elevation` selects the fill rung, so an overlay panel recesses the
+    /// content behind it instead of repainting the same ordinary surface.
     #[must_use]
-    pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
+    pub fn panel_recipe(&self, emphasis: PanelChrome, elevation: Elevation) -> PanelRecipe {
         let (border_role, title_role) = match emphasis {
             PanelChrome::Normal => (Role::Border, Role::TextStrong),
             PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
@@ -798,14 +812,17 @@ impl DesignSystem {
             title: self.style(title_role),
             pad_x: self.spacing.pad_x,
             pad_y: self.spacing.pad_y,
-            surface: self.style(Role::Surface),
+            surface: self.style(elevation.role()),
+            title_prefix: match emphasis {
+                PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Warning).text),
+                PanelChrome::Normal | PanelChrome::Focused => None,
+            },
         }
     }
 
     /// Button part×state recipe (no hard-coded RGB).
     #[must_use]
     pub fn button_recipe(&self, variant: ButtonRecipeVariant, state: ControlState) -> ButtonRecipe {
-        let disabled = matches!(state, ControlState::Disabled | ControlState::Loading);
         let base_role = match variant {
             ButtonRecipeVariant::Primary => Role::ActionFocused,
             ButtonRecipeVariant::Destructive => Role::Danger,
@@ -830,7 +847,10 @@ impl DesignSystem {
             border = self.style(Role::BorderFocused);
         }
         if matches!(variant, ButtonRecipeVariant::Destructive) {
-            fill = self.style(Role::Danger);
+            // `Role::Danger` is a foreground role: assigning it as a fill left
+            // the button with no background at all while claiming to have one.
+            // Destructive reads through its label and border instead, and the
+            // press is what turns the button solid.
             border = self.style(Role::Danger);
         }
         if matches!(
@@ -862,15 +882,26 @@ impl DesignSystem {
             }
             ControlState::Pressed => {
                 label = label.add_modifier(Modifier::BOLD);
+                if matches!(variant, ButtonRecipeVariant::Destructive) {
+                    label = label.add_modifier(Modifier::REVERSED);
+                }
             }
-            ControlState::Disabled | ControlState::Loading => {
+            ControlState::Disabled => {
                 label = self.style(Role::ActionDisabled);
+                fill = Style::new();
+                border = self.style(Role::Border);
+            }
+            ControlState::Loading => {
+                // Loading is not disabled: the button keeps its identity and
+                // dims, so a spinner beside a still-recognizable action does
+                // not read as "this control is gone".
+                label = label.add_modifier(Modifier::DIM);
                 fill = Style::new();
                 border = self.style(Role::Border);
             }
             ControlState::Default => {}
         }
-        if disabled {
+        if matches!(state, ControlState::Disabled) {
             label = self.style(Role::ActionDisabled);
         }
         ButtonRecipe {
@@ -886,13 +917,16 @@ impl DesignSystem {
     #[must_use]
     pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
         let mut border = self.style(Role::Border);
-        let mut value = self.style(Role::Input);
+        // The value is text; the well is the fill. Reading both from
+        // `Role::Input` made the value inherit the well's background and
+        // nothing else.
+        let mut value = self.style(Role::Text);
         let placeholder = self.style(Role::TextMuted);
-        let fill = self.style(Role::Input);
+        let mut fill = self.style(Role::Sunken);
         let cursor = self.style(Role::Focus);
         if invalid {
             border = self.style(Role::InputInvalid);
-            value = self.style(Role::InputInvalid);
+            value = value.patch(self.style(Role::InputInvalid));
         }
         match state {
             ControlState::Focused => border = self.style(Role::BorderFocused),
@@ -900,7 +934,11 @@ impl DesignSystem {
                 value = self.style(Role::TextDisabled);
                 border = self.style(Role::Border);
             }
-            ControlState::Hovered => border = self.style(Role::Focus),
+            ControlState::Hovered => {
+                // Hover lifts the well; only focus is allowed to brighten the
+                // border, or a pointer passing by looks like keyboard focus.
+                fill = fill.patch(self.style(Role::HoverTint));
+            }
             _ => {}
         }
         InputRecipe {
@@ -950,8 +988,15 @@ impl DesignSystem {
             Role::TextMuted
         });
         let shortcut = secondary;
+        // The gutter says "selected"; its color says whether this collection
+        // owns the keyboard. Accent while focused, muted while parked.
         let gutter = if state.selected {
-            Some((self.glyphs.selection_gutter(), self.style(Role::Accent)))
+            let tone = if state.focused {
+                Role::Accent
+            } else {
+                Role::TextMuted
+            };
+            Some((self.glyphs.selection_gutter(), self.style(tone)))
         } else {
             None
         };
@@ -968,9 +1013,8 @@ impl DesignSystem {
             use_fill,
             use_tint,
             hover_fill,
-            show_focus_underline: state.focused && state.selected && !disabled,
             focus: self.style(Role::Focus),
-            hover: self.style(Role::LinkHover),
+            hover: self.style(Role::TextStrong),
             hover_wash: self.style(Role::HoverTint),
             tint: self.style(Role::SelectionTint),
             check_on: self.glyphs.check_on(),
@@ -1007,11 +1051,13 @@ pub struct ListRowRecipe {
     pub use_tint: bool,
     /// Whether hover should tint the row background.
     pub hover_fill: bool,
-    /// Whether to paint a focus underline cue on the primary label.
-    pub show_focus_underline: bool,
-    /// Focus accent style (underline / border role).
+    /// Focus accent style for non-border focus cues.
     pub focus: Style,
-    /// Hover style when not selected.
+    /// Hover label style when not selected.
+    ///
+    /// Hover never borrows link styling: the row lifts with
+    /// [`Self::hover_wash`] behind a strong label, so a hovered row is not
+    /// mistaken for a clickable hyperlink.
     pub hover: Style,
     /// Background wash for hovered rows.
     pub hover_wash: Style,
@@ -1059,15 +1105,47 @@ mod tests {
 
     #[test]
     fn tint_recipe_keeps_wash_when_label_repaints_cells() {
+        let system = DesignSystem::phosphor().selection(SelectionChrome::Tint);
+        let state = ListRowVisualState {
+            selected: true,
+            focused: true,
+            enabled: true,
+            ..Default::default()
+        };
+        let recipe = system.resolve_list_row(state);
+        assert!(recipe.use_tint);
+        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
+
+        // The shipped default is quieter: gutter + strong label, no wash.
+        let quiet = DesignSystem::phosphor().resolve_list_row(state);
+        assert!(!quiet.use_tint && !quiet.use_fill);
+        assert_eq!(quiet.label.bg, None);
+        assert!(quiet.gutter.is_some());
+    }
+
+    #[test]
+    fn selection_gutter_tone_tracks_collection_focus() {
         let system = DesignSystem::phosphor();
-        let recipe = system.resolve_list_row(ListRowVisualState {
+        let focused = system.resolve_list_row(ListRowVisualState {
             selected: true,
             focused: true,
             enabled: true,
             ..Default::default()
         });
-        assert!(recipe.use_tint);
-        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
+        let parked = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: false,
+            enabled: true,
+            ..Default::default()
+        });
+        assert_eq!(
+            focused.gutter.expect("selected rows carry a gutter").1,
+            system.style(Role::Accent)
+        );
+        assert_eq!(
+            parked.gutter.expect("selected rows carry a gutter").1,
+            system.style(Role::TextMuted)
+        );
     }
 
     #[test]
@@ -1149,7 +1227,16 @@ mod tests {
         let system = DesignSystem::slate();
         assert_eq!(
             system.elevation(Elevation::Raised),
+            system.style(Role::Raised)
+        );
+        assert_eq!(
+            system.elevation(Elevation::Overlay),
             system.style(Role::Elevated)
+        );
+        assert_ne!(
+            system.elevation(Elevation::Raised),
+            system.elevation(Elevation::Overlay),
+            "an in-flow card and an overlay must not share a rung"
         );
         assert_eq!(Elevation::Canvas.role(), Role::Canvas);
     }

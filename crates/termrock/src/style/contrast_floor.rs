@@ -17,8 +17,8 @@
 use ratatui_core::style::Style;
 
 use super::{
-    ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, PanelChrome, Rgb, Role,
-    RolePalette, contrast_ratio,
+    ButtonRecipeVariant, ControlState, DesignSystem, Elevation, ListRowVisualState, PanelChrome,
+    Rgb, Role, RolePalette, contrast_ratio,
 };
 
 /// Surface roles that content is painted onto.
@@ -338,17 +338,18 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
             }
         }
     }
-    for chrome in [
-        PanelChrome::Normal,
-        PanelChrome::Focused,
-        PanelChrome::Danger,
+    for (chrome, elevation) in [
+        (PanelChrome::Normal, Elevation::Surface),
+        (PanelChrome::Focused, Elevation::Surface),
+        (PanelChrome::Danger, Elevation::Surface),
+        (PanelChrome::Focused, Elevation::Overlay),
     ] {
-        let recipe = system.panel_recipe(chrome);
+        let recipe = system.panel_recipe(chrome, elevation);
         let ground = style_ground(palette, recipe.surface);
         measure(
             &mut out,
             preset,
-            format!("panel {chrome:?} title"),
+            format!("panel {chrome:?}/{} title", elevation.id()),
             recipe.title.fg.and_then(Rgb::from_color),
             ground,
             4.5,
@@ -356,7 +357,7 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
         measure(
             &mut out,
             preset,
-            format!("panel {chrome:?} border"),
+            format!("panel {chrome:?}/{} border", elevation.id()),
             recipe.border.fg.and_then(Rgb::from_color),
             ground,
             1.3,
@@ -423,7 +424,13 @@ fn floor_table_covers_every_text_tier() {
     // A new text tier that never reaches this table is a contrast defect
     // waiting to happen, so the table names the tiers it measures.
     let measured = palette_pairs("phosphor", &RolePalette::tailrocks_phosphor());
-    for tier in ["Text", "TextStrong", "TextMuted", "TextFaint", "TextDisabled"] {
+    for tier in [
+        "Text",
+        "TextStrong",
+        "TextMuted",
+        "TextFaint",
+        "TextDisabled",
+    ] {
         assert!(
             measured
                 .iter()

@@ -1046,7 +1046,10 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .title(self.title)
+            .emphasis(emphasis);
         let inner = panel.inner(area);
         ratatui_core::widgets::Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -1230,18 +1233,14 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             let active = i == cursor && surface;
             let rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, rect));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: true,
-                    loading: false,
-                    checked: entry.pinned,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: entry.pinned,
+            });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
             } else if recipe.use_tint {

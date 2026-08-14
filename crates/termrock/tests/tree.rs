@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{Density, DesignSystem, Role, RolePalette, SelectionChrome},
     widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 
@@ -144,9 +144,10 @@ fn empty_and_zero_sized_trees_are_safe() {
 
 #[test]
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
-    // Fill selection (not phosphor gutter) so disclosure column geometry matches
-    // the historical hit-test expectations for this regression.
-    let tokens = DesignSystem::new(RolePalette::default(), Density::default());
+    // Fill selection (not the gutter default) so disclosure column geometry
+    // matches the historical hit-test expectations for this regression.
+    let tokens = DesignSystem::new(RolePalette::default(), Density::default())
+        .selection(SelectionChrome::Fill);
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("leaf"));
@@ -294,27 +295,30 @@ fn host_focus_chrome_preserves_non_color_selection_cues() {
     Tree::new(&rows, &tokens)
         .focused(false)
         .render(area, &mut buffer, &mut state);
-    assert!(
-        buffer[(3, 0)]
-            .modifier
-            .contains(ratatui_core::style::Modifier::UNDERLINED),
+    let gutter = tokens.glyphs.selection_gutter();
+    assert_eq!(
+        buffer[(0, 0)].symbol(),
+        gutter,
         "unfocused selection remains visible without color"
     );
     state.hover(Position::new(4, 2));
     Tree::new(&rows, &tokens)
         .focused(true)
         .render(area, &mut buffer, &mut state);
+    assert_eq!(buffer[(0, 0)].symbol(), gutter);
     assert!(
         buffer[(3, 0)]
             .modifier
             .contains(ratatui_core::style::Modifier::BOLD),
         "focused selection remains visible without color"
     );
-    assert!(
-        buffer[(4, 2)]
-            .modifier
-            .contains(ratatui_core::style::Modifier::UNDERLINED),
-        "hover is visible without color"
+    assert_eq!(
+        buffer[(4, 2)].bg,
+        tokens
+            .style(Role::HoverTint)
+            .bg
+            .expect("hover wash carries a background"),
+        "hover lifts the row instead of underlining it"
     );
 }
 

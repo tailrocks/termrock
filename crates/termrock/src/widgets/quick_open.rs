@@ -1643,18 +1643,14 @@ impl<'a, Id> QuickOpen<'a, Id> {
             let active = i == cursor && surface;
             let row = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: true,
-                    loading: false,
-                    checked: false,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+            });
             if recipe.use_fill {
                 buffer.set_style(row, recipe.label);
             } else if recipe.use_tint {

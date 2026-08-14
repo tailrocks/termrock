@@ -69,12 +69,6 @@ pub const fn color(rgb: Rgb) -> Color {
 pub const PHOSPHOR_GREEN: Color = color(PHOSPHOR_GREEN_RGB);
 /// Dark phosphor surface used behind emphasized content.
 pub const PHOSPHOR_DARK: Color = color(PHOSPHOR_DARK_RGB);
-// Dialog backdrops paint the terminal's DEFAULT background, not a
-// fixed colour: `Color::Reset` emits `\x1b[49m`, so modal overlays match the
-// operator's terminal theme instead of forcing pure black that stands out
-// against a themed (non-black) default. Occlusion still holds — Reset cells
-// overwrite the chrome behind them with a space on the default background.
-pub(crate) const DIALOG_BACKDROP: Color = Color::Reset;
 pub(crate) const SCROLL_TRACK: Color = color(SCROLL_TRACK_RGB);
 /// Pure white — reserved for consumer overrides and the ANSI/high-contrast
 /// presets; the phosphor foreground ladder uses [`TEXT_BODY`]/[`TEXT_STRONG`].
@@ -880,7 +874,6 @@ mod tests {
     #[test]
     fn default_separates_ordinary_and_strong_text() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert!(
             !theme
                 .style(Role::Text)

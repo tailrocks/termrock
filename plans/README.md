@@ -19,7 +19,7 @@ run its drift check, and update your row when done.
 | 001 | Underline grammar becomes the single binding doc SoT | P1 | M | — | DONE |
 | 002 | Role palette rebuild: text ladder, accent de-collapse, named presets | P0 | L | (001 parallel-ok) | DONE |
 | 003 | Capability honesty: quantize fixes, mono survival, glyph de-collision | P1 | M | 002 | DONE (2 deviations, see notes) |
-| 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | TODO |
+| 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | IN PROGRESS |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | TODO |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | TODO |
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | TODO |

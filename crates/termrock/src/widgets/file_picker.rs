@@ -1271,11 +1271,13 @@ impl<'a> FilePicker<'a> {
             state.presentation = FilePickerPresentation::Fullscreen;
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
         Widget::render(&panel.title(self.title), area, buffer);
         if inner.is_empty() {
@@ -1435,18 +1437,14 @@ impl<'a> FilePicker<'a> {
             let is_hi = state.collection.active() == Some(&entry.id);
             let is_sel = state.selection.is_checked(&entry.id);
             let active = is_hi && matches!(state.pane, FilePickerPane::List);
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active && state.focused,
-                    hovered: false,
-                    enabled: entry.error.is_none(),
-                    loading: false,
-                    checked: is_sel,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active && state.focused,
+                hovered: false,
+                enabled: entry.error.is_none(),
+                loading: false,
+                checked: is_sel,
+            });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
             } else if recipe.use_tint {

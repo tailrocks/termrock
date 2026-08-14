@@ -1598,22 +1598,18 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: item.enabled,
-                    loading: false,
-                    checked: matches!(
-                        item.kind,
-                        MenuRowKind::Checkbox { checked: true }
-                            | MenuRowKind::Radio { selected: true, .. }
-                    ),
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: false,
+                enabled: item.enabled,
+                loading: false,
+                checked: matches!(
+                    item.kind,
+                    MenuRowKind::Checkbox { checked: true }
+                        | MenuRowKind::Radio { selected: true, .. }
+                ),
+            });
             let row = Rect::new(inner.x, y, inner.width, 1);
             if recipe.use_fill {
                 buffer.set_style(row, recipe.label);

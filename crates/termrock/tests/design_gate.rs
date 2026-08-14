@@ -345,3 +345,97 @@ fn spinner_frames_one_column() {
         }
     }
 }
+
+// ── Selection / focus paint authority (plan 004) ─────────────────────────────
+
+use ratatui_core::{text::Line, widgets::StatefulWidget};
+use termrock::{
+    style::Role,
+    widgets::{List, ListRow, ListState, RowRole},
+};
+
+fn rows() -> [ListRow<'static, &'static str>; 3] {
+    ["alpha", "beta", "gamma"].map(|id| ListRow {
+        id,
+        label: Line::from(id),
+        leading: None,
+        secondary: None,
+        status: None,
+        badge: None,
+        shortcut: None,
+        actions: None,
+        trailing: None,
+        custom: None,
+        role: RowRole::Item,
+        enabled: true,
+        loading: false,
+    })
+}
+
+/// Selection authority: a widget resolves selection chrome from the theme.
+///
+/// Ten collections used to clone the `DesignSystem` and force
+/// `SelectionChrome::Tint` on it, so a consumer theme asking for a gutter got
+/// a tint anyway — and one asking for a tint got it twice over. The theme is
+/// the only authority; a widget that needs a different chrome is a bug report,
+/// not a local override.
+#[test]
+fn selection_chrome_is_not_overridden_in_widget_paint() {
+    let widgets = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
+    let mut offenders = Vec::new();
+    for entry in fs::read_dir(&widgets).expect("widgets directory is readable") {
+        let path = entry.expect("directory entry is readable").path();
+        if path.extension().is_none_or(|ext| ext != "rs") {
+            continue;
+        }
+        let source = fs::read_to_string(&path).expect("widget source is readable");
+        // Test modules legitimately build systems with an explicit chrome to
+        // prove both branches paint; production paint must not.
+        let production = source
+            .split("#[cfg(test)]")
+            .next()
+            .expect("split always yields a head");
+        // `.selection()` is also a state accessor; only the chrome setter counts.
+        if production.contains(".selection(SelectionChrome")
+            || production.contains(".selection(crate::style::SelectionChrome")
+        {
+            offenders.push(
+                path.file_name()
+                    .expect("file has a name")
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
+    }
+    offenders.sort();
+    assert!(
+        offenders.is_empty(),
+        "these widgets override the theme's selection chrome in paint: {offenders:?}"
+    );
+}
+
+/// The selection fill is opt-in: no widget paints `Role::Selection` by default.
+///
+/// Enabled by plan 009 once every collection has moved onto the row grammar
+/// (gutter + strong label + optional wash). Until then the gate documents the
+/// target and the remaining raw `Role::Selection` readers keep it red.
+#[test]
+#[ignore = "enable after plans 005-009 migrate the raw Role::Selection readers"]
+fn no_widget_paints_selection_fill_by_default() {
+    let system = DesignSystem::phosphor();
+    let fill = system
+        .style(Role::Selection)
+        .bg
+        .expect("the selection role carries a fill");
+    let rows = rows();
+    let area = Rect::new(0, 0, 24, 4);
+    let mut buffer = Buffer::empty(area);
+    let mut state = ListState::new(Some("beta"));
+    (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+    for cell in buffer.content() {
+        assert_ne!(
+            cell.bg, fill,
+            "selection fill must be opt-in, not the default row paint"
+        );
+    }
+}

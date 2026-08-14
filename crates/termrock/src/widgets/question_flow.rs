@@ -1089,6 +1089,7 @@ impl<'a> QuestionFlow<'a> {
         }
         let Some(set) = state.set.as_ref() else {
             let panel = Panel::new(self.system)
+                .overlay(true)
                 .title("Questions")
                 .emphasis(PanelChrome::Normal);
             let inner = panel.inner(area);
@@ -1118,6 +1119,7 @@ impl<'a> QuestionFlow<'a> {
             PanelChrome::Normal
         };
         let panel = Panel::new(self.system)
+            .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);

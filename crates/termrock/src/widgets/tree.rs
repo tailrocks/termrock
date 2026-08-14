@@ -1143,14 +1143,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 style = recipe.label;
                 if self.focused {
                     style = style.add_modifier(Modifier::BOLD);
-                    if recipe.show_focus_underline {
-                        style = style.add_modifier(Modifier::UNDERLINED);
-                    }
-                } else {
-                    style = style.add_modifier(Modifier::UNDERLINED);
                 }
             } else if hovered && node.enabled {
-                style = recipe.hover.add_modifier(Modifier::UNDERLINED);
+                style = recipe.hover;
             } else if checked && node.enabled {
                 style = style.patch(self.tokens.style(Role::Accent));
             }

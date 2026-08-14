@@ -1436,6 +1436,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         let surface = self.focused && state.accepts_input();
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
+                .overlay(true)
                 .title("Permission")
                 .emphasis(if surface {
                     PanelChrome::Focused
@@ -1481,7 +1482,10 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         };
         let rail = AccentRail::new(self.system, risk.role());
         let content_area = rail.paint(area, buffer);
-        let panel = Panel::new(&tokens).title(title.as_str()).emphasis(emphasis);
+        let panel = Panel::new(&tokens)
+            .overlay(true)
+            .title(title.as_str())
+            .emphasis(emphasis);
         let inner = panel.inner(content_area);
         Widget::render(&panel, content_area, buffer);
         if inner.is_empty() {

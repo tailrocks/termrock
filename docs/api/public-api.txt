@@ -6067,7 +6067,7 @@ pub fn termrock::interaction::from_consumed_flag<M, FocusId>(bool, core::option:
 pub const fn termrock::interaction::kind_blocks_queue(termrock::interaction::OverlayKind) -> bool
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::place_overlay_detailed(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> termrock::interaction::PlacementResult
-pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect)
+pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &termrock::style::DesignSystem)
 pub fn termrock::interaction::roving_hint_keymap(termrock::interaction::RovingOrientation) -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_horizontal() -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_vertical() -> termrock::keymap::Keymap<&'static str>
@@ -29438,7 +29438,7 @@ pub fn termrock::style::DesignSystem::new(termrock::style::RolePalette, termrock
 pub fn termrock::style::DesignSystem::no_color(self) -> Self
 pub fn termrock::style::DesignSystem::obsidian() -> Self
 pub const fn termrock::style::DesignSystem::palette(&self) -> &termrock::style::RolePalette
-pub fn termrock::style::DesignSystem::panel_recipe(&self, termrock::style::PanelChrome) -> termrock::style::PanelRecipe
+pub fn termrock::style::DesignSystem::panel_recipe(&self, termrock::style::PanelChrome, termrock::style::Elevation) -> termrock::style::PanelRecipe
 pub fn termrock::style::DesignSystem::paper() -> Self
 pub fn termrock::style::DesignSystem::phosphor() -> Self
 pub fn termrock::style::DesignSystem::quantize(self, termrock::style::ColorCapability) -> Self
@@ -29608,7 +29608,6 @@ pub termrock::style::ListRowRecipe::loading_glyph: &'static str
 pub termrock::style::ListRowRecipe::pad_x: u16
 pub termrock::style::ListRowRecipe::secondary: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::shortcut: ratatui_core::style::Style
-pub termrock::style::ListRowRecipe::show_focus_underline: bool
 pub termrock::style::ListRowRecipe::show_gutter_slot: bool
 pub termrock::style::ListRowRecipe::tint: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::trailing: ratatui_core::style::Style
@@ -29713,6 +29712,7 @@ pub termrock::style::PanelRecipe::pad_x: u16
 pub termrock::style::PanelRecipe::pad_y: u16
 pub termrock::style::PanelRecipe::surface: ratatui_core::style::Style
 pub termrock::style::PanelRecipe::title: ratatui_core::style::Style
+pub termrock::style::PanelRecipe::title_prefix: core::option::Option<&'static str>
 impl core::clone::Clone for termrock::style::PanelRecipe
 pub fn termrock::style::PanelRecipe::clone(&self) -> termrock::style::PanelRecipe
 impl core::cmp::Eq for termrock::style::PanelRecipe
@@ -30061,6 +30061,7 @@ pub const termrock::style::BLOCK_RAMP: &[char; 9]
 pub const termrock::style::BRAILLE_RAMP: &[char; 5]
 pub const termrock::style::GLYPH_CONTEXTS: &[(&str, &[termrock::style::Glyph])]
 pub const termrock::style::LEFT_BLOCK_RAMP: &[char; 9]
+pub const termrock::style::MASK_CELLS: usize
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
@@ -51134,8 +51135,11 @@ pub termrock::widgets::SurfaceRecipe::Focused
 pub termrock::widgets::SurfaceRecipe::Inset
 pub termrock::widgets::SurfaceRecipe::Interactive
 pub termrock::widgets::SurfaceRecipe::Overlay
+pub termrock::widgets::SurfaceRecipe::OverlayDanger
+pub termrock::widgets::SurfaceRecipe::OverlayFocused
 pub termrock::widgets::SurfaceRecipe::Raised
 pub termrock::widgets::SurfaceRecipe::Selected
+pub termrock::widgets::SurfaceRecipe::Sunken
 pub termrock::widgets::SurfaceRecipe::Warning
 impl termrock::widgets::SurfaceRecipe
 pub const fn termrock::widgets::SurfaceRecipe::default_bordered(self) -> bool
@@ -74480,6 +74484,7 @@ pub const fn termrock::widgets::Panel<'a>::body_detail(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::body_title(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::chrome(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Panel<'a>::collapsible(self, bool) -> Self
+pub const fn termrock::widgets::Panel<'a>::elevation(&self) -> termrock::style::Elevation
 pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Panel<'a>::footer(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::from_tokens(&'a termrock::style::DesignSystem) -> Self
@@ -74490,6 +74495,7 @@ pub const fn termrock::widgets::Panel<'a>::is_focusable(&self) -> bool
 pub fn termrock::widgets::Panel<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) -> termrock::widgets::PanelParts
 pub const fn termrock::widgets::Panel<'a>::leading(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::new(&'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Panel<'a>::overlay(self, bool) -> Self
 pub fn termrock::widgets::Panel<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::PanelState>) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::Panel<'a>::paint_skeleton_body(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, u16)
 pub const fn termrock::widgets::Panel<'a>::palette(&self) -> &termrock::style::RolePalette

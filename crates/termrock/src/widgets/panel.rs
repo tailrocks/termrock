@@ -17,7 +17,7 @@ use ratatui_widgets::block::Block;
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
-use crate::style::{DesignSystem, GlyphSet, PanelChrome, PanelRecipe, Role};
+use crate::style::{DesignSystem, Elevation, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
 use crate::widgets::error_state::ErrorView;
@@ -401,6 +401,7 @@ pub struct Panel<'a> {
     collapsible: bool,
     /// Prefer elevated fill underlay (cards).
     raised: bool,
+    overlay: bool,
     /// Header actions (dropped under narrow width before badge).
     header_actions: &'a [PanelAction<'a>],
     style: Option<Style>,
@@ -427,6 +428,7 @@ impl<'a> Panel<'a> {
             body: PanelBody::Host,
             collapsible: false,
             raised: false,
+            overlay: false,
             header_actions: &[],
             style: None,
             tokens,
@@ -563,6 +565,16 @@ impl<'a> Panel<'a> {
         self
     }
 
+    /// Marks this panel as an overlay host (dialog, picker, sheet body).
+    ///
+    /// Overlay panels fill with `Role::Elevated` so the content they cover
+    /// recedes; in-flow panels keep the ordinary surface.
+    #[must_use]
+    pub const fn overlay(mut self, overlay: bool) -> Self {
+        self.overlay = overlay;
+        self
+    }
+
     #[must_use]
     /// Overrides the recipe border style.
     pub const fn style(mut self, style: Style) -> Self {
@@ -579,7 +591,20 @@ impl<'a> Panel<'a> {
     /// Resolves the panel recipe for current emphasis.
     #[must_use]
     pub fn recipe(&self) -> PanelRecipe {
-        self.tokens.panel_recipe(self.resolved_chrome())
+        self.tokens
+            .panel_recipe(self.resolved_chrome(), self.elevation())
+    }
+
+    /// Fill rung this panel paints on.
+    #[must_use]
+    pub const fn elevation(&self) -> Elevation {
+        if self.overlay {
+            Elevation::Overlay
+        } else if self.raised {
+            Elevation::Raised
+        } else {
+            Elevation::Surface
+        }
     }
 
     /// Palette borrow from the design system.
@@ -617,10 +642,21 @@ impl<'a> Panel<'a> {
     #[must_use]
     pub const fn surface_recipe(&self) -> SurfaceRecipe {
         if matches!(self.emphasis, PanelChrome::Danger) {
-            return SurfaceRecipe::Destructive;
+            return if self.overlay {
+                SurfaceRecipe::OverlayDanger
+            } else {
+                SurfaceRecipe::Destructive
+            };
         }
         if matches!(self.emphasis, PanelChrome::Focused) {
-            return SurfaceRecipe::Focused;
+            return if self.overlay {
+                SurfaceRecipe::OverlayFocused
+            } else {
+                SurfaceRecipe::Focused
+            };
+        }
+        if self.overlay {
+            return SurfaceRecipe::Overlay;
         }
         match self.variant {
             PanelVariant::Selected => SurfaceRecipe::Selected,
@@ -697,6 +733,11 @@ impl<'a> Panel<'a> {
 
     fn title_line(&self, slots: PanelSlots<'a>, collapsed: Option<bool>) -> Option<String> {
         let mut base = slots.title_text()?;
+        // Danger chrome marks itself in the title so the warning survives a
+        // colorless terminal, where the red border is just a border.
+        if let Some(prefix) = self.recipe().title_prefix {
+            base = format!("{prefix} {base}");
+        }
         if self.collapsible {
             let glyph = if collapsed.unwrap_or(false) {
                 self.tokens.glyphs.disclosure_closed()
@@ -874,7 +915,7 @@ impl<'a> Panel<'a> {
         } else {
             self.emphasis
         };
-        let surface_recipe_tokens = self.tokens.panel_recipe(surface_style);
+        let surface_recipe_tokens = self.tokens.panel_recipe(surface_style, self.elevation());
         let _ = Surface::new(self.tokens)
             .recipe(surface_recipe)
             .bordered(false)
@@ -888,7 +929,7 @@ impl<'a> Panel<'a> {
             if focused && self.is_focusable() {
                 emphasis = PanelChrome::Focused;
             }
-            let recipe = self.tokens.panel_recipe(emphasis);
+            let recipe = self.tokens.panel_recipe(emphasis, self.elevation());
             let border = self.style.unwrap_or(recipe.border);
             let mut block = Block::bordered()
                 .border_style(border)
@@ -1158,6 +1199,51 @@ mod tests {
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::{BorderShape, DesignSystem, GlyphSet};
 
+    #[test]
+    fn overlay_panels_fill_from_the_elevated_rung() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 12, 5);
+
+        let mut overlay = Buffer::empty(area);
+        Panel::new(&system)
+            .overlay(true)
+            .emphasis(PanelChrome::Focused)
+            .paint(area, &mut overlay, None);
+
+        let mut in_flow = Buffer::empty(area);
+        Panel::new(&system)
+            .emphasis(PanelChrome::Focused)
+            .paint(area, &mut in_flow, None);
+
+        assert_eq!(overlay[(4, 2)].bg, system.style(Role::Elevated).bg.unwrap());
+        assert_eq!(in_flow[(4, 2)].bg, system.style(Role::Surface).bg.unwrap());
+        assert_ne!(
+            overlay[(4, 2)].bg,
+            in_flow[(4, 2)].bg,
+            "an overlay must lift off the surface it covers"
+        );
+        // Focus still speaks through the border role, not through weight.
+        assert_eq!(
+            overlay[(0, 0)].fg,
+            system.style(Role::BorderFocused).fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn danger_chrome_marks_its_title_for_colorless_terminals() {
+        let system = DesignSystem::phosphor();
+        let panel = Panel::new(&system)
+            .title("Delete branch")
+            .emphasis(PanelChrome::Danger);
+        let title = panel
+            .title_line(panel.slots_for_width(24), None)
+            .expect("panel has a title");
+        assert!(
+            title.starts_with(system.glyphs.resolve(crate::style::Glyph::Warning).text),
+            "danger titles carry the warning mark, got {title:?}"
+        );
+    }
+
     fn render_border(system: &DesignSystem) -> Buffer {
         let area = Rect::new(0, 0, 8, 4);
         let mut buffer = Buffer::empty(area);
@@ -1221,8 +1307,8 @@ mod tests {
     #[test]
     fn panel_recipe_focus_uses_border_focused_not_weight() {
         let tokens = DesignSystem::default();
-        let normal = tokens.panel_recipe(PanelChrome::Normal);
-        let focused = tokens.panel_recipe(PanelChrome::Focused);
+        let normal = tokens.panel_recipe(PanelChrome::Normal, Elevation::Surface);
+        let focused = tokens.panel_recipe(PanelChrome::Focused, Elevation::Surface);
         assert_ne!(normal.border, focused.border);
         let panel = Panel::new(&tokens)
             .emphasis(PanelChrome::Focused)

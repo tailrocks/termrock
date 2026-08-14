@@ -2026,11 +2026,13 @@ impl<'a> DateTimePicker<'a> {
             state.rebuild_collections();
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(body);
         Widget::render(&panel, body, buffer);
         if inner.is_empty() {

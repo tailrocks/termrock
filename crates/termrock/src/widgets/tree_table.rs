@@ -1245,18 +1245,14 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let cursor = state.cursor_row == row_index;
     let hovered = state.hovered.as_ref() == Some(&row.id);
     let loading = matches!(row.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
-    let recipe = table
-        .system
-        .clone()
-        .selection(crate::style::SelectionChrome::Tint)
-        .resolve_list_row(ListRowVisualState {
-            selected,
-            focused: surface_focused && selected,
-            hovered,
-            enabled: row.enabled,
-            loading,
-            checked,
-        });
+    let recipe = table.system.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: surface_focused && selected,
+        hovered,
+        enabled: row.enabled,
+        loading,
+        checked,
+    });
 
     let mut base_style = match row.status {
         TreeNodeStatus::Error => table.system.style(Role::Danger),

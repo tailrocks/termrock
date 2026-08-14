@@ -1347,12 +1347,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
                                 style,
                             );
-                            if recipe.show_focus_underline && primary_w > 0 {
-                                buffer.set_style(
-                                    Rect::new(x, rect.y, primary_w, 1),
-                                    recipe.focus.add_modifier(Modifier::UNDERLINED),
-                                );
-                            }
                             x = x.saturating_add(primary_w);
                         }
                         if show_secondary && let Some(sec) = row.secondary.as_ref() {
@@ -1680,7 +1674,7 @@ mod tests {
     }
 
     #[test]
-    fn phosphor_selection_is_tinted_not_neon() {
+    fn phosphor_selection_is_a_gutter_not_neon() {
         let rows = rows();
         let system = DesignSystem::default();
         let mut state = ListState::new(Some("second"));
@@ -1693,9 +1687,17 @@ mod tests {
             .find(|r| r.id == "second")
             .unwrap()
             .area;
-        let cell = &buffer[(row.x.saturating_add(1), row.y)];
-        assert_eq!(cell.bg, system.style(Role::SelectionTint).bg.unwrap());
-        assert_ne!(cell.fg, system.style(Role::ActionFocused).fg.unwrap());
+        assert_eq!(
+            buffer[(row.x, row.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "the selected row is marked by its gutter"
+        );
+        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        assert_ne!(
+            label.bg,
+            system.style(Role::Selection).bg.unwrap(),
+            "selection never fills the row by default"
+        );
     }
 
     #[test]

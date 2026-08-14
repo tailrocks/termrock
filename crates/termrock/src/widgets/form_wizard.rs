@@ -967,11 +967,13 @@ impl<'a> FormWizard<'a> {
             state.presentation = pres;
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
         Widget::render(&panel.title(self.title), area, buffer);
         if inner.is_empty() {

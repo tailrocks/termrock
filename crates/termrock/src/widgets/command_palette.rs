@@ -1640,18 +1640,14 @@ impl<'a, Id> CommandPalette<'a, Id> {
             let active = i == cursor && surface;
             let row_rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row_rect));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: entry.enabled,
-                    loading: false,
-                    checked: false,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: false,
+                enabled: entry.enabled,
+                loading: false,
+                checked: false,
+            });
             if recipe.use_fill {
                 buffer.set_style(row_rect, recipe.label);
             } else if recipe.use_tint {

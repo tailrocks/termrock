@@ -518,38 +518,40 @@ impl Backdrop {
         Self::default()
     }
 
-    /// Terminal-default background (Reset).
+    /// Terminal-default background (`Color::Reset`).
+    ///
+    /// For hosts that opt out of dimming: the layer behind the modal keeps the
+    /// operator's terminal background instead of receding.
     #[must_use]
     pub fn reset() -> Self {
         Self {
             symbol: ' ',
-            style: Style::new()
-                .fg(Color::Reset)
-                .bg(crate::style::DIALOG_BACKDROP),
+            style: Style::new().fg(Color::Reset).bg(Color::Reset),
         }
     }
 
-    /// Dim wash glyph field.
+    /// Stippled wash for terminals with no usable background color.
     #[must_use]
     pub fn dim_wash(ascii: bool) -> Self {
         Self {
             symbol: if ascii { '.' } else { '░' },
             style: Style::new()
                 .fg(Color::DarkGray)
-                .bg(crate::style::DIALOG_BACKDROP)
                 .add_modifier(ratatui_core::style::Modifier::DIM),
         }
     }
 
-    /// From design tokens (dim wash by default).
+    /// From design tokens — a solid recede, not a stipple.
+    ///
+    /// Paints `Role::BackdropWash` (the canvas blended toward black), so the
+    /// covered content actually darkens. The old `░` field over `Color::Reset`
+    /// left themed terminals with no dim at all: the background never changed,
+    /// only a sprinkle of gray glyphs appeared.
     #[must_use]
     pub fn from_tokens(tokens: &DesignSystem) -> Self {
         Self {
-            symbol: if tokens.glyphs.is_ascii() { '.' } else { '░' },
-            style: tokens
-                .style(Role::Backdrop)
-                .bg(crate::style::DIALOG_BACKDROP)
-                .add_modifier(ratatui_core::style::Modifier::DIM),
+            symbol: ' ',
+            style: tokens.style(Role::BackdropWash),
         }
     }
 
@@ -1224,10 +1226,10 @@ impl<'a> Dialog<'a> {
         if self.recipe.is_destructive() || matches!(self.variant, DialogVariant::Danger) {
             return PanelChrome::Danger;
         }
-        match self.variant {
-            DialogVariant::Info => PanelChrome::Focused,
-            DialogVariant::Default | DialogVariant::Danger => self.emphasis,
-        }
+        // Variant says what the dialog is about; emphasis says whether it owns
+        // interaction. An informational dialog does not get a focus border for
+        // being informational.
+        self.emphasis
     }
 
     fn title_for_paint(&self) -> String {
@@ -1902,16 +1904,33 @@ mod backdrop_tests {
     fn default_backdrop_dims_terminal_background() {
         let backdrop = Backdrop::default();
         assert_eq!(backdrop.symbol, '░');
-        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+        assert!(
+            backdrop
+                .style
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::DIM),
+            "the stipple fallback still has to read as dimmed"
+        );
     }
 
     #[test]
     fn backdrop_from_tokens_dims() {
         let system = DesignSystem::default();
         let backdrop = Backdrop::from_tokens(&system);
-        assert_eq!(backdrop.symbol, '░');
-        assert_eq!(backdrop.style.fg, system.style(Role::Backdrop).fg);
-        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+        // A solid recede, not a sprinkle of glyphs over an unchanged terminal
+        // background: the covered layer must actually darken.
+        assert_eq!(backdrop.symbol, ' ');
+        assert_eq!(backdrop.style.bg, system.style(Role::BackdropWash).bg);
+        assert_ne!(
+            backdrop.style.bg,
+            Some(Color::Reset),
+            "Reset leaves themed terminals undimmed"
+        );
+        assert_ne!(
+            backdrop.style.bg,
+            system.style(Role::Canvas).bg,
+            "the wash has to sit below the canvas it covers"
+        );
     }
 
     #[test]
@@ -2241,7 +2260,7 @@ mod backdrop_tests {
     fn dim_wash_backdrop_is_not_hard_black() {
         let wash = Backdrop::dim_wash(false);
         assert_ne!(wash.symbol, '\0');
-        assert_eq!(wash.style.bg, Some(Color::Reset));
+        assert_eq!(wash.style.bg, None, "the stipple never forces a background");
     }
 
     #[test]

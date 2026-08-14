@@ -1254,22 +1254,18 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: item.enabled,
-                    loading: false,
-                    checked: matches!(
-                        item.kind,
-                        MenuRowKind::Checkbox { checked: true }
-                            | MenuRowKind::Radio { selected: true, .. }
-                    ),
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: false,
+                enabled: item.enabled,
+                loading: false,
+                checked: matches!(
+                    item.kind,
+                    MenuRowKind::Checkbox { checked: true }
+                        | MenuRowKind::Radio { selected: true, .. }
+                ),
+            });
             if recipe.use_fill {
                 buffer.set_style(hit, recipe.label);
             } else if recipe.use_tint {
