@@ -155,6 +155,8 @@ pub enum Glyph {
     SelectionGutter,
     /// List bullet.
     Bullet,
+    /// Inline meta separator between adjacent facts on one row.
+    MetaSeparator,
     /// More / overflow ellipsis.
     Ellipsis,
     /// Mode indicator dot.
@@ -256,6 +258,7 @@ impl Glyph {
             Self::RuleHStrong => "rule-h-strong",
             Self::SelectionGutter => "selection-gutter",
             Self::Bullet => "bullet",
+            Self::MetaSeparator => "meta-separator",
             Self::Ellipsis => "ellipsis",
             Self::ModeDot => "mode-dot",
             Self::Connection => "connection",
@@ -329,6 +332,7 @@ impl Glyph {
             Self::RuleHStrong => "strong horizontal rule",
             Self::SelectionGutter => "selected",
             Self::Bullet => "list item",
+            Self::MetaSeparator => "separator",
             Self::Ellipsis => "more",
             Self::ModeDot => "mode",
             Self::Connection => "connection",
@@ -400,6 +404,7 @@ impl Glyph {
             | Self::RuleHStrong
             | Self::SelectionGutter
             | Self::Bullet
+            | Self::MetaSeparator
             | Self::Ellipsis
             | Self::ModeDot
             | Self::Connection
@@ -470,6 +475,7 @@ impl Glyph {
         Self::RuleHStrong,
         Self::SelectionGutter,
         Self::Bullet,
+        Self::MetaSeparator,
         Self::Ellipsis,
         Self::ModeDot,
         Self::Connection,
@@ -581,6 +587,7 @@ impl Glyph {
             Self::RuleHStrong => ("═", "=", "═"),
             Self::SelectionGutter => ("▌", "*", "▌"),
             Self::Bullet => ("•", "-", "•"),
+            Self::MetaSeparator => ("·", "|", "·"),
             Self::Ellipsis => ("…", "...", "…"),
             Self::ModeDot => ("●", "*", "●"),
             Self::Connection => ("◍", "=", "◍"),

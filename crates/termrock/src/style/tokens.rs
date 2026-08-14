@@ -119,6 +119,27 @@ impl GlyphSet {
         self.resolve(super::glyph::Glyph::Bullet).text
     }
 
+    /// Inline separator between adjacent facts on one row.
+    ///
+    /// The middle dot is reserved for this job: it separates meta content
+    /// inside a row, while [`Self::bullet`] introduces a row of its own.
+    #[must_use]
+    pub const fn meta_separator(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::MetaSeparator).text
+    }
+
+    /// [`Self::meta_separator`] with its surrounding breathing space.
+    ///
+    /// Hint rows, status slots, and keyboard help all join with this exact
+    /// string, so the rhythm between facts is identical wherever they appear.
+    #[must_use]
+    pub const fn meta_join(self) -> &'static str {
+        match self {
+            Self::Ascii => " | ",
+            Self::Unicode | Self::Enhanced => " · ",
+        }
+    }
+
     /// Disabled mark (label suffix).
     #[must_use]
     pub const fn disabled_mark(self) -> &'static str {

@@ -398,7 +398,8 @@ pub use highlighted_text::{
     substring_ranges_ignore_ascii_case,
 };
 pub use hint_bar::{
-    Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
+    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar,
+    styled_hint_spans, wrapped_hint_lines,
 };
 pub use icon::{Icon, IconParts};
 pub use identity::{

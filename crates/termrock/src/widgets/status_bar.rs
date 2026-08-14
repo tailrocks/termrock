@@ -816,17 +816,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 Side::Right => 2,
             };
             let mut content_area = placement.area;
-            if seen[side_index] && placement.area.width > 2 {
-                let separator = self.system.glyphs.resolve(Glyph::ModeDot).text;
+            if seen[side_index] && placement.area.width > 3 {
+                // Symmetric ` · `: the separator sits between two facts, so it
+                // gets the same breathing space on both sides.
+                let separator = self.system.glyphs.meta_separator();
                 buffer.set_stringn(
-                    placement.area.x,
+                    placement.area.x.saturating_add(1),
                     placement.area.y,
                     separator,
                     1,
                     apply_alpha(self.system, self.system.style(Role::TextMuted), self.alpha),
                 );
-                content_area.x = content_area.x.saturating_add(2);
-                content_area.width = content_area.width.saturating_sub(2);
+                content_area.x = content_area.x.saturating_add(3);
+                content_area.width = content_area.width.saturating_sub(3);
             }
             seen[side_index] = true;
             crate::text::display_cols_slice_into(

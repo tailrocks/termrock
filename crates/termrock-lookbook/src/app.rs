@@ -427,8 +427,12 @@ impl Lookbook {
                 | termrock::widgets::HintSpan::Text(value) => (*value).to_owned(),
                 termrock::widgets::HintSpan::DynKey(value)
                 | termrock::widgets::HintSpan::Dyn(value) => value.clone(),
-                termrock::widgets::HintSpan::Sep => " · ".to_owned(),
-                termrock::widgets::HintSpan::GroupSep => "   ".to_owned(),
+                termrock::widgets::HintSpan::Sep => {
+                    termrock::style::GlyphSet::default().meta_join().to_owned()
+                }
+                termrock::widgets::HintSpan::GroupSep => {
+                    termrock::widgets::HINT_GROUP_JOIN.to_owned()
+                }
             })
             .collect::<Vec<_>>()
             .join(" ")

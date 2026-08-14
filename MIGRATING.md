@@ -298,6 +298,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0282 | `v0.14.0` | [Honest capability ladder: quantizer, projections, glyph de-collision](migrations/0282-v0.14.0-honest-capability-ladder.md) |
 | 0283 | `v0.14.0` | [The contrast floor](migrations/0283-v0.14.0-contrast-floor.md) |
 | 0284 | `v0.14.0` | [Graphite role ladder: text tiers, accent de-collapse, retired tab-underline roles](migrations/0284-v0.14.0-graphite-role-ladder.md) |
+| 0285 | `v0.14.0` | [Row rhythm and alignment](migrations/0285-v0.14.0-row-rhythm-and-alignment.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -1023,7 +1023,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             match opt.kind {
                 SelectRowKind::Separator => {
                     if skipped >= offset || option_idx == 0 {
-                        let line = "─".repeat(usize::from(list_area.width).min(64));
+                        let line = self
+                            .system
+                            .glyphs
+                            .rule()
+                            .repeat(usize::from(list_area.width));
                         buffer.set_stringn(
                             list_area.x,
                             row_y,

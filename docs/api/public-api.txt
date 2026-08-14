@@ -28491,6 +28491,7 @@ pub termrock::style::Glyph::FolderOpen
 pub termrock::style::Glyph::Info
 pub termrock::style::Glyph::Loading
 pub termrock::style::Glyph::Mask
+pub termrock::style::Glyph::MetaSeparator
 pub termrock::style::Glyph::ModeDot
 pub termrock::style::Glyph::NowEdge
 pub termrock::style::Glyph::Play
@@ -28637,6 +28638,8 @@ pub const fn termrock::style::GlyphSet::ellipsis(self) -> &'static str
 pub const fn termrock::style::GlyphSet::id(self) -> &'static str
 pub const fn termrock::style::GlyphSet::is_ascii(self) -> bool
 pub const fn termrock::style::GlyphSet::loading(self) -> &'static str
+pub const fn termrock::style::GlyphSet::meta_join(self) -> &'static str
+pub const fn termrock::style::GlyphSet::meta_separator(self) -> &'static str
 pub const fn termrock::style::GlyphSet::resolve(self, termrock::style::Glyph) -> termrock::style::GlyphResolved
 pub const fn termrock::style::GlyphSet::rule(self) -> &'static str
 pub const fn termrock::style::GlyphSet::rule_strong(self) -> &'static str
@@ -67864,6 +67867,7 @@ pub fn termrock::widgets::Hint<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Hint<'a>
 pub struct termrock::widgets::HintBar<'a>
 impl<'a> termrock::widgets::HintBar<'a>
+pub const fn termrock::widgets::HintBar<'a>::alignment(self, termrock::text::CellAlignment) -> Self
 pub const fn termrock::widgets::HintBar<'a>::leading_spacer(self, bool) -> Self
 pub fn termrock::widgets::HintBar<'a>::measured_height(&self, u16) -> u16
 pub const fn termrock::widgets::HintBar<'a>::new(&'a [termrock::widgets::Hint<'a>], &'a termrock::style::DesignSystem) -> Self
@@ -89390,6 +89394,8 @@ pub const termrock::widgets::FULLSCREEN_VIEWER_OVERLAY_ID: &str
 pub const termrock::widgets::HEX_DEFAULT_BYTES_PER_ROW: u8
 pub const termrock::widgets::HEX_MAX_BYTES_PER_ROW: u8
 pub const termrock::widgets::HEX_MIN_BYTES_PER_ROW: u8
+pub const termrock::widgets::HINT_GROUP_JOIN: &str
+pub const termrock::widgets::HINT_SEPARATOR_COLS: usize
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT: u16
 pub const termrock::widgets::HISTORY_PICKER_FULLSCREEN_MAX_WIDTH: u16
 pub const termrock::widgets::HISTORY_PICKER_OVERLAY_ID: &str

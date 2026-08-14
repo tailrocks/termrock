@@ -763,28 +763,31 @@ impl<'a> Popover<'a> {
         if header_h > 0 {
             state.slots.header = Rect::new(inner.x, y, inner.width, header_h);
             if let Some(title) = self.header {
-                let style = if self.colorless {
+                crate::text::paint_text(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    title,
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    self.system
-                        .style(Role::TextStrong)
-                        .add_modifier(Modifier::BOLD)
-                };
+                        .add_modifier(Modifier::BOLD),
+                    self.system.glyphs.ellipsis(),
+                );
+            }
+            // A header taller than its title spends its last row on a rule, so
+            // the header reads as a band instead of a floating line. A
+            // single-row header keeps every cell for the title.
+            if header_h >= 2 && body_h > 0 {
+                let rule_y = y.saturating_add(header_h.saturating_sub(1));
+                let rule = self.system.glyphs.rule().repeat(usize::from(inner.width));
                 buffer.set_stringn(
                     inner.x,
-                    y,
-                    &take_display_cols(title, usize::from(inner.width)),
+                    rule_y,
+                    &rule,
                     usize::from(inner.width),
-                    style,
+                    self.system.style(Role::Border),
                 );
             }
             y = y.saturating_add(header_h);
-            // separator under header
-            if y < inner.bottom() && header_h > 0 && body_h > 0 {
-                // optional thin rule inside header last row already used for title
-            }
         } else {
             state.slots.header = Rect::default();
         }

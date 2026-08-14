@@ -412,7 +412,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
             density: Density::Comfortable,
             layout: KvLayout::Auto,
             key_width: 0,
-            separator: "  ",
+            separator: system.kv_separator().text(),
         }
     }
 
@@ -425,7 +425,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
             density: Density::Compact,
             layout: KvLayout::Auto,
             key_width: 0,
-            separator: " ",
+            separator: system.kv_separator().text(),
         }
     }
 
@@ -1223,6 +1223,22 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+
+    #[test]
+    fn separator_comes_from_the_shared_key_value_token() {
+        let system = crate::style::DesignSystem::phosphor();
+        let entries = sample_entries();
+        assert_eq!(
+            KeyValueList::new(&entries, &system).separator,
+            system.kv_separator().text()
+        );
+        assert_eq!(
+            KeyValueList::dense(&entries, &system).separator,
+            system.kv_separator().text()
+        );
+        let colon = system.with_kv_separator(crate::style::KvSeparator::Colon);
+        assert_eq!(KeyValueList::new(&entries, &colon).separator, " : ");
+    }
 
     fn sample_entries() -> [KvEntry<'static, &'static str>; 5] {
         [

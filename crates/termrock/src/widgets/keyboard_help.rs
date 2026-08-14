@@ -981,7 +981,13 @@ impl<'a> KeyboardHelp<'a> {
         // paint key/label pairs with priority drop already applied.
         let mut x = area.x;
         let y = area.y;
-        let sep = if self.ascii { " | " } else { " · " };
+        // The widget's own ASCII switch outranks the system profile here.
+        let glyphs = if self.ascii {
+            crate::style::GlyphSet::Ascii
+        } else {
+            self.system.glyphs
+        };
+        let sep = glyphs.meta_join();
         for (i, e) in slice.iter().enumerate() {
             if x >= area.right() {
                 break;

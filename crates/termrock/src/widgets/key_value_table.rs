@@ -521,7 +521,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             key_width: 0,
             show_type: true,
             show_source: true,
-            separator: "  ",
+            separator: system.kv_separator().text(),
         }
     }
 
@@ -1571,6 +1571,18 @@ impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &KeyValueTable<'a, Id> 
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
+
+    #[test]
+    fn separator_comes_from_the_shared_key_value_token() {
+        let system = crate::style::DesignSystem::phosphor();
+        let fields = sample();
+        assert_eq!(
+            KeyValueTable::new(&fields, &system).separator,
+            system.kv_separator().text()
+        );
+        let colon = system.with_kv_separator(crate::style::KvSeparator::Colon);
+        assert_eq!(KeyValueTable::new(&fields, &colon).separator, " : ");
+    }
 
     fn sample() -> Vec<KvtField<'static, &'static str>> {
         vec![

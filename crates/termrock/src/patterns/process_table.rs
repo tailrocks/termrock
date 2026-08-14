@@ -1267,8 +1267,10 @@ impl<'a> ProcessTable<'a> {
 
         let header_h = u16::from(body_h >= 2);
         if header_h > 0 {
+            // The leading space stands in for the row's selection mark, so the
+            // header sits over its own data instead of one cell to the right.
             let hdr = format!(
-                "{:<4} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
+                " {:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
                 "S", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
             );
             buffer.set_stringn(
@@ -1678,6 +1680,42 @@ mod tests {
             ProcessTableOutcome::ConfirmCancelled
         ));
         assert!(state.pending_confirm.is_none());
+    }
+
+    #[test]
+    fn header_columns_sit_over_their_own_data() {
+        let system = DesignSystem::default();
+        let rows = sample();
+        let mut state = ProcessTableState::new();
+        let area = Rect::new(0, 0, 72, 12);
+        let mut buf = Buffer::empty(area);
+        ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let row_text = |y: u16| -> String {
+            (0..area.width)
+                .map(|x| buf[(x, y)].symbol().to_string())
+                .collect()
+        };
+        let header = (0..area.height)
+            .map(row_text)
+            .find(|line| line.contains("PID"))
+            .expect("header row");
+        let header_y = (0..area.height)
+            .find(|y| row_text(*y).contains("PID"))
+            .expect("header row index");
+        // `PID` is right-aligned in a 7-cell column; the first data row's pid
+        // must end in the same column, not one cell to its left.
+        let pid_end = header.find("PID").expect("PID header") + "PID".len();
+        let data = row_text(header_y + 1);
+        assert_eq!(
+            data[..pid_end].trim_end().len(),
+            pid_end,
+            "pid column drifted left of its header: {data:?}"
+        );
+        assert_eq!(
+            data.as_bytes()[pid_end],
+            b' ',
+            "pid column overruns its header: {data:?}"
+        );
     }
 
     #[test]
