@@ -246,8 +246,8 @@ use termrock::style::SPINNER_DOT_PULSE_FRAMES;
 use termrock::style::{DesignSystem, MotionPolicy};
 use termrock::widgets::{
     Progress, ProgressKind, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
-    SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Skeleton,
-    SkeletonState, Spinner, SpinnerState,
+    SPINNER_RECONNECT_UNICODE, SPINNER_STREAM_ASCII, SPINNER_STREAM_UNICODE, SPINNER_WAITING_ASCII,
+    SPINNER_WAITING_UNICODE, Skeleton, SkeletonState, Spinner, SpinnerState,
 };
 
 /// Two ticks far enough apart that any animation would have advanced.
@@ -326,13 +326,15 @@ fn motion_policy_full_actually_animates() {
 fn spinner_frames_one_column() {
     // Layout-stable animation (§7 anti-pattern 3): a frame that changes width
     // shoves its neighbours every tick.
-    let sets: [(&str, &[&str]); 6] = [
+    let sets: [(&str, &[&str]); 8] = [
         ("braille", SPINNER_BRAILLE_FRAMES),
         ("dot-pulse", SPINNER_DOT_PULSE_FRAMES),
         ("ascii", SPINNER_ASCII_FRAMES),
         ("waiting-unicode", SPINNER_WAITING_UNICODE),
         ("waiting-ascii", SPINNER_WAITING_ASCII),
         ("reconnect", SPINNER_RECONNECT_UNICODE),
+        ("stream-unicode", SPINNER_STREAM_UNICODE),
+        ("stream-ascii", SPINNER_STREAM_ASCII),
     ];
     for (name, frames) in sets {
         assert!(!frames.is_empty(), "{name} frame set is empty");

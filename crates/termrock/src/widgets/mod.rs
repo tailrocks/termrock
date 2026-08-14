@@ -758,8 +758,9 @@ pub use slider::{
 };
 pub use spinner::{
     ActivityIndicator, ActivityPhase, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
-    SPINNER_DEFAULT_PERIOD_MS, SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII,
-    SPINNER_WAITING_UNICODE, Spinner, SpinnerGlyphSet, SpinnerState, SpinnerVariant,
+    SPINNER_DEFAULT_PERIOD_MS, SPINNER_RECONNECT_UNICODE, SPINNER_STREAM_ASCII,
+    SPINNER_STREAM_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Spinner,
+    SpinnerGlyphSet, SpinnerState, SpinnerVariant,
 };
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

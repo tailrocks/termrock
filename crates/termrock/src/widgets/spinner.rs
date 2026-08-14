@@ -27,7 +27,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, MotionPolicy, Role},
+    style::{DesignSystem, MotionChannel, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -42,6 +42,10 @@ pub const SPINNER_WAITING_UNICODE: &[&str] = &["·", "•", "●", "•"];
 pub const SPINNER_WAITING_ASCII: &[&str] = &[".", "o", "O", "o"];
 /// Reconnecting uses reverse braille cadence.
 pub const SPINNER_RECONNECT_UNICODE: &[&str] = &["⠏", "⠇", "⠧", "⠦", "⠴", "⠼", "⠸", "⠹", "⠙", "⠋"];
+/// Streaming ripple — content is arriving, not work spinning (Unicode).
+pub const SPINNER_STREAM_UNICODE: &[&str] = &["∻", "≈", "∿", "≋"];
+/// Streaming ripple (ASCII).
+pub const SPINNER_STREAM_ASCII: &[&str] = &["~", "-", "~", "="];
 
 // ── Phase / variant / glyphs ────────────────────────────────────────────────
 
@@ -58,6 +62,10 @@ pub enum ActivityPhase {
     Queued,
     /// Transport or session reconnect.
     Reconnecting,
+    /// Content is arriving — a ripple, not a spin.
+    Streaming,
+    /// Terminal success. Gravity: never animates.
+    Done,
 }
 
 impl ActivityPhase {
@@ -69,6 +77,8 @@ impl ActivityPhase {
             Self::Waiting => "waiting",
             Self::Queued => "queued",
             Self::Reconnecting => "reconnecting",
+            Self::Streaming => "streaming",
+            Self::Done => "done",
         }
     }
 
@@ -80,22 +90,38 @@ impl ActivityPhase {
             Self::Waiting => "Waiting",
             Self::Queued => "Queued",
             Self::Reconnecting => "Reconnecting",
+            Self::Streaming => "Streaming",
+            Self::Done => "Done",
+        }
+    }
+
+    /// What this phase is *saying*, in the shared motion vocabulary.
+    ///
+    /// The channel owns the period and the frame-rate rung, so a spinner and a
+    /// status dot in the same state breathe together instead of drifting.
+    #[must_use]
+    pub const fn channel(self) -> MotionChannel {
+        match self {
+            Self::Indeterminate | Self::Reconnecting => MotionChannel::Work,
+            Self::Waiting => MotionChannel::Wait,
+            Self::Streaming => MotionChannel::Stream,
+            // Gravity: a queued or finished thing is not happening at a rate.
+            Self::Queued | Self::Done => MotionChannel::Static,
         }
     }
 
     /// Whether this phase advances frames under Full motion.
     #[must_use]
     pub const fn animates(self) -> bool {
-        !matches!(self, Self::Queued)
+        !matches!(self.channel(), MotionChannel::Static)
     }
 
-    /// Period multiplier (waiting is slower).
+    /// Frame period for this phase, from its channel.
     #[must_use]
-    pub const fn period_scale(self) -> u64 {
-        match self {
-            Self::Indeterminate | Self::Reconnecting => 1,
-            Self::Waiting => 3,
-            Self::Queued => 1,
+    pub const fn period_ms(self) -> u64 {
+        match self.channel() {
+            MotionChannel::Static => SPINNER_DEFAULT_PERIOD_MS,
+            channel => channel.period_ms(),
         }
     }
 }
@@ -264,10 +290,7 @@ impl SpinnerState {
         if !self.should_tick() {
             return AnimationDemand::idle();
         }
-        let period = self
-            .period_ms
-            .saturating_mul(self.phase.period_scale())
-            .max(16);
+        let period = self.frame_period_ms().max(16);
         // spinner_demand uses fixed 80ms — scale deadline to our period
         let base = spinner_demand(tick, motion, true);
         if !base.needs_redraw {
@@ -277,6 +300,19 @@ impl SpinnerState {
         AnimationDemand {
             needs_redraw: true,
             next_deadline: Some(tick.now() + scaled),
+        }
+    }
+
+    /// Frame period in milliseconds.
+    ///
+    /// The phase's [`MotionChannel`] owns the cadence; a host override still
+    /// wins, so a caller that has measured its own rhythm keeps it.
+    #[must_use]
+    pub fn frame_period_ms(&self) -> u64 {
+        if self.period_ms == SPINNER_DEFAULT_PERIOD_MS {
+            self.phase.period_ms()
+        } else {
+            self.period_ms
         }
     }
 
@@ -290,19 +326,27 @@ impl SpinnerState {
         let use_ascii = ascii || matches!(self.glyph_set, SpinnerGlyphSet::Ascii);
 
         if !motion.animate_spinners() || !self.phase.animates() {
+            // Reduced motion is not frozen: each phase keeps a distinct static
+            // mark. `Indeterminate` must NOT fall back to a filled `●` — filled
+            // reads as "terminal state reached", which is the one thing an
+            // in-flight spinner is not.
             return if use_ascii {
                 match self.phase {
                     ActivityPhase::Queued => &["o"],
                     ActivityPhase::Waiting => &["."],
                     ActivityPhase::Reconnecting => &["?"],
-                    ActivityPhase::Indeterminate => &["o"],
+                    ActivityPhase::Streaming => &["~"],
+                    ActivityPhase::Done => &["+"],
+                    ActivityPhase::Indeterminate => &["O"],
                 }
             } else {
                 match self.phase {
-                    ActivityPhase::Queued => &["○"],
+                    ActivityPhase::Queued => &["◌"],
                     ActivityPhase::Waiting => &["·"],
-                    ActivityPhase::Reconnecting => &["◌"],
-                    ActivityPhase::Indeterminate => &["●"],
+                    ActivityPhase::Reconnecting => &["◍"],
+                    ActivityPhase::Streaming => &["≈"],
+                    ActivityPhase::Done => &["✓"],
+                    ActivityPhase::Indeterminate => &["○"],
                 }
             };
         }
@@ -328,7 +372,22 @@ impl SpinnerState {
                 if use_ascii {
                     &["o"]
                 } else {
-                    &["○"]
+                    &["◌"]
+                }
+            }
+            ActivityPhase::Streaming => {
+                if use_ascii {
+                    SPINNER_STREAM_ASCII
+                } else {
+                    SPINNER_STREAM_UNICODE
+                }
+            }
+            // Done is terminal: one settled mark, never a sequence.
+            ActivityPhase::Done => {
+                if use_ascii {
+                    &["+"]
+                } else {
+                    &["✓"]
                 }
             }
             ActivityPhase::Reconnecting => {
@@ -351,8 +410,7 @@ impl SpinnerState {
         if !self.should_tick() || !motion.animate_spinners() || !self.phase.animates() {
             return frames[0];
         }
-        let period = self.period_ms.saturating_mul(self.phase.period_scale());
-        let step = spinner_step(tick, frames.len(), period, motion);
+        let step = spinner_step(tick, frames.len(), self.frame_period_ms(), motion);
         frames[step]
     }
 }
@@ -749,12 +807,74 @@ mod tests {
     }
 
     #[test]
+    fn every_phase_declares_its_channel_and_cadence() {
+        // The channel owns the period, so a spinner and a status dot in the
+        // same state breathe together instead of drifting apart.
+        assert_eq!(ActivityPhase::Indeterminate.channel(), MotionChannel::Work);
+        assert_eq!(ActivityPhase::Reconnecting.channel(), MotionChannel::Work);
+        assert_eq!(ActivityPhase::Waiting.channel(), MotionChannel::Wait);
+        assert_eq!(ActivityPhase::Streaming.channel(), MotionChannel::Stream);
+        assert_eq!(ActivityPhase::Queued.channel(), MotionChannel::Static);
+        assert_eq!(ActivityPhase::Done.channel(), MotionChannel::Static);
+
+        assert_eq!(ActivityPhase::Indeterminate.period_ms(), 80);
+        assert_eq!(ActivityPhase::Waiting.period_ms(), 240);
+        assert_eq!(ActivityPhase::Streaming.period_ms(), 120);
+
+        // Terminal states cost no frames at all.
+        assert!(!ActivityPhase::Queued.animates());
+        assert!(!ActivityPhase::Done.animates());
+        assert!(ActivityPhase::Streaming.animates());
+    }
+
+    #[test]
+    fn done_is_a_settled_mark_not_a_sequence() {
+        let mut state = SpinnerState::new();
+        state.set_phase(ActivityPhase::Done);
+        assert_eq!(state.frames(MotionPolicy::Full), &["✓"]);
+        assert_eq!(
+            state.frame_glyph(tick_at(0), MotionPolicy::Full),
+            state.frame_glyph(tick_at(4_000), MotionPolicy::Full),
+            "a finished spinner must not keep moving"
+        );
+    }
+
+    #[test]
+    fn reduced_motion_marks_stay_distinct_per_phase() {
+        // Reduced is not frozen: the phase must still be readable, and no two
+        // phases may share a mark or the tier destroys the distinction.
+        let mut marks = Vec::new();
+        for phase in [
+            ActivityPhase::Indeterminate,
+            ActivityPhase::Waiting,
+            ActivityPhase::Queued,
+            ActivityPhase::Reconnecting,
+            ActivityPhase::Streaming,
+            ActivityPhase::Done,
+        ] {
+            let mut state = SpinnerState::new();
+            state.set_phase(phase);
+            let mark = state.frame_glyph(tick_at(500), MotionPolicy::Off);
+            assert_ne!(mark, "●", "{phase:?} fell back to a filled dot");
+            marks.push(mark);
+        }
+        let unique: std::collections::HashSet<_> = marks.iter().collect();
+        assert_eq!(
+            unique.len(),
+            marks.len(),
+            "phases share a static mark: {marks:?}"
+        );
+    }
+
+    #[test]
     fn spinner_motion_off_static() {
         let tokens = DesignSystem::default();
         let spinner = Spinner::new(&tokens);
         let now = Instant::now();
         let tick = FrameTick::manual(now, Duration::from_millis(560), Duration::from_millis(16));
-        assert_eq!(spinner.frame_glyph(tick, MotionPolicy::Off), "●");
+        // Hollow, never filled: a filled dot reads as "terminal state reached",
+        // which an in-flight spinner has not.
+        assert_eq!(spinner.frame_glyph(tick, MotionPolicy::Off), "○");
         let a = spinner.frame_glyph(tick, MotionPolicy::Full);
         let b = spinner.frame_glyph(
             FrameTick::manual(now, Duration::from_millis(640), Duration::from_millis(16)),
@@ -878,7 +998,10 @@ mod tests {
         let mut state = SpinnerState::new();
         state.set_ascii(true);
         let g = state.frame_glyph(tick_at(0), MotionPolicy::Off);
-        assert!(g == "o" || g == "|" || g == "." || g == "?");
+        assert!(
+            g == "O" || g == "o" || g == "|" || g == "." || g == "?",
+            "{g}"
+        );
         let a = state.frame_glyph(tick_at(80), MotionPolicy::Full);
         let b = state.frame_glyph(tick_at(160), MotionPolicy::Full);
         // may or may not differ depending on step; at least valid ascii set
