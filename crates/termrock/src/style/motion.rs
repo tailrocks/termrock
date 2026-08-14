@@ -217,6 +217,128 @@ impl MotionChannel {
     }
 }
 
+/// Easing curves permitted on a cell grid (`docs/design/tui-motion-system.md` §5).
+///
+/// **No overshoot family.** `Elastic`, `Bounce`, and strong `Back` curves are
+/// deliberately absent: on a grid an overshoot quantizes to a row popping past
+/// its target and back, plus a color flicker on the way. There is no variant to
+/// add them with, which is the point.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum Easing {
+    /// Constant rate — micro feedback only.
+    #[default]
+    Linear,
+    /// Gentle start.
+    SineIn,
+    /// Gentle stop — the default for anything entering.
+    SineOut,
+    /// Symmetric, gentle at both ends.
+    SineInOut,
+    /// Accelerating.
+    QuadIn,
+    /// Decelerating.
+    QuadOut,
+    /// Symmetric quadratic.
+    QuadInOut,
+    /// Sharp acceleration — exits.
+    CubicIn,
+    /// Fast start, long settle — entrances and scroll.
+    CubicOut,
+    /// Symmetric cubic — screen transitions.
+    CubicInOut,
+}
+
+impl Easing {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Linear => "linear",
+            Self::SineIn => "sine-in",
+            Self::SineOut => "sine-out",
+            Self::SineInOut => "sine-in-out",
+            Self::QuadIn => "quad-in",
+            Self::QuadOut => "quad-out",
+            Self::QuadInOut => "quad-in-out",
+            Self::CubicIn => "cubic-in",
+            Self::CubicOut => "cubic-out",
+            Self::CubicInOut => "cubic-in-out",
+        }
+    }
+
+    /// Every curve, in catalog order.
+    pub const ALL: [Self; 10] = [
+        Self::Linear,
+        Self::SineIn,
+        Self::SineOut,
+        Self::SineInOut,
+        Self::QuadIn,
+        Self::QuadOut,
+        Self::QuadInOut,
+        Self::CubicIn,
+        Self::CubicOut,
+        Self::CubicInOut,
+    ];
+
+    /// Map linear progress `0.0..=1.0` onto the curve.
+    ///
+    /// Every curve is anchored at `f(0) = 0` and `f(1) = 1` and stays inside
+    /// `0..=1` throughout — that containment is what keeps geometry from
+    /// popping.
+    #[must_use]
+    pub fn apply(self, t: f32) -> f32 {
+        use std::f32::consts::PI;
+        let t = t.clamp(0.0, 1.0);
+        match self {
+            Self::Linear => t,
+            Self::SineIn => 1.0 - (t * PI / 2.0).cos(),
+            Self::SineOut => (t * PI / 2.0).sin(),
+            Self::SineInOut => 0.5 * (1.0 - (PI * t).cos()),
+            Self::QuadIn => t * t,
+            Self::QuadOut => t * (2.0 - t),
+            Self::QuadInOut => {
+                if t < 0.5 {
+                    2.0 * t * t
+                } else {
+                    1.0 - 2.0 * (1.0 - t) * (1.0 - t)
+                }
+            }
+            Self::CubicIn => t * t * t,
+            Self::CubicOut => {
+                let inv = 1.0 - t;
+                1.0 - inv * inv * inv
+            }
+            Self::CubicInOut => {
+                if t < 0.5 {
+                    4.0 * t * t * t
+                } else {
+                    let inv = -2.0 * t + 2.0;
+                    1.0 - inv * inv * inv / 2.0
+                }
+            }
+        }
+    }
+}
+
+/// Shortest scroll ease (§5: short hops read instant).
+pub const SCROLL_EASE_MIN: Duration = Duration::from_millis(80);
+/// Longest scroll ease (§5: long jumps stay capped).
+pub const SCROLL_EASE_MAX: Duration = Duration::from_millis(200);
+
+/// Distance-scaled scroll duration (§5 scroll row).
+///
+/// A one-row hop must feel instant and a page jump must not feel sluggish, so
+/// the duration scales with distance and saturates — never "one duration for
+/// every scroll", which makes short hops laggy and long ones frantic.
+#[must_use]
+pub fn scroll_ease_duration(rows: u16) -> Duration {
+    const SATURATION_ROWS: f32 = 40.0;
+    let t = (f32::from(rows) / SATURATION_ROWS).clamp(0.0, 1.0);
+    let span = SCROLL_EASE_MAX.as_millis() as f32 - SCROLL_EASE_MIN.as_millis() as f32;
+    Duration::from_millis(SCROLL_EASE_MIN.as_millis() as u64 + (span * t) as u64)
+}
+
 /// Peak amplitude of any ambient loop (§1 peak restraint).
 ///
 /// Ambient motion whispers: a third of the way toward the accent, never a
@@ -384,6 +506,44 @@ mod tests {
     fn reduced_motion_is_static() {
         assert_eq!(effective_alpha(MotionPolicy::Basic, 0.2), 1.0);
         assert_eq!(effective_alpha(MotionPolicy::Off, 0.0), 1.0);
+    }
+
+    #[test]
+    fn every_easing_is_anchored_and_contained() {
+        for easing in Easing::ALL {
+            assert!(
+                easing.apply(0.0).abs() < 0.001,
+                "{easing:?} does not start at 0"
+            );
+            assert!(
+                (easing.apply(1.0) - 1.0).abs() < 0.001,
+                "{easing:?} does not end at 1"
+            );
+            for step in 0..=100 {
+                let t = step as f32 / 100.0;
+                let v = easing.apply(t);
+                assert!(
+                    (-0.001..=1.001).contains(&v),
+                    "{easing:?} overshoots at {t}: {v} — overshoot pops rows on a cell grid"
+                );
+            }
+            // Clamped outside the domain rather than extrapolating.
+            assert_eq!(easing.apply(-1.0), easing.apply(0.0));
+            assert_eq!(easing.apply(2.0), easing.apply(1.0));
+        }
+    }
+
+    #[test]
+    fn scroll_duration_scales_with_distance_and_saturates() {
+        assert_eq!(scroll_ease_duration(0), SCROLL_EASE_MIN);
+        assert!(scroll_ease_duration(5) > SCROLL_EASE_MIN);
+        assert!(scroll_ease_duration(5) < scroll_ease_duration(30));
+        assert_eq!(scroll_ease_duration(40), SCROLL_EASE_MAX);
+        assert_eq!(
+            scroll_ease_duration(u16::MAX),
+            SCROLL_EASE_MAX,
+            "a page jump must not become sluggish"
+        );
     }
 
     #[test]
