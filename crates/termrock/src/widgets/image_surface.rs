@@ -135,7 +135,7 @@ impl Widget for &ImageSurface<'_> {
             .recipe(SurfaceRecipe::Inset)
             .bordered(true)
             .fill(SurfaceFill::Transparent)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;

@@ -738,7 +738,7 @@ impl<'a> Popover<'a> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(self.border)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
 
         if inner.is_empty() {

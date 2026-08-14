@@ -685,3 +685,85 @@ fn pattern_hint_budget() {
         over.join("\n  ")
     );
 }
+
+// ── Geometry gates (plans/022 Step 2) ───────────────────────────────────────
+
+/// Overlay widgets whose chrome must never let text touch a border glyph.
+const BORDERED_OVERLAYS: &[&str] = &[
+    "drawer.rs",
+    "dropdown_menu.rs",
+    "notification_center.rs",
+    "preview_card.rs",
+    "popover.rs",
+    "menu_bar.rs",
+    "fullscreen_viewer.rs",
+    "image_surface.rs",
+    "callout.rs",
+];
+
+#[test]
+fn text_never_touches_borders() {
+    use termrock::widgets::{Surface, SurfaceRecipe};
+
+    // The contract holds at every width, including the narrow ones where
+    // density padding used to collapse to zero.
+    let system = DesignSystem::default();
+    for recipe in [
+        SurfaceRecipe::Overlay,
+        SurfaceRecipe::OverlayFocused,
+        SurfaceRecipe::Raised,
+        SurfaceRecipe::Interactive,
+    ] {
+        for width in 3..40u16 {
+            let area = Rect::new(0, 0, width, 5);
+            let content = Surface::new(&system)
+                .recipe(recipe)
+                .bordered(true)
+                .content_inset()
+                .layout(area)
+                .content;
+            if content.width == 0 {
+                continue;
+            }
+            assert!(
+                content.x >= area.x + 2,
+                "{recipe:?} at width {width}: content starts at {} — border at {} plus one",
+                content.x,
+                area.x
+            );
+            assert!(
+                content.right() + 2 <= area.right(),
+                "{recipe:?} at width {width}: content ends at {} against border {}",
+                content.right(),
+                area.right()
+            );
+        }
+    }
+}
+
+#[test]
+fn bordered_overlays_reserve_their_gutters() {
+    // A `padding(0, 0)` on this family is how text ended up flush against the
+    // border glyph; `content_inset()` is the sanctioned form.
+    let mut flush: Vec<String> = Vec::new();
+    for source in painted_sources() {
+        let name = source
+            .path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        if !BORDERED_OVERLAYS.contains(&name.as_str()) {
+            continue;
+        }
+        for (number, line) in &source.lines {
+            if line.contains("padding(0, 0)") {
+                flush.push(format!("{name}:{number}"));
+            }
+        }
+    }
+    assert!(
+        flush.is_empty(),
+        "bordered overlays painting flush against their border: {flush:?}"
+    );
+}

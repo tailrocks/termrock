@@ -934,7 +934,7 @@ impl<'a> Drawer<'a> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
 
         // Handle on inner edge (resize grip)

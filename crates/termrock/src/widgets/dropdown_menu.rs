@@ -1182,7 +1182,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;

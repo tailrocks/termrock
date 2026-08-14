@@ -1151,7 +1151,7 @@ impl<'a> NotificationCenter<'a> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(bs)
-            .padding(0, 0)
+            .content_inset()
             .paint(panel, buffer);
         if inner.is_empty() {
             return;

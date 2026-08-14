@@ -392,7 +392,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             .bordered(true)
             .border_style(border_style)
             .fill(SurfaceFill::Transparent)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
     }
     if inner.is_empty() {

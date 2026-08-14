@@ -284,6 +284,30 @@ impl<'a> Surface<'a> {
         self
     }
 
+    /// Reserves the border's content inset, and nothing else.
+    ///
+    /// Bordered chrome floors at one column at every density, so text never
+    /// sits flush against a border glyph — the rule that
+    /// [`crate::style::DesignSystem::content_inset`] owns. A borderless
+    /// surface has no glyph to clear, so it keeps its full rect and lets the
+    /// caller's own layout own the spacing. Prefer this over `padding(0, 0)`
+    /// on any bordered overlay.
+    #[must_use]
+    pub const fn content_inset(mut self) -> Self {
+        let bordered = match self.bordered {
+            Some(bordered) => bordered,
+            None => self.recipe.default_bordered(),
+        };
+        let inset = if bordered {
+            self.system.content_inset(true)
+        } else {
+            crate::style::ContentInset { x: 0, y: 0 }
+        };
+        self.pad_x = Some(inset.x);
+        self.pad_y = Some(inset.y);
+        self
+    }
+
     /// Hit region policy: full outer rect vs content only.
     #[must_use]
     pub const fn hit_full(mut self, hit_full: bool) -> Self {

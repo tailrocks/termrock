@@ -1134,7 +1134,7 @@ impl<'a> PreviewCard<'a> {
             })
             .bordered(true)
             .border_style(self.system.style(border))
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;
