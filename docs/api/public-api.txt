@@ -31726,15 +31726,18 @@ impl<T> core::convert::From<T> for termrock::widgets::ActivationOutcome
 pub fn termrock::widgets::ActivationOutcome::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ActivationOutcome
 #[non_exhaustive] pub enum termrock::widgets::ActivityPhase
+pub termrock::widgets::ActivityPhase::Done
 pub termrock::widgets::ActivityPhase::Indeterminate
 pub termrock::widgets::ActivityPhase::Queued
 pub termrock::widgets::ActivityPhase::Reconnecting
+pub termrock::widgets::ActivityPhase::Streaming
 pub termrock::widgets::ActivityPhase::Waiting
 impl termrock::widgets::ActivityPhase
 pub const fn termrock::widgets::ActivityPhase::animates(self) -> bool
+pub const fn termrock::widgets::ActivityPhase::channel(self) -> termrock::style::MotionChannel
 pub const fn termrock::widgets::ActivityPhase::default_verb(self) -> &'static str
 pub const fn termrock::widgets::ActivityPhase::id(self) -> &'static str
-pub const fn termrock::widgets::ActivityPhase::period_scale(self) -> u64
+pub const fn termrock::widgets::ActivityPhase::period_ms(self) -> u64
 impl core::clone::Clone for termrock::widgets::ActivityPhase
 pub fn termrock::widgets::ActivityPhase::clone(&self) -> termrock::widgets::ActivityPhase
 impl core::cmp::Eq for termrock::widgets::ActivityPhase
@@ -62230,6 +62233,7 @@ impl<'a, Id> termrock::widgets::CompletionMenu<'a, Id>
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::ascii(self, bool) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::empty_message(self, &'a str) -> Self
+pub const fn termrock::widgets::CompletionMenu<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::force_area(self, ratatui_core::layout::rect::Rect) -> Self
 pub const fn termrock::widgets::CompletionMenu<'a, Id>::new(&'a [termrock::widgets::CompletionCandidate<'a, Id>], &'a termrock::style::DesignSystem, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect) -> Self
 pub fn termrock::widgets::CompletionMenu<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CompletionMenuState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
@@ -82934,6 +82938,7 @@ impl termrock::widgets::SpinnerState
 pub fn termrock::widgets::SpinnerState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> termrock::runtime::AnimationDemand
 pub const fn termrock::widgets::SpinnerState::embedded_in_labeled_control(&self) -> bool
 pub fn termrock::widgets::SpinnerState::frame_glyph(&self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> &'static str
+pub fn termrock::widgets::SpinnerState::frame_period_ms(&self) -> u64
 pub fn termrock::widgets::SpinnerState::frames(&self, termrock::style::MotionPolicy) -> &'static [&'static str]
 pub const fn termrock::widgets::SpinnerState::is_active(&self) -> bool
 pub const fn termrock::widgets::SpinnerState::is_visible(&self) -> bool
@@ -90262,6 +90267,8 @@ pub const termrock::widgets::SPINNER_ASCII_FRAMES: &[&str]
 pub const termrock::widgets::SPINNER_BRAILLE_FRAMES: &[&str]
 pub const termrock::widgets::SPINNER_DEFAULT_PERIOD_MS: u64
 pub const termrock::widgets::SPINNER_RECONNECT_UNICODE: &[&str]
+pub const termrock::widgets::SPINNER_STREAM_ASCII: &[&str]
+pub const termrock::widgets::SPINNER_STREAM_UNICODE: &[&str]
 pub const termrock::widgets::SPINNER_WAITING_ASCII: &[&str]
 pub const termrock::widgets::SPINNER_WAITING_UNICODE: &[&str]
 pub const termrock::widgets::STEPPER_COMPACT_MAX_HEIGHT: u16
