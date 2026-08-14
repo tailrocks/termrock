@@ -1311,10 +1311,13 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             } else {
                 "  "
             };
+            // The pin slot is reserved on every row: a column that only exists
+            // when a row is pinned shifts every other column beside it, so a
+            // pinned list read as a ragged one (plans/009 Step 6).
             let pin = if entry.pinned {
                 if self.ascii { "* " } else { "★ " }
             } else {
-                ""
+                "  "
             };
             let kind = entry.kind.badge(self.ascii);
             let mut x = area.x;
@@ -1334,17 +1337,15 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
             buffer.set_stringn(x, y, gutter, 2, base);
             x = x.saturating_add(2);
-            if !pin.is_empty() {
-                let pw = display_cols(pin) as u16;
-                buffer.set_stringn(
-                    x,
-                    y,
-                    pin,
-                    usize::from(pw),
-                    self.system.style(Role::TextMuted),
-                );
-                x = x.saturating_add(pw);
-            }
+            let pw = display_cols(pin) as u16;
+            buffer.set_stringn(
+                x,
+                y,
+                pin,
+                usize::from(pw),
+                self.system.style(Role::TextMuted),
+            );
+            x = x.saturating_add(pw);
             let kb = format!("{kind} ");
             let kw = display_cols(&kb) as u16;
             buffer.set_stringn(
@@ -1561,6 +1562,40 @@ mod tests {
         let mut s = HistoryPickerState::new();
         let _ = s.open(Some("draft text".into()));
         s
+    }
+
+    #[test]
+    fn pinned_and_unpinned_rows_start_their_text_at_one_column() {
+        use ratatui_core::buffer::Buffer;
+        let system = DesignSystem::default();
+        let entries = catalog();
+        let mut state = open_state();
+        let area = Rect::new(0, 0, 60, 16);
+        let mut buffer = Buffer::empty(area);
+        HistoryPicker::new(&entries, &system).paint(area, &mut buffer, &mut state);
+
+        // A pinned row and an unpinned row must agree on where their kind
+        // badge starts: the pin slot is reserved either way.
+        let row_text = |y: u16| -> String {
+            (0..area.width)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        // Unicode kind badges: command, prompt, search. Position by cell, not
+        // by byte — a `★` is three bytes and one column.
+        let badge_col = |line: &str| line.chars().position(|ch| matches!(ch, '⌘' | '✎' | '⌕'));
+        let mut columns: Vec<usize> = Vec::new();
+        for y in 0..area.height {
+            let line = row_text(y);
+            if let Some(col) = badge_col(&line) {
+                columns.push(col);
+            }
+        }
+        assert!(columns.len() >= 2, "expected several rows with kind badges");
+        assert!(
+            columns.windows(2).all(|pair| pair[0] == pair[1]),
+            "kind badges start at different columns: {columns:?}"
+        );
     }
 
     #[test]
