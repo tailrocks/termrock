@@ -30065,6 +30065,7 @@ impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::adaptive() -> Self
 pub fn termrock::style::DesignSystem::ansi() -> Self
 pub const fn termrock::style::DesignSystem::ascii(self) -> Self
+pub const fn termrock::style::DesignSystem::at(self, termrock::runtime::FrameTick) -> Self
 pub const fn termrock::style::DesignSystem::border_set(&self) -> ratatui_core::symbols::border::Set<'static>
 pub const fn termrock::style::DesignSystem::border_shape(self, termrock::style::BorderShape) -> Self
 pub const fn termrock::style::DesignSystem::breakpoints(self, termrock::style::BreakpointScale) -> Self
@@ -30072,6 +30073,7 @@ pub fn termrock::style::DesignSystem::button_recipe(&self, termrock::style::Butt
 pub const fn termrock::style::DesignSystem::capability(self, termrock::style::ColorCapability) -> Self
 pub const fn termrock::style::DesignSystem::content_inset(&self, bool) -> termrock::style::ContentInset
 pub fn termrock::style::DesignSystem::density(self, termrock::style::Density) -> Self
+pub fn termrock::style::DesignSystem::elapsed_ms(&self) -> u64
 pub fn termrock::style::DesignSystem::elevation(&self, termrock::style::Elevation) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::from_palette(termrock::style::RolePalette) -> Self
 pub const fn termrock::style::DesignSystem::glyphs(self, termrock::style::GlyphSet) -> Self
@@ -30094,6 +30096,7 @@ pub const fn termrock::style::DesignSystem::selection(self, termrock::style::Sel
 pub fn termrock::style::DesignSystem::slate() -> Self
 pub fn termrock::style::DesignSystem::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::terminal_native() -> Self
+pub const fn termrock::style::DesignSystem::tick(&self) -> core::option::Option<termrock::runtime::FrameTick>
 pub const fn termrock::style::DesignSystem::with_kv_separator(self, termrock::style::KvSeparator) -> Self
 pub fn termrock::style::DesignSystem::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::DesignSystem
@@ -65481,7 +65484,6 @@ pub fn termrock::widgets::DrawerState::set_footer_rows(&mut self, u16)
 pub fn termrock::widgets::DrawerState::set_handle_only(&mut self, bool)
 pub fn termrock::widgets::DrawerState::set_header_rows(&mut self, u16)
 pub fn termrock::widgets::DrawerState::set_modality(&mut self, termrock::widgets::DrawerModality)
-pub fn termrock::widgets::DrawerState::set_motion(&mut self, termrock::style::MotionPolicy)
 pub fn termrock::widgets::DrawerState::set_presentation_override(&mut self, core::option::Option<termrock::widgets::DrawerPresentation>)
 pub const fn termrock::widgets::DrawerState::sheet() -> Self
 pub const fn termrock::widgets::DrawerState::slots(&self) -> termrock::widgets::DrawerSlots
@@ -81918,7 +81920,6 @@ pub struct termrock::widgets::SkeletonState
 impl termrock::widgets::SkeletonState
 pub fn termrock::widgets::SkeletonState::animation_demand(&self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> termrock::runtime::AnimationDemand
 pub const fn termrock::widgets::SkeletonState::new() -> Self
-pub fn termrock::widgets::SkeletonState::pulse_phase(&self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> u8
 pub fn termrock::widgets::SkeletonState::set_active(&mut self, bool)
 pub fn termrock::widgets::SkeletonState::set_shimmer(&mut self, bool)
 pub fn termrock::widgets::SkeletonState::set_visible(&mut self, bool)
@@ -90247,7 +90248,7 @@ pub const termrock::widgets::SIDEBAR_DRAWER_OVERLAY_ID: &str
 pub const termrock::widgets::SIDEBAR_RAIL_MAX_WIDTH: u16
 pub const termrock::widgets::SKELETON_FILL_ASCII: &str
 pub const termrock::widgets::SKELETON_FILL_UNICODE: &str
-pub const termrock::widgets::SKELETON_PULSE_PERIOD_MS: u64
+pub const termrock::widgets::SKELETON_SHIMMER_PERIOD_MS: u64
 pub const termrock::widgets::SLASH_ARG_SEPARATOR: char
 pub const termrock::widgets::SLASH_COMMAND_OVERLAY_ID: &str
 pub const termrock::widgets::SLASH_TRIGGER: char
