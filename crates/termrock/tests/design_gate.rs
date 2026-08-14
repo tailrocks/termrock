@@ -508,6 +508,10 @@ fn collections_share_one_gutter_glyph() {
 /// `docs/design/termrock-design-language.md` §5.9: content passthrough,
 /// monochrome links, and an explicit cursor fallback are the only survivors.
 /// Every file below is on the whitelist for one of those reasons.
+///
+/// The scan covers `TextSpan::underline(true)` as well as the modifier itself:
+/// a builder that sets the modifier without naming it is the same cue wearing
+/// a different spelling, and that is exactly how one survivor slipped through.
 #[test]
 fn interaction_underline_is_dead() {
     /// file -> why its underline is legitimate
@@ -521,6 +525,7 @@ fn interaction_underline_is_dead() {
             "text.rs",
             "TextSpan::underline is author-set content, not a state",
         ),
+        ("markdown.rs", "a markdown link is a link"),
     ];
 
     let widgets = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
@@ -539,7 +544,13 @@ fn interaction_underline_is_dead() {
             .split("#[cfg(test)]")
             .next()
             .expect("split always yields a head");
-        if painted.contains("Modifier::UNDERLINED") || painted.contains(".underlined()") {
+        // `TextSpan::underline(true)` reaches the same modifier without ever
+        // naming it — that is how the focused search match stayed underlined
+        // through plan 005's sweep (plans/009).
+        if painted.contains("Modifier::UNDERLINED")
+            || painted.contains(".underlined()")
+            || painted.contains(".underline(true)")
+        {
             offenders.push(name);
         }
     }

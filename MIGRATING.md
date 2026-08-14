@@ -317,6 +317,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0301 | `v0.14.0` | [Stream rows keep their words](migrations/0301-v0.14.0-stream-rows-keep-their-words.md) |
 | 0302 | `v0.14.0` | [Overlay affordances restored, and the neon-fill gate goes live](migrations/0302-v0.14.0-overlay-affordances-restored.md) |
 | 0303 | `v0.14.0` | [Spinner phases declare a motion channel](migrations/0303-v0.14.0-spinner-channels.md) |
+| 0304 | `v0.14.0` | [The underline scan covers the builder too](migrations/0304-v0.14.0-underline-scan-covers-the-builder.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
