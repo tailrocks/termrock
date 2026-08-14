@@ -234,3 +234,114 @@ fn gates_detect_their_own_violations() {
     ];
     assert_eq!(payload_mask(&lines), vec![true, true, true, false, false]);
 }
+
+// ── Motion gates (docs/design/tui-motion-system.md §3, §7) ──────────────────
+
+use std::time::Duration;
+
+use ratatui_core::buffer::Buffer;
+use ratatui_core::layout::Rect;
+use termrock::runtime::{FrameTick, Instant};
+use termrock::style::SPINNER_DOT_PULSE_FRAMES;
+use termrock::style::{DesignSystem, Motion};
+use termrock::widgets::{
+    Progress, ProgressKind, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
+    SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Skeleton,
+    SkeletonState, Spinner, SpinnerState,
+};
+
+/// Two ticks far enough apart that any animation would have advanced.
+fn two_ticks() -> (FrameTick, FrameTick) {
+    let start = Instant::now();
+    (
+        FrameTick::manual(start, Duration::ZERO, Duration::ZERO),
+        FrameTick::manual(
+            start + Duration::from_millis(950),
+            Duration::from_millis(950),
+            Duration::from_millis(16),
+        ),
+    )
+}
+
+/// Renders one painter into a fresh buffer.
+fn painted(area: Rect, paint: impl FnOnce(&mut Buffer)) -> Buffer {
+    let mut buffer = Buffer::empty(area);
+    paint(&mut buffer);
+    buffer
+}
+
+#[test]
+fn motion_policy_off_is_static() {
+    let system = DesignSystem::default();
+    let area = Rect::new(0, 0, 24, 3);
+    let (first, second) = two_ticks();
+
+    for motion in [Motion::Off, Motion::Reduced] {
+        let spinner = Spinner::labeled("working", &system);
+        let state = SpinnerState::new();
+        let a = painted(area, |b| spinner.paint(area, b, &state, first, motion));
+        let c = painted(area, |b| spinner.paint(area, b, &state, second, motion));
+        assert_eq!(a, c, "Spinner animated under {motion:?}");
+
+        let skeleton = Skeleton::new(2, &system);
+        let skeleton_state = SkeletonState::new();
+        let a = painted(area, |b| {
+            skeleton.paint_with_state(area, b, &skeleton_state, first, motion);
+        });
+        let c = painted(area, |b| {
+            skeleton.paint_with_state(area, b, &skeleton_state, second, motion);
+        });
+        assert_eq!(a, c, "Skeleton animated under {motion:?}");
+
+        let a = painted(area, |b| {
+            Progress::new(ProgressKind::indeterminate_from(first, motion), &system).paint(area, b);
+        });
+        let c = painted(area, |b| {
+            Progress::new(ProgressKind::indeterminate_from(second, motion), &system).paint(area, b);
+        });
+        assert_eq!(a, c, "Progress animated under {motion:?}");
+    }
+}
+
+#[test]
+fn motion_policy_full_actually_animates() {
+    // The Off gate is only meaningful if Full moves; otherwise it would pass
+    // on a widget that never animates at all.
+    let system = DesignSystem::default();
+    let area = Rect::new(0, 0, 24, 3);
+    let (first, second) = two_ticks();
+
+    let spinner = Spinner::labeled("working", &system);
+    let state = SpinnerState::new();
+    let a = painted(area, |b| {
+        spinner.paint(area, b, &state, first, Motion::Full)
+    });
+    let c = painted(area, |b| {
+        spinner.paint(area, b, &state, second, Motion::Full);
+    });
+    assert_ne!(a, c, "Spinner is static even under Motion::Full");
+}
+
+#[test]
+fn spinner_frames_one_column() {
+    // Layout-stable animation (§7 anti-pattern 3): a frame that changes width
+    // shoves its neighbours every tick.
+    let sets: [(&str, &[&str]); 6] = [
+        ("braille", SPINNER_BRAILLE_FRAMES),
+        ("dot-pulse", SPINNER_DOT_PULSE_FRAMES),
+        ("ascii", SPINNER_ASCII_FRAMES),
+        ("waiting-unicode", SPINNER_WAITING_UNICODE),
+        ("waiting-ascii", SPINNER_WAITING_ASCII),
+        ("reconnect", SPINNER_RECONNECT_UNICODE),
+    ];
+    for (name, frames) in sets {
+        assert!(!frames.is_empty(), "{name} frame set is empty");
+        for frame in frames {
+            assert_eq!(
+                termrock::text::display_cols(frame),
+                1,
+                "{name} frame {frame:?} is not one column",
+            );
+        }
+    }
+}

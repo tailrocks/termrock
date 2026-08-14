@@ -32,7 +32,7 @@ run its drift check, and update your row when done.
 | 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | TODO |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
-| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C: Part A contrast floor LANDED — 25 pre-002 shortfalls recorded in KNOWN_SHORTFALLS; Part B diets queued after 022 Step 4) |
+| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C: Part A DONE — floor holds on 4 presets; 9 ladder pairs reported as a STOP design call in migrations/0287; Part B diets next) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
