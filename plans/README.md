@@ -29,7 +29,7 @@ run its drift check, and update your row when done.
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
 | 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
-| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | TODO |
+| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE + the Presence seam; 3b/4 wait on 005/007 — see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C: Part A DONE — floor holds on 4 presets; 9 ladder pairs reported as a STOP design call in migrations/0287; Part B diets next) |
@@ -113,6 +113,86 @@ guarding after 002 retunes.
    **Follow-up for plan 002:** widening the ladder's dark steps to ≥ 10 average
    channel levels is the only lever that separates `Sunken` from `Surface` on
    256-color terminals.
+
+### Plan 014 (in progress — kernel done, widget seams pending)
+
+Landed as `migrations/0289-v0.14.0-motion-pipeline-and-policy.md`.
+
+**Done:** Step 5 (both gates first, as the plan orders), Step 1 (pipeline), Step
+2 (`MotionPolicy` / `MotionChannel` / shimmer), Step 3 (`Easing` / `Tween` /
+`Spring` / `Animator`), and the one Step 3b seam whose dependencies had landed
+(`Presence` exit).
+
+Step 1's §2 checklist, recorded as required — before: rules 6 and 7 PRESENT,
+rule 1 PARTIAL (Ratatui diffs, but every frame still emitted a style-reset
+epilogue and a full cursor sequence), rules 2, 3, 4, 5 ABSENT. All seven hold
+now. The STOP condition about a missing Presenter seam did not fire: every
+write already went through a single `terminal.draw`.
+
+Two deliberate deviations:
+
+1. **No DECRQM probe.** The plan asks for "DECRQM detect + silent degrade".
+   Emitting BSU/ESU unconditionally *is* the silent degrade — a terminal without
+   mode 2026 ignores an unknown CSI — so a probe would add a round-trip and a
+   failure mode without changing behavior. `RunOptions::synchronized_output`
+   exists for the terminal that mishandles it.
+2. **Cursor de-dup lives in a backend wrapper**, not the presenter. Ratatui's
+   `Terminal::draw` owns the cursor calls, so the presenter cannot suppress
+   them; `runtime::QuietBackend` wraps any backend and also drops empty-diff
+   draws, which is where the remaining 19 idle bytes per frame were coming from.
+
+**Remaining (Step 3b and Step 4)** — every item needs plan 005 or 007, or lives
+in another agent's lane this wave:
+
+- `DesignSystem::at(tick)` so all ~143 widgets get time with no signature churn,
+  and removal of `DrawerState`'s private motion copy (needs `style/tokens.rs`).
+- `Backdrop::alpha` + `BackdropPolicy::Dim` target alpha + `OverlayStack`
+  opened-at (needs 009's overlay recipe).
+- `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam is
+  already there, unused).
+- Collections filter fade: `revision` + `revision_changed_at` on
+  `CollectionState`; the gutter keeps snapping, which is correct per §6.
+- Tabs active-fill blend + `Changed { previous }`.
+- Diff/review tint settle over 120 ms at the three tint call sites.
+- Focus border cross-fade inside `panel_recipe`/`input_recipe` (needs 004's
+  recipes, now landed — this is the first one to pick up next).
+- Determinate progress `displayed` spring; `is_active()` while it differs.
+- Scroll `target_offset`/`display_offset` split, `WheelAccumulator`, and
+  adopting the unused `edge_fade` (needs `scroll/`, agent C's lane this wave).
+- Collapsible/Accordion `reveal_rows` from `toggled_at`; Tree stays snap.
+- `drawer.rs:19` doc drift ("terminals do not slide-animate" → "no slide
+  geometry; fade required").
+- All of Step 4's per-widget contracts (Skeleton sweep, Spinner phases, Status
+  Indicator channels, LoadingMode, Toast reflow, Timeline/LogStream).
+
+The primitives those seams need all exist now, so each is a wiring job rather
+than a design one.
+
+### Step 6 memo — layer 2: depend on tachyonfx, or port it?
+
+**Recommendation: port the shapes natively, do not take the dependency — but
+not yet.** Reasons, against the plan's stated decision inputs:
+
+1. **`MotionPolicy` must gate every effect.** tachyonfx's `EffectTimer` owns its
+   own duration and interpolation; there is no seam where a global tier can cap
+   a transition at 120 ms or collapse it to zero. Gating would mean wrapping
+   every constructor, which is most of a port with none of the control.
+2. **Recipes need role-based color targets.** Our fades interpolate toward a
+   `Role` resolved from the active `RolePalette`, not toward a literal color.
+   tachyonfx's `fx::fade_to(Color, ..)` takes a resolved color, so every call
+   site would resolve the role first — losing the theme indirection that makes
+   the palette swappable.
+3. **The shapes are small.** `Shader`, `CellFilter`, `Pattern`, `EffectTimer`
+   are a few hundred lines of well-understood code, and §4 already declares
+   their shapes binding either way. The dependency buys implementation, not
+   design.
+4. **Dependency health is fine** (ratatui-org, active), so this is not a risk
+   argument — it is an ownership argument. A buffer-effects engine that cannot
+   see our motion tier or our palette is not the engine we want.
+
+**Not yet, though:** layer 2 has no consumer until the Step 4 widget contracts
+land, and building an effects engine before anything asks for one is how it ends
+up shaped wrong. Sequence it after 014 Step 4 and 021.
 
 ### Plan 020 (done)
 

@@ -302,6 +302,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0286 | `v0.14.0` | [One voice: the microcopy standard](migrations/0286-v0.14.0-one-voice-microcopy.md) |
 | 0287 | `v0.14.0` | [Light-preset contrast and the faint tier](migrations/0287-v0.14.0-light-preset-contrast.md) |
 | 0288 | `v0.14.0` | [One paint authority for selection, focus, and elevation](migrations/0288-v0.14.0-selection-focus-paint-authority.md) |
+| 0289 | `v0.14.0` | [Motion: demand-driven pipeline, policy tiers, layer-1 animation](migrations/0289-v0.14.0-motion-pipeline-and-policy.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
