@@ -31,7 +31,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::scroll_area::ScrollAreaState,
 };
@@ -1053,22 +1053,23 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     } else {
                         self.system.style(Role::Text)
                     }
-                } else if selected && surface {
-                    match self.system.selection {
-                        SelectionChrome::Fill => self.system.style(Role::Selection),
-                        SelectionChrome::Tint | SelectionChrome::Gutter => {
-                            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                        }
-                    }
                 } else {
+                    // A selected warning is still a warning.
                     self.system.style(event.severity.role())
                 };
+                let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                    self.system,
+                    ListRowVisualState {
+                        selected: selected || cursor,
+                        focused: surface,
+                        enabled: true,
+                        ..Default::default()
+                    },
+                );
+                let style = chrome.label_style(style);
 
-                let gutter = if cursor && surface {
-                    if ascii { ">" } else { "›" }
-                } else {
-                    " "
-                };
+                // The cursor column is stamped by the shared row chrome.
+                let gutter = " ";
                 buffer.set_stringn(
                     area.x,
                     y,

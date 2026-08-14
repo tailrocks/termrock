@@ -27,7 +27,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
 };
 
@@ -976,13 +976,6 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if selected && surface {
-                match self.system.selection {
-                    SelectionChrome::Fill => self.system.style(Role::Selection),
-                    SelectionChrome::Tint | SelectionChrome::Gutter => {
-                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                    }
-                }
             } else if event.active {
                 self.system.style(Role::Accent)
             } else {
@@ -992,24 +985,20 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             if !event.enabled {
                 style = self.system.style(Role::TextDisabled);
             }
-
-            let line = self.format_line(event, area.width, ascii, colorless);
-            let gutter = if cursor && surface {
-                if ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            buffer.set_stringn(
-                area.x,
-                row_y,
-                gutter,
-                1,
-                if cursor {
-                    self.system.style(Role::Accent)
-                } else {
-                    style
+            // A selected event keeps its status tone; the chrome marks it.
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: selected || cursor,
+                    focused: surface,
+                    enabled: event.enabled,
+                    ..Default::default()
                 },
             );
+            let style = chrome.label_style(style);
+
+            let line = self.format_line(event, area.width, ascii, colorless);
+            buffer.set_stringn(area.x, row_y, " ", 1, style);
             buffer.set_stringn(area.x.saturating_add(1), row_y, " ", 1, style);
             let body = format!("{marker} {line}");
             buffer.set_stringn(
@@ -1019,6 +1008,8 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width.saturating_sub(GUTTER)),
                 style,
             );
+
+            chrome.paint(buffer, Rect::new(area.x, row_y, area.width, 1));
 
             if event.focusable() {
                 state.regions.push(TimelineRegion {

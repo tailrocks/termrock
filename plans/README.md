@@ -21,7 +21,7 @@ run its drift check, and update your row when done.
 | 003 | Capability honesty: quantize fixes, mono survival, glyph de-collision | P1 | M | 002 | DONE (2 deviations, see notes) |
 | 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | DONE |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | DONE |
-| 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | TODO |
+| 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | IN PROGRESS |
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | BLOCKED (waits on 006, which waits on 005/004 — agent C picks it up as soon as 006 lands) |
 | 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | BLOCKED (waits on 005, which waits on 004 — agent C picks it up as soon as 005 lands) |
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | BLOCKED (waits on 007; its overlay geometry half already landed with 022 Step 2 — migrations/0292) |

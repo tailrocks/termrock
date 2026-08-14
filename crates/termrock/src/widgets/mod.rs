@@ -113,6 +113,7 @@ mod question_flow;
 mod quick_open;
 mod resizable_panel_group;
 mod review;
+mod row_chrome;
 mod scroll_area;
 mod search_input;
 mod search_results;

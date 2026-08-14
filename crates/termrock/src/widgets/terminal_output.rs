@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::scroll_area::ScrollAreaState,
 };
@@ -1419,11 +1419,8 @@ fn paint_line(
     if area.is_empty() {
         return;
     }
-    let gutter = if cursor && surface {
-        if ascii { ">" } else { "›" }
-    } else {
-        " "
-    };
+    // The cursor column is stamped by the shared row chrome.
+    let gutter = " ";
     let prefix = if tiny { "" } else { line.stream.prefix(ascii) };
 
     let style = if colorless {
@@ -1432,14 +1429,20 @@ fn paint_line(
         } else {
             system.style(Role::Text)
         }
-    } else if cursor && surface {
-        match system.selection {
-            SelectionChrome::Fill => system.style(Role::Selection),
-            SelectionChrome::Tint | SelectionChrome::Gutter => system.style(Role::Focus),
-        }
     } else {
+        // stdout stays stdout and stderr stays stderr under the cursor.
         system.style(line.stream.role())
     };
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        system,
+        ListRowVisualState {
+            selected: cursor,
+            focused: surface,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let style = chrome.label_style(style);
 
     match paint_mode {
         TerminalPaintMode::Ansi | TerminalPaintMode::NoColor if line.ansi.is_some() => {

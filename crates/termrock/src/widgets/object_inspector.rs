@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Glyph, GlyphSet, MASK_CELLS, Role, SelectionChrome},
+    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
     widgets::{data_view::LoadState, scroll_area::ScrollAreaState},
 };
@@ -1592,18 +1592,21 @@ impl<'a> ObjectInspector<'a> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if cursor && surface {
-                match self.system.selection {
-                    SelectionChrome::Fill => self.system.style(Role::Selection),
-                    SelectionChrome::Tint | SelectionChrome::Gutter => {
-                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                    }
-                }
             } else if field.depth > 0 {
                 self.system.style(Role::TextMuted)
             } else {
                 self.system.style(Role::Text)
             };
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: cursor,
+                    focused: surface,
+                    enabled: true,
+                    ..Default::default()
+                },
+            );
+            let style = chrome.label_style(style);
 
             let line = if tiny {
                 if cursor {

@@ -29,7 +29,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::code_block::{CodeGutterMark, CodeHighlight, CodeHighlightKind},
     widgets::scroll_area::ScrollAreaState,
@@ -1524,11 +1524,8 @@ fn paint_list_item(
         return area.y;
     }
     let mut y = area.y;
-    let gutter = if cursor && surface {
-        if ascii { ">" } else { "›" }
-    } else {
-        " "
-    };
+    // The cursor column is stamped by the shared row chrome.
+    let gutter = " ";
     let g = d.severity.glyph(ascii);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
@@ -1546,14 +1543,21 @@ fn paint_list_item(
         } else {
             system.style(Role::Text)
         }
-    } else if cursor && surface {
-        match system.selection {
-            SelectionChrome::Fill => system.style(Role::Selection),
-            SelectionChrome::Tint | SelectionChrome::Gutter => system.style(Role::Focus),
-        }
     } else {
+        // A selected error is still an error.
         system.style(d.severity.role())
     };
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        system,
+        ListRowVisualState {
+            selected: cursor,
+            focused: surface,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let row = Rect::new(area.x, y, area.width, 1);
+    let style = chrome.label_style(style);
     buffer.set_stringn(
         area.x,
         y,
@@ -1561,6 +1565,7 @@ fn paint_list_item(
         usize::from(area.width),
         style,
     );
+    chrome.paint(buffer, row);
     y = y.saturating_add(1);
 
     if !expanded && !force_frame {

@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::scroll_area::ScrollAreaState,
 };
@@ -1126,13 +1126,6 @@ impl<'a> LogStream<'a> {
                             _ => self.system.style(Role::Text),
                         }
                     }
-                } else if selected && surface {
-                    match self.system.selection {
-                        SelectionChrome::Fill => self.system.style(Role::Selection),
-                        SelectionChrome::Tint | SelectionChrome::Gutter => {
-                            self.system.style(Role::Focus)
-                        }
-                    }
                 } else if surface {
                     self.system.style(line.level.role())
                 } else {
@@ -1142,6 +1135,18 @@ impl<'a> LogStream<'a> {
                         _ => self.system.style(Role::TextMuted),
                     }
                 };
+                // A selected error line is still an error line: the chrome
+                // marks it, the level keeps its tone.
+                let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                    self.system,
+                    ListRowVisualState {
+                        selected: selected || cursor,
+                        focused: surface,
+                        enabled: true,
+                        ..Default::default()
+                    },
+                );
+                let style = chrome.label_style(style);
 
                 let g = line.level.glyph(ascii);
                 let bm = if bookmarked {
@@ -1211,24 +1216,8 @@ impl<'a> LogStream<'a> {
                     if py >= bottom {
                         break;
                     }
-                    let gutter = if ri == 0 && cursor && surface {
-                        if ascii { ">" } else { "›" }
-                    } else if ri == 0 {
-                        " "
-                    } else {
-                        " "
-                    };
-                    buffer.set_stringn(
-                        area.x,
-                        py,
-                        gutter,
-                        1,
-                        if ri == 0 && cursor {
-                            self.system.style(Role::Accent)
-                        } else {
-                            style
-                        },
-                    );
+                    // The gutter column belongs to the shared row chrome.
+                    buffer.set_stringn(area.x, py, " ", 1, style);
                     buffer.set_stringn(
                         area.x.saturating_add(1),
                         py,
@@ -1236,6 +1225,9 @@ impl<'a> LogStream<'a> {
                         usize::from(area.width.saturating_sub(1)),
                         style,
                     );
+                    if ri == 0 {
+                        chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
+                    }
                     py = py.saturating_add(1);
                 }
 

@@ -34,9 +34,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
-    widgets::scroll_area::ScrollAreaState,
+    widgets::{row_chrome::RowChrome, scroll_area::ScrollAreaState},
 };
 
 /// Semantic kind of a projected diff line (or word span).
@@ -1417,12 +1417,9 @@ fn kind_style(
             _ if emphasize => system.style(Role::TextStrong),
             _ => system.style(Role::Text),
         }
-    } else if emphasize && surface && matches!(kind, DiffKind::Context) {
-        match system.selection {
-            SelectionChrome::Fill => system.style(Role::Selection),
-            SelectionChrome::Tint | SelectionChrome::Gutter => system.style(Role::Focus),
-        }
     } else {
+        // A cursored line is still an added / removed / context line: the
+        // selection speaks through the row chrome, not by repainting the tone.
         system.style(kind.role())
     }
 }
@@ -1444,12 +1441,28 @@ fn paint_unified_line(
     if area.is_empty() {
         return;
     }
-    let style = kind_style(system, line.kind, colorless, surface, cursor || in_hunk);
+    let chrome = RowChrome::resolve(
+        system,
+        ListRowVisualState {
+            selected: cursor,
+            focused: surface,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let style = chrome.label_style(kind_style(
+        system,
+        line.kind,
+        colorless,
+        surface,
+        cursor || in_hunk,
+    ));
     if !colorless && matches!(line.kind, DiffKind::Added | DiffKind::Removed) {
         buffer.set_style(area, system.style(line.kind.role()));
     }
+    // The cursor's own column is stamped by the shared chrome below.
     let gutter = if cursor && surface {
-        if ascii { ">" } else { "›" }
+        " "
     } else if in_hunk {
         if ascii { "." } else { "·" }
     } else {
@@ -1501,26 +1514,7 @@ fn paint_unified_line(
     let visible: String = composed.chars().skip(skip).collect();
     let painted = take_display_cols(&visible, usize::from(area.width));
 
-    // Gutter accent
-    if cursor && surface {
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&painted, 1),
-            1,
-            system.style(Role::Accent),
-        );
-        if painted.chars().count() > 1 {
-            let rest: String = painted.chars().skip(1).collect();
-            buffer.set_stringn(
-                area.x.saturating_add(1),
-                area.y,
-                take_display_cols(&rest, usize::from(area.width.saturating_sub(1))),
-                usize::from(area.width.saturating_sub(1)),
-                style,
-            );
-        }
-    } else if state.word_diff {
+    if state.word_diff {
         if let Some(words) = line.words {
             if !words.is_empty() && !tiny && state.h_offset == 0 {
                 paint_word_line(
@@ -1535,6 +1529,7 @@ fn paint_unified_line(
                     line.trailing_ws && state.show_whitespace,
                     ascii,
                 );
+                chrome.paint(buffer, area);
                 return;
             }
         }
@@ -1542,6 +1537,7 @@ fn paint_unified_line(
     } else {
         buffer.set_stringn(area.x, area.y, &painted, usize::from(area.width), style);
     }
+    chrome.paint(buffer, area);
 }
 
 fn paint_word_line(

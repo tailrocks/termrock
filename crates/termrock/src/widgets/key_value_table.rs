@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, Glyph, MASK_CELLS, Role, SelectionChrome},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
@@ -1244,34 +1244,25 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         compare: bool,
     ) {
         let selected = state.cursor.as_ref() == Some(&field.id);
-        let gutter = if selected {
-            if self.system.glyphs.is_ascii() {
-                ">"
-            } else {
-                "›"
-            }
-        } else {
-            " "
-        };
-        let mut style = if selected {
-            match self.system.selection {
-                SelectionChrome::Fill => self.system.style(Role::Selection),
-                SelectionChrome::Tint => self.system.style(Role::Focus),
-                SelectionChrome::Gutter => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
-            }
-        } else {
-            self.system.style(Role::Text)
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            self.system,
+            ListRowVisualState {
+                selected,
+                focused: true,
+                enabled: true,
+                ..Default::default()
+            },
+        );
+        let mut style = self.system.style(Role::Text);
         if let Some(role) = field.validation.role() {
             style = self.system.style(role);
         } else if let Some(st) = field.status {
             style = self.system.style(st_role(st));
         }
+        // Validation and status keep their tone under the cursor.
+        let style = chrome.label_style(style);
 
-        buffer.set_stringn(area.x, area.y, gutter, 1, self.system.style(Role::Accent));
+        buffer.set_stringn(area.x, area.y, " ", 1, style);
         buffer.set_stringn(area.x.saturating_add(1), area.y, " ", 1, style);
 
         match field.kind {

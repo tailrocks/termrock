@@ -26,7 +26,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::scroll_area::ScrollAreaState,
 };
@@ -1445,14 +1445,19 @@ fn paint_hex_row(
         } else {
             system.style(Role::Text)
         }
-    } else if cursor_in_row && surface {
-        match system.selection {
-            SelectionChrome::Fill => system.style(Role::Selection),
-            SelectionChrome::Tint | SelectionChrome::Gutter => system.style(Role::Focus),
-        }
     } else {
         system.style(Role::Text)
     };
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        system,
+        ListRowVisualState {
+            selected: cursor_in_row,
+            focused: surface,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let style = chrome.label_style(style);
 
     buffer.set_stringn(
         area.x,
@@ -1461,6 +1466,7 @@ fn paint_hex_row(
         usize::from(area.width),
         style,
     );
+    chrome.paint(buffer, area);
 }
 
 impl StatefulWidget for &HexViewer<'_> {
