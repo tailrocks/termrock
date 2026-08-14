@@ -1734,10 +1734,18 @@ impl<'a, Id> QuickOpen<'a, Id> {
             if detail_w > 0 {
                 if let Some(d) = &item.detail {
                     let dx = area.right().saturating_sub(detail_w);
+                    // A path end-cut loses exactly the token that tells two
+                    // candidates apart, so drop leading segments instead
+                    // (plans/022 Step 3).
+                    let shown = crate::text::truncate_path(
+                        d,
+                        usize::from(detail_w),
+                        self.system.glyphs.ellipsis(),
+                    );
                     buffer.set_stringn(
                         dx,
                         y,
-                        &take_display_cols(d, usize::from(detail_w)),
+                        shown.as_ref(),
                         usize::from(detail_w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1975,6 +1983,29 @@ mod tests {
         s.set_focused(true);
         s.set_accepts_input(true);
         s
+    }
+
+    #[test]
+    fn narrow_paths_keep_their_filename() {
+        use ratatui_core::buffer::Buffer;
+        let system = crate::style::DesignSystem::default();
+        let items = example_quick_open_files();
+        let mut state = focused();
+        let area = Rect::new(0, 0, 40, 14);
+        let mut buffer = Buffer::empty(area);
+        QuickOpen::new(&providers(), &items, &system).paint(area, &mut buffer, &mut state);
+        let painted: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        // `src/widgets/quick_open.rs` end-cut to `src/widgets/quick_o…`, which
+        // loses the only token that tells two candidates apart. Dropping
+        // leading segments keeps it.
+        assert!(painted.contains("quick_open.rs"), "{painted}");
+        // Nothing is left showing only the directories it came from.
+        assert!(!painted.contains("src/widgets/q"), "{painted}");
+        assert!(painted.contains("src/main.rs"), "{painted}");
     }
 
     #[test]

@@ -750,6 +750,9 @@ impl<'a, Id> Form<'a, Id> {
 
 const COLUMN_GAP: u16 = 2;
 
+/// Validation errors listed before the summary defers to `+N more`.
+const ERROR_SUMMARY_ROWS: usize = 3;
+
 impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
     type State = FormState<Id>;
 
@@ -767,8 +770,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         }
 
         let errors = collect_errors(self.fieldsets);
+        // Header + the errors shown + a `+N more` row when some are held back.
+        // Three of five errors used to vanish with nothing saying so
+        // (plans/022 Step 3).
+        let shown_errors = errors.len().min(ERROR_SUMMARY_ROWS);
+        let hidden_errors = errors.len().saturating_sub(shown_errors);
         let summary_rows = if self.show_error_summary && !errors.is_empty() {
-            1usize.saturating_add(errors.len().min(3))
+            1usize
+                .saturating_add(shown_errors)
+                .saturating_add(usize::from(hidden_errors > 0))
         } else {
             0
         };
@@ -819,9 +829,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
             );
             content_y = content_y.saturating_add(1);
-            for (label, msg) in errors.iter().take(3) {
-                let line = format!("• {label}: {msg}");
-                let text = take_display_cols(&line, usize::from(content_area.width));
+            for (label, msg) in errors.iter().take(shown_errors) {
+                let line = format!("{} {label}: {msg}", self.system.glyphs.bullet());
+                let text = crate::text::truncate_cols(
+                    &line,
+                    usize::from(content_area.width),
+                    self.system.glyphs.ellipsis(),
+                );
                 paint_string(
                     buffer,
                     content_area,
@@ -830,6 +844,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                     content_area.x,
                     &text,
                     self.system.style(Role::Danger),
+                );
+                content_y = content_y.saturating_add(1);
+            }
+            if hidden_errors > 0 {
+                paint_string(
+                    buffer,
+                    content_area,
+                    state.offset,
+                    content_y,
+                    content_area.x,
+                    &format!("+{hidden_errors} more"),
+                    self.system.style(Role::TextMuted),
                 );
                 content_y = content_y.saturating_add(1);
             }

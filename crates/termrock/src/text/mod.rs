@@ -575,8 +575,10 @@ fn paint_line_window(
 /// Contracts a path to `budget` display columns by dropping leading segments,
 /// so the discriminating tail (`…/widgets/quick_open.rs`) stays readable.
 ///
-/// Falls back to middle contraction when even the final segment does not fit —
-/// a bare filename keeps its head and tail rather than losing its extension.
+/// When not even one leading `…/` plus the final segment fits, the directories
+/// go entirely and the filename alone is contracted from its middle: a
+/// ten-column column shows `quick_o…rs`, not `src/w…en.rs`. Middle contraction
+/// is what keeps both the start of a name and its extension.
 #[must_use]
 pub fn truncate_path<'a>(path: &'a str, budget: usize, ellipsis: &str) -> Cow<'a, str> {
     if display_cols(path) <= budget {
@@ -585,23 +587,20 @@ pub fn truncate_path<'a>(path: &'a str, budget: usize, ellipsis: &str) -> Cow<'a
     let ellipsis_cols = display_cols(ellipsis);
     if ellipsis_cols < budget {
         // Longest suffix that starts at a separator and still fits.
-        let mut best: Option<&str> = None;
         for (index, _) in path.match_indices('/') {
             let suffix = &path[index..];
             if ellipsis_cols + display_cols(suffix) <= budget {
-                best = Some(suffix);
-                break;
+                let mut out = String::with_capacity(ellipsis.len() + suffix.len());
+                out.push_str(ellipsis);
+                out.push_str(suffix);
+                return Cow::Owned(out);
             }
         }
-        if let Some(suffix) = best {
-            let mut out = String::with_capacity(ellipsis.len() + suffix.len());
-            out.push_str(ellipsis);
-            out.push_str(suffix);
-            return Cow::Owned(out);
-        }
     }
+    // Directories cannot help at this width; keep the name itself.
+    let name = path.rsplit('/').next().unwrap_or(path);
     Cow::Owned(truncate_display_cols(
-        path,
+        name,
         budget,
         TruncateMode::Middle,
         ellipsis,
@@ -735,10 +734,17 @@ mod tests {
             truncate_path("src/widgets/quick_open.rs", 40, "…"),
             "src/widgets/quick_open.rs"
         );
-        // No separator fits: middle contraction keeps head and extension.
+        // No separator fits: the directories go and the name keeps its head
+        // and its extension.
         let bare = truncate_path("averylongfilename.rs", 12, "…");
         assert!(bare.starts_with('a') && bare.ends_with(".rs"));
         assert_eq!(display_cols(&bare), 12);
+        let squeezed = truncate_path("src/widgets/quick_open.rs", 10, "…");
+        assert!(
+            squeezed.starts_with("quic") && squeezed.ends_with(".rs"),
+            "{squeezed}"
+        );
+        assert_eq!(display_cols(&squeezed), 10);
     }
 
     #[test]

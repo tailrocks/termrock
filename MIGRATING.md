@@ -306,6 +306,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0290 | `v0.14.0` | [The information budget](migrations/0290-v0.14.0-information-budget.md) |
 | 0291 | `v0.14.0` | [One scrollbar language](migrations/0291-v0.14.0-one-scrollbar-language.md) |
 | 0292 | `v0.14.0` | [Bordered overlays reserve their gutter](migrations/0292-v0.14.0-overlay-content-inset.md) |
+| 0293 | `v0.14.0` | [Honest truncation: chrome labels, paths, held-back errors](migrations/0293-v0.14.0-honest-truncation.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

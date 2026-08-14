@@ -713,22 +713,29 @@ impl<'a> Panel<'a> {
         };
         let slots = self.slots_for_width(width);
         if let Some(title) = self.title_line(slots, None) {
-            let budget = width.saturating_sub(4).max(1);
-            let clipped = if display_cols(&title) > usize::from(budget) {
-                title
-                    .chars()
-                    .take(usize::from(budget.saturating_sub(1)))
-                    .collect::<String>()
-                    + "…"
-            } else {
-                title
-            };
+            let clipped = self.chrome_label(&title, width.saturating_sub(4));
             block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
         }
         if let Some(footer) = slots.footer {
-            block = block.title_bottom(Span::styled(format!(" {} ", footer.trim()), recipe.title));
+            let clipped = self.chrome_label(footer, width.saturating_sub(4));
+            block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
         }
         block
+    }
+
+    /// Contracts a title or footer to the cells the chrome can spare.
+    ///
+    /// One rule for all four panel variants: grapheme-safe, ellipsis-marked,
+    /// and applied to the footer too. Titles used to be cut with `chars()`,
+    /// which counts code points — a CJK title overran its own border — and
+    /// footers were never contracted at all (plans/022 Step 3).
+    fn chrome_label(&self, text: &str, budget: u16) -> String {
+        crate::text::truncate_cols(
+            text.trim(),
+            usize::from(budget.max(1)),
+            self.tokens.glyphs.ellipsis(),
+        )
+        .into_owned()
     }
 
     fn title_line(&self, slots: PanelSlots<'a>, collapsed: Option<bool>) -> Option<String> {
@@ -941,25 +948,13 @@ impl<'a> Panel<'a> {
                     .actions
                     .map(|a| a.width.saturating_add(1))
                     .unwrap_or(0);
-                let budget = area
-                    .width
-                    .saturating_sub(4)
-                    .saturating_sub(action_reserve)
-                    .max(1);
-                let clipped = if display_cols(&title) > usize::from(budget) {
-                    title
-                        .chars()
-                        .take(usize::from(budget.saturating_sub(1)))
-                        .collect::<String>()
-                        + "…"
-                } else {
-                    title
-                };
+                let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
+                let clipped = self.chrome_label(&title, budget);
                 block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
             }
             if let Some(footer) = slots.footer {
-                block =
-                    block.title_bottom(Span::styled(format!(" {} ", footer.trim()), recipe.title));
+                let clipped = self.chrome_label(footer, area.width.saturating_sub(4));
+                block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
             }
             block.render(area, buffer);
         } else if matches!(self.variant, PanelVariant::DividerOnly) {
@@ -1227,6 +1222,25 @@ mod tests {
             overlay[(0, 0)].fg,
             system.style(Role::BorderFocused).fg.unwrap()
         );
+    }
+
+    #[test]
+    fn wide_titles_and_long_footers_stay_inside_the_border() {
+        let tokens = DesignSystem::default();
+        // Wide enough that the footer slot survives contraction (< 24 drops it).
+        let area = Rect::new(0, 0, 34, 4);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&tokens)
+            .title("日本語のタイトルです、とても長い見出し")
+            .footer("a footer far too long for this panel")
+            .render(area, &mut buffer);
+        for y in [0u16, area.height - 1] {
+            let row: String = (0..area.width).map(|x| buffer[(x, y)].symbol()).collect();
+            // Corners survive: the label never overruns its own border.
+            assert!(row.starts_with('┌') || row.starts_with('└'), "{row:?}");
+            assert!(row.ends_with('┐') || row.ends_with('┘'), "{row:?}");
+            assert!(row.contains('…'), "{row:?}");
+        }
     }
 
     #[test]
