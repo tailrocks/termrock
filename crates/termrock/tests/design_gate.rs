@@ -235,7 +235,7 @@ fn gates_detect_their_own_violations() {
     assert_eq!(payload_mask(&lines), vec![true, true, true, false, false]);
 }
 
-// ── Motion gates (docs/design/tui-motion-system.md §3, §7) ──────────────────
+// ── Motion gates (docs/design/tui-motion-system.md §3, §7) ─────────────────
 
 use std::time::Duration;
 
@@ -243,7 +243,7 @@ use ratatui_core::buffer::Buffer;
 use ratatui_core::layout::Rect;
 use termrock::runtime::{FrameTick, Instant};
 use termrock::style::SPINNER_DOT_PULSE_FRAMES;
-use termrock::style::{DesignSystem, Motion};
+use termrock::style::{DesignSystem, MotionPolicy};
 use termrock::widgets::{
     Progress, ProgressKind, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
     SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Skeleton,
@@ -276,7 +276,7 @@ fn motion_policy_off_is_static() {
     let area = Rect::new(0, 0, 24, 3);
     let (first, second) = two_ticks();
 
-    for motion in [Motion::Off, Motion::Reduced] {
+    for motion in [MotionPolicy::Off, MotionPolicy::Basic] {
         let spinner = Spinner::labeled("working", &system);
         let state = SpinnerState::new();
         let a = painted(area, |b| spinner.paint(area, b, &state, first, motion));
@@ -314,12 +314,12 @@ fn motion_policy_full_actually_animates() {
     let spinner = Spinner::labeled("working", &system);
     let state = SpinnerState::new();
     let a = painted(area, |b| {
-        spinner.paint(area, b, &state, first, Motion::Full)
+        spinner.paint(area, b, &state, first, MotionPolicy::Full)
     });
     let c = painted(area, |b| {
-        spinner.paint(area, b, &state, second, Motion::Full);
+        spinner.paint(area, b, &state, second, MotionPolicy::Full);
     });
-    assert_ne!(a, c, "Spinner is static even under Motion::Full");
+    assert_ne!(a, c, "Spinner is static even under MotionPolicy::Full");
 }
 
 #[test]
@@ -346,6 +346,7 @@ fn spinner_frames_one_column() {
     }
 }
 
+<<<<<<< Updated upstream
 // ── Selection / focus paint authority (plan 004) ─────────────────────────────
 
 use ratatui_core::{text::Line, widgets::StatefulWidget};
@@ -438,4 +439,170 @@ fn no_widget_paints_selection_fill_by_default() {
             "selection fill must be opt-in, not the default row paint"
         );
     }
+=======
+// ── Information-budget gates (docs/design/web-premium-tui-law.md §4.2) ──────
+
+use termrock::patterns::{
+    AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation, ConnectionManager,
+    ConnectionManagerState, IntegrationStatus, IntegrationStatusPresentation,
+    IntegrationStatusState, PlanReview, PlanReviewState, SessionPicker, SessionPickerState,
+    example_agent_status, example_connections, example_integrations, example_plan_document,
+    example_sessions,
+};
+use termrock::style::Role;
+
+/// Foreground colors that paint *content* in `buffer`, not single glyphs.
+///
+/// Hue count is the "too much information" proxy: a frame that speaks in nine
+/// colors asks the eye to rank nine things at once. A color carrying a status
+/// glyph is not that — one cell of meaning next to neutral text is exactly the
+/// shape the design language asks for — so a hue has to cover a word before it
+/// counts against the budget.
+const GLYPH_CELL_ALLOWANCE: usize = 3;
+
+fn content_foregrounds(buffer: &Buffer) -> Vec<ratatui_core::style::Color> {
+    let mut counts: Vec<(ratatui_core::style::Color, usize)> = Vec::new();
+    for cell in buffer.content() {
+        if cell.symbol().trim().is_empty() {
+            continue;
+        }
+        match counts.iter_mut().find(|(color, _)| *color == cell.fg) {
+            Some((_, seen)) => *seen += 1,
+            None => counts.push((cell.fg, 1)),
+        }
+    }
+    counts
+        .into_iter()
+        .filter(|(_, seen)| *seen > GLYPH_CELL_ALLOWANCE)
+        .map(|(color, _)| color)
+        .collect()
+}
+
+/// Footer hint rows in a frame, and how many chords each advertises.
+///
+/// A hint row is recognisable by its joins — two or more meta separators that
+/// are not a scrollbar track — and by where it sits: the footer band. Meta
+/// separators higher up belong to content (a row's `project · time`), and two
+/// panes side by side put two of those on one buffer row.
+fn hint_rows(buffer: &Buffer, system: &DesignSystem) -> Vec<usize> {
+    let separator = system.glyphs.meta_separator();
+    let track_fg = system
+        .style(Role::ScrollTrack)
+        .fg
+        .expect("scroll track carries a color");
+    let footer_band = buffer.area.height.saturating_sub(3);
+    (footer_band..buffer.area.height)
+        .map(|y| {
+            (0..buffer.area.width)
+                .filter(|x| {
+                    let cell = &buffer[(buffer.area.x + x, buffer.area.y + y)];
+                    cell.symbol() == separator && cell.fg != track_fg
+                })
+                .count()
+        })
+        .filter(|joins| *joins >= 2)
+        .map(|joins| joins + 1)
+        .collect()
+}
+
+/// The default frame of each priority pattern, painted with its own fixture.
+fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)> {
+    let area = Rect::new(0, 0, 72, 18);
+
+    let mut agent = AgentStatusHeaderState::new();
+    agent.snapshot = example_agent_status();
+    agent.presentation = AgentStatusPresentation::Header;
+    let agent_area = Rect::new(0, 0, 72, 3);
+
+    let mut sessions = SessionPickerState::new();
+    sessions.set_sessions(example_sessions());
+
+    let mut connections = ConnectionManagerState::new();
+    connections.set_connections(example_connections());
+
+    let mut plan = PlanReviewState::new();
+    plan.open(example_plan_document());
+
+    let mut integrations = IntegrationStatusState::new();
+    integrations.set_entries(example_integrations());
+    integrations.presentation = IntegrationStatusPresentation::Panel;
+
+    vec![
+        (
+            "agent_status_header",
+            painted(agent_area, |buffer| {
+                AgentStatusHeader::new(system).paint(agent_area, buffer, &mut agent);
+            }),
+        ),
+        (
+            "session_picker",
+            painted(area, |buffer| {
+                SessionPicker::new(system).paint(area, buffer, &mut sessions);
+            }),
+        ),
+        (
+            "connection_manager",
+            painted(area, |buffer| {
+                ConnectionManager::new(system).paint(area, buffer, &mut connections);
+            }),
+        ),
+        (
+            "plan_review",
+            painted(area, |buffer| {
+                PlanReview::new(system).paint(area, buffer, &mut plan);
+            }),
+        ),
+        (
+            "integration_status",
+            painted(area, |buffer| {
+                IntegrationStatus::new(system).paint(area, buffer, &mut integrations);
+            }),
+        ),
+    ]
+}
+
+/// Hues a default frame may speak in before it is shouting.
+const STYLE_DIVERSITY_BUDGET: usize = 8;
+
+#[test]
+fn pattern_style_diversity() {
+    let system = DesignSystem::default();
+    let mut over: Vec<String> = Vec::new();
+    for (name, buffer) in priority_pattern_frames(&system) {
+        let hues = content_foregrounds(&buffer);
+        if hues.len() > STYLE_DIVERSITY_BUDGET {
+            over.push(format!("{name}: {} hues {hues:?}", hues.len()));
+        }
+    }
+    assert!(
+        over.is_empty(),
+        "default frames over the {STYLE_DIVERSITY_BUDGET}-hue budget:\n  {}",
+        over.join("\n  ")
+    );
+}
+
+/// Chords one footer row may advertise before it becomes a keymap dump.
+const HINT_BUDGET: usize = 5;
+
+#[test]
+fn pattern_hint_budget() {
+    let system = DesignSystem::default();
+    let mut over: Vec<String> = Vec::new();
+    for (name, buffer) in priority_pattern_frames(&system) {
+        let rows = hint_rows(&buffer, &system);
+        if rows.len() > 1 {
+            over.push(format!("{name}: {} hint rows", rows.len()));
+        }
+        for hints in &rows {
+            if *hints > HINT_BUDGET {
+                over.push(format!("{name}: {hints} hints on one row"));
+            }
+        }
+    }
+    assert!(
+        over.is_empty(),
+        "footer hint budget exceeded:\n  {}",
+        over.join("\n  ")
+    );
+>>>>>>> Stashed changes
 }

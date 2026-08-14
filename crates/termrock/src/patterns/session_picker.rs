@@ -589,6 +589,8 @@ pub struct SessionPickerState {
     pub show_archived: bool,
     /// Filter pins only.
     pub pins_only: bool,
+    /// Preview shows the full metadata sheet instead of its five-line core.
+    pub preview_details: bool,
     /// Focused.
     pub focused: bool,
     accepts_input: bool,
@@ -626,6 +628,7 @@ impl SessionPickerState {
             confirm_proceed_focused: false,
             show_archived: false,
             pins_only: false,
+            preview_details: false,
             focused: true,
             accepts_input: true,
             search_mode: true,
@@ -915,6 +918,10 @@ impl SessionPickerState {
             }
             KeyCode::Char('o') if key.modifiers.is_empty() && self.query.is_empty() => {
                 SessionPickerOutcome::PopoverRequested
+            }
+            KeyCode::Char('i') if key.modifiers.is_empty() && self.query.is_empty() => {
+                self.preview_details = !self.preview_details;
+                SessionPickerOutcome::Ignored
             }
             KeyCode::Char('z') if key.modifiers.is_empty() && self.query.is_empty() => {
                 self.show_archived = !self.show_archived;
@@ -1338,10 +1345,7 @@ impl<'a> SessionPicker<'a> {
             buffer.set_stringn(
                 inner.x,
                 fy,
-                take_display_cols(
-                    "enter open · n new · r rename · p pin · a archive · del delete · esc cancel",
-                    w,
-                ),
+                take_display_cols("enter open · n new · i details · del delete · esc close", w),
                 w,
                 self.system.style(Role::TextMuted),
             );
@@ -1412,18 +1416,28 @@ impl<'a> SessionPicker<'a> {
             };
             let loc = s.location.glyph(self.ascii);
             let text = format!("{mark}{pin}{st}{loc} {}{unread}{dirty}", s.title);
+            // Status lives in its glyph cell, not across the whole row: a
+            // list of five sessions used to paint five hues over its titles
+            // (information budget, plans/017 Part B).
             let style = if !s.enabled {
                 self.system.style(Role::TextMuted)
             } else if selected {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if s.action_required && !self.colorless {
-                self.system.style(Role::Warning)
-            } else if !self.colorless {
-                self.system.style(s.status.role())
             } else {
                 self.system.style(Role::Text)
             };
             buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            if !self.colorless && s.enabled && !selected {
+                let status_role = if s.action_required {
+                    Role::Warning
+                } else {
+                    s.status.role()
+                };
+                let glyph_x = area.x.saturating_add(2);
+                if glyph_x < area.x.saturating_add(area.width) {
+                    buffer[(glyph_x, y)].set_style(self.system.style(status_role));
+                }
+            }
             state.row_hits.push((
                 s.id.clone(),
                 Rect {
@@ -1483,8 +1497,10 @@ impl<'a> SessionPicker<'a> {
             );
             return;
         };
-        let lines: Vec<(String, Role)> = {
-            let mut v = vec![(s.title.clone(), Role::Accent)];
+        // Default frame: five quiet lines. Everything else is one keypress
+        // away behind `i` (information budget, plans/017 Part B).
+        let lines: Vec<(String, Role)> = if state.preview_details {
+            let mut v = vec![(s.title.clone(), Role::TextStrong)];
             if let Some(p) = s.project.as_ref() {
                 v.push((format!("project {p}"), Role::TextMuted));
             }
@@ -1496,29 +1512,46 @@ impl<'a> SessionPicker<'a> {
                 s.status.role(),
             ));
             if let Some(m) = s.model.as_ref() {
-                v.push((format!("model {m}"), Role::Text));
+                v.push((format!("model {m}"), Role::TextMuted));
             }
             if let Some(m) = s.mode.as_ref() {
-                v.push((format!("mode {m}"), Role::Text));
+                v.push((format!("mode {m}"), Role::TextMuted));
             }
             if let Some(d) = s.device.as_ref() {
-                v.push((format!("device {d}"), Role::Info));
+                v.push((format!("device {d}"), Role::TextMuted));
             }
             if let Some(sum) = s.summary.as_ref() {
                 v.push((sum.clone(), Role::Text));
             }
             if s.pinned {
-                v.push(("pinned".into(), Role::Warning));
+                v.push(("pinned".into(), Role::TextMuted));
             }
             if s.dirty {
                 v.push(("dirty / local draft elsewhere".into(), Role::Warning));
             }
             if s.unread > 0 {
-                v.push((format!("{} unread", s.unread), Role::Info));
+                v.push((format!("{} unread", s.unread), Role::TextMuted));
             }
             if s.action_required {
                 v.push(("action required".into(), Role::Warning));
             }
+            v
+        } else {
+            let mut v = vec![(s.title.clone(), Role::TextStrong)];
+            if let Some(r) = s.recency.as_ref() {
+                v.push((r.clone(), Role::TextFaint));
+            }
+            if let Some(m) = s.model.as_ref() {
+                v.push((format!("model {m}"), Role::TextMuted));
+            }
+            v.push((
+                format!("{} {}", s.status.glyph(self.ascii), s.status.id()),
+                s.status.role(),
+            ));
+            if let Some(sum) = s.summary.as_ref() {
+                v.push((sum.clone(), Role::Text));
+            }
+            v.push(("i details".into(), Role::TextFaint));
             v
         };
         for (line, role) in lines {

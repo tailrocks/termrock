@@ -172,6 +172,29 @@ voice and an app voice, sometimes inside one string. This clause arbitrates.
 Two gates enforce the mechanical half: `design_gate.rs::no_bare_ellipsis_in_paint`
 and `design_gate.rs::one_chord_notation`.
 
+### 4.2 The information budget — radical calm, measured (binding)
+
+A default frame shows **≤3 content zones**, spends **≤1 hint row** carrying
+**≤5 chords**, keeps **metadata to ≤⅓ of visible rows**, and speaks in **≤8
+content hues** — a hue that paints a status *glyph* is not a content hue, which
+is the whole point of putting status in the glyph.
+
+Everything else is **one keypress away** (focus, expand, or overlay) **and its
+affordance is visible in the frame**: `i details`, `d details`, `s segments`.
+Removing information from the default frame requires providing that keypress
+path in the same commit. Detail is never deleted, only moved.
+
+Safety information does not bend to the budget. A permission prompt's risk
+line, a destructive confirmation's consequence, and an error's cause stay in
+the default frame however crowded it gets.
+
+Charts are exempt from the hue budget: series colors are data, not decoration.
+
+Three gates enforce the mechanical half: `design_gate.rs::pattern_hint_budget`,
+`design_gate.rs::pattern_style_diversity`, and the contrast floor in
+`style/contrast_floor.rs`, which keeps a quieted tone from becoming an
+unreadable one.
+
 ---
 
 ## 5. The vocabulary (referenced throughout the component annex)

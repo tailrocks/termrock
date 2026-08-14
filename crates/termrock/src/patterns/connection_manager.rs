@@ -1887,7 +1887,7 @@ impl<'a> ConnectionManager<'a> {
                     "enter connect · f fav · t test · F full · esc"
                 }
                 ConnectionManagerPresentation::Full => {
-                    "enter connect · n add · e edit · t test · r reconnect · f fav · del · 1/2/3 view · esc"
+                    "enter connect · n add · t test · 1/2/3 view · esc close"
                 }
             };
             buffer.set_stringn(
@@ -1983,16 +1983,16 @@ impl<'a> ConnectionManager<'a> {
                     c.environment
                 )
             } else {
+                // Default frame carries identity only: status glyph, name, env.
+                // Target, protocol, and kind live one keypress away in the
+                // detail pane (information budget, plans/017 Part B).
                 format!(
-                    "{}{}{} {} {} {} · {} [{}]",
+                    "{}{}{} {} · {}",
                     if selected { ">" } else { " " },
                     fav,
                     status_g,
-                    c.kind.glyph(self.ascii),
                     c.name,
-                    c.target,
-                    c.environment,
-                    c.protocol_label
+                    c.environment
                 )
             };
             let mut style = self.system.style(self.role(c.status.role()));
