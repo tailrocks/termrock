@@ -1054,8 +1054,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                         self.system.style(Role::Text)
                     }
                 } else {
-                    // A selected warning is still a warning.
-                    self.system.style(event.severity.role())
+                    // A selected warning is still a warning — and its severity
+                    // rides the glyph, not the sentence (plans/007).
+                    self.system.style(Role::Text)
                 };
                 let chrome = crate::widgets::row_chrome::RowChrome::resolve(
                     self.system,
@@ -1133,6 +1134,21 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     usize::from(area.width.saturating_sub(GUTTER)),
                     style,
                 );
+                if !colorless {
+                    // Every branch of `line` opens with the severity glyph.
+                    crate::widgets::row_chrome::paint_status_glyph(
+                        buffer,
+                        Rect::new(
+                            area.x.saturating_add(GUTTER),
+                            y,
+                            area.width.saturating_sub(GUTTER),
+                            1,
+                        ),
+                        0,
+                        sev,
+                        self.system.style(event.severity.role()),
+                    );
+                }
                 if event.focusable() {
                     state.regions.push(EventStreamRegion {
                         id: event.id.clone(),

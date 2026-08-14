@@ -1070,11 +1070,19 @@ impl<'a> LogStream<'a> {
         if let Some(msg) = &state.reconnect_message {
             if y < area.bottom().saturating_sub(u16::from(show_chip)) {
                 let line = format!("! reconnect: {msg}");
+                // The banner is a sentence; its mark carries the warning.
                 buffer.set_stringn(
                     area.x,
                     y,
                     take_display_cols(&line, usize::from(area.width)),
                     usize::from(area.width),
+                    self.system.style(Role::Text),
+                );
+                crate::widgets::row_chrome::paint_status_glyph(
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                    0,
+                    "!",
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -1127,11 +1135,12 @@ impl<'a> LogStream<'a> {
                         }
                     }
                 } else if surface {
-                    self.system.style(line.level.role())
+                    // The level's hue rides its glyph; the message is a
+                    // sentence and stays readable (plans/007).
+                    self.system.style(Role::Text)
                 } else {
                     match line.level {
-                        LogLevel::Error => self.system.style(Role::Danger),
-                        LogLevel::Warn => self.system.style(Role::Warning),
+                        LogLevel::Error | LogLevel::Warn => self.system.style(Role::Text),
                         _ => self.system.style(Role::TextMuted),
                     }
                 };
@@ -1171,11 +1180,18 @@ impl<'a> LogStream<'a> {
                     escape_log_text(line.text)
                 };
 
+                // `glyph_col` is where the level glyph lands inside the row,
+                // so the level's color can be put back on that one cell.
+                let mut glyph_col: Option<usize> = None;
                 let body = match state.recipe {
                     LogLineRecipe::Compact if tiny => plain.clone(),
-                    LogLineRecipe::Compact => format!("{bm}{g} {plain}{batch}"),
+                    LogLineRecipe::Compact => {
+                        glyph_col = Some(display_cols(bm));
+                        format!("{bm}{g} {plain}{batch}")
+                    }
                     LogLineRecipe::Detailed if tiny => plain.clone(),
                     LogLineRecipe::Detailed if narrow => {
+                        glyph_col = Some(display_cols(bm));
                         format!("{bm}{g} {plain}{batch}")
                     }
                     LogLineRecipe::Detailed => {
@@ -1187,6 +1203,9 @@ impl<'a> LogStream<'a> {
                         if let Some(src) = line.source {
                             parts.push(src.to_string());
                         }
+                        glyph_col = Some(
+                            parts.iter().map(|p| display_cols(p)).sum::<usize>() + parts.len(),
+                        );
                         parts.push(g.to_string());
                         if colorless {
                             parts.push(format!("{}", line.level.letter()));
@@ -1227,6 +1246,31 @@ impl<'a> LogStream<'a> {
                     );
                     if ri == 0 {
                         chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
+                        if let Some(col) = glyph_col
+                            && !colorless
+                            && matches!(state.wrap, LogWrap::Wrap)
+                                .then_some(0usize)
+                                .unwrap_or(usize::from(state.h_offset))
+                                <= col
+                        {
+                            let scrolled = if matches!(state.wrap, LogWrap::Wrap) {
+                                col
+                            } else {
+                                col.saturating_sub(usize::from(state.h_offset))
+                            };
+                            crate::widgets::row_chrome::paint_status_glyph(
+                                buffer,
+                                Rect::new(
+                                    area.x.saturating_add(1),
+                                    py,
+                                    area.width.saturating_sub(1),
+                                    1,
+                                ),
+                                u16::try_from(scrolled).unwrap_or(u16::MAX),
+                                g,
+                                self.system.style(line.level.role()),
+                            );
+                        }
                     }
                     py = py.saturating_add(1);
                 }
@@ -1471,6 +1515,40 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains("boot") || text.contains("ready"), "{text}");
+    }
+
+    #[test]
+    fn level_color_is_confined_to_its_glyph_cell() {
+        let system = DesignSystem::default();
+        let lines = sample();
+        let mut state = LogStreamState::new();
+        state.set_following(false);
+        state.recipe = LogLineRecipe::Compact;
+        let stream = LogStream::new(&lines, &system).focused(true);
+        let area = Rect::new(0, 0, 72, 10);
+        let mut buf = Buffer::empty(area);
+        stream.render(area, &mut buf, &mut state);
+
+        let error_fg = system.style(Role::Danger).fg;
+        let warn_fg = system.style(Role::Warning).fg;
+        // Only the painted log rows: the follow chip is a status element in
+        // its own right, not a sentence.
+        for region in &state.regions {
+            for y in region.area.top()..region.area.bottom() {
+                let level_cells = (0..area.width)
+                    .filter(|x| {
+                        let fg = Some(buf[(*x, y)].fg);
+                        !buf[(*x, y)].symbol().trim().is_empty()
+                            && (fg == error_fg || fg == warn_fg)
+                    })
+                    .count();
+                assert!(
+                    level_cells <= 1,
+                    "row {y} paints {level_cells} cells in a level color; \
+                     the level belongs to its glyph"
+                );
+            }
+        }
     }
 
     #[test]
