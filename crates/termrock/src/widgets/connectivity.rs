@@ -55,6 +55,9 @@ pub enum ConnectivityPhase {
     ServerUnavailable,
 }
 
+/// Offline capabilities listed before the panel defers to `+N more`.
+const OFFLINE_CAPS_SHOWN: usize = 4;
+
 impl ConnectivityPhase {
     /// Stable id.
     #[must_use]
@@ -944,7 +947,7 @@ impl<'a> OfflineSurface<'a> {
         }
         if !state.offline_caps.is_empty() {
             rows.push(("offline capabilities".into(), Role::TextMuted, false));
-            for c in state.offline_caps.iter().take(4) {
+            for c in state.offline_caps.iter().take(OFFLINE_CAPS_SHOWN) {
                 let mark = if c.available { "+" } else { "-" };
                 rows.push((
                     format!("  {mark} {}", c.label),
@@ -955,6 +958,11 @@ impl<'a> OfflineSurface<'a> {
                     },
                     false,
                 ));
+            }
+            // Say what was held back, the way the queued list above does.
+            let hidden = state.offline_caps.len().saturating_sub(OFFLINE_CAPS_SHOWN);
+            if hidden > 0 {
+                rows.push((format!("  +{hidden} more"), Role::TextDisabled, false));
             }
         }
         // Preserve cues

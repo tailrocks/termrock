@@ -63,6 +63,9 @@ pub enum SearchStatus {
     Error,
 }
 
+/// Columns a status label may spend before it is contracted.
+const STATUS_LABEL_COLS: usize = 12;
+
 impl SearchStatus {
     /// Stable id.
     #[must_use]
@@ -942,10 +945,10 @@ impl<'a> SearchInput<'a> {
     fn status_label(&self, _state: &SearchInputState) -> String {
         if let Some(msg) = self.status_message {
             if matches!(self.status, SearchStatus::Error) {
-                return take_display_cols(msg, 12);
+                return take_display_cols(msg, STATUS_LABEL_COLS);
             }
         }
-        match self.status {
+        let label = match self.status {
             SearchStatus::Idle => String::new(),
             SearchStatus::Searching => {
                 if self.ascii {
@@ -957,10 +960,10 @@ impl<'a> SearchInput<'a> {
             SearchStatus::Results { count } => format!("{count}"),
             SearchStatus::NoResults => "0".into(),
             SearchStatus::Error => "err".into(),
-        }
-        .chars()
-        .take(12)
-        .collect()
+        };
+        // Display columns, not code points: a status label is painted, and a
+        // wide glyph spends two cells (plans/022 Step 3).
+        crate::text::take_display_cols(&label, STATUS_LABEL_COLS)
     }
 
     /// Semantic registration — status ids, never raw error dumps with secrets.

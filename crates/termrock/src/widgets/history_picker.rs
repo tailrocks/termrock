@@ -266,8 +266,12 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
             keep_start,
             keep_end,
         } => {
-            let chars: Vec<char> = text.chars().collect();
-            let n = chars.len();
+            // Grapheme clusters, not chars: masking by code point splits a
+            // family emoji or a combining accent and leaks half of it
+            // (plans/022 Step 3).
+            let clusters: Vec<&str> =
+                unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect();
+            let n = clusters.len();
             if n == 0 {
                 return String::new();
             }
@@ -277,9 +281,9 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
                     .text
                     .repeat(n.min(MASK_CELLS).max(1));
             }
-            let mut out: String = chars.iter().take(keep_start).collect();
-            out.push('…');
-            out.extend(chars.iter().skip(n - keep_end));
+            let mut out: String = clusters[..keep_start].concat();
+            out.push_str(Glyph::Ellipsis.resolve(GlyphSet::Unicode).text);
+            out.push_str(&clusters[n - keep_end..].concat());
             out
         }
     }

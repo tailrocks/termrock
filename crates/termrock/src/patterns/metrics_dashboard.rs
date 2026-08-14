@@ -54,6 +54,9 @@ pub enum MetricsTimeRange {
     Custom,
 }
 
+/// Alerts listed before the dashboard defers to `+N more`.
+const ALERTS_SHOWN: usize = 3;
+
 impl MetricsTimeRange {
     /// Stable id.
     #[must_use]
@@ -1233,7 +1236,7 @@ impl<'a> MetricsDashboard<'a> {
         if !slots.alerts.is_empty() && !self.alerts.is_empty() {
             let mut y = slots.alerts.y;
             let max_y = slots.alerts.bottom();
-            for (i, a) in self.alerts.iter().enumerate().take(3) {
+            for (i, a) in self.alerts.iter().enumerate().take(ALERTS_SHOWN) {
                 if y >= max_y {
                     break;
                 }
@@ -1254,6 +1257,17 @@ impl<'a> MetricsDashboard<'a> {
                     },
                 );
                 y = y.saturating_add(1);
+            }
+            // An alert list that stops at three says so.
+            let hidden = self.alerts.len().saturating_sub(ALERTS_SHOWN);
+            if hidden > 0 && y < max_y {
+                buffer.set_stringn(
+                    slots.alerts.x,
+                    y,
+                    take_display_cols(&format!("+{hidden} more"), usize::from(slots.alerts.width)),
+                    usize::from(slots.alerts.width),
+                    self.system.style(Role::TextMuted),
+                );
             }
         }
 
