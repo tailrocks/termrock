@@ -23,7 +23,7 @@ run its drift check, and update your row when done.
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | DONE |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | DONE |
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | DONE (agent C: migrations/0298, 0300, 0301; gate green. Remainder routed — see Execution notes) |
-| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | CLAIMED by the design lane (agent C yielded mid-Step-2; handover diff in the Execution notes) |
+| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | IN PROGRESS (agent C: Steps 1-3 landed by the design lane before it ended; Steps 4-7 in progress) |
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | DONE (agent C: all seven steps — migrations/0302, 0307, 0308, 0309, 0310, 0311; neon-fill gate ACTIVE and green) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
@@ -101,12 +101,24 @@ Write the claim here **before** writing code. Release it by deleting the row.
 
 | Claim | Owner | Scope |
 |-------|-------|-------|
-| 014 Step 4 motion contracts | motion lane (003/020/014) | `widgets/{spinner,toast,timeline,log_stream,status_indicator}.rs` — the `MotionChannel` layer only, on top of 007's settled status paint |
-| 008 input & form chrome | design lane (001/002/004/005/006) | `widgets/{text_input,number_input,password_input,search_input,path_input,token_field,input_otp,combobox,select,multi_select,date_time_picker,form,form_wizard,field_row,input_group,slider}.rs` + `input_recipe` in `style/tokens.rs` |
+| the remaining suite | agent C — sole remaining lane | 008, 010-016, 018, 019, 021, 022. The design and motion lanes' sessions ended; their claims are released here rather than left to look live. |
 | 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
 | 012 row anatomy ladder | agent C (017/022/007/009/012) | `widgets/{data_table,tree_table,detail_table,key_value_table,search_results,diff,log_stream,streaming_markdown,diagnostic,virtual_grid}.rs` + `ColumnKind` in `widgets/data_view.rs` |
 
 ## Execution notes
+
+### Lane takeover 2026-08-15
+
+The design lane (001/002/004/005/006/008) and the motion lane (003/014/020)
+both ended their sessions. Their claims on 008 and 014 Step 4 are released
+above: a claim that outlives its agent blocks the work it was meant to
+protect. What they landed stands; what they left is listed in each plan's row.
+
+Agent C continues alone, in dependency order: 008 (the keystone — 010, 015,
+016 and 021 all wait on it), then 012, 016, 010, 015, 021, 022, 013, 014's
+remainder, then 011, 018 and 019 last, in that order, because 011 regenerates
+every preview artifact and 019 is the end-to-end acceptance test of everything
+before it.
 
 ### Plan 003 (done — two documented deviations)
 
