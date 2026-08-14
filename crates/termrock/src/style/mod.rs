@@ -11,6 +11,8 @@
 use ratatui_core::style::{Color, Modifier, Style};
 
 mod appearance;
+#[cfg(test)]
+mod contrast_floor;
 mod density;
 mod glyph;
 mod motion;
@@ -29,7 +31,7 @@ pub use motion::{
     blend_toward, coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness,
     smoothstep, wave_brightness,
 };
-pub use palette::Rgb;
+pub use palette::{Rgb, contrast_ratio, relative_luminance};
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,
     ACTOR_PLAN as ACTOR_PLAN_RGB, ACTOR_SYSTEM as ACTOR_SYSTEM_RGB,

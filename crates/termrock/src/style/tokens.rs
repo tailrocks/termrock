@@ -830,7 +830,14 @@ impl DesignSystem {
                 label = label.add_modifier(Modifier::BOLD);
             }
             ControlState::Hovered => {
-                label = self.style(Role::LinkHover);
+                // Only a link repaints its label on hover. A filled button that
+                // swapped its label to the link hue put cyan on green — 1.02:1,
+                // an invisible label. Everything else washes its ground instead.
+                if matches!(variant, ButtonRecipeVariant::Link) {
+                    label = self.style(Role::LinkHover);
+                } else if fill.bg.is_none() {
+                    fill = self.style(Role::HoverTint);
+                }
             }
             ControlState::Pressed => {
                 label = label.add_modifier(Modifier::BOLD);

@@ -29792,6 +29792,7 @@ pub termrock::style::Rgb::b: u8
 pub termrock::style::Rgb::g: u8
 pub termrock::style::Rgb::r: u8
 impl termrock::style::Rgb
+pub const fn termrock::style::Rgb::from_color(ratatui_core::style::color::Color) -> core::option::Option<Self>
 pub const fn termrock::style::Rgb::new(u8, u8, u8) -> Self
 impl core::clone::Clone for termrock::style::Rgb
 pub fn termrock::style::Rgb::clone(&self) -> termrock::style::Rgb
@@ -30051,6 +30052,7 @@ pub const termrock::style::SPINNER_DOT_PULSE_FRAMES: &[&str]
 pub fn termrock::style::blend_toward(ratatui_core::style::color::Color, ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
 pub fn termrock::style::coalesce_cells(impl core::iter::traits::collect::IntoIterator<Item = (char, ratatui_core::style::Style)>) -> alloc::vec::Vec<(alloc::string::String, ratatui_core::style::Style)>
 pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
+pub fn termrock::style::contrast_ratio(termrock::style::Rgb, termrock::style::Rgb) -> f32
 pub fn termrock::style::edge_fade(u16, u16, u16) -> f32
 pub fn termrock::style::effective_alpha(termrock::style::Motion, f32) -> f32
 pub fn termrock::style::fade_style(ratatui_core::style::Style, f32, ratatui_core::style::color::Color) -> ratatui_core::style::Style
@@ -30060,6 +30062,7 @@ pub fn termrock::style::palette_for_appearance(termrock::style::Appearance) -> t
 pub fn termrock::style::pulse_brightness(u64, u64) -> f32
 pub fn termrock::style::quantize_color(ratatui_core::style::color::Color, termrock::style::ColorCapability) -> ratatui_core::style::color::Color
 pub fn termrock::style::quantize_palette(&termrock::style::RolePalette, termrock::style::ColorCapability) -> termrock::style::RolePalette
+pub fn termrock::style::relative_luminance(termrock::style::Rgb) -> f32
 pub fn termrock::style::rgb_to_xterm256(u8, u8, u8) -> u8
 pub fn termrock::style::smoothstep(f32) -> f32
 pub fn termrock::style::wave_brightness(u64, u16, u16, f32) -> f32
