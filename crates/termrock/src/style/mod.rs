@@ -51,6 +51,7 @@ pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
+pub(crate) use quantize::degrade_chrome as degrade_projection_chrome;
 pub use quantize::{ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256};
 pub use tokens::{
     BorderShape, BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ContentInset, ControlState,
