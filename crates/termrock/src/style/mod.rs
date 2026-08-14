@@ -544,7 +544,7 @@ impl RolePalette {
             Role::ChartSeries4 => Style::new().fg(Color::Rgb(192, 132, 252)),
             Role::ChartAxis => Style::new().fg(muted),
             Role::ChartGrid => Style::new().fg(border),
-            Role::TextFaint => Style::new().fg(Color::Rgb(100, 116, 139)).dim(),
+            Role::TextFaint => Style::new().fg(Color::Rgb(118, 133, 156)).dim(),
             Role::BackdropWash => Style::new().bg(blend_toward(canvas, Color::Rgb(0, 0, 0), 0.4)),
         })
     }
@@ -557,14 +557,15 @@ impl RolePalette {
         let elevated = Color::Rgb(244, 241, 236);
         let text = Color::Rgb(28, 25, 23);
         let muted = Color::Rgb(87, 83, 78);
-        let disabled = Color::Rgb(168, 162, 158);
+        let disabled = Color::Rgb(161, 154, 150);
+        let faint = Color::Rgb(133, 126, 122);
         let border = Color::Rgb(214, 211, 209);
         let accent = Color::Rgb(37, 99, 235);
         let selection = Color::Rgb(219, 234, 254);
-        let success = Color::Rgb(22, 163, 74);
-        let warning = Color::Rgb(202, 138, 4);
-        let danger = Color::Rgb(220, 38, 38);
-        let info = Color::Rgb(2, 132, 199);
+        let success = Color::Rgb(17, 129, 59);
+        let warning = Color::Rgb(152, 104, 3);
+        let danger = Color::Rgb(202, 33, 33);
+        let info = Color::Rgb(2, 120, 181);
         Self::from_fn(|role| match role {
             Role::Canvas => Style::new().bg(canvas),
             Role::Surface => Style::new().bg(surface),
@@ -627,7 +628,7 @@ impl RolePalette {
             Role::ChartSeries4 => Style::new().fg(Color::Rgb(147, 51, 234)),
             Role::ChartAxis => Style::new().fg(muted),
             Role::ChartGrid => Style::new().fg(border),
-            Role::TextFaint => Style::new().fg(disabled).dim(),
+            Role::TextFaint => Style::new().fg(faint).dim(),
             Role::BackdropWash => Style::new().bg(blend_toward(canvas, Color::Rgb(0, 0, 0), 0.4)),
         })
     }

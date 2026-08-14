@@ -17,8 +17,8 @@
 use ratatui_core::style::Style;
 
 use super::{
-    ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, PanelChrome, ROLE_COUNT,
-    Rgb, Role, RolePalette, contrast_ratio,
+    ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, PanelChrome, Rgb, Role,
+    RolePalette, contrast_ratio,
 };
 
 /// Surface roles that content is painted onto.
@@ -56,32 +56,28 @@ impl Measured {
 /// when a palette change fixes one, its line must be deleted in the same
 /// commit, and `plans/017` re-runs the whole table then.
 ///
-/// Ratios recorded at the measurement below are the pre-002 baseline.
 const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
-    // Text ladder: the light preset still sits too close to its canvas.
-    ("paper", "TextDisabled on Canvas"), // 2.38 < 2.50
-    // Surface ladder: the elevation steps are a rounding error apart.
-    ("phosphor", "ladder Canvas->Surface"),      // 1.07 < 1.15
-    ("phosphor", "ladder Surface->Raised"),      // 1.09 < 1.15
-    ("phosphor", "ladder Raised->Elevated"),     // 1.08 < 1.15
-    ("paper", "ladder Canvas->Surface"),         // 1.06 < 1.15
-    ("paper", "ladder Surface->Raised"),         // 1.09 < 1.15
-    ("paper", "ladder Raised->Elevated"),        // 1.04 < 1.15
-    ("high_contrast", "ladder Canvas->Surface"), // 1.00 < 1.15
-    ("high_contrast", "ladder Surface->Raised"), // 1.06 < 1.15
-    ("high_contrast", "ladder Raised->Elevated"), // 1.07 < 1.15
-    // Light preset status hues were picked for web backgrounds, not paper.
-    ("paper", "Warning on Canvas"),            // 2.77 < 4.50
-    ("paper", "Warning on Surface"),           // 2.94 < 4.50
-    ("paper", "Success on Canvas"),            // 3.11 < 4.50
-    ("paper", "Success on Surface"),           // 3.30 < 4.50
-    ("paper", "Info on Canvas"),               // 3.86 < 4.50
-    ("paper", "Info on Surface"),              // 4.10 < 4.50
-    ("paper", "DiffAdded on its own tint"),    // 3.00 < 4.50
-    ("paper", "DiffRemoved on its own tint"),  // 3.95 < 4.50
-    ("paper", "InputInvalid on its own tint"), // 3.95 < 4.50
+    // The surface ladder cannot clear 1.15 per step while one `Border` tone
+    // stays a visible hairline on every rung of it. A ladder that steps by
+    // 1.15 spans 1.52 from Canvas to Elevated, and a border 1.3 clear of both
+    // ends needs 1.69 — so the two rows of the floor table are mutually
+    // unsatisfiable with a single border role. Candidate dark ladder measured
+    // for the record: Canvas (10,12,10) → Surface (31,35,33) → Raised
+    // (45,49,47) → Elevated (57,61,59) at 1.20 per step; it needs a second
+    // border tone (or a per-elevation border) to keep hairlines visible.
+    // Reported under plans/017 Part A STOP: palette identity is a design call.
+    ("phosphor", "ladder Canvas->Surface"),
+    ("phosphor", "ladder Surface->Raised"),
+    ("phosphor", "ladder Raised->Elevated"),
+    ("paper", "ladder Canvas->Surface"),
+    ("paper", "ladder Surface->Raised"),
+    ("paper", "ladder Raised->Elevated"),
+    // The high-contrast preset paints Surface on Canvas deliberately: one
+    // black ground, maximum text contrast, structure carried by borders.
+    ("high_contrast", "ladder Canvas->Surface"),
+    ("high_contrast", "ladder Surface->Raised"),
+    ("high_contrast", "ladder Raised->Elevated"),
 ];
-
 fn presets() -> Vec<(&'static str, RolePalette)> {
     vec![
         ("phosphor", RolePalette::tailrocks_phosphor()),
@@ -152,7 +148,11 @@ fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
         }
     }
     for surface in [Role::Canvas, Role::Surface] {
-        for (role, base) in [(Role::TextMuted, 4.5), (Role::TextDisabled, 2.5)] {
+        for (role, base) in [
+            (Role::TextMuted, 4.5),
+            (Role::TextFaint, 3.0),
+            (Role::TextDisabled, 2.5),
+        ] {
             measure(
                 &mut out,
                 preset,
@@ -419,15 +419,45 @@ fn recipe_pairs_pass_floor() {
 }
 
 #[test]
-fn floor_table_covers_every_role_tier() {
-    // plans/002 adds `TextFaint` (and retires the tab-underline roles). When
-    // the role set moves, the tiers below must move with it in the same
-    // commit: `TextFaint` on Canvas/Surface ≥ 3.0, and `TextDisabled` must
-    // stay ≥ 0.4 ratio-points away from it (plans/017 Part A step A2).
-    assert_eq!(
-        ROLE_COUNT, 63,
-        "role set changed — extend the contrast floor table (plans/017 Part A)"
-    );
+fn floor_table_covers_every_text_tier() {
+    // A new text tier that never reaches this table is a contrast defect
+    // waiting to happen, so the table names the tiers it measures.
+    let measured = palette_pairs("phosphor", &RolePalette::tailrocks_phosphor());
+    for tier in ["Text", "TextStrong", "TextMuted", "TextFaint", "TextDisabled"] {
+        assert!(
+            measured
+                .iter()
+                .any(|m| m.pair.starts_with(&format!("{tier} on"))),
+            "{tier} is not measured against any surface"
+        );
+    }
+    for surface in SURFACES {
+        assert!(
+            measured
+                .iter()
+                .any(|m| m.pair.ends_with(&format!("on {surface:?}"))),
+            "{surface:?} carries no measured text"
+        );
+    }
+}
+
+#[test]
+fn disabled_and_faint_tiers_stay_distinguishable() {
+    // Two tiers that measure the same are one tier with two names.
+    for (preset, palette) in presets() {
+        let ground = bg_of(&palette, Role::Canvas).expect("canvas fill");
+        let Some(faint) = fg_of(&palette, Role::TextFaint) else {
+            continue;
+        };
+        let Some(disabled) = fg_of(&palette, Role::TextDisabled) else {
+            continue;
+        };
+        let gap = (contrast_ratio(faint, ground) - contrast_ratio(disabled, ground)).abs();
+        assert!(
+            gap >= 0.4,
+            "{preset}: TextFaint and TextDisabled differ by only {gap:.2} against the canvas"
+        );
+    }
 }
 
 #[test]
