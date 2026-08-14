@@ -322,6 +322,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0306 | `v0.14.0` | [Toasts fade in, errors do not](migrations/0306-v0.14.0-toast-entrance-motion.md) |
 | 0307 | `v0.14.0` | [Empty bodies speak one language](migrations/0307-v0.14.0-empty-bodies-speak-one-language.md) |
 | 0308 | `v0.14.0` | [Overlay hints share one vocabulary](migrations/0308-v0.14.0-overlay-hints-share-one-vocabulary.md) |
+| 0309 | `v0.14.0` | [Danger is quiet by default](migrations/0309-v0.14.0-danger-is-quiet-by-default.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -35,7 +35,7 @@ use crate::{
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
     style::{Density, DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
-    widgets::{AccentRail, Action, ActionBar, ActionBarState, Panel, PanelChrome},
+    widgets::{Action, ActionBar, ActionBarState, Panel, PanelChrome},
 };
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
@@ -1378,6 +1378,23 @@ impl PermissionPromptState {
 
 // ── Widget ──────────────────────────────────────────────────────────────────
 
+/// How loudly a destructive surface wears its risk.
+///
+/// The consensus across shadcn, Amp, Linear and Grok — recorded as decision D1
+/// in `docs/design/termrock-component-audit-2026-08.md` — is that danger lives
+/// on the confirm button, not on the container: a red box around everything
+/// makes the operator read nothing. `Quiet` is the default; `Loud` exists for
+/// the irreversible-of-irreversible case and must be asked for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum DangerChrome {
+    /// Neutral container; risk carried by the title glyph and the confirm chip.
+    #[default]
+    Quiet,
+    /// Danger border as well, for a destructive action that cannot be undone.
+    Loud,
+}
+
 /// Permission / trust surface widget (head of queue).
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionPrompt<'a> {
@@ -1388,6 +1405,8 @@ pub struct PermissionPrompt<'a> {
     colorless: bool,
     /// Scene/overlay surface focus chrome.
     focused: bool,
+    /// How loudly the container wears a destructive risk.
+    danger_chrome: DangerChrome,
 }
 
 impl<'a> PermissionPrompt<'a> {
@@ -1399,7 +1418,17 @@ impl<'a> PermissionPrompt<'a> {
             ascii: false,
             colorless: false,
             focused: true,
+            danger_chrome: DangerChrome::Quiet,
         }
+    }
+
+    /// How loudly the container wears a destructive risk.
+    ///
+    /// Defaults to [`DangerChrome::Quiet`].
+    #[must_use]
+    pub const fn danger_chrome(mut self, chrome: DangerChrome) -> Self {
+        self.danger_chrome = chrome;
+        self
     }
 
     /// Prefer ASCII risk markers.
@@ -1475,13 +1504,16 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             risk.label(),
             req.action
         );
-        let emphasis = if surface {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
+        // Danger is quiet by default: the container stays neutral and the risk
+        // is carried by the title's glyph and word, with red reserved for the
+        // destructive confirm chip. A rail painted in the risk role made every
+        // prompt shout before it was read (audit D1/F8, plans/009 Step 5).
+        let emphasis = match (self.danger_chrome, risk.is_destructive(), surface) {
+            (DangerChrome::Loud, true, _) => PanelChrome::Danger,
+            (_, _, true) => PanelChrome::Focused,
+            (_, _, false) => PanelChrome::Normal,
         };
-        let rail = AccentRail::new(self.system, risk.role());
-        let content_area = rail.paint(area, buffer);
+        let content_area = area;
         let panel = Panel::new(&tokens)
             .overlay(true)
             .title(title.as_str())
@@ -2591,16 +2623,42 @@ mod tests {
     }
 
     #[test]
-    fn trust_surface_uses_severity_rail_and_action_bar_regions() {
+    fn trust_surface_is_quiet_by_default_and_loud_on_request() {
         let system = DesignSystem::default();
-        let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
         let area = Rect::new(0, 0, 64, 18);
-        let mut buffer = Buffer::empty(area);
-        StatefulWidget::render(&prompt, area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].fg, system.style(Role::Danger).fg.unwrap());
+
+        // Quiet: the container is neutral chrome. Danger is stated by the
+        // title glyph and the confirm chip, not by a red frame (D1).
+        let mut quiet = Buffer::empty(area);
+        StatefulWidget::render(
+            &PermissionPrompt::new(&system),
+            area,
+            &mut quiet,
+            &mut state,
+        );
+        assert_eq!(
+            quiet[(0, 0)].fg,
+            system.style(Role::BorderFocused).fg.unwrap()
+        );
         assert!(!state.action_regions.is_empty());
+        let painted: String = quiet
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(painted.contains('⚠') || painted.contains('⛔'), "{painted}");
+
+        // Loud is opt-in, for a destructive action that cannot be undone.
+        let mut loud = Buffer::empty(area);
+        StatefulWidget::render(
+            &PermissionPrompt::new(&system).danger_chrome(DangerChrome::Loud),
+            area,
+            &mut loud,
+            &mut state,
+        );
+        assert_eq!(loud[(0, 0)].fg, system.style(Role::Danger).fg.unwrap());
     }
 
     #[test]

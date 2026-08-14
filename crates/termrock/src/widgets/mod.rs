@@ -648,7 +648,7 @@ pub use path_input::{
     expand_env_vars, expand_tilde, is_absolute_path, join_path, normalize_separators,
 };
 pub use permission::{
-    DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
+    DangerChrome, DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
     PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,
     PermissionOutcome, PermissionPrompt, PermissionPromptState, PermissionProvenance,
     PermissionQueue, PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget,
