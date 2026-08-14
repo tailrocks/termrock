@@ -701,9 +701,15 @@ pub fn glyph_by_id(id: &str) -> Option<Glyph> {
 /// two meanings wearing the same character.
 ///
 /// Membership is "can a reader see these together and have to tell them apart" —
-/// side by side in a row, or column-wise down a list. Mutually exclusive states
-/// of a single element (a divider that is idle *or* focused) are not members:
-/// they are separated by role and weight, never by shape.
+/// side by side in a row, or column-wise down a list. Two kinds of glyph are
+/// deliberately *not* members:
+///
+/// - **Mutually exclusive states of one element** (a divider that is idle *or*
+///   focused): separated by role and weight, never by shape.
+/// - **Delimiters.** [`Glyph::MetaSeparator`] shares `·` with [`Glyph::Info`],
+///   but a separator is always painted inside spaces (` · `) between facts,
+///   while `Info` occupies a status cell. Listing it would force one of the two
+///   to change shape to satisfy a rule neither of them breaks.
 pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
     (
         "collection row",
