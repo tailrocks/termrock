@@ -417,7 +417,8 @@ impl ResultQueryStatus {
                     None => format!("{rows} rows · {columns} cols"),
                 }
             }
-            Self::Failed { message } => format!("error · {message}"),
+            // Severity rides the Danger role and the status glyph, not the word.
+            Self::Failed { message } => message.clone(),
             Self::Cancelled => "cancelled".into(),
         }
     }

@@ -137,8 +137,8 @@ impl ToolCallAction {
             Self::OpenDiff => "d",
             Self::OpenLog => "l",
             Self::PermissionFocus => "p",
-            Self::CopyArgs => "Ctrl+A",
-            Self::CopyResult => "Ctrl+C",
+            Self::CopyArgs => "C-a",
+            Self::CopyResult => "C-c",
             Self::Fullscreen => "f",
         }
     }
@@ -1040,7 +1040,7 @@ pub fn example_tool_calls() -> Vec<ToolCall> {
             .args_summary("eslint .")
             .result_summary("exit 1")
             .args_detail("eslint .\n# token=supersecret")
-            .result_detail("error: Unexpected token")
+            .result_detail("Unexpected token")
             .secrets_redacted(true)
             .has_diff(true)
             .has_log(true),

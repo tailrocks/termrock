@@ -27,6 +27,11 @@ pub const LEFT_BLOCK_RAMP: &[char; 9] = &[' ', '▏', '▎', '▍', '▌', '▋'
 pub const SHADE_RAMP: &[char; 4] = &[' ', '░', '▒', '▓'];
 /// Shared braille density ramp.
 pub const BRAILLE_RAMP: &[char; 5] = &[' ', '⣀', '⣤', '⣶', '⣿'];
+/// Cells painted for a fully masked secret.
+///
+/// Fixed width on purpose: a mask whose length tracked the secret would leak
+/// it. Every masked field uses [`Glyph::Mask`] repeated this many times.
+pub const MASK_CELLS: usize = 8;
 /// Canonical deterministic braille spinner.
 pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 /// Quiet four-step presence pulse; every frame is one display cell.

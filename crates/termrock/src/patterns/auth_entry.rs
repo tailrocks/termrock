@@ -22,7 +22,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Glyph, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         Checkbox, CheckboxOutcome, CheckboxState, Panel, PanelVariant, PasswordConfirmState,
@@ -701,6 +701,17 @@ pub fn auth_entry_form_width(total: u16, has_aside: bool) -> u16 {
     }
 }
 
+/// Fixed-width secret placeholder, resolved from the glyph catalog.
+///
+/// One mask glyph for every masked field in the library; the width is fixed so
+/// an empty field never advertises how long the real secret is.
+fn mask_placeholder(system: &DesignSystem) -> String {
+    Glyph::Mask
+        .resolve(system.glyphs)
+        .text
+        .repeat(crate::style::MASK_CELLS)
+}
+
 /// Paint auth entry panel.
 pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
     if area.is_empty() {
@@ -810,7 +821,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
             Validation::Valid
         };
         let _ = PasswordInput::new(surfaces.password_label, system)
-            .placeholder("••••••••")
+            .placeholder(&mask_placeholder(system))
             .validation(val)
             .paint(fa, buffer, &mut state.secrets.password);
         y = y.saturating_add(field_h.saturating_add(1));
@@ -827,7 +838,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
                 Validation::Valid
             };
             let _ = PasswordInput::new(surfaces.confirm_label, system)
-                .placeholder("••••••••")
+                .placeholder(&mask_placeholder(system))
                 .validation(val)
                 .paint(fa, buffer, &mut state.secrets.confirm);
             y = y.saturating_add(field_h.saturating_add(1));
@@ -856,12 +867,12 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
     // Footer hints
     if y < bottom && w > 0 {
         let hint = match state.mode {
-            AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · Ctrl+G sign in",
+            AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · C-g sign in",
             AuthEntryMode::SignIn => {
-                "Tab · Enter submit · Esc · Ctrl+G sign up · Ctrl+F forgot · Ctrl+E email"
+                "Tab · Enter submit · Esc · C-g sign up · C-f forgot · C-e email"
             }
             AuthEntryMode::EmailOnly => {
-                "Enter request link · Esc cancel · Ctrl+G password · Ctrl+O oauth"
+                "Enter request link · Esc cancel · C-g password · C-o oauth"
             }
         };
         buffer.set_stringn(

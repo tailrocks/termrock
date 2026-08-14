@@ -51,6 +51,13 @@ pub const COMPLETION_FULLSCREEN_MAX_HEIGHT: u16 = 10;
 /// Default documentation side-panel width when details are shown.
 pub const COMPLETION_DOCS_DEFAULT_WIDTH: u16 = 28;
 
+/// Default "still fetching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so a host-supplied message
+/// survives the ASCII profile: only the *default* is swapped.
+const LOADING_MESSAGE: &str = "Loading…";
+const LOADING_MESSAGE_ASCII: &str = "Loading...";
+
 // ── Model ───────────────────────────────────────────────────────────────────
 
 /// Async / empty / stale chrome status (host drives; paint reflects).
@@ -496,7 +503,7 @@ impl<Id> CompletionMenuState<Id> {
             show_docs: true,
             docs_scroll: 0,
             slots: CompletionSlots::empty(),
-            loading_message: "Loading…".into(),
+            loading_message: LOADING_MESSAGE.into(),
             empty_message: "No matches".into(),
             stale_message: "Stale results".into(),
         }
@@ -1150,11 +1157,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {
-            let msg = if self.ascii {
-                "Loading..."
-            } else {
-                state.loading_message.as_str()
-            };
+            let msg = loading_copy(self.ascii, state);
             paint_centered_msg(buffer, list_body, msg, self.system.style(Role::TextMuted));
             paint_status_line(self, buffer, state);
             return;
@@ -1403,6 +1406,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for CompletionMenu<'_, Id> {
     }
 }
 
+/// Loading copy for the active glyph profile.
+///
+/// A host-supplied message is painted as written; only the default carries an
+/// ASCII twin, so overriding the copy never loses it on a degraded terminal.
+fn loading_copy<'a, Id>(ascii: bool, state: &'a CompletionMenuState<Id>) -> &'a str {
+    if ascii && state.loading_message == LOADING_MESSAGE {
+        LOADING_MESSAGE_ASCII
+    } else {
+        state.loading_message.as_str()
+    }
+}
+
 fn paint_status_line<Id>(
     menu: &CompletionMenu<'_, Id>,
     buffer: &mut Buffer,
@@ -1413,13 +1428,7 @@ fn paint_status_line<Id>(
         return;
     }
     let msg = match state.status {
-        CompletionStatus::Loading => {
-            if menu.ascii {
-                "Loading..."
-            } else {
-                state.loading_message.as_str()
-            }
-        }
+        CompletionStatus::Loading => loading_copy(menu.ascii, state),
         CompletionStatus::Stale => state.stale_message.as_str(),
         _ => return,
     };

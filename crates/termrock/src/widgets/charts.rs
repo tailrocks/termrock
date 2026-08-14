@@ -2765,7 +2765,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 8);
         let mut buffer = Buffer::empty(area);
         Chart::new(&series, &system)
-            .title("host")
+            .title("Host")
             .glyphs(VizGlyphSet::Ascii)
             .show_legend(true)
             .show_axes(true)
@@ -2781,7 +2781,7 @@ mod tests {
             text.contains("cpu") && text.contains("mem"),
             "legend labels: {text}"
         );
-        assert!(text.contains("host"), "title: {text}");
+        assert!(text.contains("Host"), "title: {text}");
         let m0 = VizGlyphSet::Ascii.series_marker(0);
         let m1 = VizGlyphSet::Ascii.series_marker(1);
         // Plot occupancy: both series markers (not legend-only — markers also on plot rows)
@@ -3196,7 +3196,7 @@ mod tests {
         ];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 8));
         Histogram::new(&buckets, &system)
-            .title("hist")
+            .title("Hist")
             .selected(1)
             .render(Rect::new(0, 0, 20, 8), &mut buffer);
 
@@ -3358,7 +3358,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         MetricRadar::new(&axes, &series, &system)
             .glyphs(VizGlyphSet::Ascii)
-            .title("metrics")
+            .title("Metrics")
             .show_legend(true)
             .render(area, &mut buffer);
 
@@ -3366,7 +3366,7 @@ mod tests {
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
         assert!(
-            row0.contains('m') && row0.contains('e'),
+            row0.contains('M') && row0.contains('e'),
             "title on first row: {row0:?}"
         );
         let row1: String = (0..40u16)

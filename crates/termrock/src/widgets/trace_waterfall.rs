@@ -1446,7 +1446,7 @@ mod tests {
         let area = Rect::new(0, 0, 72, 14);
         let mut buf = Buffer::empty(area);
         TraceWaterfall::new(&spans, &system)
-            .title("req")
+            .title("Request")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

@@ -171,12 +171,12 @@ impl FileOpKind {
     #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
-            Self::Copy => "copy",
-            Self::Move => "move",
-            Self::Delete => "delete",
-            Self::Rename => "rename",
-            Self::NewFile => "new file",
-            Self::NewDir => "new dir",
+            Self::Copy => "Copy",
+            Self::Move => "Move",
+            Self::Delete => "Delete",
+            Self::Rename => "Rename",
+            Self::NewFile => "New file",
+            Self::NewDir => "New directory",
         }
     }
 }

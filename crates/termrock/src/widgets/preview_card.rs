@@ -56,7 +56,7 @@ pub const PREVIEW_CARD_DEFAULT_MAX_WIDTH: u16 = 48;
 /// Default preferred height (content may shrink).
 pub const PREVIEW_CARD_DEFAULT_MAX_HEIGHT: u16 = 16;
 /// Footer hint when unpinned.
-pub const PREVIEW_CARD_HINT: &str = "pin · enter open · esc dismiss";
+pub const PREVIEW_CARD_HINT: &str = "pin · enter open · esc cancel";
 /// Footer hint when pinned.
 pub const PREVIEW_CARD_PINNED_HINT: &str = "pinned · enter open · esc unpin";
 
@@ -1218,7 +1218,9 @@ impl<'a> PreviewCard<'a> {
         };
         match load {
             PreviewLoadState::Loading => {
-                let msg = if ascii { "... loading" } else { "… loading" };
+                // Verb first, ellipsis trailing: the row reads as an action in
+                // progress, not as an elision.
+                let msg = if ascii { "loading..." } else { "loading…" };
                 buffer.set_stringn(
                     inner.x,
                     y,

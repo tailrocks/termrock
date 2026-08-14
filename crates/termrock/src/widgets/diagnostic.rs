@@ -2009,7 +2009,7 @@ mod tests {
         let view = DiagnosticView::new(&items, &system)
             .recipe(DiagnosticRecipe::Full)
             .source_lines(&lines)
-            .title("problems");
+            .title("Problems");
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
         view.render(area, &mut buf, &mut state);

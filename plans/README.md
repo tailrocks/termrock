@@ -35,7 +35,7 @@ run its drift check, and update your row when done.
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C: Part A contrast floor LANDED — 25 pre-002 shortfalls recorded in KNOWN_SHORTFALLS; Part B diets queued after 022 Step 4) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
-| 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | TODO |
+| 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
 | 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | TODO |
 | 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Step 1 helpers + Step 4 rhythm/alignment DONE; Steps 2/3/5/6 queued after 007-009) |
 
@@ -113,6 +113,35 @@ guarding after 002 retunes.
    **Follow-up for plan 002:** widening the ladder's dark steps to ≥ 10 average
    channel levels is the only lever that separates `Sunken` from `Surface` on
    256-color terminals.
+
+### Plan 020 (done)
+
+Landed as `migrations/0286-v0.14.0-one-voice-microcopy.md`; the standard is
+`docs/design/web-premium-tui-law.md` §4.1 (rule 16), and
+`crates/termrock/tests/design_gate.rs` carries the two gates
+(`no_bare_ellipsis_in_paint`, `one_chord_notation`). That file did not exist —
+plan 004 is expected to add its own gates to the same file rather than a second
+mechanism. The chord gate earned its keep immediately: it caught a `⌃c copy`
+hint in `terminal_output.rs` that the plan's own `rg` leads had missed.
+
+Step 1's `fmt_key` helper was **not** added — `widgets::kbd::format_chord`
+already is the single chord formatter, so the plan's "or confirm one exists"
+branch applies. `GlyphSet::ellipsis()` likewise already existed.
+
+Four hint verbs are sanctioned exceptions per the plan's STOP rule (normalizing
+them would describe the wrong behavior): `esc demote` (FullscreenViewer, returns
+fullscreen to inline), `esc clear` (JumpOverlay/EmptyState, clears a prefix not
+a layer), `esc back` (EmptyState, navigates), `esc clear/cancel` (CommandPalette,
+staged). All four are listed in the migration.
+
+Two `error`-prefixed strings survive on purpose and are documented:
+`ConnectionManager`'s `error   {err}` is a key-value label in an aligned detail
+list, and `ErrorState::diagnostics_text` is clipboard payload, not chrome.
+
+Follow-ups left open: `widgets::text::ascii_ellipsis()` and
+`BREADCRUMBS_ELLIPSIS`/`_ASCII` are public parallel paths to the catalog with
+zero (respectively one) consumers; removing them is a public-API break beyond
+this plan's string-only scope.
 
 Deferred out of 003 (unchanged): EAW-Ambiguous glyph width policy (terminals
 rendering `✓●○◆` as two cells) needs a capability flag plus a layout audit.

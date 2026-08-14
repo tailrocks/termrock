@@ -1075,27 +1075,22 @@ pub fn draft_code_frame_lines(editor: &TextAreaState) -> Vec<CodeFrameLine<'_>> 
 #[must_use]
 pub fn query_editor_help_entries() -> Vec<HelpEntry> {
     vec![
-        HelpEntry::new(
-            "run",
-            "Query",
-            "Ctrl+R / Ctrl+Enter",
-            "Run query / selection",
-        ),
-        HelpEntry::new("stop", "Query", "Ctrl+Shift+S", "Stop run"),
-        HelpEntry::new("format", "Query", "Ctrl+F", "Format request"),
-        HelpEntry::new("save", "Query", "Ctrl+S", "Save query request"),
-        HelpEntry::new("history", "Query", "Ctrl+H", "Open history"),
-        HelpEntry::new("saved", "Query", "Ctrl+Shift+O", "Open saved queries"),
-        HelpEntry::new("complete", "Edit", "Ctrl+Space", "Completion"),
+        HelpEntry::new("run", "Query", "C-r / C-enter", "Run query / selection"),
+        HelpEntry::new("stop", "Query", "C-S-s", "Stop run"),
+        HelpEntry::new("format", "Query", "C-f", "Format request"),
+        HelpEntry::new("save", "Query", "C-s", "Save query request"),
+        HelpEntry::new("history", "Query", "C-h", "Open history"),
+        HelpEntry::new("saved", "Query", "C-S-o", "Open saved queries"),
+        HelpEntry::new("complete", "Edit", "C-space", "Completion"),
         HelpEntry::new(
             "focus",
             "Nav",
-            "Ctrl+J",
+            "C-j",
             "Cycle editor/results/diagnostics/params",
         ),
-        HelpEntry::new("help", "Help", "Ctrl+?", "Keyboard help"),
-        HelpEntry::new("fullscreen", "View", "Ctrl+Shift+F", "Fullscreen editor"),
-        HelpEntry::new("mode", "View", "Ctrl+M", "Cycle compact/normal/fullscreen"),
+        HelpEntry::new("help", "Help", "C-?", "Keyboard help"),
+        HelpEntry::new("fullscreen", "View", "C-S-f", "Fullscreen editor"),
+        HelpEntry::new("mode", "View", "C-m", "Cycle compact/normal/fullscreen"),
     ]
 }
 
@@ -1254,8 +1249,8 @@ impl<'a> QueryEditor<'a> {
                 buffer.set_stringn(
                     area.x.saturating_add(area.width.saturating_sub(10)),
                     y,
-                    if ascii { "..." } else { "…run" },
-                    4,
+                    if ascii { "run..." } else { "run…" },
+                    6,
                     self.system.style(Role::Warning),
                 );
             }
@@ -1475,9 +1470,9 @@ impl<'a> QueryEditor<'a> {
                 height: 1,
             };
             let footer = if state.run.is_running() {
-                "Ctrl+R run · Ctrl+Shift+S stop · Ctrl+Space complete · Ctrl+J focus · Ctrl+? help"
+                "C-r run · C-S-s stop · C-space complete · C-j focus · C-? help"
             } else {
-                "Ctrl+R run · Ctrl+F format · Ctrl+S save · Ctrl+H history · Ctrl+J focus · Ctrl+? help"
+                "C-r run · C-f format · C-s save · C-h history · C-j focus · C-? help"
             };
             buffer.set_stringn(
                 area.x,
@@ -1701,7 +1696,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         QueryEditor::new(&system)
             .diagnostics(&diags)
-            .title("sql")
+            .title("SQL")
             .render(area, &mut buf, &mut state);
         assert!(!state.slots.editor.is_empty());
         assert!(!state.slots.results.is_empty() || state.mode != QueryEditorMode::Normal);

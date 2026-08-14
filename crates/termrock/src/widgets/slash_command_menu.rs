@@ -672,7 +672,7 @@ pub fn example_slash_catalog() -> Vec<SlashCommand> {
         SlashCommand::new("plan", "plan")
             .description("Enter plan mode")
             .aliases(["p"])
-            .shortcut("Ctrl+Shift+P")
+            .shortcut("C-S-p")
             .source(SlashCommandSource::Composer)
             .recent(true),
         SlashCommand::new("model", "model")
@@ -1353,7 +1353,7 @@ mod tests {
         let entries = vec![
             CommandEntry::new("theme", "Toggle theme")
                 .command_key("theme")
-                .shortcut("Ctrl+T"),
+                .shortcut("C-t"),
             CommandEntry::new("x", "Disabled")
                 .enabled(false)
                 .disabled_reason("nope"),

@@ -24,7 +24,7 @@ pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
 pub use glyph::{
     BLOCK_RAMP, BRAILLE_RAMP, GLYPH_CONTEXTS, Glyph, GlyphGroup, GlyphResolved, LEFT_BLOCK_RAMP,
-    SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
+    MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
 };
 pub use motion::{
     blend_toward, coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness,

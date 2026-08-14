@@ -1295,7 +1295,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         // Footer
         state.slots.footer = Rect::new(inner.x, y, inner.width, footer_h);
         let hint = if state.help_open {
-            "help: esc close help · tab chrome · arrows body (host)"
+            "help: esc cancel · tab chrome · arrows body (host)"
         } else {
             FULLSCREEN_VIEWER_HINT
         };

@@ -1266,10 +1266,10 @@ impl<'a> MetricsDashboard<'a> {
                 .count();
             let footer = if failed > 0 {
                 format!(
-                    "Tab zones · hjkl tiles · Enter drill · Ctrl+R refresh · {failed} failed · {warn} thr"
+                    "Tab zones · hjkl tiles · Enter drill · C-r refresh · {failed} failed · {warn} thr"
                 )
             } else {
-                "Tab zones · hjkl tiles · Enter drill · Ctrl+T range · Ctrl+D compare · Ctrl+K cmds"
+                "Tab zones · hjkl tiles · Enter drill · C-t range · C-d compare · C-k cmds"
                     .to_string()
             };
             buffer.set_stringn(
@@ -1656,7 +1656,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
         MetricsDashboard::new(&tiles, &alerts, &system)
-            .title("ops")
+            .title("Ops")
             .render(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
         let text: String = buf

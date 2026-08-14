@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome,
@@ -256,7 +256,10 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
             if text.is_empty() {
                 String::new()
             } else {
-                "••••••••".into()
+                Glyph::Mask
+                    .resolve(GlyphSet::Unicode)
+                    .text
+                    .repeat(MASK_CELLS)
             }
         }
         HistoryRedaction::MaskMiddle {
@@ -269,7 +272,10 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
                 return String::new();
             }
             if keep_start + keep_end >= n {
-                return "•".repeat(n.min(8).max(1));
+                return Glyph::Mask
+                    .resolve(GlyphSet::Unicode)
+                    .text
+                    .repeat(n.min(MASK_CELLS).max(1));
             }
             let mut out: String = chars.iter().take(keep_start).collect();
             out.push('…');
@@ -980,7 +986,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             title: "History",
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ · enter apply · ctrl+p pin · ctrl+d delete · esc restore draft"),
+            footer_hint: Some("↑↓ · enter apply · C-p pin · C-d delete · esc restore draft"),
             empty_message: "No history yet",
         }
     }

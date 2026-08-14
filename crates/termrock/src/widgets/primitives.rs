@@ -21,7 +21,7 @@ use crate::{
     },
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Motion, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, Motion, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -721,8 +721,10 @@ impl Button<'_> {
         let show_leading =
             self.leading.is_some() && !tiny && (area.width >= 10 || self.label.is_empty());
 
+        // Catalog on both paths: the ASCII profile already carries the
+        // degraded form, so no literal is needed to spell it out.
         let load_g = if mono || self.ascii {
-            "..."
+            Glyph::Loading.resolve(GlyphSet::Ascii).text
         } else {
             theme.glyphs.resolve(Glyph::Loading).text
         };
@@ -1233,7 +1235,7 @@ impl<'a> IconButton<'a> {
         };
         let face = if loading {
             if mono {
-                "...".to_string()
+                Glyph::Loading.resolve(GlyphSet::Ascii).text.to_string()
             } else {
                 self.system.glyphs.resolve(Glyph::Loading).text.to_string()
             }

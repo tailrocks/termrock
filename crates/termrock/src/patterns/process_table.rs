@@ -1561,7 +1561,7 @@ mod tests {
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
         ProcessTable::new(&rows, &system)
-            .title("procs")
+            .title("Procs")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

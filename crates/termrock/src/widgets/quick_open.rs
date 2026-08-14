@@ -60,6 +60,13 @@ pub const QUICK_OPEN_DEFAULT_LIMIT: usize = 200;
 /// Max providers shown in the tab strip before compact mode.
 pub const QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX: u16 = 40;
 
+/// Default "still searching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so host-supplied copy survives
+/// the ASCII profile: only the *default* is swapped.
+const QUICK_OPEN_SEARCHING: &str = "Searching…";
+const QUICK_OPEN_SEARCHING_ASCII: &str = "Searching...";
+
 // ── Size / placement ────────────────────────────────────────────────────────
 
 /// Preferred size.
@@ -1301,10 +1308,10 @@ impl<'a, Id> QuickOpen<'a, Id> {
             focused: true,
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ open · enter · @provider · ctrl+n/p switch · ctrl+j jump · esc"),
+            footer_hint: Some("↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc"),
             empty_message: "Type to search resources",
             no_result_message: "No matching resources",
-            loading_message: "Searching…",
+            loading_message: QUICK_OPEN_SEARCHING,
             title: "Quick Open",
         }
     }
@@ -1584,8 +1591,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if state.loading && self.items.is_empty() {
-            let msg = if self.ascii {
-                "[...] searching"
+            let msg = if self.ascii && self.loading_message == QUICK_OPEN_SEARCHING {
+                QUICK_OPEN_SEARCHING_ASCII
             } else {
                 self.loading_message
             };

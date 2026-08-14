@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, Glyph, MASK_CELLS, Role, SelectionChrome},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
@@ -596,11 +596,10 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &KeyValueTableState<Id>,
     ) -> String {
         if field.secret && !state.is_revealed(&field.id) {
-            return if self.system.glyphs.is_ascii() {
-                "********".into()
-            } else {
-                "••••••••".into()
-            };
+            return Glyph::Mask
+                .resolve(self.system.glyphs)
+                .text
+                .repeat(MASK_CELLS);
         }
         if state.editing && state.cursor.as_ref() == Some(&field.id) {
             return state.edit_draft.clone();

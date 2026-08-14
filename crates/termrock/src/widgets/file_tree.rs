@@ -1350,7 +1350,7 @@ mod tests {
         let area = Rect::new(0, 0, 48, 16);
         let mut buf = Buffer::empty(area);
         FileTree::new(&e, &system)
-            .title("repo")
+            .title("Repo")
             .focused(true)
             .render(area, &mut buf, &mut state);
         let text: String = buf

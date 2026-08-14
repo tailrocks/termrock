@@ -51,6 +51,13 @@ pub const COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16 = 14;
 /// Max remembered query history entries.
 pub const COMMAND_PALETTE_HISTORY_CAP: usize = 32;
 
+/// Default "still fetching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so host-supplied copy survives
+/// the ASCII profile: only the *default* is swapped.
+const COMMAND_PALETTE_LOADING: &str = "Loading…";
+const COMMAND_PALETTE_LOADING_ASCII: &str = "Loading...";
+
 // ── Size / placement ────────────────────────────────────────────────────────
 
 /// Preferred palette size (width × height in cells).
@@ -1210,10 +1217,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
             focused: true,
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ move · enter run · esc clear/close · ctrl+p history"),
+            footer_hint: Some("↑↓ move · enter run · esc clear/cancel · C-p history"),
             empty_message: "Type to search commands",
             no_result_message: "No matching commands",
-            loading_message: "Loading…",
+            loading_message: COMMAND_PALETTE_LOADING,
             show_preview: true,
         }
     }
@@ -1516,8 +1523,8 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = if self.ascii {
-                "[...] loading"
+            let msg = if self.ascii && self.loading_message == COMMAND_PALETTE_LOADING {
+                COMMAND_PALETTE_LOADING_ASCII
             } else {
                 self.loading_message
             };
@@ -1828,7 +1835,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
     vec![
         CommandEntry::new("theme", "Toggle theme")
             .group("Appearance")
-            .shortcut("Ctrl+T")
+            .shortcut("C-t")
             .command_key("view.theme")
             .preview("Cycle phosphor / high-contrast")
             .keywords(["appearance", "color"]),
@@ -1843,12 +1850,12 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
         CommandEntry::new("goto-line", "Go to line…")
             .group("Navigation")
             .argument_prompt("Line")
-            .shortcut("Ctrl+G")
+            .shortcut("C-g")
             .command_key("nav.goto")
             .contextual(true),
         CommandEntry::new("quit", "Quit")
             .group("App")
-            .shortcut("Ctrl+Q")
+            .shortcut("C-q")
             .command_key("app.quit"),
         CommandEntry::new("disabled-demo", "Deploy (unavailable)")
             .group("App")
@@ -1858,11 +1865,11 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
         CommandEntry::new("key-save", "Save file")
             .page("keys")
             .group("File")
-            .shortcut("Ctrl+S"),
+            .shortcut("C-s"),
         CommandEntry::new("key-find", "Find in file")
             .page("keys")
             .group("Edit")
-            .shortcut("Ctrl+F"),
+            .shortcut("C-f"),
     ]
 }
 

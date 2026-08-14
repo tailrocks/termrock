@@ -187,7 +187,9 @@ impl SearchResultsStatus {
                 None => format!("{visible} results"),
             },
             Self::Empty { message } => message.clone().unwrap_or_else(|| "no matches".into()),
-            Self::Error { message, .. } => format!("error · {message}"),
+            // No "error" prefix: severity is carried by the Danger role and the
+            // status glyph, so the word would spend a cell saying it twice.
+            Self::Error { message, .. } => message.clone(),
             Self::Stale { generation } => format!("stale gen {generation} · refresh"),
             Self::Cancelled => "cancelled".into(),
         }
@@ -1580,7 +1582,7 @@ mod tests {
         let area = Rect::new(0, 0, 64, 14);
         let mut buf = Buffer::empty(area);
         SearchResults::new(&groups, &items, &system)
-            .title("find")
+            .title("Find")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

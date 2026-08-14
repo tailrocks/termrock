@@ -40,7 +40,7 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1021,7 +1021,12 @@ impl<'a, Id> Tabs<'a, Id> {
             buffer.set_stringn(
                 tr.x,
                 tr.y,
-                if self.ascii { "..." } else { " … " },
+                // Catalog-resolved and padded to the same budget in both
+                // profiles, so the overflow trigger does not shift by a cell
+                // between Unicode and ASCII.
+                &Glyph::Ellipsis
+                    .resolve(self.system.glyphs)
+                    .aligned(ellipsis_w),
                 usize::from(tr.width),
                 self.system.style(Role::TabInactive),
             );

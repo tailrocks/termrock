@@ -1355,7 +1355,7 @@ fn paint_header(
         let hints = if ascii {
             "c=cancel r=retry d=detach C-c=copy e=env f=follow m=mode"
         } else {
-            "c cancel · r retry · d detach · ⌃c copy · e env · f follow · m mode"
+            "c cancel · r retry · d detach · C-c copy · e env · f follow · m mode"
         };
         buffer.set_stringn(
             area.x,
@@ -1681,7 +1681,7 @@ mod tests {
         ];
         let mut state = TerminalOutputState::new();
         state.recipe = TerminalOutputRecipe::Pane;
-        let view = TerminalOutput::new(&meta, &lines, &system).title("build");
+        let view = TerminalOutput::new(&meta, &lines, &system).title("Build");
         let area = Rect::new(0, 0, 64, 14);
         let mut buf = Buffer::empty(area);
         (&view).render(area, &mut buf, &mut state);

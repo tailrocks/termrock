@@ -797,7 +797,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
     if !slots.footer.is_empty() {
         if status_slots.is_empty() {
             let dirty = if state.dirty { "modified" } else { "clean" };
-            let save = if state.dirty { "Ctrl+S save" } else { "Ctrl+S" };
+            let save = if state.dirty { "C-s save" } else { "C-s" };
             let text = format!("{dirty} · {save} · ? help · r reset");
             buffer.set_stringn(
                 slots.footer.x,
@@ -1005,7 +1005,7 @@ pub fn example_settings_appearance_fields() -> [Field<'static, &'static str>; 3]
 #[must_use]
 pub fn example_settings_keys_fields() -> [Field<'static, &'static str>; 2] {
     [
-        Field::new("submit", "Submit chord", "Ctrl+Enter")
+        Field::new("submit", "Submit chord", "C-enter")
             .dirty(true)
             .warning("conflict with send-queue"),
         Field::new("cancel", "Cancel", "Esc"),
@@ -1040,11 +1040,11 @@ pub fn example_settings_fieldsets() -> Vec<Fieldset<'static, &'static str>> {
 pub fn example_settings_help_entries() -> Vec<crate::widgets::HelpEntry> {
     use crate::widgets::HelpEntry;
     vec![
-        HelpEntry::new("save", "General", "Ctrl+S", "Save settings"),
-        HelpEntry::new("discard", "General", "Ctrl+Z", "Discard dirty"),
-        HelpEntry::new("reset-section", "General", "Ctrl+R", "Reset section"),
-        HelpEntry::new("reset-field", "General", "Alt+R", "Reset field"),
-        HelpEntry::new("drawer", "Navigation", "Ctrl+B", "Toggle category drawer"),
+        HelpEntry::new("save", "General", "C-s", "Save settings"),
+        HelpEntry::new("discard", "General", "C-z", "Discard dirty"),
+        HelpEntry::new("reset-section", "General", "C-r", "Reset section"),
+        HelpEntry::new("reset-field", "General", "A-r", "Reset field"),
+        HelpEntry::new("drawer", "Navigation", "C-b", "Toggle category drawer"),
         HelpEntry::new(
             "cycle",
             "Navigation",

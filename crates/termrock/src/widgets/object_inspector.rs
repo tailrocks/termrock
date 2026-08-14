@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, Glyph, GlyphSet, MASK_CELLS, Role, SelectionChrome},
     text::{display_cols, take_display_cols},
     widgets::{data_view::LoadState, scroll_area::ScrollAreaState},
 };
@@ -1403,11 +1403,12 @@ impl<'a> ObjectInspector<'a> {
         state: &ObjectInspectorState,
     ) -> String {
         if field.secret && !state.is_revealed(field.path) {
-            return if self.ascii || state.ascii {
-                "********".into()
+            let set = if self.ascii || state.ascii {
+                GlyphSet::Ascii
             } else {
-                "••••••••".into()
+                GlyphSet::Unicode
             };
+            return Glyph::Mask.resolve(set).text.repeat(MASK_CELLS);
         }
         if state.editing && state.cursor_path.as_deref() == Some(field.path) {
             return escape_inspect_value(&state.edit_draft);

@@ -1810,11 +1810,11 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             vec![
                 MenuNode::command("new", "New")
                     .mnemonic('N')
-                    .shortcut("Ctrl+N")
+                    .shortcut("C-n")
                     .command_key("file.new"),
                 MenuNode::command("open", "Open…")
                     .mnemonic('O')
-                    .shortcut("Ctrl+O")
+                    .shortcut("C-o")
                     .command_key("file.open"),
                 MenuNode::separator("file-sep-1"),
                 MenuNode::section("recent-h", "Recent"),
@@ -1837,7 +1837,7 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
                 MenuNode::separator("file-sep-3"),
                 MenuNode::command("quit", "Quit")
                     .mnemonic('Q')
-                    .shortcut("Ctrl+Q")
+                    .shortcut("C-q")
                     .command_key("file.quit"),
             ],
         )
@@ -1848,7 +1848,7 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             vec![
                 MenuNode::command("undo", "Undo")
                     .mnemonic('U')
-                    .shortcut("Ctrl+Z")
+                    .shortcut("C-z")
                     .command_key("edit.undo"),
                 MenuNode::command("redo", "Redo")
                     .enabled(false)

@@ -2228,7 +2228,7 @@ mod backdrop_tests {
     fn empty_body_and_from_system() {
         let system = DesignSystem::phosphor();
         let dialog =
-            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc dismiss");
+            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc cancel");
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);

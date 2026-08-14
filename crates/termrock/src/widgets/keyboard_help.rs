@@ -1080,7 +1080,7 @@ impl<'a> KeyboardHelp<'a> {
             state.query.set_focused(surface);
             let _ = crate::widgets::TextInput::new("", self.system)
                 .placeholder(if self.ascii {
-                    "filter bindings..."
+                    "Filter bindings..."
                 } else {
                     "Filter bindings…"
                 })

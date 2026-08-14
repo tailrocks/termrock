@@ -1465,7 +1465,9 @@ pub fn render_project_launcher(
     // Status
     if let Some(r) = pane_area(&panes, "status") {
         if let Some(err) = &state.host_error {
-            state.status.transient = Some(format!("error: {err}"));
+            // Severity is the status role's job; the line spends its cells on
+            // what actually failed.
+            state.status.transient = Some(err.clone());
         } else if state.problem_count > 0 {
             state.status.transient = Some(format!(
                 "{} stale/missing · a ack · r reload",

@@ -1361,7 +1361,7 @@ mod tests {
         let area = Rect::new(0, 0, 30, 16);
         let mut buf = Buffer::empty(area);
         Drawer::new("Inspector", &system)
-            .footer(Some("esc close"))
+            .footer(Some("esc cancel"))
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.header.height, 1);
         assert_eq!(state.slots.footer.height, 1);

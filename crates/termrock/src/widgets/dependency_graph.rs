@@ -1673,7 +1673,7 @@ mod tests {
         let area = Rect::new(0, 0, 72, 16);
         let mut buf = Buffer::empty(area);
         DependencyGraph::new(&nodes, &edges, &system)
-            .title("crates")
+            .title("Crates")
             .render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Graph);
         let text: String = buf

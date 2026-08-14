@@ -1331,7 +1331,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
         SchemaBrowser::new(&entries, &system)
-            .title("catalog")
+            .title("Catalog")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

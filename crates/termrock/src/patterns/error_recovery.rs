@@ -1497,7 +1497,7 @@ mod tests {
             "API_KEY value must be fully redacted, got {api_line:?}"
         );
         assert!(
-            api_line.contains('•') || api_line.contains("****") || api_line.contains('…'),
+            api_line.contains('●') || api_line.contains("****") || api_line.contains('…'),
             "API_KEY line should show mask glyphs: {api_line:?}"
         );
         // Non-secret context retained

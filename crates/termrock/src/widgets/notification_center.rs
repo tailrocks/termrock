@@ -47,7 +47,7 @@ pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
 pub const NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize = 500;
 /// Hint footer.
 pub const NOTIFICATION_CENTER_HINT: &str =
-    "j/k move · enter open · u read · x dismiss · c clear · / filter · esc close";
+    "j/k move · enter open · u read · x dismiss · c clear · / filter · esc cancel";
 
 // ── Models (shared kinds from Toast) ────────────────────────────────────────
 
@@ -1433,7 +1433,7 @@ mod tests {
         let a = ToastArchive {
             id: "t1".into(),
             kind: ToastKind::Success,
-            title: Some("Ok".into()),
+            title: Some("OK".into()),
             message: "done".into(),
             reason: ToastArchiveReason::Expired,
             announcement: "done".into(),

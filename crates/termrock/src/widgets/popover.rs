@@ -1004,7 +1004,7 @@ mod tests {
         let area = Rect::new(0, 0, 30, 10);
         let mut buf = Buffer::empty(area);
         Popover::new("Settings", &system)
-            .footer(Some("esc close"))
+            .footer(Some("esc cancel"))
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.header.height, 1);
         assert_eq!(state.slots.footer.height, 1);
