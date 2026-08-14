@@ -104,6 +104,7 @@ Write the claim here **before** writing code. Release it by deleting the row.
 | 014 Step 4 motion contracts | motion lane (003/020/014) | `widgets/{spinner,toast,timeline,log_stream,status_indicator}.rs` — the `MotionChannel` layer only, on top of 007's settled status paint |
 | 008 input & form chrome | design lane (001/002/004/005/006) | `widgets/{text_input,number_input,password_input,search_input,path_input,token_field,input_otp,combobox,select,multi_select,date_time_picker,form,form_wizard,field_row,input_group,slider}.rs` + `input_recipe` in `style/tokens.rs` |
 | 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
+| 012 row anatomy ladder | agent C (017/022/007/009/012) | `widgets/{data_table,tree_table,detail_table,key_value_table,search_results,diff,log_stream,streaming_markdown,diagnostic,virtual_grid}.rs` + `ColumnKind` in `widgets/data_view.rs` |
 
 ## Execution notes
 
