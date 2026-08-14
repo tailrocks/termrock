@@ -30728,6 +30728,8 @@ pub const termrock::style::SHADE_RAMP: &[char; 4]
 pub const termrock::style::SPINNER_BRAILLE_FRAMES: &[&str]
 pub const termrock::style::SPINNER_DOT_PULSE_FRAMES: &[&str]
 pub fn termrock::style::blend_toward(ratatui_core::style::color::Color, ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
+pub fn termrock::style::breathe_over(termrock::style::MotionPolicy, u64, u64) -> f32
+pub fn termrock::style::channel_brightness(termrock::style::MotionPolicy, termrock::style::MotionChannel, u64) -> f32
 pub fn termrock::style::coalesce_cells(impl core::iter::traits::collect::IntoIterator<Item = (char, ratatui_core::style::Style)>) -> alloc::vec::Vec<(alloc::string::String, ratatui_core::style::Style)>
 pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::contrast_ratio(termrock::style::Rgb, termrock::style::Rgb) -> f32
@@ -49821,6 +49823,7 @@ pub termrock::widgets::SemanticStatus::Waiting
 pub termrock::widgets::SemanticStatus::Warning
 impl termrock::widgets::SemanticStatus
 pub const termrock::widgets::SemanticStatus::ALL: [Self; 11]
+pub const fn termrock::widgets::SemanticStatus::channel(self) -> termrock::style::MotionChannel
 pub const fn termrock::widgets::SemanticStatus::default_label(self) -> &'static str
 pub fn termrock::widgets::SemanticStatus::from_id(&str) -> core::option::Option<Self>
 pub const fn termrock::widgets::SemanticStatus::glyph(self, bool) -> &'static str
@@ -49828,6 +49831,7 @@ pub const fn termrock::widgets::SemanticStatus::glyph_ascii(self) -> &'static st
 pub const fn termrock::widgets::SemanticStatus::glyph_for_set(self, termrock::style::GlyphSet) -> &'static str
 pub const fn termrock::widgets::SemanticStatus::glyph_unicode(self) -> &'static str
 pub const fn termrock::widgets::SemanticStatus::id(self) -> &'static str
+pub const fn termrock::widgets::SemanticStatus::period_ms(self) -> u64
 pub const fn termrock::widgets::SemanticStatus::role(self) -> termrock::style::Role
 impl termrock::widgets::SemanticStatus
 pub const fn termrock::widgets::SemanticStatus::from_presence(termrock::widgets::PresenceStatus) -> Self
