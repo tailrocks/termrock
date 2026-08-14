@@ -793,7 +793,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
         let accepts = self.focused || state.focused;
         let fold_open = if self.ascii { "v " } else { "▾ " };
         let fold_closed = if self.ascii { "> " } else { "▸ " };
-        let sel_gutter = if self.ascii { ">" } else { "›" };
+        let sel_gutter = self.system.glyphs.selection_gutter();
 
         for (block_index, block) in self.blocks.iter().enumerate() {
             let Some((_, start, height)) = starts.get(block_index) else {

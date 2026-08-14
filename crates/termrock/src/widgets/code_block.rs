@@ -302,7 +302,8 @@ impl CodeHighlightKind {
 
     fn role(self) -> Role {
         match self {
-            Self::Selection => Role::Selection,
+            // A selected range washes; the code keeps its syntax tones.
+            Self::Selection => Role::SelectionTint,
             Self::Search | Self::Emphasis => Role::Accent,
             Self::Diagnostic => Role::Warning,
             Self::DiffAdd => Role::DiffAdded,

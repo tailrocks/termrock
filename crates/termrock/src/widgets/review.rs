@@ -1696,7 +1696,7 @@ fn paint_file_tree(
             " "
         };
         let gutter = if cur && focus {
-            if ascii { ">" } else { "›" }
+            system.glyphs.selection_gutter()
         } else {
             " "
         };

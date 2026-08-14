@@ -1220,8 +1220,11 @@ impl<'a, Id> NavigationList<'a, Id> {
             let style = if !item.enabled && item.kind.is_route() {
                 self.system.style(Role::TextDisabled)
             } else if route {
+                // The active route is a strong label on the selection wash —
+                // never a full-width slab of brand color.
                 self.system
-                    .style(Role::Selection)
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if focus {
                 self.system
@@ -1235,10 +1238,10 @@ impl<'a, Id> NavigationList<'a, Id> {
                 self.system.style(Role::Text)
             };
 
-            let gutter = if focus {
-                if self.ascii { ">" } else { "›" }
-            } else if route {
-                if self.ascii { "*" } else { "•" }
+            // Route and cursor share the one gutter glyph; the tone says
+            // which is which (Accent while the rail owns keys, muted otherwise).
+            let gutter = if focus || route {
+                self.system.glyphs.selection_gutter()
             } else {
                 " "
             };

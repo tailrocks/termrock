@@ -1212,7 +1212,9 @@ impl<'a> KeyboardHelp<'a> {
                     self.system.style(Role::Text)
                 }
             } else if active {
-                self.system.style(Role::Selection)
+                self.system
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
             } else if e.conflict {
                 self.system.style(Role::Danger)
             } else if e.remapped {

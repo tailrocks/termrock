@@ -1285,7 +1285,9 @@ impl<'a> NotificationCenter<'a> {
                 line = format!("{line}  t{}", item.created_at_secs);
 
                 let style = if selected {
-                    self.system.style(Role::Selection)
+                    self.system
+                        .style(Role::TextStrong)
+                        .patch(self.system.style(Role::SelectionTint))
                 } else if item.unread {
                     self.system.style(Role::Text)
                 } else {

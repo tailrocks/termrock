@@ -1229,7 +1229,7 @@ impl<'a> SearchResults<'a> {
                         "▾"
                     };
                     let mark = if selected {
-                        if ascii { "*" } else { "›" }
+                        self.system.glyphs.selection_gutter()
                     } else {
                         " "
                     };
@@ -1259,7 +1259,7 @@ impl<'a> SearchResults<'a> {
                 }
                 SearchFlatRow::Item { item, .. } => {
                     let mark = if selected {
-                        if ascii { ">" } else { "›" }
+                        self.system.glyphs.selection_gutter()
                     } else if state.multi && state.checked.iter().any(|c| c == item.id) {
                         if ascii { "*" } else { "★" }
                     } else {

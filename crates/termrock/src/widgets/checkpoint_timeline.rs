@@ -1219,7 +1219,7 @@ impl<'a> CheckpointTimeline<'a> {
             }
             let selected = i == state.cursor;
             let mark = if selected {
-                if self.ascii { ">" } else { "›" }
+                self.system.glyphs.selection_gutter()
             } else if cp.is_head {
                 if self.ascii { "*" } else { "●" }
             } else {

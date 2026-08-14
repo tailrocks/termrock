@@ -384,12 +384,22 @@ impl StatefulWidget for &SplitPane<'_> {
             (SplitDirection::Horizontal, Some(SplitSide::Second), _) => ("‹", Role::Accent),
             (SplitDirection::Vertical, Some(SplitSide::First), _) => ("⌄", Role::Accent),
             (SplitDirection::Vertical, Some(SplitSide::Second), _) => ("⌃", Role::Accent),
-            (SplitDirection::Horizontal, None, true) => ("┃", Role::Focus),
-            (SplitDirection::Horizontal, None, false) if state.hovered => ("┋", Role::Focus),
-            (SplitDirection::Horizontal, None, false) => ("│", Role::Border),
-            (SplitDirection::Vertical, None, true) => ("━", Role::Focus),
-            (SplitDirection::Vertical, None, false) if state.hovered => ("┅", Role::Focus),
-            (SplitDirection::Vertical, None, false) => ("─", Role::Border),
+            (SplitDirection::Horizontal, None, true) => {
+                (self.system.glyphs.rule_v(), Role::BorderFocused)
+            }
+            (SplitDirection::Horizontal, None, false) if state.hovered => {
+                (self.system.glyphs.rule_v(), Role::Focus)
+            }
+            (SplitDirection::Horizontal, None, false) => {
+                (self.system.glyphs.rule_v(), Role::Border)
+            }
+            (SplitDirection::Vertical, None, true) => {
+                (self.system.glyphs.rule(), Role::BorderFocused)
+            }
+            (SplitDirection::Vertical, None, false) if state.hovered => {
+                (self.system.glyphs.rule(), Role::Focus)
+            }
+            (SplitDirection::Vertical, None, false) => (self.system.glyphs.rule(), Role::Border),
         };
         let mut style = self.system.style(role);
         if state.focused {

@@ -546,7 +546,9 @@ fn paint_feedback<Id: Clone + PartialEq>(
             let style = if !a.enabled {
                 args.system.style(Role::TextDisabled)
             } else if active {
-                args.system.style(Role::Selection)
+                args.system
+                    .style(Role::TextStrong)
+                    .patch(args.system.style(Role::SelectionTint))
             } else {
                 text_style
             };

@@ -1241,7 +1241,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
             // Selection gutter
             if selected {
-                let mark = if self.ascii { ">" } else { "›" };
+                let mark = self.system.glyphs.selection_gutter();
                 if let Some(cell) = buffer.cell_mut((list_body.x, y)) {
                     cell.set_symbol(mark);
                     cell.set_style(style);
@@ -1513,9 +1513,11 @@ fn row_style(
     } else if !enabled {
         system.style(Role::TextDisabled)
     } else if selected {
-        system.style(Role::Selection)
+        system
+            .style(Role::TextStrong)
+            .patch(system.style(Role::SelectionTint))
     } else if hovered {
-        system.style(Role::Focus)
+        system.style(Role::TextStrong)
     } else {
         system.style(Role::Text)
     }

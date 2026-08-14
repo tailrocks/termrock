@@ -765,8 +765,12 @@ impl<'a> ProgressSteps<'a> {
                 }
                 l
             };
+            // A selected step keeps its status tone; selection is a wash.
             let style = if selected {
-                self.system.style(Role::Selection)
+                self.system
+                    .style(step.status.role())
+                    .patch(self.system.style(Role::SelectionTint))
+                    .add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(step.status.role())
             };

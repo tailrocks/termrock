@@ -1290,10 +1290,11 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_style(row_area, recipe.hover_wash);
     }
 
-    let gutter = if checked {
-        if state.ascii { "*" } else { "▌" }
-    } else if selected && surface_focused {
-        if state.ascii { ">" } else { "›" }
+    // Selection owns the gutter; "checked" is a check glyph, not a bar.
+    let gutter = if selected && surface_focused {
+        table.system.glyphs.selection_gutter()
+    } else if checked {
+        table.system.glyphs.check_on()
     } else {
         " "
     };

@@ -887,13 +887,21 @@ impl<'a> ResizablePanelGroup<'a> {
             let hovered = state.hovered_handle == Some(i);
             let ascii = self.system.glyphs.is_ascii();
             let (glyph, role) = match (self.direction, focused, hovered, ascii) {
-                (SplitDirection::Horizontal, true, _, false) => ("┃", Role::Focus),
-                (SplitDirection::Horizontal, false, true, false) => ("┋", Role::Focus),
+                (SplitDirection::Horizontal, true, _, false) => {
+                    (self.system.glyphs.rule_v(), Role::BorderFocused)
+                }
+                (SplitDirection::Horizontal, false, true, false) => {
+                    (self.system.glyphs.rule_v(), Role::Focus)
+                }
                 (SplitDirection::Horizontal, false, false, false) => {
                     (self.system.glyphs.rule_v(), Role::Border)
                 }
-                (SplitDirection::Vertical, true, _, false) => ("━", Role::Focus),
-                (SplitDirection::Vertical, false, true, false) => ("┅", Role::Focus),
+                (SplitDirection::Vertical, true, _, false) => {
+                    (self.system.glyphs.rule(), Role::BorderFocused)
+                }
+                (SplitDirection::Vertical, false, true, false) => {
+                    (self.system.glyphs.rule(), Role::Focus)
+                }
                 (SplitDirection::Vertical, false, false, false) => {
                     (self.system.glyphs.rule(), Role::Border)
                 }

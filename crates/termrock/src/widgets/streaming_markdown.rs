@@ -823,7 +823,8 @@ impl<'a> StreamingMarkdown<'a> {
 
         // caret / failed strip
         if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
-            let cue = if self.ascii { "|" } else { "▌" };
+            // Not `▌`: that bar means "this row is selected".
+            let cue = if self.ascii { "|" } else { "▍" };
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
                 area.x.saturating_add(area.width.saturating_sub(2)),

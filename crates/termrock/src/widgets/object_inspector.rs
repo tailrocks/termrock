@@ -1542,7 +1542,7 @@ impl<'a> ObjectInspector<'a> {
             }
             let cursor = i == state.cursor;
             let gutter = if cursor && surface {
-                if ascii { ">" } else { "›" }
+                self.system.glyphs.selection_gutter()
             } else if cursor {
                 if ascii { "." } else { "·" }
             } else {

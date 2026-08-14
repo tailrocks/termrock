@@ -1996,12 +1996,12 @@ impl StatefulWidget for &PromptComposer<'_> {
             );
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
+                // Selected text keeps its own foreground; the range washes.
                 let sel = if state.colorless {
-                    self.system
-                        .style(Role::Selection)
+                    ratatui_core::style::Style::new()
                         .add_modifier(ratatui_core::style::Modifier::REVERSED)
                 } else {
-                    self.system.style(Role::Selection)
+                    self.system.style(Role::SelectionTint)
                 };
                 paint_editor_selection(buffer, layout.editor, state, sel);
             }

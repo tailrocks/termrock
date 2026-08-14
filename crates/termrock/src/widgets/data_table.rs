@@ -1467,10 +1467,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         table.system.style(Role::Text)
     };
 
-    let gutter = if selected {
-        if state.ascii { "*" } else { "▌" }
-    } else if cursor && surface_focused {
-        if state.ascii { ">" } else { "›" }
+    let gutter = if selected || (cursor && surface_focused) {
+        table.system.glyphs.selection_gutter()
     } else if expanded {
         if state.ascii { "v" } else { "▾" }
     } else {
@@ -1524,7 +1522,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         });
         let mut cell_style = style;
         if cell_selected {
-            cell_style = table.system.style(Role::Selection);
+            cell_style = cell_style.patch(table.system.style(Role::SelectionTint));
         }
         if cell_focused {
             // A cell cursor is a cell: reverse it.

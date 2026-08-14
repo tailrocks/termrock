@@ -1405,7 +1405,8 @@ impl<'a, Id> MenuBar<'a, Id> {
                         self.system.style(Role::TextDisabled)
                     } else if active {
                         self.system
-                            .style(Role::Selection)
+                            .style(Role::TextStrong)
+                            .patch(self.system.style(Role::SelectionTint))
                             .add_modifier(Modifier::BOLD)
                     } else if state.mnemonic_mode {
                         self.system.style(Role::Focus)

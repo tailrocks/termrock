@@ -7,7 +7,7 @@ use ratatui_core::{
 };
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{DesignSystem, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{SplitDirection, SplitPane, SplitPaneOutcome, SplitPaneState, SplitRatio, SplitSide},
 };
 
@@ -152,7 +152,7 @@ fn painted_divider_supports_focus_drag_and_release() {
     let split = SplitPane::new(SplitDirection::Horizontal, 2, 2, &system);
     let area = Rect::new(5, 7, 31, 5);
     let mut state = SplitPaneState::new(SplitRatio::from_percent(50));
-    // Hover glyph only when unfocused; focused paints solid ┃.
+    // One divider glyph in every state; the role says focused vs hovered.
     state.set_focused(false);
     let mut buffer = Buffer::empty(Rect::new(0, 0, 40, 16));
     split.render(area, &mut buffer, &mut state);
@@ -161,7 +161,14 @@ fn painted_divider_supports_focus_drag_and_release() {
     assert!(state.hover(&split, divider.as_position()));
     assert!(state.is_hovered());
     split.render(area, &mut buffer, &mut state);
-    assert_eq!(buffer[divider.as_position()].symbol(), "┋");
+    assert_eq!(
+        buffer[divider.as_position()].symbol(),
+        system.glyphs.rule_v()
+    );
+    assert_eq!(
+        buffer[divider.as_position()].fg,
+        theme.style(Role::Focus).fg.unwrap()
+    );
     assert!(state.hover(&split, Position::new(0, 0)));
     assert!(!state.is_hovered());
 
@@ -267,7 +274,15 @@ fn focused_and_collapsed_dividers_have_non_color_glyphs() {
     let mut buffer = Buffer::empty(area);
 
     split.render(area, &mut buffer, &mut state);
-    assert_eq!(buffer[state.layout().divider.as_position()].symbol(), "┃");
+    // Focus swaps the border role; it never thickens the glyph.
+    assert_eq!(
+        buffer[state.layout().divider.as_position()].symbol(),
+        system.glyphs.rule_v()
+    );
+    assert_eq!(
+        buffer[state.layout().divider.as_position()].fg,
+        theme.style(Role::BorderFocused).fg.unwrap()
+    );
 
     state.collapse(SplitSide::First);
     split.render(area, &mut buffer, &mut state);

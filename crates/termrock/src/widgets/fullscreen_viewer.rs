@@ -1242,7 +1242,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 let style = if !a.enabled {
                     self.system.style(Role::TextDisabled)
                 } else if active {
-                    self.system.style(Role::Selection)
+                    self.system
+                        .style(Role::TextStrong)
+                        .patch(self.system.style(Role::SelectionTint))
                 } else {
                     self.system.style(Role::Text)
                 };

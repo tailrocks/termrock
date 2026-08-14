@@ -531,7 +531,9 @@ fn token_style(
     let mut style = match status {
         TokenStatus::Error => system.style(Role::Danger),
         TokenStatus::Loading => system.style(Role::TextMuted),
-        TokenStatus::Default if selected => system.style(Role::Selection),
+        TokenStatus::Default if selected => system
+            .style(Role::TextStrong)
+            .patch(system.style(Role::SelectionTint)),
         TokenStatus::Default if focused => system.style(Role::Focus),
         TokenStatus::Default => system.style(Role::TextMuted),
     };

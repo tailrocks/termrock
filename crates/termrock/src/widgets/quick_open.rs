@@ -1564,7 +1564,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 }
             } else if active && surface {
                 self.system
-                    .style(Role::Selection)
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::TextMuted)
