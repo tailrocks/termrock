@@ -979,11 +979,29 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             list_top = list_top.saturating_add(1);
         }
 
-        let list_area = Rect::new(
+        let full_list = Rect::new(
             inner.x,
             list_top,
             inner.width,
             inner.bottom().saturating_sub(list_top),
+        );
+        if full_list.is_empty() {
+            return;
+        }
+        // Reserve the scroll gutter whether or not it is painted, so rows do
+        // not reflow the moment the list grows past its viewport
+        // (plans/022 Step 2).
+        let gutter = Rect::new(
+            full_list.right().saturating_sub(1),
+            full_list.y,
+            1,
+            full_list.height,
+        );
+        let list_area = Rect::new(
+            full_list.x,
+            full_list.y,
+            full_list.width.saturating_sub(1),
+            full_list.height,
         );
         if list_area.is_empty() {
             return;
@@ -1109,6 +1127,15 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 }
             }
         }
+
+        crate::scroll::paint_list_scrollbar(
+            buffer,
+            gutter,
+            coll_items.len(),
+            vp,
+            u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+            self.system,
+        );
     }
 
     /// Semantic registration for trigger.

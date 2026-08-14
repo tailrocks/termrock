@@ -22,9 +22,9 @@ run its drift check, and update your row when done.
 | 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | IN PROGRESS |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | TODO |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | TODO |
-| 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | TODO |
-| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | TODO |
-| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | TODO |
+| 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | BLOCKED (waits on 006, which waits on 005/004 — agent C picks it up as soon as 006 lands) |
+| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | BLOCKED (waits on 005, which waits on 004 — agent C picks it up as soon as 005 lands) |
+| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | BLOCKED (waits on 007; its overlay geometry half already landed with 022 Step 2 — migrations/0292) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
@@ -37,7 +37,7 @@ run its drift check, and update your row when done.
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
 | 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | TODO |
-| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Steps 2/3/6 queued behind 005/006 — they touch the same row and overlay chrome) |
+| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Step 2 partial — overlay insets + picker gutters landed, table gutters/chevrons/tees pending; Steps 3 and 6 queued behind 005/006, which rewrite the same row chrome) |
 
 Micro-detail review lens: [DESIGNER-CHECKLIST.md](DESIGNER-CHECKLIST.md) —
 49 designer checks, each mapped to its owning plan (compiled from the
