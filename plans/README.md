@@ -29,7 +29,7 @@ run its drift check, and update your row when done.
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
 | 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
-| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence done; 4: Skeleton done — see notes) |
+| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence; 4: Skeleton, Spinner, StatusIndicator, Toast entrance — see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | DONE (Part A: floor holds on 4 presets, 9 ladder pairs reported as a design call in migrations/0287; Part B: law §4.2 + 3 gates + 6 surface diets in migrations/0290; 4 rows deferred with reasons in Execution notes) |
@@ -171,13 +171,35 @@ Two deliberate deviations:
   block every 400 ms. Period 400 ms → 1500 ms, `pulse_phase` removed.
   `shimmer_implies_no_spinner_frames` is in place. (migration 0297)
 
-**Remaining (Step 3b and Step 4)** — needs plan 007, or another agent's lane:
+- Step 4 Spinner: phases declare a `MotionChannel`; `Streaming` and `Done`
+  added; the `Indeterminate` reduced-motion fallback was a filled `●`, the mark
+  that means "terminal state reached", and is now `○`. (migration 0303)
+- Step 4 StatusIndicator: `SemanticStatus::channel()` — `Running` breathes on
+  `Live`, `Waiting` pulses on `Wait`, `Online` on the 5 s heartbeat, and every
+  terminal state is `Static`. The cell breathes; the label never does.
+  (migration 0305)
+- Step 4 Toast: entrance fade, errors never animate, success dips once and
+  returns to full. (migration 0306)
 
-- `StatusIndicator` channels (Running `◉` Live breathe / Waiting `◐` Wait pulse
-  / heartbeat) — deliberately left to 007's executor, who is rewriting that
-  status paint now; the `MotionChannel` goes on top once it settles.
-- `Spinner` phase→channel map and `Toast` entrance/reflow — same file contention
-  this wave.
+**Remaining (Step 3b and Step 4):**
+
+- **Toast exit fade + 100 ms stack reflow tween.** Both need the queue to hold
+  an entry past its TTL and to carry a per-id `Animator`, which is queue
+  semantics rather than paint — a bigger change than the entrance was, and
+  worth doing as its own commit.
+- Timeline / LogStream running-rail wave and 1-tick arrival pulse.
+- `Backdrop::alpha` + `BackdropPolicy::Dim` — belongs with 009's overlay
+  recipe, which another lane holds.
+- `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam
+  exists, unused).
+- Collections filter fade (`revision` + `revision_changed_at`); gutter keeps
+  snapping, which is correct per §6.
+- Tabs active-fill blend; diff/review tint settle; focus border cross-fade in
+  `panel_recipe`/`input_recipe`.
+- Determinate progress `displayed` spring.
+- Scroll `target_offset`/`display_offset` split, `WheelAccumulator`, `edge_fade`
+  adoption — needs `scroll/`, held by another lane.
+- Collapsible/Accordion `reveal_rows`; `drawer.rs:19` doc drift.
 - `Backdrop::alpha` + `BackdropPolicy::Dim` target alpha + `OverlayStack`
   opened-at (needs 009's overlay recipe).
 - `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam is
