@@ -55,13 +55,13 @@ fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
     state.set_phase(ActivityPhase::Reconnecting);
     let tick = crate::demo::demo_tick(200);
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
-        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+        .paint(area, frame.buffer_mut(), &state, tick, MotionPolicy::Full);
 }
 ```
 

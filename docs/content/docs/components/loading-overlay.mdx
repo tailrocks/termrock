@@ -52,7 +52,7 @@ use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
 // Exact paint setup used by the shared catalog story.
 fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::Panel;
     let _ = Panel::new(system)
         .title("table")
@@ -63,7 +63,7 @@ fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &De
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 ```

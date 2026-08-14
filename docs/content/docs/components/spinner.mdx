@@ -63,7 +63,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let state = SpinnerState::new();
     let tick = crate::demo::demo_tick(400);
     Spinner::labeled("Fetching packages", system).paint(
@@ -71,7 +71,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 ```
