@@ -440,6 +440,87 @@ fn no_widget_paints_selection_fill_by_default() {
     }
 }
 
+/// Chords a footer hint literal may advertise.
+///
+/// Sixteen chords in one row is a keymap dump wearing a hint row's clothes:
+/// the eye reads none of them. The rest belong in the keyboard-help overlay.
+const HINT_COPY_BUDGET: usize = 5;
+
+/// Whether a ` · `-joined literal reads as a row of chords.
+///
+/// A hint segment is a short chord token followed by its verb — `x stop`,
+/// `C-r run`, `esc cancel`. Content rows join facts the same way (`8 items ·
+/// 2 failed`), so a literal only counts when most of its segments have that
+/// chord shape.
+fn hint_segments(literal: &str) -> Option<usize> {
+    let body = literal.trim_matches('"');
+    let segments: Vec<&str> = body.split(" · ").map(str::trim).collect();
+    if segments.len() < 2 {
+        return None;
+    }
+    let chord_like = segments
+        .iter()
+        .filter(|segment| {
+            let mut parts = segment.split_whitespace();
+            let (Some(chord), Some(verb)) = (parts.next(), parts.next()) else {
+                return false;
+            };
+            chord.len() <= 4
+                && !chord.contains('{')
+                && verb.chars().next().is_some_and(char::is_alphabetic)
+        })
+        .count();
+    (chord_like * 2 >= segments.len()).then_some(segments.len())
+}
+
+/// Whether this line sits inside a `StatusSlot::shortcut(...)` call.
+///
+/// The call wraps across lines once its literal is long, so the marker can be
+/// a couple of lines above the string it introduces.
+fn slot_shortcut_context(lines: &[(usize, String)], index: usize) -> bool {
+    let start = index.saturating_sub(2);
+    lines[start..=index]
+        .iter()
+        .any(|(_, line)| line.contains("StatusSlot::shortcut"))
+}
+
+#[test]
+fn pattern_hint_copy_budget() {
+    let mut over: Vec<String> = Vec::new();
+    for source in painted_sources() {
+        if !source.path.to_string_lossy().contains("patterns") {
+            continue;
+        }
+        for (index, (number, line)) in source.lines.iter().enumerate() {
+            // `StatusSlot::shortcut` is the status bar's shortcut channel, not
+            // a footer row: it is contracted by priority and it carries the
+            // keyboard-path parity contract for pointer actions, which
+            // outranks the hint budget (law §4.2).
+            if slot_shortcut_context(&source.lines, index) {
+                continue;
+            }
+            for literal in string_literals(line) {
+                if let Some(count) = hint_segments(&literal)
+                    && count > HINT_COPY_BUDGET
+                {
+                    let name = source
+                        .path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    over.push(format!("{name}:{number}: {count} chords in {literal}"));
+                }
+            }
+        }
+    }
+    assert!(
+        over.is_empty(),
+        "footer hint rows over the {HINT_COPY_BUDGET}-chord budget:\n  {}",
+        over.join("\n  ")
+    );
+}
+
 // ── Information-budget gates (docs/design/web-premium-tui-law.md §4.2) ──────
 
 use termrock::patterns::{

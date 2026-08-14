@@ -32,7 +32,7 @@ run its drift check, and update your row when done.
 | 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE + the Presence seam; 3b/4 wait on 005/007 — see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
-| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C: Part A DONE — floor holds on 4 presets; 9 ladder pairs reported as a STOP design call in migrations/0287; Part B diets next) |
+| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | DONE (Part A: floor holds on 4 presets, 9 ladder pairs reported as a design call in migrations/0287; Part B: law §4.2 + 3 gates + 6 surface diets in migrations/0290; 4 rows deferred with reasons in Execution notes) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
@@ -230,6 +230,36 @@ Widget sites still holding glyph literals (`slider.rs`, `split_pane.rs`,
 three input masks) were out of 003's scope — the catalog entries they need now
 exist (`Glyph::Slider*`, `Glyph::Divider*`, `Glyph::Mask`, `LEFT_BLOCK_RAMP`,
 `SHADE_RAMP`); the widget-facing plans wire them.
+
+### Plan 017 Part B (done — four rows deferred, with reasons)
+
+Applied: `agent_status_header` (segment sheet behind `i`, connection shown
+only when not ready), `session_picker` (five-line preview behind `i`, status
+into the glyph cell), `permission.rs` (safety-only collapsed frame, detail
+behind `d`), `connection_manager` (identity-only rows), `metrics_dashboard`
+(toolbar carries what the operator changed), and the ≤5-chord footer rule
+across ten patterns. Law §4.2 + `pattern_style_diversity`,
+`pattern_hint_budget`, `pattern_hint_copy_budget` enforce it.
+
+Deferred, each to the plan that owns the missing piece:
+
+1. **`plan_review` counts into `PanelTitleSpec`** — `PanelTitleSpec` is a
+   plan-016 promotion and does not exist yet. Its pane emphasis is already
+   inside the hue budget (6 hues measured).
+2. **`database_workbench` / `observability_dashboard` ≤3 default panes** — a
+   layout change on two surfaces whose sweeps belong to plan 013; neither has
+   public fixtures for the budget gate yet, so the change would land
+   unmeasured.
+3. **`help_center` / `integration_status` `+N more`** — the `+N more` template
+   and the nine silent `.take(N)` clips are plan 022 Step 3, which owns one
+   implementation for all of them.
+4. **`setup_wizard` summary shows only user-changed values** — the summary
+   lines arrive from the host as opaque strings; the pattern cannot know which
+   changed. Needs a host-facing "changed" flag, which is an API design call,
+   not a paint fix.
+
+Also deferred: `metrics_dashboard`'s per-tile diet (title, value+unit, delta
+glyph, spark) — the tile painters are plan 016's `MetricTile` promotion.
 
 ## Dependency notes
 

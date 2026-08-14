@@ -1472,7 +1472,7 @@ impl<'a> QueryEditor<'a> {
             let footer = if state.run.is_running() {
                 "C-r run · C-S-s stop · C-space complete · C-j focus · C-? help"
             } else {
-                "C-r run · C-f format · C-s save · C-h history · C-j focus · C-? help"
+                "C-r run · C-f format · C-s save · C-h history · C-? help"
             };
             buffer.set_stringn(
                 area.x,

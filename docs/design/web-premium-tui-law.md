@@ -189,6 +189,9 @@ line, a destructive confirmation's consequence, and an error's cause stay in
 the default frame however crowded it gets.
 
 Charts are exempt from the hue budget: series colors are data, not decoration.
+Keyboard-path parity is exempt from the chord budget: where a surface advertises
+the keyboard path for every pointer action, the list is an accessibility
+contract and stays complete.
 
 Three gates enforce the mechanical half: `design_gate.rs::pattern_hint_budget`,
 `design_gate.rs::pattern_style_diversity`, and the contrast floor in

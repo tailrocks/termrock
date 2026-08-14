@@ -869,7 +869,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
         let hint = match state.mode {
             AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · C-g sign in",
             AuthEntryMode::SignIn => {
-                "Tab · Enter submit · Esc · C-g sign up · C-f forgot · C-e email"
+                "Enter submit · Tab next · C-g sign up · C-f forgot · Esc cancel"
             }
             AuthEntryMode::EmailOnly => {
                 "Enter request link · Esc cancel · C-g password · C-o oauth"

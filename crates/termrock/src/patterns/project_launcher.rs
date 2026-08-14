@@ -804,11 +804,8 @@ impl ProjectLauncherState {
             StatusSlot::connection("conn", self.connection.label()).priority(10),
             StatusSlot::context("mode", self.mode.id()).priority(20),
             StatusSlot::focus_zone("focus", self.focus).priority(30),
-            StatusSlot::shortcut(
-                "keys",
-                "enter open · n new · i import · f fav · C-o quick · C-n session · tab",
-            )
-            .priority(90),
+            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+                .priority(90),
         ];
         if self.problem_count > 0 {
             slots.push(

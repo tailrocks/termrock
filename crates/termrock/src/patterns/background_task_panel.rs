@@ -1195,7 +1195,7 @@ impl<'a> BackgroundTaskPanel<'a> {
             }
         }
 
-        let foot = "j/k · enter open · x stop · r restart · d detach · f follow · C clear · esc";
+        let foot = "enter open · x stop · r restart · f follow · esc close";
         buffer.set_stringn(
             inner.x,
             foot_y,

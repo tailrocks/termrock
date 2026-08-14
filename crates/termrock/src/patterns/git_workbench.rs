@@ -1014,7 +1014,7 @@ impl GitWorkbenchState {
             StatusSlot::focus_zone("focus", self.focus).priority(40),
             StatusSlot::shortcut(
                 "keys",
-                "? help · t stage · T unstage · x discard · C-f full · tab",
+                "t stage · T unstage · x discard · C-f full · ? help",
             )
             .priority(90),
         ];

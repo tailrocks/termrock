@@ -768,11 +768,8 @@ impl ErrorRecoveryState {
         let mut slots = vec![
             StatusSlot::context("mode", self.mode.id()).priority(10),
             StatusSlot::focus_zone("focus", self.focus).priority(20),
-            StatusSlot::shortcut(
-                "keys",
-                "r restart · s restore · c copy · l logs · e env · i report · q quit · tab",
-            )
-            .priority(90),
+            StatusSlot::shortcut("keys", "r restart · s restore · l logs · i report · q quit")
+                .priority(90),
         ];
         if self.terminal_restore_failed {
             slots.push(StatusSlot::new("tty", "tty-restore-failed").priority(5));

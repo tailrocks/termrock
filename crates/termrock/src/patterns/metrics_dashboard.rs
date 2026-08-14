@@ -1178,13 +1178,23 @@ impl<'a> MetricsDashboard<'a> {
         if !slots.toolbar.is_empty() {
             let title = self.title.unwrap_or("metrics");
             let pause = if state.paused { "paused" } else { "live" };
-            let line = format!(
-                "{title} · {} · {} · {}ms · {pause} · {}",
-                state.time_range.label(),
-                state.comparison.label(),
-                state.refresh_ms,
-                mode.id()
-            );
+            let failed = self
+                .tiles
+                .iter()
+                .filter(|t| matches!(t.health, MetricTileHealth::Failed))
+                .count();
+            // Title band carries what the operator changed, not the whole
+            // control state: refresh cadence and layout mode are visible in
+            // the frame itself, and a default comparison says nothing
+            // (information budget, plans/017 Part B).
+            let mut line = format!("{title} · {} · {pause}", state.time_range.label());
+            if !matches!(state.comparison, MetricsComparison::None) {
+                line.push_str(" · ");
+                line.push_str(state.comparison.label());
+            }
+            if failed > 0 {
+                line.push_str(&format!(" · {failed} failed"));
+            }
             let style = if matches!(state.focus, MetricsFocus::Toolbar) && self.focused {
                 self.system.style(Role::Focus)
             } else {
@@ -1254,28 +1264,15 @@ impl<'a> MetricsDashboard<'a> {
                 .iter()
                 .filter(|t| matches!(t.health, MetricTileHealth::Failed))
                 .count();
-            let warn = self
-                .tiles
-                .iter()
-                .filter(|t| {
-                    matches!(
-                        t.health,
-                        MetricTileHealth::Warning | MetricTileHealth::Danger
-                    )
-                })
-                .count();
             let footer = if failed > 0 {
-                format!(
-                    "Tab zones · hjkl tiles · Enter drill · C-r refresh · {failed} failed · {warn} thr"
-                )
+                "Tab zones · hjkl tiles · Enter drill · C-r refresh · C-k cmds"
             } else {
-                "Tab zones · hjkl tiles · Enter drill · C-t range · C-d compare · C-k cmds"
-                    .to_string()
+                "Tab zones · hjkl tiles · Enter drill · C-t range · C-k cmds"
             };
             buffer.set_stringn(
                 slots.footer.x,
                 slots.footer.y,
-                take_display_cols(&footer, usize::from(slots.footer.width)),
+                take_display_cols(footer, usize::from(slots.footer.width)),
                 usize::from(slots.footer.width),
                 self.system.style(Role::TextMuted),
             );

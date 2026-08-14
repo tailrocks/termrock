@@ -771,7 +771,7 @@ impl<'a> PromptQueue<'a> {
             let banner = if state.agent.is_busy() {
                 "agent busy · Enter sends next when free · i interrupt+send · no auto-drain on fail"
             } else {
-                "idle · Enter/s send · e edit · d delete · J/K reorder · Esc compact"
+                "Enter send · e edit · d delete · J/K reorder · Esc compact"
             };
             buffer.set_stringn(
                 inner.x,
@@ -893,7 +893,7 @@ impl<'a> PromptQueue<'a> {
                 inner.x,
                 fy,
                 take_display_cols(
-                    "enter send · i interrupt+send · e edit · d del · J/K reorder · esc",
+                    "enter send · i interrupt+send · e edit · d del · esc close",
                     w,
                 ),
                 w,

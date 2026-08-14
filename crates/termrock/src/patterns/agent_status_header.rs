@@ -542,6 +542,8 @@ pub struct AgentStatusHeaderState {
     pub action_cursor: usize,
     /// Focused.
     pub focused: bool,
+    /// Header shows the full segment sheet instead of its actionable core.
+    pub segments_expanded: bool,
     accepts_input: bool,
     /// Action hit regions.
     pub action_hits: Vec<(AgentStatusAction, Rect)>,
@@ -566,6 +568,7 @@ impl AgentStatusHeaderState {
             actions: AgentStatusAction::default_strip().to_vec(),
             action_cursor: 0,
             focused: true,
+            segments_expanded: false,
             accepts_input: true,
             action_hits: Vec::new(),
             slot_strings: Vec::new(),
@@ -645,6 +648,10 @@ impl AgentStatusHeaderState {
                 }
             }
             // Chord shortcuts (focus not required to move)
+            KeyCode::Char('i') if key.modifiers.is_empty() => {
+                self.segments_expanded = !self.segments_expanded;
+                AgentStatusHeaderOutcome::Ignored
+            }
             KeyCode::Char('s') if key.modifiers.is_empty() => {
                 AgentStatusHeaderOutcome::Action(AgentStatusAction::Sessions)
             }
@@ -977,41 +984,60 @@ impl<'a> AgentStatusHeader<'a> {
             }
             segs.push((work_s, work_role));
 
-            // Connection if not ready or always compact glyph
-            let cg = snap.connection.glyph(self.ascii);
-            segs.push((
-                format!("{cg} {}", snap.connection.label()),
-                if self.colorless {
-                    Role::Text
-                } else {
-                    snap.connection.role()
-                },
-            ));
+            // A permanent row of eight segments in five hues is not a
+            // status line, it is a dashboard. The default frame keeps what is
+            // actionable — work, a connection that is not ready, the model,
+            // and a non-empty queue — and `i` opens the rest in place
+            // (information budget, plans/017 Part B).
+            let expanded = state.segments_expanded;
+            let mut hidden = 0usize;
 
-            // Branch / project if space
-            if let Some(b) = snap.branch.as_ref() {
-                segs.push((format!("⌥ {b}"), Role::TextMuted));
+            if expanded || !matches!(snap.connection, AgentConnectionStatus::Ready) {
+                let cg = snap.connection.glyph(self.ascii);
+                segs.push((
+                    format!("{cg} {}", snap.connection.label()),
+                    if self.colorless {
+                        Role::Text
+                    } else {
+                        snap.connection.role()
+                    },
+                ));
+            } else {
+                hidden += 1;
             }
-            if let Some(m) = snap.mode.as_ref() {
-                segs.push((m.clone(), Role::Accent));
-            }
+
             if let Some(m) = snap.model.as_ref() {
                 segs.push((m.clone(), Role::TextMuted));
             }
-            if let Some(ctx) = snap.context_text() {
-                segs.push((ctx, Role::Info));
+            if let Some(q) = snap.queue_depth
+                && q > 0
+            {
+                segs.push((format!("q:{q}"), Role::Warning));
             }
-            // Decorative last
-            if let Some(c) = snap.cost.as_ref() {
-                segs.push((c.clone(), Role::TextMuted));
-            }
-            if let Some(e) = snap.elapsed.as_ref() {
-                segs.push((e.clone(), Role::TextMuted));
-            }
-            if let Some(q) = snap.queue_depth {
-                if q > 0 {
-                    segs.push((format!("q:{q}"), Role::Warning));
+
+            for extra in [
+                snap.branch
+                    .as_ref()
+                    .map(|b| (format!("⌥ {b}"), Role::TextMuted)),
+                snap.mode.as_ref().map(|m| (m.clone(), Role::TextMuted)),
+                snap.context_text().map(|ctx| (ctx, Role::TextMuted)),
+                snap.cost.as_ref().map(|c| (c.clone(), Role::TextMuted)),
+                snap.elapsed.as_ref().map(|e| (e.clone(), Role::TextMuted)),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                if expanded {
+                    segs.push(extra);
+                } else {
+                    hidden += 1;
                 }
+            }
+
+            if expanded {
+                segs.push(("i less".into(), Role::TextFaint));
+            } else if hidden > 0 {
+                segs.push((format!("i +{hidden}"), Role::TextFaint));
             }
 
             // Paint left-to-right, drop from end when overflow (but keep first actionable)

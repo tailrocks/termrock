@@ -18594,6 +18594,7 @@ pub termrock::patterns::AgentStatusHeaderState::actions: alloc::vec::Vec<termroc
 pub termrock::patterns::AgentStatusHeaderState::auto_contract: bool
 pub termrock::patterns::AgentStatusHeaderState::focused: bool
 pub termrock::patterns::AgentStatusHeaderState::presentation: termrock::patterns::AgentStatusPresentation
+pub termrock::patterns::AgentStatusHeaderState::segments_expanded: bool
 pub termrock::patterns::AgentStatusHeaderState::snapshot: termrock::patterns::AgentStatusSnapshot
 impl termrock::patterns::AgentStatusHeaderState
 pub fn termrock::patterns::AgentStatusHeaderState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::patterns::AgentStatusHeaderOutcome
@@ -24106,6 +24107,7 @@ pub termrock::patterns::SessionPickerState::load_state: termrock::patterns::Sess
 pub termrock::patterns::SessionPickerState::phase: termrock::patterns::SessionPickerPhase
 pub termrock::patterns::SessionPickerState::pins_only: bool
 pub termrock::patterns::SessionPickerState::presentation: termrock::patterns::SessionPickerPresentation
+pub termrock::patterns::SessionPickerState::preview_details: bool
 pub termrock::patterns::SessionPickerState::query: alloc::string::String
 pub termrock::patterns::SessionPickerState::row_hits: alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
 pub termrock::patterns::SessionPickerState::scroll: usize

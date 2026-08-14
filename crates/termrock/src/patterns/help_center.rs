@@ -763,7 +763,7 @@ impl HelpCenterState {
             StatusSlot::focus_zone("focus", self.focus).priority(20),
             StatusSlot::shortcut(
                 "keys",
-                "enter open · / search · c cmd · k keys · d doctor · i inspect · tab · esc",
+                "enter open · / search · k keys · d doctor · esc close",
             )
             .priority(90),
         ];

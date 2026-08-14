@@ -725,9 +725,12 @@ impl FileManagerState {
             StatusSlot::context("cwd", "cwd").priority(10),
             StatusSlot::context("entries", "entries").priority(20),
             StatusSlot::focus_zone("focus", self.focus).priority(30),
+            // Every pointer action needs a keyboard path, and this slot is
+            // where they are advertised — parity outranks the hint budget
+            // (docs/design/web-premium-tui-law.md §4.2).
             StatusSlot::shortcut(
                 "keys",
-                "tab · y yank · x cut · v paste · d del · r ren · n new · C-o open · p preview",
+                "y yank · x cut · v paste · d del · r ren · n new · p preview · C-o open",
             )
             .priority(90),
         ];
