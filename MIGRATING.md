@@ -311,6 +311,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0295 | `v0.14.0` | [Underline means "link", and nothing else](migrations/0295-v0.14.0-underline-free-interaction.md) |
 | 0296 | `v0.14.0` | [One selection language for every collection](migrations/0296-v0.14.0-one-selection-language.md) |
 | 0297 | `v0.14.0` | [Skeleton sweeps instead of pulsing](migrations/0297-v0.14.0-skeleton-shimmer-sweep.md) |
+| 0298 | `v0.14.0` | [Status lives in the glyph](migrations/0298-v0.14.0-status-in-the-glyph.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

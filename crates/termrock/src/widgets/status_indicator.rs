@@ -348,13 +348,10 @@ impl<'a> StatusIndicator<'a> {
             return;
         }
         let text = self.text(state);
-        let mut style = self.system.style(self.kind.role());
-        if self.strong
-            || matches!(
-                self.kind,
-                SemanticStatus::Running | SemanticStatus::Failed | SemanticStatus::Online
-            )
-        {
+        // The label is words, not a signal: it stays in the body tone and the
+        // status color lands on the glyph cell alone (plans/007).
+        let mut style = self.system.style(crate::style::Role::Text);
+        if self.strong {
             style = style.add_modifier(Modifier::BOLD);
         }
         buffer.set_stringn(
@@ -364,6 +361,16 @@ impl<'a> StatusIndicator<'a> {
             usize::from(area.width),
             style,
         );
+        let mut glyph_style = self.system.style(self.kind.role());
+        if self.strong
+            || matches!(
+                self.kind,
+                SemanticStatus::Running | SemanticStatus::Failed | SemanticStatus::Online
+            )
+        {
+            glyph_style = glyph_style.add_modifier(Modifier::BOLD);
+        }
+        crate::widgets::row_chrome::paint_status_glyph(buffer, area, 0, self.glyph(), glyph_style);
     }
 
     /// Semantic registration — always exposes text name even for compact dots.

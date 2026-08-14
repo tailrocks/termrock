@@ -721,15 +721,16 @@ impl<'a> ErrorState<'a> {
         let mut line = format!("{g} {}", self.summary);
         if let Some(ex) = self.explanation {
             if area.height >= 2 {
-                self.paint_centered(
+                let at = self.paint_centered(
                     area,
                     buffer,
                     area.y,
                     &line,
                     self.system
-                        .style(self.kind.role())
+                        .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD),
                 );
+                self.paint_kind_glyph(buffer, at, area.y, g);
                 let mut second = ex.to_string();
                 if let Some(r) = self.recovery.retry {
                     second = format!("{second} · {}", r.label);
@@ -747,15 +748,16 @@ impl<'a> ErrorState<'a> {
         } else if let Some(r) = self.recovery.retry {
             line = format!("{line} · {}", r.label);
         }
-        self.paint_centered(
+        let at = self.paint_centered(
             area,
             buffer,
             area.y,
             &line,
             self.system
-                .style(self.kind.role())
+                .style(Role::TextStrong)
                 .add_modifier(Modifier::BOLD),
         );
+        self.paint_kind_glyph(buffer, at, area.y, g);
     }
 
     fn paint_block(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
@@ -922,6 +924,7 @@ impl<'a> ErrorState<'a> {
         let _ = btn.paint(hit, buffer, btn_state);
     }
 
+    /// Paints one centered line and reports the column it started at.
     fn paint_centered(
         &self,
         area: Rect,
@@ -929,14 +932,32 @@ impl<'a> ErrorState<'a> {
         y: u16,
         text: &str,
         style: ratatui_core::style::Style,
-    ) {
+    ) -> Option<u16> {
         let width = display_cols(text).min(usize::from(area.width));
         if width == 0 {
-            return;
+            return None;
         }
         let clipped = take_display_cols(text, width);
         let x = center_line_x(area, width as u16);
         buffer.set_stringn(x, y, &clipped, width, style);
+        Some(x)
+    }
+
+    /// Repaints the leading glyph of a centered line in the error's tone.
+    ///
+    /// The summary is a sentence and stays readable in the strong text tone;
+    /// the glyph carries the severity (plans/007).
+    fn paint_kind_glyph(&self, buffer: &mut Buffer, x: Option<u16>, y: u16, glyph: &str) {
+        let Some(x) = x else {
+            return;
+        };
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            Rect::new(x, y, display_cols(glyph) as u16, 1),
+            0,
+            glyph,
+            self.system.style(self.kind.role()),
+        );
     }
 
     /// Diagnostics text for copy (host clipboard).

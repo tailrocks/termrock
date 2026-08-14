@@ -22,7 +22,7 @@
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -653,12 +653,20 @@ impl<'a> ActivityIndicator<'a> {
         }
         let glyph = local.frame_glyph(tick, motion);
         let line1 = format!("{glyph} {}", self.label);
+        // The verb is words; the spinner cell is the signal (plans/007).
         buffer.set_stringn(
             area.x,
             area.y,
             &take_display_cols(&line1, usize::from(area.width)),
             usize::from(area.width),
-            self.system.style(self.role).add_modifier(Modifier::BOLD),
+            self.system.style(Role::TextMuted),
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            0,
+            glyph,
+            self.system.style(self.role),
         );
         if let Some(detail) = self.detail {
             if area.height > 1 {

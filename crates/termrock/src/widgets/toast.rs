@@ -1043,10 +1043,12 @@ fn paint_one_toast(
     if inner.is_empty() {
         return;
     }
-    let rail = system.style(kind.role());
+    // The rail is chrome, not a signal: severity lives on the icon, so a
+    // stack of toasts is not a stack of colored bars (plans/007).
+    let rail = system.style(Role::Border);
     for y in inner.y..inner.bottom() {
         buffer[(inner.x, y)].set_style(rail);
-        buffer[(inner.x, y)].set_symbol("│");
+        buffer[(inner.x, y)].set_symbol(system.glyphs.rule_v());
     }
     let content = Rect::new(
         inner.x.saturating_add(2),
@@ -1644,7 +1646,7 @@ mod tests {
     }
 
     #[test]
-    fn toast_border_is_muted_severity_on_icon_and_rail() {
+    fn toast_chrome_is_muted_and_severity_lives_on_the_icon() {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 24, 4);
         let mut buffer = Buffer::empty(area);
@@ -1660,8 +1662,15 @@ mod tests {
             false,
             None,
         );
+        // Border and rail are chrome; only the icon carries the severity
+        // (plans/007).
         assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
-        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Warning).fg.unwrap());
+        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Border).fg.unwrap());
+        let warning = system.style(Role::Warning).fg.unwrap();
+        let icon_cells = (0..area.width)
+            .filter(|x| buffer[(*x, 1)].fg == warning)
+            .count();
+        assert_eq!(icon_cells, 1, "severity belongs to the icon cell alone");
     }
 
     #[test]

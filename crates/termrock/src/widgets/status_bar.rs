@@ -113,9 +113,12 @@ impl StatusKind {
     #[must_use]
     pub const fn default_role(self) -> Role {
         match self {
-            Self::Mode => Role::Accent,
+            // Mode is context, not the operator's current intent: accent is
+            // spent on the one live thing, never on a permanent band
+            // (plans/007).
+            Self::Mode => Role::TextStrong,
             Self::Connection => Role::Success,
-            Self::Selection => Role::Info,
+            Self::Selection => Role::TextMuted,
             Self::Context => Role::TextMuted,
             Self::Shortcut => Role::HintKey,
             Self::FocusZone => Role::TextStrong,
@@ -837,13 +840,32 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 usize::from(content_area.width),
                 &mut content,
             );
+            // Slot words read as one band; the slot's own glyph carries its
+            // state (plans/007).
+            let body = if slot.style_explicit {
+                style
+            } else {
+                self.system.style(Role::StatusBar)
+            };
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,
                 &content,
                 usize::from(content_area.width),
-                apply_alpha(self.system, style, self.alpha),
+                apply_alpha(self.system, body, self.alpha),
             );
+            let glyph = slot
+                .glyph
+                .unwrap_or_else(|| slot.kind.default_glyph(self.system.glyphs));
+            if !glyph.is_empty() && !slot.style_explicit {
+                crate::widgets::row_chrome::paint_status_glyph(
+                    buffer,
+                    content_area,
+                    0,
+                    glyph,
+                    apply_alpha(self.system, style, self.alpha),
+                );
+            }
             state.regions.push(HitRegion {
                 id: placement.id.clone(),
                 area: placement.area,

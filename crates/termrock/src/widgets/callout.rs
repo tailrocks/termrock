@@ -364,10 +364,11 @@ fn paint_feedback<Id: Clone + PartialEq>(
         .add_modifier(Modifier::BOLD);
 
     let section = matches!(args.content.recipe, CalloutRecipe::Section);
+    // Tone rides the rail and the glyph; the border is chrome and stays
+    // neutral, so a page of callouts is not a page of colored boxes
+    // (plans/007).
     let border_role = if args.focused && args.emphasize {
         Role::BorderFocused
-    } else if section {
-        tone_role
     } else {
         Role::Border
     };

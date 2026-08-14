@@ -84,7 +84,10 @@ impl SemanticStatus {
             Self::Offline | Self::Idle | Self::Queued | Self::Paused | Self::Unknown => {
                 Role::TextMuted
             }
-            Self::Running => Role::Accent,
+            // Running is not the brand: it is live information. Accent is
+            // reserved for the one thing the operator is acting on
+            // (docs/design/termrock-design-language.md §3, plans/007).
+            Self::Running => Role::InfoDim,
             Self::Waiting | Self::Warning => Role::Warning,
             Self::Failed => Role::Danger,
         }

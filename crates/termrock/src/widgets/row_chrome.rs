@@ -14,6 +14,39 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, style::Style};
 
 use crate::style::{DesignSystem, ListRowRecipe, ListRowVisualState};
 
+/// Repaints a status glyph inside an already-painted row.
+///
+/// Status color belongs to the glyph cell and nowhere else: the words stay in
+/// the body tone, so a list of five levels reads as one column of color
+/// instead of five colored sentences
+/// (`docs/design/termrock-design-language.md` §3).
+///
+/// `column` is the glyph's offset in display columns from the row's left
+/// edge. The cell's existing background is kept, so a selection wash painted
+/// under the row survives.
+pub(crate) fn paint_status_glyph(
+    buffer: &mut Buffer,
+    row: Rect,
+    column: u16,
+    glyph: &str,
+    style: Style,
+) {
+    let x = row.x.saturating_add(column);
+    if row.width == 0 || row.height == 0 || x >= row.right() {
+        return;
+    }
+    let cell = &mut buffer[(x, row.y)];
+    let ground = cell.style().bg;
+    let mut style = style;
+    if style.bg.is_none() {
+        if let Some(bg) = ground {
+            style = style.bg(bg);
+        }
+    }
+    cell.set_symbol(glyph);
+    cell.set_style(style);
+}
+
 /// Resolved row chrome for one painted row.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RowChrome {
