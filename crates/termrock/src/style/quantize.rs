@@ -183,6 +183,20 @@ const fn xterm256_to_rgb(index: u8) -> (u8, u8, u8) {
 
 /// Channel spread below which a color has no hue worth keeping.
 const NEUTRAL_CHROMA: u8 = 24;
+
+// Four ANSI neutrals have to carry a six-tier design ladder (canvas, border,
+// disabled, muted, body, strong), so the bands are cut where the *hierarchy*
+// breaks rather than where the colors are nearest. True nearest-neighbor over
+// {0, 127, 229, 255} would put the graphite border at Black — invisible chrome
+// on a black canvas — and a 128 midpoint would drop muted text into the same
+// DarkGray as that border, collapsing metadata into chrome. These three cuts
+// keep canvas, chrome, secondary text, and body text on four distinct rungs.
+/// Below this, a neutral is canvas or a deep surface.
+const NEUTRAL_CHROME: u16 = 48;
+/// Below this, a neutral is border or disabled chrome; above it, secondary text.
+const NEUTRAL_MUTED: u16 = 120;
+/// At or above this, a neutral is body or strong text.
+const NEUTRAL_BODY: u16 = 208;
 /// Peak channel below which no chromatic ANSI slot is dark enough to be honest.
 ///
 /// ANSI `Green` is `(0,205,0)`; painting a `(20,51,26)` selection tint with it
@@ -205,9 +219,9 @@ fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> Color {
     if chroma <= NEUTRAL_CHROMA || hi < CHROMATIC_FLOOR {
         let level = (u16::from(r) + u16::from(g) + u16::from(b)) / 3;
         return match level {
-            0..48 => Color::Black,
-            48..128 => Color::DarkGray,
-            128..208 => Color::Gray,
+            0..NEUTRAL_CHROME => Color::Black,
+            NEUTRAL_CHROME..NEUTRAL_MUTED => Color::DarkGray,
+            NEUTRAL_MUTED..NEUTRAL_BODY => Color::Gray,
             _ => Color::White,
         };
     }
@@ -277,8 +291,11 @@ mod tests {
         palette.style(role).bg.expect("surface role paints a bg")
     }
 
-    /// Palette hues pinned at plan-003 execution time (plan 002 had not landed;
-    /// its STOP rule says pin the values that exist at HEAD).
+    /// The graphite palette's actual hues, retuned after plan 002 landed.
+    ///
+    /// These literals are the point: they say what the *shipping* palette does
+    /// on a 16-color terminal, so a future revalue that quietly pushes a hue
+    /// across a sector boundary fails here rather than in someone's terminal.
     #[test]
     fn ansi16_maps_semantic_hues_to_distinct_colors() {
         let cases = [
@@ -286,14 +303,34 @@ mod tests {
             ((255, 94, 122), Color::LightRed, "danger"),
             ((255, 216, 94), Color::LightYellow, "warning"),
             ((0, 180, 180), Color::Cyan, "info"),
-            ((61, 220, 90), Color::LightGreen, "success mint"),
-            ((80, 80, 80), Color::DarkGray, "border graphite"),
-            ((255, 255, 255), Color::White, "text"),
+            ((93, 255, 160), Color::LightGreen, "success mint"),
+            ((48, 58, 50), Color::DarkGray, "border graphite"),
+            ((214, 224, 214), Color::White, "body text"),
+            ((122, 138, 122), Color::Gray, "muted text"),
             ((10, 12, 10), Color::Black, "canvas"),
         ];
         for ((r, g, b), expected, what) in cases {
             assert_eq!(rgb_to_ansi16(r, g, b), expected, "{what}");
         }
+    }
+
+    /// The text ladder is a hierarchy channel; ANSI-16 must not flatten it into
+    /// the chrome it sits on.
+    #[test]
+    fn ansi16_keeps_text_above_the_chrome_it_sits_on() {
+        let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Ansi16);
+        let fg = |role| palette.style(role).fg.expect("role paints a fg");
+
+        let body = fg(Role::Text);
+        let muted = fg(Role::TextMuted);
+        let border = fg(Role::Border);
+
+        assert_ne!(body, muted, "body and secondary text collapsed to one tone");
+        assert_ne!(
+            muted, border,
+            "secondary text collapsed into border chrome — metadata becomes chrome"
+        );
+        assert_ne!(border, Color::Black, "border vanished into a black canvas");
     }
 
     #[test]

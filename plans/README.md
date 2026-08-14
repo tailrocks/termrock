@@ -223,6 +223,39 @@ Follow-ups left open: `widgets::text::ascii_ellipsis()` and
 zero (respectively one) consumers; removing them is a public-API break beyond
 this plan's string-only scope.
 
+**Hue pins retuned after plan 002 landed** (the follow-up this note promised):
+`style::quantize`'s table now pins the shipping graphite values — success
+`(93,255,160)`, border `(48,58,50)`, body text `(214,224,214)`, muted text
+`(122,138,122)`. Retuning surfaced a real defect and fixed it: muted text
+(level 127) and border chrome (level 52) both landed on `DarkGray`, so metadata
+became chrome on any 16-color terminal. The neutral bands are now cut at 48 /
+120 / 208 — where the *hierarchy* breaks, not where the colors are nearest —
+and `ansi16_keeps_text_above_the_chrome_it_sits_on` pins that canvas, chrome,
+secondary text, and body text stay on four distinct rungs. True
+nearest-neighbor over `{0,127,229,255}` would put the graphite border at
+`Black`, i.e. invisible chrome on a black canvas.
+
+**Open: ASCII sort marker collides with disclosure (owner: 006/012).** Plan 006
+routed the table sort marker through the catalog, and in the ASCII profile
+descending renders `v` — the same character as `Glyph::DisclosureOpen`. In
+`tree_table`, which has both, an ASCII terminal shows `v` in the header meaning
+"sorted descending" and `v` on every expanded row meaning "expanded". This is
+exactly what `GLYPH_CONTEXTS` exists to catch; the sort marker was a raw
+literal (`table.rs:1623`, `tree_table.rs:1198`, `data_table.rs:1396`), so the
+gate never saw it. Three ways out, none free — hence not decided here:
+
+1. Move disclosure to the classic tree `+`/`-`. Most idiomatic, frees `^`/`v`
+   for direction everywhere — but it is a second breaking change to a glyph
+   already migrated in 0282, and `-` then collides with `Glyph::Bullet`.
+2. Give the sort marker its own ASCII that is not `v`. Everything legible is
+   taken or weak (`V` differs only by case).
+3. Keep the collision and let position disambiguate (header vs row gutter).
+   Honest only if `GLYPH_CONTEXTS` records the exemption with that reasoning,
+   the way delimiters already are.
+
+Whoever promotes the sort marker into the catalog should pick one and register
+the context so the gate holds the line afterwards.
+
 Deferred out of 003 (unchanged): EAW-Ambiguous glyph width policy (terminals
 rendering `✓●○◆` as two cells) needs a capability flag plus a layout audit.
 Widget sites still holding glyph literals (`slider.rs`, `split_pane.rs`,
