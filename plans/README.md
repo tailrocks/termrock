@@ -259,9 +259,11 @@ leading cell, so no cell is ever ambiguous about which it is — position
 disambiguates, the same reasoning that already exempts delimiters from
 `GLYPH_CONTEXTS`. Option 1 would cost a second break to a glyph migrated in
 0282 and then trade the collision for `-` vs `Glyph::Bullet` in the same file.
-Registering `ArrowUp`/`ArrowDown` and `tree_table`'s check glyph in a
-table-header context with that exemption recorded is the remaining work; the
-uniqueness test then confirms the rest of the assignment.
+**Done:** `GLYPH_CONTEXTS` gained a `"table header"` context holding the two
+sort markers, and the header/body exemption is written into its doc comment
+beside the delimiter one. `tree_table`'s check glyph needed no new registration
+— it is painted in the row gutter, so it is already covered by the existing
+`"collection row"` context.
 
 Deferred out of 003 (unchanged): EAW-Ambiguous glyph width policy (terminals
 rendering `✓●○◆` as two cells) needs a capability flag plus a layout audit.

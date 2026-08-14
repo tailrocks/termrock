@@ -710,6 +710,13 @@ pub fn glyph_by_id(id: &str) -> Option<Glyph> {
 ///   but a separator is always painted inside spaces (` · `) between facts,
 ///   while `Info` occupies a status cell. Listing it would force one of the two
 ///   to change shape to satisfy a rule neither of them breaks.
+/// - **Header vs body cells.** [`Glyph::ArrowDown`] renders `v` in ASCII, the
+///   same character as [`Glyph::DisclosureOpen`]. A table shows both, but never
+///   in the same cell: the sort marker sits in the header row's column label
+///   and disclosure sits in a body row's leading cell, one column-aligned band
+///   apart. They are separate contexts below for that reason — the alternative
+///   was breaking a disclosure encoding migrated in 0282 and trading this
+///   collision for `-` vs [`Glyph::Bullet`] in the same file.
 pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
     (
         "collection row",
@@ -756,6 +763,12 @@ pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
             Glyph::Error,
             Glyph::Info,
         ],
+    ),
+    (
+        // Column labels only. Disclosure and the row gutter live one band below,
+        // in the body rows — see the header/body note above.
+        "table header",
+        &[Glyph::ArrowUp, Glyph::ArrowDown],
     ),
     (
         "slider track",
