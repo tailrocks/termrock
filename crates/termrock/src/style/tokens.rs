@@ -4,6 +4,7 @@
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
 
 use super::{ColorCapability, Density, Glyph, MotionPolicy, Role, RolePalette};
+use crate::runtime::FrameTick;
 use ratatui_core::style::{Modifier, Style};
 
 /// Glyph encoding profile for borders, disclosure, and status markers.
@@ -543,6 +544,18 @@ pub struct DesignSystem {
     pub breakpoints: BreakpointScale,
     /// Separator painted between a key and its value.
     pub kv_separator: KvSeparator,
+    /// Frame time for animated chrome, when a host supplies one.
+    ///
+    /// Motion policy already rides the design system into every widget, but the
+    /// *clock* did not, so anything wanting time needed it threaded through its
+    /// own signature. Carrying the tick here gives all ~143 widgets access with
+    /// no signature churn.
+    ///
+    /// `None` means "no time was injected": every animated surface paints its
+    /// settled frame. That keeps snapshot tests deterministic without a special
+    /// test mode, and it is the honest default — a widget must never invent a
+    /// clock during paint.
+    tick: Option<FrameTick>,
 }
 
 impl Default for DesignSystem {
@@ -623,6 +636,7 @@ impl DesignSystem {
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
             kv_separator: KvSeparator::default(),
+            tick: None,
         }
     }
 
@@ -638,6 +652,36 @@ impl DesignSystem {
         self.density = density;
         self.spacing = SpacingScale::from_density(density);
         self
+    }
+
+    /// Supplies this frame's time to every widget painted with this system.
+    ///
+    /// Call once per frame in the host's render function:
+    ///
+    /// ```rust,ignore
+    /// let system = base_system.clone().at(tick);
+    /// ```
+    #[must_use]
+    pub const fn at(mut self, tick: FrameTick) -> Self {
+        self.tick = Some(tick);
+        self
+    }
+
+    /// This frame's time, if the host supplied one.
+    #[must_use]
+    pub const fn tick(&self) -> Option<FrameTick> {
+        self.tick
+    }
+
+    /// Milliseconds since the runner started, or `0` when no tick was supplied.
+    ///
+    /// The phase source for ambient loops ([`MotionChannel::phase`]), which
+    /// must ride wall clock rather than frame count.
+    ///
+    /// [`MotionChannel::phase`]: super::MotionChannel::phase
+    #[must_use]
+    pub fn elapsed_ms(&self) -> u64 {
+        self.tick.map_or(0, FrameTick::elapsed_ms)
     }
 
     /// Overrides motion.
@@ -1196,6 +1240,27 @@ mod tests {
             merged.style(Role::Text),
             DesignSystem::phosphor().style(Role::Text)
         );
+    }
+
+    #[test]
+    fn tick_defaults_to_none_so_snapshots_stay_deterministic() {
+        let system = DesignSystem::default();
+        assert_eq!(
+            system.tick(),
+            None,
+            "a design system must not invent a clock"
+        );
+        assert_eq!(system.elapsed_ms(), 0);
+
+        let start = crate::runtime::Instant::now();
+        let tick = FrameTick::manual(
+            start + std::time::Duration::from_millis(750),
+            std::time::Duration::from_millis(750),
+            std::time::Duration::from_millis(16),
+        );
+        let timed = system.at(tick);
+        assert_eq!(timed.tick(), Some(tick));
+        assert_eq!(timed.elapsed_ms(), 750);
     }
 
     #[test]

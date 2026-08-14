@@ -442,7 +442,6 @@ pub struct DrawerState {
     footer_rows: u16,
     /// Compact handle-only mode (host collapsed).
     handle_only: bool,
-    motion: MotionPolicy,
 }
 
 impl Default for DrawerState {
@@ -473,7 +472,6 @@ impl DrawerState {
             header_rows: 1,
             footer_rows: 0,
             handle_only: false,
-            motion: MotionPolicy::Full,
         }
     }
 
@@ -603,11 +601,6 @@ impl DrawerState {
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
-    }
-
-    /// Motion tier (no-motion → ASCII handle chrome).
-    pub fn set_motion(&mut self, motion: MotionPolicy) {
-        self.motion = motion;
     }
 
     /// Compact handle-only.
@@ -928,8 +921,9 @@ impl<'a> Drawer<'a> {
             Role::Border
         };
         let border_style = self.system.style(border);
-        let no_motion =
-            matches!(state.motion, MotionPolicy::Off | MotionPolicy::Basic) || self.ascii;
+        // The tier rides the design system into every widget; a private copy
+        // on the state could disagree with it, and did.
+        let no_motion = !self.system.motion.allows_ambient() || self.ascii;
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
@@ -1394,9 +1388,9 @@ mod tests {
     #[test]
     fn no_motion_ascii_handle() {
         let system = DesignSystem::default();
+        let system = system.motion(MotionPolicy::Off);
         let mut state = DrawerState::new();
         state.open = true;
-        state.set_motion(MotionPolicy::Off);
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
         Drawer::new("Rail", &system)
