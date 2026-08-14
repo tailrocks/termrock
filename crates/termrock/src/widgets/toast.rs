@@ -334,6 +334,11 @@ pub enum ToastOutcome {
 
 /// Visibility and expiry state for a **single** transient notification.
 ///
+/// Entrance fade window (motion SoT §6: overlays fade in, ≤ 120 ms).
+pub const TOAST_ENTER_MS: u64 = 120;
+/// Single acknowledging pulse after a success toast arrives, then static.
+pub const TOAST_SUCCESS_PULSE_MS: u64 = 400;
+
 /// Backed by [`Presence`] so TTL, deadlines, and focus rules share one motion
 /// primitive (toasts are never focusable).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -398,6 +403,50 @@ impl ToastState {
             return;
         }
         let _ = self.presence.advance(tick, MotionPolicy::Off);
+    }
+
+    /// When this toast became visible, if it is.
+    #[must_use]
+    pub const fn shown_at(self) -> Option<Instant> {
+        match self.presence.phase() {
+            crate::runtime::PresencePhase::Visible { since } => Some(since),
+            _ => None,
+        }
+    }
+
+    /// Paint alpha for this frame: entrance fade, then the per-kind rule.
+    ///
+    /// - **Errors never animate.** A failure must be readable the instant it
+    ///   lands; fading one in delays the only message that cannot wait.
+    /// - **Success pulses once, then goes still** — an acknowledgement, not an
+    ///   ongoing state.
+    /// - Everything else fades in over [`TOAST_ENTER_MS`] and then holds.
+    #[must_use]
+    pub fn paint_alpha(self, tick: FrameTick, kind: ToastKind, policy: MotionPolicy) -> f32 {
+        if matches!(kind, ToastKind::Error) || !policy.allows_transitions() {
+            return 1.0;
+        }
+        let Some(since) = self.shown_at() else {
+            return 1.0;
+        };
+        let age = tick.now().saturating_duration_since(since).as_millis() as u64;
+        let enter = policy.clamp_duration(Duration::from_millis(TOAST_ENTER_MS));
+        let enter_ms = enter.as_millis() as u64;
+        if enter_ms > 0 && age < enter_ms {
+            return (age as f32 / enter_ms as f32).clamp(0.0, 1.0);
+        }
+        if matches!(kind, ToastKind::Success) && policy.allows_ambient() {
+            let pulse_age = age.saturating_sub(enter_ms);
+            if pulse_age < TOAST_SUCCESS_PULSE_MS {
+                // One dip and back to full: it starts and ends at 1.0, so the
+                // pulse cannot snap when it stops. A breathe would end at its
+                // trough and jump.
+                let phase = pulse_age as f32 / TOAST_SUCCESS_PULSE_MS as f32;
+                let dip = (std::f32::consts::PI * phase).sin().powi(2);
+                return 1.0 - crate::style::AMBIENT_PEAK * dip;
+            }
+        }
+        1.0
     }
 
     /// Returns whether the toast is visible at this frame.
@@ -1400,6 +1449,21 @@ impl<'a> ToastStack<'a> {
                 entry.region = None;
                 continue;
             }
+            // The tick rides the design system (migration 0299), so the stack
+            // fades without a new paint parameter.
+            let alpha = self.system.tick().map_or(1.0, |tick| {
+                entry
+                    .state
+                    .paint_alpha(tick, entry.kind, self.system.motion)
+            });
+            let faded = (alpha < 1.0).then(|| {
+                let canvas = self
+                    .system
+                    .style(Role::Canvas)
+                    .bg
+                    .unwrap_or(ratatui_core::style::Color::Reset);
+                crate::style::fade_style(self.system.style(Role::Text), alpha, canvas)
+            });
             paint_one_toast(
                 area,
                 buffer,
@@ -1410,7 +1474,7 @@ impl<'a> ToastStack<'a> {
                 entry.progress,
                 entry.undo_label.as_deref(),
                 self.ascii,
-                None,
+                faded,
             );
             entry.region = Some(area);
         }
@@ -1421,6 +1485,108 @@ impl<'a> ToastStack<'a> {
 
 #[cfg(test)]
 mod state_tests {
+
+    #[test]
+    fn errors_never_fade_in() {
+        // A failure must be readable the instant it lands. Fading one in delays
+        // the one message that cannot wait.
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        for ms in [0, 40, 119, 200] {
+            assert_eq!(
+                state.paint_alpha(
+                    tick(start, Duration::from_millis(ms)),
+                    ToastKind::Error,
+                    MotionPolicy::Full
+                ),
+                1.0,
+                "error faded at {ms}ms"
+            );
+        }
+    }
+
+    #[test]
+    fn ordinary_toasts_fade_in_then_hold() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        let alpha = |ms: u64| {
+            state.paint_alpha(
+                tick(start, Duration::from_millis(ms)),
+                ToastKind::Info,
+                MotionPolicy::Full,
+            )
+        };
+
+        assert!(alpha(0) < 0.2, "entrance starts dim");
+        assert!(alpha(60) > alpha(0) && alpha(60) < 1.0, "entrance ramps");
+        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "entrance completes at the cap");
+        assert_eq!(alpha(5_000), 1.0, "and then holds — no ongoing motion");
+    }
+
+    #[test]
+    fn success_pulses_once_and_then_goes_still() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        let alpha = |ms: u64| {
+            state.paint_alpha(
+                tick(start, Duration::from_millis(ms)),
+                ToastKind::Success,
+                MotionPolicy::Full,
+            )
+        };
+        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "the pulse starts at full");
+        let deepest = alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS / 2);
+        assert!(deepest < 1.0, "success should acknowledge with one dip");
+        assert!(
+            deepest >= 1.0 - crate::style::AMBIENT_PEAK,
+            "the dip must whisper, not flash: {deepest}"
+        );
+        assert_eq!(
+            alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS + 1),
+            1.0,
+            "one pulse, not a loop — a finished thing must not keep moving"
+        );
+    }
+
+    #[test]
+    fn off_lands_every_toast_instantly_and_basic_keeps_only_the_entrance() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+
+        // `Off`: nothing moves, for any kind.
+        for kind in [ToastKind::Info, ToastKind::Success, ToastKind::Error] {
+            let a = state.paint_alpha(tick(start, Duration::ZERO), kind, MotionPolicy::Off);
+            let b = state.paint_alpha(
+                tick(start, Duration::from_millis(300)),
+                kind,
+                MotionPolicy::Off,
+            );
+            assert_eq!(a, 1.0);
+            assert_eq!(b, 1.0, "{kind:?} moved under Off");
+        }
+
+        // `Basic` is "transitions ≤ 120 ms only" (SoT §3), so the entrance
+        // survives — but the ambient success pulse does not.
+        let entrance = state.paint_alpha(
+            tick(start, Duration::from_millis(60)),
+            ToastKind::Info,
+            MotionPolicy::Basic,
+        );
+        assert!(entrance < 1.0, "Basic should keep a short entrance fade");
+        assert_eq!(
+            state.paint_alpha(
+                tick(start, Duration::from_millis(TOAST_ENTER_MS + 200)),
+                ToastKind::Success,
+                MotionPolicy::Basic
+            ),
+            1.0,
+            "Basic must not run the ambient success pulse"
+        );
+    }
     use super::*;
 
     fn tick(start: Instant, elapsed: Duration) -> FrameTick {
