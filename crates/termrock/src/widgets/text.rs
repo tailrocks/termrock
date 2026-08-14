@@ -155,6 +155,7 @@ pub struct TextSpan<'a> {
     /// Author-set underline for content that is underlined (composes with
     /// emphasis). This is content, not a state cue.
     underline: bool,
+    reverse: bool,
     /// Syntax-independent annotation tag (search, diagnostic, link id, …).
     annotation: Option<Cow<'a, str>>,
     /// Highlight mark (search hit, selection preview) without requiring bg fill.
@@ -170,6 +171,7 @@ impl<'a> TextSpan<'a> {
             role: Role::Text,
             emphasis: TextEmphasis::Normal,
             underline: false,
+            reverse: false,
             annotation: None,
             highlight: false,
         }
@@ -183,6 +185,7 @@ impl<'a> TextSpan<'a> {
             role: Role::Text,
             emphasis: TextEmphasis::Normal,
             underline: false,
+            reverse: false,
             annotation: None,
             highlight: false,
         }
@@ -234,6 +237,13 @@ impl<'a> TextSpan<'a> {
     #[must_use]
     pub const fn underline(mut self, on: bool) -> Self {
         self.underline = on;
+        self
+    }
+
+    /// Reverse this run — the colorless way to say "this one".
+    #[must_use]
+    pub const fn reverse(mut self, on: bool) -> Self {
+        self.reverse = on;
         self
     }
 
@@ -542,6 +552,9 @@ impl<'a> Text<'a> {
         }
         if span.underline {
             style = style.add_modifier(Modifier::UNDERLINED);
+        }
+        if span.reverse {
+            style = style.add_modifier(Modifier::REVERSED);
         }
         if span.highlight {
             // Non-bg highlight: accent foreground plus weight.

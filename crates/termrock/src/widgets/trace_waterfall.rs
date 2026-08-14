@@ -1234,12 +1234,14 @@ impl<'a> TraceWaterfall<'a> {
                     } else {
                         "█"
                     };
+                    // Bars are data, so they read as a series. A waterfall
+                    // painted in severity was a wall of colour with no shape
+                    // in it; failure still shows in the fill glyph above and
+                    // in the status letter in the name column.
                     let bar_role = if selected && self.focused {
-                        Role::Focus
-                    } else if span.critical {
-                        Role::Warning
+                        Role::ChartSeries2
                     } else {
-                        span.status.role()
+                        Role::ChartSeries1
                     };
                     let bx = bar_x.saturating_add(c0);
                     for dx in 0..bw {

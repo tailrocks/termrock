@@ -953,14 +953,14 @@ fn match_span<'a>(piece: &'a str, kind: MatchKind, ht: &HighlightedText<'_>) -> 
         .highlight(true)
         .annotation(kind.id());
     s = s.strong();
-    // No-color path: DesignSystem already monochrome; force underline
+    // Colorless, or the match you are actually on: reverse the run.
+    // Underline is the link affordance (design-language §5.9), not "this one".
     if matches!(
         ht.system.capability,
         crate::style::ColorCapability::Monochrome
-    ) {
-        s = s.underline(true);
-    } else if kind == MatchKind::Focused {
-        s = s.underline(true);
+    ) || kind == MatchKind::Focused
+    {
+        s = s.reverse(true);
     }
     let _ = Modifier::BOLD; // style via strong
     s

@@ -85895,6 +85895,7 @@ pub const fn termrock::widgets::TextSpan<'a>::highlight(self, bool) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::is_highlight(&self) -> bool
 pub const fn termrock::widgets::TextSpan<'a>::italic(self) -> Self
 pub fn termrock::widgets::TextSpan<'a>::new(impl core::convert::Into<alloc::borrow::Cow<'a, str>>) -> Self
+pub const fn termrock::widgets::TextSpan<'a>::reverse(self, bool) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::role(self, termrock::style::Role) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::role_of(&self) -> termrock::style::Role
 pub const fn termrock::widgets::TextSpan<'a>::strong(self) -> Self
