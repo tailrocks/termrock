@@ -809,7 +809,7 @@ impl<'a> SearchInput<'a> {
                 Role::Text
             });
             let style = if state.focused {
-                style.add_modifier(Modifier::UNDERLINED)
+                style.add_modifier(Modifier::BOLD)
             } else {
                 style
             };

@@ -814,11 +814,25 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             }
         }
         if selected {
-            // underline full row as non-color focus cue
+            // The selected row washes and carries the gutter; each cell keeps
+            // its own foreground so key/value tones survive.
+            let wash = self.system.style(Role::SelectionTint).bg;
             for x in area.x..area.x.saturating_add(area.width) {
                 let cell = &mut buffer[(x, area.y)];
-                let s = cell.style().add_modifier(Modifier::UNDERLINED);
+                let mut s = cell.style();
+                if let Some(bg) = wash {
+                    s = s.bg(bg);
+                }
                 cell.set_style(s);
+            }
+            if area.width > 0 {
+                let cell = &mut buffer[(area.x, area.y)];
+                let mut marked = cell.style().patch(self.system.style(Role::Accent));
+                if let Some(bg) = wash {
+                    marked = marked.bg(bg);
+                }
+                cell.set_symbol(self.system.glyphs.selection_gutter());
+                cell.set_style(marked);
             }
         }
     }

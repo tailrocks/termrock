@@ -1186,9 +1186,10 @@ impl<'a, Id> Tabs<'a, Id> {
             style = style.add_modifier(Modifier::BOLD);
         }
         if focused_tab && !selected {
-            style = style.add_modifier(Modifier::UNDERLINED | Modifier::REVERSED);
-        } else if hovered {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            // Keyboard focus that has not committed yet: reverse the label.
+            style = style.add_modifier(Modifier::REVERSED);
+        } else if hovered && let Some(bg) = self.system.style(Role::HoverTint).bg {
+            style = style.bg(bg);
         }
         if !tab.enabled {
             style = self.system.style(Role::TextMuted);

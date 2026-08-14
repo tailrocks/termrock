@@ -1363,7 +1363,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
 
         let mut cell_style = base_style;
         if cursor && surface_focused && state.cursor_col == ord {
-            cell_style = cell_style.add_modifier(Modifier::UNDERLINED);
+            // A cell cursor is a cell: reverse it.
+            cell_style = cell_style.add_modifier(Modifier::REVERSED);
         }
 
         if ord == 0 {

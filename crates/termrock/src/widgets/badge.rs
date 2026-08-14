@@ -458,7 +458,7 @@ impl<'a> Badge<'a> {
         if self.interactive {
             if state.is_some_and(|s| s.focused) {
                 style = style
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                    .add_modifier(Modifier::BOLD)
                     .patch(self.system.style(Role::Focus));
             } else if state.is_some_and(|s| s.selected) {
                 style = style.add_modifier(Modifier::BOLD);

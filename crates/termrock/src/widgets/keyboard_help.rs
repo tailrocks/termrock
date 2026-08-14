@@ -1204,9 +1204,10 @@ impl<'a> KeyboardHelp<'a> {
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::REVERSED)
                 } else if e.conflict {
+                    // A conflicting binding is a warning, and says so.
                     self.system
-                        .style(Role::TextStrong)
-                        .add_modifier(Modifier::UNDERLINED)
+                        .style(Role::Warning)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }

@@ -859,7 +859,7 @@ impl<'a> Stepper<'a> {
                 StepStatus::Error => self
                     .system
                     .style(Role::TextStrong)
-                    .add_modifier(Modifier::UNDERLINED),
+                    .add_modifier(Modifier::BOLD),
                 StepStatus::Disabled | StepStatus::Skipped | StepStatus::Future => {
                     self.system.style(Role::TextMuted)
                 }
@@ -879,7 +879,7 @@ impl<'a> Stepper<'a> {
             StepStatus::Optional => self.system.style(Role::Text),
         };
         if active_cursor && focused && !matches!(status, StepStatus::Current) {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD);
         }
         style
     }

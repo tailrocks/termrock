@@ -867,9 +867,9 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     } else {
                         self.system.style(Role::TextMuted)
                     };
-                    // underline current for no-color
+                    // Bold carries "you are here" without color.
                     let style = if is_current && !is_focus {
-                        style.add_modifier(Modifier::UNDERLINED)
+                        style.add_modifier(Modifier::BOLD)
                     } else {
                         style
                     };

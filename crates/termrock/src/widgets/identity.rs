@@ -566,7 +566,7 @@ impl<'a> AvatarGlyph<'a> {
             crate::style::ColorCapability::Monochrome
         ) {
             style.fg = None;
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         }
         buffer.set_stringn(
             parts.face.x,
@@ -587,7 +587,7 @@ impl<'a> AvatarGlyph<'a> {
                     ps = match self.presence {
                         PresenceStatus::Online => ps.add_modifier(Modifier::BOLD),
                         PresenceStatus::Busy | PresenceStatus::Error => {
-                            ps.add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                            ps.add_modifier(Modifier::BOLD | Modifier::REVERSED)
                         }
                         PresenceStatus::Away => ps.add_modifier(Modifier::DIM),
                         _ => ps.add_modifier(Modifier::DIM),

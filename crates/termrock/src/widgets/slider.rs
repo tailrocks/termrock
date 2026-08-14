@@ -733,9 +733,7 @@ impl<'a> Slider<'a> {
         if !state.enabled {
             self.system.style(Role::TextDisabled)
         } else if state.focused {
-            self.system
-                .style(Role::Focus)
-                .add_modifier(Modifier::UNDERLINED)
+            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
         } else {
             self.system.style(Role::Text)
         }

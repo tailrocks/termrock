@@ -519,11 +519,13 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             return self.system.style(Role::TextDisabled);
         }
         if focused {
+            // Focused-and-selected is the bold one; focused-only carries the
+            // Focus role and, without color, the reverse cell.
             let mut s = self.system.style(Role::Focus);
             if selected {
-                s = s.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
-            } else {
-                s = s.add_modifier(Modifier::UNDERLINED);
+                s = s.add_modifier(Modifier::BOLD);
+            } else if self.mono() {
+                s = s.add_modifier(Modifier::REVERSED);
             }
             return s;
         }
@@ -537,10 +539,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             return s;
         }
         if hovered {
-            return self
-                .system
-                .style(Role::TextMuted)
-                .add_modifier(Modifier::UNDERLINED);
+            return self.system.style(Role::Text);
         }
         self.system.style(Role::TextMuted)
     }

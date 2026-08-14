@@ -435,7 +435,7 @@ impl<'a, Id> Checkbox<'a, Id> {
         if state.invalid {
             let mut s = self.system.style(Role::Danger);
             if state.focused {
-                s = s.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+                s = s.add_modifier(Modifier::BOLD);
             }
             return s;
         }
@@ -468,16 +468,12 @@ impl<'a, Id> Checkbox<'a, Id> {
             return self.system.style(Role::Danger);
         }
         if state.focused {
-            return self
-                .system
-                .style(Role::Focus)
-                .add_modifier(Modifier::UNDERLINED);
+            // Focus is a role change plus weight; the control's own glyph
+            // (`◉`/`○`, `▮`/`▯`) carries the state next to it.
+            return self.system.style(Role::Focus).add_modifier(Modifier::BOLD);
         }
         if state.hovered {
-            return self
-                .system
-                .style(Role::Text)
-                .add_modifier(Modifier::UNDERLINED);
+            return self.system.style(Role::TextStrong);
         }
         self.system.style(Role::Text)
     }
@@ -1138,7 +1134,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     Role::TextStrong
                 });
                 if state.surface_focused {
-                    style = style.add_modifier(Modifier::UNDERLINED);
+                    style = style.add_modifier(Modifier::BOLD);
                 }
                 let text = take_display_cols(leg, usize::from(area.width));
                 buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
@@ -1288,8 +1284,6 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             let mut s = self.system.style(Role::Focus);
             if selected {
                 s = s.add_modifier(Modifier::BOLD);
-            } else {
-                s = s.add_modifier(Modifier::UNDERLINED);
             }
             return s;
         }
@@ -1302,10 +1296,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             return s;
         }
         if hovered {
-            return self
-                .system
-                .style(Role::Text)
-                .add_modifier(Modifier::UNDERLINED);
+            return self.system.style(Role::TextStrong);
         }
         self.system.style(Role::Text)
     }
@@ -2049,7 +2040,7 @@ impl<'a, Id> Switch<'a, Id> {
         if state.invalid {
             let mut s = self.system.style(Role::Danger);
             if state.focused {
-                s = s.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+                s = s.add_modifier(Modifier::BOLD);
             }
             return s;
         }
@@ -2083,16 +2074,12 @@ impl<'a, Id> Switch<'a, Id> {
             return self.system.style(Role::Danger);
         }
         if state.focused {
-            return self
-                .system
-                .style(Role::Focus)
-                .add_modifier(Modifier::UNDERLINED);
+            // Focus is a role change plus weight; the control's own glyph
+            // (`◉`/`○`, `▮`/`▯`) carries the state next to it.
+            return self.system.style(Role::Focus).add_modifier(Modifier::BOLD);
         }
         if state.hovered {
-            return self
-                .system
-                .style(Role::Text)
-                .add_modifier(Modifier::UNDERLINED);
+            return self.system.style(Role::TextStrong);
         }
         self.system.style(Role::Text)
     }

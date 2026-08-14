@@ -294,8 +294,9 @@ pub use charts::{
 };
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
-    CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeWrap, ControlRender, PlainSyntax,
-    RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display, syntax_role_style,
+    CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeTokenKind, CodeWrap, ControlRender,
+    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display,
+    syntax_role_style,
 };
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,
@@ -444,7 +445,7 @@ pub use label::{
 };
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
-    LinkParts, LinkState, LinkVariant,
+    LinkParts, LinkState, LinkStyle, LinkVariant,
 };
 pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,

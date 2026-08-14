@@ -2459,7 +2459,7 @@ impl Widget for &MetricRadar<'_> {
             let lab_style = if axis_selected {
                 self.system
                     .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                    .add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::TextMuted)
             };

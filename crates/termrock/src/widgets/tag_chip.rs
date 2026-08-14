@@ -358,10 +358,12 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         };
         // Highlight remove part when focused there.
         if state.focused && matches!(state.part, TokenPart::Remove) && remove.width > 0 {
+            // The remove affordance is one or two cells: reverse them so the
+            // focus lands on the `×` itself.
             let st = self
                 .system
                 .style(Role::Danger)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+                .add_modifier(Modifier::BOLD | Modifier::REVERSED);
             buffer.set_style(remove, st);
         }
         let parts = TokenParts {
@@ -846,7 +848,7 @@ impl<'a, Id: Clone> Chip<'a, Id> {
                 remove,
                 self.system
                     .style(Role::Danger)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED),
             );
         }
         let parts = TokenParts {

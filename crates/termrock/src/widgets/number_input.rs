@@ -1040,7 +1040,7 @@ impl<'a> NumberInput<'a> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             buffer.set_stringn(
                 area.x,

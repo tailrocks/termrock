@@ -458,7 +458,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
         });
     slots.title = Rect::new(title_x, y, title_w, 1);
     let title_style = if args.focused && args.emphasize {
-        strong.add_modifier(Modifier::UNDERLINED)
+        strong.add_modifier(Modifier::BOLD)
     } else {
         strong
     };

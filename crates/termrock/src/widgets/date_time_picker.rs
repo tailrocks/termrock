@@ -2141,9 +2141,9 @@ impl<'a> DateTimePicker<'a> {
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD)
                 } else if is_today {
-                    self.system
-                        .style(Role::Text)
-                        .add_modifier(Modifier::UNDERLINED)
+                    // "Today" is a fact about the date, not a selection: it
+                    // reads through the accent, and the cursor still reverses.
+                    self.system.style(Role::Accent)
                 } else if in_month {
                     self.system.style(Role::Text)
                 } else {

@@ -29,7 +29,7 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        link::{DestinationDisplay, Link, LinkVariant},
+        link::{DestinationDisplay, Link, LinkStyle},
         markdown::SourceAnchor,
         streaming_markdown::StreamCitation,
     },
@@ -518,7 +518,10 @@ pub fn citation_link<'a>(
     } else {
         Link::app_route(label, destination, system)
     };
-    link = link.variant(LinkVariant::Underline).hyperlinks(hyperlinks);
+    // A citation is a link and says so the classic way.
+    link = link
+        .link_style(LinkStyle::AlwaysUnderline)
+        .hyperlinks(hyperlinks);
     if !hyperlinks {
         link = link.always_show_destination();
     }

@@ -124,7 +124,7 @@ pub enum TextEmphasis {
     Normal,
     /// Bold weight.
     Strong,
-    /// Italic when available; underline fallback.
+    /// Italic emphasis.
     Emphasis,
     /// Dim / secondary (modifier + optional muted role).
     Dim,
@@ -152,7 +152,8 @@ pub struct TextSpan<'a> {
     content: Cow<'a, str>,
     role: Role,
     emphasis: TextEmphasis,
-    /// Extra underline (composes with emphasis).
+    /// Author-set underline for content that is underlined (composes with
+    /// emphasis). This is content, not a state cue.
     underline: bool,
     /// Syntax-independent annotation tag (search, diagnostic, link id, …).
     annotation: Option<Cow<'a, str>>,
@@ -528,25 +529,27 @@ impl<'a> Text<'a> {
                 style = style.add_modifier(Modifier::BOLD);
             }
             TextEmphasis::Emphasis => {
-                style = style.add_modifier(Modifier::ITALIC | Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::ITALIC);
             }
             TextEmphasis::Dim => {
                 style = style.add_modifier(Modifier::DIM);
             }
             TextEmphasis::Code => {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                // Inline code reads through the syntax tone, keeping the
+                // "no filled background" promise this widget makes.
+                style = style.patch(self.system.style(Role::Info));
             }
         }
         if span.underline {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
         if span.highlight {
-            // Non-bg highlight: underline + accent foreground when available.
+            // Non-bg highlight: accent foreground plus weight.
             let accent = self.system.style(Role::Accent);
             if let Some(fg) = accent.fg {
                 style = style.fg(fg);
             }
-            style = style.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+            style = style.add_modifier(Modifier::BOLD);
         }
         style
     }

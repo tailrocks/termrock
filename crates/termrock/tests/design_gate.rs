@@ -346,6 +346,59 @@ fn spinner_frames_one_column() {
     }
 }
 
+// ── Underline-free interaction grammar (plan 005) ────────────────────────────
+
+/// Underline means "link", and nothing else.
+///
+/// It used to mean focus, selection, hover, current item, sort, severity,
+/// match, syntax class and button affordance — everything except the one thing
+/// a reader expects. The binding grammar is
+/// `docs/design/termrock-design-language.md` §5.9: content passthrough,
+/// monochrome links, and an explicit cursor fallback are the only survivors.
+/// Every file below is on the whitelist for one of those reasons.
+#[test]
+fn interaction_underline_is_dead() {
+    /// file -> why its underline is legitimate
+    const WHITELIST: &[(&str, &str)] = &[
+        ("link.rs", "the link affordance itself (LinkStyle policy)"),
+        ("citation.rs", "a citation is a link"),
+        ("key_value_list.rs", "href values are links"),
+        ("primitives.rs", "ButtonVariant::Link renders as a link"),
+        ("code_block.rs", "diagnostic spans: squiggle substitute"),
+        (
+            "text.rs",
+            "TextSpan::underline is author-set content, not a state",
+        ),
+    ];
+
+    let widgets = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
+    let mut offenders = Vec::new();
+    for path in rust_files(&widgets) {
+        let name = path
+            .file_name()
+            .expect("file has a name")
+            .to_string_lossy()
+            .into_owned();
+        if WHITELIST.iter().any(|(f, _)| *f == name) {
+            continue;
+        }
+        let body = fs::read_to_string(&path).expect("widget source is readable");
+        let painted = body
+            .split("#[cfg(test)]")
+            .next()
+            .expect("split always yields a head");
+        if painted.contains("Modifier::UNDERLINED") || painted.contains(".underlined()") {
+            offenders.push(name);
+        }
+    }
+    offenders.sort();
+    offenders.dedup();
+    assert!(
+        offenders.is_empty(),
+        "underline is not an interaction cue (design-language §5.9) — found in: {offenders:?}"
+    );
+}
+
 // ── Selection / focus paint authority (plan 004) ─────────────────────────────
 
 use ratatui_core::{text::Line, widgets::StatefulWidget};

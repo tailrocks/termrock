@@ -1021,7 +1021,7 @@ impl<'a> TextInput<'a> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             let text = take_display_cols(self.label, usize::from(area.width));
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);

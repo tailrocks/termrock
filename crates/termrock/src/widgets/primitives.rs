@@ -283,7 +283,7 @@ pub enum ButtonVariant {
     /// Default secondary action (pad + border role when focused).
     #[default]
     Secondary,
-    /// Quiet / ghost (minimal chrome; focus underline).
+    /// Quiet / ghost (minimal chrome; focus = bold label + border role).
     Quiet,
     /// Outline (border role + pad; brackets only secondary ASCII cue).
     Outline,
@@ -373,7 +373,7 @@ pub struct ButtonParts {
 /// - Pending confirmation → first Activate yields `ConfirmRequired`.
 ///
 /// Outcomes are pure ([`ActivationOutcome`]); effects stay consumer-owned.
-/// Affordance is **role + weight + underline/fill cues**, not brackets alone.
+/// Affordance is **role + weight + border/fill cues**, not brackets alone.
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     label: &'a str,
@@ -694,25 +694,21 @@ impl Button<'_> {
             ButtonVariant::Link => {
                 style = style.add_modifier(Modifier::UNDERLINED);
             }
-            ButtonVariant::Outline => {
+            ButtonVariant::Outline | ButtonVariant::Quiet | ButtonVariant::Secondary => {
+                // Focus speaks through the recipe's border and a bold label.
+                // Underlining every focusable button made a form of ordinary
+                // controls look like a page of hyperlinks.
                 if surface {
-                    style = style.add_modifier(Modifier::UNDERLINED);
+                    style = style.add_modifier(Modifier::BOLD);
                 }
             }
             ButtonVariant::Destructive => {
                 style = style.add_modifier(Modifier::BOLD);
-                if mono {
-                    style = style.add_modifier(Modifier::UNDERLINED);
-                }
-            }
-            ButtonVariant::Quiet | ButtonVariant::Secondary => {
-                if surface {
-                    style = style.add_modifier(Modifier::UNDERLINED);
-                }
             }
         }
         if armed {
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            // The press is the one moment the button inverts.
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         }
 
         let narrow = area.width < 12;
@@ -787,7 +783,7 @@ impl Button<'_> {
                 }
             }
             ButtonVariant::Outline if mono => {
-                // Brackets only as ASCII secondary chrome alongside underline.
+                // Brackets only as ASCII secondary chrome alongside the border.
                 format!("{pad_s}[{body}]")
             }
             _ => format!("{pad_s}{body}{pad_s}"),
@@ -1291,9 +1287,11 @@ impl<'a> IconButton<'a> {
             recipe.fill.patch(recipe.label)
         };
         if toggled || armed {
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            // A pressed or latched icon button inverts its face; there is no
+            // label here for a weight change to land on.
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         } else if surface {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD);
         }
         if matches!(self.variant, ButtonVariant::Destructive) {
             style = style.add_modifier(Modifier::BOLD);

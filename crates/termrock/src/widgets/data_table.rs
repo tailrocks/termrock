@@ -1527,7 +1527,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             cell_style = table.system.style(Role::Selection);
         }
         if cell_focused {
-            cell_style = cell_style.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+            // A cell cursor is a cell: reverse it.
+            cell_style = cell_style.add_modifier(Modifier::REVERSED);
         }
         if state.editing && cell_focused {
             let draft = take_display_cols(&state.edit_draft, usize::from(paint_w));

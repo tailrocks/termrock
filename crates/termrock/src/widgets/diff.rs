@@ -1576,12 +1576,12 @@ fn paint_word_line(
         } else {
             match w.kind {
                 DiffWordKind::Equal => base,
-                DiffWordKind::Insert => system
-                    .style(Role::DiffAdded)
-                    .add_modifier(Modifier::UNDERLINED),
-                DiffWordKind::Delete => system
-                    .style(Role::DiffRemoved)
-                    .add_modifier(Modifier::UNDERLINED),
+                // The word tints already carry their own ground; weight marks
+                // which words inside the line actually moved.
+                DiffWordKind::Insert => system.style(Role::DiffAdded).add_modifier(Modifier::BOLD),
+                DiffWordKind::Delete => {
+                    system.style(Role::DiffRemoved).add_modifier(Modifier::BOLD)
+                }
             }
         };
         let remain = max_x.saturating_sub(x);

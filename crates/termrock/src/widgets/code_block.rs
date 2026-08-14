@@ -64,6 +64,45 @@ impl SyntaxHighlighter for PlainSyntax {
     }
 }
 
+/// What a token *is*, before anyone decides how it looks.
+///
+/// The tokenizer used to encode "string" as green-plus-underline and the
+/// role-aware highlighter decoded that back by sniffing modifiers, so a paint
+/// change silently rewrote classification. The kind is the fact; each
+/// highlighter maps it to its own presentation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum CodeTokenKind {
+    /// Ordinary source text, punctuation, whitespace.
+    #[default]
+    Plain,
+    /// Line comment through end of line.
+    Comment,
+    /// Quoted string literal.
+    String,
+    /// Numeric literal.
+    Number,
+    /// Language keyword (host-supplied set).
+    Keyword,
+    /// Identifier immediately followed by `(`.
+    Function,
+}
+
+impl CodeTokenKind {
+    /// Semantic role this kind paints through.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Plain => Role::Text,
+            Self::Comment => Role::SyntaxComment,
+            Self::String => Role::SyntaxString,
+            Self::Number => Role::SyntaxNumber,
+            Self::Keyword => Role::SyntaxKeyword,
+            Self::Function => Role::SyntaxFunction,
+        }
+    }
+}
+
 /// Lightweight token highlighter using semantic syntax roles (no tree-sitter).
 ///
 /// Good ANSI / monochrome fallback: roles quantize to bold/dim/underline under
@@ -111,13 +150,47 @@ impl<'a> TokenSyntax<'a> {
     }
 }
 
+impl TokenSyntax<'_> {
+    /// Tokenizes one prepared line into classified segments.
+    ///
+    /// Prefer this over [`SyntaxHighlighter::highlight_line`] when the caller
+    /// owns the palette: the kind is the fact, the style is one reading of it.
+    #[must_use]
+    pub fn tokens_for_line<'line>(&self, line: &'line str) -> Vec<(&'line str, CodeTokenKind)> {
+        tokenize_line(line, self.language, self.keywords)
+    }
+}
+
 impl SyntaxHighlighter for TokenSyntax<'_> {
     fn highlight_line<'line>(
         &self,
         line: &'line str,
         _line_index: usize,
     ) -> Vec<(&'line str, Style)> {
-        tokenize_line(line, self.language, self.keywords)
+        // Palette-free fallback colors for hosts without a `DesignSystem`;
+        // `RoleTokenSyntax` is the themed path.
+        self.tokens_for_line(line)
+            .into_iter()
+            .map(|(seg, kind)| {
+                let style = match kind {
+                    CodeTokenKind::Plain => Style::default(),
+                    CodeTokenKind::Comment => {
+                        Style::default().add_modifier(Modifier::DIM | Modifier::ITALIC)
+                    }
+                    CodeTokenKind::String => Style::default().fg(ratatui_core::style::Color::Green),
+                    CodeTokenKind::Number => {
+                        Style::default().fg(ratatui_core::style::Color::Magenta)
+                    }
+                    CodeTokenKind::Keyword => Style::default()
+                        .fg(ratatui_core::style::Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                    CodeTokenKind::Function => {
+                        Style::default().fg(ratatui_core::style::Color::Blue)
+                    }
+                };
+                (seg, style)
+            })
+            .collect()
     }
 }
 
@@ -883,10 +956,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if let Some(fg) = role_style.fg {
                 style = style.fg(fg);
             }
-            // Prefer non-fill cues: underline for diagnostic/search; bold for selection.
+            // Prefer non-fill cues: a diagnostic keeps the squiggle
+            // substitute; everything else reads through weight or ground.
             match kind {
-                CodeHighlightKind::Diagnostic | CodeHighlightKind::Search => {
+                CodeHighlightKind::Diagnostic => {
+                    // Sanctioned content annotation (design-language §5.9):
+                    // the underline stands in for a squiggle, matching the
+                    // caret rows `Diagnostic` paints.
                     style = style.add_modifier(Modifier::UNDERLINED);
+                }
+                CodeHighlightKind::Search => {
+                    style = style.add_modifier(Modifier::BOLD);
+                    if let Some(bg) = self.system.style(Role::HoverTint).bg {
+                        style = style.bg(bg);
+                    }
                 }
                 CodeHighlightKind::Selection | CodeHighlightKind::Emphasis => {
                     style = style.add_modifier(Modifier::BOLD);
@@ -898,7 +981,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     if let Some(bg) = role_style.bg {
                         style = style.bg(bg);
                     } else {
-                        style = style.add_modifier(Modifier::UNDERLINED);
+                        style = style.add_modifier(Modifier::BOLD);
                     }
                 }
             }
@@ -1529,9 +1612,9 @@ fn tokenize_line<'a>(
     line: &'a str,
     language: Option<&str>,
     keywords: &[&str],
-) -> Vec<(&'a str, Style)> {
+) -> Vec<(&'a str, CodeTokenKind)> {
     if line.is_empty() {
-        return vec![("", Style::default())];
+        return vec![("", CodeTokenKind::Plain)];
     }
     // Line comment
     let comment_prefix = match language {
@@ -1548,20 +1631,13 @@ fn tokenize_line<'a>(
         if idx > 0 {
             out.extend(tokenize_code_part(&line[..idx], keywords));
         }
-        out.push((
-            &line[idx..],
-            Style::default().fg(ratatui_core::style::Color::Gray), // paint maps via Role if default
-        ));
-        // Use Role-backed styles for comments — inject via special marker: Style with DIM
-        if let Some(last) = out.last_mut() {
-            last.1 = Style::default().add_modifier(Modifier::DIM | Modifier::ITALIC);
-        }
+        out.push((&line[idx..], CodeTokenKind::Comment));
         return out;
     }
     tokenize_code_part(line, keywords)
 }
 
-fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Style)> {
+fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, CodeTokenKind)> {
     let mut out = Vec::new();
     let bytes = line.as_bytes();
     let mut i = 0usize;
@@ -1582,17 +1658,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
                 }
                 i += 1;
             }
-            out.push((
-                &line[start..i],
-                Style::default().add_modifier(Modifier::UNDERLINED), // string cue; color from Role at paint if we use system — use green-ish via Color
-            ));
-            // Prefer semantic: Style with a fixed color that DesignSystem can still
-            // override? Highlighter returns Style; paint keeps it. Use Keyword role colors via Color::Reset + modifier for mono.
-            if let Some(last) = out.last_mut() {
-                last.1 = Style::default()
-                    .fg(ratatui_core::style::Color::Green)
-                    .add_modifier(Modifier::UNDERLINED);
-            }
+            out.push((&line[start..i], CodeTokenKind::String));
             continue;
         }
         // Number
@@ -1604,10 +1670,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
             {
                 i += 1;
             }
-            out.push((
-                &line[start..i],
-                Style::default().fg(ratatui_core::style::Color::Magenta),
-            ));
+            out.push((&line[start..i], CodeTokenKind::Number));
             continue;
         }
         // Ident
@@ -1618,16 +1681,14 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
                 i += 1;
             }
             let word = &line[start..i];
-            let style = if keywords.contains(&word) {
-                Style::default()
-                    .fg(ratatui_core::style::Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+            let kind = if keywords.contains(&word) {
+                CodeTokenKind::Keyword
             } else if i < bytes.len() && bytes[i] == b'(' {
-                Style::default().fg(ratatui_core::style::Color::Blue)
+                CodeTokenKind::Function
             } else {
-                Style::default()
+                CodeTokenKind::Plain
             };
-            out.push((word, style));
+            out.push((word, kind));
             continue;
         }
         // Single char punctuation / space
@@ -1654,10 +1715,10 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Sty
         let _ = start;
         // re-do as single
         // (loop already advanced — if we extended, ok)
-        out.push((&line[start..i], Style::default()));
+        out.push((&line[start..i], CodeTokenKind::Plain));
     }
     if out.is_empty() {
-        out.push((line, Style::default()));
+        out.push((line, CodeTokenKind::Plain));
     }
     out
 }
@@ -1680,7 +1741,7 @@ pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
                 style = style.add_modifier(Modifier::DIM | Modifier::ITALIC);
             }
             Role::SyntaxString => {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::ITALIC);
             }
             Role::SyntaxNumber => {
                 style = style.add_modifier(Modifier::BOLD | Modifier::DIM);
@@ -1740,30 +1801,12 @@ impl SyntaxHighlighter for RoleTokenSyntax<'_> {
         line: &'line str,
         line_index: usize,
     ) -> Vec<(&'line str, Style)> {
+        let _ = line_index;
         let token = TokenSyntax::new(self.language, self.keywords);
-        let raw = token.highlight_line(line, line_index);
-        raw.into_iter()
-            .map(|(seg, style)| {
-                // Remap approximate TokenSyntax colors to roles
-                let role = if style.add_modifier.contains(Modifier::DIM) {
-                    Role::SyntaxComment
-                } else if style.add_modifier.contains(Modifier::UNDERLINED)
-                    && style.fg == Some(ratatui_core::style::Color::Green)
-                {
-                    Role::SyntaxString
-                } else if style.fg == Some(ratatui_core::style::Color::Magenta) {
-                    Role::SyntaxNumber
-                } else if style.add_modifier.contains(Modifier::BOLD)
-                    && style.fg == Some(ratatui_core::style::Color::Cyan)
-                {
-                    Role::SyntaxKeyword
-                } else if style.fg == Some(ratatui_core::style::Color::Blue) {
-                    Role::SyntaxFunction
-                } else {
-                    Role::Text
-                };
-                (seg, syntax_role_style(self.system, role))
-            })
+        token
+            .tokens_for_line(line)
+            .into_iter()
+            .map(|(seg, kind)| (seg, syntax_role_style(self.system, kind.role())))
             .collect()
     }
 }

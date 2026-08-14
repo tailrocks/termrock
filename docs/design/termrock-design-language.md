@@ -365,6 +365,9 @@ the migration records the mechanical edits.
 2. **Content rendering** — faithful passthrough: ANSI SGR-4 in `ansi_text`,
    OSC-8 hyperlink segments, markdown emphasis *fallback* when italics are
    unavailable, diff/word-diff only where the content itself is underlined.
+   Diagnostic-span underline inside code blocks is sanctioned content
+   annotation (squiggle substitute), matching the caret-row semantics of
+   `Diagnostic`.
 3. **Cursor fallback** — the text/grid cursor is a block/reverse cell by
    default; underline-cursor is permitted only as an explicit fallback where
    reverse video is unavailable.

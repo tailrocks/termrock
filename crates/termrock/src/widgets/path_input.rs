@@ -1010,7 +1010,7 @@ impl<'a> PathInput<'a> {
             };
             let mut style = self.system.style(role);
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             if destructive {
                 style = style.add_modifier(Modifier::BOLD);
@@ -1196,11 +1196,11 @@ impl<'a> PathInput<'a> {
 
         // Emphasize destructive field
         if destructive {
+            // A path that would overwrite something reads as danger through
+            // its own role and weight — the field keeps its border language.
             buffer.set_style(
                 field,
-                self.system
-                    .style(Role::Danger)
-                    .add_modifier(Modifier::UNDERLINED),
+                self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
             );
         }
 

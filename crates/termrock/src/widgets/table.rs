@@ -1329,7 +1329,8 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .is_some_and(|id| id == &table.columns[column_index].id);
                 let mut cell_style = style;
                 if cell_focused {
-                    cell_style = cell_style.add_modifier(Modifier::UNDERLINED);
+                    // A cell cursor is a cell: reverse it.
+                    cell_style = cell_style.add_modifier(Modifier::REVERSED);
                 }
                 if matches!(table.tokens.selection, SelectionChrome::Fill) && selected {
                     buffer.set_style(rect, cell_style);

@@ -401,9 +401,10 @@ impl<'a> InputOtp<'a> {
             };
             let focused_slot = state.focused && i == state.cursor;
             let style = if focused_slot {
+                // The slot under the cursor is one cell: reverse it.
                 self.system
                     .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                    .add_modifier(Modifier::REVERSED)
             } else if slot.is_some() {
                 self.system.style(Role::TextStrong)
             } else {

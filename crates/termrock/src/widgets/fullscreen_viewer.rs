@@ -1178,7 +1178,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         let title_style = if matches!(state.chrome_focus, ViewerChromeFocus::Title) {
             self.system
                 .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
         } else {
             self.system
                 .style(Role::TextStrong)
@@ -1206,9 +1206,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 let sep = if self.ascii { " > " } else { " › " };
                 let path = src.path_labels.join(sep);
                 let style = if matches!(state.chrome_focus, ViewerChromeFocus::Breadcrumbs) {
-                    self.system
-                        .style(Role::Text)
-                        .add_modifier(Modifier::UNDERLINED)
+                    self.system.style(Role::Text).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::TextMuted)
                 };
@@ -1300,9 +1298,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             FULLSCREEN_VIEWER_HINT
         };
         let style = if matches!(state.chrome_focus, ViewerChromeFocus::Help) {
-            self.system
-                .style(Role::Text)
-                .add_modifier(Modifier::UNDERLINED)
+            self.system.style(Role::Text).add_modifier(Modifier::BOLD)
         } else {
             self.system.style(Role::TextMuted)
         };
