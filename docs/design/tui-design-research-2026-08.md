@@ -9,7 +9,11 @@ selection, or tab cue** (see §5.3 — underline is retired from the state vocab
 **Scope:** the 48 components listed in §6 plus the shared styling system they inherit from.
 **Companion SoTs:** [`tui-app-deep-analysis.md`](./tui-app-deep-analysis.md)
 (per-app cell-level extraction from 15 reference apps),
-[`tui-motion-system.md`](./tui-motion-system.md) (transitions/effects/pipeline).
+[`tui-motion-system.md`](./tui-motion-system.md) (transitions/effects/pipeline),
+[`tui-design-specs-2026-08.md`](./tui-design-specs-2026-08.md) (DESIGN.md specs,
+Monospace standard, Clack/Fresh/Superfile/FrankenTUI),
+[`tui-theme-gallery.md`](./tui-theme-gallery.md) (color scheme gallery, palette→role
+mapping, quantization).
 
 ---
 

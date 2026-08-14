@@ -162,7 +162,8 @@ choice, not a follower. **This is a feature, not a defect**, provided:
   mandates full re-themability).
 - TermRock ships or can map to the ecosystem palettes above, so a consumer
   adopting Catppuccin or Tokyo Night gets a coherent TermRock look without
-  hand-rolling Role mappings.
+  hand-rolling Role mappings. *(Resolved 2026-08: gallery + mapping algorithm
+  in [`tui-theme-gallery.md`](./tui-theme-gallery.md).)*
 - The phosphor accent budget (≤2 bright accents/viewport) is respected — the
   muted palettes succeed partly by restraint, and TermRock's accent-budget rule
   is the structural equivalent.
