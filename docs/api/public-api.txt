@@ -86704,8 +86704,10 @@ pub fn termrock::widgets::ToastState::is_visible(&self, termrock::runtime::Frame
 pub const fn termrock::widgets::ToastState::lifetime(self) -> termrock::widgets::ToastLifetime
 pub const fn termrock::widgets::ToastState::new(termrock::widgets::ToastLifetime) -> Self
 pub fn termrock::widgets::ToastState::next_deadline(&self) -> core::option::Option<std::time::Instant>
+pub fn termrock::widgets::ToastState::paint_alpha(self, termrock::runtime::FrameTick, termrock::widgets::ToastKind, termrock::style::MotionPolicy) -> f32
 pub fn termrock::widgets::ToastState::set_paused(&mut self, bool)
 pub fn termrock::widgets::ToastState::show(&mut self, termrock::runtime::FrameTick)
+pub const fn termrock::widgets::ToastState::shown_at(self) -> core::option::Option<std::time::Instant>
 impl core::clone::Clone for termrock::widgets::ToastState
 pub fn termrock::widgets::ToastState::clone(&self) -> termrock::widgets::ToastState
 impl core::cmp::Eq for termrock::widgets::ToastState
