@@ -253,8 +253,15 @@ gate never saw it. Three ways out, none free — hence not decided here:
    Honest only if `GLYPH_CONTEXTS` records the exemption with that reasoning,
    the way delimiters already are.
 
-Whoever promotes the sort marker into the catalog should pick one and register
-the context so the gate holds the line afterwards.
+**Decided (owner: plan 006's executor, queued):** option 3. The marker sits in
+the header row's column label and the disclosure glyph sits in the body row's
+leading cell, so no cell is ever ambiguous about which it is — position
+disambiguates, the same reasoning that already exempts delimiters from
+`GLYPH_CONTEXTS`. Option 1 would cost a second break to a glyph migrated in
+0282 and then trade the collision for `-` vs `Glyph::Bullet` in the same file.
+Registering `ArrowUp`/`ArrowDown` and `tree_table`'s check glyph in a
+table-header context with that exemption recorded is the remaining work; the
+uniqueness test then confirms the rest of the assignment.
 
 Deferred out of 003 (unchanged): EAW-Ambiguous glyph width policy (terminals
 rendering `✓●○◆` as two cells) needs a capability flag plus a layout audit.
