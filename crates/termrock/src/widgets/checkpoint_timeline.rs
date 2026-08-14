@@ -1233,8 +1233,12 @@ impl<'a> CheckpointTimeline<'a> {
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
             let text = format!("{mark}{bound} {} {}{}{}", cp.when, cp.label, head, branch);
+            // Selection is chrome — the gutter and weight mark it; the row
+            // keeps its own meaning (plans/007).
             let style = if selected {
-                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD)
             } else if cp.boundary.needs_warning() && !self.colorless {
                 self.system.style(cp.boundary.role())
             } else if cp.is_head {
@@ -1269,7 +1273,7 @@ impl<'a> CheckpointTimeline<'a> {
 
         let lines: Vec<(String, Role)> = {
             let mut v = Vec::new();
-            v.push((format!("{} · {}", cp.kind.id(), cp.label), Role::Accent));
+            v.push((format!("{} · {}", cp.kind.id(), cp.label), Role::TextStrong));
             if let Some(a) = cp.actor.as_ref() {
                 v.push((format!("actor {a}"), Role::TextMuted));
             }

@@ -110,7 +110,7 @@ impl EmptyKind {
     pub const fn title_role(self) -> Role {
         match self {
             Self::PermissionLimited => Role::Warning,
-            Self::FirstUse => Role::Accent,
+            Self::FirstUse => Role::TextStrong,
             _ => Role::TextStrong,
         }
     }

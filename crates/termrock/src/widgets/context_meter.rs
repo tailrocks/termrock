@@ -909,11 +909,12 @@ impl<'a> ContextMeter<'a> {
                     y,
                     take_display_cols(&format!("→ {}", acts.join(" · ")), w),
                     w,
-                    if self.colorless {
-                        self.system.style(Role::Text)
+                    // A suggestion row is guidance, not the current intent.
+                    self.system.style(if self.colorless {
+                        Role::Text
                     } else {
-                        self.system.style(Role::Accent)
-                    },
+                        Role::Info
+                    }),
                 );
             }
         }

@@ -301,13 +301,13 @@ pub fn window_samples(samples: &[f64], width: usize) -> &[f64] {
 }
 
 /// Chart series color roles (cycle).
+// Data wears the series roles and nothing else: the reserved accent is the
+// operator's current intent, not a fifth series (plans/007).
 const SERIES_ROLES: &[Role] = &[
     Role::ChartSeries1,
     Role::ChartSeries2,
     Role::ChartSeries3,
     Role::ChartSeries4,
-    Role::Accent,
-    Role::Info,
 ];
 
 fn series_role(i: usize) -> Role {
