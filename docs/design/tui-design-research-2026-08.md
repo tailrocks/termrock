@@ -7,6 +7,9 @@
 **Supersedes:** every rule in earlier docs that prescribes **underline as a focus,
 selection, or tab cue** (see §5.3 — underline is retired from the state vocabulary)
 **Scope:** the 48 components listed in §6 plus the shared styling system they inherit from.
+**Companion SoTs:** [`tui-app-deep-analysis.md`](./tui-app-deep-analysis.md)
+(per-app cell-level extraction from 15 reference apps),
+[`tui-motion-system.md`](./tui-motion-system.md) (transitions/effects/pipeline).
 
 ---
 
