@@ -695,13 +695,18 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
                         let focused = state.overflow_open;
-                        let mut style = self.system.style(if focused {
-                            Role::ActionFocused
-                        } else {
-                            Role::TextMuted
-                        });
+                        // Ground first, then a legible foreground over it:
+                        // patching the tint over `ActionFocused` left black
+                        // ink on a dark tint (plans/007).
+                        let mut style =
+                            self.system
+                                .style(Role::SelectionTint)
+                                .patch(self.system.style(if focused {
+                                    Role::TextStrong
+                                } else {
+                                    Role::TextMuted
+                                }));
                         style = style.add_modifier(Modifier::BOLD);
-                        style = style.patch(self.system.style(Role::SelectionTint));
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);

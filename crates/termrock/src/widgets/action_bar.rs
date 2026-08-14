@@ -181,19 +181,24 @@ impl<Id: Clone + PartialEq> ActionBar<'_, Id> {
         }
         let on_cursor = state.cursor.as_ref() == Some(&action.id);
         let label = self.label_for(action, state);
-        let style = action.style.unwrap_or_else(|| {
-            if !action.enabled {
-                self.system.style(Role::ActionDisabled)
-            } else if on_cursor {
-                if self.colorless {
-                    self.system.style(Role::TextStrong)
-                } else {
-                    self.system.style(Role::ActionFocused)
-                }
+        // A caller's style is an opinion about the label, not a licence to
+        // erase the cursor: it composes over the chrome instead of replacing
+        // it, so a danger action under the cursor still reads as focused
+        // (plans/007 rule 4).
+        let mut style = if !action.enabled {
+            self.system.style(Role::ActionDisabled)
+        } else if on_cursor {
+            if self.colorless {
+                self.system.style(Role::TextStrong)
             } else {
-                self.system.style(Role::Text)
+                self.system.style(Role::ActionFocused)
             }
-        });
+        } else {
+            self.system.style(Role::Text)
+        };
+        if let Some(custom) = action.style {
+            style = style.patch(custom);
+        }
         Paragraph::new(label).style(style).render(rect, buffer);
         if action.enabled {
             state.regions.push(HitRegion {
