@@ -104,9 +104,9 @@ pub enum ColumnWidth {
 /// Visible sort direction for a sortable column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SortDirection {
-    /// Ascending order, rendered as `▲` / `^`.
+    /// Ascending order, rendered as `↑` / `^`.
     Ascending,
-    /// Descending order, rendered as `▼` / `v`.
+    /// Descending order, rendered as `↓` / `v`.
     Descending,
 }
 
@@ -1194,10 +1194,10 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     gap: u16,
     bordered: bool,
 ) {
-    let header_style = table.tokens.palette.style(Role::TextMuted);
+    let header_style = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
         Rect::new(area.x, area.y, area.width, 1),
-        table.tokens.palette.style(Role::Raised),
+        super::table_chrome::header_band(table.tokens),
     );
     let origin_x = area.x.saturating_add(MARKER_WIDTH);
     // Clear gutter under header for alignment.
@@ -1249,7 +1249,7 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         buffer.set_stringn(
                             sort_x.saturating_add(1),
                             area.y,
-                            sort_glyph(direction),
+                            sort_glyph(table.tokens, direction),
                             1,
                             header_style,
                         );
@@ -1619,11 +1619,8 @@ fn render_line_overflow(
     );
 }
 
-const fn sort_glyph(direction: SortDirection) -> &'static str {
-    match direction {
-        SortDirection::Ascending => "▲",
-        SortDirection::Descending => "▼",
-    }
+fn sort_glyph(system: &DesignSystem, direction: SortDirection) -> &'static str {
+    super::table_chrome::sort_marker(system, matches!(direction, SortDirection::Ascending))
 }
 
 #[cfg(test)]
@@ -1868,7 +1865,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains("CPU ▼"));
+        assert!(text.contains("CPU ↓"));
         assert!(text.contains("東 京 🧪"));
         assert!(
             state

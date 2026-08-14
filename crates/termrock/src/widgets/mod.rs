@@ -135,6 +135,7 @@ mod stepper;
 mod streaming_markdown;
 mod surface;
 mod table;
+mod table_chrome;
 mod tabs;
 mod tag_chip;
 mod terminal_output;

@@ -933,6 +933,7 @@ pub fn default_tree_table_intent(key: KeyEvent, mode: TreeTableNavMode) -> Optio
 /// TreeTable widget.
 #[derive(Debug, Clone)]
 pub struct TreeTable<'a, Id, ColId> {
+    empty_message: &'a str,
     system: &'a DesignSystem,
     columns: &'a ColumnModel<ColId>,
     rows: &'a [TreeTableRow<'a, Id>],
@@ -950,6 +951,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         rows: &'a [TreeTableRow<'a, Id>],
     ) -> Self {
         Self {
+            empty_message: "No rows",
             system,
             columns,
             rows,
@@ -957,6 +959,16 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             sticky_header: true,
             compact_indent: false,
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     /// Scene focus chrome for this surface.
@@ -988,6 +1000,16 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         state.header_regions.clear();
         state.row_regions.clear();
         if area.is_empty() {
+            return;
+        }
+        if self.rows.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
             return;
         }
         let surface_focused = self.focused || state.accepts_input;
@@ -1155,15 +1177,16 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut TreeTableState<Id, ColId>,
-    surface_focused: bool,
+    _surface_focused: bool,
 ) where
     ColId: Clone,
 {
-    let style = if surface_focused {
-        table.system.style(Role::TextStrong)
-    } else {
-        table.system.style(Role::TextMuted)
-    };
+    // The header never brightens with focus; the panel border says that.
+    let style = super::table_chrome::header_style(table.system);
+    buffer.set_style(
+        Rect::new(area.x, y, area.width, 1),
+        super::table_chrome::header_band(table.system),
+    );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
     let origin = area.x.saturating_add(GUTTER_W);
     let clip_right = area.right();
@@ -1192,13 +1215,10 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            title.push_str(if state.ascii {
-                if sort.ascending { "^" } else { "v" }
-            } else if sort.ascending {
-                "▲"
-            } else {
-                "▼"
-            });
+            title.push_str(super::table_chrome::sort_marker(
+                table.system,
+                sort.ascending,
+            ));
         }
         buffer.set_stringn(
             paint_x,

@@ -839,6 +839,7 @@ pub fn filter_timeline_events<'a, Id>(
 /// Chronological timeline widget.
 #[derive(Debug, Clone)]
 pub struct Timeline<'a, Id = ()> {
+    empty_message: &'a str,
     events: &'a [TimelineEvent<'a, Id>],
     system: &'a DesignSystem,
     recipe: TimelineRecipe,
@@ -852,6 +853,7 @@ impl<'a> Timeline<'a, ()> {
     #[must_use]
     pub const fn new(events: &'a [TimelineEvent<'a, ()>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "No events",
             events,
             system,
             recipe: TimelineRecipe::Detailed,
@@ -859,6 +861,16 @@ impl<'a> Timeline<'a, ()> {
             ascii: false,
             colorless: false,
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 }
 
@@ -870,6 +882,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         system: &'a DesignSystem,
     ) -> Self {
         Self {
+            empty_message: "No events",
             events,
             system,
             recipe: TimelineRecipe::Detailed,
@@ -943,7 +956,10 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&format!("{mark}(no events)"), usize::from(area.width)),
+                take_display_cols(
+                    &format!("{mark}{}", self.empty_message),
+                    usize::from(area.width),
+                ),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );

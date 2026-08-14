@@ -12,9 +12,10 @@ use crate::{
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::DesignSystem,
     style::{Role, RolePalette},
+    text::take_display_cols,
 };
 
-const SELECTED_MARKER: &str = "▸ ";
+const SELECTED_MARKER: &str = "▌ ";
 const NORMAL_MARKER: &str = "  ";
 const COPY_AFFORDANCE: &str = "  ⧉";
 const COPIED_AFFORDANCE: &str = "  ✓";
@@ -287,6 +288,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
 #[derive(Debug, Clone, Copy)]
 /// A selectable key/value table with typed row activation.
 pub struct DetailTable<'a, Id> {
+    empty_message: &'a str,
     rows: &'a [DetailRow<'a, Id>],
     /// Zero derives the label width from the borrowed rows.
     label_width: u16,
@@ -305,10 +307,21 @@ impl<'a, Id> DetailTable<'a, Id> {
         self.system.kv_separator().text()
     }
 
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
     #[must_use]
     /// Creates a detail table over borrowed rows and mutable table state.
     pub const fn new(rows: &'a [DetailRow<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "Nothing to show",
             rows,
             label_width: 0,
             wrap: false,
@@ -511,6 +524,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
             return;
         }
 
+        if self.rows.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
         let scroll_x = usize::from(state.scroll.scroll_x);
         let scroll_y = usize::from(state.scroll.scroll_y);
         let window_end = scroll_y.saturating_add(usize::from(area.height));

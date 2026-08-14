@@ -1187,6 +1187,19 @@ impl<'a, Id> NavigationList<'a, Id> {
             })
             .collect();
 
+        if visible.is_empty() && !filter_q.is_empty() && y < area.bottom() {
+            // A filter that hides everything has to say so, or the rail looks
+            // like it lost its contents.
+            buffer.set_stringn(
+                area.x,
+                y,
+                crate::text::take_display_cols("No matches", usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
+
         let offset = state.collection.offset();
         // Map offset through focusable — simple paint all filtered from y
         let mut painted = 0usize;

@@ -503,6 +503,7 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
 /// Dense interactive key/value detail table.
 #[derive(Debug, Clone)]
 pub struct KeyValueTable<'a, Id> {
+    empty_message: &'a str,
     fields: &'a [KvtField<'a, Id>],
     system: &'a DesignSystem,
     key_width: u16,
@@ -516,6 +517,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     #[must_use]
     pub const fn new(fields: &'a [KvtField<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "No fields",
             fields,
             system,
             key_width: 0,
@@ -523,6 +525,16 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             show_source: true,
             separator: system.kv_separator().text(),
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     /// Fixed key column width (0 = auto).
@@ -1025,6 +1037,16 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             return;
         }
 
+        if self.fields.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
         // Footer row for mode / filter / validation
         let footer_h = 1u16;
         let body = Rect {

@@ -346,6 +346,100 @@ fn spinner_frames_one_column() {
     }
 }
 
+// ── One selection language (plan 006) ────────────────────────────────────────
+
+/// Every collection marks its selected row with the same glyph.
+///
+/// Five widgets used to invent their own "current row" marker — `›`, `>`, `•`,
+/// `▸`, `*` — so moving between a list, a table and a rail meant relearning
+/// what selection looks like. The catalog's `selection_gutter()` is the one
+/// answer, and this renders the families side by side to prove it.
+#[test]
+fn collections_share_one_gutter_glyph() {
+    use ratatui_core::widgets::Widget;
+    use termrock::{
+        style::DesignSystem,
+        widgets::{
+            Column, ColumnWidth, Table, TableRow, TableState, Timeline, TimelineEvent, Tree,
+            TreeNode, TreeState,
+        },
+    };
+
+    let system = DesignSystem::phosphor();
+    let gutter = system.glyphs.selection_gutter();
+    let area = Rect::new(0, 0, 28, 4);
+
+    // List
+    let rows = rows();
+    let mut list_state = ListState::new(Some("beta"));
+    let mut list_buffer = Buffer::empty(area);
+    (&List::new(&rows, &system)).render(area, &mut list_buffer, &mut list_state);
+    let list_row = list_state
+        .regions()
+        .iter()
+        .find(|r| r.id == "beta")
+        .expect("the selected row was painted")
+        .area;
+    assert_eq!(
+        list_buffer[(list_row.x, list_row.y)].symbol(),
+        gutter,
+        "List"
+    );
+
+    // Table
+    let columns = [Column::new("name", "Name", ColumnWidth::Fixed(10))];
+    let alpha = [Line::from("alpha")];
+    let beta = [Line::from("beta")];
+    let table_rows = [TableRow::new(0u8, &alpha), TableRow::new(1u8, &beta)];
+    let mut table_state = TableState::new(Some(1u8));
+    let mut table_buffer = Buffer::empty(area);
+    (&Table::new(&columns, &table_rows, &system)).render(area, &mut table_buffer, &mut table_state);
+    let table_row = table_state
+        .row_regions
+        .iter()
+        .find(|r| r.id == 1u8)
+        .expect("the selected row was painted")
+        .area;
+    assert_eq!(
+        table_buffer[(table_row.x, table_row.y)].symbol(),
+        gutter,
+        "Table"
+    );
+
+    // Tree
+    let nodes = vec![
+        TreeNode::new("root", Line::from("Workspace"), 0),
+        TreeNode::new("leaf", Line::from("File"), 1),
+    ];
+    let mut tree_state = TreeState::new(Some("leaf"));
+    let mut tree_buffer = Buffer::empty(area);
+    Tree::new(&nodes, &system).render(area, &mut tree_buffer, &mut tree_state);
+    let tree_row = tree_state
+        .regions()
+        .iter()
+        .find(|r| r.id == "leaf")
+        .expect("the selected row was painted")
+        .area;
+    assert_eq!(
+        tree_buffer[(tree_row.x, tree_row.y)].symbol(),
+        gutter,
+        "Tree"
+    );
+
+    // Timeline
+    let events = [
+        TimelineEvent::new("12:01", "Started"),
+        TimelineEvent::new("12:02", "Running"),
+    ];
+    let mut timeline_buffer = Buffer::empty(area);
+    Widget::render(&Timeline::new(&events, &system), area, &mut timeline_buffer);
+    assert_eq!(
+        timeline_buffer[(area.x, area.y)].symbol(),
+        gutter,
+        "Timeline"
+    );
+}
+
 // ── Underline-free interaction grammar (plan 005) ────────────────────────────
 
 /// Underline means "link", and nothing else.

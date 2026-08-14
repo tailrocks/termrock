@@ -1334,10 +1334,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
 ) where
     ColId: Clone,
 {
-    let style = table.system.style(Role::TextMuted);
+    let style = super::table_chrome::header_style(table.system);
     buffer.set_style(
         Rect::new(area.x, y, area.width, 1),
-        table.system.style(Role::Raised),
+        super::table_chrome::header_band(table.system),
     );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
     let origin = area.x.saturating_add(GUTTER_W);
@@ -1390,14 +1390,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            let mark = if state.ascii {
-                if sort.ascending { "^" } else { "v" }
-            } else if sort.ascending {
-                "▲"
-            } else {
-                "▼"
-            };
-            title.push_str(mark);
+            title.push_str(super::table_chrome::sort_marker(
+                table.system,
+                sort.ascending,
+            ));
         }
         let text = take_display_cols(&title, usize::from(paint_w));
         buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);

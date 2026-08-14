@@ -63920,6 +63920,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DetailRow<'a, Id>
 pub struct termrock::widgets::DetailTable<'a, Id>
 impl<'a, Id> termrock::widgets::DetailTable<'a, Id>
 pub const fn termrock::widgets::DetailTable<'a, Id>::content_revision(self, u64) -> Self
+pub const fn termrock::widgets::DetailTable<'a, Id>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::DetailTable<'a, Id>::label_width(self, u16) -> Self
 pub fn termrock::widgets::DetailTable<'a, Id>::measure(&self) -> (u16, u16)
 pub const fn termrock::widgets::DetailTable<'a, Id>::new(&'a [termrock::widgets::DetailRow<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -70404,6 +70405,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::KeyValueListState
 pub struct termrock::widgets::KeyValueTable<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::KeyValueTable<'a, Id>
 pub fn termrock::widgets::KeyValueTable<'a, Id>::display_value(&self, &termrock::widgets::KvtField<'a, Id>, &termrock::widgets::KeyValueTableState<Id>) -> alloc::string::String
+pub const fn termrock::widgets::KeyValueTable<'a, Id>::empty_message(self, &'a str) -> Self
 pub fn termrock::widgets::KeyValueTable<'a, Id>::handle_intent(&self, &mut termrock::widgets::KeyValueTableState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::KeyValueTableOutcome<Id>
 pub fn termrock::widgets::KeyValueTable<'a, Id>::handle_key(&self, &mut termrock::widgets::KeyValueTableState<Id>, termrock::input::KeyEvent) -> termrock::widgets::KeyValueTableOutcome<Id>
 pub fn termrock::widgets::KeyValueTable<'a, Id>::handle_mouse(&self, &mut termrock::widgets::KeyValueTableState<Id>, termrock::input::MouseEvent) -> termrock::widgets::KeyValueTableOutcome<Id>
@@ -86174,6 +86176,7 @@ pub const fn termrock::widgets::Timeline<'a, Id>::recipe(self, termrock::widgets
 pub fn termrock::widgets::Timeline<'a, Id>::render_stateful(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
 pub const fn termrock::widgets::Timeline<'a, Id>::with_events(&'a [termrock::widgets::TimelineEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<'a> termrock::widgets::Timeline<'a, ()>
+pub const fn termrock::widgets::Timeline<'a, ()>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::Timeline<'a, ()>::new(&'a [termrock::widgets::TimelineEvent<'a, ()>], &'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Timeline<'_, ()>
 pub fn &termrock::widgets::Timeline<'_, ()>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
@@ -89011,6 +89014,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TreeState<Id>
 pub struct termrock::widgets::TreeTable<'a, Id, ColId>
 impl<'a, Id: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::TreeTable<'a, Id, ColId>
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::compact_indent(self, bool) -> Self
+pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [termrock::widgets::TreeTableRow<'a, Id>]) -> Self
 pub fn termrock::widgets::TreeTable<'a, Id, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TreeTableState<Id, ColId>) where ColId: core::clone::Clone
@@ -89432,6 +89436,7 @@ pub fn termrock::widgets::VirtSlice::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::VirtSlice
 pub struct termrock::widgets::VirtualGrid<'a, RowId, ColId>
 impl<'a, RowId, ColId> termrock::widgets::VirtualGrid<'a, RowId, ColId>
+pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::gutter(self, bool) -> Self
 pub const fn termrock::widgets::VirtualGrid<'a, RowId, ColId>::header(self, bool) -> Self
