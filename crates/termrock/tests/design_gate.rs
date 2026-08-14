@@ -346,7 +346,6 @@ fn spinner_frames_one_column() {
     }
 }
 
-<<<<<<< Updated upstream
 // ── Selection / focus paint authority (plan 004) ─────────────────────────────
 
 use ratatui_core::{text::Line, widgets::StatefulWidget};
@@ -439,7 +438,8 @@ fn no_widget_paints_selection_fill_by_default() {
             "selection fill must be opt-in, not the default row paint"
         );
     }
-=======
+}
+
 // ── Information-budget gates (docs/design/web-premium-tui-law.md §4.2) ──────
 
 use termrock::patterns::{
@@ -449,7 +449,6 @@ use termrock::patterns::{
     example_agent_status, example_connections, example_integrations, example_plan_document,
     example_sessions,
 };
-use termrock::style::Role;
 
 /// Foreground colors that paint *content* in `buffer`, not single glyphs.
 ///
@@ -604,5 +603,4 @@ fn pattern_hint_budget() {
         "footer hint budget exceeded:\n  {}",
         over.join("\n  ")
     );
->>>>>>> Stashed changes
 }
