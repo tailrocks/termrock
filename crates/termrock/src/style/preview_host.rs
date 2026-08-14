@@ -14,7 +14,9 @@
 
 use ratatui_core::layout::Rect;
 
-use super::{ColorCapability, DesignSystem, RolePalette, quantize_palette};
+use super::{
+    ColorCapability, DesignSystem, RolePalette, degrade_projection_chrome, quantize_palette,
+};
 
 /// Kind of capability-aware preview surface (media/resource host).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -165,11 +167,18 @@ impl CapabilityPreviewHost {
         quantize_palette(self.system.palette(), self.capability)
     }
 
-    /// Tokens with projected theme.
+    /// Tokens with projected theme, capability, and degraded interaction chrome.
+    ///
+    /// A projection that quantizes only the palette lies: on a monochrome
+    /// terminal a `SelectionChrome::Fill` row has no fill left to paint, so the
+    /// projection also falls back to the gutter glyph and the ASCII set — the
+    /// same downgrade [`DesignSystem::no_color`] performs.
     #[must_use]
     pub fn projected_tokens(&self) -> DesignSystem {
         let mut tokens = self.system.clone();
         tokens.palette = self.projected_theme();
+        tokens.capability = self.capability;
+        degrade_projection_chrome(&mut tokens);
         tokens
     }
 

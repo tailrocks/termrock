@@ -18,7 +18,7 @@ run its drift check, and update your row when done.
 |------|-------|----------|--------|------------|--------|
 | 001 | Underline grammar becomes the single binding doc SoT | P1 | M | — | DONE |
 | 002 | Role palette rebuild: text ladder, accent de-collapse, named presets | P0 | L | (001 parallel-ok) | TODO |
-| 003 | Capability honesty: quantize fixes, mono survival, glyph de-collision | P1 | M | 002 | TODO |
+| 003 | Capability honesty: quantize fixes, mono survival, glyph de-collision | P1 | M | 002 | DONE (2 deviations, see notes) |
 | 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | TODO |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | TODO |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | TODO |
@@ -87,6 +87,40 @@ D15-D17, D19-D23 remain with the operator; plans apply the audit's
 recommendations where they touch one and say so.
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale).
+
+## Execution notes
+
+### Plan 003 (done — two documented deviations)
+
+Landed as `migrations/0282-v0.14.0-honest-capability-ladder.md`. Plan 002 had
+not landed when 003 ran, so its palette-value table pins the hues at HEAD
+(`(0,255,65)` accent, `(255,94,122)` danger, `(255,216,94)` warning,
+`(0,180,180)` info, `(61,220,90)` success, `(80,80,80)` border), exactly as the
+plan's STOP rule instructs. A second test reads the live phosphor palette and
+only asserts the four status hues stay separable and non-neutral, so it keeps
+guarding after 002 retunes.
+
+1. **Step 1 uses hue-sector matching, not nearest-neighbor.** The specified
+   luminance-weighted nearest-RGB search answers `DarkGray` for danger
+   `(255,94,122)` — a pastel is closer to mid-gray than to its own primary in
+   RGB space — and therefore fails the plan's own acceptance table. The
+   implementation matches the hue sector, then picks the bright or dim half.
+2. **Step 2 reaches 4 distinct surface indices, not 5.** The xterm-256 gray
+   ramp steps by 10 while the phosphor ladder steps by ~5, and the palette holds
+   no dark neutral between 8 and 18, so `Sunken` (13,16,13) and `Surface`
+   (18,22,18) must share index 233 — a sunken well is invisible at 256 colors.
+   `Canvas < Surface < Raised < Elevated` is strictly increasing and tested.
+   **Follow-up for plan 002:** widening the ladder's dark steps to ≥ 10 average
+   channel levels is the only lever that separates `Sunken` from `Surface` on
+   256-color terminals.
+
+Deferred out of 003 (unchanged): EAW-Ambiguous glyph width policy (terminals
+rendering `✓●○◆` as two cells) needs a capability flag plus a layout audit.
+Widget sites still holding glyph literals (`slider.rs`, `split_pane.rs`,
+`resizable_panel_group.rs`, `charts.rs`, `multi_select.rs`, `menu_bar.rs`, the
+three input masks) were out of 003's scope — the catalog entries they need now
+exist (`Glyph::Slider*`, `Glyph::Divider*`, `Glyph::Mask`, `LEFT_BLOCK_RAMP`,
+`SHADE_RAMP`); the widget-facing plans wire them.
 
 ## Dependency notes
 

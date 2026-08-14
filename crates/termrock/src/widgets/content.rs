@@ -877,7 +877,7 @@ mod tests {
     fn paragraph_ascii_list_bullet() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let p = Paragraph::list_item("x", &system);
-        assert_eq!(p.resolved_prefix(), "* ");
+        assert_eq!(p.resolved_prefix(), "- ");
     }
 
     #[test]

@@ -129,11 +129,22 @@ impl CapabilityBoundary {
         quantize_palette(&palette, self.set.color)
     }
 
-    /// Project design tokens (palette quantized; host may also set density).
+    /// Project design tokens onto this boundary (host may still set density).
+    ///
+    /// The palette is quantized, the capability recorded, and interaction chrome
+    /// the ladder can no longer paint is downgraded: a monochrome or ASCII
+    /// boundary gets [`crate::style::SelectionChrome::Gutter`] and
+    /// [`GlyphSet::Ascii`], because a selection *fill* has nothing left to fill
+    /// with on those terminals.
     #[must_use]
     pub fn project_system(self, system: DesignSystem) -> DesignSystem {
         let mut out = system;
         out.palette = self.project_palette(out.palette);
+        out.capability = self.set.color;
+        if self.ascii_glyphs() {
+            out.glyphs = GlyphSet::Ascii;
+        }
+        crate::style::degrade_projection_chrome(&mut out);
         out
     }
 
@@ -191,6 +202,27 @@ mod tests {
         assert!(!b.interactive());
         assert!(b.component_hints().headless);
         assert!(!b.session_flags().raw_mode);
+    }
+
+    #[test]
+    fn mono_projection_downgrades_selection_and_glyphs() {
+        let b = CapabilityBoundary::from_profile(CapabilityProfile::Minimal);
+        let projected = b.project_system(DesignSystem::phosphor());
+        assert_eq!(projected.capability, ColorCapability::Monochrome);
+        assert_eq!(projected.glyphs, GlyphSet::Ascii);
+        assert_eq!(
+            projected.selection,
+            crate::style::SelectionChrome::Gutter,
+            "a fill has nothing to fill with once color is gone"
+        );
+    }
+
+    #[test]
+    fn modern_projection_keeps_rich_chrome() {
+        let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
+        let projected = b.project_system(DesignSystem::phosphor());
+        assert_eq!(projected.glyphs, DesignSystem::phosphor().glyphs);
+        assert_eq!(projected.selection, DesignSystem::phosphor().selection);
     }
 
     #[test]

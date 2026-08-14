@@ -7,7 +7,6 @@
 //! (`BOLD_WHITE`, `BOLD_GREEN`, `DIM`, `DANGER`) so callers avoid writing
 //! `crate::style::BOLD_WHITE` inline.
 
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::style::{Color, Modifier, Style};
 
 mod appearance;
@@ -24,14 +23,13 @@ mod tokens;
 pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
 pub use density::{Density, Motion};
 pub use glyph::{
-    BLOCK_RAMP, BRAILLE_RAMP, Glyph, GlyphGroup, GlyphResolved, SPINNER_BRAILLE_FRAMES,
-    SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
+    BLOCK_RAMP, BRAILLE_RAMP, GLYPH_CONTEXTS, Glyph, GlyphGroup, GlyphResolved, LEFT_BLOCK_RAMP,
+    SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
 };
 pub use motion::{
     blend_toward, coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness,
     smoothstep, wave_brightness,
 };
-pub use palette::{Rgb, contrast_ratio, relative_luminance};
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,
     ACTOR_PLAN as ACTOR_PLAN_RGB, ACTOR_SYSTEM as ACTOR_SYSTEM_RGB,
@@ -50,6 +48,7 @@ use palette::{
     TAB_BG_INACTIVE_HOVER as TAB_BG_INACTIVE_HOVER_RGB, WARNING_YELLOW as WARNING_YELLOW_RGB,
     WHITE as WHITE_RGB,
 };
+pub use palette::{Rgb, contrast_ratio, relative_luminance};
 pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
@@ -870,7 +869,6 @@ mod tests {
     fn builders_override_and_populate_every_role() {
         let blue = Style::new().bg(Color::Blue);
         let theme = RolePalette::default().with_role(Role::TabActive, blue);
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::TabActive), blue);
 
         let generated = RolePalette::from_fn(|role| Style::new().fg(Color::Indexed(role as u8)));
@@ -887,7 +885,6 @@ mod tests {
     #[test]
     fn default_separates_ordinary_and_strong_text() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Text).fg, Some(WHITE));
         assert!(
             !theme
@@ -907,7 +904,6 @@ mod tests {
     #[test]
     fn default_borders_use_gray_inactive_and_green_focused() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         assert_eq!(theme.style(Role::Border).fg, Some(BORDER_GRAY));
         assert_eq!(theme.style(Role::BorderFocused).fg, Some(PHOSPHOR_GREEN));
     }
@@ -1013,7 +1009,6 @@ mod tests {
     #[test]
     fn action_focused_and_disabled_use_distinct_rgb() {
         let theme = RolePalette::tailrocks_phosphor();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let focused = theme.style(Role::ActionFocused);
         let disabled = theme.style(Role::ActionDisabled);
         assert_ne!(focused.fg, disabled.fg);
@@ -1050,7 +1045,6 @@ mod tests {
     #[test]
     fn phosphor_preset_pins_load_bearing_role_values() {
         let theme = RolePalette::tailrocks_phosphor();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(255, 255, 255))),
             (Role::Border, Style::new().fg(Color::Rgb(80, 80, 80))),
@@ -1103,7 +1097,6 @@ mod tests {
     #[test]
     fn slate_preset_pins_load_bearing_role_values() {
         let theme = RolePalette::slate();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let expected = [
             (Role::Text, Style::new().fg(Color::Rgb(226, 232, 240))),
             (Role::Border, Style::new().fg(Color::Rgb(71, 85, 105))),

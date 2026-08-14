@@ -28,7 +28,7 @@ use crate::{
         default_list_intent,
     },
     scroll::max_offset,
-    style::{Density, DesignSystem, ListRowVisualState, Role},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
@@ -1952,10 +1952,8 @@ mod tests {
         let text: String = (0..24)
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
-        assert!(
-            text.contains('…') || text.contains('.'),
-            "loading glyph present: {text:?}"
-        );
+        let loading = Glyph::Loading.resolve(tokens.glyphs).text;
+        assert!(text.contains(loading), "loading glyph present: {text:?}");
         assert!(text.contains("Build"), "{text:?}");
     }
 
@@ -2006,7 +2004,12 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        assert_eq!(
+            buffer[(0, 0)].symbol(),
+            Glyph::SelectionGutter
+                .resolve(crate::style::GlyphSet::Ascii)
+                .text
+        );
         let check = buffer[(2, 0)].symbol();
         assert!(check == "[" || check == "x", "ascii check: {check:?}");
     }

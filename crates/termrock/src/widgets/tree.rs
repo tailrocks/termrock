@@ -1550,7 +1550,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
         // gutter + disclosure
-        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        assert_eq!(buffer[(0, 0)].symbol(), "*");
         // disclosure open ascii after gutter slot (2) + indent 0
         assert_eq!(buffer[(2, 0)].symbol(), "v");
     }

@@ -28473,6 +28473,12 @@ pub termrock::style::Glyph::DiamondFilled
 pub termrock::style::Glyph::DisabledMark
 pub termrock::style::Glyph::DisclosureClosed
 pub termrock::style::Glyph::DisclosureOpen
+pub termrock::style::Glyph::DividerHorizontal
+pub termrock::style::Glyph::DividerHorizontalActive
+pub termrock::style::Glyph::DividerHorizontalHint
+pub termrock::style::Glyph::DividerVertical
+pub termrock::style::Glyph::DividerVerticalActive
+pub termrock::style::Glyph::DividerVerticalHint
 pub termrock::style::Glyph::Edit
 pub termrock::style::Glyph::Ellipsis
 pub termrock::style::Glyph::EmptyCircle
@@ -28483,7 +28489,9 @@ pub termrock::style::Glyph::Folder
 pub termrock::style::Glyph::FolderOpen
 pub termrock::style::Glyph::Info
 pub termrock::style::Glyph::Loading
+pub termrock::style::Glyph::Mask
 pub termrock::style::Glyph::ModeDot
+pub termrock::style::Glyph::NowEdge
 pub termrock::style::Glyph::Play
 pub termrock::style::Glyph::Prompt
 pub termrock::style::Glyph::RadioOff
@@ -28498,6 +28506,10 @@ pub termrock::style::Glyph::Search
 pub termrock::style::Glyph::SelectionGutter
 pub termrock::style::Glyph::SelectionMark
 pub termrock::style::Glyph::Settings
+pub termrock::style::Glyph::SliderFill
+pub termrock::style::Glyph::SliderRail
+pub termrock::style::Glyph::SliderThumb
+pub termrock::style::Glyph::SliderTick
 pub termrock::style::Glyph::StatusDotHollow
 pub termrock::style::Glyph::StatusDotRing
 pub termrock::style::Glyph::StatusDotTarget
@@ -30043,10 +30055,13 @@ pub fn termrock::style::ThemePackage::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::ThemePackage
 pub const termrock::style::BLOCK_RAMP: &[char; 9]
 pub const termrock::style::BRAILLE_RAMP: &[char; 5]
+pub const termrock::style::GLYPH_CONTEXTS: &[(&str, &[termrock::style::Glyph])]
+pub const termrock::style::LEFT_BLOCK_RAMP: &[char; 9]
 pub const termrock::style::PHOSPHOR_DARK: ratatui_core::style::color::Color
 pub const termrock::style::PHOSPHOR_GREEN: ratatui_core::style::color::Color
 pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
 pub const termrock::style::ROLE_COUNT: usize
+pub const termrock::style::SHADE_RAMP: &[char; 4]
 pub const termrock::style::SPINNER_BRAILLE_FRAMES: &[&str]
 pub const termrock::style::SPINNER_DOT_PULSE_FRAMES: &[&str]
 pub fn termrock::style::blend_toward(ratatui_core::style::color::Color, ratatui_core::style::color::Color, f32) -> ratatui_core::style::color::Color
