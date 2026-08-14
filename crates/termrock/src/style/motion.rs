@@ -413,6 +413,38 @@ pub fn fade_style(mut style: Style, alpha: f32, canvas: Color) -> Style {
     style
 }
 
+/// Ambient brightness for a channel at this moment, in `0.0..=1.0`.
+///
+/// A sin² breathe whose trough is [`AMBIENT_PEAK`] below full — motion that
+/// whispers (§1 peak restraint). Terminal channels and reduced tiers return
+/// `1.0`, so a caller can multiply unconditionally and a settled state simply
+/// stays at full brightness.
+///
+/// [`MotionChannel::Live`] on a presence dot wants the slower
+/// [`HEARTBEAT_PERIOD_MS`]; pass it explicitly rather than the channel period.
+#[must_use]
+pub fn channel_brightness(policy: MotionPolicy, channel: MotionChannel, elapsed_ms: u64) -> f32 {
+    if !policy.allows_ambient() || matches!(channel, MotionChannel::Static) {
+        return 1.0;
+    }
+    breathe(channel.phase(elapsed_ms))
+}
+
+/// Same breathe over an explicit period (heartbeats, host-tuned loops).
+#[must_use]
+pub fn breathe_over(policy: MotionPolicy, elapsed_ms: u64, period_ms: u64) -> f32 {
+    if !policy.allows_ambient() || period_ms == 0 {
+        return 1.0;
+    }
+    breathe((elapsed_ms % period_ms) as f32 / period_ms as f32)
+}
+
+/// sin² over one phase, scaled into `1.0 - AMBIENT_PEAK ..= 1.0`.
+fn breathe(phase: f32) -> f32 {
+    let wave = (std::f32::consts::PI * phase).sin().powi(2);
+    1.0 - AMBIENT_PEAK + AMBIENT_PEAK * wave
+}
+
 /// Raised-cosine shimmer band travelling across `cols` (§1, §6 skeletons).
 ///
 /// The band peaks at [`AMBIENT_PEAK`] and falls to zero at its edges, so a
