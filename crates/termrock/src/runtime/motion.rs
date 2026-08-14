@@ -202,6 +202,56 @@ impl Presence {
         Self::immediate()
     }
 
+    /// Give this presence an exit phase.
+    ///
+    /// Every constructor starts at `Duration::ZERO`, which made
+    /// [`PresencePhase::Exiting`] unreachable — a surface could only vanish.
+    /// The motion SoT §6 asks overlays to fade out over ~120 ms; the tier still
+    /// decides, so `MotionPolicy::Off` collapses this to an instant hide.
+    #[must_use]
+    pub const fn with_exit(mut self, duration: Duration) -> Self {
+        self.exit_duration = duration;
+        self
+    }
+
+    /// Configured exit duration.
+    #[must_use]
+    pub const fn exit_duration(self) -> Duration {
+        self.exit_duration
+    }
+
+    /// Progress `0.0..=1.0` through the current timed phase.
+    ///
+    /// `Pending` counts toward the show delay, `Exiting` toward the exit, and
+    /// `Visible` toward its TTL. Untimed phases report `1.0` — fully arrived —
+    /// so a caller can multiply an alpha by this without special cases.
+    #[must_use]
+    pub fn phase_fraction(self, tick: FrameTick) -> f32 {
+        let (since, span) = match self.phase {
+            PresencePhase::Hidden => return 1.0,
+            PresencePhase::Pending { since } => (since, self.show_delay),
+            PresencePhase::Visible { since } => match self.visible_ttl {
+                Some(ttl) => (since, ttl),
+                None => return 1.0,
+            },
+            PresencePhase::Exiting { since } => (since, self.exit_duration),
+        };
+        if span.is_zero() {
+            return 1.0;
+        }
+        let elapsed = tick.now().saturating_duration_since(since);
+        (elapsed.as_secs_f32() / span.as_secs_f32()).clamp(0.0, 1.0)
+    }
+
+    /// Paint alpha for a fading exit, `1.0` whenever the surface is not leaving.
+    #[must_use]
+    pub fn exit_alpha(self, tick: FrameTick) -> f32 {
+        match self.phase {
+            PresencePhase::Exiting { .. } => 1.0 - self.phase_fraction(tick),
+            _ => 1.0,
+        }
+    }
+
     /// Current phase.
     #[must_use]
     pub const fn phase(self) -> PresencePhase {
@@ -237,7 +287,8 @@ impl Presence {
         if matches!(self.phase, PresencePhase::Hidden) {
             return;
         }
-        if self.exit_duration.is_zero() || !motion.animate_spinners() {
+        // Exits are transitions, not spinners: `Basic` still fades.
+        if self.exit_duration.is_zero() || !motion.allows_transitions() {
             self.phase = PresencePhase::Hidden;
         } else {
             self.phase = PresencePhase::Exiting { since: tick.now() };
@@ -393,6 +444,73 @@ mod tests {
         let change = p.advance(tick_at(&mut clock, start, 2000), MotionPolicy::Full);
         assert_eq!(change, PresenceChange::BecameHidden);
         assert!(!p.is_focusable());
+    }
+
+    #[test]
+    fn exit_phase_is_reachable_and_fades() {
+        let start = Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut presence =
+            Presence::toast(Duration::from_secs(2)).with_exit(Duration::from_millis(120));
+
+        presence.request_show(tick_at(&mut clock, start, 0));
+        presence.request_hide(tick_at(&mut clock, start, 10), MotionPolicy::Full);
+        assert!(
+            matches!(presence.phase(), PresencePhase::Exiting { .. }),
+            "every constructor used to zero the exit duration, so Exiting was unreachable"
+        );
+        assert!(presence.is_visible(), "an exiting surface is still painted");
+        assert!(!presence.is_focusable(), "but it must not accept focus");
+
+        let mid = tick_at(&mut clock, start, 70);
+        let alpha = presence.exit_alpha(mid);
+        assert!(alpha > 0.0 && alpha < 1.0, "exit alpha stuck at {alpha}");
+
+        let after = tick_at(&mut clock, start, 200);
+        assert_eq!(
+            presence.advance(after, MotionPolicy::Full),
+            PresenceChange::BecameHidden
+        );
+    }
+
+    #[test]
+    fn exits_follow_the_transition_tier_not_the_spinner_tier() {
+        let start = Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let build = || Presence::immediate().with_exit(Duration::from_millis(120));
+
+        // `Basic` keeps transitions: it must still fade.
+        let mut basic = build();
+        basic.request_show(tick_at(&mut clock, start, 0));
+        basic.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Basic);
+        assert!(matches!(basic.phase(), PresencePhase::Exiting { .. }));
+
+        // `Off` hides instantly.
+        let mut off = build();
+        off.request_show(tick_at(&mut clock, start, 2));
+        off.request_hide(tick_at(&mut clock, start, 3), MotionPolicy::Off);
+        assert_eq!(off.phase(), PresencePhase::Hidden);
+    }
+
+    #[test]
+    fn phase_fraction_reports_progress_through_timed_phases() {
+        let start = Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut presence = Presence::tooltip(Duration::from_millis(400));
+        presence.request_show(tick_at(&mut clock, start, 0));
+
+        let quarter = tick_at(&mut clock, start, 100);
+        assert!((presence.phase_fraction(quarter) - 0.25).abs() < 0.01);
+        assert_eq!(
+            presence.exit_alpha(quarter),
+            1.0,
+            "only an exiting surface fades"
+        );
+
+        // An untimed visible phase is fully arrived.
+        let mut visible = Presence::immediate();
+        visible.request_show(tick_at(&mut clock, start, 200));
+        assert_eq!(visible.phase_fraction(tick_at(&mut clock, start, 900)), 1.0);
     }
 
     #[test]
