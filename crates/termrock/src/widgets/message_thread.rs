@@ -1070,7 +1070,7 @@ impl<'a> MessageThread<'a> {
             .focused(self.focused)
             .ascii(self.ascii)
             .colorless(self.colorless)
-            .empty_label("(empty thread)");
+            .empty_label("No messages yet");
         StatefulWidget::render(&transcript, body, buffer, &mut state.transcript);
 
         if footer_h > 0 {

@@ -1104,14 +1104,10 @@ impl<'a> TraceWaterfall<'a> {
         state.window.clamp();
 
         if visible.is_empty() {
-            let msg = state.empty_message.as_deref().unwrap_or("(no spans)");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(msg, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
+            let msg = state.empty_message.as_deref().unwrap_or("No spans");
+            super::EmptyState::new(msg, self.system)
+                .inline()
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         }
 

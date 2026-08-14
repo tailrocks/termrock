@@ -1297,7 +1297,7 @@ fn paint_graph(
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols("(no nodes)", usize::from(area.width)),
+            take_display_cols("No nodes", usize::from(area.width)),
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -1453,7 +1453,7 @@ fn paint_list_or_tree(
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols("(no nodes)", usize::from(area.width)),
+            take_display_cols("No nodes", usize::from(area.width)),
             usize::from(area.width),
             system.style(Role::TextMuted),
         );

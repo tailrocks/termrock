@@ -674,7 +674,7 @@ impl<'a, Id> Transcript<'a, Id> {
             focused: false,
             ascii: false,
             colorless: false,
-            empty_label: "(empty transcript)",
+            empty_label: "No messages yet",
             tick: 0,
         }
     }
@@ -767,11 +767,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
             } else {
                 self.system.style(Role::TextDisabled)
             };
-            let label = if self.ascii {
-                "(empty)"
-            } else {
-                self.empty_label
-            };
+            let label = self.empty_label;
             let clipped = take_display_cols(label, usize::from(area.width));
             buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
             return;
@@ -975,7 +971,7 @@ mod tests {
         terminal
             .draw(|f| {
                 f.render_stateful_widget(
-                    &Transcript::new(&blocks, &system).empty_label("(no messages)"),
+                    &Transcript::new(&blocks, &system).empty_label("No messages"),
                     Rect::new(0, 0, 24, 3),
                     &mut state,
                 );
@@ -983,7 +979,7 @@ mod tests {
             .unwrap();
         let text = buffer_text(&terminal);
         assert!(
-            text.contains("no messages") || text.contains("(empty"),
+            text.contains("No messages") || text.contains("No messages yet"),
             "{text:?}"
         );
     }

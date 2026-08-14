@@ -1048,7 +1048,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
                     y,
                     buffer,
                     if state.ascii { "[ ] " } else { "∅ " },
-                    message.as_deref().unwrap_or("(empty)"),
+                    message.as_deref().unwrap_or("No rows"),
                     Role::TextMuted,
                 );
                 state.body_origin = (area.x, y);

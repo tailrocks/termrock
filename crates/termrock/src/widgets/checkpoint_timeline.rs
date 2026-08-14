@@ -1129,13 +1129,9 @@ impl<'a> CheckpointTimeline<'a> {
         }
 
         if state.checkpoints.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                inner.y,
-                take_display_cols("(no checkpoints)", usize::from(inner.width)),
-                usize::from(inner.width),
-                self.system.style(Role::TextMuted),
-            );
+            super::EmptyState::new("No checkpoints yet", self.system)
+                .inline()
+                .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             return;
         }
 

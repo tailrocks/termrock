@@ -1139,9 +1139,9 @@ impl<'a, Id> FileTree<'a, Id> {
 
         if nodes.is_empty() {
             let msg = if state.filter.is_some() {
-                "(no matches)"
+                "No matches"
             } else {
-                "(empty tree)"
+                "Empty tree"
             };
             buffer.set_stringn(
                 tree_area.x,

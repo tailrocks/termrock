@@ -1197,7 +1197,7 @@ impl<'a> SearchResults<'a> {
                 SearchResultsStatus::Cancelled => "cancelled",
                 SearchResultsStatus::Idle => "type to search",
                 SearchResultsStatus::Stale { .. } => "stale — press r to refresh",
-                _ => "(no results)",
+                _ => "No results",
             };
             buffer.set_stringn(
                 area.x,

@@ -320,6 +320,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0304 | `v0.14.0` | [The underline scan covers the builder too](migrations/0304-v0.14.0-underline-scan-covers-the-builder.md) |
 | 0305 | `v0.14.0` | [A live status breathes in its own cell](migrations/0305-v0.14.0-status-breathes-in-its-cell.md) |
 | 0306 | `v0.14.0` | [Toasts fade in, errors do not](migrations/0306-v0.14.0-toast-entrance-motion.md) |
+| 0307 | `v0.14.0` | [Empty bodies speak one language](migrations/0307-v0.14.0-empty-bodies-speak-one-language.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

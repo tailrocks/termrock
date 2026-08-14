@@ -865,7 +865,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             nodes,
             system,
             ascii: false,
-            empty_message: "(empty)",
+            empty_message: "Nothing here",
         }
     }
 

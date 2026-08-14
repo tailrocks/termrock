@@ -1070,7 +1070,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         } else {
                             "∅ "
                         },
-                        message.as_deref().unwrap_or("(empty)")
+                        message.as_deref().unwrap_or("No fields")
                     ),
                     self.system.style(Role::TextMuted),
                 );

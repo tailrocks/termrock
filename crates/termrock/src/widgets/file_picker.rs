@@ -1518,13 +1518,9 @@ impl<'a> FilePicker<'a> {
         }
 
         if state.entries.is_empty() && matches!(state.status, FileListingStatus::Ready) {
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols("(empty)", usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
+            super::EmptyState::new("Empty folder", self.system)
+                .inline()
+                .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
         }
     }
 
