@@ -826,9 +826,10 @@ pub use toolbar::{
     ToolbarState, ToolbarVariant,
 };
 pub use tooltip::{
-    TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,
-    TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState, TooltipTrigger, TooltipVariant,
-    dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
+    TOOLTIP_CHROME_COLS, TOOLTIP_CHROME_ROWS, TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH,
+    TOOLTIP_OVERLAY_ID, Tooltip, TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState,
+    TooltipTrigger, TooltipVariant, dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip,
+    tooltip_overlay_size,
 };
 pub use transcript::{
     Transcript, TranscriptAnchor, TranscriptBlock, TranscriptKind, TranscriptOutcome,

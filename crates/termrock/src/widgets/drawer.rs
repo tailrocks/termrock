@@ -28,6 +28,7 @@ use ratatui_core::{
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::borders::Borders;
 
 use crate::{
     input::{
@@ -924,9 +925,20 @@ impl<'a> Drawer<'a> {
         // The tier rides the design system into every widget; a private copy
         // on the state could disagree with it, and did.
         let no_motion = !self.system.motion.allows_ambient() || self.ascii;
+        // The docked edge butts against the pane the drawer slid out of, and
+        // the handle column is already the rule at that seam. Drawing a border
+        // there too stacked three vertical lines on one boundary
+        // (plans/009 Step 4).
+        let borders = match state.edge {
+            DrawerEdge::Right => Borders::ALL & !Borders::LEFT,
+            DrawerEdge::Left => Borders::ALL & !Borders::RIGHT,
+            DrawerEdge::Bottom => Borders::ALL & !Borders::TOP,
+            DrawerEdge::Top => Borders::ALL & !Borders::BOTTOM,
+        };
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
+            .borders(borders)
             .border_style(border_style)
             .content_inset()
             .paint(area, buffer);

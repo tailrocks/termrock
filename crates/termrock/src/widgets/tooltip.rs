@@ -251,11 +251,22 @@ impl<'a> TooltipContent<'a> {
                 w = w.saturating_add(display_cols(s) as u16 + 2);
             }
         }
-        w.min(max_width.max(1))
+        // Border and inset on both sides: the caller sizes the whole floating
+        // surface, not just its words.
+        w.saturating_add(TOOLTIP_CHROME_COLS).min(max_width.max(1))
     }
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
+
+/// Columns a tooltip spends on its own chrome: one border and one inset cell
+/// on each side.
+pub const TOOLTIP_CHROME_COLS: u16 = 4;
+
+/// Rows a tooltip spends on its own chrome: one border row above and below.
+///
+/// A caller sizing a one-line tooltip needs three rows, not one.
+pub const TOOLTIP_CHROME_ROWS: u16 = 2;
 
 /// Host coordination (tooltip never steals focus).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -656,6 +667,19 @@ impl<'a> Tooltip<'a> {
         if area.is_empty() {
             return;
         }
+        // Every variant floats: a tooltip that writes bare text over live
+        // content is unreadable against whatever it lands on. One overlay
+        // surface, one quiet outline, one cell of breathing room
+        // (plans/009 Step 4).
+        let area = super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(self.system.style(Role::Border))
+            .content_inset()
+            .paint(area, buffer);
+        if area.is_empty() {
+            return;
+        }
         let muted = if self.colorless {
             self.system.style(Role::TextMuted)
         } else {
@@ -673,16 +697,6 @@ impl<'a> Tooltip<'a> {
         } else {
             self.system.style(Role::HintKey)
         };
-
-        // Optional elevated fill for rich
-        if matches!(self.variant, TooltipVariant::Rich) {
-            let fill = self.system.style(Role::Elevated);
-            for y in area.y..area.bottom() {
-                for x in area.x..area.right() {
-                    buffer[(x, y)].set_style(fill);
-                }
-            }
-        }
 
         match self.variant {
             TooltipVariant::Plain => {
@@ -874,7 +888,8 @@ mod tests {
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
         let _ = state.advance(tick, MotionPolicy::Off);
 
-        let area = Rect::new(0, 0, 24, 2);
+        // The floating surface costs a border row above and below.
+        let area = Rect::new(0, 0, 24, 3);
         let mut buf = Buffer::empty(area);
         Tooltip::new("Save file", &system).paint(area, &mut buf, &state);
         let t: String = buf
@@ -894,7 +909,7 @@ mod tests {
         .shortcut()
         .paint(area, &mut buf2, &state);
 
-        let mut buf3 = Buffer::empty(Rect::new(0, 0, 28, 2));
+        let mut buf3 = Buffer::empty(Rect::new(0, 0, 28, 4));
         Tooltip::content(
             TooltipContent::plain("Writes buffer")
                 .title("Save")
@@ -903,7 +918,7 @@ mod tests {
             &system,
         )
         .rich()
-        .paint(Rect::new(0, 0, 28, 2), &mut buf3, &state);
+        .paint(Rect::new(0, 0, 28, 4), &mut buf3, &state);
         let t3: String = buf3
             .content()
             .iter()

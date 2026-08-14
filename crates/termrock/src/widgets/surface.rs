@@ -221,6 +221,7 @@ pub struct Surface<'a> {
     fill: SurfaceFill,
     pad_x: Option<u16>,
     pad_y: Option<u16>,
+    borders: Option<ratatui_widgets::borders::Borders>,
     /// When true (default for interactive), hit uses root; else content.
     hit_full: Option<bool>,
 }
@@ -237,6 +238,7 @@ impl<'a> Surface<'a> {
             fill: SurfaceFill::Auto,
             pad_x: None,
             pad_y: None,
+            borders: None,
             hit_full: None,
         }
     }
@@ -281,6 +283,17 @@ impl<'a> Surface<'a> {
     pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
         self.pad_x = Some(pad_x);
         self.pad_y = Some(pad_y);
+        self
+    }
+
+    /// Draws only the named edges of the border.
+    ///
+    /// A docked surface butts against the pane it slid out of; drawing all
+    /// four edges there stacks its rule on the host's, and on any handle the
+    /// widget paints at the seam. Defaults to all four edges.
+    #[must_use]
+    pub const fn borders(mut self, borders: ratatui_widgets::borders::Borders) -> Self {
+        self.borders = Some(borders);
         self
     }
 
@@ -398,7 +411,11 @@ impl<'a> Surface<'a> {
             fill_rect(buffer, area, fill);
         }
         if let Some(border) = plan.border {
-            Block::bordered()
+            Block::default()
+                .borders(
+                    self.borders
+                        .unwrap_or(ratatui_widgets::borders::Borders::ALL),
+                )
                 .border_style(border)
                 .border_set(self.system.border_set())
                 .render(area, buffer);
