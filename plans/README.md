@@ -88,6 +88,21 @@ recommendations where they touch one and say so.
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale).
 
+## Claims (binding)
+
+Three agents share this branch. A claim written here is **binding**: the agent
+that writes it owns that plan or file set, and no other agent touches it — not
+even when it looks unblocked and idle. Claims exchanged only in agent-to-agent
+messages are not enough, because a third agent never sees them; that is exactly
+how plan 007 got executed twice on 2026-08-14, by two agents who had each told
+*someone* they were taking it.
+
+Write the claim here **before** writing code. Release it by deleting the row.
+
+| Claim | Owner | Scope |
+|-------|-------|-------|
+| 014 Step 4 motion contracts | motion lane (003/020/014) | `widgets/{spinner,toast,timeline,log_stream,status_indicator}.rs` — the `MotionChannel` layer only, on top of 007's settled status paint |
+
 ## Execution notes
 
 ### Plan 003 (done — two documented deviations)
