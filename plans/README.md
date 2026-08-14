@@ -37,7 +37,7 @@ run its drift check, and update your row when done.
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
 | 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | TODO |
-| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Step 2 partial — overlay insets + picker gutters landed, table gutters/chevrons/tees pending; Steps 3 and 6 queued behind 005/006, which rewrite the same row chrome) |
+| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Step 2 overlay insets + Select/CompletionMenu gutters DONE; Step 3 tier-1 chrome/paths/clips DONE; Step 6 gates DONE. Remaining: Step 2 table gutters + chevrons + tee glyphs, Step 3 composed_row/list/data_table sites, Step 6 spacing-literal migration — all wait on 005/006, which rewrite the same row chrome) |
 
 Micro-detail review lens: [DESIGNER-CHECKLIST.md](DESIGNER-CHECKLIST.md) —
 49 designer checks, each mapped to its owning plan (compiled from the
@@ -260,6 +260,29 @@ Deferred, each to the plan that owns the missing piece:
 
 Also deferred: `metrics_dashboard`'s per-tile diet (title, value+unit, delta
 glyph, spark) — the tile painters are plan 016's `MetricTile` promotion.
+
+### Plan 022 (agent C — what is done and what waits)
+
+Landed: Step 1 (shared helpers: `text::paint_text`, `paint_line_overflow`,
+`truncate_path`, `DesignSystem::content_inset`, `SpacingScale::band`,
+`KvSeparator`, `scroll::paint_list_scrollbar` — migrations/0281), Step 4
+(process-table header alignment, one key-value separator, symmetric status
+separator, one hint alignment path, `Glyph::MetaSeparator`, popover header
+rule — 0285), Step 5 (one scrollbar language across Tree/Form/ScrollArea/
+TextArea — 0291), Step 2's overlay insets (0292) and the Select /
+CompletionMenu scroll gutters, Step 3's first tier (panel chrome labels,
+paths, `+N more` at four clip sites, grapheme-safe masks — 0293, 0294), and
+Step 6's gates (`text_never_touches_borders`, `truncation_has_ellipsis`,
+`one_scrollbar_language`, tiny-terminal + seeded resize fuzz).
+
+Waiting on 005/006: the rest of Step 2 (table column gutters, horizontal-clip
+chevrons, menu separator tees) and of Step 3 (composed_row / list primary
+labels, data_table sort marker, menu shortcut priority) touch the same row
+chrome those two plans rewrite; landing them first would be rework for
+whoever runs 006. Step 6's spacing-literal migration follows them.
+
+DropdownMenu has no scroll model at all — it paints until it runs out of rows
+— so its "gutter + indicator" row needs the scroll state first, not a gutter.
 
 ## Dependency notes
 
