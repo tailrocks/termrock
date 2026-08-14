@@ -59,6 +59,7 @@ mod edit_core;
 mod empty_state;
 mod error_state;
 mod event_stream;
+mod field_message;
 mod field_row;
 mod file_picker;
 mod file_tree;

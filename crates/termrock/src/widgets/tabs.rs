@@ -1195,7 +1195,9 @@ impl<'a, Id> Tabs<'a, Id> {
             style = style.bg(bg);
         }
         if !tab.enabled {
-            style = self.system.style(Role::TextMuted);
+            // Disabled is a different fact from "inactive": muting both meant a
+            // tab you cannot click looked exactly like one you can.
+            style = self.system.style(Role::TextDisabled);
         }
 
         let mut parts = String::from(" ");

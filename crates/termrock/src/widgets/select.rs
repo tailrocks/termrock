@@ -860,17 +860,18 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             state.panel = Rect::default();
         }
 
-        // Validation under trigger
-        if area.height >= 3 {
-            if let Validation::Invalid(msg) = self.validation {
-                buffer.set_stringn(
-                    area.x,
-                    area.bottom().saturating_sub(1),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
-                );
-            }
+        // Validation directly under the trigger — not pinned to the bottom
+        // edge, where it drifted away from the field it describes.
+        if area.height >= 3
+            && let Validation::Invalid(msg) = self.validation
+        {
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                msg,
+            );
         }
     }
 

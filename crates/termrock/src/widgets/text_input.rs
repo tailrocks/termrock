@@ -897,6 +897,7 @@ pub struct TextInputParts {
 #[derive(Debug, Clone, Copy)]
 pub struct TextInput<'a> {
     label: &'a str,
+    required: bool,
     placeholder: &'a str,
     validation: Validation<'a>,
     system: &'a DesignSystem,
@@ -913,6 +914,7 @@ impl<'a> TextInput<'a> {
     pub const fn new(label: &'a str, system: &'a DesignSystem) -> Self {
         Self {
             label,
+            required: false,
             placeholder: "",
             validation: Validation::Valid,
             system,
@@ -922,6 +924,16 @@ impl<'a> TextInput<'a> {
             show_clear: false,
             secret_mask: '*',
         }
+    }
+
+    /// Marks the field as required; paints `*` after the label.
+    ///
+    /// Non-color cue by design — the mark is the fact and `Role::Danger` only
+    /// reinforces it, so the requirement survives a colorless terminal.
+    #[must_use]
+    pub const fn required(mut self, required: bool) -> Self {
+        self.required = required;
+        self
     }
 
     /// Placeholder while empty.
@@ -1025,6 +1037,17 @@ impl<'a> TextInput<'a> {
             }
             let text = take_display_cols(self.label, usize::from(area.width));
             buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+            if self.required {
+                // A form that only reveals a requirement after you submit is a
+                // form that wasted your time: say it beside the name.
+                let mark_x = area
+                    .x
+                    .saturating_add(u16::try_from(display_cols(&text)).unwrap_or(0))
+                    .saturating_add(1);
+                if mark_x < area.right() {
+                    buffer.set_stringn(mark_x, y, "*", 1, self.system.style(Role::Danger));
+                }
+            }
             y = y.saturating_add(1);
         }
 
@@ -1198,18 +1221,17 @@ impl<'a> TextInput<'a> {
             }
         }
 
-        // Validation message on extra row
-        if area.height >= 3 {
-            if let Validation::Invalid(msg) = self.validation {
-                let text = take_display_cols(msg, usize::from(area.width));
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    &text,
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
-                );
-            }
+        // Validation message, directly under the field in every input.
+        if area.height >= 3
+            && let Validation::Invalid(msg) = self.validation
+        {
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                msg,
+            );
         }
 
         let parts = TextInputParts {
@@ -1305,6 +1327,54 @@ impl StatefulWidget for TextInput<'_> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_required_field_says_so_before_you_submit() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 20, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("");
+        TextInput::new("Email", &system)
+            .required(true)
+            .paint(area, &mut buffer, &mut state);
+
+        let label: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            label.trim_end().ends_with('*'),
+            "the requirement is marked beside the name, got {label:?}"
+        );
+
+        let mut plain = Buffer::empty(area);
+        let mut plain_state = TextInputState::new("");
+        TextInput::new("Email", &system).paint(area, &mut plain, &mut plain_state);
+        let plain_label: String = (0..area.width)
+            .map(|x| plain[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(!plain_label.contains('*'));
+    }
+
+    #[test]
+    fn an_invalid_field_leads_its_message_with_a_glyph() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("x");
+        TextInput::new("Email", &system)
+            .validation(Validation::Invalid("not an address"))
+            .paint(area, &mut buffer, &mut state);
+
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 2)].symbol().to_string())
+            .collect();
+        let mark = system.glyphs.resolve(crate::style::Glyph::Error).text;
+        assert!(
+            row.starts_with(mark),
+            "the error row leads with its glyph so it survives NO_COLOR, got {row:?}"
+        );
+        assert!(row.contains("not an address"));
+    }
     use super::*;
     use crate::style::RolePalette;
 

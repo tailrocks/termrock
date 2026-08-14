@@ -85585,6 +85585,7 @@ pub fn termrock::widgets::TextInput<'a>::paint(&self, ratatui_core::layout::rect
 pub const fn termrock::widgets::TextInput<'a>::placeholder(self, &'a str) -> Self
 pub const fn termrock::widgets::TextInput<'a>::prefix(self, &'a str) -> Self
 pub fn termrock::widgets::TextInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::TextInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
+pub const fn termrock::widgets::TextInput<'a>::required(self, bool) -> Self
 pub const fn termrock::widgets::TextInput<'a>::secret(self, bool) -> Self
 pub const fn termrock::widgets::TextInput<'a>::secret_mask(self, char) -> Self
 pub const fn termrock::widgets::TextInput<'a>::show_clear(self, bool) -> Self
