@@ -83999,6 +83999,7 @@ pub struct termrock::widgets::Surface<'a>
 impl<'a> termrock::widgets::Surface<'a>
 pub const fn termrock::widgets::Surface<'a>::border_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Surface<'a>::bordered(self, bool) -> Self
+pub const fn termrock::widgets::Surface<'a>::content_inset(self) -> Self
 pub const fn termrock::widgets::Surface<'a>::elevation(self, termrock::widgets::SurfaceElevation) -> Self
 pub const fn termrock::widgets::Surface<'a>::fill(self, termrock::widgets::SurfaceFill) -> Self
 pub const fn termrock::widgets::Surface<'a>::hit_full(self, bool) -> Self
