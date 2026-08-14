@@ -33,7 +33,7 @@ use crate::{
     interaction::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1073,17 +1073,39 @@ impl<'a> TextInput<'a> {
             }
         }
 
-        let field = Rect::new(x, field_row.y, right.saturating_sub(x).max(1), 1);
-        let input_style = self.system.style(if !state.enabled {
-            Role::TextDisabled
-        } else if invalid {
-            Role::InputInvalid
+        // One field-chrome authority for the whole input family: the well,
+        // the value tone, the cursor and the focus cue all come from
+        // `input_recipe` (plans/008 Step 2).
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
         } else if state.loading {
-            Role::TextMuted
+            ControlState::Loading
         } else {
-            Role::Input
-        });
-        buffer.set_style(field, input_style);
+            ControlState::Default
+        };
+        let recipe = self.system.input_recipe(control_state, invalid);
+        // The prompt column is reserved in every state, so a value does not
+        // shift sideways the moment focus arrives.
+        let prompt_rect = Rect::new(x, field_row.y, 1.min(right.saturating_sub(x)), 1);
+        let x = x.saturating_add(1).min(right);
+        let field = Rect::new(x, field_row.y, right.saturating_sub(x).max(1), 1);
+        let well = Rect::new(
+            prompt_rect.x,
+            field_row.y,
+            field.right().saturating_sub(prompt_rect.x),
+            1,
+        );
+        buffer.set_style(well, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt {
+            buffer.set_stringn(prompt_rect.x, prompt_rect.y, glyph, 1, style);
+        }
+        let input_style = if state.loading {
+            self.system.style(Role::TextMuted)
+        } else {
+            recipe.value
+        };
 
         let field_w = usize::from(field.width);
         state.reveal_cursor(field_w);
@@ -1099,7 +1121,7 @@ impl<'a> TextInput<'a> {
             take_display_cols(&self.masked_display(display_src), field_w)
         };
         let text_style = if state.value.is_empty() {
-            self.system.style(Role::TextMuted)
+            recipe.placeholder
         } else {
             input_style
         };

@@ -343,12 +343,7 @@ impl<'a, Id> SegmentedControl<'a, Id> {
     }
 
     fn mono(&self) -> bool {
-        self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
+        self.colorless || self.system.mono()
     }
 
     fn format_face(&self, item: &SegmentedItem<'a, Id>, selected: bool) -> String {

@@ -346,6 +346,62 @@ fn spinner_frames_one_column() {
     }
 }
 
+// ── One field chrome (plan 008) ──────────────────────────────────────────────
+
+/// A focused field looks focused, and every field in the family agrees how.
+///
+/// Before `input_recipe` had consumers, a focused `TextInput` was
+/// pixel-identical to an unfocused one apart from the caret — the label
+/// underline had been carrying the entire focus signal, on the wrong element,
+/// and plan 005 removed it. The well plus the prompt cell carry it now.
+#[test]
+fn a_focused_field_says_so() {
+    use termrock::{
+        style::{DesignSystem, Role},
+        widgets::{TextInput, TextInputState},
+    };
+
+    let system = DesignSystem::phosphor();
+    let area = Rect::new(0, 0, 20, 2);
+
+    let mut resting = Buffer::empty(area);
+    let mut resting_state = TextInputState::new("value");
+    TextInput::new("Name", &system).paint(area, &mut resting, &mut resting_state);
+
+    let mut focused = Buffer::empty(area);
+    let mut focused_state = TextInputState::new("value");
+    focused_state.set_focused(true);
+    TextInput::new("Name", &system).paint(area, &mut focused, &mut focused_state);
+
+    assert_ne!(
+        resting, focused,
+        "a focused field must differ from a resting one by more than its caret"
+    );
+
+    let well = system
+        .style(Role::Sunken)
+        .bg
+        .expect("the field well carries a background");
+    let resting_wells = resting.content().iter().filter(|c| c.bg == well).count();
+    assert!(
+        resting_wells > 0,
+        "the well is painted in every state, not only when focused"
+    );
+
+    let cue = system
+        .style(Role::BorderFocused)
+        .fg
+        .expect("the focus role carries a foreground");
+    assert!(
+        focused.content().iter().any(|c| c.fg == cue),
+        "the focused field paints its prompt cue"
+    );
+    assert!(
+        !resting.content().iter().any(|c| c.fg == cue),
+        "a resting field does not"
+    );
+}
+
 // ── One selection language (plan 006) ────────────────────────────────────────
 
 /// Every collection marks its selected row with the same glyph.

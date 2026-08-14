@@ -185,9 +185,7 @@ impl<'a> SliderMark<'a> {
 // ── Track painting helpers ──────────────────────────────────────────────────
 
 fn mono(system: &DesignSystem, colorless: bool) -> bool {
-    colorless
-        || system.glyphs.is_ascii()
-        || matches!(system.capability, crate::style::ColorCapability::Monochrome)
+    colorless || system.mono()
 }
 
 fn handle_glyph(system: &DesignSystem, colorless: bool) -> &'static str {

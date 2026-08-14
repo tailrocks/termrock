@@ -809,7 +809,10 @@ impl<'a, Id> Tabs<'a, Id> {
             tabs,
             gap: TAB_GAP,
             system,
-            ascii: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
             show_close: true,
         }
     }

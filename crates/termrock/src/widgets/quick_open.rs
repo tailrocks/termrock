@@ -1306,8 +1306,11 @@ impl<'a, Id> QuickOpen<'a, Id> {
             items,
             system,
             focused: true,
-            ascii: false,
-            colorless: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
+            colorless: system.mono(),
             footer_hint: Some("↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc"),
             empty_message: "Type to search resources",
             no_result_message: "No matching resources",

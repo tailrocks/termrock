@@ -474,6 +474,13 @@ pub struct InputRecipe {
     pub fill: Style,
     /// Cursor style.
     pub cursor: Style,
+    /// Field-local focus cue for chrome with no border of its own.
+    ///
+    /// A one-line field cannot swap a border color, so focus is carried by a
+    /// leading prompt cell instead. `None` when the field is not the
+    /// interaction owner; the column stays reserved either way so the value
+    /// does not shift when focus arrives.
+    pub prompt: Option<(&'static str, Style)>,
     /// Horizontal pad.
     pub pad_x: u16,
 }
@@ -782,6 +789,23 @@ impl DesignSystem {
         self
     }
 
+    /// Whether this system must carry meaning without color.
+    ///
+    /// True on a monochrome projection *or* an ASCII glyph profile — both mean
+    /// the paint has to say what it means through weight, reverse, and glyph.
+    /// Widgets used to each decide this for themselves, so a terminal could be
+    /// colorless to a checkbox and full-color to the field beside it.
+    #[must_use]
+    pub const fn mono(&self) -> bool {
+        self.glyphs.is_ascii() || matches!(self.capability, ColorCapability::Monochrome)
+    }
+
+    /// Whether glyphs resolve to the ASCII profile.
+    #[must_use]
+    pub const fn ascii_glyphs(&self) -> bool {
+        self.glyphs.is_ascii()
+    }
+
     /// Breakpoint scale.
     #[must_use]
     pub const fn breakpoints(mut self, breakpoints: BreakpointScale) -> Self {
@@ -985,12 +1009,19 @@ impl DesignSystem {
             }
             _ => {}
         }
+        let prompt = matches!(state, ControlState::Focused).then(|| {
+            (
+                self.glyphs.resolve(super::glyph::Glyph::Prompt).text,
+                self.style(Role::BorderFocused),
+            )
+        });
         InputRecipe {
             value,
             placeholder,
             border,
             fill,
             cursor,
+            prompt,
             pad_x: self.spacing.pad_x,
         }
     }

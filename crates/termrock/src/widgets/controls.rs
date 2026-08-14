@@ -401,12 +401,7 @@ impl<'a, Id> Checkbox<'a, Id> {
     }
 
     fn mono(&self) -> bool {
-        self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
+        self.colorless || self.system.mono()
     }
 
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
@@ -1022,12 +1017,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
     }
 
     fn mono(&self) -> bool {
-        self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
+        self.colorless || self.system.mono()
     }
 
     fn mark(&self, selected: bool) -> &'static str {
@@ -1998,12 +1988,7 @@ impl<'a, Id> Switch<'a, Id> {
     }
 
     fn mono(&self) -> bool {
-        self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
+        self.colorless || self.system.mono()
     }
 
     fn track_face(&self, state: &SwitchState) -> String {

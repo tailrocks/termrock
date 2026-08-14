@@ -361,8 +361,11 @@ impl<'a, Id> Toolbar<'a, Id> {
             orientation: ToolbarOrientation::Horizontal,
             variant: ToolbarVariant::Default,
             overflow_id: None,
-            ascii: false,
-            colorless: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
+            colorless: system.mono(),
         }
     }
 

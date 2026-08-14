@@ -900,16 +900,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             return;
         }
         let invalid = matches!(self.validation, Validation::Invalid(_));
-        let role = if !state.enabled {
-            Role::TextDisabled
-        } else if invalid {
-            Role::InputInvalid
+        // The trigger is a field, so it wears the field's chrome. Swapping the
+        // whole style to `Role::Focus` on focus threw away the well underneath
+        // it — the box stopped looking like something you type into at the one
+        // moment it mattered.
+        let control_state = if !state.enabled {
+            crate::style::ControlState::Disabled
         } else if state.focused || state.is_open() {
-            Role::Focus
+            crate::style::ControlState::Focused
         } else {
-            Role::Input
+            crate::style::ControlState::Default
         };
-        buffer.set_style(area, self.system.style(role));
+        let recipe = self.system.input_recipe(control_state, invalid);
+        buffer.set_style(area, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt
+            && area.width > 0
+        {
+            buffer.set_stringn(area.x, area.y, glyph, 1, style);
+        }
 
         let value_label = state
             .value

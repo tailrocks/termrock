@@ -30065,6 +30065,7 @@ impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::adaptive() -> Self
 pub fn termrock::style::DesignSystem::ansi() -> Self
 pub const fn termrock::style::DesignSystem::ascii(self) -> Self
+pub const fn termrock::style::DesignSystem::ascii_glyphs(&self) -> bool
 pub const fn termrock::style::DesignSystem::at(self, termrock::runtime::FrameTick) -> Self
 pub const fn termrock::style::DesignSystem::border_set(&self) -> ratatui_core::symbols::border::Set<'static>
 pub const fn termrock::style::DesignSystem::border_shape(self, termrock::style::BorderShape) -> Self
@@ -30082,6 +30083,7 @@ pub fn termrock::style::DesignSystem::input_recipe(&self, termrock::style::Contr
 pub const fn termrock::style::DesignSystem::kv_separator(&self) -> termrock::style::KvSeparator
 pub fn termrock::style::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub fn termrock::style::DesignSystem::merge(self, &termrock::style::RolePalette) -> Self
+pub const fn termrock::style::DesignSystem::mono(&self) -> bool
 pub const fn termrock::style::DesignSystem::motion(self, termrock::style::MotionPolicy) -> Self
 pub fn termrock::style::DesignSystem::new(termrock::style::RolePalette, termrock::style::Density) -> Self
 pub fn termrock::style::DesignSystem::no_color(self) -> Self
@@ -30201,6 +30203,7 @@ pub termrock::style::InputRecipe::cursor: ratatui_core::style::Style
 pub termrock::style::InputRecipe::fill: ratatui_core::style::Style
 pub termrock::style::InputRecipe::pad_x: u16
 pub termrock::style::InputRecipe::placeholder: ratatui_core::style::Style
+pub termrock::style::InputRecipe::prompt: core::option::Option<(&'static str, ratatui_core::style::Style)>
 pub termrock::style::InputRecipe::value: ratatui_core::style::Style
 impl core::clone::Clone for termrock::style::InputRecipe
 pub fn termrock::style::InputRecipe::clone(&self) -> termrock::style::InputRecipe
