@@ -126,7 +126,8 @@ impl ProgressStepStatus {
     pub const fn role(self) -> Role {
         match self {
             Self::Queued | Self::Skipped | Self::Cancelled => Role::TextMuted,
-            Self::Running | Self::Retrying => Role::Accent,
+            // Running is live information, not the brand (plans/007).
+            Self::Running | Self::Retrying => Role::InfoDim,
             Self::Waiting => Role::Warning,
             Self::Complete => Role::Success,
             Self::Warning => Role::Warning,

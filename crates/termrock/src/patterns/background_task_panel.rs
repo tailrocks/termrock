@@ -174,7 +174,8 @@ impl BackgroundTaskStatus {
     pub const fn role(self) -> Role {
         match self {
             Self::Pending | Self::Detached => Role::TextMuted,
-            Self::Running => Role::Accent,
+            // Live work reads as information, not as the brand (plans/007).
+            Self::Running => Role::InfoDim,
             Self::Reconnecting => Role::Warning,
             Self::Lost | Self::Failed => Role::Danger,
             Self::Succeeded => Role::Success,

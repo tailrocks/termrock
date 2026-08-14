@@ -1980,12 +1980,19 @@ impl StatefulWidget for &PromptComposer<'_> {
                 Rect::new(area.x, layout.editor.y, area.width, layout.editor.height);
             buffer.set_style(editor_surface, self.system.style(Role::Sunken));
             let prompt = Glyph::Prompt.resolve(self.system.glyphs).text;
+            // The caret is the accent only while the composer can be typed
+            // into; a blocked composer is not the current intent (plans/007).
+            let prompt_role = if state.accepts_input() {
+                Role::Accent
+            } else {
+                Role::TextMuted
+            };
             buffer.set_stringn(
                 area.x,
                 layout.editor.y,
                 prompt,
                 usize::from(area.width.min(1)),
-                self.system.style(Role::Accent),
+                self.system.style(prompt_role),
             );
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(

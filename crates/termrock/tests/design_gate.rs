@@ -1028,3 +1028,90 @@ fn flagship_widgets_survive_tiny_and_random_geometry() {
         });
     }
 }
+
+// ── Accent budget (plans/007 Step 7) ────────────────────────────────────────
+
+/// Cells one flagship frame may paint in the reserved accent before the
+/// screen stops having a single subject.
+///
+/// Measured after the plans/007 sweep: a 60×12 list with a selected row spends
+/// one accent cell (its gutter mark) and a three-slot status bar spends none.
+/// Eight leaves room for a focused control's chip without permitting a flood.
+/// The number is the regression guard for design-language law 1.1: raising it
+/// is a design decision, not a test fix.
+const ACCENT_CELL_BUDGET: usize = 8;
+
+/// Cells painted in the palette's reserved accent, fg or bg.
+fn accent_cells(buffer: &Buffer, system: &DesignSystem) -> usize {
+    let accent = system.style(Role::Accent).fg;
+    buffer
+        .content()
+        .iter()
+        .filter(|cell| {
+            !cell.symbol().trim().is_empty() && (Some(cell.fg) == accent || Some(cell.bg) == accent)
+        })
+        .count()
+}
+
+#[test]
+fn accent_budget() {
+    use ratatui_core::text::Line;
+    use ratatui_core::widgets::StatefulWidget;
+    use termrock::widgets::{
+        List, ListRow, ListState, RowRole, StatusBar, StatusBarState, StatusSlot,
+    };
+
+    let system = DesignSystem::default();
+    let area = Rect::new(0, 0, 60, 12);
+    let mut over: Vec<String> = Vec::new();
+
+    let rows: Vec<ListRow<'static, usize>> = (0..8)
+        .map(|id| ListRow {
+            id,
+            label: Line::from("a list row that says something"),
+            leading: None,
+            secondary: Some(Line::from("meta")),
+            status: None,
+            badge: None,
+            shortcut: None,
+            actions: None,
+            trailing: None,
+            custom: None,
+            role: RowRole::Item,
+            enabled: true,
+            loading: false,
+        })
+        .collect();
+    let mut list_state = ListState::new(Some(2));
+    let list = painted(area, |buffer| {
+        StatefulWidget::render(&List::new(&rows, &system), area, buffer, &mut list_state);
+    });
+
+    let slots = [
+        StatusSlot::new("mode", "edit"),
+        StatusSlot::new("branch", "main"),
+        StatusSlot::new("sel", "3 selected"),
+    ];
+    let bar_area = Rect::new(0, 0, 60, 1);
+    let mut bar_state = StatusBarState::<&str>::new();
+    let bar = painted(bar_area, |buffer| {
+        StatefulWidget::render(
+            &StatusBar::new(&slots, &[], &system),
+            bar_area,
+            buffer,
+            &mut bar_state,
+        );
+    });
+
+    for (name, buffer) in [("list", list), ("status_bar", bar)] {
+        let cells = accent_cells(&buffer, &system);
+        if cells > ACCENT_CELL_BUDGET {
+            over.push(format!("{name}: {cells} accent cells"));
+        }
+    }
+    assert!(
+        over.is_empty(),
+        "frames over the {ACCENT_CELL_BUDGET}-cell accent budget:\n  {}",
+        over.join("\n  ")
+    );
+}

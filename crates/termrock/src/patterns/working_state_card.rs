@@ -121,7 +121,8 @@ impl WorkingPhase {
     fn role(self) -> Role {
         match self {
             Self::Planning | Self::Searching | Self::Reviewing => Role::Info,
-            Self::Editing | Self::Running => Role::Accent,
+            // Live work reads as information, not as the brand (plans/007).
+            Self::Editing | Self::Running => Role::InfoDim,
             Self::Waiting => Role::Warning,
         }
     }

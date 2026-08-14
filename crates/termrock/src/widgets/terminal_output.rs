@@ -186,7 +186,8 @@ impl TerminalRunStatus {
         match self {
             Self::Pending | Self::Detached => Role::TextMuted,
             Self::WaitingPermission => Role::Warning,
-            Self::Running => Role::Accent,
+            // Running is live information, not the brand (plans/007).
+            Self::Running => Role::InfoDim,
             Self::Succeeded => Role::Success,
             Self::Failed | Self::Signaled | Self::TimedOut => Role::Danger,
             Self::Cancelled => Role::Warning,

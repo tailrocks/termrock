@@ -123,7 +123,8 @@ impl DiagnosticSeverity {
             Self::Error => Role::Danger,
             Self::Warning => Role::Warning,
             Self::Info => Role::Info,
-            Self::Hint | Self::Help => Role::Accent,
+            // Hints assist; they do not compete with the current intent.
+            Self::Hint | Self::Help => Role::Info,
             Self::Note => Role::TextMuted,
         }
     }

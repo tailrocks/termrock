@@ -102,7 +102,7 @@ impl SearchResultKind {
         match self {
             Self::File => Role::Text,
             Self::Log => Role::Info,
-            Self::Object => Role::Accent,
+            Self::Object => Role::Info,
             Self::Command => Role::Warning,
             Self::Doc => Role::Link,
             Self::Symbol => Role::Success,

@@ -118,7 +118,8 @@ impl ProgressStatus {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Running | Self::Buffering => Role::Accent,
+            // Live work reads as information, not as the brand (plans/007).
+            Self::Running | Self::Buffering => Role::InfoDim,
             Self::Paused => Role::Warning,
             Self::Cancelled => Role::TextMuted,
             Self::Complete => Role::Success,

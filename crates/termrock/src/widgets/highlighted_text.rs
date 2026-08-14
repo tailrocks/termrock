@@ -64,14 +64,17 @@ impl MatchKind {
 
     fn role(self, selected: bool) -> Role {
         match self {
+            // A page of matches is not a page of warnings: ordinary matches
+            // read as strong text, and accent marks the one the cursor is on
+            // (plans/007).
             Self::Match | Self::Focused => {
                 if selected {
                     Role::Accent
                 } else {
-                    Role::Warning
+                    Role::TextStrong
                 }
             }
-            Self::Soft => Role::Info,
+            Self::Soft => Role::TextMuted,
             Self::Annotation => Role::Link,
         }
     }
