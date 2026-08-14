@@ -953,24 +953,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
             state.scrollbar_region = Some(scrollbar);
-            for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.system.style(Role::ScrollTrack));
-            }
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
+            crate::scroll::paint_list_scrollbar(
+                buffer,
+                scrollbar,
                 content_height,
                 state.viewport_height,
-                scrollbar.height,
-                state.offset,
-            ) {
-                for y in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        scrollbar.x,
-                        scrollbar.y.saturating_add(y),
-                        "█",
-                        self.system.style(Role::ScrollThumb),
-                    );
-                }
-            }
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.system,
+            );
         }
     }
 }

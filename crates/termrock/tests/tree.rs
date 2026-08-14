@@ -266,8 +266,9 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
     let area = Rect::new(0, 0, 12, 3);
     let mut buffer = Buffer::empty(area);
     tree.render(area, &mut buffer, &mut state);
-    assert_eq!(buffer[(11, 0)].symbol(), "█");
-    assert_eq!(buffer[(11, 2)].symbol(), "│");
+    // One scrollbar language across every scroll surface (plans/022 Step 5).
+    assert_eq!(buffer[(11, 0)].symbol(), "┃");
+    assert_eq!(buffer[(11, 2)].symbol(), "·");
 
     assert_eq!(
         state.handle_key(&rows, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),

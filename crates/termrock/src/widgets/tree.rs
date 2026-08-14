@@ -1437,29 +1437,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
-            for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.tokens.style(Role::ScrollTrack));
-            }
             let thumb_total = if state.virtual_total > 0 {
                 state.virtual_total
             } else {
                 self.nodes.len()
             };
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
+            crate::scroll::paint_list_scrollbar(
+                buffer,
+                scrollbar,
                 thumb_total,
                 usize::from(body.height),
-                body.height,
-                state.offset,
-            ) {
-                for y in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        scrollbar.x,
-                        scrollbar.y.saturating_add(y),
-                        "█",
-                        self.tokens.style(Role::ScrollThumb),
-                    );
-                }
-            }
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.tokens,
+            );
         }
     }
 }

@@ -716,79 +716,50 @@ impl<'a> ScrollArea<'a> {
         }
         let need_v = self.need_bar_v(state);
         let need_h = self.need_bar_h(state);
-        let track = self.tokens.style(Role::ScrollTrack);
-        let thumb = self.tokens.style(Role::ScrollThumb);
 
+        // One scrollbar language for every scroll surface: the canonical `·`
+        // track with a `┃` / `━` thumb, and one owner for the thumb math
+        // (plans/022 Step 5).
         if need_v && area.width >= 1 {
-            let x = area.right().saturating_sub(1);
             let bar_h = if need_h {
                 area.height.saturating_sub(1)
             } else {
                 area.height
             };
-            for y in area.y..area.y.saturating_add(bar_h) {
-                buffer[(x, y)].set_char('│').set_style(track);
-            }
-            if state.content_h > 0 && state.viewport_h > 0 && bar_h > 0 {
-                let max_off = max_offset(state.content_h as usize, state.viewport_h as usize);
-                let thumb_h = (state.viewport_h as usize)
-                    .saturating_mul(bar_h as usize)
-                    .checked_div(state.content_h.max(1) as usize)
-                    .unwrap_or(1)
-                    .max(1)
-                    .min(bar_h as usize);
-                let travel = (bar_h as usize).saturating_sub(thumb_h);
-                let thumb_y = if max_off == 0 {
-                    0
-                } else {
-                    travel.saturating_mul(state.offset_y as usize) / max_off
-                };
-                for dy in 0..thumb_h {
-                    let y = area
-                        .y
-                        .saturating_add(thumb_y as u16)
-                        .saturating_add(dy as u16);
-                    if y < area.y.saturating_add(bar_h) {
-                        buffer[(x, y)].set_char('█').set_style(thumb);
-                    }
-                }
-            }
+            crate::scroll::render_scrollbar(
+                buffer,
+                Rect::new(area.right().saturating_sub(1), area.y, 1, bar_h),
+                crate::scroll::ScrollbarSpec::new(
+                    crate::scroll::ScrollAxis::Vertical,
+                    crate::scroll::ScrollbarGeometry::new(
+                        usize::from(state.content_h),
+                        usize::from(state.viewport_h),
+                        state.offset_y,
+                    ),
+                ),
+                self.tokens,
+            );
         }
 
         if need_h && area.height >= 1 {
-            let y = area.bottom().saturating_sub(1);
             let bar_w = if need_v {
                 area.width.saturating_sub(1)
             } else {
                 area.width
             };
-            for x in area.x..area.x.saturating_add(bar_w) {
-                buffer[(x, y)].set_char('─').set_style(track);
-            }
-            if state.content_w > 0 && state.viewport_w > 0 && bar_w > 0 {
-                let max_off = max_offset(state.content_w as usize, state.viewport_w as usize);
-                let thumb_w = (state.viewport_w as usize)
-                    .saturating_mul(bar_w as usize)
-                    .checked_div(state.content_w.max(1) as usize)
-                    .unwrap_or(1)
-                    .max(1)
-                    .min(bar_w as usize);
-                let travel = (bar_w as usize).saturating_sub(thumb_w);
-                let thumb_x = if max_off == 0 {
-                    0
-                } else {
-                    travel.saturating_mul(state.offset_x as usize) / max_off
-                };
-                for dx in 0..thumb_w {
-                    let x = area
-                        .x
-                        .saturating_add(thumb_x as u16)
-                        .saturating_add(dx as u16);
-                    if x < area.x.saturating_add(bar_w) {
-                        buffer[(x, y)].set_char('█').set_style(thumb);
-                    }
-                }
-            }
+            crate::scroll::render_scrollbar(
+                buffer,
+                Rect::new(area.x, area.bottom().saturating_sub(1), bar_w, 1),
+                crate::scroll::ScrollbarSpec::new(
+                    crate::scroll::ScrollAxis::Horizontal,
+                    crate::scroll::ScrollbarGeometry::new(
+                        usize::from(state.content_w),
+                        usize::from(state.viewport_w),
+                        state.offset_x,
+                    ),
+                ),
+                self.tokens,
+            );
         }
     }
 
