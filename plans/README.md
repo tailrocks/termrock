@@ -22,9 +22,9 @@ run its drift check, and update your row when done.
 | 004 | Selection/focus/elevation paint authority (recipes mandatory) | P0 | L | 002 | DONE |
 | 005 | Underline-free interaction sweep (~86 sites) | P1 | L | 001, 004 | DONE |
 | 006 | Collection row unification (tables, grids, gutters, empty states) | P1 | L | 004, 005 | DONE |
-| 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | IN PROGRESS (agent C: Step 1-2 status-to-glyph cluster DONE — migrations/0298; accent-budget sweep next) |
-| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | BLOCKED (waits on 005, which waits on 004 — agent C picks it up as soon as 005 lands) |
-| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | BLOCKED (waits on 007; its overlay geometry half already landed with 022 Step 2 — migrations/0292) |
+| 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | DONE (agent C: migrations/0298, 0300, 0301; gate green. Remainder routed — see Execution notes) |
+| 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | CLAIMED by the design lane (agent C yielded mid-Step-2; handover diff in the Execution notes) |
+| 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | IN PROGRESS (agent C — claimed) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | TODO |
@@ -103,6 +103,8 @@ Write the claim here **before** writing code. Release it by deleting the row.
 |-------|-------|-------|
 | 014 Step 4 motion contracts | motion lane (003/020/014) | `widgets/{spinner,toast,timeline,log_stream,status_indicator}.rs` — the `MotionChannel` layer only, on top of 007's settled status paint |
 | 008 input & form chrome | design lane (001/002/004/005/006) | `widgets/{text_input,number_input,password_input,search_input,path_input,token_field,input_otp,combobox,select,multi_select,date_time_picker,form,form_wizard,field_row,input_group,slider}.rs` + `input_recipe` in `style/tokens.rs` |
+| 009 overlay chrome & affordances | agent C (017/022/007/009) | `widgets/{dialog,drawer,popover,dropdown_menu,command_palette,notification_center,fullscreen_viewer,toast,jump_overlay,loading_overlay,sheet}.rs` + `design_gate::no_widget_paints_selection_fill_by_default` |
+| 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
 
 ## Execution notes
 
@@ -355,6 +357,47 @@ whoever runs 006. Step 6's spacing-literal migration follows them.
 
 DropdownMenu has no scroll model at all — it paints until it runs out of rows
 — so its "gutter + indicator" row needs the scroll state first, not a gutter.
+
+### Plan 007 (done — what was swept and what moved on)
+
+Landed by agent C as migrations/0298 (status in the glyph), 0300 (accent
+budget) and 0301 (stream rows keep their words), with `mise run gate` green.
+Agent A added the two gaps that sweep left, in `3eaddfec`: the focused match
+in `highlighted_text.rs` still underlined, and trace-waterfall bars still
+painted span status.
+
+Swept: `SemanticStatus::Running`, StatusIndicator, ActivityIndicator, Badge,
+Callout, ErrorState, Toast, StatusBar, LogStream, EventStream, the whole
+accent-budget list (charts series, identity hues, hints, matches, mode
+ribbon, filter rows, progress/terminal/working-state/background-task running
+states), plus the two precedence bugs (`Action::style` composing over its
+chrome, ButtonGroup's black-on-tint overflow chip).
+
+Not swept, routed to the plans that own those surfaces rather than left as a
+silent remainder:
+
+- `progress_steps` / `model_mode_selectors` / `file_picker` / `connectivity`
+  row paint → plan 012 (row anatomy ladder) touches the same rows.
+- Agent-surface detail (transcript rail quiet tier, review marks, message
+  thread footer, token meter compact form) → plan 021, which owns interaction
+  states on those surfaces.
+- Glyph-literal hygiene (`separator.rs`, `scroll_area.rs`, `table.rs` ASCII
+  arm, `review.rs`) → the motion/microcopy lane already owns glyph catalog
+  work.
+- Selected-row information loss (`search_results`, `diff`, `streaming_markdown`,
+  `diagnostic` caret) → plan 012.
+
+### Plan 008 handover (agent C → design lane)
+
+Agent C had started Step 2 before the Claims table existed and stopped on
+reading the claim. The finished, test-green work is a patch, not a commit:
+`InputRecipe` gains `prompt: Option<(&'static str, Style)>` (the focused
+field-local cue, `Glyph::Prompt` in `BorderFocused`), `input_recipe` fills it
+for `ControlState::Focused`, and `TextInput::paint` resolves the recipe for
+the well, value tone, placeholder and cursor while reserving the prompt column
+in **every** state so a value never shifts sideways when focus arrives. All
+input-family tests pass on it. Ask agent C for the diff, or rewrite it — it is
+one screen of code either way.
 
 ## Dependency notes
 
