@@ -203,6 +203,35 @@ impl ScrollbarSpec {
     }
 }
 
+/// Paints the list-family scrollbar into a reserved gutter column.
+///
+/// This is the one sanctioned entry point for scroll indication: menus,
+/// pickers, viewports, and text areas all reach the canonical `·` track /
+/// `┃` thumb language through it instead of re-deriving thumb math. Nothing
+/// is painted when the content already fits, so a reserved gutter stays blank
+/// rather than showing a full-height thumb.
+pub fn paint_list_scrollbar(
+    buffer: &mut Buffer,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    system: &DesignSystem,
+) {
+    if gutter.is_empty() || !scroll::is_scrollable(total, viewport) {
+        return;
+    }
+    render_scrollbar(
+        buffer,
+        gutter,
+        ScrollbarSpec::new(
+            scroll::ScrollAxis::Vertical,
+            ScrollbarGeometry::new(total, viewport, offset),
+        ),
+        system,
+    );
+}
+
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.
 pub fn render_scrollbar(
     buffer: &mut Buffer,

@@ -6,6 +6,8 @@ pub use crate::ansi_text::{
     strip_str, styled_spans,
 };
 use std::borrow::Cow;
+
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -358,6 +360,254 @@ pub fn truncate_display_cols(
     }
 }
 
+/// Horizontal alignment of painted content inside its rectangle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum CellAlignment {
+    /// Align content to the left edge.
+    #[default]
+    Left,
+    /// Center content in the resolved width.
+    Center,
+    /// Align content to the right edge.
+    Right,
+}
+
+/// How painted content treats a rectangle that is too small.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum CellOverflow {
+    /// Clip at a display-column boundary (default).
+    #[default]
+    Clip,
+    /// Clip and mark the contraction with the caller's ellipsis glyph.
+    Ellipsis,
+}
+
+/// Alignment, overflow policy, and ellipsis glyph for one painted line.
+///
+/// Right-aligned content contracts from its head (`…5678`) so the meaningful
+/// tail — the part alignment pulled to the edge — survives; every other
+/// alignment contracts from its tail (`1234…`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LinePlacement<'a> {
+    /// Horizontal alignment inside the paint rectangle.
+    pub alignment: CellAlignment,
+    /// Contraction policy applied when content exceeds the rectangle.
+    pub overflow: CellOverflow,
+    /// Glyph painted where content was contracted.
+    pub ellipsis: &'a str,
+}
+
+impl<'a> LinePlacement<'a> {
+    /// Left-aligned placement that clips without an ellipsis marker.
+    #[must_use]
+    pub const fn clipped(ellipsis: &'a str) -> Self {
+        Self {
+            alignment: CellAlignment::Left,
+            overflow: CellOverflow::Clip,
+            ellipsis,
+        }
+    }
+
+    /// Left-aligned placement that marks contraction with `ellipsis`.
+    #[must_use]
+    pub const fn contracting(ellipsis: &'a str) -> Self {
+        Self {
+            alignment: CellAlignment::Left,
+            overflow: CellOverflow::Ellipsis,
+            ellipsis,
+        }
+    }
+
+    /// Places content against a different edge of the rectangle.
+    #[must_use]
+    pub const fn align(mut self, alignment: CellAlignment) -> Self {
+        self.alignment = alignment;
+        self
+    }
+
+    /// Chooses whether contraction is silent or marked.
+    #[must_use]
+    pub const fn overflow(mut self, overflow: CellOverflow) -> Self {
+        self.overflow = overflow;
+        self
+    }
+}
+
+/// Paints one row of plain `text`, contracting with `ellipsis` when the text is
+/// wider than `area`.
+///
+/// This is the sanctioned painter for titles, labels, and single-line values:
+/// it never splits a grapheme cluster and never leaves a silent hard cut.
+pub fn paint_text(buffer: &mut Buffer, area: Rect, text: &str, style: Style, ellipsis: &str) {
+    if area.is_empty() {
+        return;
+    }
+    let width = usize::from(area.width);
+    let fitted = truncate_cols(text, width, ellipsis);
+    let safe = if fitted.chars().any(is_terminal_control_char) {
+        Cow::Owned(
+            fitted
+                .chars()
+                .filter(|ch| !is_terminal_control_char(*ch))
+                .collect::<String>(),
+        )
+    } else {
+        fitted
+    };
+    buffer.set_stringn(area.x, area.y, safe.as_ref(), width, style);
+}
+
+/// Paints a styled `line` into `area`, preserving per-span styles across the
+/// alignment offset and the contraction boundary.
+///
+/// `scratch` is a caller-owned buffer reused across rows so a table body does
+/// not allocate per cell.
+pub fn paint_line_overflow(
+    buffer: &mut Buffer,
+    area: Rect,
+    line: &Line<'_>,
+    style: Style,
+    placement: LinePlacement<'_>,
+    scratch: &mut String,
+) {
+    if area.is_empty() {
+        return;
+    }
+    buffer.set_style(area, style);
+    let line_width = line
+        .spans
+        .iter()
+        .map(|span| display_cols(span.content.as_ref()))
+        .sum::<usize>();
+    let width = usize::from(area.width);
+    let contracts = matches!(placement.overflow, CellOverflow::Ellipsis) && line_width > width;
+    let ellipsis_cols = if contracts {
+        display_cols(placement.ellipsis).min(width)
+    } else {
+        0
+    };
+    let budget = width.saturating_sub(ellipsis_cols);
+    if budget == 0 {
+        if ellipsis_cols > 0 {
+            buffer.set_stringn(area.x, area.y, placement.ellipsis, width, style);
+        }
+        return;
+    }
+    // Right-aligned content keeps its tail; every other alignment keeps its head.
+    let leading_ellipsis = contracts && matches!(placement.alignment, CellAlignment::Right);
+    let skip = if leading_ellipsis {
+        line_width.saturating_sub(budget)
+    } else {
+        0
+    };
+    let visible = line_width.saturating_sub(skip).min(budget);
+    let pad = match placement.alignment {
+        CellAlignment::Left => 0,
+        CellAlignment::Center => budget.saturating_sub(visible) / 2,
+        CellAlignment::Right => budget.saturating_sub(visible),
+    };
+    let content_x = if leading_ellipsis { ellipsis_cols } else { 0 } + pad;
+    paint_line_window(
+        buffer,
+        area,
+        line,
+        style,
+        (skip, budget),
+        content_x,
+        scratch,
+    );
+    if contracts {
+        let ellipsis_x = if leading_ellipsis {
+            0
+        } else {
+            content_x + visible
+        };
+        let x = area
+            .x
+            .saturating_add(u16::try_from(ellipsis_x).unwrap_or(u16::MAX));
+        buffer.set_stringn(x, area.y, placement.ellipsis, ellipsis_cols, style);
+    }
+}
+
+/// Paints the `[skip, skip + budget)` display-column window of `line` starting
+/// at `content_x` cells into `area`.
+fn paint_line_window(
+    buffer: &mut Buffer,
+    area: Rect,
+    line: &Line<'_>,
+    style: Style,
+    window: (usize, usize),
+    content_x: usize,
+    scratch: &mut String,
+) {
+    let (skip, budget) = window;
+    let end = skip.saturating_add(budget);
+    let mut logical_col = 0usize;
+    for span in &line.spans {
+        let span_width = display_cols(span.content.as_ref());
+        let span_end = logical_col + span_width;
+        if span_end <= skip {
+            logical_col = span_end;
+            continue;
+        }
+        if logical_col >= end {
+            break;
+        }
+        let local_skip = skip.saturating_sub(logical_col);
+        let take = span_width
+            .saturating_sub(local_skip)
+            .min(end - logical_col.max(skip));
+        display_cols_slice_into(span.content.as_ref(), local_skip, take, scratch);
+        let target = content_x + logical_col.max(skip) - skip;
+        buffer.set_stringn(
+            area.x
+                .saturating_add(u16::try_from(target).unwrap_or(u16::MAX)),
+            area.y,
+            scratch.as_str(),
+            take,
+            style.patch(span.style),
+        );
+        logical_col = span_end;
+    }
+}
+
+/// Contracts a path to `budget` display columns by dropping leading segments,
+/// so the discriminating tail (`…/widgets/quick_open.rs`) stays readable.
+///
+/// Falls back to middle contraction when even the final segment does not fit —
+/// a bare filename keeps its head and tail rather than losing its extension.
+#[must_use]
+pub fn truncate_path<'a>(path: &'a str, budget: usize, ellipsis: &str) -> Cow<'a, str> {
+    if display_cols(path) <= budget {
+        return Cow::Borrowed(path);
+    }
+    let ellipsis_cols = display_cols(ellipsis);
+    if ellipsis_cols < budget {
+        // Longest suffix that starts at a separator and still fits.
+        let mut best: Option<&str> = None;
+        for (index, _) in path.match_indices('/') {
+            let suffix = &path[index..];
+            if ellipsis_cols + display_cols(suffix) <= budget {
+                best = Some(suffix);
+                break;
+            }
+        }
+        if let Some(suffix) = best {
+            let mut out = String::with_capacity(ellipsis.len() + suffix.len());
+            out.push_str(ellipsis);
+            out.push_str(suffix);
+            return Cow::Owned(out);
+        }
+    }
+    Cow::Owned(truncate_display_cols(
+        path,
+        budget,
+        TruncateMode::Middle,
+        ellipsis,
+    ))
+}
+
 /// Collapse a terminal-window title to one printable line.
 #[must_use]
 pub fn sanitize_terminal_title(title: &str) -> String {
@@ -382,7 +632,114 @@ pub fn sanitize_terminal_title(title: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use ratatui_core::text::Span;
+
     use super::*;
+
+    fn row_text(buffer: &Buffer, row: u16) -> String {
+        (0..buffer.area.width)
+            .map(|x| buffer[(x, row)].symbol())
+            .collect()
+    }
+
+    /// Row content without the blank continuation cell of a wide grapheme.
+    fn row_glyphs(buffer: &Buffer, row: u16) -> String {
+        row_text(buffer, row).replace(' ', "")
+    }
+
+    #[test]
+    fn paint_text_contracts_wide_titles_without_splitting_a_cell() {
+        let area = Rect::new(0, 0, 8, 1);
+        let mut buffer = Buffer::empty(area);
+        paint_text(&mut buffer, area, "日本語のタイトル", Style::default(), "…");
+        let painted = row_glyphs(&buffer, 0);
+        assert_eq!(painted, "日本語…");
+        assert!(display_cols(&painted) <= 8);
+    }
+
+    #[test]
+    fn paint_text_keeps_zwj_sequences_whole() {
+        let area = Rect::new(0, 0, 3, 1);
+        let mut buffer = Buffer::empty(area);
+        // Family emoji is one grapheme cluster: it survives or it goes, never splits.
+        paint_text(&mut buffer, area, "👨‍👩‍👧‍👦👨‍👩‍👧‍👦", Style::default(), "…");
+        let painted = row_glyphs(&buffer, 0);
+        assert!(painted.ends_with('…'), "{painted:?}");
+        assert_eq!(painted.matches('\u{200d}').count(), 3, "{painted:?}");
+    }
+
+    #[test]
+    fn right_aligned_lines_contract_from_the_head() {
+        let area = Rect::new(0, 0, 5, 1);
+        let mut buffer = Buffer::empty(area);
+        let line = Line::from(vec![Span::raw("1234 5678")]);
+        let mut scratch = String::new();
+        paint_line_overflow(
+            &mut buffer,
+            area,
+            &line,
+            Style::default(),
+            LinePlacement::contracting("…").align(CellAlignment::Right),
+            &mut scratch,
+        );
+        assert_eq!(row_text(&buffer, 0), "…5678");
+    }
+
+    #[test]
+    fn left_aligned_lines_contract_from_the_tail_and_keep_span_styles() {
+        use ratatui_core::style::Color;
+        let area = Rect::new(0, 0, 6, 1);
+        let mut buffer = Buffer::empty(area);
+        let line = Line::from(vec![
+            Span::styled("ab", Style::default().fg(Color::Red)),
+            Span::raw("cdefgh"),
+        ]);
+        let mut scratch = String::new();
+        paint_line_overflow(
+            &mut buffer,
+            area,
+            &line,
+            Style::default(),
+            LinePlacement::contracting("…"),
+            &mut scratch,
+        );
+        assert_eq!(row_text(&buffer, 0), "abcde…");
+        assert_eq!(buffer[(0, 0)].fg, Color::Red);
+        assert_eq!(buffer[(2, 0)].fg, Color::Reset);
+    }
+
+    #[test]
+    fn centered_lines_stay_centered_when_they_fit() {
+        let area = Rect::new(0, 0, 7, 1);
+        let mut buffer = Buffer::empty(area);
+        let line = Line::from(vec![Span::raw("abc")]);
+        let mut scratch = String::new();
+        paint_line_overflow(
+            &mut buffer,
+            area,
+            &line,
+            Style::default(),
+            LinePlacement::clipped("…").align(CellAlignment::Center),
+            &mut scratch,
+        );
+        assert_eq!(row_text(&buffer, 0), "  abc  ");
+    }
+
+    #[test]
+    fn paths_drop_leading_segments_before_they_lose_the_filename() {
+        assert_eq!(
+            truncate_path("src/widgets/quick_open.rs", 20, "…"),
+            "…/quick_open.rs"
+        );
+        assert_eq!(
+            truncate_path("src/widgets/quick_open.rs", 40, "…"),
+            "src/widgets/quick_open.rs"
+        );
+        // No separator fits: middle contraction keeps head and extension.
+        let bare = truncate_path("averylongfilename.rs", 12, "…");
+        assert!(bare.starts_with('a') && bare.ends_with(".rs"));
+        assert_eq!(display_cols(&bare), 12);
+    }
 
     #[test]
     fn reusable_display_slice_matches_allocating_variant() {

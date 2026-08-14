@@ -32,12 +32,12 @@ run its drift check, and update your row when done.
 | 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | TODO |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
-| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | TODO |
+| 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | IN PROGRESS (agent C queue #2: Part A contrast floor next; Part B after 022 Step 4) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | TODO |
 | 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | TODO |
-| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | TODO |
+| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C queue #1: Step 1 helpers DONE; Step 4 next, Steps 2/3/5/6 after 007-009) |
 
 Micro-detail review lens: [DESIGNER-CHECKLIST.md](DESIGNER-CHECKLIST.md) —
 49 designer checks, each mapped to its owning plan (compiled from the

@@ -21,7 +21,10 @@ use ratatui_core::{
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role, SelectionChrome},
+    text::{LinePlacement, paint_line_overflow},
 };
+
+pub use crate::text::{CellAlignment, CellOverflow};
 
 const MARKER_WIDTH: u16 = 2;
 
@@ -98,18 +101,6 @@ pub enum ColumnWidth {
     Fill(NonZeroU16),
 }
 
-/// Horizontal alignment of a table cell.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum CellAlignment {
-    /// Align content to the left edge.
-    #[default]
-    Left,
-    /// Center content in the resolved width.
-    Center,
-    /// Align content to the right edge.
-    Right,
-}
-
 /// Visible sort direction for a sortable column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SortDirection {
@@ -117,17 +108,6 @@ pub enum SortDirection {
     Ascending,
     /// Descending order, rendered as `▼` / `v`.
     Descending,
-}
-
-/// How cell text treats a width that is too small.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum CellOverflow {
-    /// Clip at a display-column boundary (default).
-    #[default]
-    Clip,
-    /// Clip and append an ellipsis when content is wider than the cell.
-    Ellipsis,
 }
 
 /// Borrowed description of one table column.
@@ -1624,60 +1604,18 @@ fn render_line_overflow(
     scratch: &mut String,
     tokens: &DesignSystem,
 ) {
-    if area.is_empty() {
-        return;
-    }
-    buffer.set_style(area, style);
-    let line_width = line
-        .spans
-        .iter()
-        .map(|span| crate::text::display_cols(span.content.as_ref()))
-        .sum::<usize>();
-    let ellipsis = matches!(overflow, CellOverflow::Ellipsis)
-        && line_width > usize::from(area.width)
-        && area.width > 0;
-    let budget = if ellipsis {
-        area.width.saturating_sub(1)
-    } else {
-        area.width
-    };
-    let painted = u16::try_from(line_width).unwrap_or(u16::MAX).min(budget);
-    let left = match alignment {
-        CellAlignment::Left => 0,
-        CellAlignment::Center => budget.saturating_sub(painted) / 2,
-        CellAlignment::Right => budget.saturating_sub(painted),
-    };
-    let available = usize::from(budget.saturating_sub(left));
-    let mut logical_col = 0usize;
-    let mut painted_col = 0usize;
-    for span in &line.spans {
-        if logical_col >= available {
-            break;
-        }
-        let span_width = crate::text::display_cols(span.content.as_ref());
-        crate::text::display_cols_slice_into(
-            span.content.as_ref(),
-            0,
-            available - logical_col,
-            scratch,
-        );
-        let scratch_width = crate::text::display_cols(scratch);
-        buffer.set_stringn(
-            area.x
-                .saturating_add(left)
-                .saturating_add(u16::try_from(painted_col).unwrap_or(u16::MAX)),
-            area.y,
-            scratch.as_str(),
-            available.saturating_sub(painted_col),
-            style.patch(span.style),
-        );
-        painted_col += scratch_width;
-        logical_col += span_width;
-    }
-    if ellipsis {
-        let ex = area.x.saturating_add(area.width.saturating_sub(1));
-        buffer.set_stringn(ex, area.y, tokens.glyphs.ellipsis(), 1, style);
-    }
+    paint_line_overflow(
+        buffer,
+        area,
+        line,
+        style,
+        LinePlacement {
+            alignment,
+            overflow,
+            ellipsis: tokens.glyphs.ellipsis(),
+        },
+        scratch,
+    );
 }
 
 const fn sort_glyph(direction: SortDirection) -> &'static str {

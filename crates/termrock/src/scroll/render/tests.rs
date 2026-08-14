@@ -113,3 +113,24 @@ fn delta_helpers_clamp_or_preserve_overshoot_as_named() {
     assert_eq!(free, 14);
     assert_eq!(clamp_scroll_offset(12, 5, &mut free), 7);
 }
+
+#[test]
+fn list_gutter_paints_the_canonical_language_only_when_scrollable() {
+    let system = DesignSystem::default();
+    let gutter = Rect::new(0, 0, 1, 4);
+    let paint = |total: usize, offset: u16| {
+        let mut buffer = Buffer::empty(gutter);
+        paint_list_scrollbar(&mut buffer, gutter, total, 4, offset, &system);
+        (0..gutter.height)
+            .map(|y| buffer[(0, y)].symbol().to_string())
+            .collect::<Vec<_>>()
+    };
+    // Content fits: a reserved gutter stays blank instead of showing a full thumb.
+    assert_eq!(paint(4, 0), vec![" ", " ", " ", " "]);
+    let scrolled = paint(16, 0);
+    assert_eq!(scrolled[0], ScrollbarStyle::Line.vertical_thumb());
+    assert_eq!(scrolled[3], SCROLLBAR_TRACK);
+    let bottom = paint(16, 12);
+    assert_eq!(bottom[0], SCROLLBAR_TRACK);
+    assert_eq!(bottom[3], ScrollbarStyle::Line.vertical_thumb());
+}

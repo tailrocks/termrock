@@ -177,6 +177,95 @@ impl SpacingScale {
             },
         }
     }
+
+    /// Blank rows that separate two content sections at this density.
+    ///
+    /// The band is the first thing surrendered under height pressure — see
+    /// [`SpacerBand::resolve`].
+    #[must_use]
+    pub const fn band(self) -> SpacerBand {
+        SpacerBand { rows: self.gap }
+    }
+}
+
+/// Cells reserved between chrome edges and the content they contain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ContentInset {
+    /// Columns reserved on each horizontal edge.
+    pub x: u16,
+    /// Rows reserved on each vertical edge.
+    pub y: u16,
+}
+
+impl ContentInset {
+    /// Shrinks `area` by this inset on all four edges, never past empty.
+    #[must_use]
+    pub fn apply(self, area: ratatui_core::layout::Rect) -> ratatui_core::layout::Rect {
+        let x = area.x.saturating_add(self.x);
+        let y = area.y.saturating_add(self.y);
+        let width = area.width.saturating_sub(self.x.saturating_mul(2));
+        let height = area.height.saturating_sub(self.y.saturating_mul(2));
+        ratatui_core::layout::Rect {
+            x: x.min(area.x.saturating_add(area.width)),
+            y: y.min(area.y.saturating_add(area.height)),
+            width,
+            height,
+        }
+    }
+}
+
+/// Blank rows painted between two content sections to give a surface rhythm.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct SpacerBand {
+    /// Preferred band height in rows.
+    pub rows: u16,
+}
+
+impl SpacerBand {
+    /// Band height that actually fits: rhythm is dropped before content is.
+    ///
+    /// `available` is the rows the surface owns, `content` the rows its
+    /// sections need. The band survives only when every content row still
+    /// fits with it painted.
+    #[must_use]
+    pub const fn resolve(self, available: u16, content: u16) -> u16 {
+        if available >= content.saturating_add(self.rows) {
+            self.rows
+        } else {
+            0
+        }
+    }
+}
+
+/// Separator painted between a key and its value in key-value surfaces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum KvSeparator {
+    /// Two-cell gutter — alignment carries the pairing (default).
+    #[default]
+    Gutter,
+    /// Explicit ` : ` rule for ragged, non-aligned pairs.
+    Colon,
+}
+
+impl KvSeparator {
+    /// Literal painted between the key and the value.
+    #[must_use]
+    pub const fn text(self) -> &'static str {
+        match self {
+            Self::Gutter => "  ",
+            Self::Colon => " : ",
+        }
+    }
+
+    /// Display columns the separator occupies.
+    #[must_use]
+    pub const fn cols(self) -> u16 {
+        match self {
+            Self::Gutter => 2,
+            Self::Colon => 3,
+        }
+    }
 }
 
 /// Runtime visual facts for one list row (widget state + row projection).
@@ -420,6 +509,8 @@ pub struct DesignSystem {
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
     pub breakpoints: BreakpointScale,
+    /// Separator painted between a key and its value.
+    pub kv_separator: KvSeparator,
 }
 
 impl Default for DesignSystem {
@@ -499,6 +590,7 @@ impl DesignSystem {
             border_shape: BorderShape::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
+            kv_separator: KvSeparator::default(),
         }
     }
 
@@ -570,6 +662,41 @@ impl DesignSystem {
         } else {
             PLAIN
         }
+    }
+
+    /// Cells that separate chrome from the content inside it.
+    ///
+    /// Bordered chrome always reserves at least one column so text never sits
+    /// flush against a border glyph — at every terminal width, including the
+    /// narrow ones where padding used to collapse. Vertical rhythm inside a
+    /// border comes from the border itself, so bordered chrome insets no rows.
+    #[must_use]
+    pub const fn content_inset(&self, bordered: bool) -> ContentInset {
+        if bordered {
+            let x = self.spacing.pad_x.saturating_sub(1);
+            ContentInset {
+                x: if x == 0 { 1 } else { x },
+                y: 0,
+            }
+        } else {
+            ContentInset {
+                x: self.spacing.pad_x,
+                y: self.spacing.pad_y,
+            }
+        }
+    }
+
+    /// Separator this system paints between a key and its value.
+    #[must_use]
+    pub const fn kv_separator(&self) -> KvSeparator {
+        self.kv_separator
+    }
+
+    /// Overrides the key-value separator family.
+    #[must_use]
+    pub const fn with_kv_separator(mut self, separator: KvSeparator) -> Self {
+        self.kv_separator = separator;
+        self
     }
 
     /// Overrides color capability (call before quantize).
@@ -1013,5 +1140,61 @@ mod tests {
         let system = DesignSystem::paper().quantize(ColorCapability::Ansi16);
         let _ = system.style(Role::Accent);
         assert_eq!(system.capability, ColorCapability::Ansi16);
+    }
+
+    #[test]
+    fn bordered_chrome_always_reserves_a_column_at_every_density() {
+        for density in [Density::Comfortable, Density::Compact, Density::Dashboard] {
+            let system = DesignSystem::phosphor().density(density);
+            let bordered = system.content_inset(true);
+            assert!(bordered.x >= 1, "{density:?} bordered inset collapsed");
+            assert_eq!(bordered.y, 0, "{density:?} border owns vertical rhythm");
+            let plain = system.content_inset(false);
+            assert_eq!(plain.x, system.spacing.pad_x);
+            assert_eq!(plain.y, system.spacing.pad_y);
+        }
+    }
+
+    #[test]
+    fn content_inset_shrinks_a_rect_symmetrically() {
+        let area = ratatui_core::layout::Rect::new(4, 2, 10, 6);
+        let inset = ContentInset { x: 2, y: 1 };
+        let inner = inset.apply(area);
+        assert_eq!((inner.x, inner.y, inner.width, inner.height), (6, 3, 6, 4));
+        // Never past empty on a rect narrower than the inset.
+        let tiny = ContentInset { x: 3, y: 3 }.apply(ratatui_core::layout::Rect::new(0, 0, 2, 2));
+        assert_eq!((tiny.width, tiny.height), (0, 0));
+    }
+
+    #[test]
+    fn rhythm_band_is_surrendered_before_content_rows() {
+        let band = DesignSystem::phosphor().spacing.band();
+        assert_eq!(band.rows, 1);
+        assert_eq!(band.resolve(10, 4), 1);
+        assert_eq!(band.resolve(5, 5), 0);
+        assert_eq!(SpacerBand { rows: 2 }.resolve(6, 4), 2);
+        assert_eq!(
+            DesignSystem::phosphor()
+                .density(Density::Dashboard)
+                .spacing
+                .band()
+                .rows,
+            0
+        );
+    }
+
+    #[test]
+    fn key_value_surfaces_share_one_separator_token() {
+        let system = DesignSystem::phosphor();
+        assert_eq!(system.kv_separator(), KvSeparator::Gutter);
+        assert_eq!(system.kv_separator().text(), "  ");
+        let colon = system.with_kv_separator(KvSeparator::Colon);
+        assert_eq!(colon.kv_separator().text(), " : ");
+        for separator in [KvSeparator::Gutter, KvSeparator::Colon] {
+            assert_eq!(
+                usize::from(separator.cols()),
+                crate::text::display_cols(separator.text())
+            );
+        }
     }
 }

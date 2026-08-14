@@ -28074,6 +28074,7 @@ pub fn termrock::scroll::mouse_scroll_delta(termrock::input::MouseEventKind, ter
 pub fn termrock::scroll::mouse_scroll_delta_with_step(termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes, u16) -> core::option::Option<termrock::scroll::ScrollDelta>
 pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> usize
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
+pub fn termrock::scroll::paint_list_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
 pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::scroll::ScrollbarSpec, &termrock::style::DesignSystem)
@@ -28673,6 +28674,57 @@ pub unsafe fn termrock::style::GlyphSet::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::GlyphSet
 pub fn termrock::style::GlyphSet::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::GlyphSet
+#[non_exhaustive] pub enum termrock::style::KvSeparator
+pub termrock::style::KvSeparator::Colon
+pub termrock::style::KvSeparator::Gutter
+impl termrock::style::KvSeparator
+pub const fn termrock::style::KvSeparator::cols(self) -> u16
+pub const fn termrock::style::KvSeparator::text(self) -> &'static str
+impl core::clone::Clone for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::clone(&self) -> termrock::style::KvSeparator
+impl core::cmp::Eq for termrock::style::KvSeparator
+impl core::cmp::PartialEq for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::eq(&self, &termrock::style::KvSeparator) -> bool
+impl core::default::Default for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::default() -> termrock::style::KvSeparator
+impl core::fmt::Debug for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::KvSeparator
+impl core::marker::StructuralPartialEq for termrock::style::KvSeparator
+impl core::marker::Freeze for termrock::style::KvSeparator
+impl core::marker::Send for termrock::style::KvSeparator
+impl core::marker::Sync for termrock::style::KvSeparator
+impl core::marker::Unpin for termrock::style::KvSeparator
+impl core::marker::UnsafeUnpin for termrock::style::KvSeparator
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::KvSeparator
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::KvSeparator
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::KvSeparator where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::KvSeparator::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::KvSeparator where U: core::convert::From<T>
+pub fn termrock::style::KvSeparator::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::KvSeparator where U: core::convert::Into<T>
+pub type termrock::style::KvSeparator::Error = core::convert::Infallible
+pub fn termrock::style::KvSeparator::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::KvSeparator where U: core::convert::TryFrom<T>
+pub type termrock::style::KvSeparator::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::KvSeparator::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::KvSeparator where T: core::clone::Clone
+pub type termrock::style::KvSeparator::Owned = T
+pub fn termrock::style::KvSeparator::clone_into(&self, &mut T)
+pub fn termrock::style::KvSeparator::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::KvSeparator where T: 'static + ?core::marker::Sized
+pub fn termrock::style::KvSeparator::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::KvSeparator where T: ?core::marker::Sized
+pub fn termrock::style::KvSeparator::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::KvSeparator where T: ?core::marker::Sized
+pub fn termrock::style::KvSeparator::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::KvSeparator where T: core::clone::Clone
+pub unsafe fn termrock::style::KvSeparator::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::KvSeparator
+pub fn termrock::style::KvSeparator::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::KvSeparator
 #[non_exhaustive] pub enum termrock::style::MediaSessionCommand
 pub termrock::style::MediaSessionCommand::Clear
 pub termrock::style::MediaSessionCommand::Delete
@@ -29285,12 +29337,63 @@ pub unsafe fn termrock::style::CapabilityPreviewHost::clone_to_uninit(&self, *mu
 impl<T> core::convert::From<T> for termrock::style::CapabilityPreviewHost
 pub fn termrock::style::CapabilityPreviewHost::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::CapabilityPreviewHost
+pub struct termrock::style::ContentInset
+pub termrock::style::ContentInset::x: u16
+pub termrock::style::ContentInset::y: u16
+impl termrock::style::ContentInset
+pub fn termrock::style::ContentInset::apply(self, ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
+impl core::clone::Clone for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::clone(&self) -> termrock::style::ContentInset
+impl core::cmp::Eq for termrock::style::ContentInset
+impl core::cmp::PartialEq for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::eq(&self, &termrock::style::ContentInset) -> bool
+impl core::default::Default for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::default() -> termrock::style::ContentInset
+impl core::fmt::Debug for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::ContentInset
+impl core::marker::StructuralPartialEq for termrock::style::ContentInset
+impl core::marker::Freeze for termrock::style::ContentInset
+impl core::marker::Send for termrock::style::ContentInset
+impl core::marker::Sync for termrock::style::ContentInset
+impl core::marker::Unpin for termrock::style::ContentInset
+impl core::marker::UnsafeUnpin for termrock::style::ContentInset
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::ContentInset
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::ContentInset
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::ContentInset where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::ContentInset::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::ContentInset where U: core::convert::From<T>
+pub fn termrock::style::ContentInset::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::ContentInset where U: core::convert::Into<T>
+pub type termrock::style::ContentInset::Error = core::convert::Infallible
+pub fn termrock::style::ContentInset::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::ContentInset where U: core::convert::TryFrom<T>
+pub type termrock::style::ContentInset::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::ContentInset::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::ContentInset where T: core::clone::Clone
+pub type termrock::style::ContentInset::Owned = T
+pub fn termrock::style::ContentInset::clone_into(&self, &mut T)
+pub fn termrock::style::ContentInset::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::ContentInset where T: 'static + ?core::marker::Sized
+pub fn termrock::style::ContentInset::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::ContentInset where T: ?core::marker::Sized
+pub fn termrock::style::ContentInset::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::ContentInset where T: ?core::marker::Sized
+pub fn termrock::style::ContentInset::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::ContentInset where T: core::clone::Clone
+pub unsafe fn termrock::style::ContentInset::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::ContentInset
+pub fn termrock::style::ContentInset::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::ContentInset
 pub struct termrock::style::DesignSystem
 pub termrock::style::DesignSystem::border_shape: termrock::style::BorderShape
 pub termrock::style::DesignSystem::breakpoints: termrock::style::BreakpointScale
 pub termrock::style::DesignSystem::capability: termrock::style::ColorCapability
 pub termrock::style::DesignSystem::density: termrock::style::Density
 pub termrock::style::DesignSystem::glyphs: termrock::style::GlyphSet
+pub termrock::style::DesignSystem::kv_separator: termrock::style::KvSeparator
 pub termrock::style::DesignSystem::motion: termrock::style::Motion
 pub termrock::style::DesignSystem::palette: termrock::style::RolePalette
 pub termrock::style::DesignSystem::selection: termrock::style::SelectionChrome
@@ -29304,12 +29407,14 @@ pub const fn termrock::style::DesignSystem::border_shape(self, termrock::style::
 pub const fn termrock::style::DesignSystem::breakpoints(self, termrock::style::BreakpointScale) -> Self
 pub fn termrock::style::DesignSystem::button_recipe(&self, termrock::style::ButtonRecipeVariant, termrock::style::ControlState) -> termrock::style::ButtonRecipe
 pub const fn termrock::style::DesignSystem::capability(self, termrock::style::ColorCapability) -> Self
+pub const fn termrock::style::DesignSystem::content_inset(&self, bool) -> termrock::style::ContentInset
 pub fn termrock::style::DesignSystem::density(self, termrock::style::Density) -> Self
 pub fn termrock::style::DesignSystem::elevation(&self, termrock::style::Elevation) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::from_palette(termrock::style::RolePalette) -> Self
 pub const fn termrock::style::DesignSystem::glyphs(self, termrock::style::GlyphSet) -> Self
 pub fn termrock::style::DesignSystem::high_contrast() -> Self
 pub fn termrock::style::DesignSystem::input_recipe(&self, termrock::style::ControlState, bool) -> termrock::style::InputRecipe
+pub const fn termrock::style::DesignSystem::kv_separator(&self) -> termrock::style::KvSeparator
 pub fn termrock::style::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub fn termrock::style::DesignSystem::merge(self, &termrock::style::RolePalette) -> Self
 pub const fn termrock::style::DesignSystem::motion(self, termrock::style::Motion) -> Self
@@ -29326,6 +29431,7 @@ pub const fn termrock::style::DesignSystem::selection(self, termrock::style::Sel
 pub fn termrock::style::DesignSystem::slate() -> Self
 pub fn termrock::style::DesignSystem::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::terminal_native() -> Self
+pub const fn termrock::style::DesignSystem::with_kv_separator(self, termrock::style::KvSeparator) -> Self
 pub fn termrock::style::DesignSystem::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::DesignSystem
 pub fn termrock::style::DesignSystem::surface_recipe(&self, termrock::widgets::SurfaceRecipe) -> termrock::widgets::SurfacePaintPlan
@@ -29787,12 +29893,62 @@ pub unsafe fn termrock::style::RolePalette::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::style::RolePalette
 pub fn termrock::style::RolePalette::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::RolePalette
+pub struct termrock::style::SpacerBand
+pub termrock::style::SpacerBand::rows: u16
+impl termrock::style::SpacerBand
+pub const fn termrock::style::SpacerBand::resolve(self, u16, u16) -> u16
+impl core::clone::Clone for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::clone(&self) -> termrock::style::SpacerBand
+impl core::cmp::Eq for termrock::style::SpacerBand
+impl core::cmp::PartialEq for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::eq(&self, &termrock::style::SpacerBand) -> bool
+impl core::default::Default for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::default() -> termrock::style::SpacerBand
+impl core::fmt::Debug for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::style::SpacerBand
+impl core::marker::StructuralPartialEq for termrock::style::SpacerBand
+impl core::marker::Freeze for termrock::style::SpacerBand
+impl core::marker::Send for termrock::style::SpacerBand
+impl core::marker::Sync for termrock::style::SpacerBand
+impl core::marker::Unpin for termrock::style::SpacerBand
+impl core::marker::UnsafeUnpin for termrock::style::SpacerBand
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::style::SpacerBand
+impl core::panic::unwind_safe::UnwindSafe for termrock::style::SpacerBand
+impl<Q, K> equivalent::Equivalent<K> for termrock::style::SpacerBand where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::style::SpacerBand::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::style::SpacerBand where U: core::convert::From<T>
+pub fn termrock::style::SpacerBand::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::style::SpacerBand where U: core::convert::Into<T>
+pub type termrock::style::SpacerBand::Error = core::convert::Infallible
+pub fn termrock::style::SpacerBand::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::style::SpacerBand where U: core::convert::TryFrom<T>
+pub type termrock::style::SpacerBand::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::style::SpacerBand::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::style::SpacerBand where T: core::clone::Clone
+pub type termrock::style::SpacerBand::Owned = T
+pub fn termrock::style::SpacerBand::clone_into(&self, &mut T)
+pub fn termrock::style::SpacerBand::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::style::SpacerBand where T: 'static + ?core::marker::Sized
+pub fn termrock::style::SpacerBand::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::style::SpacerBand where T: ?core::marker::Sized
+pub fn termrock::style::SpacerBand::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::style::SpacerBand where T: ?core::marker::Sized
+pub fn termrock::style::SpacerBand::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::style::SpacerBand where T: core::clone::Clone
+pub unsafe fn termrock::style::SpacerBand::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::style::SpacerBand
+pub fn termrock::style::SpacerBand::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::style::SpacerBand
 pub struct termrock::style::SpacingScale
 pub termrock::style::SpacingScale::gap: u16
 pub termrock::style::SpacingScale::min_row_height: u16
 pub termrock::style::SpacingScale::pad_x: u16
 pub termrock::style::SpacingScale::pad_y: u16
 impl termrock::style::SpacingScale
+pub const fn termrock::style::SpacingScale::band(self) -> termrock::style::SpacerBand
 pub const fn termrock::style::SpacingScale::from_density(termrock::style::Density) -> Self
 impl core::clone::Clone for termrock::style::SpacingScale
 pub fn termrock::style::SpacingScale::clone(&self) -> termrock::style::SpacingScale
@@ -29959,6 +30115,103 @@ pub unsafe fn termrock::ansi_text::AnsiTextMode::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::ansi_text::AnsiTextMode
 pub fn termrock::ansi_text::AnsiTextMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiTextMode
+pub enum termrock::text::CellAlignment
+pub termrock::text::CellAlignment::Center
+pub termrock::text::CellAlignment::Left
+pub termrock::text::CellAlignment::Right
+impl core::clone::Clone for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::clone(&self) -> termrock::text::CellAlignment
+impl core::cmp::Eq for termrock::text::CellAlignment
+impl core::cmp::PartialEq for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::eq(&self, &termrock::text::CellAlignment) -> bool
+impl core::default::Default for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::default() -> termrock::text::CellAlignment
+impl core::fmt::Debug for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::text::CellAlignment
+impl core::marker::StructuralPartialEq for termrock::text::CellAlignment
+impl core::marker::Freeze for termrock::text::CellAlignment
+impl core::marker::Send for termrock::text::CellAlignment
+impl core::marker::Sync for termrock::text::CellAlignment
+impl core::marker::Unpin for termrock::text::CellAlignment
+impl core::marker::UnsafeUnpin for termrock::text::CellAlignment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::text::CellAlignment
+impl core::panic::unwind_safe::UnwindSafe for termrock::text::CellAlignment
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::CellAlignment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::CellAlignment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::CellAlignment where U: core::convert::From<T>
+pub fn termrock::text::CellAlignment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::CellAlignment where U: core::convert::Into<T>
+pub type termrock::text::CellAlignment::Error = core::convert::Infallible
+pub fn termrock::text::CellAlignment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::CellAlignment where U: core::convert::TryFrom<T>
+pub type termrock::text::CellAlignment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::CellAlignment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::CellAlignment where T: core::clone::Clone
+pub type termrock::text::CellAlignment::Owned = T
+pub fn termrock::text::CellAlignment::clone_into(&self, &mut T)
+pub fn termrock::text::CellAlignment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::CellAlignment where T: 'static + ?core::marker::Sized
+pub fn termrock::text::CellAlignment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::CellAlignment where T: ?core::marker::Sized
+pub fn termrock::text::CellAlignment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::CellAlignment where T: ?core::marker::Sized
+pub fn termrock::text::CellAlignment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::CellAlignment where T: core::clone::Clone
+pub unsafe fn termrock::text::CellAlignment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::CellAlignment
+#[non_exhaustive] pub enum termrock::text::CellOverflow
+pub termrock::text::CellOverflow::Clip
+pub termrock::text::CellOverflow::Ellipsis
+impl core::clone::Clone for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::clone(&self) -> termrock::text::CellOverflow
+impl core::cmp::Eq for termrock::text::CellOverflow
+impl core::cmp::PartialEq for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::eq(&self, &termrock::text::CellOverflow) -> bool
+impl core::default::Default for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::default() -> termrock::text::CellOverflow
+impl core::fmt::Debug for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::text::CellOverflow
+impl core::marker::StructuralPartialEq for termrock::text::CellOverflow
+impl core::marker::Freeze for termrock::text::CellOverflow
+impl core::marker::Send for termrock::text::CellOverflow
+impl core::marker::Sync for termrock::text::CellOverflow
+impl core::marker::Unpin for termrock::text::CellOverflow
+impl core::marker::UnsafeUnpin for termrock::text::CellOverflow
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::text::CellOverflow
+impl core::panic::unwind_safe::UnwindSafe for termrock::text::CellOverflow
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::CellOverflow where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::CellOverflow::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::CellOverflow where U: core::convert::From<T>
+pub fn termrock::text::CellOverflow::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::CellOverflow where U: core::convert::Into<T>
+pub type termrock::text::CellOverflow::Error = core::convert::Infallible
+pub fn termrock::text::CellOverflow::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::CellOverflow where U: core::convert::TryFrom<T>
+pub type termrock::text::CellOverflow::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::CellOverflow::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::CellOverflow where T: core::clone::Clone
+pub type termrock::text::CellOverflow::Owned = T
+pub fn termrock::text::CellOverflow::clone_into(&self, &mut T)
+pub fn termrock::text::CellOverflow::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::CellOverflow where T: 'static + ?core::marker::Sized
+pub fn termrock::text::CellOverflow::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::CellOverflow where T: ?core::marker::Sized
+pub fn termrock::text::CellOverflow::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::CellOverflow where T: ?core::marker::Sized
+pub fn termrock::text::CellOverflow::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::CellOverflow where T: core::clone::Clone
+pub unsafe fn termrock::text::CellOverflow::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::CellOverflow
 #[non_exhaustive] pub enum termrock::text::TruncateMode
 pub termrock::text::TruncateMode::End
 pub termrock::text::TruncateMode::Middle
@@ -30344,6 +30597,56 @@ pub unsafe fn termrock::text::FixedPrefixSegment::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::text::FixedPrefixSegment
 pub fn termrock::text::FixedPrefixSegment::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::text::FixedPrefixSegment
+pub struct termrock::text::LinePlacement<'a>
+pub termrock::text::LinePlacement::alignment: termrock::text::CellAlignment
+pub termrock::text::LinePlacement::ellipsis: &'a str
+pub termrock::text::LinePlacement::overflow: termrock::text::CellOverflow
+impl<'a> termrock::text::LinePlacement<'a>
+pub const fn termrock::text::LinePlacement<'a>::align(self, termrock::text::CellAlignment) -> Self
+pub const fn termrock::text::LinePlacement<'a>::clipped(&'a str) -> Self
+pub const fn termrock::text::LinePlacement<'a>::contracting(&'a str) -> Self
+pub const fn termrock::text::LinePlacement<'a>::overflow(self, termrock::text::CellOverflow) -> Self
+impl<'a> core::clone::Clone for termrock::text::LinePlacement<'a>
+pub fn termrock::text::LinePlacement<'a>::clone(&self) -> termrock::text::LinePlacement<'a>
+impl<'a> core::cmp::Eq for termrock::text::LinePlacement<'a>
+impl<'a> core::cmp::PartialEq for termrock::text::LinePlacement<'a>
+pub fn termrock::text::LinePlacement<'a>::eq(&self, &termrock::text::LinePlacement<'a>) -> bool
+impl<'a> core::fmt::Debug for termrock::text::LinePlacement<'a>
+pub fn termrock::text::LinePlacement<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::StructuralPartialEq for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::Freeze for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::Send for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::Sync for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::Unpin for termrock::text::LinePlacement<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::text::LinePlacement<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::text::LinePlacement<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::text::LinePlacement<'a>
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::LinePlacement<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::LinePlacement<'a>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::LinePlacement<'a> where U: core::convert::From<T>
+pub fn termrock::text::LinePlacement<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::LinePlacement<'a> where U: core::convert::Into<T>
+pub type termrock::text::LinePlacement<'a>::Error = core::convert::Infallible
+pub fn termrock::text::LinePlacement<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::LinePlacement<'a> where U: core::convert::TryFrom<T>
+pub type termrock::text::LinePlacement<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::LinePlacement<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::LinePlacement<'a> where T: core::clone::Clone
+pub type termrock::text::LinePlacement<'a>::Owned = T
+pub fn termrock::text::LinePlacement<'a>::clone_into(&self, &mut T)
+pub fn termrock::text::LinePlacement<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::LinePlacement<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::text::LinePlacement<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::LinePlacement<'a> where T: ?core::marker::Sized
+pub fn termrock::text::LinePlacement<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::LinePlacement<'a> where T: ?core::marker::Sized
+pub fn termrock::text::LinePlacement<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::LinePlacement<'a> where T: core::clone::Clone
+pub unsafe fn termrock::text::LinePlacement<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::LinePlacement<'a>
+pub fn termrock::text::LinePlacement<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::LinePlacement<'a>
 pub fn termrock::text::display_cols(&str) -> usize
 pub fn termrock::text::display_cols_slice(&str, usize, usize) -> alloc::string::String
 pub fn termrock::text::display_cols_slice_into(&str, usize, usize, &mut alloc::string::String)
@@ -30355,6 +30658,8 @@ pub fn termrock::text::leading_space_cols<S>(impl core::iter::traits::collect::I
 pub fn termrock::text::line_from_ansi(&str, ratatui_core::style::Style) -> ratatui_core::text::line::Line<'static>
 pub fn termrock::text::lines_for_log(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::line::Line<'static>>
 pub fn termrock::text::padded_line_display_cols<I, S>(I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = S> + core::clone::Clone, S: core::convert::AsRef<str>
+pub fn termrock::text::paint_line_overflow(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, &ratatui_core::text::line::Line<'_>, ratatui_core::style::Style, termrock::text::LinePlacement<'_>, &mut alloc::string::String)
+pub fn termrock::text::paint_text(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, &str, ratatui_core::style::Style, &str)
 pub fn termrock::text::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::text::parse_to_line(&str, &termrock::ansi_text::AnsiParseOptions) -> termrock::ansi_text::AnsiLine
 pub fn termrock::text::sanitize_terminal_title(&str) -> alloc::string::String
@@ -30364,6 +30669,7 @@ pub fn termrock::text::styled_spans(&str, ratatui_core::style::Style) -> alloc::
 pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
 pub fn termrock::text::truncate_cols<'a>(&'a str, usize, &str) -> alloc::borrow::Cow<'a, str>
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
+pub fn termrock::text::truncate_path<'a>(&'a str, usize, &str) -> alloc::borrow::Cow<'a, str>
 pub fn termrock::text::wrap_display_cols(&str, usize) -> alloc::vec::Vec<alloc::string::String>
 pub mod termrock::widgets
 pub mod termrock::widgets::attachment_chips_bench
@@ -32934,99 +33240,99 @@ pub enum termrock::widgets::CellAlignment
 pub termrock::widgets::CellAlignment::Center
 pub termrock::widgets::CellAlignment::Left
 pub termrock::widgets::CellAlignment::Right
-impl core::clone::Clone for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::clone(&self) -> termrock::widgets::CellAlignment
-impl core::cmp::Eq for termrock::widgets::CellAlignment
-impl core::cmp::PartialEq for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::eq(&self, &termrock::widgets::CellAlignment) -> bool
-impl core::default::Default for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::default() -> termrock::widgets::CellAlignment
-impl core::fmt::Debug for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::CellAlignment
-impl core::marker::StructuralPartialEq for termrock::widgets::CellAlignment
-impl core::marker::Freeze for termrock::widgets::CellAlignment
-impl core::marker::Send for termrock::widgets::CellAlignment
-impl core::marker::Sync for termrock::widgets::CellAlignment
-impl core::marker::Unpin for termrock::widgets::CellAlignment
-impl core::marker::UnsafeUnpin for termrock::widgets::CellAlignment
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CellAlignment
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CellAlignment
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CellAlignment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::CellAlignment::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::CellAlignment where U: core::convert::From<T>
-pub fn termrock::widgets::CellAlignment::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CellAlignment where U: core::convert::Into<T>
-pub type termrock::widgets::CellAlignment::Error = core::convert::Infallible
-pub fn termrock::widgets::CellAlignment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::CellAlignment where U: core::convert::TryFrom<T>
-pub type termrock::widgets::CellAlignment::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::CellAlignment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::CellAlignment where T: core::clone::Clone
-pub type termrock::widgets::CellAlignment::Owned = T
-pub fn termrock::widgets::CellAlignment::clone_into(&self, &mut T)
-pub fn termrock::widgets::CellAlignment::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::CellAlignment where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::CellAlignment::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::CellAlignment where T: ?core::marker::Sized
-pub fn termrock::widgets::CellAlignment::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CellAlignment where T: ?core::marker::Sized
-pub fn termrock::widgets::CellAlignment::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::CellAlignment where T: core::clone::Clone
-pub unsafe fn termrock::widgets::CellAlignment::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::CellAlignment
-pub fn termrock::widgets::CellAlignment::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::CellAlignment
+impl core::clone::Clone for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::clone(&self) -> termrock::text::CellAlignment
+impl core::cmp::Eq for termrock::text::CellAlignment
+impl core::cmp::PartialEq for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::eq(&self, &termrock::text::CellAlignment) -> bool
+impl core::default::Default for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::default() -> termrock::text::CellAlignment
+impl core::fmt::Debug for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::text::CellAlignment
+impl core::marker::StructuralPartialEq for termrock::text::CellAlignment
+impl core::marker::Freeze for termrock::text::CellAlignment
+impl core::marker::Send for termrock::text::CellAlignment
+impl core::marker::Sync for termrock::text::CellAlignment
+impl core::marker::Unpin for termrock::text::CellAlignment
+impl core::marker::UnsafeUnpin for termrock::text::CellAlignment
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::text::CellAlignment
+impl core::panic::unwind_safe::UnwindSafe for termrock::text::CellAlignment
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::CellAlignment where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::CellAlignment::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::CellAlignment where U: core::convert::From<T>
+pub fn termrock::text::CellAlignment::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::CellAlignment where U: core::convert::Into<T>
+pub type termrock::text::CellAlignment::Error = core::convert::Infallible
+pub fn termrock::text::CellAlignment::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::CellAlignment where U: core::convert::TryFrom<T>
+pub type termrock::text::CellAlignment::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::CellAlignment::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::CellAlignment where T: core::clone::Clone
+pub type termrock::text::CellAlignment::Owned = T
+pub fn termrock::text::CellAlignment::clone_into(&self, &mut T)
+pub fn termrock::text::CellAlignment::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::CellAlignment where T: 'static + ?core::marker::Sized
+pub fn termrock::text::CellAlignment::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::CellAlignment where T: ?core::marker::Sized
+pub fn termrock::text::CellAlignment::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::CellAlignment where T: ?core::marker::Sized
+pub fn termrock::text::CellAlignment::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::CellAlignment where T: core::clone::Clone
+pub unsafe fn termrock::text::CellAlignment::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::CellAlignment
+pub fn termrock::text::CellAlignment::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::CellAlignment
 #[non_exhaustive] pub enum termrock::widgets::CellOverflow
 pub termrock::widgets::CellOverflow::Clip
 pub termrock::widgets::CellOverflow::Ellipsis
-impl core::clone::Clone for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::clone(&self) -> termrock::widgets::CellOverflow
-impl core::cmp::Eq for termrock::widgets::CellOverflow
-impl core::cmp::PartialEq for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::eq(&self, &termrock::widgets::CellOverflow) -> bool
-impl core::default::Default for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::default() -> termrock::widgets::CellOverflow
-impl core::fmt::Debug for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for termrock::widgets::CellOverflow
-impl core::marker::StructuralPartialEq for termrock::widgets::CellOverflow
-impl core::marker::Freeze for termrock::widgets::CellOverflow
-impl core::marker::Send for termrock::widgets::CellOverflow
-impl core::marker::Sync for termrock::widgets::CellOverflow
-impl core::marker::Unpin for termrock::widgets::CellOverflow
-impl core::marker::UnsafeUnpin for termrock::widgets::CellOverflow
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CellOverflow
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CellOverflow
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CellOverflow where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::CellOverflow::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::CellOverflow where U: core::convert::From<T>
-pub fn termrock::widgets::CellOverflow::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CellOverflow where U: core::convert::Into<T>
-pub type termrock::widgets::CellOverflow::Error = core::convert::Infallible
-pub fn termrock::widgets::CellOverflow::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::CellOverflow where U: core::convert::TryFrom<T>
-pub type termrock::widgets::CellOverflow::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::CellOverflow::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::CellOverflow where T: core::clone::Clone
-pub type termrock::widgets::CellOverflow::Owned = T
-pub fn termrock::widgets::CellOverflow::clone_into(&self, &mut T)
-pub fn termrock::widgets::CellOverflow::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::CellOverflow where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::CellOverflow::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::CellOverflow where T: ?core::marker::Sized
-pub fn termrock::widgets::CellOverflow::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CellOverflow where T: ?core::marker::Sized
-pub fn termrock::widgets::CellOverflow::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::CellOverflow where T: core::clone::Clone
-pub unsafe fn termrock::widgets::CellOverflow::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::CellOverflow
-pub fn termrock::widgets::CellOverflow::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::CellOverflow
+impl core::clone::Clone for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::clone(&self) -> termrock::text::CellOverflow
+impl core::cmp::Eq for termrock::text::CellOverflow
+impl core::cmp::PartialEq for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::eq(&self, &termrock::text::CellOverflow) -> bool
+impl core::default::Default for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::default() -> termrock::text::CellOverflow
+impl core::fmt::Debug for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::text::CellOverflow
+impl core::marker::StructuralPartialEq for termrock::text::CellOverflow
+impl core::marker::Freeze for termrock::text::CellOverflow
+impl core::marker::Send for termrock::text::CellOverflow
+impl core::marker::Sync for termrock::text::CellOverflow
+impl core::marker::Unpin for termrock::text::CellOverflow
+impl core::marker::UnsafeUnpin for termrock::text::CellOverflow
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::text::CellOverflow
+impl core::panic::unwind_safe::UnwindSafe for termrock::text::CellOverflow
+impl<Q, K> equivalent::Equivalent<K> for termrock::text::CellOverflow where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::text::CellOverflow::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::text::CellOverflow where U: core::convert::From<T>
+pub fn termrock::text::CellOverflow::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::text::CellOverflow where U: core::convert::Into<T>
+pub type termrock::text::CellOverflow::Error = core::convert::Infallible
+pub fn termrock::text::CellOverflow::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::text::CellOverflow where U: core::convert::TryFrom<T>
+pub type termrock::text::CellOverflow::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::text::CellOverflow::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::text::CellOverflow where T: core::clone::Clone
+pub type termrock::text::CellOverflow::Owned = T
+pub fn termrock::text::CellOverflow::clone_into(&self, &mut T)
+pub fn termrock::text::CellOverflow::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::text::CellOverflow where T: 'static + ?core::marker::Sized
+pub fn termrock::text::CellOverflow::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::text::CellOverflow where T: ?core::marker::Sized
+pub fn termrock::text::CellOverflow::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::text::CellOverflow where T: ?core::marker::Sized
+pub fn termrock::text::CellOverflow::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::text::CellOverflow where T: core::clone::Clone
+pub unsafe fn termrock::text::CellOverflow::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::text::CellOverflow
+pub fn termrock::text::CellOverflow::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::text::CellOverflow
 #[non_exhaustive] pub enum termrock::widgets::ChartFill
 pub termrock::widgets::ChartFill::Area
 pub termrock::widgets::ChartFill::AreaStacked
@@ -60528,7 +60834,7 @@ impl<T> core::convert::From<T> for termrock::widgets::CollapsibleState
 pub fn termrock::widgets::CollapsibleState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CollapsibleState
 pub struct termrock::widgets::Column<'a, Id>
-pub termrock::widgets::Column::alignment: termrock::widgets::CellAlignment
+pub termrock::widgets::Column::alignment: termrock::text::CellAlignment
 pub termrock::widgets::Column::id: Id
 pub termrock::widgets::Column::priority: u8
 pub termrock::widgets::Column::sort: core::option::Option<termrock::widgets::SortDirection>
@@ -60536,7 +60842,7 @@ pub termrock::widgets::Column::sortable: bool
 pub termrock::widgets::Column::title: ratatui_core::text::line::Line<'a>
 pub termrock::widgets::Column::width: termrock::widgets::ColumnWidth
 impl<'a, Id> termrock::widgets::Column<'a, Id>
-pub const fn termrock::widgets::Column<'a, Id>::alignment(self, termrock::widgets::CellAlignment) -> Self
+pub const fn termrock::widgets::Column<'a, Id>::alignment(self, termrock::text::CellAlignment) -> Self
 pub fn termrock::widgets::Column<'a, Id>::new(Id, impl core::convert::Into<ratatui_core::text::line::Line<'a>>, termrock::widgets::ColumnWidth) -> Self
 pub const fn termrock::widgets::Column<'a, Id>::priority(self, u8) -> Self
 pub const fn termrock::widgets::Column<'a, Id>::sortable(self, core::option::Option<termrock::widgets::SortDirection>) -> Self
@@ -83429,7 +83735,7 @@ pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::focused(self, bool) 
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::from_system(&'a [termrock::widgets::Column<'a, ColumnId>], &'a [termrock::widgets::TableRow<'a, RowId>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Table<'a, RowId, ColumnId>::loading_message(self, ratatui_core::text::line::Line<'a>) -> Self
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::new(&'a [termrock::widgets::Column<'a, ColumnId>], &'a [termrock::widgets::TableRow<'a, RowId>], &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::overflow(self, termrock::widgets::CellOverflow) -> Self
+pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::overflow(self, termrock::text::CellOverflow) -> Self
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::recipe(self, termrock::widgets::TableRecipe) -> Self
 pub const fn termrock::widgets::Table<'a, RowId, ColumnId>::sticky_header(self, bool) -> Self
 impl<'a, RowId: core::clone::Clone, ColumnId: core::clone::Clone> core::clone::Clone for termrock::widgets::Table<'a, RowId, ColumnId>
