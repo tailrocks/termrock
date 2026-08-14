@@ -5458,6 +5458,7 @@ pub fn termrock::interaction::OverlayStack<FocusId>::entries(&self) -> &[termroc
 pub fn termrock::interaction::OverlayStack<FocusId>::get(&self, &termrock::interaction::OverlayId) -> core::option::Option<&termrock::interaction::OverlayEntry<FocusId>>
 pub fn termrock::interaction::OverlayStack<FocusId>::is_empty(&self) -> bool
 pub const fn termrock::interaction::OverlayStack<FocusId>::new() -> Self
+pub fn termrock::interaction::OverlayStack<FocusId>::paint_backdrop(&self, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem)
 pub fn termrock::interaction::OverlayStack<FocusId>::pointer_hits_top(&self, ratatui_core::layout::position::Position) -> bool
 pub fn termrock::interaction::OverlayStack<FocusId>::queue(&self) -> &[termrock::interaction::OverlaySpec<FocusId>]
 pub fn termrock::interaction::OverlayStack<FocusId>::queue_len(&self) -> usize

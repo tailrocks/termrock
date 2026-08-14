@@ -17882,12 +17882,8 @@ fn notification_center_empty_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        Style::new().dim()
-    } else {
-        system.style(Role::Backdrop)
-    };
-    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
+    // The shipped default: a solid recede from the theme, not a stipple.
+    frame.render_widget(Backdrop::from_tokens(system), area);
 }
 
 fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
