@@ -7,6 +7,12 @@
 //! focus routing via [`AppShellSlots::focus_order`]. Overlay hosts use
 //! [`AppShellSlots::overlay_bounds`]. Responsive collapse follows
 //! [`crate::layout::ResponsiveSurface::AppShell`].
+//!
+//! Teaches: how to compose the canonical application shell as slots, so a
+//! host owns its content and TermRock owns the geometry.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::layout::Rect;
 

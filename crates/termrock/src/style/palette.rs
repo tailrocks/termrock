@@ -105,3 +105,40 @@ pub(crate) const ACTOR_THINKING: Rgb = Rgb::new(154, 127, 209);
 pub(crate) const ACTOR_TOOL: Rgb = Rgb::new(120, 120, 120);
 pub(crate) const ACTOR_PLAN: Rgb = Rgb::new(255, 219, 141);
 pub(crate) const ACTOR_SYSTEM: Rgb = Rgb::new(122, 162, 247);
+
+/// Lifts a colour one step, for the "the pointer is here" answer on a surface
+/// that already owns its ground.
+///
+/// A hover wash needs an empty background to land on. A filled control has
+/// none, so its hover has to come from the fill itself: RGB colours lighten
+/// (or darken, when they are already near white), and the eight base ANSI
+/// colours swap to their bright twins. Anything else is returned unchanged —
+/// the caller then falls back to a non-colour cue.
+#[must_use]
+pub fn lift(color: ratatui_core::style::Color) -> ratatui_core::style::Color {
+    use ratatui_core::style::Color;
+
+    match color {
+        Color::Rgb(r, g, b) => {
+            let rgb = Rgb { r, g, b };
+            let lighten = relative_luminance(rgb) < 0.6;
+            let step = |channel: u8| -> u8 {
+                if lighten {
+                    channel.saturating_add(((255 - channel) as f32 * 0.22) as u8)
+                } else {
+                    channel.saturating_sub((channel as f32 * 0.18) as u8)
+                }
+            };
+            Color::Rgb(step(r), step(g), step(b))
+        }
+        Color::Black => Color::DarkGray,
+        Color::Red => Color::LightRed,
+        Color::Green => Color::LightGreen,
+        Color::Yellow => Color::LightYellow,
+        Color::Blue => Color::LightBlue,
+        Color::Magenta => Color::LightMagenta,
+        Color::Cyan => Color::LightCyan,
+        Color::Gray => Color::White,
+        other => other,
+    }
+}

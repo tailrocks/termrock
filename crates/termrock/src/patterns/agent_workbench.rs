@@ -16,6 +16,18 @@
 //!
 //! Research: Grok Build, Amp, OpenCode, Claude Code, Posting, Zellij, Glow
 //! (experience references, not product clones).
+//!
+//! Teaches: how to compose a full agent workbench: transcript, prompt
+//! composer, task rail, approvals and diagnostics in one focus-routed shell.
+//!
+//! Composes: [`crate::widgets::DiffHunk`], [`crate::widgets::DiffReview`],
+//! [`crate::widgets::DiffReviewOutcome`],
+//! [`crate::widgets::DiffReviewState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], [`crate::widgets::ListState`],
+//! [`crate::widgets::ModeRibbon`], and 30 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -39,7 +51,7 @@ use crate::{
         PlanReview, PlanReviewState, SessionPicker, SessionPickerState, TaskRail, TaskRailOutcome,
         TaskRailState, WorkingStateCard, WorkingStateCardState,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, PanelChrome},
     widgets::{
         DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon,
         ModeRibbonState, Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState,
@@ -1071,7 +1083,6 @@ pub fn render_agent_workbench(
         && let Some(modal) = permission_rect
     {
         StatefulWidget::render(card, modal, buffer, permission_state);
-        let _ = system.style(Role::BorderFocused);
     }
     if let Some(flow) = question
         && let Some(modal) = question_rect

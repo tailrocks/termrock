@@ -16,10 +16,12 @@
 //! used. Concretely, every file in this module:
 //!
 //! 1. **Composes public widgets only.** No raw buffer paint — no
-//!    `set_stringn`, no `cell_mut`. If a surface cannot be expressed through
-//!    widgets, the missing widget is the finding, not a license to hand-roll
-//!    chrome here. (An example that paints its own chrome teaches the wrong
-//!    thing, and the design language loses its enforcement point.)
+//!    `set_stringn`, no `cell_mut`. Single rows go through
+//!    [`crate::style::DesignSystem::paint_row`], which contracts honestly and
+//!    never splits a grapheme cluster. If a surface cannot be expressed
+//!    through widgets, the missing widget is the finding, not a license to
+//!    hand-roll chrome here: an example that paints its own chrome teaches the
+//!    wrong thing, and the design language loses its enforcement point.
 //! 2. **Owns domain state and wording.** Product nouns, copy, status
 //!    vocabulary and projections live here; tone, glyphs, focus chrome and
 //!    contraction live in the widgets.
@@ -88,7 +90,10 @@ mod task_rail;
 mod terminal_run_card;
 mod working_state_card;
 
-pub use agent_shell::{AgentShellLayout, AgentShellSlots, layout_agent_shell};
+pub use agent_shell::{
+    AgentShellFocus, AgentShellLayout, AgentShellSlots, AgentShellView, layout_agent_shell,
+    render_agent_shell,
+};
 pub use agent_workbench::{
     AgentWorkbenchState, WorkbenchDensity, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane,
     WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
@@ -169,8 +174,8 @@ pub use observability_dashboard::{
     observability_dashboard_layout_density, render_observability_dashboard, seed_failure_state,
 };
 pub use ops_dashboard::{
-    OpsDashboardLayout, OpsDashboardOutcome, OpsDashboardSlots, OpsDashboardState, OpsRegion,
-    layout_ops_dashboard,
+    OpsDashboardLayout, OpsDashboardOutcome, OpsDashboardSlots, OpsDashboardState,
+    OpsDashboardView, OpsRegion, layout_ops_dashboard, render_ops_dashboard,
 };
 pub use project_launcher::bench as project_launcher_bench;
 pub use project_launcher::{
@@ -183,8 +188,9 @@ pub use project_launcher::{
     render_project_launcher, seed_error_state, seed_onboarding_state, seed_stale_state,
 };
 pub use resource_browser::{
-    ResourceBrowserLayout, ResourceBrowserOutcome, ResourceBrowserSlots, ResourceBrowserState,
-    layout_resource_browser, wire_resource_preview,
+    ResourceBrowserFocus, ResourceBrowserLayout, ResourceBrowserOutcome, ResourceBrowserSlots,
+    ResourceBrowserState, ResourceBrowserView, layout_resource_browser, render_resource_browser,
+    wire_resource_preview,
 };
 pub use settings_screen::{
     SettingsBodyMode, SettingsDensity, SettingsRegion, SettingsScreenOutcome, SettingsScreenSlots,
@@ -200,7 +206,9 @@ pub use setup_wizard::{
     example_setup_connection_fields, example_setup_steps, example_setup_summary_lines,
     layout_setup_wizard, render_setup_wizard, setup_steps_to_wizard_steps,
 };
-pub use studio_shell::{StudioShellLayout, StudioShellSlots, layout_studio_shell};
+pub use studio_shell::{
+    StudioShellLayout, StudioShellSlots, StudioShellView, layout_studio_shell, render_studio_shell,
+};
 
 // ── Example composites (from widgets) ─────────────────────────
 pub use activity_shelf::bench as activity_shelf_bench;

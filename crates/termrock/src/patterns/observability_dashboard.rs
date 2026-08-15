@@ -18,6 +18,18 @@
 //! not re-painted.
 //!
 //! Research: k9s, btop, Grafana concepts, terminal log tools.
+//!
+//! Teaches: how to compose an operational monitoring view: metrics, logs,
+//! events and object inspection side by side.
+//!
+//! Composes: [`crate::widgets::EventSeverity`],
+//! [`crate::widgets::EventStream`], [`crate::widgets::EventStreamOutcome`],
+//! [`crate::widgets::EventStreamState`], [`crate::widgets::InspectorField`],
+//! [`crate::widgets::LogLevel`], [`crate::widgets::LogLine`],
+//! [`crate::widgets::LogStream`], and 19 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
@@ -1053,11 +1065,10 @@ pub fn render_observability_dashboard(
         Widget::render(&panel, r, buffer);
         if inspect_fields.is_empty() {
             if !inner.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(select a log, event, or metric)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(select a log, event, or metric)",
                     system.style(Role::TextMuted),
                 );
             }

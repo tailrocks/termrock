@@ -571,6 +571,8 @@ pub struct HistoryPickerState<Id> {
     redaction: HistoryRedaction,
     show_preview: bool,
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     scroll: usize,
     painted_rows: u16,
     _id: std::marker::PhantomData<Id>,
@@ -598,6 +600,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             redaction: HistoryRedaction::None,
             show_preview: true,
             hits: Vec::new(),
+            hovered: None,
             scroll: 0,
             painted_rows: 0,
             _id: std::marker::PhantomData,
@@ -909,6 +912,12 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
@@ -1284,7 +1293,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active,
-                hovered: false,
+                hovered: state.hovered == Some(i),
                 enabled: true,
                 loading: false,
                 checked: entry.pinned,

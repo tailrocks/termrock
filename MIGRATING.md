@@ -327,6 +327,10 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0311 | `v0.14.0` | [Picker columns hold still, and notifications get a clock](migrations/0311-v0.14.0-picker-columns-and-a-clock.md) |
 | 0312 | `v0.14.0` | [Control chrome parity](migrations/0312-v0.14.0-control-chrome-parity.md) |
 | 0313 | `v0.14.0` | [Rows get anatomy](migrations/0313-v0.14.0-rows-get-anatomy.md) |
+| 0314 | `v0.14.0` | [Examples only compose](migrations/0314-v0.14.0-examples-only-compose.md) |
+| 0315 | `v0.14.0` | [Examples stop hand-rolling chrome](migrations/0315-v0.14.0-examples-stop-hand-rolling.md) |
+| 0316 | `v0.14.0` | [One token family, one focus vocabulary](migrations/0316-v0.14.0-one-token-family.md) |
+| 0317 | `v0.14.0` | [Every state paints, and Space works](migrations/0317-v0.14.0-every-state-paints.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

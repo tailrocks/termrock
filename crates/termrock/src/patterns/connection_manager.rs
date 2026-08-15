@@ -23,6 +23,18 @@
 //! may compose this block later.
 //!
 //! Research: TablePlus, SSH managers, cloud CLIs, service dashboards.
+//!
+//! Teaches: how to compose reusable inventory for database, SSH, API, and
+//! service connections.
+//!
+//! Composes: [`crate::widgets::ConnectivityPhase`],
+//! [`crate::widgets::Panel`], [`crate::widgets::PasswordInput`],
+//! [`crate::widgets::PasswordInputState`],
+//! [`crate::widgets::ReconnectingState`], [`crate::widgets::RevealPolicy`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
@@ -38,7 +50,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         ConnectivityPhase, Panel, PasswordInput, PasswordInputState, ReconnectingState,
@@ -1771,7 +1783,7 @@ impl<'a> ConnectionManager<'a> {
         }
 
         let mut y = inner.y;
-        let w = usize::from(inner.width);
+        let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
         // Identity / offline projection banner when selected is offline-like
@@ -1779,11 +1791,10 @@ impl<'a> ConnectionManager<'a> {
             if c.status.is_offline_like() && y < max_y {
                 let offline = connection_to_reconnecting_state(c);
                 let line = offline.banner_line(self.ascii);
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&line, w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &line,
                     self.system.style(self.role(c.status.role())),
                 );
                 y = y.saturating_add(1);
@@ -1807,11 +1818,10 @@ impl<'a> ConnectionManager<'a> {
                 ConnectionManagerPhase::TestBusy => "testing…".into(),
                 ConnectionManagerPhase::ConfirmDelete => "confirm delete…".into(),
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
                 self.system.style(self.role(Role::Text)),
             );
             y = y.saturating_add(1);
@@ -1837,11 +1847,10 @@ impl<'a> ConnectionManager<'a> {
             }
             ConnectionManagerPhase::TestBusy => {
                 if !content.is_empty() {
-                    buffer.set_stringn(
-                        content.x,
-                        content.y,
-                        take_display_cols("testing connection… host owns protocol I/O", w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(content.x, content.y, inner.width, 1),
+                        "testing connection… host owns protocol I/O",
                         self.system.style(self.role(Role::Info)),
                     );
                 }
@@ -1890,11 +1899,10 @@ impl<'a> ConnectionManager<'a> {
                     "enter connect · n add · t test · 1/2/3 view · esc close"
                 }
             };
-            buffer.set_stringn(
-                inner.x,
-                fy,
-                take_display_cols(hints, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, fy, inner.width, 1),
+                hints,
                 self.system.style(self.role(Role::TextMuted)),
             );
         }
@@ -1904,7 +1912,7 @@ impl<'a> ConnectionManager<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let viewport = max_y.saturating_sub(y) as usize;
@@ -1920,11 +1928,10 @@ impl<'a> ConnectionManager<'a> {
             } else {
                 "no matches"
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(msg, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                msg,
                 self.system.style(self.role(Role::TextMuted)),
             );
             return;
@@ -1997,12 +2004,25 @@ impl<'a> ConnectionManager<'a> {
             };
             let mut style = self.system.style(self.role(c.status.role()));
             if selected {
-                style = style.add_modifier(Modifier::REVERSED | Modifier::BOLD);
+                // The gutter marks the row; weight and a tint carry it. A
+                // reversed slab loses the connection's own status (plans/010).
+                let recipe = self.system.resolve_list_row(ListRowVisualState {
+                    selected: true,
+                    focused: true,
+                    enabled: c.enabled,
+                    ..Default::default()
+                });
+                style = if self.colorless {
+                    style.add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                } else {
+                    style.patch(recipe.tint).add_modifier(Modifier::BOLD)
+                };
             }
             if !c.enabled {
                 style = self.system.style(self.role(Role::TextMuted));
             }
-            buffer.set_stringn(area.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             state.row_hits.push((
                 c.id.clone(),
                 Rect {
@@ -2020,15 +2040,14 @@ impl<'a> ConnectionManager<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(c) = state.current() else {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("no selection", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "no selection",
                 self.system.style(self.role(Role::TextMuted)),
             );
             return;
@@ -2079,11 +2098,10 @@ impl<'a> ConnectionManager<'a> {
             if y >= max_y {
                 break;
             }
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &line,
                 self.system.style(self.role(role)),
             );
             y = y.saturating_add(1);
@@ -2094,7 +2112,7 @@ impl<'a> ConnectionManager<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
 
@@ -2137,7 +2155,8 @@ impl<'a> ConnectionManager<'a> {
             } else {
                 self.system.style(self.role(Role::Text))
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             y = y.saturating_add(1);
         }
 
@@ -2147,11 +2166,10 @@ impl<'a> ConnectionManager<'a> {
             let marker = if focus { ">" } else { " " };
             let label = format!("{marker}secret   ");
             let label_w = display_cols(&label) as u16;
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&label, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &label,
                 if focus {
                     self.system
                         .style(self.role(Role::Accent))
@@ -2179,14 +2197,10 @@ impl<'a> ConnectionManager<'a> {
         }
 
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(
-                    "tab fields · enter save · esc cancel · secret never in outcomes",
-                    w,
-                ),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "tab fields · enter save · esc cancel · secret never in outcomes",
                 self.system.style(self.role(Role::TextMuted)),
             );
         }
@@ -2197,19 +2211,15 @@ impl<'a> ConnectionManager<'a> {
         if y < area.y {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let name = state
             .current()
             .map(|c| c.name.as_str())
             .unwrap_or("connection");
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(
-                &format!("! Delete “{name}” — host removes (irreversible)"),
-                w,
-            ),
-            w,
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, y, area.width, 1),
+            &format!("! Delete “{name}” — host removes (irreversible)"),
             self.system.style(self.role(Role::Danger)),
         );
         let bar_y = area.bottom().saturating_sub(1);
@@ -2224,11 +2234,10 @@ impl<'a> ConnectionManager<'a> {
             " Delete "
         };
         let line = format!("{cancel}  {proceed}");
-        buffer.set_stringn(
-            area.x,
-            bar_y,
-            take_display_cols(&line, w),
-            w,
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, bar_y, area.width, 1),
+            &line,
             self.system.style(self.role(Role::Accent)),
         );
         let cw = display_cols(cancel) as u16;

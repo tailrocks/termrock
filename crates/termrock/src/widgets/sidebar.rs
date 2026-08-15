@@ -1351,7 +1351,8 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         Self {
             items,
             system,
-            focused: true,
+            // A surface does not own focus until its host says so.
+            focused: false,
             ascii: false,
             title: "",
             show_panel: false,
@@ -1399,7 +1400,9 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
             return;
         }
         let _ = state.apply_width(area.width);
-        state.nav.focused = self.focused || state.nav.focused;
+        // Focus is stated per frame, not accumulated: OR-ing it in meant a
+        // caller could grant focus but never take it back (plans/010 Step 5).
+        state.nav.focused = self.focused;
         state.nav.accepts_input = state.accepts_input;
 
         let mut inner = area;

@@ -19,6 +19,15 @@
 //!
 //! Research: Grok Build extension/MCP views, editor extension managers,
 //! service health panels.
+//!
+//! Teaches: how to compose status and management for MCP servers, plugins,
+//! extensions, tools, and external integrations.
+//!
+//! Composes: [`crate::widgets::Panel`], [`crate::widgets::StatefulWidget`],
+//! [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -1053,7 +1062,7 @@ impl<'a> IntegrationStatus<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &IntegrationStatusState) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let (text, role) = if let Some(e) = state.current() {
             let g = e.health.glyph(self.ascii);
             let k = e.kind.glyph(self.ascii);
@@ -1067,11 +1076,10 @@ impl<'a> IntegrationStatus<'a> {
         } else {
             (state.aggregate_badge(), Role::TextMuted)
         };
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&text, w),
-            w,
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &text,
             self.system.style(role),
         );
     }
@@ -1095,11 +1103,10 @@ impl<'a> IntegrationStatus<'a> {
         let max_y = inner.bottom().saturating_sub(1);
 
         if state.entries.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("(no integrations)", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                "(no integrations)",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1140,7 +1147,8 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 self.system.style(e.health.role())
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
             state.row_hits.push((
                 e.id.clone(),
                 Rect {
@@ -1199,7 +1207,8 @@ impl<'a> IntegrationStatus<'a> {
                 } else {
                     self.system.style(Role::TextMuted)
                 };
-                buffer.set_stringn(x, y, &t, usize::from(tw), style);
+                self.system
+                    .paint_row(buffer, Rect::new(x, y, tw, 1), &t, style);
                 x = x.saturating_add(tw.saturating_add(1));
             }
             y = y.saturating_add(1);
@@ -1217,11 +1226,10 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 Role::TextMuted
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
                 self.system.style(role),
             );
             y = y.saturating_add(1);
@@ -1230,11 +1238,10 @@ impl<'a> IntegrationStatus<'a> {
         // Egress warning
         if let Some(eg) = e.egress_line() {
             if y < max_y {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&format!("! {eg}"), w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &format!("! {eg}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -1266,11 +1273,10 @@ impl<'a> IntegrationStatus<'a> {
                     if line.is_empty() || y >= content_bottom {
                         continue;
                     }
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(Role::Text),
                     );
                     y = y.saturating_add(1);
@@ -1288,21 +1294,19 @@ impl<'a> IntegrationStatus<'a> {
                     } else {
                         Role::Text
                     };
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(role),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.capabilities.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no capabilities declared)", w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        "(no capabilities declared)",
                         self.system.style(Role::TextMuted),
                     );
                 }
@@ -1322,21 +1326,19 @@ impl<'a> IntegrationStatus<'a> {
                     } else {
                         Role::Text
                     };
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(role),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.permissions.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no permissions declared)", w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        "(no permissions declared)",
                         self.system.style(Role::TextMuted),
                     );
                 }
@@ -1347,21 +1349,19 @@ impl<'a> IntegrationStatus<'a> {
                     if y >= content_bottom {
                         break;
                     }
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        line,
                         self.system.style(Role::TextMuted),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.logs.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no logs — g requests host stream)", w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        "(no logs — g requests host stream)",
                         self.system.style(Role::TextMuted),
                     );
                 }
@@ -1384,11 +1384,10 @@ impl<'a> IntegrationStatus<'a> {
     ) {
         let actions = state.actions_for_current();
         if actions.is_empty() {
-            buffer.set_stringn(
-                x,
-                y,
-                take_display_cols("j/k select · d panel · b badge", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(x, y, u16::try_from(w).unwrap_or(u16::MAX), 1),
+                "j/k select · d panel · b badge",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1412,7 +1411,8 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
+            self.system
+                .paint_row(buffer, Rect::new(col, y, tw, 1), &text, style);
             state.action_hits.push((
                 *action,
                 Rect {

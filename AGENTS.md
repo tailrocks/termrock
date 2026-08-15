@@ -134,8 +134,20 @@ guidance—it is package-boundary law.
 | `PermissionPrompt` (neutral trust chrome) | Agent/git/DB **workbench** and **dashboard** application shells |
 | `ModeRibbon` / `WorkbenchMode` row (caller labels) | Full agent workbench recipe with product panes |
 | `PromptQueueItem` (neutral FIFO identity) | `PromptQueue` management UI recipe |
+| `MetricTile` (one measured number) | `MetricsDashboard` / `ObservabilityDashboard` |
+| `StatusStrip` (budgeted segment row) | `AgentStatusHeader` |
+| `ConfirmPrompt` (neutral destructive confirm) | `SessionPicker` delete flow |
+| `ChromeRow` (query / mode / notice row) | A pane's own filter and rename modes |
 
 Full standard: [`docs/design/building-block-vs-example-composite.md`](docs/design/building-block-vs-example-composite.md).
+
+**Examples contain zero raw paint.** A file under `patterns/` must not call
+`Buffer::set_stringn` or `Buffer::cell_mut`: single rows go through
+`DesignSystem::paint_row`, and everything else is a widget. If a recipe cannot
+be expressed that way, the missing widget is the finding — report it, do not
+hand-roll chrome in the example. Every rendering example opens with a
+`//! Teaches:` header naming its assembly. `design_gate.rs::patterns_only_compose`
+and `patterns_have_charter_docs` enforce both.
 
 **When unsure:** default the **primitive pieces** into `widgets` and the
 **assembled product surface** into `patterns`. Do not ship “half-product”

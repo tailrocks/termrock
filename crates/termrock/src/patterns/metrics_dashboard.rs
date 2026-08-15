@@ -14,6 +14,15 @@
 //! chrome, thresholds, comparison deltas, and layout contraction.
 //!
 //! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
+//!
+//! Teaches: how to compose reusable observability dashboard block.
+//!
+//! Composes: [`crate::widgets::CommandEntry`], [`crate::widgets::LoadState`],
+//! [`crate::widgets::MetricTile`], [`crate::widgets::MetricTileHealth`],
+//! [`crate::widgets::MetricTilePresentation`], [`crate::widgets::MetricViz`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -22,7 +31,6 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
     widgets::{CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation},
 };
 
@@ -999,11 +1007,10 @@ impl<'a> MetricsDashboard<'a> {
             } else {
                 self.system.style(Role::TextStrong)
             };
-            buffer.set_stringn(
-                slots.toolbar.x,
-                slots.toolbar.y,
-                take_display_cols(&line, usize::from(slots.toolbar.width)),
-                usize::from(slots.toolbar.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(slots.toolbar.x, slots.toolbar.y, slots.toolbar.width, 1),
+                &line,
                 style,
             );
         }
@@ -1042,11 +1049,10 @@ impl<'a> MetricsDashboard<'a> {
                     && self.focused;
                 let letter = a.severity.letter();
                 let line = format!("{letter} {}", a.message);
-                buffer.set_stringn(
-                    slots.alerts.x,
-                    y,
-                    take_display_cols(&line, usize::from(slots.alerts.width)),
-                    usize::from(slots.alerts.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
+                    &line,
                     if focused {
                         self.system.style(Role::Focus)
                     } else {
@@ -1058,11 +1064,10 @@ impl<'a> MetricsDashboard<'a> {
             // An alert list that stops at three says so.
             let hidden = self.alerts.len().saturating_sub(ALERTS_SHOWN);
             if hidden > 0 && y < max_y {
-                buffer.set_stringn(
-                    slots.alerts.x,
-                    y,
-                    take_display_cols(&format!("+{hidden} more"), usize::from(slots.alerts.width)),
-                    usize::from(slots.alerts.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
+                    &format!("+{hidden} more"),
                     self.system.style(Role::TextMuted),
                 );
             }
@@ -1080,11 +1085,10 @@ impl<'a> MetricsDashboard<'a> {
             } else {
                 "Tab zones · hjkl tiles · Enter drill · C-t range · C-k cmds"
             };
-            buffer.set_stringn(
-                slots.footer.x,
-                slots.footer.y,
-                take_display_cols(footer, usize::from(slots.footer.width)),
-                usize::from(slots.footer.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
+                footer,
                 self.system.style(Role::TextMuted),
             );
         }

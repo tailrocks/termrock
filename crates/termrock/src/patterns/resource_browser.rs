@@ -6,11 +6,27 @@
 //! Preview pane wires through [`CapabilityPreviewHost`] for generation-safe
 //! placement planning. Consumers emit protocol bytes outside render.
 //! Built on AppShell Workbench (rail=sidebar, preview=inspector).
+//!
+//! Teaches: how to compose a resource browser's geometry — a tree or list
+//! rail, a detail pane, and an optional preview.
+//!
+//! Composes: [`crate::widgets::ScrollAreaState`],
+//! [`crate::widgets::SidebarItem`], [`crate::widgets::SidebarOutcome`],
+//! [`crate::widgets::SidebarState`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
-use crate::style::{CapabilityPreviewHost, Density};
+use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
+
+use crate::style::{CapabilityPreviewHost, Density, DesignSystem, Role};
+use crate::widgets::{
+    DetailRow, DetailTable, DetailTableState, Panel, StatusBar, StatusBarState, StatusSlot, Tree,
+    TreeNode, TreeState,
+};
 
 use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
@@ -116,8 +132,154 @@ pub fn wire_resource_preview(
     }
 }
 
+// ── Reference paint ─────────────────────────────────────────────────────────
+
+/// Host-owned content for one resource browser frame.
+#[derive(Debug, Clone, Copy)]
+pub struct ResourceBrowserView<'a, NodeId, RowId> {
+    /// Navigation nodes for the rail.
+    pub nodes: &'a [TreeNode<'a, NodeId>],
+    /// Detail rows for the selected resource.
+    pub details: &'a [DetailRow<'a, RowId>],
+    /// Preview body, when a preview pane is configured.
+    pub preview: Option<&'a str>,
+    /// Footer hints.
+    pub hints: &'a [StatusSlot<'a, &'a str>],
+}
+
+/// Which pane of the browser owns interaction this frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ResourceBrowserFocus {
+    /// The navigation rail.
+    #[default]
+    Rail,
+    /// The detail pane.
+    Detail,
+}
+
+/// Paints a reference resource browser over [`layout_resource_browser`].
+///
+/// The rail is a [`Tree`], the detail pane a [`DetailTable`], the preview a
+/// [`Panel`] body, and the footer a [`StatusBar`] — no chrome is invented
+/// here. Hosts wanting a different assembly copy this and swap the widgets.
+pub fn render_resource_browser<NodeId: Clone + Eq, RowId: Clone + Eq>(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    config: ResourceBrowserLayout,
+    view: ResourceBrowserView<'_, NodeId, RowId>,
+    focus: ResourceBrowserFocus,
+    tree_state: &mut TreeState<NodeId>,
+    detail_state: &mut DetailTableState<RowId>,
+) -> ResourceBrowserSlots {
+    let slots = layout_resource_browser(area, config);
+
+    if slots.rail.height > 0 {
+        Tree::new(view.nodes, system)
+            .focused(matches!(focus, ResourceBrowserFocus::Rail))
+            .render(slots.rail, buffer, tree_state);
+    }
+
+    if slots.detail.height > 0 {
+        DetailTable::new(view.details, system).render(slots.detail, buffer, detail_state);
+    }
+
+    if let Some(preview) = slots.preview
+        && preview.height > 0
+    {
+        let body = Panel::new(system)
+            .title("Preview")
+            .paint(preview, buffer, None);
+        if let Some(text) = view.preview {
+            for (i, line) in text.lines().take(usize::from(body.height)).enumerate() {
+                system.paint_row(
+                    buffer,
+                    Rect::new(
+                        body.x,
+                        body.y.saturating_add(u16::try_from(i).unwrap_or(0)),
+                        body.width,
+                        1,
+                    ),
+                    line,
+                    system.style(Role::TextMuted),
+                );
+            }
+        }
+    }
+
+    if slots.status.height > 0 {
+        let mut status = StatusBarState::new();
+        StatusBar::new(view.hints, &[], system).render(slots.status, buffer, &mut status);
+    }
+
+    slots
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn reference_paint_fills_every_slot() {
+        use crate::style::DesignSystem;
+        use crate::widgets::{
+            DetailCapability, DetailRow, DetailTableState, StatusSlot, TreeNode, TreeState,
+        };
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::text::Line;
+
+        let system = DesignSystem::default();
+        let nodes = [
+            TreeNode::new("ns", Line::from("namespaces"), 0),
+            TreeNode::new("pods", Line::from("pods"), 1),
+        ];
+        let details = [DetailRow {
+            id: "name",
+            label: "Name",
+            value: "api-7",
+            href: None,
+            capability: DetailCapability::Copy,
+            emphasis: false,
+            style: None,
+        }];
+        let hints = [StatusSlot::new("tab", "tab pane")];
+        let view = ResourceBrowserView {
+            nodes: &nodes,
+            details: &details,
+            preview: Some("apiVersion: v1"),
+            hints: &hints,
+        };
+        let mut tree_state = TreeState::new(Some("ns"));
+        let mut detail_state = DetailTableState::default();
+        let area = Rect::new(0, 0, 90, 24);
+        let mut buffer = Buffer::empty(area);
+        let config = ResourceBrowserLayout {
+            preview_width: 24,
+            ..ResourceBrowserLayout::default()
+        };
+        let slots = render_resource_browser(
+            area,
+            &mut buffer,
+            &system,
+            config,
+            view,
+            ResourceBrowserFocus::Rail,
+            &mut tree_state,
+            &mut detail_state,
+        );
+
+        let painted = |rect: Rect| {
+            (rect.x..rect.right()).any(|x| {
+                (rect.y..rect.bottom()).any(|y| !buffer[(x, y)].symbol().trim().is_empty())
+            })
+        };
+        assert!(painted(slots.rail), "rail painted nothing");
+        assert!(painted(slots.detail), "detail painted nothing");
+        if let Some(preview) = slots.preview {
+            assert!(painted(preview), "preview painted nothing");
+        }
+        assert!(painted(slots.status), "status painted nothing");
+    }
     use super::*;
     use crate::style::DesignSystem;
 

@@ -17,6 +17,19 @@
 //!
 //! Research: TablePlus, DataGrip, pgcli/lazysql-style tools, high-quality
 //! developer workbenches.
+//!
+//! Teaches: how to compose source-owned database application composition
+//! from.
+//!
+//! Composes: [`crate::widgets::CommandEntry`],
+//! [`crate::widgets::CommandPalette`],
+//! [`crate::widgets::CommandPaletteOutcome`],
+//! [`crate::widgets::CommandPaletteState`], [`crate::widgets::HistoryEntry`],
+//! [`crate::widgets::HistoryKind`], [`crate::widgets::HistoryPicker`],
+//! [`crate::widgets::HistoryPickerOutcome`], and 15 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -39,7 +52,6 @@ use crate::{
         connection_to_reconnecting_state, example_connections,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
     widgets::{
         CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteState, HistoryEntry,
         HistoryKind, HistoryPicker, HistoryPickerOutcome, HistoryPickerState, InspectorField,
@@ -1441,13 +1453,7 @@ pub fn render_database_workbench(
             } else {
                 system.style(Role::TextMuted)
             };
-            buffer.set_stringn(
-                r.x,
-                y,
-                take_display_cols(&tab_line, usize::from(r.width)),
-                usize::from(r.width),
-                style,
-            );
+            system.paint_row(buffer, Rect::new(r.x, y, r.width, 1), &tab_line, style);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }

@@ -18,6 +18,17 @@
 //! chrome; does not embed full connection inventory.
 //!
 //! Research: IDE welcome screens, zoxide/fzf workflows, agent session launchers.
+//!
+//! Teaches: how to compose fast project/session launcher for developer tools
+//! from.
+//!
+//! Composes: [`crate::widgets::EmptyAction`], [`crate::widgets::EmptyKind`],
+//! [`crate::widgets::EmptyState`], [`crate::widgets::EmptyStateOutcome`],
+//! [`crate::widgets::EmptyStateState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], [`crate::widgets::ListState`], and 21 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -1387,18 +1398,14 @@ pub fn render_project_launcher(
         if !inner.is_empty() {
             let rows = project_list_rows(&filtered);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols(
-                        if projects.is_empty() {
-                            "(no projects — n new · i import)"
-                        } else {
-                            "(no matches)"
-                        },
-                        usize::from(inner.width),
-                    ),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    if projects.is_empty() {
+                        "(no projects — n new · i import)"
+                    } else {
+                        "(no matches)"
+                    },
                     system.style(Role::TextMuted),
                 );
             } else {

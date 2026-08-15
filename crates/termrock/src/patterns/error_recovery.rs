@@ -18,6 +18,17 @@
 //!
 //! Research: crash reporters, terminal panic hooks, session restoration,
 //! resilient CLI design.
+//!
+//! Teaches: how to compose a graceful recovery surface for serious failures:
+//! what broke, what was preserved, and what to do next.
+//!
+//! Composes: [`crate::widgets::ErrorKind`], [`crate::widgets::ErrorRecipe`],
+//! [`crate::widgets::ErrorState`], [`crate::widgets::ErrorStateOutcome`],
+//! [`crate::widgets::ErrorStateState`], [`crate::widgets::HistoryRedaction`],
+//! [`crate::widgets::List`], [`crate::widgets::ListRow`], and 9 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
@@ -29,7 +40,6 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
     widgets::{
         ErrorKind, ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, List, ListRow,
         ListState, Panel, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState,
@@ -1178,11 +1188,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             } else {
                 "No preserved work snapshot.".into()
             };
-            buffer.set_stringn(
-                inner.x,
-                inner.y,
-                take_display_cols(&msg, usize::from(inner.width)),
-                usize::from(inner.width),
+            system.paint_row(
+                buffer,
+                Rect::new(inner.x, inner.y, inner.width, 1),
+                &msg,
                 system.style(if snapshot.work_preserved {
                     Role::Success
                 } else {
@@ -1221,11 +1230,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                 if y >= max_y {
                     break;
                 }
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(line, usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    line,
                     system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1234,11 +1242,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             if let Some(d) = doctor {
                 if y < max_y {
                     let cue = format!("doctor findings: {}", d.findings.len());
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&cue, usize::from(inner.width)),
-                        usize::from(inner.width),
+                    system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &cue,
                         system.style(Role::Info),
                     );
                 }

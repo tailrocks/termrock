@@ -1020,30 +1020,39 @@ impl<'a, Id> RadioGroup<'a, Id> {
         self.colorless || self.system.mono()
     }
 
-    fn mark(&self, selected: bool) -> &'static str {
-        if self.mono() {
-            return if selected { "(*)" } else { "( )" };
+    /// The pip an option wears: shape before colour.
+    ///
+    /// `○` empty → `◎` the cursor is on it but nothing is committed → `●`
+    /// chosen. The middle rung existed in the model and was never painted, so
+    /// a roving cursor looked identical to a made choice (plans/015 Step 5).
+    fn mark(&self, selected: bool, previewed: bool) -> &'static str {
+        if self.mono() || self.system.glyphs.is_ascii() {
+            // Bracket forms keep 3-column alignment stable.
+            return match (selected, previewed) {
+                (true, _) => "(*)",
+                (false, true) => "(-)",
+                (false, false) => "( )",
+            };
         }
-        // Prefer 3-col bracket forms for alignment stability even in Unicode
-        // when glyph is single-cell — still use catalog for enhanced.
-        if self.system.glyphs.is_ascii() {
-            return if selected { "(*)" } else { "( )" };
-        }
-        if selected {
-            self.system
-                .glyphs
-                .resolve(crate::style::Glyph::RadioOn)
-                .text
-        } else {
-            self.system
-                .glyphs
-                .resolve(crate::style::Glyph::RadioOff)
-                .text
+        match (selected, previewed) {
+            (true, _) => {
+                self.system
+                    .glyphs
+                    .resolve(crate::style::Glyph::RadioOn)
+                    .text
+            }
+            (false, true) => "◎",
+            (false, false) => {
+                self.system
+                    .glyphs
+                    .resolve(crate::style::Glyph::RadioOff)
+                    .text
+            }
         }
     }
 
-    fn mark_cols(&self, selected: bool) -> u16 {
-        display_cols(self.mark(selected)) as u16
+    fn mark_cols(&self, selected: bool, previewed: bool) -> u16 {
+        display_cols(self.mark(selected, previewed)) as u16
     }
 
     fn option_label_line(&self, opt: &RadioOption<'a, Id>, max_cols: usize) -> String {
@@ -1148,8 +1157,10 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let selected = state.selected.as_ref() == Some(&opt.id);
                     let focused = state.surface_focused && state.active() == Some(&opt.id);
                     let hovered = state.hovered.as_ref() == Some(&opt.id);
-                    let mark = self.mark(selected);
-                    let mark_w = self.mark_cols(selected).min(area.width);
+                    let mark = self.mark(selected, focused && !selected);
+                    let mark_w = self
+                        .mark_cols(selected, focused && !selected)
+                        .min(area.width);
                     let mark_area = Rect::new(area.x, y, mark_w.max(1), 1);
                     let style = self.option_style(state, opt, selected, focused, hovered);
                     buffer.set_stringn(
@@ -1207,8 +1218,8 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let selected = state.selected.as_ref() == Some(&opt.id);
                     let focused = state.surface_focused && state.active() == Some(&opt.id);
                     let hovered = state.hovered.as_ref() == Some(&opt.id);
-                    let mark = self.mark(selected);
-                    let mark_w = self.mark_cols(selected);
+                    let mark = self.mark(selected, focused && !selected);
+                    let mark_w = self.mark_cols(selected, focused && !selected);
                     let label = self.option_label_line(opt, 24);
                     let label_w = display_cols(&label) as u16;
                     let w = mark_w
@@ -2801,6 +2812,31 @@ mod tests {
             buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
             Some("[")
         );
+    }
+
+    #[test]
+    fn a_roving_cursor_previews_before_it_commits() {
+        let system = DesignSystem::default();
+        let options = [
+            RadioOption::new("a", "Compact"),
+            RadioOption::new("b", "Comfortable"),
+        ];
+        let mut state = RadioState::new(Some("a"));
+        state.surface_focused = true;
+        state.collection.set_active(Some("b"));
+        let area = Rect::new(0, 0, 30, 3);
+        let mut buffer = Buffer::empty(area);
+        RadioGroup::new(&options, &system).render(area, &mut buffer, &mut state);
+
+        let rows: Vec<String> = (0..area.height)
+            .map(|y| (0..area.width).map(|x| buffer[(x, y)].symbol()).collect())
+            .collect();
+        let all = rows.join("\n");
+        assert!(
+            all.contains('◎'),
+            "the option under the cursor previews with ◎: {all:?}"
+        );
+        assert!(all.contains('●'), "the committed option keeps ●: {all:?}");
     }
 
     #[test]

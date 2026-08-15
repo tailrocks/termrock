@@ -16,6 +16,17 @@
 //! **vs [`super::QuestionFlow`].** Interview Q&A, not plan approval.
 //!
 //! Research: Grok Build plan approval, code review workflows, document annotation.
+//!
+//! Teaches: how to compose interactive review surface for agent-generated
+//! plans.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Action`],
+//! [`crate::widgets::ActionBar`], [`crate::widgets::ActionBarState`],
+//! [`crate::widgets::FieldRow`], [`crate::widgets::FieldRowValue`],
+//! [`crate::widgets::Panel`], [`crate::widgets::PermissionRisk`], and 2 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
@@ -1577,11 +1588,10 @@ impl<'a> PlanReview<'a> {
                 } else {
                     "∅ no plan"
                 };
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
                     m,
-                    usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
             }
@@ -1607,11 +1617,10 @@ impl<'a> PlanReview<'a> {
         let title_x = panel_area.x.saturating_add(2);
         let title_width = panel_area.right().saturating_sub(title_x).saturating_sub(1);
         if title_width > 0 {
-            buffer.set_stringn(
-                title_x,
-                panel_area.y,
-                take_display_cols(&title, usize::from(title_width)),
-                usize::from(title_width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(title_x, panel_area.y, title_width, 1),
+                &title,
                 self.system
                     .style(Role::ActorPlan)
                     .add_modifier(Modifier::BOLD),
@@ -1636,7 +1645,8 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(risk.role())
                 };
-                buffer.set_stringn(inner.x, y, take_display_cols(sum, w), w, style);
+                self.system
+                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), sum, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1661,11 +1671,10 @@ impl<'a> PlanReview<'a> {
                 PlanReviewPhase::Review => "",
             };
             let line = format!("{label}{draft}▌");
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
                 self.system.style(Role::Accent),
             );
             y = y.saturating_add(1);
@@ -1703,7 +1712,12 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(inner.x, cons_y, take_display_cols(&line, w), w, style);
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, cons_y, inner.width, 1),
+                &line,
+                style,
+            );
         }
 
         state.plan = Some(plan);
@@ -1740,7 +1754,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
+            self.system
+                .paint_row(buffer, Rect::new(col, y, tw, 1), &text, style);
             state.pane_hits.push((
                 *pane,
                 Rect {
@@ -1763,7 +1778,7 @@ impl<'a> PlanReview<'a> {
         plan: &PlanDocument,
     ) {
         let lines = plan.body_lines();
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let (sel_start, sel_end) = state.selection_range();
         let mut y = area.y;
         let max_y = area.bottom();
@@ -1791,7 +1806,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
         if lines.is_empty() && y < max_y {
@@ -1808,7 +1824,8 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(Role::Text)
                 };
-                buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+                self.system
+                    .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1821,7 +1838,7 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         for (i, task) in plan.tasks.iter().enumerate() {
@@ -1854,11 +1871,10 @@ impl<'a> PlanReview<'a> {
             y = y.saturating_add(1);
         }
         if plan.tasks.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no tasks)", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "(no tasks)",
                 self.system.style(Role::TextMuted),
             );
         }
@@ -1871,15 +1887,14 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Risks", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Risks",
                 self.system.style(Role::Warning),
             );
             y = y.saturating_add(1);
@@ -1902,15 +1917,15 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(risk.severity.role())
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Assumptions", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Assumptions",
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1920,21 +1935,19 @@ impl<'a> PlanReview<'a> {
                 break;
             }
             let text = format!(" · {}", a.text);
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&text, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &text,
                 self.system.style(Role::Text),
             );
             y = y.saturating_add(1);
         }
         if !plan.source_refs.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Sources", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Sources",
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -1948,11 +1961,10 @@ impl<'a> PlanReview<'a> {
                     .map(|l| format!(" ({l})"))
                     .unwrap_or_default();
                 let text = format!(" · {}{loc}", s.label);
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&text, w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                    &text,
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1967,7 +1979,7 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         for (i, f) in plan.affected_files.iter().enumerate() {
@@ -1992,30 +2004,29 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
         if plan.affected_files.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no files)", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "(no files)",
                 self.system.style(Role::TextMuted),
             );
         }
     }
 
     fn paint_comments(&self, area: Rect, buffer: &mut Buffer, state: &PlanReviewState) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         if state.comments.is_empty() {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("No comments · m to annotate", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "No comments · m to annotate",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -2049,7 +2060,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
     }
@@ -2061,26 +2073,24 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(prev) = plan.previous.as_ref() else {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("No previous revision", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "No previous revision",
                 self.system.style(Role::TextMuted),
             );
             return;
         };
         if y < max_y {
             let hdr = format!("v{} → v{}", prev.version, plan.version);
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&hdr, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &hdr,
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -2153,7 +2163,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(row, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), row, style);
             y = y.saturating_add(1);
         }
     }

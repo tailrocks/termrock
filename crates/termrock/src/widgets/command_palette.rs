@@ -571,6 +571,8 @@ pub struct CommandPaletteState<Id> {
     presentation_override: Option<CommandPalettePresentation>,
     /// Hit regions for mouse: (flat result index, rect).
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     origin: (u16, u16),
     /// Pending activation id while in argument phase.
     pending_id: Option<Id>,
@@ -606,6 +608,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             presentation: CommandPalettePresentation::Centered,
             presentation_override: None,
             hits: Vec::new(),
+            hovered: None,
             origin: (0, 0),
             pending_id: None,
             pending_command: None,
@@ -1124,6 +1127,12 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) {
                         if self.cursor_index() != *idx {
@@ -1677,7 +1686,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active,
-                hovered: false,
+                hovered: state.hovered == Some(i),
                 enabled: entry.enabled,
                 loading: false,
                 checked: false,

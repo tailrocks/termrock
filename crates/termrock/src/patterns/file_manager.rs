@@ -17,6 +17,19 @@
 //! not re-painted.
 //!
 //! Research: Yazi, ranger, lf, broot, desktop file managers.
+//!
+//! Teaches: how to compose a file manager: tree, listing, preview and inline
+//! rename or filter chrome, routed through one focus model.
+//!
+//! Composes: [`crate::widgets::AlertDialog`],
+//! [`crate::widgets::AlertDialogOutcome`],
+//! [`crate::widgets::AlertDialogState`], [`crate::widgets::AlertKind`],
+//! [`crate::widgets::AlertScope`], [`crate::widgets::BreadcrumbItem`],
+//! [`crate::widgets::Breadcrumbs`], [`crate::widgets::BreadcrumbsOutcome`],
+//! and 28 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
@@ -26,7 +39,6 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
     widgets::{
         AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertScope, BreadcrumbItem,
         Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, FileTree, FileTreeEntry,
@@ -1601,11 +1613,10 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
         if !inner.is_empty() {
             let rows = FileManagerState::queue_rows(ops);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no pending ops)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(no pending ops)",
                     system.style(Role::TextMuted),
                 );
             } else {

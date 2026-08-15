@@ -470,6 +470,8 @@ pub struct MenuBarState {
     bar_hits: Vec<(usize, Rect)>,
     /// Panel hits: (depth, item_index, rect).
     panel_hits: Vec<(usize, usize, Rect)>,
+    /// (depth, item) the pointer is over.
+    hovered: Option<(usize, usize)>,
     /// Painted bar origin.
     bar_origin: (u16, u16),
     /// Painted bar size.
@@ -501,6 +503,7 @@ impl MenuBarState {
             presentation_override: None,
             bar_hits: Vec::new(),
             panel_hits: Vec::new(),
+            hovered: None,
             bar_origin: (0, 0),
             bar_size: (0, 0),
             opener_focus_hint: None,
@@ -1082,6 +1085,13 @@ impl MenuBarState {
                 MenuBarOutcome::Ignored
             }
             MouseEventKind::Moved if self.is_open() => {
+                // Hover is stated every event, so leaving a panel clears it.
+                self.hovered = self
+                    .panel_hits
+                    .iter()
+                    .rev()
+                    .find(|(_, _, rect)| rect_contains(*rect, event.position))
+                    .map(|(depth, idx, _)| (*depth, *idx));
                 // Desktop: hover switches top menus.
                 for (idx, rect) in &self.bar_hits {
                     if rect_contains(*rect, event.position) && Some(*idx) != self.open_top {
@@ -1602,7 +1612,7 @@ impl<'a, Id> MenuBar<'a, Id> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active,
-                hovered: false,
+                hovered: state.hovered == Some((depth, i)),
                 enabled: item.enabled,
                 loading: false,
                 checked: matches!(

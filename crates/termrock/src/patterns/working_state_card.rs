@@ -22,6 +22,16 @@
 //! **vs [`super::AgentStatusHeader`].** Session chrome; this is turn work.
 //!
 //! Research: agent status surfaces with privacy-preserving reasoning summaries.
+//!
+//! Teaches: how to compose transparent but non-invasive summary of what the
+//! agent is doing now.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Panel`],
+//! [`crate::widgets::SemanticStatus`], [`crate::widgets::StatefulWidget`],
+//! [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -770,11 +780,10 @@ impl<'a> WorkingStateCard<'a> {
         }
         let Some(work) = state.work.clone() else {
             if !area.is_empty() {
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    take_display_cols("idle", usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, area.y, area.width, 1),
+                    "idle",
                     self.system.style(Role::TextMuted),
                 );
             }
@@ -810,7 +819,12 @@ impl<'a> WorkingStateCard<'a> {
             SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
         };
         let text = format!("{mark} {line}");
-        buffer.set_stringn(area.x, area.y, take_display_cols(&text, w), w, style);
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &text,
+            style,
+        );
         state.header_hit = Some(Rect {
             x: area.x,
             y: area.y,
@@ -847,7 +861,7 @@ impl<'a> WorkingStateCard<'a> {
         }
 
         let mut y = inner.y;
-        let w = usize::from(inner.width);
+        let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
         // Phase + elapsed + progress
@@ -873,7 +887,8 @@ impl<'a> WorkingStateCard<'a> {
             } else {
                 self.system.style(work.phase.role())
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
             state.header_hit = Some(Rect {
                 x: inner.x,
                 y,
@@ -885,11 +900,10 @@ impl<'a> WorkingStateCard<'a> {
 
         // Public summary (never labeled as private reasoning)
         if y < max_y {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&format!("summary: {}", work.summary), w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &format!("summary: {}", work.summary),
                 self.system.style(Role::Text),
             );
             y = y.saturating_add(1);
@@ -897,11 +911,10 @@ impl<'a> WorkingStateCard<'a> {
 
         if let Some(next) = &work.next_action {
             if y < max_y {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&format!("next: {next}"), w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &format!("next: {next}"),
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -910,11 +923,10 @@ impl<'a> WorkingStateCard<'a> {
 
         if let Some(wr) = &work.waiting_reason {
             if y < max_y {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&format!("waiting: {wr}"), w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &format!("waiting: {wr}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -923,11 +935,10 @@ impl<'a> WorkingStateCard<'a> {
 
         // Resources
         if !work.resources.is_empty() && y < max_y {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("resources", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                "resources",
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -957,7 +968,8 @@ impl<'a> WorkingStateCard<'a> {
                 } else {
                     self.system.style(Role::Text)
                 };
-                buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+                self.system
+                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
                 state.resource_hits.push((
                     r.id.clone(),
                     Rect {
@@ -1018,7 +1030,8 @@ impl<'a> WorkingStateCard<'a> {
                 } else {
                     self.system.style(Role::TextMuted)
                 };
-                buffer.set_stringn(col, fy, &text, usize::from(tw), style);
+                self.system
+                    .paint_row(buffer, Rect::new(col, fy, tw, 1), &text, style);
                 state.action_hits.push((
                     *action,
                     Rect {

@@ -208,6 +208,8 @@ pub enum SelectOutcome<Id> {
     },
     /// List closed without commit (Esc / outside).
     Closed,
+    /// The pointer moved onto (or off) an option.
+    HoverChanged,
     /// Highlight moved in the open list.
     HighlightChanged {
         /// New highlight id.
@@ -252,6 +254,8 @@ pub struct SelectState<Id> {
     trigger: Rect,
     panel: Rect,
     option_regions: Vec<(Id, Rect)>,
+    /// Option the pointer is over (hover wash; never a commit).
+    hovered: Option<Id>,
     search_region: Option<Rect>,
 }
 
@@ -280,6 +284,7 @@ impl<Id> SelectState<Id> {
             trigger: Rect::default(),
             panel: Rect::default(),
             option_regions: Vec::new(),
+            hovered: None,
             search_region: None,
         }
     }
@@ -708,6 +713,21 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         if !self.enabled {
             return SelectOutcome::Ignored;
         }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated per event, unconditionally: a pointer that
+            // leaves the list must clear it (plans/021 Step 1).
+            let was = self.hovered.clone();
+            self.hovered = self
+                .option_regions
+                .iter()
+                .find(|(_, rect)| rect.contains(event.position))
+                .map(|(id, _)| id.clone());
+            return if was == self.hovered {
+                SelectOutcome::Ignored
+            } else {
+                SelectOutcome::HoverChanged
+            };
+        }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             return SelectOutcome::Ignored;
         }
@@ -1091,7 +1111,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let recipe = self.system.resolve_list_row(ListRowVisualState {
                         selected: is_hi,
                         focused: is_hi && state.focused,
-                        hovered: false,
+                        hovered: state.hovered.as_ref() == Some(&opt.id),
                         enabled: !opt.disabled,
                         loading: false,
                         checked: is_val,

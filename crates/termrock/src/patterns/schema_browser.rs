@@ -14,6 +14,17 @@
 //! **vs [`super::Tree`].** Tree is the generic hierarchy substrate.
 //!
 //! Research: TablePlus, DataGrip, pgcli ecosystems, file-tree navigation.
+//!
+//! Teaches: how to compose hierarchical database / schema navigator.
+//!
+//! Composes: [`crate::widgets::BreadcrumbItem`],
+//! [`crate::widgets::QuickOpenItem`], [`crate::widgets::QuickOpenPreview`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::Tree`],
+//! [`crate::widgets::TreeNode`], [`crate::widgets::TreeNodeStatus`],
+//! [`crate::widgets::TreeOutcome`], and 1 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use std::collections::BTreeSet;
 
@@ -22,7 +33,6 @@ use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWi
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
-    text::take_display_cols,
     widgets::{
         BreadcrumbItem, QuickOpenItem, QuickOpenPreview, Tree, TreeNode, TreeNodeStatus,
         TreeOutcome, TreeState,
@@ -1091,11 +1101,10 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
                 state.presentation.id(),
                 self.entries.len()
             );
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &line,
                 if self.focused {
                     self.system.style(Role::TextStrong)
                 } else {
@@ -1108,11 +1117,10 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 
         if state.filter.is_some() && h > 0 {
             let q = state.filter.as_deref().unwrap_or("");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&format!("/{q}_"), usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &format!("/{q}_"),
                 self.system.style(Role::Accent),
             );
             y = y.saturating_add(1);
@@ -1132,11 +1140,10 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 
         let visible = state.visible_entries(self.entries);
         if visible.is_empty() {
-            buffer.set_stringn(
-                body.x,
-                body.y,
-                take_display_cols("(no objects)", usize::from(body.width)),
-                usize::from(body.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(body.x, body.y, body.width, 1),
+                "(no objects)",
                 self.system.style(Role::TextMuted),
             );
             return;

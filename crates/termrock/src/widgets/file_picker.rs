@@ -383,6 +383,8 @@ pub enum FilePickerOutcome {
     Ignored,
     /// Chrome / cursor changed.
     Changed,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Host should list `path` for `generation` (cancellable).
     ListRequested {
         /// Directory to list.
@@ -463,6 +465,8 @@ pub struct FilePickerState {
     // geometry
     breadcrumb_hits: Vec<(String, Rect)>,
     entry_hits: Vec<(String, Rect)>,
+    /// Entry the pointer is over (hover wash; never a commit).
+    hovered: Option<String>,
     list_area: Rect,
     path_area: Rect,
     preview_area: Rect,
@@ -514,6 +518,7 @@ impl FilePickerState {
             click_seq: 0,
             breadcrumb_hits: Vec::new(),
             entry_hits: Vec::new(),
+            hovered: None,
             list_area: Rect::default(),
             path_area: Rect::default(),
             preview_area: Rect::default(),
@@ -1133,6 +1138,20 @@ impl FilePickerState {
         if !click && !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             // only left down for most
         }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated every event, so leaving the list clears it.
+            let was = self.hovered.clone();
+            self.hovered = self
+                .entry_hits
+                .iter()
+                .find(|(_, rect)| rect.contains(event.position))
+                .map(|(id, _)| id.clone());
+            return if was == self.hovered {
+                FilePickerOutcome::Ignored
+            } else {
+                FilePickerOutcome::HoverChanged
+            };
+        }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             return FilePickerOutcome::Ignored;
         }
@@ -1452,7 +1471,7 @@ impl<'a> FilePicker<'a> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active && state.focused,
-                hovered: false,
+                hovered: state.hovered.as_deref() == Some(entry.id.as_str()),
                 enabled: entry.error.is_none(),
                 loading: false,
                 checked: is_sel,

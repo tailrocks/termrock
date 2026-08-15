@@ -19,6 +19,18 @@
 //! not re-detect terminal capabilities.
 //!
 //! Research: Vim/Helix help, Zellij key help, CLI man pages, command palettes.
+//!
+//! Teaches: how to compose HelpCenter / CommandReference — contextual product
+//! help composed from.
+//!
+//! Composes: [`crate::widgets::CommandEntry`], [`crate::widgets::HelpEntry`],
+//! [`crate::widgets::KeyboardHelp`], [`crate::widgets::KeyboardHelpMode`],
+//! [`crate::widgets::KeyboardHelpOutcome`],
+//! [`crate::widgets::KeyboardHelpState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], and 15 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -1442,11 +1454,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         if !inner.is_empty() {
             let rows = help_topic_rows(&filtered_topics);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no topics)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(no topics)",
                     system.style(Role::TextMuted),
                 );
             } else {
@@ -1496,11 +1507,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 .collect();
             let rows = command_list_rows(&filtered);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no commands)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(no commands)",
                     system.style(Role::TextMuted),
                 );
             } else {
@@ -1530,11 +1540,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 let blocks = project_markdown(&t.markdown);
                 MarkdownView::new(&blocks, system).paint(inner, buffer, &mut state.body);
             } else {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(select a topic)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(select a topic)",
                     system.style(Role::TextMuted),
                 );
             }
@@ -1551,11 +1560,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         if !inner.is_empty() {
             let rows = diagnostics_rows(doctor, component_ids);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no findings — d open doctor)", usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    "(no findings — d open doctor)",
                     system.style(Role::TextMuted),
                 );
             } else {

@@ -36,6 +36,25 @@ pub(crate) fn sort_marker(system: &DesignSystem, ascending: bool) -> &'static st
     system.glyphs.resolve(glyph).text
 }
 
+/// Marker a sortable-but-unsorted column wears.
+///
+/// A column that can be sorted and never says so is a hidden affordance: the
+/// operator has to click and see what happens. The neutral marker states the
+/// capability faintly; the direction arrow replaces it once sorted
+/// (plans/021 Step 3).
+pub(crate) fn sortable_marker(system: &DesignSystem) -> &'static str {
+    if system.glyphs.is_ascii() {
+        "^v"
+    } else {
+        "⇅"
+    }
+}
+
+/// Tone for the neutral sortable marker.
+pub(crate) fn sortable_marker_style(system: &DesignSystem) -> Style {
+    system.style(Role::TextFaint)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

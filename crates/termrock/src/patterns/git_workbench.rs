@@ -17,6 +17,19 @@
 //! **vs standalone [`DiffReview`] / [`FileTree`].** Composed, not re-painted.
 //!
 //! Research: lazygit, GitUI, delta, IDE source-control panels.
+//!
+//! Teaches: how to compose modern source-owned Git workflow composition from.
+//!
+//! Composes: [`crate::widgets::Checkpoint`],
+//! [`crate::widgets::CheckpointTimeline`],
+//! [`crate::widgets::CheckpointTimelineOutcome`],
+//! [`crate::widgets::CheckpointTimelineState`],
+//! [`crate::widgets::ConfirmFocus`], [`crate::widgets::ConfirmPrompt`],
+//! [`crate::widgets::Diagnostic`], [`crate::widgets::DiagnosticSeverity`],
+//! and 31 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -31,7 +44,7 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
@@ -1373,7 +1386,7 @@ fn paint_branch_list(
     if inner.is_empty() {
         return;
     }
-    let w = usize::from(inner.width);
+    let _w = usize::from(inner.width);
     let mut y = inner.y;
     let max_y = inner.bottom();
     for (i, b) in state.branches.iter().enumerate() {
@@ -1395,9 +1408,23 @@ fn paint_branch_list(
         let line = format!("{sel}{cur}{}{track}", b.name);
         let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
         if i == state.branch_cursor && focused {
-            style = style.add_modifier(Modifier::REVERSED | Modifier::BOLD);
+            // Selection is chrome: the gutter marks it and the weight carries
+            // it. A reversed slab hides which branch is current (plans/010).
+            style = system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD)
+                .patch(
+                    system
+                        .resolve_list_row(ListRowVisualState {
+                            selected: true,
+                            focused: true,
+                            enabled: true,
+                            ..Default::default()
+                        })
+                        .tint,
+                );
         }
-        buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+        system.paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
         y = y.saturating_add(1);
     }
 }

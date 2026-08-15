@@ -19,6 +19,19 @@
 //!
 //! Research: TablePlus-like query editors, database TUIs, Grafana query
 //! workflows, terminal editors.
+//!
+//! Teaches: how to compose code-oriented editor for SQL, logs, search
+//! languages, and structured queries.
+//!
+//! Composes: [`crate::widgets::CodeFrame`],
+//! [`crate::widgets::CodeFrameLine`],
+//! [`crate::widgets::CompletionMenuState`], [`crate::widgets::Diagnostic`],
+//! [`crate::widgets::DiagnosticSeverity`], [`crate::widgets::HelpEntry`],
+//! [`crate::widgets::HistoryEntry`], [`crate::widgets::HistoryKind`], and 9
+//! more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
@@ -1229,28 +1242,26 @@ impl<'a> QueryEditor<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                style,
-            );
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             // run status color cue
             if matches!(state.run, QueryRunStatus::Failed { .. }) {
-                buffer.set_stringn(
-                    area.x.saturating_add(area.width.saturating_sub(8)),
-                    y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x.saturating_add(area.width.saturating_sub(8)), y, 5, 1),
                     "error",
-                    5,
                     self.system.style(Role::Danger),
                 );
             } else if state.run.is_running() {
-                buffer.set_stringn(
-                    area.x.saturating_add(area.width.saturating_sub(10)),
-                    y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(
+                        area.x.saturating_add(area.width.saturating_sub(10)),
+                        y,
+                        6,
+                        1,
+                    ),
                     if ascii { "run..." } else { "run…" },
-                    6,
                     self.system.style(Role::Warning),
                 );
             }
@@ -1283,13 +1294,8 @@ impl<'a> QueryEditor<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&chips, usize::from(area.width)),
-                usize::from(area.width),
-                style,
-            );
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &chips, style);
             y = y.saturating_add(1);
             remaining = remaining.saturating_sub(1);
         }
@@ -1342,11 +1348,10 @@ impl<'a> QueryEditor<'a> {
         if matches!(state.focus, QueryFocus::Editor) && self.focused {
             // light accent mark
             if slots.editor.width > 0 {
-                buffer.set_stringn(
-                    slots.editor.x,
-                    slots.editor.y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.editor.x, slots.editor.y, 1, 1),
                     if ascii { ">" } else { "›" },
-                    1,
                     self.system.style(Role::Accent),
                 );
             }
@@ -1363,22 +1368,18 @@ impl<'a> QueryEditor<'a> {
             };
             let focused_diag = matches!(state.focus, QueryFocus::Diagnostics);
             let summary = diagnostic_summary(self.diagnostics);
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(
-                    &format!(
-                        "{} {}",
-                        if focused_diag {
-                            if ascii { "*" } else { "●" }
-                        } else {
-                            " "
-                        },
-                        summary
-                    ),
-                    usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &format!(
+                    "{} {}",
+                    if focused_diag {
+                        if ascii { "*" } else { "●" }
+                    } else {
+                        " "
+                    },
+                    summary
                 ),
-                usize::from(area.width),
                 if focused_diag {
                     self.system.style(Role::Focus)
                 } else {
@@ -1398,11 +1399,10 @@ impl<'a> QueryEditor<'a> {
                     d.code.map(|c| format!("[{c}] ")).unwrap_or_default(),
                     d.message
                 );
-                buffer.set_stringn(
-                    area.x,
-                    y.saturating_add(1),
-                    take_display_cols(&msg, usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, y.saturating_add(1), area.width, 1),
+                    &msg,
                     self.system.style(d.severity.role()),
                 );
             }
@@ -1423,11 +1423,10 @@ impl<'a> QueryEditor<'a> {
             } else {
                 format!("results · {}", state.results.status)
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&hdr, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &hdr,
                 if focused_res {
                     self.system.style(Role::Focus)
                 } else {
@@ -1450,11 +1449,10 @@ impl<'a> QueryEditor<'a> {
                 } else {
                     "  (awaiting host result projection)".into()
                 };
-                buffer.set_stringn(
-                    area.x,
-                    y.saturating_add(1),
-                    take_display_cols(&mark, usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, y.saturating_add(1), area.width, 1),
+                    &mark,
                     self.system.style(Role::TextDisabled),
                 );
             }
@@ -1474,11 +1472,10 @@ impl<'a> QueryEditor<'a> {
             } else {
                 "C-r run · C-f format · C-s save · C-h history · C-? help"
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(footer, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                footer,
                 self.system.style(Role::TextMuted),
             );
         }

@@ -25,18 +25,18 @@ run its drift check, and update your row when done.
 | 007 | Status-in-the-glyph + accent budget sweep (data/feedback/agent) | P1 | L | 006 | DONE (agent C: migrations/0298, 0300, 0301; gate green. Remainder routed — see Execution notes) |
 | 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | DONE (Steps 1-3 by the design lane; Steps 4-7 by agent C — migrations/0312, `inputs_share_field_chrome` green. Form two-line rows deferred to 015, see notes) |
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | DONE (agent C: all seven steps — migrations/0302, 0307, 0308, 0309, 0310, 0311; neon-fill gate ACTIVE and green) |
-| 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | TODO |
+| 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | DONE (agent C: selection slabs, Callout banner, auth pending + error chrome, KeyValueList wizard rows, sidebar focus, `patterns_compose_chrome` gate, migrations/0315) |
 | 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | DONE (agent C: all five steps — `TieredRow` substrate, `ColumnKind` in 3 tables, `paint_with`, migrations/0313, `data_rows_have_ladder` green) |
 | 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
 | 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence; 4: Skeleton, Spinner, StatusIndicator, Toast entrance — see notes) |
-| 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | TODO |
-| 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | TODO |
+| 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | DONE (agent C: FocusEmphasis + SurfaceFamily, one token paint body + BracketStyle, one keycap composer, TabsActiveCue (AccentPill default + §5.2 errata), breathing rows, ◎ preview pip, `one_chip_recipe` + `bold_budget_per_row` gates, migrations/0316) |
+| 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | DONE (agent C: 6 promotions, 174 raw-paint sites swept, charter + `Teaches:` headers, 4 reference paints, 3 gates, migrations/0314) |
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | DONE (Part A: floor holds on 4 presets, 9 ladder pairs reported as a design call in migrations/0287; Part B: law §4.2 + 3 gates + 6 surface diets in migrations/0290; 4 rows deferred with reasons in Execution notes) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
-| 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | TODO |
+| 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | IN PROGRESS (agent C: Steps 1-3 + 5 gate DONE — hover in 9 collections, Space fix + KeyReleaseReporting, pressed token, P6 reveal, sortable marker, `|| true` deleted, `state_matrix_distinct`, migrations/0317. Remaining: Step 4 state completeness sweep, Step 6 toast TTL) |
 | 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Step 2 overlay insets + Select/CompletionMenu gutters DONE; Step 3 tier-1 chrome/paths/clips DONE; Step 6 gates DONE. Remaining: Step 2 table gutters + chevrons + tee glyphs, Step 3 composed_row/list/data_table sites, Step 6 spacing-literal migration — all wait on 005/006, which rewrite the same row chrome) |
 
 Micro-detail review lens: [DESIGNER-CHECKLIST.md](DESIGNER-CHECKLIST.md) —
@@ -101,7 +101,6 @@ Write the claim here **before** writing code. Release it by deleting the row.
 
 | Claim | Owner | Scope |
 |-------|-------|-------|
-| 016 patterns become examples | agent C | `patterns/**`, `widgets/{metric_tile,status_strip,confirm_prompt,chrome_row,panel}.rs`, `design_gate.rs` pattern gates |
 | the remaining suite | agent C — sole remaining lane | 008, 010-016, 018, 019, 021, 022. The design and motion lanes' sessions ended; their claims are released here rather than left to look live. |
 | 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
 

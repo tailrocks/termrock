@@ -599,6 +599,8 @@ pub struct QuickOpenState<Id> {
     presentation_override: Option<QuickOpenPresentation>,
     show_preview: bool,
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     provider_hits: Vec<(usize, Rect)>,
     scroll: usize,
     painted_rows: u16,
@@ -633,6 +635,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             presentation_override: None,
             show_preview: true,
             hits: Vec::new(),
+            hovered: None,
             provider_hits: Vec::new(),
             scroll: 0,
             painted_rows: 0,
@@ -1201,6 +1204,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), providers, visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
@@ -1650,7 +1659,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active,
-                hovered: false,
+                hovered: state.hovered == Some(i),
                 enabled: true,
                 loading: false,
                 checked: false,

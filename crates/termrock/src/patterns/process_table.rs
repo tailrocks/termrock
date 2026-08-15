@@ -14,6 +14,15 @@
 //! **vs [`super::TreeTable`].** TreeTable is generic hierarchy+columns.
 //! ProcessTable is process-domain projection, sort/filter policy, signal
 //! confirm chrome, and paint tuned for live monitors.
+//!
+//! Teaches: how to compose process / task monitor with tree and flat modes.
+//!
+//! Composes: [`crate::widgets::ColumnModel`], [`crate::widgets::DataColumn`],
+//! [`crate::widgets::DataColumnWidth`], [`crate::widgets::LoadState`],
+//! [`crate::widgets::SortSpec`], [`crate::widgets::VirtualWindow`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
@@ -1238,11 +1247,10 @@ impl<'a> ProcessTable<'a> {
                 state.refresh_ms,
                 self.processes.len()
             );
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &line,
                 self.system.style(Role::TextStrong),
             );
             y = y.saturating_add(1);
@@ -1251,11 +1259,10 @@ impl<'a> ProcessTable<'a> {
 
         if state.filter.is_some() && h > 0 {
             let q = state.filter.as_deref().unwrap_or("");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&format!("/{q}_"), usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &format!("/{q}_"),
                 self.system.style(Role::Accent),
             );
             y = y.saturating_add(1);
@@ -1273,11 +1280,10 @@ impl<'a> ProcessTable<'a> {
                 " {:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
                 "S", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
             );
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&hdr, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &hdr,
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1294,11 +1300,10 @@ impl<'a> ProcessTable<'a> {
         let bottom = y.saturating_add(rows_h);
 
         if visible.is_empty() {
-            buffer.set_stringn(
-                area.x,
-                py,
-                take_display_cols("(no processes)", usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, py, area.width, 1),
+                "(no processes)",
                 self.system.style(Role::TextMuted),
             );
         } else {
@@ -1350,19 +1355,13 @@ impl<'a> ProcessTable<'a> {
                 } else {
                     self.system.style(Role::Text)
                 };
-                buffer.set_stringn(
-                    area.x,
-                    py,
-                    take_display_cols(&line, usize::from(area.width)),
-                    usize::from(area.width),
-                    style,
-                );
+                self.system
+                    .paint_row(buffer, Rect::new(area.x, py, area.width, 1), &line, style);
                 if !selected {
-                    buffer.set_stringn(
-                        area.x.saturating_add(1),
-                        py,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(area.x.saturating_add(1), py, 1, 1),
                         p.status.label(),
-                        1,
                         self.system.style(p.status.role()),
                     );
                 }
@@ -1386,11 +1385,10 @@ impl<'a> ProcessTable<'a> {
                 conf.signal.safe_verb(),
                 conf.subject
             );
-            buffer.set_stringn(
-                area.x,
-                cy,
-                take_display_cols(&msg, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, cy, area.width, 1),
+                &msg,
                 self.system.style(Role::Danger),
             );
         }

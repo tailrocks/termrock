@@ -19,6 +19,17 @@
 //!
 //! Research: agent approval flows, code review queues, security request
 //! dashboards.
+//!
+//! Teaches: how to compose unified surface for pending permissions,
+//! questions, plans, diffs, and other human decisions.
+//!
+//! Composes: [`crate::widgets::NotificationItem`], [`crate::widgets::Panel`],
+//! [`crate::widgets::PermissionRisk`], [`crate::widgets::SemanticStatus`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::ToastKind`],
+//! [`crate::widgets::ToastPriority`], [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -954,7 +965,7 @@ impl<'a> ApprovalQueue<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &ApprovalQueueState) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let label = state.badge_label();
         let role = if state.high_risk_count() > 0 {
             Role::Danger
@@ -965,11 +976,10 @@ impl<'a> ApprovalQueue<'a> {
         };
         let g = if self.ascii { "!" } else { "⚑" };
         let text = format!("{g} {label}");
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&text, w),
-            w,
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &text,
             self.system
                 .style(if self.colorless { Role::Text } else { role }),
         );
@@ -1005,22 +1015,20 @@ impl<'a> ApprovalQueue<'a> {
             } else {
                 "Space multi-select Low only · A bulk · a approve · never y"
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(banner, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                banner,
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
         }
 
         if state.view.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("(no pending decisions)", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                "(no pending decisions)",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1075,7 +1083,8 @@ impl<'a> ApprovalQueue<'a> {
             } else {
                 self.system.style(item.risk.role())
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
             state.row_hits.push((
                 item.id.clone(),
                 Rect {
@@ -1101,11 +1110,10 @@ impl<'a> ApprovalQueue<'a> {
                             .map(|a| format!(" · {a}"))
                             .unwrap_or_default();
                         let line = format!("    {p}{actor}{age}");
-                        buffer.set_stringn(
-                            inner.x,
-                            y,
-                            take_display_cols(&line, w),
-                            w,
+                        self.system.paint_row(
+                            buffer,
+                            Rect::new(inner.x, y, inner.width, 1),
+                            &line,
                             self.system.style(Role::TextMuted),
                         );
                         y = y.saturating_add(1);
@@ -1123,14 +1131,10 @@ impl<'a> ApprovalQueue<'a> {
                 } else {
                     "must Open — not bulk-safe"
                 };
-                buffer.set_stringn(
-                    inner.x,
-                    py,
-                    take_display_cols(
-                        &format!("{} · {} · {safe}", item.blocking.label(), item.risk.label()),
-                        w,
-                    ),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, py, inner.width, 1),
+                    &format!("{} · {} · {safe}", item.blocking.label(), item.risk.label()),
                     self.system.style(if item.allows_quick_approve() {
                         Role::TextMuted
                     } else {
@@ -1178,7 +1182,8 @@ impl<'a> ApprovalQueue<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
+            self.system
+                .paint_row(buffer, Rect::new(col, y, tw, 1), &text, style);
             state.action_hits.push((
                 *action,
                 Rect {

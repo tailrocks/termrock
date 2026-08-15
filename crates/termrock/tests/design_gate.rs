@@ -1389,3 +1389,396 @@ fn data_row_tones(buffer: &Buffer) -> Vec<(u16, usize)> {
         })
         .collect()
 }
+
+/// Examples compose; they do not paint.
+///
+/// An example that hand-rolls chrome teaches the wrong thing and leaves the
+/// design language without an enforcement point. Single rows go through
+/// `DesignSystem::paint_row`, which contracts honestly; everything else goes
+/// through a widget (plans/016).
+#[test]
+fn patterns_only_compose() {
+    let dir = crate_src().join("patterns");
+    let mut offenders = Vec::new();
+    for path in rust_files(&dir) {
+        let body = fs::read_to_string(&path).expect("read pattern");
+        let source: String = body
+            .lines()
+            .take_while(|l| !l.trim_start().starts_with("#[cfg(test)]"))
+            .filter(|l| !l.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for needle in ["set_stringn(", "cell_mut("] {
+            if source.contains(needle) {
+                offenders.push(format!("{}: {needle}", path.display()));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "raw buffer paint in an example — compose a widget, or report the missing widget:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// Every example says what it teaches.
+#[test]
+fn patterns_have_charter_docs() {
+    let dir = crate_src().join("patterns");
+    let mut offenders = Vec::new();
+    for path in rust_files(&dir) {
+        if path.ends_with("mod.rs") {
+            continue;
+        }
+        let body = fs::read_to_string(&path).expect("read pattern");
+        if !body.contains("//! Teaches:") {
+            offenders.push(path.display().to_string());
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "example without a `//! Teaches:` header — say what assembly it teaches:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// Building blocks never depend on examples (boundary law §6).
+#[test]
+fn widgets_never_import_patterns() {
+    let dir = crate_src().join("widgets");
+    let mut offenders = Vec::new();
+    for path in rust_files(&dir) {
+        let body = fs::read_to_string(&path).expect("read widget");
+        for (i, line) in body.lines().enumerate() {
+            let trimmed = line.trim_start();
+            // Doc links to an example are fine; code depending on one is not.
+            if trimmed.starts_with("//") {
+                continue;
+            }
+            if trimmed.contains("crate::patterns") || trimmed.contains("super::patterns") {
+                offenders.push(format!("{}:{}: {trimmed}", path.display(), i + 1));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "a widget depends on an example; the dependency runs the other way:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// Examples do not invent selection chrome or bypass the hint vocabulary.
+///
+/// Full-row reversed slabs and `Role::Selection` washes were how patterns used
+/// to say "this row is selected"; the row recipe says it now, and the reversed
+/// form survives only as the colorless fallback (plans/010).
+#[test]
+fn patterns_compose_chrome() {
+    let dir = crate_src().join("patterns");
+    let mut offenders = Vec::new();
+    for path in rust_files(&dir) {
+        let body = fs::read_to_string(&path).expect("read pattern");
+        let lines: Vec<(usize, &str)> = body
+            .lines()
+            .enumerate()
+            .map(|(i, l)| (i + 1, l))
+            .take_while(|(_, l)| !l.trim_start().starts_with("#[cfg(test)]"))
+            .filter(|(_, l)| !l.trim_start().starts_with("//"))
+            .collect();
+        for (i, (line_no, line)) in lines.iter().enumerate() {
+            if line.contains("Role::Selection") {
+                offenders.push(format!(
+                    "{}:{line_no}: Role::Selection — the row recipe owns selection fill",
+                    path.display()
+                ));
+            }
+            if !line.contains("Modifier::REVERSED") {
+                continue;
+            }
+            // Colorless terminals keep the reversed cue: it is the only cue
+            // they have. Look for the guard within the enclosing few lines.
+            let window = lines
+                .iter()
+                .skip(i.saturating_sub(8))
+                .take(9)
+                .map(|(_, l)| *l)
+                .collect::<Vec<_>>()
+                .join("\n");
+            if window.contains("colorless") {
+                continue;
+            }
+            offenders.push(format!(
+                "{}:{line_no}: reversed slab outside a colorless branch",
+                path.display()
+            ));
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "an example invented its own selection chrome:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// One chip family: no second bracket-paint body.
+///
+/// Tag, Chip, keycaps and token-field entries are the same token with
+/// different brackets. When each grows its own painter they drift — different
+/// bracket faintness, different focus cue, different remove affordance
+/// (plans/015 Step 2).
+#[test]
+fn one_chip_recipe() {
+    let src = crate_src();
+    let mut offenders = Vec::new();
+    for (file, allowance) in [("tag_chip.rs", 1usize), ("kbd.rs", 1usize)] {
+        let body = fs::read_to_string(src.join("widgets").join(file)).expect("read widget");
+        let paint_only: String = body
+            .lines()
+            .take_while(|l| !l.trim_start().starts_with("#[cfg(test)]"))
+            .filter(|l| !l.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        // A bracket-composing paint body is recognisable by the literal it
+        // wraps its label in.
+        let bodies = paint_only.matches("String::from(\"[\"").count()
+            + paint_only.matches("format!(\"[{").count();
+        if bodies > allowance {
+            offenders.push(format!(
+                "{file}: {bodies} bracket-composing bodies (allowed {allowance})"
+            ));
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "a second chip/keycap painter appeared; route it through the shared one:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// At most one bold run per row.
+///
+/// The four-level text ladder collapses when several parts of a row shout at
+/// once: the label may carry weight, its metadata never does (law P4).
+#[test]
+fn bold_budget_per_row() {
+    use ratatui_core::style::Modifier;
+    use termrock::style::{Density, DesignSystem, ListRowVisualState, RolePalette};
+
+    for density in [Density::Compact, Density::Comfortable, Density::Dashboard] {
+        let system = DesignSystem::new(RolePalette::default(), density);
+        for selected in [false, true] {
+            for focused in [false, true] {
+                for hovered in [false, true] {
+                    let recipe = system.resolve_list_row(ListRowVisualState {
+                        selected,
+                        focused,
+                        hovered,
+                        enabled: true,
+                        loading: false,
+                        checked: false,
+                    });
+                    let meta = [
+                        ("secondary", recipe.secondary),
+                        ("trailing", recipe.trailing),
+                        ("shortcut", recipe.shortcut),
+                    ];
+                    for (name, style) in meta {
+                        assert!(
+                            !style.add_modifier.contains(Modifier::BOLD),
+                            "{density:?} row (selected={selected}, focused={focused}, \
+                             hovered={hovered}) paints {name} bold; weight belongs to the label"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Every state a control claims to have must look different.
+///
+/// The state-coverage audit found pressed painting nowhere and hover missing
+/// from most of the library — which happened because nothing rendered the
+/// states side by side and compared them. This does (plans/021 Step 5).
+#[test]
+fn state_matrix_distinct() {
+    use ratatui_core::layout::Position;
+    use termrock::input::{KeyReleaseReporting, MouseButton, MouseEvent, MouseEventKind};
+    use termrock::style::{ControlState, DesignSystem, ListRowVisualState};
+    use termrock::widgets::{Button, ButtonState, ButtonVariant};
+
+    let system = DesignSystem::default();
+
+    // Button: idle / hovered / pressed / disabled must be four frames.
+    let area = Rect::new(0, 0, 16, 1);
+    let mut frames: Vec<(&'static str, Buffer)> = Vec::new();
+
+    let mut idle = ButtonState::new();
+    idle.activation.set_accepts_input(true);
+    frames.push((
+        "idle",
+        painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(ButtonVariant::Primary)
+                .paint(area, buffer, &mut idle);
+        }),
+    ));
+
+    let mut hovered = ButtonState::new();
+    hovered.activation.set_accepts_input(true);
+    hovered.hovered = true;
+    frames.push((
+        "hovered",
+        painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(ButtonVariant::Primary)
+                .paint(area, buffer, &mut hovered);
+        }),
+    ));
+
+    let mut pressed = ButtonState::new();
+    pressed.activation.set_accepts_input(true);
+    pressed
+        .activation
+        .set_release_reporting(KeyReleaseReporting::Reported);
+    // A press needs a painted hit region to land in.
+    let _ = painted(area, |buffer| {
+        Button::new("Run", &system)
+            .variant(ButtonVariant::Primary)
+            .paint(area, buffer, &mut pressed);
+    });
+    let armed = pressed.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(MouseButton::Left),
+        position: Position::new(area.x, area.y),
+        modifiers: termrock::input::KeyModifiers::NONE,
+    });
+    assert!(
+        pressed.activation.is_armed(),
+        "the press must arm the button: {armed:?}"
+    );
+    frames.push((
+        "pressed",
+        painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(ButtonVariant::Primary)
+                .paint(area, buffer, &mut pressed);
+        }),
+    ));
+
+    let mut disabled = ButtonState::new();
+    disabled.activation.set_accepts_input(true);
+    disabled.activation.set_enabled(false);
+    frames.push((
+        "disabled",
+        painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(ButtonVariant::Primary)
+                .paint(area, buffer, &mut disabled);
+        }),
+    ));
+
+    for (i, (name, frame)) in frames.iter().enumerate() {
+        for (other_name, other) in frames.iter().skip(i + 1) {
+            assert_ne!(
+                frame.content(),
+                other.content(),
+                "Button paints {name} and {other_name} identically"
+            );
+        }
+    }
+
+    // Row recipe: idle / hovered / selected / disabled must differ too.
+    let states = [
+        (
+            "idle",
+            ListRowVisualState {
+                selected: false,
+                focused: false,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+            },
+        ),
+        (
+            "hovered",
+            ListRowVisualState {
+                selected: false,
+                focused: false,
+                hovered: true,
+                enabled: true,
+                loading: false,
+                checked: false,
+            },
+        ),
+        (
+            "selected",
+            ListRowVisualState {
+                selected: true,
+                focused: true,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+            },
+        ),
+        (
+            "disabled",
+            ListRowVisualState {
+                selected: false,
+                focused: false,
+                hovered: false,
+                enabled: false,
+                loading: false,
+                checked: false,
+            },
+        ),
+    ];
+    let recipes: Vec<(&str, _)> = states
+        .iter()
+        .map(|(name, state)| (*name, system.resolve_list_row(*state)))
+        .collect();
+    for (i, (name, recipe)) in recipes.iter().enumerate() {
+        for (other_name, other) in recipes.iter().skip(i + 1) {
+            assert_ne!(
+                (
+                    recipe.label,
+                    recipe.tint,
+                    recipe.hover_wash,
+                    recipe.show_actions
+                ),
+                (
+                    other.label,
+                    other.tint,
+                    other.hover_wash,
+                    other.show_actions
+                ),
+                "the row recipe resolves {name} and {other_name} identically"
+            );
+        }
+    }
+
+    // A control state that claims to be pressed must not resolve as hovered.
+    let button_states = [
+        ControlState::Default,
+        ControlState::Hovered,
+        ControlState::Pressed,
+        ControlState::Focused,
+        ControlState::Disabled,
+    ];
+    let resolved: Vec<_> = button_states
+        .iter()
+        .map(|state| system.button_recipe(Default::default(), *state))
+        .collect();
+    for (i, recipe) in resolved.iter().enumerate() {
+        for (j, other) in resolved.iter().enumerate().skip(i + 1) {
+            assert_ne!(
+                (recipe.label, recipe.fill),
+                (other.label, other.fill),
+                "button recipe resolves {:?} and {:?} identically",
+                button_states[i],
+                button_states[j]
+            );
+        }
+    }
+}

@@ -21,7 +21,9 @@ use ratatui_core::{
 use super::data_view::ColumnKind;
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, ListRowVisualState, Role, SelectionChrome},
+    style::{
+        DesignSystem, FocusEmphasis, ListRowVisualState, Role, SelectionChrome, SurfaceFamily,
+    },
     text::{LinePlacement, paint_line_overflow},
 };
 
@@ -1267,7 +1269,13 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
             if paint_w > 0 {
                 let sort = column.sort.filter(|_| column.sortable && !shown_sort);
                 shown_sort |= sort.is_some();
-                let sort_width = u16::from(sort.is_some()).saturating_mul(2).min(paint_w);
+                // A sortable column says so before it is sorted (plans/021
+                // Step 3): the neutral marker states the capability, the
+                // direction arrow replaces it once a sort is applied.
+                let sortable_hint = column.sortable && sort.is_none();
+                let sort_width = u16::from(sort.is_some() || sortable_hint)
+                    .saturating_mul(2)
+                    .min(paint_w);
                 // Only show title when the left edge of the column is visible enough.
                 let skip_left = paint_x.saturating_sub(col_left.max(0) as u16);
                 let title_w = paint_w.saturating_sub(sort_width);
@@ -1282,19 +1290,23 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         &mut state.scratch_text,
                     );
                 }
-                if let Some(direction) = sort
-                    && sort_width > 0
-                    && col_right as u16 <= clip_right
-                {
+                if sort_width > 0 && col_right as u16 <= clip_right {
                     let sort_x = paint_end.saturating_sub(sort_width);
                     buffer.set_stringn(sort_x, area.y, " ", 1, header_style);
                     if sort_width > 1 {
+                        let (marker, marker_style) = match sort {
+                            Some(direction) => (sort_glyph(table.tokens, direction), header_style),
+                            None => (
+                                super::table_chrome::sortable_marker(table.tokens),
+                                super::table_chrome::sortable_marker_style(table.tokens),
+                            ),
+                        };
                         buffer.set_stringn(
                             sort_x.saturating_add(1),
                             area.y,
-                            sort_glyph(table.tokens, direction),
+                            marker,
                             1,
-                            header_style,
+                            marker_style,
                         );
                     }
                 }
@@ -1374,8 +1386,18 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 let kind = table.columns[column_index].kind;
                 let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
-                    // A cell cursor is a cell: reverse it.
-                    cell_style = cell_style.add_modifier(Modifier::REVERSED);
+                    // A cell cursor is a cell: the Cell family's focus cue
+                    // says how it marks itself (plans/015 Step 1).
+                    cell_style = match table.tokens.focus_emphasis(SurfaceFamily::Cell) {
+                        FocusEmphasis::Reversed => cell_style.add_modifier(Modifier::REVERSED),
+                        FocusEmphasis::BoldKey => cell_style.add_modifier(Modifier::BOLD),
+                        FocusEmphasis::SelectionFill | FocusEmphasis::FocusTint => {
+                            cell_style.patch(table.tokens.style(Role::SelectionTint))
+                        }
+                        FocusEmphasis::BrightBorder | FocusEmphasis::PillGlyph => {
+                            cell_style.patch(table.tokens.style(Role::Focus))
+                        }
+                    };
                 }
                 if matches!(table.tokens.selection, SelectionChrome::Fill) && selected {
                     buffer.set_style(rect, cell_style);

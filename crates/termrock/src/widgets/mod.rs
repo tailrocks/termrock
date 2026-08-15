@@ -426,6 +426,7 @@ pub use jump_overlay::{
 pub use kbd::{
     ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
     format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
+    keycap_text,
 };
 pub use key_value_list::{
     KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvEntry, KvEntryParts,
@@ -800,12 +801,13 @@ pub use table::{
 };
 pub use tabs::{
     TAB_GAP, TABS_OVERFLOW_MAX_WIDTH, TABS_SELECT_MAX_WIDTH, Tab, TabCell, TabStatus, Tabs,
-    TabsActivation, TabsOrientation, TabsOutcome, TabsPresentation, TabsState, lay_out_tabs,
-    tab_at_column,
+    TabsActivation, TabsActiveCue, TabsOrientation, TabsOutcome, TabsPresentation, TabsState,
+    lay_out_tabs, tab_at_column,
 };
 pub use tag_chip::{
-    Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,
-    TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
+    BracketStyle, Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart,
+    TokenParts, TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState,
+    remove_label,
 };
 pub use text_area::{
     TextArea, TextAreaOutcome, TextAreaState, TextAreaVariant, TextCursor, TextWrap,

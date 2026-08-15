@@ -16,6 +16,18 @@
 //! **vs [`super::ContextMeter`].** Budget specialist; header shows a compact cue.
 //!
 //! Research: Grok Build headers, OpenCode, Amp, IDE workspace headers.
+//!
+//! Teaches: how to compose compact top-level status for the current
+//! agent/session.
+//!
+//! Composes: [`crate::widgets::Panel`], [`crate::widgets::StatefulWidget`],
+//! [`crate::widgets::StatusBar`], [`crate::widgets::StatusBarRecipe`],
+//! [`crate::widgets::StatusBarState`], [`crate::widgets::StatusKind`],
+//! [`crate::widgets::StatusRegion`], [`crate::widgets::StatusSegment`], and 3
+//! more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -1082,7 +1094,8 @@ impl<'a> AgentStatusHeader<'a> {
                 } else {
                     self.system.style(Role::TextMuted)
                 };
-                buffer.set_stringn(x, y, &text, usize::from(tw), style);
+                self.system
+                    .paint_row(buffer, Rect::new(x, y, tw, 1), &text, style);
                 state.action_hits.push((
                     *action,
                     Rect {

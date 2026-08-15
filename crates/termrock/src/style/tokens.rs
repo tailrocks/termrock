@@ -164,6 +164,104 @@ pub enum SelectionChrome {
     Tint,
 }
 
+/// How a family of surfaces says "the keyboard is here".
+///
+/// Plans 005-008 gave each family its cue; this names them so a theme can
+/// state the vocabulary instead of every widget improvising one (audit F2).
+/// The rule the names encode: a container brightens its border, a row tints
+/// and takes the gutter, a cell reverses, a chip marks its bracket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum FocusEmphasis {
+    /// `Role::BorderFocused` on the container's own edge (panels, inputs).
+    #[default]
+    BrightBorder,
+    /// Full selection fill — opt-in only, never a resting default.
+    SelectionFill,
+    /// `Role::SelectionTint` behind the row plus its gutter glyph.
+    FocusTint,
+    /// Reversed cell — a cell cursor is a cell (tables, grids).
+    Reversed,
+    /// Weight on the key itself (keycaps, hint chords).
+    BoldKey,
+    /// The token's bracket carries focus; the mark keeps stating membership.
+    PillGlyph,
+}
+
+impl FocusEmphasis {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::BrightBorder => "bright-border",
+            Self::SelectionFill => "selection-fill",
+            Self::FocusTint => "focus-tint",
+            Self::Reversed => "reversed",
+            Self::BoldKey => "bold-key",
+            Self::PillGlyph => "pill-glyph",
+        }
+    }
+
+    /// The cue a surface family wears by default.
+    #[must_use]
+    pub const fn for_family(family: SurfaceFamily) -> Self {
+        match family {
+            SurfaceFamily::Container | SurfaceFamily::Field => Self::BrightBorder,
+            SurfaceFamily::Row => Self::FocusTint,
+            SurfaceFamily::Cell => Self::Reversed,
+            SurfaceFamily::Token => Self::PillGlyph,
+            SurfaceFamily::Chord => Self::BoldKey,
+        }
+    }
+}
+
+/// The families whose focus cue differs, for [`FocusEmphasis::for_family`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum SurfaceFamily {
+    /// Panels, dialogs, drawers.
+    #[default]
+    Container,
+    /// Text inputs and other typed fields.
+    Field,
+    /// List, tree and table rows.
+    Row,
+    /// Individual table or grid cells.
+    Cell,
+    /// Tags, chips, token-field entries.
+    Token,
+    /// Keycaps and hint chords.
+    Chord,
+}
+
+impl SurfaceFamily {
+    /// Position in a per-family table.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Container => 0,
+            Self::Field => 1,
+            Self::Row => 2,
+            Self::Cell => 3,
+            Self::Token => 4,
+            Self::Chord => 5,
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Container => "container",
+            Self::Field => "field",
+            Self::Row => "row",
+            Self::Cell => "cell",
+            Self::Token => "token",
+            Self::Chord => "chord",
+        }
+    }
+}
+
 /// Corner-glyph family for single-line borders. Focus stays color-only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -308,6 +406,17 @@ pub struct ListRowVisualState {
     pub loading: bool,
     /// Multi-select membership.
     pub checked: bool,
+}
+
+impl ListRowVisualState {
+    /// Whether this row's hidden affordances are revealed.
+    ///
+    /// A row reveals its actions when the operator is on it — by cursor, by
+    /// focus, or by pointer. Everything else keeps them out of the way.
+    #[must_use]
+    pub const fn revealed(self) -> bool {
+        self.enabled && (self.selected || self.focused || self.hovered)
+    }
 }
 
 /// Semantic panel chrome emphasis for recipes.
@@ -563,6 +672,8 @@ pub struct DesignSystem {
     pub breakpoints: BreakpointScale,
     /// Separator painted between a key and its value.
     pub kv_separator: KvSeparator,
+    /// Focus cue per surface family, in [`SurfaceFamily`] order.
+    focus: [FocusEmphasis; 6],
     /// Frame time for animated chrome, when a host supplies one.
     ///
     /// Motion policy already rides the design system into every widget, but the
@@ -655,6 +766,14 @@ impl DesignSystem {
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
             kv_separator: KvSeparator::default(),
+            focus: [
+                FocusEmphasis::for_family(SurfaceFamily::Container),
+                FocusEmphasis::for_family(SurfaceFamily::Field),
+                FocusEmphasis::for_family(SurfaceFamily::Row),
+                FocusEmphasis::for_family(SurfaceFamily::Cell),
+                FocusEmphasis::for_family(SurfaceFamily::Token),
+                FocusEmphasis::for_family(SurfaceFamily::Chord),
+            ],
             tick: None,
         }
     }
@@ -663,6 +782,23 @@ impl DesignSystem {
     #[must_use]
     pub fn from_palette(palette: RolePalette) -> Self {
         Self::new(palette, Density::default())
+    }
+
+    /// The focus cue this system gives a surface family.
+    #[must_use]
+    pub const fn focus_emphasis(&self, family: SurfaceFamily) -> FocusEmphasis {
+        self.focus[family.index()]
+    }
+
+    /// Overrides one family's focus cue (themes state the vocabulary).
+    #[must_use]
+    pub const fn with_focus_emphasis(
+        mut self,
+        family: SurfaceFamily,
+        emphasis: FocusEmphasis,
+    ) -> Self {
+        self.focus[family.index()] = emphasis;
+        self
     }
 
     /// Overrides density and recomputes spacing from density.
@@ -855,6 +991,22 @@ impl DesignSystem {
         self.palette.style(role)
     }
 
+    /// Paints one contracted row of text.
+    ///
+    /// The sanctioned single-row painter for titles, labels and values: it
+    /// never splits a grapheme cluster, never leaves a silent hard cut, and
+    /// takes its ellipsis from the active glyph profile. Surfaces that reach
+    /// for `Buffer::set_stringn` instead lose all three.
+    pub fn paint_row(
+        &self,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        area: ratatui_core::layout::Rect,
+        text: &str,
+        style: Style,
+    ) {
+        crate::text::paint_text(buffer, area, text, style, self.glyphs.ellipsis());
+    }
+
     /// Elevation → style.
     #[must_use]
     pub fn elevation(&self, elevation: Elevation) -> Style {
@@ -958,10 +1110,27 @@ impl DesignSystem {
                     label = self.style(Role::LinkHover);
                 } else if fill.bg.is_none() {
                     fill = self.style(Role::HoverTint);
+                } else if let Some(bg) = fill.bg {
+                    // A filled button already owns its ground, so a hover wash
+                    // lands on nothing: the fill itself lifts one step. The
+                    // label carries the same ground, so it lifts with it —
+                    // otherwise it repaints the resting colour straight back
+                    // over the lift (plans/021 Step 1).
+                    let lifted = super::palette::lift(bg);
+                    fill = fill.bg(lifted);
+                    if label.bg == Some(bg) {
+                        label = label.bg(lifted);
+                    }
+                    border = self.style(Role::BorderFocused);
+                    bordered = true;
                 }
             }
             ControlState::Pressed => {
+                // Pressed is a distinct fact, not "hover but bolder": the
+                // control sinks into the press for the frame it is held
+                // (plans/021 Step 2).
                 label = label.add_modifier(Modifier::BOLD);
+                fill = self.style(Role::SelectionTint);
                 if matches!(variant, ButtonRecipeVariant::Destructive) {
                     label = label.add_modifier(Modifier::REVERSED);
                 }
@@ -1113,6 +1282,10 @@ impl DesignSystem {
             ),
             checked: state.checked,
             loading: state.loading,
+            // Law P6: a row's actions appear when the row is the one you are
+            // on. Idle rows keep a faint marker so the affordance is still
+            // discoverable (plans/021 Step 3).
+            show_actions: state.revealed(),
         }
     }
 }
@@ -1162,6 +1335,8 @@ pub struct ListRowRecipe {
     pub checked: bool,
     /// Loading flag for leading glyph override.
     pub loading: bool,
+    /// Whether row actions are revealed this frame (law P6).
+    pub show_actions: bool,
 }
 
 #[cfg(test)]

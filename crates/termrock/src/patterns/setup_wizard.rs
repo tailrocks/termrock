@@ -12,6 +12,18 @@
 //!
 //! Research: CLI installers, Huh, cloud auth flows, native onboarding
 //! (experience references — not marketing splash screens).
+//!
+//! Teaches: how to compose a first-run onboarding flow: steps, capability
+//! findings, per-step validation and an explicit continue.
+//!
+//! Composes: [`crate::widgets::BUILTIN_THEME_PRESETS`],
+//! [`crate::widgets::EmptyKind`], [`crate::widgets::EmptyState`],
+//! [`crate::widgets::Field`], [`crate::widgets::Fieldset`],
+//! [`crate::widgets::Form`], [`crate::widgets::FormOutcome`],
+//! [`crate::widgets::FormState`], and 18 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -25,10 +37,12 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        BUILTIN_THEME_PRESETS, EmptyKind, EmptyState, Field, Fieldset, Form, FormOutcome,
-        FormState, FormWizard, FormWizardOutcome, FormWizardState, KeybindingRecorderState,
-        PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome,
-        ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep,
+        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind,
+        EmptyState, Field, Fieldset, Form, FormOutcome, FormState, FormWizard, FormWizardOutcome,
+        FormWizardState, KeyValueList, KeyValueListState, KeybindingRecorderState, KvEntry,
+        KvStatus, PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker,
+        ThemePickerOutcome, ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
+        WizardStep,
     },
 };
 
@@ -694,8 +708,40 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
         }
     }
 
+    paint_primary_action(buffer, body, system, state);
     paint_cancel_confirm(buffer, frame, system, state);
-    let _ = state.colorless;
+}
+
+/// The step's shippable action, as a button rather than only a chord.
+///
+/// A wizard whose only way forward is Enter teaches that the action is
+/// invisible; the chord still works, and now the action is visible too
+/// (plans/016 Step 3).
+fn paint_primary_action(
+    buffer: &mut Buffer,
+    body: Rect,
+    system: &DesignSystem,
+    state: &SetupWizardState,
+) {
+    if state.cancel_confirm || body.height < 4 {
+        return;
+    }
+    let last = state.wizard.step().saturating_add(1) >= state.wizard.step_count();
+    let label = if last { "Finish" } else { "Continue" };
+    let button = Button::new(label, system).variant(ButtonVariant::Primary);
+    let width = button.preferred_width().min(body.width);
+    if width == 0 {
+        return;
+    }
+    let rect = Rect::new(
+        body.right().saturating_sub(width),
+        body.bottom().saturating_sub(1),
+        width,
+        1,
+    );
+    let mut button_state = ButtonState::new();
+    button_state.activation.set_accepts_input(true);
+    button.paint(rect, buffer, &mut button_state);
 }
 
 fn paint_cancel_confirm(
@@ -713,21 +759,18 @@ fn paint_cancel_confirm(
         width: frame.width,
         height: 1,
     };
-    let text = if state.ascii {
-        "Leave setup? Enter yes · Esc no"
-    } else {
-        "Leave setup? Enter confirm · Esc stay"
+    // One confirm surface for the whole library (plans/016 Step 1).
+    let prompt = Rect {
+        x: strip.x,
+        y: strip.y.saturating_sub(1),
+        width: strip.width,
+        height: 2,
     };
-    // Dim backdrop line
-    buffer.set_stringn(
-        strip.x,
-        strip.y,
-        take_display_cols(text, usize::from(strip.width)),
-        usize::from(strip.width),
-        system
-            .style(Role::Warning)
-            .add_modifier(ratatui_core::style::Modifier::REVERSED),
-    );
+    ConfirmPrompt::new("Leave setup?", "Leave", system)
+        .detail("the steps you have finished are kept")
+        .cancel_label("Stay")
+        .colorless(state.colorless)
+        .paint(prompt, buffer);
 }
 
 fn paint_capability_list(
@@ -735,62 +778,51 @@ fn paint_capability_list(
     area: Rect,
     system: &DesignSystem,
     lines: &[CapabilityLine<'_>],
-    ascii: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
     }
-    let header = if ascii {
-        "Terminal capabilities"
-    } else {
-        "Terminal capabilities"
-    };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(header, usize::from(area.width)),
-        usize::from(area.width),
+    // A capability report is key/value data, so it reads as key/value data:
+    // labels strong, findings quiet, and the severity on the row's own status
+    // rather than on the whole sentence (plans/010 Step 3).
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        "Terminal capabilities",
         system.style(Role::TextStrong),
     );
-    let mut y = area.y.saturating_add(1);
-    for line in lines
-        .iter()
-        .take(usize::from(area.height.saturating_sub(1)))
-    {
-        let mark = if line.problem {
-            if ascii { "[!]" } else { "✗" }
-        } else if ascii {
-            "[x]"
-        } else {
-            "✓"
-        };
-        let row = format!("{mark} {} — {}", line.label, line.status);
-        let role = if line.problem {
-            Role::Danger
-        } else {
-            Role::Text
-        };
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(&row, usize::from(area.width)),
-            usize::from(area.width),
-            system.style(role),
-        );
-        y = y.saturating_add(1);
-        if y >= area.bottom() {
-            break;
-        }
+    let body = Rect::new(
+        area.x,
+        area.y.saturating_add(1),
+        area.width,
+        area.height.saturating_sub(1),
+    );
+    if body.height == 0 {
+        return;
     }
-    if lines.is_empty() && area.height > 1 {
-        buffer.set_stringn(
-            area.x,
-            area.y.saturating_add(1),
-            take_display_cols("(host projects doctor rows)", usize::from(area.width)),
-            usize::from(area.width),
+    if lines.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "(host projects doctor rows)",
             system.style(Role::TextMuted),
         );
+        return;
     }
+    let entries: Vec<KvEntry<'_, usize>> = lines
+        .iter()
+        .enumerate()
+        .map(|(i, line)| {
+            KvEntry::pair(i, line.label, line.status).status(if line.problem {
+                KvStatus::Danger
+            } else {
+                KvStatus::Success
+            })
+        })
+        .collect();
+    let mut state = KeyValueListState::new();
+    KeyValueList::new(&entries, system).paint(body, buffer, &mut state);
 }
 
 fn paint_summary(
@@ -798,46 +830,47 @@ fn paint_summary(
     area: Rect,
     system: &DesignSystem,
     lines: &[&str],
-    ascii: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
     }
-    let title = if ascii { "Review" } else { "Review" };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(title, usize::from(area.width)),
-        usize::from(area.width),
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        "Review",
         system.style(Role::TextStrong),
     );
-    let mut y = area.y.saturating_add(1);
-    for line in lines
-        .iter()
-        .take(usize::from(area.height.saturating_sub(1)))
-    {
-        let row = format!("· {line}");
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(&row, usize::from(area.width)),
-            usize::from(area.width),
-            system.style(Role::Text),
-        );
-        y = y.saturating_add(1);
-        if y >= area.bottom() {
-            break;
-        }
+    let body = Rect::new(
+        area.x,
+        area.y.saturating_add(1),
+        area.width,
+        area.height.saturating_sub(1),
+    );
+    if body.height == 0 {
+        return;
     }
-    if lines.is_empty() && area.height > 1 {
-        buffer.set_stringn(
-            area.x,
-            area.y.saturating_add(1),
-            take_display_cols("Host summary projection", usize::from(area.width)),
-            usize::from(area.width),
+    if lines.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "Host summary projection",
             system.style(Role::TextMuted),
         );
+        return;
     }
+    // Summary rows arrive as `label: value` or as plain sentences; both read
+    // as a list, not as a paragraph of bullets.
+    let entries: Vec<KvEntry<'_, usize>> = lines
+        .iter()
+        .enumerate()
+        .map(|(i, line)| match line.split_once(": ") {
+            Some((key, value)) => KvEntry::pair(i, key, value),
+            None => KvEntry::pair(i, line, ""),
+        })
+        .collect();
+    let mut state = KeyValueListState::new();
+    KeyValueList::new(&entries, system).paint(body, buffer, &mut state);
 }
 
 fn paint_body_hint(
@@ -850,11 +883,10 @@ fn paint_body_hint(
     if area.is_empty() {
         return;
     }
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(text, usize::from(area.width)),
-        usize::from(area.width),
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        text,
         system.style(Role::TextMuted),
     );
 }

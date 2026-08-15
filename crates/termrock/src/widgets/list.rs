@@ -1145,10 +1145,23 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         };
         let mut y = body.y;
         let mut painted_rows = 0usize;
+        // Breathing rows: under Comfortable density a group header opens with
+        // one blank canvas row, so sections read as sections instead of as one
+        // unbroken column (law P1, audit D8; plans/015 Step 4).
+        let breathing = matches!(self.density, Density::Comfortable);
+        let mut painted_any = false;
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
                 break;
             }
+            if breathing
+                && painted_any
+                && matches!(row.role, RowRole::GroupHeader)
+                && y.saturating_add(1) < body.bottom()
+            {
+                y = y.saturating_add(1);
+            }
+            painted_any = true;
             let secondary_below = matches!(self.density, Density::Comfortable)
                 && row.secondary.is_some()
                 && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
@@ -1257,10 +1270,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         if show_shortcut {
                             budget = budget.saturating_sub(shortcut_need);
                         }
-                        let show_actions =
-                            row.actions.is_some() && content_w >= 14 && budget >= actions_need + 2;
+                        // Actions belong to the row you are on (law P6): the
+                        // width ladder is the cap, not the gate. An idle row
+                        // with actions keeps a faint marker so the affordance
+                        // stays discoverable (plans/021 Step 3).
+                        let has_actions = row.actions.is_some();
+                        let fits_actions = content_w >= 14 && budget >= actions_need + 2;
+                        let show_actions = has_actions && fits_actions && recipe.show_actions;
+                        let show_action_marker = has_actions && fits_actions && !show_actions;
                         if show_actions {
                             budget = budget.saturating_sub(actions_need);
+                        } else if show_action_marker {
+                            budget = budget.saturating_sub(2);
                         }
                         let badge_need = badge
                             .map(|b| {
@@ -1375,6 +1396,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     sc,
                                     usize::from(w),
                                     recipe.shortcut,
+                                );
+                            }
+                        }
+                        if show_action_marker {
+                            let marker = self.tokens.glyphs.ellipsis();
+                            let w = u16::try_from(crate::text::display_cols(marker))
+                                .unwrap_or(1)
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_stringn(
+                                    cursor,
+                                    rect.y,
+                                    marker,
+                                    usize::from(w),
+                                    self.tokens.style(Role::TextFaint),
                                 );
                             }
                         }

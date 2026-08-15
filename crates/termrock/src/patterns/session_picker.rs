@@ -16,6 +16,16 @@
 //!
 //! Research: Amp sessions, OpenCode sessions, Grok Build picker, project launchers.
 //! Outcomes are **requests only** — no persistence, network, or draft mutation.
+//!
+//! Teaches: how to compose polished selector for creating, resuming,
+//! searching, renaming, archiving, and deleting agent sessions.
+//!
+//! Composes: [`crate::widgets::ConfirmFocus`],
+//! [`crate::widgets::ConfirmPrompt`], [`crate::widgets::Panel`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -1209,16 +1219,15 @@ impl<'a> SessionPicker<'a> {
         }
 
         let mut y = inner.y;
-        let w = usize::from(inner.width);
+        let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
         // Draft preservation banner
         if y < max_y {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("draft & context preserved on cancel", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                "draft & context preserved on cancel",
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1248,7 +1257,8 @@ impl<'a> SessionPicker<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
             y = y.saturating_add(1);
         }
 
@@ -1263,11 +1273,10 @@ impl<'a> SessionPicker<'a> {
             } else {
                 "loading…"
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(m, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                m,
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -1277,11 +1286,10 @@ impl<'a> SessionPicker<'a> {
                 .load_error
                 .as_deref()
                 .unwrap_or("load failed · r retry");
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(msg, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                msg,
                 self.system.style(Role::Danger),
             );
             y = y.saturating_add(1);
@@ -1342,11 +1350,10 @@ impl<'a> SessionPicker<'a> {
             self.paint_confirm(inner, buffer, state);
         } else if max_y > inner.y {
             let fy = max_y.saturating_sub(1);
-            buffer.set_stringn(
-                inner.x,
-                fy,
-                take_display_cols("enter open · n new · i details · del delete · esc close", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, fy, inner.width, 1),
+                "enter open · n new · i details · del delete · esc close",
                 self.system.style(Role::TextMuted),
             );
         }
@@ -1356,7 +1363,7 @@ impl<'a> SessionPicker<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let viewport = max_y.saturating_sub(y) as usize;
@@ -1369,11 +1376,10 @@ impl<'a> SessionPicker<'a> {
             } else {
                 "no matches"
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(msg, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                msg,
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1426,7 +1432,8 @@ impl<'a> SessionPicker<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             if !self.colorless && s.enabled && !selected {
                 let status_role = if s.action_required {
                     Role::Warning
@@ -1467,11 +1474,10 @@ impl<'a> SessionPicker<'a> {
                     meta.push_str(r);
                 }
                 if !meta.is_empty() {
-                    buffer.set_stringn(
-                        area.x,
-                        y,
-                        take_display_cols(&format!("    {meta}"), w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(area.x, y, area.width, 1),
+                        &format!("    {meta}"),
                         self.system.style(Role::TextMuted),
                     );
                     y = y.saturating_add(1);
@@ -1484,15 +1490,14 @@ impl<'a> SessionPicker<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(s) = state.current() else {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no selection)", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "(no selection)",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1563,7 +1568,8 @@ impl<'a> SessionPicker<'a> {
             } else {
                 self.system.style(role)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             y = y.saturating_add(1);
         }
     }

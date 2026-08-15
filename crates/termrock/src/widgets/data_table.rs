@@ -122,6 +122,8 @@ pub enum DataTableOutcome<RowId, ColId> {
     Scrolled,
     /// Cursor moved within projected slice.
     CursorMoved,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Sort requested for column (consumer sorts / re-projects).
     SortRequested(ColId),
     /// Sort with direction (toggle chrome).
@@ -243,6 +245,8 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub header_regions: Vec<DataTableHeaderRegion<ColId>>,
     /// Body cell hit regions from last paint.
     pub cell_regions: Vec<DataTableCellRegion<RowId, ColId>>,
+    /// Row the pointer is over. Hover washes; it never selects.
+    pub hovered_row: Option<RowId>,
     /// Active column resize drag (column id + start width + start x).
     resize_drag: Option<(ColId, u16, u16)>,
     /// Range-selection drag anchor cell.
@@ -287,6 +291,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             pin_end_count: 0,
             header_regions: Vec::new(),
             cell_regions: Vec::new(),
+            hovered_row: None,
             resize_drag: None,
             range_anchor: None,
             body_origin: (0, 0),
@@ -863,6 +868,19 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
         }
 
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated every event, so leaving the body clears it.
+            let was = self.hovered_row.clone();
+            self.hovered_row = self
+                .cell_regions
+                .iter()
+                .find(|region| region.area.contains(event.position))
+                .map(|region| region.row.clone());
+            if was != self.hovered_row {
+                return DataTableOutcome::HoverChanged;
+            }
+        }
+
         match event.kind {
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
@@ -1402,7 +1420,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             id: col.id.clone(),
             area: Rect::new(paint_x, y, paint_w.saturating_sub(RESIZE_HIT).max(1), 1),
             resize_handle: Rect::new(handle_x, y, RESIZE_HIT, 1),
-            sortable: col.sortable || true, // allow sort chrome by default for pro tables
+            // A column is sortable when the host says so. `|| true` made
+            // every column advertise sorting and emit sort requests the host
+            // never asked for (plans/021 Step 3).
+            sortable: col.sortable,
         });
         // Separator
         if paint_end < clip_right && paint_ord + 1 < widths.len() {
@@ -1442,7 +1463,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let recipe = table.system.resolve_list_row(ListRowVisualState {
         selected,
         focused: cursor && surface_focused,
-        hovered: false,
+        hovered: state.hovered_row.as_ref() == Some(id),
         enabled: true,
         loading: false,
         checked: selected,

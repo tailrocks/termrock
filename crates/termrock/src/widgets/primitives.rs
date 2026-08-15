@@ -69,6 +69,8 @@ pub struct ActivationState {
     pending_confirmation: bool,
     /// First activate received; next Activate fires.
     confirm_armed: bool,
+    /// Whether this terminal reports key releases.
+    release_reporting: crate::input::KeyReleaseReporting,
 }
 
 impl ActivationState {
@@ -82,6 +84,7 @@ impl ActivationState {
             armed: false,
             pending_confirmation: false,
             confirm_armed: false,
+            release_reporting: crate::input::KeyReleaseReporting::PressOnly,
         }
     }
 
@@ -122,6 +125,20 @@ impl ActivationState {
             self.armed = false;
             self.confirm_armed = false;
         }
+    }
+
+    /// States whether this terminal reports key releases.
+    ///
+    /// Hosts that negotiate the Kitty keyboard protocol pass `Reported`, which
+    /// restores press-to-arm / release-to-fire for Space.
+    pub const fn set_release_reporting(&mut self, reporting: crate::input::KeyReleaseReporting) {
+        self.release_reporting = reporting;
+    }
+
+    /// Whether this control waits for a key release before activating.
+    #[must_use]
+    pub const fn release_reporting(&self) -> crate::input::KeyReleaseReporting {
+        self.release_reporting
     }
 
     /// Require two Activate intents (e.g. destructive).
@@ -200,8 +217,20 @@ impl ActivationState {
         if !self.can_activate() {
             return ActivationOutcome::Ignored;
         }
-        // Space: arm on press, fire on release (desktop dialog discipline).
+        // Space: arm on press, fire on release — but only where releases are
+        // actually reported. On an ordinary terminal that half of the
+        // handshake never arrives, so Space armed the control forever and
+        // never activated it (plans/021 Step 2).
         if matches!(key.code, KeyCode::Char(' ')) {
+            if !self.release_reporting.can_wait_for_release() {
+                return match key.kind {
+                    KeyEventKind::Press => {
+                        self.armed = false;
+                        self.fire_or_confirm()
+                    }
+                    KeyEventKind::Repeat | KeyEventKind::Release => ActivationOutcome::Ignored,
+                };
+            }
             match key.kind {
                 KeyEventKind::Press => {
                     self.armed = true;
@@ -1416,6 +1445,34 @@ mod tests {
     }
 
     #[test]
+    fn space_activates_on_a_terminal_without_release_reporting() {
+        use crate::input::{KeyCode, KeyEvent, KeyModifiers, KeyReleaseReporting};
+
+        let mut state = ActivationState::new();
+        state.set_accepts_input(true);
+        // The default terminal reports presses only.
+        assert_eq!(state.release_reporting(), KeyReleaseReporting::PressOnly);
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert!(
+            matches!(out, ActivationOutcome::Activated),
+            "Space must activate where releases are never reported: {out:?}"
+        );
+        assert!(!state.is_armed(), "and it must not stay armed");
+
+        // Where releases are reported, the dialog discipline stands.
+        let mut kitty = ActivationState::new();
+        kitty.set_accepts_input(true);
+        kitty.set_release_reporting(KeyReleaseReporting::Reported);
+        let armed = kitty.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert!(matches!(armed, ActivationOutcome::Pressed));
+        let fired = kitty.handle_key(KeyEvent {
+            kind: KeyEventKind::Release,
+            ..KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)
+        });
+        assert!(matches!(fired, ActivationOutcome::Activated));
+    }
+
+    #[test]
     fn primary_button_is_accent_chip() {
         let system = DesignSystem::default();
         let mut state = ButtonState::new();
@@ -1477,6 +1534,10 @@ mod tests {
     fn button_space_arms_then_release_activates() {
         let mut state = ButtonState::new();
         state.activation.set_accepts_input(true);
+        // Press-to-arm needs a terminal that reports the release (plans/021).
+        state
+            .activation
+            .set_release_reporting(crate::input::KeyReleaseReporting::Reported);
         assert_eq!(
             state.handle_key(press(KeyCode::Char(' '))),
             ActivationOutcome::Pressed

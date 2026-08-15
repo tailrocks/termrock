@@ -353,6 +353,8 @@ pub enum DropdownMenuOutcome<Id> {
     Ignored,
     /// Cursor moved in a panel.
     CursorMoved,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Root panel opened.
     Opened {
         /// Trigger used.
@@ -433,6 +435,8 @@ pub struct DropdownMenuState {
     presentation_override: Option<DropdownMenuPresentation>,
     /// Panel hits: (depth, item_index, rect).
     panel_hits: Vec<(usize, usize, Rect)>,
+    /// (depth, item) the pointer is over. Hover washes; it never commits.
+    hovered: Option<(usize, usize)>,
     /// Custom-preview hit rects for host paint.
     preview_hits: Vec<(usize, usize, Rect)>,
     /// Root panel origin for mouse.
@@ -462,6 +466,7 @@ impl DropdownMenuState {
             presentation: DropdownMenuPresentation::Cascading,
             presentation_override: None,
             panel_hits: Vec::new(),
+            hovered: None,
             preview_hits: Vec::new(),
             origin: (0, 0),
             typeahead: String::new(),
@@ -949,6 +954,21 @@ impl DropdownMenuState {
             return DropdownMenuOutcome::Ignored;
         }
         match event.kind {
+            MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving a panel clears it.
+                let was = self.hovered;
+                self.hovered = self
+                    .panel_hits
+                    .iter()
+                    .rev()
+                    .find(|(_, _, rect)| rect.contains(event.position))
+                    .map(|(depth, idx, _)| (*depth, *idx));
+                if was == self.hovered {
+                    DropdownMenuOutcome::Ignored
+                } else {
+                    DropdownMenuOutcome::HoverChanged
+                }
+            }
             MouseEventKind::Down(MouseButton::Left) => {
                 let pos = event.position;
                 // Find deepest hit first.
@@ -1257,7 +1277,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             let recipe = self.system.resolve_list_row(ListRowVisualState {
                 selected: active,
                 focused: active,
-                hovered: false,
+                hovered: state.hovered == Some((depth, i)),
                 enabled: item.enabled,
                 loading: false,
                 checked: matches!(

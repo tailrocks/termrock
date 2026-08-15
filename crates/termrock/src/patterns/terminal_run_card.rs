@@ -18,6 +18,18 @@
 //! **Ownership.** Host owns PTY/process. Outcomes are **requests only**.
 //!
 //! Research: agent CLIs, CI command cards, terminal output panes.
+//!
+//! Teaches: how to compose shell/terminal command card with live output.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Card`],
+//! [`crate::widgets::TerminalCommandMeta`],
+//! [`crate::widgets::TerminalEnvEntry`], [`crate::widgets::TerminalLine`],
+//! [`crate::widgets::TerminalOutput`],
+//! [`crate::widgets::TerminalOutputOutcome`],
+//! [`crate::widgets::TerminalOutputRecipe`], and 6 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -911,11 +923,10 @@ impl<'a> TerminalRunCard<'a> {
                 run.display_command(),
                 run.status.label()
             );
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, area.y, area.width, 1),
+                &line,
                 self.system.style(if colorless {
                     Role::Text
                 } else {
@@ -1001,11 +1012,10 @@ impl<'a> TerminalRunCard<'a> {
                         usize::from(body.width).saturating_sub(10)
                     )
                 );
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&line, usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &line,
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1020,11 +1030,10 @@ impl<'a> TerminalRunCard<'a> {
                         usize::from(body.width).saturating_sub(10)
                     )
                 );
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&line, usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &line,
                     self.system.style(Role::Accent),
                 );
                 y = y.saturating_add(1);
@@ -1032,11 +1041,10 @@ impl<'a> TerminalRunCard<'a> {
         }
         if let Some(cwd) = &run.cwd {
             if y < max_y && body.width >= 24 {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("cwd: {cwd}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("cwd: {cwd}"),
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1044,33 +1052,30 @@ impl<'a> TerminalRunCard<'a> {
         }
         if let Some(a) = &run.actor {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("via {a}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("via {a}"),
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
             }
         }
         if run.status.needs_permission() && y < max_y {
-            buffer.set_stringn(
-                body.x,
-                y,
-                take_display_cols("permission required · p", usize::from(body.width)),
-                usize::from(body.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(body.x, y, body.width, 1),
+                "permission required · p",
                 self.system.style(Role::Warning),
             );
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("egress: {e}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("egress: {e}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
