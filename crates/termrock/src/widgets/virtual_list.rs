@@ -730,12 +730,15 @@ impl<'a, Id> VirtualList<'a, Id> {
             if paint_y >= body.bottom() {
                 break;
             }
+            let selected = state.list.selected() == Some(&row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, paint_y, body.width, 1),
                 row,
                 self.system,
                 true,
+                selected,
+                self.focused,
             );
             paint_y = paint_y.saturating_add(1);
         }
@@ -774,12 +777,15 @@ impl<'a, Id> VirtualList<'a, Id> {
             if ty >= body.bottom() {
                 break;
             }
+            let selected = state.list.selected() == Some(&row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, ty, body.width, 1),
                 row,
                 self.system,
                 true,
+                selected,
+                self.focused,
             );
             ty = ty.saturating_add(1);
         }
@@ -861,16 +867,32 @@ impl<'a, Id> VirtualList<'a, Id> {
     }
 }
 
+/// Paints one sticky (pinned) row with the same chrome the body uses.
+///
+/// Sticky rows used to drop selection entirely: scrolling a selected row into
+/// the pinned band made it look unselected. They resolve the shared row
+/// recipe, so the gutter slot and the selection wash survive the pin.
 fn paint_simple_row<Id>(
     buffer: &mut Buffer,
     area: Rect,
     row: &ListRow<'_, Id>,
     system: &DesignSystem,
     strong: bool,
+    selected: bool,
+    focused: bool,
 ) {
     if area.is_empty() {
         return;
     }
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        system,
+        crate::style::ListRowVisualState {
+            selected,
+            focused,
+            enabled: row.enabled,
+            ..Default::default()
+        },
+    );
     let mut style = if strong {
         system.style(Role::TextStrong)
     } else {
@@ -881,9 +903,12 @@ fn paint_simple_row<Id>(
             .style(Role::TextStrong)
             .add_modifier(ratatui_core::style::Modifier::BOLD);
     }
-    let text = row.plain_label();
+    let style = chrome.label_style(style);
+    // Reserve the gutter column so pinned rows line up with the body.
+    let text = format!(" {}", row.plain_label());
     let w = display_cols(&text).min(usize::from(area.width));
     buffer.set_stringn(area.x, area.y, &take_display_cols(&text, w), w, style);
+    chrome.paint(buffer, area);
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &VirtualList<'_, Id> {

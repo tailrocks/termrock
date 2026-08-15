@@ -29,13 +29,17 @@ impl Default for AppearanceThemeMap {
     fn default() -> Self {
         Self {
             dark: "phosphor",
-            light: "slate",
+            light: "paper",
         }
     }
 }
 
 impl Appearance {
-    /// Best-effort detection without GUI toolkits.
+    /// Best-effort detection without GUI toolkits, memoized for the process.
+    ///
+    /// Detection can shell out (macOS), so the answer is resolved once and
+    /// reused. Call it at startup; use [`Self::detect_fresh`] when the host
+    /// needs to re-read the environment after it changed.
     ///
     /// Order:
     /// 1. `TERMROCK_APPEARANCE` / `GROK_APPEARANCE` / `LC_GROK_APPEARANCE` (`dark`|`light`)
@@ -44,6 +48,15 @@ impl Appearance {
     /// 4. Unknown
     #[must_use]
     pub fn detect() -> Self {
+        static CACHED: std::sync::OnceLock<Appearance> = std::sync::OnceLock::new();
+        *CACHED.get_or_init(Self::detect_fresh)
+    }
+
+    /// Runs appearance detection again, bypassing the [`Self::detect`] memo.
+    ///
+    /// Same order as [`Self::detect`]; every call pays the full cost.
+    #[must_use]
+    pub fn detect_fresh() -> Self {
         for key in [
             "TERMROCK_APPEARANCE",
             "GROK_APPEARANCE",
@@ -87,7 +100,7 @@ impl Appearance {
 #[must_use]
 pub fn palette_for_appearance(appearance: Appearance) -> crate::style::RolePalette {
     match appearance {
-        Appearance::Light => crate::style::RolePalette::slate(),
+        Appearance::Light => crate::style::RolePalette::paper(),
         Appearance::Dark | Appearance::Unknown => crate::style::RolePalette::tailrocks_phosphor(),
     }
 }
@@ -117,7 +130,7 @@ mod tests {
     #[test]
     fn theme_key_maps_light_and_dark() {
         let map = AppearanceThemeMap::default();
-        assert_eq!(Appearance::Light.theme_key(map), "slate");
+        assert_eq!(Appearance::Light.theme_key(map), "paper");
         assert_eq!(Appearance::Dark.theme_key(map), "phosphor");
         assert_eq!(Appearance::Unknown.theme_key(map), "phosphor");
     }
@@ -130,5 +143,28 @@ mod tests {
             dark.style(crate::style::Role::Canvas),
             light.style(crate::style::Role::Canvas)
         );
+    }
+
+    #[test]
+    fn light_appearance_is_actually_light() {
+        fn luminance(style: ratatui_core::style::Style) -> f64 {
+            let Some(ratatui_core::style::Color::Rgb(r, g, b)) = style.bg else {
+                panic!("canvas must carry an RGB background");
+            };
+            0.2126 * f64::from(r) + 0.7152 * f64::from(g) + 0.0722 * f64::from(b)
+        }
+
+        let dark = palette_for_appearance(Appearance::Dark);
+        let light = palette_for_appearance(Appearance::Light);
+        assert!(
+            luminance(light.style(crate::style::Role::Canvas))
+                > luminance(dark.style(crate::style::Role::Canvas)),
+            "light appearance must resolve a lighter canvas than dark"
+        );
+    }
+
+    #[test]
+    fn detect_is_memoized() {
+        assert_eq!(Appearance::detect(), Appearance::detect());
     }
 }

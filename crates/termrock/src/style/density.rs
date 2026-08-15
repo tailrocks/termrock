@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Layout density and motion tokens for product-neutral chrome.
+//! Layout density tokens for product-neutral chrome.
+//!
+//! Motion policy lives in [`super::motion`].
 
 /// Spacing scale shared by chrome and composite layouts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
@@ -17,6 +19,16 @@ pub enum Density {
 }
 
 impl Density {
+    /// Stable id, for inspectors and story metadata.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Comfortable => "comfortable",
+            Self::Dashboard => "dashboard",
+        }
+    }
+
     /// Horizontal padding cells around content regions.
     #[must_use]
     pub const fn padding_x(self) -> u16 {
@@ -65,37 +77,6 @@ impl Density {
     }
 }
 
-/// Motion intensity for frame-driven animations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
-#[non_exhaustive]
-pub enum Motion {
-    /// Full spinner and soft transitions.
-    #[default]
-    Full,
-    /// Reduced animation (prefer static glyphs).
-    Reduced,
-    /// No animated frames.
-    Off,
-}
-
-impl Motion {
-    /// Whether indeterminate spinners should advance frames.
-    #[must_use]
-    pub const fn animate_spinners(self) -> bool {
-        matches!(self, Self::Full)
-    }
-
-    /// Frame step divisor for reduced motion (slower advance).
-    #[must_use]
-    pub const fn spinner_divisor(self) -> u64 {
-        match self {
-            Self::Full => 1,
-            Self::Reduced => 4,
-            Self::Off => u64::MAX,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,12 +86,5 @@ mod tests {
         assert!(Density::Comfortable.padding_x() >= Density::Compact.padding_x());
         assert!(Density::Compact.padding_x() >= Density::Dashboard.padding_x());
         assert!(Density::Comfortable.gap() >= Density::Dashboard.gap());
-    }
-
-    #[test]
-    fn motion_off_disables_spinner_advance() {
-        assert!(!Motion::Off.animate_spinners());
-        assert!(Motion::Full.animate_spinners());
-        assert_eq!(Motion::Off.spinner_divisor(), u64::MAX);
     }
 }

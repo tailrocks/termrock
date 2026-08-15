@@ -1187,6 +1187,19 @@ impl<'a, Id> NavigationList<'a, Id> {
             })
             .collect();
 
+        if visible.is_empty() && !filter_q.is_empty() && y < area.bottom() {
+            // A filter that hides everything has to say so, or the rail looks
+            // like it lost its contents.
+            buffer.set_stringn(
+                area.x,
+                y,
+                crate::text::take_display_cols("No matches", usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
+
         let offset = state.collection.offset();
         // Map offset through focusable — simple paint all filtered from y
         let mut painted = 0usize;
@@ -1220,8 +1233,11 @@ impl<'a, Id> NavigationList<'a, Id> {
             let style = if !item.enabled && item.kind.is_route() {
                 self.system.style(Role::TextDisabled)
             } else if route {
+                // The active route is a strong label on the selection wash —
+                // never a full-width slab of brand color.
                 self.system
-                    .style(Role::Selection)
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if focus {
                 self.system
@@ -1235,10 +1251,10 @@ impl<'a, Id> NavigationList<'a, Id> {
                 self.system.style(Role::Text)
             };
 
-            let gutter = if focus {
-                if self.ascii { ">" } else { "›" }
-            } else if route {
-                if self.ascii { "*" } else { "•" }
+            // Route and cursor share the one gutter glyph; the tone says
+            // which is which (Accent while the rail owns keys, muted otherwise).
+            let gutter = if focus || route {
+                self.system.glyphs.selection_gutter()
             } else {
                 " "
             };
@@ -1335,7 +1351,8 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         Self {
             items,
             system,
-            focused: true,
+            // A surface does not own focus until its host says so.
+            focused: false,
             ascii: false,
             title: "",
             show_panel: false,
@@ -1383,7 +1400,9 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
             return;
         }
         let _ = state.apply_width(area.width);
-        state.nav.focused = self.focused || state.nav.focused;
+        // Focus is stated per frame, not accumulated: OR-ing it in meant a
+        // caller could grant focus but never take it back (plans/010 Step 5).
+        state.nav.focused = self.focused;
         state.nav.accepts_input = state.accepts_input;
 
         let mut inner = area;

@@ -51,6 +51,13 @@ pub const COMPLETION_FULLSCREEN_MAX_HEIGHT: u16 = 10;
 /// Default documentation side-panel width when details are shown.
 pub const COMPLETION_DOCS_DEFAULT_WIDTH: u16 = 28;
 
+/// Default "still fetching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so a host-supplied message
+/// survives the ASCII profile: only the *default* is swapped.
+const LOADING_MESSAGE: &str = "Loading…";
+const LOADING_MESSAGE_ASCII: &str = "Loading...";
+
 // ── Model ───────────────────────────────────────────────────────────────────
 
 /// Async / empty / stale chrome status (host drives; paint reflects).
@@ -496,7 +503,7 @@ impl<Id> CompletionMenuState<Id> {
             show_docs: true,
             docs_scroll: 0,
             slots: CompletionSlots::empty(),
-            loading_message: "Loading…".into(),
+            loading_message: LOADING_MESSAGE.into(),
             empty_message: "No matches".into(),
             stale_message: "Stale results".into(),
         }
@@ -947,6 +954,7 @@ pub struct CompletionMenu<'a, Id> {
     preferred: CompletionMenuSize,
     ascii: bool,
     colorless: bool,
+    focused: bool,
     /// When set, paint into this rect instead of re-placing (stack geometry).
     force_area: Option<Rect>,
 }
@@ -964,6 +972,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             candidates,
             system,
             empty_message: "No matches",
+            focused: false,
             bounds,
             anchor,
             preferred: CompletionMenuSize {
@@ -994,6 +1003,17 @@ impl<'a, Id> CompletionMenu<'a, Id> {
     #[must_use]
     pub const fn ascii(mut self, on: bool) -> Self {
         self.ascii = on;
+        self
+    }
+
+    /// Whether the menu itself owns focus.
+    ///
+    /// Defaults to `false`: a completion menu floats under an editor that
+    /// keeps the keyboard, and only the interaction owner wears the focused
+    /// border.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
         self
     }
 
@@ -1136,10 +1156,13 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         state.viewport_height = usize::from(list_body.height.max(1));
         state.reconcile(self.candidates);
 
-        let border = if self.colorless {
-            self.system.style(Role::Border)
-        } else {
+        // The menu declares itself non-focusable — the editor keeps focus — so
+        // it must not wear the focused border. A host that gives the menu its
+        // own focus says so with `focused(true)` (plans/009 Step 4).
+        let border = if self.focused && !self.colorless {
             self.system.style(Role::BorderFocused)
+        } else {
+            self.system.style(Role::Border)
         };
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
@@ -1150,11 +1173,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {
-            let msg = if self.ascii {
-                "Loading..."
-            } else {
-                state.loading_message.as_str()
-            };
+            let msg = loading_copy(self.ascii, state);
             paint_centered_msg(buffer, list_body, msg, self.system.style(Role::TextMuted));
             paint_status_line(self, buffer, state);
             return;
@@ -1238,7 +1257,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
             // Selection gutter
             if selected {
-                let mark = if self.ascii { ">" } else { "›" };
+                let mark = self.system.glyphs.selection_gutter();
                 if let Some(cell) = buffer.cell_mut((list_body.x, y)) {
                     cell.set_symbol(mark);
                     cell.set_style(style);
@@ -1342,6 +1361,23 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             }
         }
 
+        // The right margin the rows already reserve doubles as the scroll
+        // gutter: a menu that scrolls says so (plans/022 Step 2).
+        crate::scroll::paint_scrolled_region(
+            buffer,
+            list_body,
+            Rect::new(
+                list_body.right().saturating_sub(1),
+                list_body.y,
+                1,
+                list_body.height,
+            ),
+            self.candidates.len(),
+            state.viewport_height,
+            u16::try_from(state.offset).unwrap_or(u16::MAX),
+            self.system,
+        );
+
         paint_status_line(self, buffer, state);
     }
 
@@ -1403,6 +1439,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for CompletionMenu<'_, Id> {
     }
 }
 
+/// Loading copy for the active glyph profile.
+///
+/// A host-supplied message is painted as written; only the default carries an
+/// ASCII twin, so overriding the copy never loses it on a degraded terminal.
+fn loading_copy<'a, Id>(ascii: bool, state: &'a CompletionMenuState<Id>) -> &'a str {
+    if ascii && state.loading_message == LOADING_MESSAGE {
+        LOADING_MESSAGE_ASCII
+    } else {
+        state.loading_message.as_str()
+    }
+}
+
 fn paint_status_line<Id>(
     menu: &CompletionMenu<'_, Id>,
     buffer: &mut Buffer,
@@ -1413,13 +1461,7 @@ fn paint_status_line<Id>(
         return;
     }
     let msg = match state.status {
-        CompletionStatus::Loading => {
-            if menu.ascii {
-                "Loading..."
-            } else {
-                state.loading_message.as_str()
-            }
-        }
+        CompletionStatus::Loading => loading_copy(menu.ascii, state),
         CompletionStatus::Stale => state.stale_message.as_str(),
         _ => return,
     };
@@ -1488,9 +1530,11 @@ fn row_style(
     } else if !enabled {
         system.style(Role::TextDisabled)
     } else if selected {
-        system.style(Role::Selection)
+        system
+            .style(Role::TextStrong)
+            .patch(system.style(Role::SelectionTint))
     } else if hovered {
-        system.style(Role::Focus)
+        system.style(Role::TextStrong)
     } else {
         system.style(Role::Text)
     }

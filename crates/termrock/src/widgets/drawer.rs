@@ -16,8 +16,11 @@
 //! process policy. Opening a drawer must not clear host list/table selection
 //! or scroll offsets — TermRock only owns drawer-local chrome and stack geometry.
 //!
-//! **Motion.** Terminals do not slide-animate; [`Motion::Off`] / [`Motion::Reduced`]
-//! selects static chrome (ASCII handles, no spinner) as the no-motion fallback.
+//! **MotionPolicy.** A drawer does not slide *geometrically* — a terminal has
+//! no sub-cell motion, and a cell-by-cell slide reads as a stutter — but it
+//! does fade: the panel arrives by opacity, not by travel. [`MotionPolicy::Off`]
+//! / [`MotionPolicy::Basic`] selects static chrome (ASCII handles, no spinner)
+//! as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
 
@@ -28,6 +31,7 @@ use ratatui_core::{
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::borders::Borders;
 
 use crate::{
     input::{
@@ -38,7 +42,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -442,7 +446,6 @@ pub struct DrawerState {
     footer_rows: u16,
     /// Compact handle-only mode (host collapsed).
     handle_only: bool,
-    motion: Motion,
 }
 
 impl Default for DrawerState {
@@ -473,7 +476,6 @@ impl DrawerState {
             header_rows: 1,
             footer_rows: 0,
             handle_only: false,
-            motion: Motion::Full,
         }
     }
 
@@ -603,11 +605,6 @@ impl DrawerState {
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
-    }
-
-    /// Motion preference (no-motion → ASCII handle chrome).
-    pub fn set_motion(&mut self, motion: Motion) {
-        self.motion = motion;
     }
 
     /// Compact handle-only.
@@ -928,12 +925,25 @@ impl<'a> Drawer<'a> {
             Role::Border
         };
         let border_style = self.system.style(border);
-        let no_motion = matches!(state.motion, Motion::Off | Motion::Reduced) || self.ascii;
+        // The tier rides the design system into every widget; a private copy
+        // on the state could disagree with it, and did.
+        let no_motion = !self.system.motion.allows_ambient() || self.ascii;
+        // The docked edge butts against the pane the drawer slid out of, and
+        // the handle column is already the rule at that seam. Drawing a border
+        // there too stacked three vertical lines on one boundary
+        // (plans/009 Step 4).
+        let borders = match state.edge {
+            DrawerEdge::Right => Borders::ALL & !Borders::LEFT,
+            DrawerEdge::Left => Borders::ALL & !Borders::RIGHT,
+            DrawerEdge::Bottom => Borders::ALL & !Borders::TOP,
+            DrawerEdge::Top => Borders::ALL & !Borders::BOTTOM,
+        };
         super::Surface::new(self.system)
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
+            .borders(borders)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
 
         // Handle on inner edge (resize grip)
@@ -1361,7 +1371,7 @@ mod tests {
         let area = Rect::new(0, 0, 30, 16);
         let mut buf = Buffer::empty(area);
         Drawer::new("Inspector", &system)
-            .footer(Some("esc close"))
+            .footer(Some("esc cancel"))
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.header.height, 1);
         assert_eq!(state.slots.footer.height, 1);
@@ -1393,9 +1403,9 @@ mod tests {
     #[test]
     fn no_motion_ascii_handle() {
         let system = DesignSystem::default();
+        let system = system.motion(MotionPolicy::Off);
         let mut state = DrawerState::new();
         state.open = true;
-        state.set_motion(Motion::Off);
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
         Drawer::new("Rail", &system)

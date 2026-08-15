@@ -176,10 +176,12 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
             if rect.width == 0 || rect.height == 0 {
                 continue;
             }
+            // The active mode already wears its brackets; a permanent ribbon
+            // is ambient chrome and does not spend the accent (plans/007).
             let style = if !mode.enabled {
                 self.tokens.style(Role::TextDisabled)
             } else if mode.active {
-                self.tokens.style(Role::Accent)
+                self.tokens.style(Role::TextStrong)
             } else {
                 self.tokens.style(Role::TextMuted)
             };

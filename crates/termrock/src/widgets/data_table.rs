@@ -30,7 +30,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, ListRowVisualState, Role},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::data_view::{
         CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
@@ -38,8 +38,17 @@ use crate::{
     },
 };
 
+/// Selection gutter width: one marker cell plus its breathing space.
+///
+/// Stated once so the gutter cannot drift between the row, the header and the
+/// hit regions (plans/022 Step 6).
 const GUTTER_W: u16 = 2;
-const SEP: &str = "│";
+
+/// Column separator, from the glyph catalog rather than a file-local literal.
+fn system_rule_v(system: &DesignSystem) -> &'static str {
+    system.glyphs.rule_v()
+}
+
 const RESIZE_HIT: u16 = 1;
 
 /// Keyboard navigation mode (VisiData-like layers).
@@ -122,6 +131,8 @@ pub enum DataTableOutcome<RowId, ColId> {
     Scrolled,
     /// Cursor moved within projected slice.
     CursorMoved,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Sort requested for column (consumer sorts / re-projects).
     SortRequested(ColId),
     /// Sort with direction (toggle chrome).
@@ -243,6 +254,8 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub header_regions: Vec<DataTableHeaderRegion<ColId>>,
     /// Body cell hit regions from last paint.
     pub cell_regions: Vec<DataTableCellRegion<RowId, ColId>>,
+    /// Row the pointer is over. Hover washes; it never selects.
+    pub hovered_row: Option<RowId>,
     /// Active column resize drag (column id + start width + start x).
     resize_drag: Option<(ColId, u16, u16)>,
     /// Range-selection drag anchor cell.
@@ -287,6 +300,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             pin_end_count: 0,
             header_regions: Vec::new(),
             cell_regions: Vec::new(),
+            hovered_row: None,
             resize_drag: None,
             range_anchor: None,
             body_origin: (0, 0),
@@ -863,6 +877,19 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
         }
 
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated every event, so leaving the body clears it.
+            let was = self.hovered_row.clone();
+            self.hovered_row = self
+                .cell_regions
+                .iter()
+                .find(|region| region.area.contains(event.position))
+                .map(|region| region.row.clone());
+            if was != self.hovered_row {
+                return DataTableOutcome::HoverChanged;
+            }
+        }
+
         match event.kind {
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
@@ -1165,7 +1192,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                     y,
                     buffer,
                     if state.ascii { "[ ] " } else { "∅ " },
-                    message.as_deref().unwrap_or("(empty)"),
+                    message.as_deref().unwrap_or("No rows"),
                     Role::TextMuted,
                 );
                 state.body_origin = (area.x, y);
@@ -1334,10 +1361,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
 ) where
     ColId: Clone,
 {
-    let style = table.system.style(Role::TextMuted);
+    let style = super::table_chrome::header_style(table.system);
     buffer.set_style(
         Rect::new(area.x, y, area.width, 1),
-        table.system.style(Role::Raised),
+        super::table_chrome::header_band(table.system),
     );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
     let origin = area.x.saturating_add(GUTTER_W);
@@ -1390,14 +1417,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            let mark = if state.ascii {
-                if sort.ascending { "^" } else { "v" }
-            } else if sort.ascending {
-                "▲"
-            } else {
-                "▼"
-            };
-            title.push_str(mark);
+            title.push_str(super::table_chrome::sort_marker(
+                table.system,
+                sort.ascending,
+            ));
         }
         let text = take_display_cols(&title, usize::from(paint_w));
         buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
@@ -1406,14 +1429,17 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             id: col.id.clone(),
             area: Rect::new(paint_x, y, paint_w.saturating_sub(RESIZE_HIT).max(1), 1),
             resize_handle: Rect::new(handle_x, y, RESIZE_HIT, 1),
-            sortable: col.sortable || true, // allow sort chrome by default for pro tables
+            // A column is sortable when the host says so. `|| true` made
+            // every column advertise sorting and emit sort requests the host
+            // never asked for (plans/021 Step 3).
+            sortable: col.sortable,
         });
         // Separator
         if paint_end < clip_right && paint_ord + 1 < widths.len() {
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1421,6 +1447,39 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if skip_scroll {
             x = paint_end.saturating_add(1);
         }
+    }
+
+    paint_clip_chevrons(table, area, y, buffer, state);
+}
+
+/// Marks a horizontally clipped header with the direction of what is cut.
+///
+/// A table scrolled sideways gave no sign that columns existed off-screen —
+/// the row simply stopped. The edge cells state it (plans/022 Step 2).
+fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+    table: &DataTable<'_, RowId, ColId>,
+    area: Rect,
+    y: u16,
+    buffer: &mut Buffer,
+    state: &DataTableState<RowId, ColId>,
+) {
+    let style = table.system.style(Role::TextFaint);
+    let glyphs = table.system.glyphs;
+    if state.h_offset > 0 {
+        let x = area.x.saturating_add(GUTTER_W);
+        if x < area.right() {
+            buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronLeft).text, 1, style);
+        }
+    }
+    let total: u16 = state
+        .paint_widths
+        .iter()
+        .map(|(_, w)| w.saturating_add(1))
+        .sum();
+    let visible = area.width.saturating_sub(GUTTER_W);
+    if total.saturating_sub(state.h_offset) > visible {
+        let x = area.right().saturating_sub(1);
+        buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronRight).text, 1, style);
     }
 }
 
@@ -1443,18 +1502,14 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let expanded = state.expand.expanded.contains(id);
     let logical_row = state.window.offset.saturating_add(row_index as u64);
 
-    let recipe = table
-        .system
-        .clone()
-        .selection(crate::style::SelectionChrome::Tint)
-        .resolve_list_row(ListRowVisualState {
-            selected,
-            focused: cursor && surface_focused,
-            hovered: false,
-            enabled: true,
-            loading: false,
-            checked: selected,
-        });
+    let recipe = table.system.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: cursor && surface_focused,
+        hovered: state.hovered_row.as_ref() == Some(id),
+        enabled: true,
+        loading: false,
+        checked: selected,
+    });
     let style = if state.colorless {
         if selected || (cursor && surface_focused) {
             table.system.style(Role::TextStrong)
@@ -1471,10 +1526,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         table.system.style(Role::Text)
     };
 
-    let gutter = if selected {
-        if state.ascii { "*" } else { "▌" }
-    } else if cursor && surface_focused {
-        if state.ascii { ">" } else { "›" }
+    let gutter = if selected || (cursor && surface_focused) {
+        table.system.glyphs.selection_gutter()
     } else if expanded {
         if state.ascii { "v" } else { "▾" }
     } else {
@@ -1526,12 +1579,18 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             row: logical_row,
             col: paint_ord,
         });
-        let mut cell_style = style;
+        let quiet = if state.colorless {
+            style
+        } else {
+            recipe.secondary.fg.map_or(style, |fg| style.fg(fg))
+        };
+        let mut cell_style = col.kind.cell_style(style, quiet);
         if cell_selected {
-            cell_style = table.system.style(Role::Selection);
+            cell_style = cell_style.patch(table.system.style(Role::SelectionTint));
         }
         if cell_focused {
-            cell_style = cell_style.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+            // A cell cursor is a cell: reverse it.
+            cell_style = cell_style.add_modifier(Modifier::REVERSED);
         }
         if state.editing && cell_focused {
             let draft = take_display_cols(&state.edit_draft, usize::from(paint_w));
@@ -1551,7 +1610,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1586,7 +1645,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
 mod tests {
     use super::*;
     use crate::input::{MouseButton, MouseEvent, MouseEventKind};
-    use crate::widgets::data_view::{ColumnPin, DataColumn, DataColumnWidth, LoadState, bench};
+    use crate::widgets::data_view::{
+        ColumnKind, ColumnPin, DataColumn, DataColumnWidth, LoadState, bench,
+    };
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2068,6 +2129,40 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains("Cluster"), "{text}");
+    }
+
+    #[test]
+    fn numeric_columns_read_quieter_than_text_columns() {
+        let system = DesignSystem::default();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(8)).priority(100),
+            DataColumn::new("size", "Size", DataColumnWidth::Fixed(6))
+                .priority(50)
+                .kind(ColumnKind::Numeric),
+        ]);
+        let c0: &[&str] = &["deploy", "1024"];
+        let rows = [(1u64, c0)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.load = LoadState::Ready { count: 1 };
+        let area = Rect::new(0, 0, 30, 6);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('d')))
+            .expect("the data row must be painted");
+        let at = |needle: char| {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted"));
+            buffer[(x, row_y)].style().fg
+        };
+        assert_ne!(
+            at('d'),
+            at('1'),
+            "a count must not read as loudly as the identity beside it"
+        );
+        assert_eq!(at('1'), system.style(Role::TextMuted).fg);
     }
 
     #[test]

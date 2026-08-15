@@ -12,6 +12,18 @@
 //!
 //! Research: CLI installers, Huh, cloud auth flows, native onboarding
 //! (experience references — not marketing splash screens).
+//!
+//! Teaches: how to compose a first-run onboarding flow: steps, capability
+//! findings, per-step validation and an explicit continue.
+//!
+//! Composes: [`crate::widgets::BUILTIN_THEME_PRESETS`],
+//! [`crate::widgets::EmptyKind`], [`crate::widgets::EmptyState`],
+//! [`crate::widgets::Field`], [`crate::widgets::Fieldset`],
+//! [`crate::widgets::Form`], [`crate::widgets::FormOutcome`],
+//! [`crate::widgets::FormState`], and 18 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -25,10 +37,12 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        BUILTIN_THEME_PRESETS, EmptyKind, EmptyState, Field, Fieldset, Form, FormOutcome,
-        FormState, FormWizard, FormWizardOutcome, FormWizardState, KeybindingRecorderState,
-        PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome,
-        ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep,
+        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind,
+        EmptyState, Field, Fieldset, Form, FormOutcome, FormState, FormWizard, FormWizardOutcome,
+        FormWizardState, KeyValueList, KeyValueListState, KeybindingRecorderState, KvEntry,
+        KvStatus, PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker,
+        ThemePickerOutcome, ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
+        WizardStep,
     },
 };
 
@@ -213,6 +227,11 @@ pub enum SetupWizardOutcome {
         /// Step index after restore.
         step: usize,
     },
+    /// Review step switched between changed-only and every value.
+    SummaryDetailToggled {
+        /// Showing every value after the toggle.
+        all: bool,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -247,6 +266,8 @@ pub struct SetupWizardState {
     pub colorless: bool,
     /// Title override.
     pub title: String,
+    /// Whether the review step shows every value or only what changed.
+    show_all_summary: bool,
 }
 
 impl Default for SetupWizardState {
@@ -281,6 +302,7 @@ impl SetupWizardState {
             ascii: false,
             colorless: false,
             title: "Setup".into(),
+            show_all_summary: false,
         }
     }
 
@@ -411,6 +433,17 @@ impl SetupWizardState {
         // Esc → safe cancel (never one-shot leave)
         if matches!(key.code, KeyCode::Esc) {
             return self.request_cancel();
+        }
+
+        // Review step: `a` opens the values the diet held back.
+        if matches!(self.current_kind(), SetupStepKind::Summary)
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Char('a' | 'A'))
+        {
+            self.show_all_summary = !self.show_all_summary;
+            return SetupWizardOutcome::SummaryDetailToggled {
+                all: self.show_all_summary,
+            };
         }
 
         // Ctrl+S progress save (wizard)
@@ -553,6 +586,44 @@ pub fn layout_setup_wizard(area: Rect, mode: SetupWizardMode) -> SetupWizardSlot
     }
 }
 
+/// One line of the review step.
+///
+/// `changed` is the host's answer to "did the operator touch this?" — the
+/// pattern cannot know, and a review that repeats the twenty defaults it was
+/// handed buries the two values that were actually chosen. Everything the
+/// operator did not change is one keypress away, never deleted (plans/017 §B2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SetupSummaryLine<'a> {
+    /// What the value is called.
+    pub label: &'a str,
+    /// The value, formatted by the host.
+    pub value: &'a str,
+    /// Whether the operator changed it during this run.
+    pub changed: bool,
+}
+
+impl<'a> SetupSummaryLine<'a> {
+    /// A value the operator chose.
+    #[must_use]
+    pub const fn edited(label: &'a str, value: &'a str) -> Self {
+        Self {
+            label,
+            value,
+            changed: true,
+        }
+    }
+
+    /// A value left at what the host proposed.
+    #[must_use]
+    pub const fn untouched(label: &'a str, value: &'a str) -> Self {
+        Self {
+            label,
+            value,
+            changed: false,
+        }
+    }
+}
+
 // ── Surfaces & paint ────────────────────────────────────────────────────────
 
 /// Borrowed surfaces for one setup paint.
@@ -565,8 +636,8 @@ pub struct SetupWizardSurfaces<'a> {
     pub fieldsets: &'a [Fieldset<'a, &'static str>],
     /// Capability doctor lines (Capability step).
     pub capabilities: &'a [CapabilityLine<'a>],
-    /// Summary lines (Summary / review).
-    pub summary_lines: &'a [&'a str],
+    /// Review lines, each stating whether the operator changed it.
+    pub summary_lines: &'a [SetupSummaryLine<'a>],
     /// Welcome title / body.
     pub welcome_title: &'a str,
     /// Welcome explanation (one short line — not marketing paragraphs).
@@ -678,7 +749,14 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
             );
         }
         SetupStepKind::Summary => {
-            paint_summary(buffer, body, system, summary_lines, state.ascii);
+            paint_summary(
+                buffer,
+                body,
+                system,
+                summary_lines,
+                state.show_all_summary,
+                state.ascii,
+            );
         }
         SetupStepKind::Recovery => {
             let msg = state
@@ -694,8 +772,40 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
         }
     }
 
+    paint_primary_action(buffer, body, system, state);
     paint_cancel_confirm(buffer, frame, system, state);
-    let _ = state.colorless;
+}
+
+/// The step's shippable action, as a button rather than only a chord.
+///
+/// A wizard whose only way forward is Enter teaches that the action is
+/// invisible; the chord still works, and now the action is visible too
+/// (plans/016 Step 3).
+fn paint_primary_action(
+    buffer: &mut Buffer,
+    body: Rect,
+    system: &DesignSystem,
+    state: &SetupWizardState,
+) {
+    if state.cancel_confirm || body.height < 4 {
+        return;
+    }
+    let last = state.wizard.step().saturating_add(1) >= state.wizard.step_count();
+    let label = if last { "Finish" } else { "Continue" };
+    let button = Button::new(label, system).variant(ButtonVariant::Primary);
+    let width = button.preferred_width().min(body.width);
+    if width == 0 {
+        return;
+    }
+    let rect = Rect::new(
+        body.right().saturating_sub(width),
+        body.bottom().saturating_sub(1),
+        width,
+        1,
+    );
+    let mut button_state = ButtonState::new();
+    button_state.activation.set_accepts_input(true);
+    button.paint(rect, buffer, &mut button_state);
 }
 
 fn paint_cancel_confirm(
@@ -713,21 +823,18 @@ fn paint_cancel_confirm(
         width: frame.width,
         height: 1,
     };
-    let text = if state.ascii {
-        "Leave setup? Enter yes · Esc no"
-    } else {
-        "Leave setup? Enter confirm · Esc stay"
+    // One confirm surface for the whole library (plans/016 Step 1).
+    let prompt = Rect {
+        x: strip.x,
+        y: strip.y.saturating_sub(1),
+        width: strip.width,
+        height: 2,
     };
-    // Dim backdrop line
-    buffer.set_stringn(
-        strip.x,
-        strip.y,
-        take_display_cols(text, usize::from(strip.width)),
-        usize::from(strip.width),
-        system
-            .style(Role::Warning)
-            .add_modifier(ratatui_core::style::Modifier::REVERSED),
-    );
+    ConfirmPrompt::new("Leave setup?", "Leave", system)
+        .detail("the steps you have finished are kept")
+        .cancel_label("Stay")
+        .colorless(state.colorless)
+        .paint(prompt, buffer);
 }
 
 fn paint_capability_list(
@@ -735,108 +842,127 @@ fn paint_capability_list(
     area: Rect,
     system: &DesignSystem,
     lines: &[CapabilityLine<'_>],
-    ascii: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
     }
-    let header = if ascii {
-        "Terminal capabilities"
-    } else {
-        "Terminal capabilities"
-    };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(header, usize::from(area.width)),
-        usize::from(area.width),
+    // A capability report is key/value data, so it reads as key/value data:
+    // labels strong, findings quiet, and the severity on the row's own status
+    // rather than on the whole sentence (plans/010 Step 3).
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        "Terminal capabilities",
         system.style(Role::TextStrong),
     );
-    let mut y = area.y.saturating_add(1);
-    for line in lines
-        .iter()
-        .take(usize::from(area.height.saturating_sub(1)))
-    {
-        let mark = if line.problem {
-            if ascii { "[!]" } else { "✗" }
-        } else if ascii {
-            "[x]"
-        } else {
-            "✓"
-        };
-        let row = format!("{mark} {} — {}", line.label, line.status);
-        let role = if line.problem {
-            Role::Danger
-        } else {
-            Role::Text
-        };
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(&row, usize::from(area.width)),
-            usize::from(area.width),
-            system.style(role),
-        );
-        y = y.saturating_add(1);
-        if y >= area.bottom() {
-            break;
-        }
+    let body = Rect::new(
+        area.x,
+        area.y.saturating_add(1),
+        area.width,
+        area.height.saturating_sub(1),
+    );
+    if body.height == 0 {
+        return;
     }
-    if lines.is_empty() && area.height > 1 {
-        buffer.set_stringn(
-            area.x,
-            area.y.saturating_add(1),
-            take_display_cols("(host projects doctor rows)", usize::from(area.width)),
-            usize::from(area.width),
+    if lines.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "(host projects doctor rows)",
             system.style(Role::TextMuted),
         );
+        return;
     }
+    let entries: Vec<KvEntry<'_, usize>> = lines
+        .iter()
+        .enumerate()
+        .map(|(i, line)| {
+            KvEntry::pair(i, line.label, line.status).status(if line.problem {
+                KvStatus::Danger
+            } else {
+                KvStatus::Success
+            })
+        })
+        .collect();
+    let mut state = KeyValueListState::new();
+    KeyValueList::new(&entries, system).paint(body, buffer, &mut state);
 }
 
 fn paint_summary(
     buffer: &mut Buffer,
     area: Rect,
     system: &DesignSystem,
-    lines: &[&str],
-    ascii: bool,
+    lines: &[SetupSummaryLine<'_>],
+    show_all: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
     }
-    let title = if ascii { "Review" } else { "Review" };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(title, usize::from(area.width)),
-        usize::from(area.width),
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        "Review",
         system.style(Role::TextStrong),
     );
-    let mut y = area.y.saturating_add(1);
-    for line in lines
-        .iter()
-        .take(usize::from(area.height.saturating_sub(1)))
-    {
-        let row = format!("· {line}");
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(&row, usize::from(area.width)),
-            usize::from(area.width),
-            system.style(Role::Text),
-        );
-        y = y.saturating_add(1);
-        if y >= area.bottom() {
-            break;
-        }
+    let body = Rect::new(
+        area.x,
+        area.y.saturating_add(1),
+        area.width,
+        area.height.saturating_sub(1),
+    );
+    if body.height == 0 {
+        return;
     }
-    if lines.is_empty() && area.height > 1 {
-        buffer.set_stringn(
-            area.x,
-            area.y.saturating_add(1),
-            take_display_cols("Host summary projection", usize::from(area.width)),
-            usize::from(area.width),
+    if lines.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "Host summary projection",
             system.style(Role::TextMuted),
         );
+        return;
+    }
+    // The default frame is what the operator decided; `a` opens the rest.
+    let shown: Vec<&SetupSummaryLine<'_>> = lines
+        .iter()
+        .filter(|line| show_all || line.changed)
+        .collect();
+    let hidden = lines.len().saturating_sub(shown.len());
+    let note_rows = u16::from(hidden > 0);
+    let list_area = Rect::new(
+        body.x,
+        body.y,
+        body.width,
+        body.height.saturating_sub(note_rows),
+    );
+    if shown.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "Nothing changed from the defaults",
+            system.style(Role::TextMuted),
+        );
+    } else if list_area.height > 0 {
+        let entries: Vec<KvEntry<'_, usize>> = shown
+            .iter()
+            .enumerate()
+            .map(|(i, line)| KvEntry::pair(i, line.label, line.value))
+            .collect();
+        let mut state = KeyValueListState::new();
+        KeyValueList::new(&entries, system).paint(list_area, buffer, &mut state);
+    }
+    if let Some(note) = crate::text::more_note(hidden) {
+        let y = body.y.saturating_add(list_area.height.min(body.height));
+        if y < body.bottom() {
+            system.paint_row(
+                buffer,
+                Rect::new(body.x, y, body.width, 1),
+                &format!("{note} · a all"),
+                system.style(Role::TextMuted),
+            );
+        }
     }
 }
 
@@ -850,11 +976,10 @@ fn paint_body_hint(
     if area.is_empty() {
         return;
     }
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(text, usize::from(area.width)),
-        usize::from(area.width),
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        text,
         system.style(Role::TextMuted),
     );
 }
@@ -933,12 +1058,12 @@ pub fn example_setup_choices_fields() -> [Field<'static, &'static str>; 2] {
 
 /// Demo summary lines.
 #[must_use]
-pub fn example_setup_summary_lines() -> Vec<&'static str> {
+pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     vec![
-        "Account: Ada <ada@example>",
-        "Endpoint: https://api.example",
-        "Theme: phosphor",
-        "Trust: default-deny tools",
+        SetupSummaryLine::edited("Account", "Ada <ada@example>"),
+        SetupSummaryLine::edited("Endpoint", "https://api.example"),
+        SetupSummaryLine::untouched("Theme", "phosphor"),
+        SetupSummaryLine::untouched("Trust", "default-deny tools"),
     ]
 }
 

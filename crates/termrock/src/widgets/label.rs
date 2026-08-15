@@ -1011,7 +1011,7 @@ mod tests {
     fn ascii_disabled_mark() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let l = Label::<()>::new("X", &system).disabled();
-        assert!(l.decorated(40).contains('x'));
+        assert!(l.decorated(40).contains('~'));
     }
 
     #[test]

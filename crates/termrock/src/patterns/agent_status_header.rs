@@ -16,6 +16,18 @@
 //! **vs [`super::ContextMeter`].** Budget specialist; header shows a compact cue.
 //!
 //! Research: Grok Build headers, OpenCode, Amp, IDE workspace headers.
+//!
+//! Teaches: how to compose compact top-level status for the current
+//! agent/session.
+//!
+//! Composes: [`crate::widgets::Panel`], [`crate::widgets::StatefulWidget`],
+//! [`crate::widgets::StatusBar`], [`crate::widgets::StatusBarRecipe`],
+//! [`crate::widgets::StatusBarState`], [`crate::widgets::StatusKind`],
+//! [`crate::widgets::StatusRegion`], [`crate::widgets::StatusSegment`], and 3
+//! more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -37,7 +49,9 @@ use crate::{
     widgets::StatusBarState,
     widgets::StatusKind,
     widgets::StatusRegion,
+    widgets::StatusSegment,
     widgets::StatusSlot,
+    widgets::StatusStrip,
 };
 
 /// Overlay / focus id for header chrome.
@@ -115,7 +129,8 @@ impl AgentWorkStatus {
             Self::Working => "●",
             Self::Streaming => "◎",
             Self::WaitingUser | Self::ActionRequired => "⚠",
-            Self::WaitingPermission => "🔒",
+            // One column, not two (plans/013 Step 2).
+            Self::WaitingPermission => "⚿",
             Self::Error => "✗",
         }
     }
@@ -542,6 +557,8 @@ pub struct AgentStatusHeaderState {
     pub action_cursor: usize,
     /// Focused.
     pub focused: bool,
+    /// Header shows the full segment sheet instead of its actionable core.
+    pub segments_expanded: bool,
     accepts_input: bool,
     /// Action hit regions.
     pub action_hits: Vec<(AgentStatusAction, Rect)>,
@@ -566,6 +583,7 @@ impl AgentStatusHeaderState {
             actions: AgentStatusAction::default_strip().to_vec(),
             action_cursor: 0,
             focused: true,
+            segments_expanded: false,
             accepts_input: true,
             action_hits: Vec::new(),
             slot_strings: Vec::new(),
@@ -645,6 +663,10 @@ impl AgentStatusHeaderState {
                 }
             }
             // Chord shortcuts (focus not required to move)
+            KeyCode::Char('i') if key.modifiers.is_empty() => {
+                self.segments_expanded = !self.segments_expanded;
+                AgentStatusHeaderOutcome::Ignored
+            }
             KeyCode::Char('s') if key.modifiers.is_empty() => {
                 AgentStatusHeaderOutcome::Action(AgentStatusAction::Sessions)
             }
@@ -962,85 +984,88 @@ impl<'a> AgentStatusHeader<'a> {
 
         // Row 1: actionable first
         if y < max_y {
-            let mut segs: Vec<(String, Role)> = Vec::new();
-            // Action / work
             let work = snap.work_text();
-            let work_role = if self.colorless {
-                Role::Text
-            } else {
-                snap.work.role()
-            };
-            let g = snap.work.glyph(self.ascii);
-            let mut work_s = format!("{g} {work}");
+            let mut work_s = format!("{} {work}", snap.work.glyph(self.ascii));
             if let Some(d) = snap.action_detail.as_ref() {
                 work_s = format!("{work_s}: {d}");
             }
-            segs.push((work_s, work_role));
+            let connection = format!(
+                "{} {}",
+                snap.connection.glyph(self.ascii),
+                snap.connection.label()
+            );
+            let queue = snap
+                .queue_depth
+                .filter(|q| *q > 0)
+                .map(|q| format!("q:{q}"));
+            let branch = snap.branch.as_ref().map(|b| format!("⌥ {b}"));
 
-            // Connection if not ready or always compact glyph
-            let cg = snap.connection.glyph(self.ascii);
-            segs.push((
-                format!("{cg} {}", snap.connection.label()),
-                if self.colorless {
-                    Role::Text
-                } else {
-                    snap.connection.role()
-                },
-            ));
-
-            // Branch / project if space
-            if let Some(b) = snap.branch.as_ref() {
-                segs.push((format!("⌥ {b}"), Role::TextMuted));
+            // A permanent row of eight segments in five hues is not a status
+            // line, it is a dashboard. The default frame keeps what is
+            // actionable — work, a connection that is not ready, the model,
+            // and a non-empty queue — and `i` opens the rest in place
+            // (information budget, plans/017 Part B). StatusStrip owns the
+            // colour budget and the drop order (plans/016 Step 1).
+            let expanded = state.segments_expanded;
+            let ready = matches!(snap.connection, AgentConnectionStatus::Ready);
+            let mut segments = vec![
+                StatusSegment::new(&work_s)
+                    .role(snap.work.role())
+                    .priority(100),
+            ];
+            if expanded || !ready {
+                segments.push(
+                    StatusSegment::new(&connection)
+                        .role(snap.connection.role())
+                        .priority(90),
+                );
             }
-            if let Some(m) = snap.mode.as_ref() {
-                segs.push((m.clone(), Role::Accent));
+            if let Some(model) = snap.model.as_ref() {
+                segments.push(StatusSegment::new(model).priority(70));
             }
-            if let Some(m) = snap.model.as_ref() {
-                segs.push((m.clone(), Role::TextMuted));
+            if let Some(queue) = queue.as_ref() {
+                segments.push(StatusSegment::new(queue).role(Role::Warning).priority(80));
             }
-            if let Some(ctx) = snap.context_text() {
-                segs.push((ctx, Role::Info));
-            }
-            // Decorative last
-            if let Some(c) = snap.cost.as_ref() {
-                segs.push((c.clone(), Role::TextMuted));
-            }
-            if let Some(e) = snap.elapsed.as_ref() {
-                segs.push((e.clone(), Role::TextMuted));
-            }
-            if let Some(q) = snap.queue_depth {
-                if q > 0 {
-                    segs.push((format!("q:{q}"), Role::Warning));
-                }
-            }
-
-            // Paint left-to-right, drop from end when overflow (but keep first actionable)
-            let mut x = inner.x;
-            let end = inner.x.saturating_add(inner.width);
-            for (i, (text, role)) in segs.iter().enumerate() {
-                let piece = if i == 0 {
-                    text.clone()
-                } else {
-                    format!(" · {text}")
-                };
-                let tw = display_cols(&piece) as u16;
-                if x.saturating_add(tw) > end {
-                    // Keep actionable first segment always (may clip)
-                    if i == 0 {
-                        let clipped = take_display_cols(&piece, usize::from(end.saturating_sub(x)));
-                        buffer.set_stringn(
-                            x,
-                            y,
-                            clipped,
-                            usize::from(end.saturating_sub(x)),
-                            self.system.style(*role),
-                        );
+            let context = snap.context_text();
+            if expanded {
+                for (text, priority) in [
+                    (branch.as_deref(), 40u8),
+                    (snap.mode.as_deref(), 35),
+                    (context.as_deref(), 30),
+                    (snap.cost.as_deref(), 20),
+                    (snap.elapsed.as_deref(), 10),
+                ] {
+                    if let Some(text) = text {
+                        segments.push(StatusSegment::new(text).priority(priority));
                     }
-                    break;
                 }
-                buffer.set_stringn(x, y, &piece, usize::from(tw), self.system.style(*role));
-                x = x.saturating_add(tw);
             }
+
+            let hidden = [
+                (!expanded && ready).then_some(()),
+                (!expanded).then_some(()).filter(|()| branch.is_some()),
+                (!expanded).then_some(()).filter(|()| snap.mode.is_some()),
+                (!expanded).then_some(()).filter(|()| context.is_some()),
+                (!expanded).then_some(()).filter(|()| snap.cost.is_some()),
+                (!expanded)
+                    .then_some(())
+                    .filter(|()| snap.elapsed.is_some()),
+            ]
+            .into_iter()
+            .flatten()
+            .count();
+            let hint = if expanded {
+                "i less".to_string()
+            } else {
+                format!("i +{hidden}")
+            };
+            if expanded || hidden > 0 {
+                segments.push(StatusSegment::new(&hint).role(Role::TextFaint).priority(5));
+            }
+
+            StatusStrip::new(&segments, self.system)
+                .colorless(self.colorless)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -1070,7 +1095,8 @@ impl<'a> AgentStatusHeader<'a> {
                 } else {
                     self.system.style(Role::TextMuted)
                 };
-                buffer.set_stringn(x, y, &text, usize::from(tw), style);
+                self.system
+                    .paint_row(buffer, Rect::new(x, y, tw, 1), &text, style);
                 state.action_hits.push((
                     *action,
                     Rect {

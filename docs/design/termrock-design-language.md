@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Design direction (living). Consolidates and extends the paint audit. |
+| **Status** | **Binding design SoT for interaction styling & focus grammar** (living). Consolidates and extends the paint audit. On conflict about focus/selection/active/underline paint, this file wins; [`terminal-design-system.md`](./terminal-design-system.md) stays SoT for token taxonomy; [`phosphor-obsidian-visual-direction.md`](./phosphor-obsidian-visual-direction.md) stays SoT for the phosphor palette values. |
 | **Date** | 2026-08-14 |
 | **Perspective** | Designer / craft, not architecture. Answers *why it looks cheap* and *what makes it read expensive*. |
 | **References** | Grok Build (same stack, studied from source), Amp (ampcode.com), Jackin (Tailrocks consumer, `=0.11.0`), shadcn/ui, Linear |
@@ -280,13 +280,20 @@ Active tab default cue:
  ▸ Files    Search    Git        ← bold Accent label + ▸ leading marker; quiet inactive
 ```
 
-- Active = **bold + `FgStrong`/Accent** + leading `▸` (or `◆`) marker.
+- Active = **bold + `FgStrong`/Accent** + a non-line cue.
 - Inactive = `FgMuted`.
 - When the strip owns keyboard focus: add `▌` Accent gutter on the active tab.
 - Optional (theme token, **off by default**): a bottom **accent rule line** — a run
   of `─` border cells in `Accent` under the active tab. This is a *border glyph*,
   full-width, visually distinct from character underline. Keep off by default to
-  honor the underline aversion; expose as `TabsActiveCue::{Marker, Rule, Both}`.
+  honor the underline aversion.
+
+> **Errata (plans/015, 2026-08-15).** The shipped vocabulary is
+> `TabsActiveCue::{AccentPill, Connected, Marker, Rule}`, and the **default is
+> `AccentPill`** — a `SelectionTint` wash behind a bold label — not `Marker`.
+> A marker plus weight survives as `Marker` for colourless terminals, and
+> `Connected` joins the active tab to the pane below for app shells. The
+> underline is gone in every one of them.
 
 ### 5.3 Inputs (text/number/password/search/path/token/OTP/date)
 
@@ -340,12 +347,47 @@ Links conventionally underline. Honor "dislike *mostly* underline": default link
 (`Color` default, `UnderlineOnHover`, `AlwaysUnderline`) so a consumer who wants
 classic web links can enable it. Remove `link.rs:424,773` default underline.
 
+**Monochrome projection is the exception:** on mono / `NO_COLOR` the `Link` role
+*keeps* `Modifier::UNDERLINED` regardless of `LinkStyle`, because underline is the
+only reliable link cue once color is gone. This is the only interaction underline
+that survives a colorless projection; every other cue degrades to bold / dim /
+reverse / glyph per §5.9.
+
 ### 5.8 Migration note for the sweep
 
 The underline removal is a visible default change → sequential `migrations/` file
 + `MIGRATING.md` entry when implemented (per repo law). Enumerate the ~30 sites
 and the replacement cue in that file. This document defines the target grammar;
 the migration records the mechanical edits.
+
+### 5.9 Grammar clauses (binding)
+
+`Modifier::UNDERLINED` is allowed ONLY for:
+
+1. **Hyperlinks in monochrome projection** — on mono / `NO_COLOR`, `Role::Link`
+   keeps underline (it is the only reliable link cue without color). In color
+   modes the default link affordance is `Link` color + trailing `↗`/`›`
+   chevron, no underline; underline is opt-in via `LinkStyle`
+   (`Color` default | `UnderlineOnHover` | `AlwaysUnderline`).
+2. **Content rendering** — faithful passthrough: ANSI SGR-4 in `ansi_text`,
+   OSC-8 hyperlink segments, markdown emphasis *fallback* when italics are
+   unavailable, diff/word-diff only where the content itself is underlined.
+   Diagnostic-span underline inside code blocks is sanctioned content
+   annotation (squiggle substitute), matching the caret-row semantics of
+   `Diagnostic`.
+3. **Cursor fallback** — the text/grid cursor is a block/reverse cell by
+   default; underline-cursor is permitted only as an explicit fallback where
+   reverse video is unavailable.
+
+Underline is FORBIDDEN for: focus (container, row, field, label, control,
+chrome section), selection, hover, active/current item (tab, page, step,
+crumb, segment), sort indicators, severity/status, search/match highlight,
+syntax classes, and button affordance.
+
+The mono (colorless) cue ladder replacing it: **BOLD** = strong/current,
+**DIM** = muted/disabled, **REVERSED** = selected row / cursor cell /
+focused-chrome, **glyph prefix** (`!`, `x`, `>`, `*`) = severity/selection,
+**UNDERLINED** = link only.
 
 ---
 

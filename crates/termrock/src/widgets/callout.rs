@@ -364,10 +364,11 @@ fn paint_feedback<Id: Clone + PartialEq>(
         .add_modifier(Modifier::BOLD);
 
     let section = matches!(args.content.recipe, CalloutRecipe::Section);
+    // Tone rides the rail and the glyph; the border is chrome and stays
+    // neutral, so a page of callouts is not a page of colored boxes
+    // (plans/007).
     let border_role = if args.focused && args.emphasize {
         Role::BorderFocused
-    } else if section {
-        tone_role
     } else {
         Role::Border
     };
@@ -392,7 +393,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             .bordered(true)
             .border_style(border_style)
             .fill(SurfaceFill::Transparent)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
     }
     if inner.is_empty() {
@@ -400,6 +401,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     }
 
     // Gutter rail (quote / CLI warning rail) — 1 cell
+    // The rail is one cell plus the density's own gap (plans/022 Step 6).
     let gutter_w = 1u16;
     slots.gutter = Rect::new(inner.x, inner.y, gutter_w.min(inner.width), inner.height);
     let rail = if args.ascii { "|" } else { "│" };
@@ -458,7 +460,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
         });
     slots.title = Rect::new(title_x, y, title_w, 1);
     let title_style = if args.focused && args.emphasize {
-        strong.add_modifier(Modifier::UNDERLINED)
+        strong.add_modifier(Modifier::BOLD)
     } else {
         strong
     };
@@ -546,7 +548,9 @@ fn paint_feedback<Id: Clone + PartialEq>(
             let style = if !a.enabled {
                 args.system.style(Role::TextDisabled)
             } else if active {
-                args.system.style(Role::Selection)
+                args.system
+                    .style(Role::TextStrong)
+                    .patch(args.system.style(Role::SelectionTint))
             } else {
                 text_style
             };

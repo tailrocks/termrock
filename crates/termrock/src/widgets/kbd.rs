@@ -414,6 +414,15 @@ pub struct Kbd<'a> {
     variant: KbdVariant,
 }
 
+/// The keycap form of a chord: one place composes the brackets.
+///
+/// Measurement and paint used to compose `[..]` separately in `Kbd` and in
+/// `ShortcutHint`, which is how the two renderings drifted apart (plans/015).
+#[must_use]
+pub fn keycap_text(chord: &str) -> String {
+    format!("[{}]", chord.trim())
+}
+
 impl<'a> Kbd<'a> {
     /// Explicit chord label (e.g. already resolved glyph).
     #[must_use]
@@ -540,7 +549,7 @@ impl<'a> Kbd<'a> {
     #[must_use]
     pub fn measure_width(&self) -> u16 {
         let d = match self.variant {
-            KbdVariant::Keycap => format!("[{}]", self.decorated().trim()),
+            KbdVariant::Keycap => keycap_text(&self.decorated()),
             _ => self.decorated(),
         };
         u16::try_from(display_cols(&d)).unwrap_or(1).max(1)
@@ -552,10 +561,7 @@ impl<'a> Kbd<'a> {
             return;
         }
         let text = match self.variant {
-            KbdVariant::Keycap => {
-                let inner = self.decorated();
-                format!("[{}]", inner.trim())
-            }
+            KbdVariant::Keycap => keycap_text(&self.decorated()),
             KbdVariant::Compact | KbdVariant::Inline => self.decorated(),
         };
         let clipped = take_display_cols(&text, usize::from(area.width));
@@ -738,7 +744,7 @@ impl<'a> ShortcutHint<'a> {
     #[must_use]
     pub fn measure_width(&self) -> u16 {
         let k = match self.form {
-            ShortcutForm::Keycap => display_cols(&format!("[{}]", self.chord.trim())),
+            ShortcutForm::Keycap => display_cols(&keycap_text(self.chord.as_ref())),
             _ => display_cols(self.chord.as_ref()),
         };
         let c = if self.command.is_empty() {
@@ -775,14 +781,24 @@ impl<'a> ShortcutHint<'a> {
 
         match self.form {
             ShortcutForm::Footer | ShortcutForm::Keycap => {
-                let key = if matches!(self.form, ShortcutForm::Keycap) {
-                    format!("[{}]", self.chord.trim())
+                // One keycap renderer for the library: `Kbd` owns the bracket,
+                // the weight and the raised ground, so a hint's keycap and a
+                // standalone keycap cannot drift (plans/015 Step 2).
+                let keycap = matches!(self.form, ShortcutForm::Keycap);
+                let key = if keycap {
+                    keycap_text(self.chord.as_ref())
                 } else {
                     self.chord.to_string()
                 };
                 let key = take_display_cols(&key, usize::from(area.width));
                 let kw = display_cols(&key) as u16;
-                buffer.set_stringn(area.x, area.y, &key, usize::from(area.width), key_style);
+                if keycap {
+                    Kbd::new(self.chord.as_ref(), self.system)
+                        .keycap()
+                        .paint(Rect::new(area.x, area.y, kw.min(area.width), 1), buffer);
+                } else {
+                    buffer.set_stringn(area.x, area.y, &key, usize::from(area.width), key_style);
+                }
                 if show_cmd {
                     let x = area.x.saturating_add(kw).saturating_add(1);
                     if x < area.right() {

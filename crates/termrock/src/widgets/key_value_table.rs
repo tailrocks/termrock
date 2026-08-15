@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, Role, SelectionChrome},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
@@ -503,6 +503,7 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
 /// Dense interactive key/value detail table.
 #[derive(Debug, Clone)]
 pub struct KeyValueTable<'a, Id> {
+    empty_message: &'a str,
     fields: &'a [KvtField<'a, Id>],
     system: &'a DesignSystem,
     key_width: u16,
@@ -516,13 +517,24 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     #[must_use]
     pub const fn new(fields: &'a [KvtField<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "No fields",
             fields,
             system,
             key_width: 0,
             show_type: true,
             show_source: true,
-            separator: "  ",
+            separator: system.kv_separator().text(),
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     /// Fixed key column width (0 = auto).
@@ -596,11 +608,10 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &KeyValueTableState<Id>,
     ) -> String {
         if field.secret && !state.is_revealed(&field.id) {
-            return if self.system.glyphs.is_ascii() {
-                "********".into()
-            } else {
-                "••••••••".into()
-            };
+            return Glyph::Mask
+                .resolve(self.system.glyphs)
+                .text
+                .repeat(MASK_CELLS);
         }
         if state.editing && state.cursor.as_ref() == Some(&field.id) {
             return state.edit_draft.clone();
@@ -1026,6 +1037,16 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             return;
         }
 
+        if self.fields.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
         // Footer row for mode / filter / validation
         let footer_h = 1u16;
         let body = Rect {
@@ -1049,7 +1070,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         } else {
                             "∅ "
                         },
-                        message.as_deref().unwrap_or("(empty)")
+                        message.as_deref().unwrap_or("No fields")
                     ),
                     self.system.style(Role::TextMuted),
                 );
@@ -1245,34 +1266,25 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         compare: bool,
     ) {
         let selected = state.cursor.as_ref() == Some(&field.id);
-        let gutter = if selected {
-            if self.system.glyphs.is_ascii() {
-                ">"
-            } else {
-                "›"
-            }
-        } else {
-            " "
-        };
-        let mut style = if selected {
-            match self.system.selection {
-                SelectionChrome::Fill => self.system.style(Role::Selection),
-                SelectionChrome::Tint => self.system.style(Role::Focus),
-                SelectionChrome::Gutter => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
-            }
-        } else {
-            self.system.style(Role::Text)
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            self.system,
+            ListRowVisualState {
+                selected,
+                focused: true,
+                enabled: true,
+                ..Default::default()
+            },
+        );
+        let mut style = self.system.style(Role::Text);
         if let Some(role) = field.validation.role() {
             style = self.system.style(role);
         } else if let Some(st) = field.status {
             style = self.system.style(st_role(st));
         }
+        // Validation and status keep their tone under the cursor.
+        let style = chrome.label_style(style);
 
-        buffer.set_stringn(area.x, area.y, gutter, 1, self.system.style(Role::Accent));
+        buffer.set_stringn(area.x, area.y, " ", 1, style);
         buffer.set_stringn(area.x.saturating_add(1), area.y, " ", 1, style);
 
         match field.kind {
@@ -1571,6 +1583,18 @@ impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &KeyValueTable<'a, Id> 
 mod tests {
     use super::*;
     use ratatui_core::layout::Position;
+
+    #[test]
+    fn separator_comes_from_the_shared_key_value_token() {
+        let system = crate::style::DesignSystem::phosphor();
+        let fields = sample();
+        assert_eq!(
+            KeyValueTable::new(&fields, &system).separator,
+            system.kv_separator().text()
+        );
+        let colon = system.with_kv_separator(crate::style::KvSeparator::Colon);
+        assert_eq!(KeyValueTable::new(&fields, &colon).separator, " : ");
+    }
 
     fn sample() -> Vec<KvtField<'static, &'static str>> {
         vec![

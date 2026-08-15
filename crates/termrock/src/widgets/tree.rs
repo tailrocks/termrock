@@ -1143,14 +1143,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 style = recipe.label;
                 if self.focused {
                     style = style.add_modifier(Modifier::BOLD);
-                    if recipe.show_focus_underline {
-                        style = style.add_modifier(Modifier::UNDERLINED);
-                    }
-                } else {
-                    style = style.add_modifier(Modifier::UNDERLINED);
                 }
             } else if hovered && node.enabled {
-                style = recipe.hover.add_modifier(Modifier::UNDERLINED);
+                style = recipe.hover;
             } else if checked && node.enabled {
                 style = style.patch(self.tokens.style(Role::Accent));
             }
@@ -1442,29 +1437,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
-            for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.tokens.style(Role::ScrollTrack));
-            }
             let thumb_total = if state.virtual_total > 0 {
                 state.virtual_total
             } else {
                 self.nodes.len()
             };
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
+            crate::scroll::paint_scrolled_region(
+                buffer,
+                body,
+                scrollbar,
                 thumb_total,
                 usize::from(body.height),
-                body.height,
-                state.offset,
-            ) {
-                for y in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        scrollbar.x,
-                        scrollbar.y.saturating_add(y),
-                        "█",
-                        self.tokens.style(Role::ScrollThumb),
-                    );
-                }
-            }
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.tokens,
+            );
         }
     }
 }
@@ -1550,7 +1536,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
         // gutter + disclosure
-        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        assert_eq!(buffer[(0, 0)].symbol(), "*");
         // disclosure open ascii after gutter slot (2) + indent 0
         assert_eq!(buffer[(2, 0)].symbol(), "v");
     }

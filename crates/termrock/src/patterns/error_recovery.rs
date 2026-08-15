@@ -18,13 +18,19 @@
 //!
 //! Research: crash reporters, terminal panic hooks, session restoration,
 //! resilient CLI design.
+//!
+//! Teaches: how to compose a graceful recovery surface for serious failures:
+//! what broke, what was preserved, and what to do next.
+//!
+//! Composes: [`crate::widgets::ErrorKind`], [`crate::widgets::ErrorRecipe`],
+//! [`crate::widgets::ErrorState`], [`crate::widgets::ErrorStateOutcome`],
+//! [`crate::widgets::ErrorStateState`], [`crate::widgets::HistoryRedaction`],
+//! [`crate::widgets::List`], [`crate::widgets::ListRow`], and 9 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     capability::DoctorReport,
@@ -34,11 +40,10 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
     widgets::{
         ErrorKind, ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, List, ListRow,
-        ListState, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState, StatusSlot,
-        history_redaction_secret, redact_history_text,
+        ListState, Panel, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState,
+        StatusSlot, history_redaction_secret, redact_history_text,
     },
 };
 
@@ -768,11 +773,8 @@ impl ErrorRecoveryState {
         let mut slots = vec![
             StatusSlot::context("mode", self.mode.id()).priority(10),
             StatusSlot::focus_zone("focus", self.focus).priority(20),
-            StatusSlot::shortcut(
-                "keys",
-                "r restart · s restore · c copy · l logs · e env · i report · q quit · tab",
-            )
-            .priority(90),
+            StatusSlot::shortcut("keys", "r restart · s restore · l logs · i report · q quit")
+                .priority(90),
         ];
         if self.terminal_restore_failed {
             slots.push(StatusSlot::new("tty", "tty-restore-failed").priority(5));
@@ -1172,12 +1174,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
 
     // Preserved work strip
     if let Some(r) = pane_area(&panes, "preserved") {
-        let panel = Panelish {
-            system,
-            title: "Preserved work",
-            focused: state.focus == "preserved",
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Preserved work")
+            .emphasis(PanelChrome::for_focus(state.focus == "preserved"))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let msg = if snapshot.work_preserved {
                 if snapshot.preserved_note.is_empty() {
@@ -1188,11 +1188,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             } else {
                 "No preserved work snapshot.".into()
             };
-            buffer.set_stringn(
-                inner.x,
-                inner.y,
-                take_display_cols(&msg, usize::from(inner.width)),
-                usize::from(inner.width),
+            system.paint_row(
+                buffer,
+                Rect::new(inner.x, inner.y, inner.width, 1),
+                &msg,
                 system.style(if snapshot.work_preserved {
                     Role::Success
                 } else {
@@ -1205,12 +1204,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
     // Actions list
     if let Some(r) = pane_area(&panes, "actions") {
         let focused = state.focus == "actions";
-        let panel = Panelish {
-            system,
-            title: "Recovery options",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Recovery options")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = recovery_action_rows(state.action_set());
             let list = List::new(&rows, system).focused(focused);
@@ -1221,12 +1218,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
     // Diagnostics — redacted report text
     if let Some(r) = pane_area(&panes, "diagnostics") {
         let focused = state.focus == "diagnostics";
-        let panel = Panelish {
-            system,
-            title: "Diagnostics (redacted)",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Diagnostics (redacted)")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let report = state.redacted_report(snapshot);
             let mut y = inner.y;
@@ -1235,11 +1230,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                 if y >= max_y {
                     break;
                 }
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(line, usize::from(inner.width)),
-                    usize::from(inner.width),
+                system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    line,
                     system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1248,11 +1242,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             if let Some(d) = doctor {
                 if y < max_y {
                     let cue = format!("doctor findings: {}", d.findings.len());
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&cue, usize::from(inner.width)),
-                        usize::from(inner.width),
+                    system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &cue,
                         system.style(Role::Info),
                     );
                 }
@@ -1277,28 +1270,6 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             buffer,
             &mut state.status,
         );
-    }
-}
-
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 
@@ -1497,7 +1468,7 @@ mod tests {
             "API_KEY value must be fully redacted, got {api_line:?}"
         );
         assert!(
-            api_line.contains('•') || api_line.contains("****") || api_line.contains('…'),
+            api_line.contains('●') || api_line.contains("****") || api_line.contains('…'),
             "API_KEY line should show mask glyphs: {api_line:?}"
         );
         // Non-secret context retained

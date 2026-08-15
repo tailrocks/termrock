@@ -12,11 +12,11 @@ use crate::{
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::DesignSystem,
     style::{Role, RolePalette},
+    text::take_display_cols,
 };
 
-const SELECTED_MARKER: &str = "▸ ";
+const SELECTED_MARKER: &str = "▌ ";
 const NORMAL_MARKER: &str = "  ";
-const SEPARATOR: &str = " : ";
 const COPY_AFFORDANCE: &str = "  ⧉";
 const COPIED_AFFORDANCE: &str = "  ✓";
 
@@ -288,6 +288,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
 #[derive(Debug, Clone, Copy)]
 /// A selectable key/value table with typed row activation.
 pub struct DetailTable<'a, Id> {
+    empty_message: &'a str,
     rows: &'a [DetailRow<'a, Id>],
     /// Zero derives the label width from the borrowed rows.
     label_width: u16,
@@ -298,10 +299,29 @@ pub struct DetailTable<'a, Id> {
 }
 
 impl<'a, Id> DetailTable<'a, Id> {
+    /// Separator painted between a label and its value.
+    ///
+    /// One family answer for every key-value surface — see
+    /// [`crate::style::KvSeparator`].
+    fn separator(&self) -> &'static str {
+        self.system.kv_separator().text()
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
     #[must_use]
     /// Creates a detail table over borrowed rows and mutable table state.
     pub const fn new(rows: &'a [DetailRow<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "Nothing to show",
             rows,
             label_width: 0,
             wrap: false,
@@ -356,7 +376,7 @@ impl<'a, Id> DetailTable<'a, Id> {
             .map(|row| {
                 crate::text::display_cols(SELECTED_MARKER)
                     .saturating_add(label_width)
-                    .saturating_add(crate::text::display_cols(SEPARATOR))
+                    .saturating_add(crate::text::display_cols(self.separator()))
                     .saturating_add(crate::text::display_cols(row.value))
                     .saturating_add(affordance_width(row, false))
             })
@@ -406,7 +426,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
     fn row_width(&self, row: &DetailRow<'_, Id>, label_width: usize) -> usize {
         crate::text::display_cols(SELECTED_MARKER)
             + label_width
-            + crate::text::display_cols(SEPARATOR)
+            + crate::text::display_cols(self.separator())
             + crate::text::display_cols(row.value)
             + affordance_width(row, false)
     }
@@ -415,7 +435,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
         usize::from(area.width).saturating_sub(
             crate::text::display_cols(SELECTED_MARKER)
                 + label_width
-                + crate::text::display_cols(SEPARATOR),
+                + crate::text::display_cols(self.separator()),
         )
     }
 
@@ -504,6 +524,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
             return;
         }
 
+        if self.rows.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
         let scroll_x = usize::from(state.scroll.scroll_x);
         let scroll_y = usize::from(state.scroll.scroll_y);
         let window_end = scroll_y.saturating_add(usize::from(area.height));
@@ -588,7 +618,7 @@ fn render_row<Id: Clone + PartialEq>(
         NORMAL_MARKER
     };
     let marker_width = crate::text::display_cols(marker);
-    let separator_width = crate::text::display_cols(SEPARATOR);
+    let separator_width = crate::text::display_cols(table.separator());
     let value_col = marker_width + label_width + separator_width;
     let value_style = row.style.unwrap_or_else(|| {
         if hovered && (row.capability.copyable() || row.capability.linkable()) {
@@ -629,7 +659,7 @@ fn render_row<Id: Clone + PartialEq>(
         paint_segment(
             buffer,
             area,
-            SEPARATOR,
+            table.separator(),
             marker_width + label_width,
             scroll_x,
             table.system.style(Role::Border),
@@ -753,6 +783,20 @@ fn affordance_width<Id>(row: &DetailRow<'_, Id>, copied: bool) -> usize {
 mod tests {
     use super::*;
     use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
+
+    #[test]
+    fn separator_comes_from_the_shared_key_value_token() {
+        let system = crate::style::DesignSystem::phosphor();
+        let rows = rows();
+        // The colon rule used to be hardcoded here while its two sibling
+        // key-value widgets used a two-cell gutter.
+        assert_eq!(
+            DetailTable::new(&rows, &system).separator(),
+            system.kv_separator().text()
+        );
+        let colon = system.with_kv_separator(crate::style::KvSeparator::Colon);
+        assert_eq!(DetailTable::new(&rows, &colon).separator(), " : ");
+    }
 
     fn rows() -> [DetailRow<'static, &'static str>; 3] {
         [

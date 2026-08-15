@@ -1,6 +1,8 @@
 # TermRock terminal-native design system
 
-**Status:** design SoT (partially implemented; complete as target architecture)  
+**Status:** design SoT for the token taxonomy (partially implemented; complete as
+target architecture). Interaction underline rules are superseded by
+[`termrock-design-language.md`](./termrock-design-language.md) §5 (binding).  
 **Supersedes:** treating `Theme` / `Role` alone as the design system  
 **Builds on:** `Theme`, `Role`, `Density`, `Motion`, `GlyphSet`, `SelectionChrome`,
 `SpacingScale`, `DesignTokens`, `DesignSystem`, `ColorCapability`, `Appearance`  
@@ -9,8 +11,10 @@
 **Constraint:** terminal-native (cells, glyphs, modifiers, capability ladders)—not CSS-in-Rust
 
 > **Erratum 2026-08:** underline is retired from the focus/selection/tab state
-> vocabulary (reserved for hovered links only). The `focus_underline` fields in the
-> target structs below are superseded by the gutter/bold/tint focus model in
+> vocabulary (links only; on mono the `Link` role keeps it). The former
+> `focus_underline` fields in the target structs below are removed in favor of the
+> gutter/bold/tint focus model. Binding grammar:
+> [`termrock-design-language.md`](./termrock-design-language.md) §5 / §5.9; see also
 > [`tui-design-research-2026-08.md`](./tui-design-research-2026-08.md) §5.3.
 
 ### Implementation gap (HEAD)
@@ -79,7 +83,7 @@ Map **meaning** → `Style` (fg/bg/modifiers). Not CSS variables: each role is a
 | **Interactive** | `link`, `linkHover`, `selection`, `selectionMuted`, `hover`, `focusRing` |
 | **Input** | `input`, `inputPlaceholder`, `inputInvalid`, `cursor` |
 | **Chrome** | `statusBar`, `hintKey`, `hintText`, `hintDim`, `scrollTrack`, `scrollThumb` |
-| **Tab** | `tabActive`, `tabInactive`, `tabActiveHover`, `tabInactiveHover`, `tabUnderlineFocused`, `tabUnderlineQuiet` |
+| **Tab** | `tabActive`, `tabInactive`, `tabActiveHover`, `tabInactiveHover`, `tabAccent`, `tabAccentQuiet` (rule-row cue, opt-in, off by default) |
 | **Action** | `action`, `actionFocused`, `actionDisabled` |
 
 **Foreground hierarchy (terminal):**
@@ -446,7 +450,7 @@ pub struct ListStatePatch {
     pub primary_modifiers: Option<Modifier>,
     pub secondary_fg: Option<ColorKey>,
     pub show_selection_indicator: Option<bool>,
-    pub focus_underline: Option<bool>,
+    // removed: underline is not a focus cue
     pub fill: Option<ColorKey>, // only if SelectionChrome::Fill
 }
 
@@ -485,7 +489,7 @@ pub struct ResolvedListRow {
     pub secondary: Option<ResolvedPart>,
     pub badge: Option<ResolvedPart>,
     pub shortcut: Option<ResolvedPart>,
-    pub focus_underline: bool,
+    // removed: underline is not a focus cue
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -653,7 +657,7 @@ let frame = system.glyphs.spinner_frame(tick.frame_index(), system.motion);
 | **Truecolor** | Authored RGB as-is |
 | **Indexed256** | `rgb_to_xterm256` on all RGB roles (existing) |
 | **Ansi16** | Map to nearest ANSI; prefer hue families (danger→red, accent→green/cyan) |
-| **Monochrome / NO_COLOR** | fg/bg → Reset; keep **modifiers** (bold/dim/underline/reverse); force glyph cues on |
+| **Monochrome / NO_COLOR** | fg/bg → Reset; keep **modifiers** (bold/dim/reverse; underline only on links); force glyph cues on |
 
 **Mono rules (terminal-native a11y):**
 
@@ -777,7 +781,7 @@ Preferred end state: widgets **only** take `&DesignSystem`; raw `Role` indexing 
 | `obsidian_selection_not_equal_accent_fill` | selection bg ≠ accent solid neon when gutter mode |
 | `density_insets_monotonic` | comfortable ≥ compact ≥ dashboard pad |
 | `glyph_ascii_fallback` | all glyphs non-empty in ascii set |
-| `capability_mono_keeps_underline_bold` | mono projection preserves modifiers |
+| `capability_mono_keeps_bold_reverse` | mono projection preserves modifiers |
 | `list_recipe_drops_secondary_before_primary` | at cols=40 secondary absent, primary present |
 | `list_gutter_vs_fill` | resolved fill option differs |
 | `motion_off_spinner_static` | frame index stable |

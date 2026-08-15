@@ -214,6 +214,12 @@ TOML equivalent is allowed; **canonical digest uses JSON with sorted keys** (see
 | `story` | Story/interactor pack only | `{ui}/stories/` |
 | `fixture` | Test fixtures only | `tests/ui_fixtures/` |
 
+A story pack ships the component's **in-application scene** as well as its
+isolated stories (`<component>/in-app`, see
+`docs/design/component-documentation-standard.md`). A block installed without
+the scene that shows it in context teaches the same lesson the docs used to:
+what the component is, and nothing about where it goes (plans/018 Step 4).
+
 ### 2.4 Namespaces
 
 - Format: `{namespace}/{name}` (e.g. `termrock/tool-card`, `acme/ops-sidebar`).

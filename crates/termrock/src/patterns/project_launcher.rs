@@ -18,6 +18,17 @@
 //! chrome; does not embed full connection inventory.
 //!
 //! Research: IDE welcome screens, zoxide/fzf workflows, agent session launchers.
+//!
+//! Teaches: how to compose fast project/session launcher for developer tools
+//! from.
+//!
+//! Composes: [`crate::widgets::EmptyAction`], [`crate::widgets::EmptyKind`],
+//! [`crate::widgets::EmptyState`], [`crate::widgets::EmptyStateOutcome`],
+//! [`crate::widgets::EmptyStateState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], [`crate::widgets::ListState`], and 21 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -41,7 +52,7 @@ use crate::{
     text::take_display_cols,
     widgets::{
         EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
-        ListState, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
+        ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
         PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
         QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
         StatusBar, StatusBarState, StatusRegion, StatusSlot,
@@ -804,11 +815,8 @@ impl ProjectLauncherState {
             StatusSlot::connection("conn", self.connection.label()).priority(10),
             StatusSlot::context("mode", self.mode.id()).priority(20),
             StatusSlot::focus_zone("focus", self.focus).priority(30),
-            StatusSlot::shortcut(
-                "keys",
-                "enter open · n new · i import · f fav · C-o quick · C-n session · tab",
-            )
-            .priority(90),
+            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+                .priority(90),
         ];
         if self.problem_count > 0 {
             slots.push(
@@ -1361,15 +1369,13 @@ pub fn render_project_launcher(
         let focused = state.focus == "search" && !state.quick_open_open;
         state.search.set_focused(focused);
         if r.height >= 3 {
-            let panel = Panelish {
-                system,
-                title: match state.mode {
+            let inner = Panel::new(system)
+                .title(match state.mode {
                     ProjectLauncherMode::Home => "Projects · home",
                     ProjectLauncherMode::Inline => "Quick open · inline",
-                },
-                focused,
-            };
-            let inner = panel.paint(r, buffer);
+                })
+                .emphasis(PanelChrome::for_focus(focused))
+                .paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("filter projects…")
@@ -1385,29 +1391,23 @@ pub fn render_project_launcher(
     // Projects list
     if let Some(r) = pane_area(&panes, "projects") {
         let focused = state.focus == "projects" && !state.quick_open_open;
-        let panel = Panelish {
-            system,
-            title: "Projects",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Projects")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = project_list_rows(&filtered);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols(
-                        if projects.is_empty() {
-                            "(no projects — n new · i import)"
-                        } else {
-                            "(no matches)"
-                        },
-                        usize::from(inner.width),
-                    ),
-                    usize::from(inner.width),
-                    system.style(Role::TextMuted),
-                );
+                // An empty pane says what is missing and what to do next
+                // (plans/013 Step 4).
+                let empty = if projects.is_empty() {
+                    EmptyState::new("No projects", system)
+                        .kind(EmptyKind::NoData)
+                        .explanation("n new, i import")
+                } else {
+                    EmptyState::new("No matches", system).kind(EmptyKind::FilteredOut)
+                };
+                empty.paint(inner, buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.projects);
@@ -1436,12 +1436,10 @@ pub fn render_project_launcher(
                 .load(PreviewLoadState::Idle)
                 .essential_elsewhere(true)
         });
-        let panel = Panelish {
-            system,
-            title: "Preview",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Preview")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             PreviewCard::new(content, system).paint(inner, buffer, &mut state.preview);
         }
@@ -1465,7 +1463,9 @@ pub fn render_project_launcher(
     // Status
     if let Some(r) = pane_area(&panes, "status") {
         if let Some(err) = &state.host_error {
-            state.status.transient = Some(format!("error: {err}"));
+            // Severity is the status role's job; the line spends its cells on
+            // what actually failed.
+            state.status.transient = Some(err.clone());
         } else if state.problem_count > 0 {
             state.status.transient = Some(format!(
                 "{} stale/missing · a ack · r reload",
@@ -1494,29 +1494,6 @@ pub fn render_project_launcher(
                 &mut state.quick_open,
             );
         }
-    }
-}
-
-/// Minimal panel chrome helper.
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 

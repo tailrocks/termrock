@@ -3,7 +3,8 @@
 
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
 
-use super::{ColorCapability, Density, Motion, Role, RolePalette};
+use super::{ColorCapability, Density, Glyph, MotionPolicy, Role, RolePalette};
+use crate::runtime::FrameTick;
 use ratatui_core::style::{Modifier, Style};
 
 /// Glyph encoding profile for borders, disclosure, and status markers.
@@ -119,6 +120,27 @@ impl GlyphSet {
         self.resolve(super::glyph::Glyph::Bullet).text
     }
 
+    /// Inline separator between adjacent facts on one row.
+    ///
+    /// The middle dot is reserved for this job: it separates meta content
+    /// inside a row, while [`Self::bullet`] introduces a row of its own.
+    #[must_use]
+    pub const fn meta_separator(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::MetaSeparator).text
+    }
+
+    /// [`Self::meta_separator`] with its surrounding breathing space.
+    ///
+    /// Hint rows, status slots, and keyboard help all join with this exact
+    /// string, so the rhythm between facts is identical wherever they appear.
+    #[must_use]
+    pub const fn meta_join(self) -> &'static str {
+        match self {
+            Self::Ascii => " | ",
+            Self::Unicode | Self::Enhanced => " · ",
+        }
+    }
+
     /// Disabled mark (label suffix).
     #[must_use]
     pub const fn disabled_mark(self) -> &'static str {
@@ -131,12 +153,125 @@ impl GlyphSet {
 #[non_exhaustive]
 pub enum SelectionChrome {
     /// Full-row fill using `Role::Selection`.
-    #[default]
+    ///
+    /// Opt-in only; never a default. A saturated row fill outshouts every
+    /// other cue on the screen, so a theme has to ask for it explicitly.
     Fill,
     /// Leading gutter glyph only (quieter).
+    #[default]
     Gutter,
     /// Tint via `Role::SelectionTint` without full fill.
     Tint,
+}
+
+/// How a family of surfaces says "the keyboard is here".
+///
+/// Plans 005-008 gave each family its cue; this names them so a theme can
+/// state the vocabulary instead of every widget improvising one (audit F2).
+/// The rule the names encode: a container brightens its border, a row tints
+/// and takes the gutter, a cell reverses, a chip marks its bracket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum FocusEmphasis {
+    /// `Role::BorderFocused` on the container's own edge (panels, inputs).
+    #[default]
+    BrightBorder,
+    /// Full selection fill — opt-in only, never a resting default.
+    SelectionFill,
+    /// `Role::SelectionTint` behind the row plus its gutter glyph.
+    FocusTint,
+    /// Reversed cell — a cell cursor is a cell (tables, grids).
+    Reversed,
+    /// Weight on the key itself (keycaps, hint chords).
+    BoldKey,
+    /// The token's bracket carries focus; the mark keeps stating membership.
+    PillGlyph,
+}
+
+impl FocusEmphasis {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::BrightBorder => "bright-border",
+            Self::SelectionFill => "selection-fill",
+            Self::FocusTint => "focus-tint",
+            Self::Reversed => "reversed",
+            Self::BoldKey => "bold-key",
+            Self::PillGlyph => "pill-glyph",
+        }
+    }
+
+    /// The cue a surface family wears by default.
+    #[must_use]
+    pub const fn for_family(family: SurfaceFamily) -> Self {
+        match family {
+            SurfaceFamily::Container | SurfaceFamily::Field => Self::BrightBorder,
+            SurfaceFamily::Row => Self::FocusTint,
+            SurfaceFamily::Cell => Self::Reversed,
+            SurfaceFamily::Token => Self::PillGlyph,
+            SurfaceFamily::Chord => Self::BoldKey,
+        }
+    }
+}
+
+/// The families whose focus cue differs, for [`FocusEmphasis::for_family`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum SurfaceFamily {
+    /// Panels, dialogs, drawers.
+    #[default]
+    Container,
+    /// Text inputs and other typed fields.
+    Field,
+    /// List, tree and table rows.
+    Row,
+    /// Individual table or grid cells.
+    Cell,
+    /// Tags, chips, token-field entries.
+    Token,
+    /// Keycaps and hint chords.
+    Chord,
+}
+
+impl SurfaceFamily {
+    /// Position in a per-family table.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Container => 0,
+            Self::Field => 1,
+            Self::Row => 2,
+            Self::Cell => 3,
+            Self::Token => 4,
+            Self::Chord => 5,
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Container => "container",
+            Self::Field => "field",
+            Self::Row => "row",
+            Self::Cell => "cell",
+            Self::Token => "token",
+            Self::Chord => "chord",
+        }
+    }
+}
+
+impl SelectionChrome {
+    /// Stable id, for inspectors and story metadata.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Fill => "fill",
+            Self::Gutter => "gutter",
+            Self::Tint => "tint",
+        }
+    }
 }
 
 /// Corner-glyph family for single-line borders. Focus stays color-only.
@@ -177,6 +312,95 @@ impl SpacingScale {
             },
         }
     }
+
+    /// Blank rows that separate two content sections at this density.
+    ///
+    /// The band is the first thing surrendered under height pressure — see
+    /// [`SpacerBand::resolve`].
+    #[must_use]
+    pub const fn band(self) -> SpacerBand {
+        SpacerBand { rows: self.gap }
+    }
+}
+
+/// Cells reserved between chrome edges and the content they contain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ContentInset {
+    /// Columns reserved on each horizontal edge.
+    pub x: u16,
+    /// Rows reserved on each vertical edge.
+    pub y: u16,
+}
+
+impl ContentInset {
+    /// Shrinks `area` by this inset on all four edges, never past empty.
+    #[must_use]
+    pub fn apply(self, area: ratatui_core::layout::Rect) -> ratatui_core::layout::Rect {
+        let x = area.x.saturating_add(self.x);
+        let y = area.y.saturating_add(self.y);
+        let width = area.width.saturating_sub(self.x.saturating_mul(2));
+        let height = area.height.saturating_sub(self.y.saturating_mul(2));
+        ratatui_core::layout::Rect {
+            x: x.min(area.x.saturating_add(area.width)),
+            y: y.min(area.y.saturating_add(area.height)),
+            width,
+            height,
+        }
+    }
+}
+
+/// Blank rows painted between two content sections to give a surface rhythm.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct SpacerBand {
+    /// Preferred band height in rows.
+    pub rows: u16,
+}
+
+impl SpacerBand {
+    /// Band height that actually fits: rhythm is dropped before content is.
+    ///
+    /// `available` is the rows the surface owns, `content` the rows its
+    /// sections need. The band survives only when every content row still
+    /// fits with it painted.
+    #[must_use]
+    pub const fn resolve(self, available: u16, content: u16) -> u16 {
+        if available >= content.saturating_add(self.rows) {
+            self.rows
+        } else {
+            0
+        }
+    }
+}
+
+/// Separator painted between a key and its value in key-value surfaces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum KvSeparator {
+    /// Two-cell gutter — alignment carries the pairing (default).
+    #[default]
+    Gutter,
+    /// Explicit ` : ` rule for ragged, non-aligned pairs.
+    Colon,
+}
+
+impl KvSeparator {
+    /// Literal painted between the key and the value.
+    #[must_use]
+    pub const fn text(self) -> &'static str {
+        match self {
+            Self::Gutter => "  ",
+            Self::Colon => " : ",
+        }
+    }
+
+    /// Display columns the separator occupies.
+    #[must_use]
+    pub const fn cols(self) -> u16 {
+        match self {
+            Self::Gutter => 2,
+            Self::Colon => 3,
+        }
+    }
 }
 
 /// Runtime visual facts for one list row (widget state + row projection).
@@ -196,6 +420,17 @@ pub struct ListRowVisualState {
     pub checked: bool,
 }
 
+impl ListRowVisualState {
+    /// Whether this row's hidden affordances are revealed.
+    ///
+    /// A row reveals its actions when the operator is on it — by cursor, by
+    /// focus, or by pointer. Everything else keeps them out of the way.
+    #[must_use]
+    pub const fn revealed(self) -> bool {
+        self.enabled && (self.selected || self.focused || self.hovered)
+    }
+}
+
 /// Semantic panel chrome emphasis for recipes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -207,6 +442,18 @@ pub enum PanelChrome {
     Focused,
     /// Destructive / risk surface.
     Danger,
+}
+
+impl PanelChrome {
+    /// The chrome a container wears for a focus flag.
+    ///
+    /// Every surface that owns focus reaches for the same two-armed
+    /// conditional; stating it once keeps the focus-visible hierarchy from
+    /// drifting one container at a time.
+    #[must_use]
+    pub const fn for_focus(focused: bool) -> Self {
+        if focused { Self::Focused } else { Self::Normal }
+    }
 }
 
 /// Resolved paint plan for a panel chrome surface.
@@ -222,6 +469,11 @@ pub struct PanelRecipe {
     pub pad_y: u16,
     /// Optional surface fill style.
     pub surface: ratatui_core::style::Style,
+    /// Glyph the title carries when the chrome itself is a warning.
+    ///
+    /// Danger chrome must not rely on a red border alone: colorless and
+    /// low-color terminals need the mark in the title.
+    pub title_prefix: Option<&'static str>,
 }
 
 /// Elevation token → surface role mapping (not border weight).
@@ -246,7 +498,10 @@ impl Elevation {
         match self {
             Self::Canvas => Role::Canvas,
             Self::Surface => Role::Surface,
-            Self::Raised | Self::Overlay => Role::Elevated,
+            // Raised is an in-flow step; Elevated is reserved for overlays, so
+            // a card on a panel and a dialog over it never share a fill.
+            Self::Raised => Role::Raised,
+            Self::Overlay => Role::Elevated,
         }
     }
 
@@ -346,12 +601,19 @@ pub struct InputRecipe {
     pub value: Style,
     /// Placeholder style.
     pub placeholder: Style,
-    /// Border / underline style.
+    /// Border style.
     pub border: Style,
     /// Fill style.
     pub fill: Style,
     /// Cursor style.
     pub cursor: Style,
+    /// Field-local focus cue for chrome with no border of its own.
+    ///
+    /// A one-line field cannot swap a border color, so focus is carried by a
+    /// leading prompt cell instead. `None` when the field is not the
+    /// interaction owner; the column stays reserved either way so the value
+    /// does not shift when focus arrives.
+    pub prompt: Option<(&'static str, Style)>,
     /// Horizontal pad.
     pub pad_x: u16,
 }
@@ -406,8 +668,8 @@ pub struct DesignSystem {
     pub palette: RolePalette,
     /// Layout density.
     pub density: Density,
-    /// Motion preference.
-    pub motion: Motion,
+    /// Motion tier for animated chrome.
+    pub motion: MotionPolicy,
     /// Glyph policy.
     pub glyphs: GlyphSet,
     /// Resolved spacing.
@@ -420,6 +682,22 @@ pub struct DesignSystem {
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
     pub breakpoints: BreakpointScale,
+    /// Separator painted between a key and its value.
+    pub kv_separator: KvSeparator,
+    /// Focus cue per surface family, in [`SurfaceFamily`] order.
+    focus: [FocusEmphasis; 6],
+    /// Frame time for animated chrome, when a host supplies one.
+    ///
+    /// Motion policy already rides the design system into every widget, but the
+    /// *clock* did not, so anything wanting time needed it threaded through its
+    /// own signature. Carrying the tick here gives all ~143 widgets access with
+    /// no signature churn.
+    ///
+    /// `None` means "no time was injected": every animated surface paints its
+    /// settled frame. That keeps snapshot tests deterministic without a special
+    /// test mode, and it is the honest default — a widget must never invent a
+    /// clock during paint.
+    tick: Option<FrameTick>,
 }
 
 impl Default for DesignSystem {
@@ -432,7 +710,7 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Tint)
+        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
     }
 
     /// Terminal-default background variant of the phosphor system.
@@ -456,7 +734,7 @@ impl DesignSystem {
     /// Light paper system.
     #[must_use]
     pub fn paper() -> Self {
-        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Fill)
+        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Tint)
     }
 
     /// ANSI 16-color native system (no truecolor dependency).
@@ -471,7 +749,7 @@ impl DesignSystem {
     #[must_use]
     pub fn high_contrast() -> Self {
         Self::from_palette(RolePalette::high_contrast())
-            .selection(SelectionChrome::Fill)
+            .selection(SelectionChrome::Tint)
             .glyphs(GlyphSet::Unicode)
     }
 
@@ -492,13 +770,23 @@ impl DesignSystem {
         Self {
             palette,
             density,
-            motion: Motion::default(),
+            motion: MotionPolicy::default(),
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::from_density(density),
             selection: SelectionChrome::default(),
             border_shape: BorderShape::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
+            kv_separator: KvSeparator::default(),
+            focus: [
+                FocusEmphasis::for_family(SurfaceFamily::Container),
+                FocusEmphasis::for_family(SurfaceFamily::Field),
+                FocusEmphasis::for_family(SurfaceFamily::Row),
+                FocusEmphasis::for_family(SurfaceFamily::Cell),
+                FocusEmphasis::for_family(SurfaceFamily::Token),
+                FocusEmphasis::for_family(SurfaceFamily::Chord),
+            ],
+            tick: None,
         }
     }
 
@@ -506,6 +794,23 @@ impl DesignSystem {
     #[must_use]
     pub fn from_palette(palette: RolePalette) -> Self {
         Self::new(palette, Density::default())
+    }
+
+    /// The focus cue this system gives a surface family.
+    #[must_use]
+    pub const fn focus_emphasis(&self, family: SurfaceFamily) -> FocusEmphasis {
+        self.focus[family.index()]
+    }
+
+    /// Overrides one family's focus cue (themes state the vocabulary).
+    #[must_use]
+    pub const fn with_focus_emphasis(
+        mut self,
+        family: SurfaceFamily,
+        emphasis: FocusEmphasis,
+    ) -> Self {
+        self.focus[family.index()] = emphasis;
+        self
     }
 
     /// Overrides density and recomputes spacing from density.
@@ -516,9 +821,39 @@ impl DesignSystem {
         self
     }
 
+    /// Supplies this frame's time to every widget painted with this system.
+    ///
+    /// Call once per frame in the host's render function:
+    ///
+    /// ```rust,ignore
+    /// let system = base_system.clone().at(tick);
+    /// ```
+    #[must_use]
+    pub const fn at(mut self, tick: FrameTick) -> Self {
+        self.tick = Some(tick);
+        self
+    }
+
+    /// This frame's time, if the host supplied one.
+    #[must_use]
+    pub const fn tick(&self) -> Option<FrameTick> {
+        self.tick
+    }
+
+    /// Milliseconds since the runner started, or `0` when no tick was supplied.
+    ///
+    /// The phase source for ambient loops ([`MotionChannel::phase`]), which
+    /// must ride wall clock rather than frame count.
+    ///
+    /// [`MotionChannel::phase`]: super::MotionChannel::phase
+    #[must_use]
+    pub fn elapsed_ms(&self) -> u64 {
+        self.tick.map_or(0, FrameTick::elapsed_ms)
+    }
+
     /// Overrides motion.
     #[must_use]
-    pub const fn motion(mut self, motion: Motion) -> Self {
+    pub const fn motion(mut self, motion: MotionPolicy) -> Self {
         self.motion = motion;
         self
     }
@@ -572,11 +907,63 @@ impl DesignSystem {
         }
     }
 
+    /// Cells that separate chrome from the content inside it.
+    ///
+    /// Bordered chrome always reserves at least one column so text never sits
+    /// flush against a border glyph — at every terminal width, including the
+    /// narrow ones where padding used to collapse. Vertical rhythm inside a
+    /// border comes from the border itself, so bordered chrome insets no rows.
+    #[must_use]
+    pub const fn content_inset(&self, bordered: bool) -> ContentInset {
+        if bordered {
+            let x = self.spacing.pad_x.saturating_sub(1);
+            ContentInset {
+                x: if x == 0 { 1 } else { x },
+                y: 0,
+            }
+        } else {
+            ContentInset {
+                x: self.spacing.pad_x,
+                y: self.spacing.pad_y,
+            }
+        }
+    }
+
+    /// Separator this system paints between a key and its value.
+    #[must_use]
+    pub const fn kv_separator(&self) -> KvSeparator {
+        self.kv_separator
+    }
+
+    /// Overrides the key-value separator family.
+    #[must_use]
+    pub const fn with_kv_separator(mut self, separator: KvSeparator) -> Self {
+        self.kv_separator = separator;
+        self
+    }
+
     /// Overrides color capability (call before quantize).
     #[must_use]
     pub const fn capability(mut self, capability: ColorCapability) -> Self {
         self.capability = capability;
         self
+    }
+
+    /// Whether this system must carry meaning without color.
+    ///
+    /// True on a monochrome projection *or* an ASCII glyph profile — both mean
+    /// the paint has to say what it means through weight, reverse, and glyph.
+    /// Widgets used to each decide this for themselves, so a terminal could be
+    /// colorless to a checkbox and full-color to the field beside it.
+    #[must_use]
+    pub const fn mono(&self) -> bool {
+        self.glyphs.is_ascii() || matches!(self.capability, ColorCapability::Monochrome)
+    }
+
+    /// Whether glyphs resolve to the ASCII profile.
+    #[must_use]
+    pub const fn ascii_glyphs(&self) -> bool {
+        self.glyphs.is_ascii()
     }
 
     /// Breakpoint scale.
@@ -616,6 +1003,22 @@ impl DesignSystem {
         self.palette.style(role)
     }
 
+    /// Paints one contracted row of text.
+    ///
+    /// The sanctioned single-row painter for titles, labels and values: it
+    /// never splits a grapheme cluster, never leaves a silent hard cut, and
+    /// takes its ellipsis from the active glyph profile. Surfaces that reach
+    /// for `Buffer::set_stringn` instead lose all three.
+    pub fn paint_row(
+        &self,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        area: ratatui_core::layout::Rect,
+        text: &str,
+        style: Style,
+    ) {
+        crate::text::paint_text(buffer, area, text, style, self.glyphs.ellipsis());
+    }
+
     /// Elevation → style.
     #[must_use]
     pub fn elevation(&self, elevation: Elevation) -> Style {
@@ -638,26 +1041,75 @@ impl DesignSystem {
     }
 
     /// Panel chrome recipe for single-line borders and title hierarchy.
+    ///
+    /// `elevation` selects the fill rung, so an overlay panel recesses the
+    /// content behind it instead of repainting the same ordinary surface.
     #[must_use]
-    pub fn panel_recipe(&self, emphasis: PanelChrome) -> PanelRecipe {
+    pub fn panel_recipe(&self, emphasis: PanelChrome, elevation: Elevation) -> PanelRecipe {
+        self.panel_recipe_at(emphasis, elevation, 1.0)
+    }
+
+    /// Panel recipe part-way through a focus change.
+    ///
+    /// `settled` is how far the transition has run: `0.0` is the previous
+    /// border, `1.0` the new one. Focus that snaps on a bright accent border
+    /// reads as a flash; blending the two roles is the whole of the
+    /// cross-fade, and it lives here so all sixteen panel consumers inherit
+    /// it (plans/014 Step 3b).
+    #[must_use]
+    pub fn panel_recipe_at(
+        &self,
+        emphasis: PanelChrome,
+        elevation: Elevation,
+        settled: f32,
+    ) -> PanelRecipe {
         let (border_role, title_role) = match emphasis {
             PanelChrome::Normal => (Role::Border, Role::TextStrong),
             PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
             PanelChrome::Danger => (Role::Danger, Role::TextStrong),
         };
+        let border = if self.motion.allows_transitions() && settled < 1.0 {
+            let from = match emphasis {
+                PanelChrome::Focused => Role::Border,
+                PanelChrome::Normal | PanelChrome::Danger => Role::BorderFocused,
+            };
+            self.blend_role(from, border_role, settled)
+        } else {
+            self.style(border_role)
+        };
         PanelRecipe {
-            border: self.style(border_role),
+            border,
             title: self.style(title_role),
             pad_x: self.spacing.pad_x,
             pad_y: self.spacing.pad_y,
-            surface: self.style(Role::Surface),
+            surface: self.style(elevation.role()),
+            title_prefix: match emphasis {
+                PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Warning).text),
+                PanelChrome::Normal | PanelChrome::Focused => None,
+            },
         }
+    }
+
+    /// Blends one role's foreground toward another's.
+    ///
+    /// The transition vocabulary: a settled surface asks for a role, a
+    /// transitioning one asks for the point between two.
+    #[must_use]
+    pub fn blend_role(&self, from: Role, to: Role, t: f32) -> Style {
+        let target = self.style(to);
+        let (Some(from_fg), Some(to_fg)) = (self.style(from).fg, target.fg) else {
+            return target;
+        };
+        target.fg(super::motion::blend_toward(
+            from_fg,
+            to_fg,
+            t.clamp(0.0, 1.0),
+        ))
     }
 
     /// Button part×state recipe (no hard-coded RGB).
     #[must_use]
     pub fn button_recipe(&self, variant: ButtonRecipeVariant, state: ControlState) -> ButtonRecipe {
-        let disabled = matches!(state, ControlState::Disabled | ControlState::Loading);
         let base_role = match variant {
             ButtonRecipeVariant::Primary => Role::ActionFocused,
             ButtonRecipeVariant::Destructive => Role::Danger,
@@ -682,7 +1134,10 @@ impl DesignSystem {
             border = self.style(Role::BorderFocused);
         }
         if matches!(variant, ButtonRecipeVariant::Destructive) {
-            fill = self.style(Role::Danger);
+            // `Role::Danger` is a foreground role: assigning it as a fill left
+            // the button with no background at all while claiming to have one.
+            // Destructive reads through its label and border instead, and the
+            // press is what turns the button solid.
             border = self.style(Role::Danger);
         }
         if matches!(
@@ -703,19 +1158,54 @@ impl DesignSystem {
                 label = label.add_modifier(Modifier::BOLD);
             }
             ControlState::Hovered => {
-                label = self.style(Role::LinkHover);
+                // Only a link repaints its label on hover. A filled button that
+                // swapped its label to the link hue put cyan on green — 1.02:1,
+                // an invisible label. Everything else washes its ground instead.
+                if matches!(variant, ButtonRecipeVariant::Link) {
+                    label = self.style(Role::LinkHover);
+                } else if fill.bg.is_none() {
+                    fill = self.style(Role::HoverTint);
+                } else if let Some(bg) = fill.bg {
+                    // A filled button already owns its ground, so a hover wash
+                    // lands on nothing: the fill itself lifts one step. The
+                    // label carries the same ground, so it lifts with it —
+                    // otherwise it repaints the resting colour straight back
+                    // over the lift (plans/021 Step 1).
+                    let lifted = super::palette::lift(bg);
+                    fill = fill.bg(lifted);
+                    if label.bg == Some(bg) {
+                        label = label.bg(lifted);
+                    }
+                    border = self.style(Role::BorderFocused);
+                    bordered = true;
+                }
             }
             ControlState::Pressed => {
+                // Pressed is a distinct fact, not "hover but bolder": the
+                // control sinks into the press for the frame it is held
+                // (plans/021 Step 2).
                 label = label.add_modifier(Modifier::BOLD);
+                fill = self.style(Role::SelectionTint);
+                if matches!(variant, ButtonRecipeVariant::Destructive) {
+                    label = label.add_modifier(Modifier::REVERSED);
+                }
             }
-            ControlState::Disabled | ControlState::Loading => {
+            ControlState::Disabled => {
                 label = self.style(Role::ActionDisabled);
+                fill = Style::new();
+                border = self.style(Role::Border);
+            }
+            ControlState::Loading => {
+                // Loading is not disabled: the button keeps its identity and
+                // dims, so a spinner beside a still-recognizable action does
+                // not read as "this control is gone".
+                label = label.add_modifier(Modifier::DIM);
                 fill = Style::new();
                 border = self.style(Role::Border);
             }
             ControlState::Default => {}
         }
-        if disabled {
+        if matches!(state, ControlState::Disabled) {
             label = self.style(Role::ActionDisabled);
         }
         ButtonRecipe {
@@ -730,30 +1220,59 @@ impl DesignSystem {
     /// Text input part×state recipe.
     #[must_use]
     pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
+        self.input_recipe_at(state, invalid, 1.0)
+    }
+
+    /// Input recipe part-way through a focus change.
+    ///
+    /// Same contract as [`Self::panel_recipe_at`]: `0.0` is the border the
+    /// field is leaving, `1.0` the one it is arriving at.
+    #[must_use]
+    pub fn input_recipe_at(&self, state: ControlState, invalid: bool, settled: f32) -> InputRecipe {
         let mut border = self.style(Role::Border);
-        let mut value = self.style(Role::Input);
+        // The value is text; the well is the fill. Reading both from
+        // `Role::Input` made the value inherit the well's background and
+        // nothing else.
+        let mut value = self.style(Role::Text);
         let placeholder = self.style(Role::TextMuted);
-        let fill = self.style(Role::Input);
+        let mut fill = self.style(Role::Sunken);
         let cursor = self.style(Role::Focus);
         if invalid {
             border = self.style(Role::InputInvalid);
-            value = self.style(Role::InputInvalid);
+            value = value.patch(self.style(Role::InputInvalid));
         }
         match state {
-            ControlState::Focused => border = self.style(Role::BorderFocused),
+            ControlState::Focused => {
+                border = if self.motion.allows_transitions() && settled < 1.0 {
+                    self.blend_role(Role::Border, Role::BorderFocused, settled)
+                } else {
+                    self.style(Role::BorderFocused)
+                };
+            }
             ControlState::Disabled => {
                 value = self.style(Role::TextDisabled);
                 border = self.style(Role::Border);
             }
-            ControlState::Hovered => border = self.style(Role::Focus),
+            ControlState::Hovered => {
+                // Hover lifts the well; only focus is allowed to brighten the
+                // border, or a pointer passing by looks like keyboard focus.
+                fill = fill.patch(self.style(Role::HoverTint));
+            }
             _ => {}
         }
+        let prompt = matches!(state, ControlState::Focused).then(|| {
+            (
+                self.glyphs.resolve(super::glyph::Glyph::Prompt).text,
+                self.style(Role::BorderFocused),
+            )
+        });
         InputRecipe {
             value,
             placeholder,
             border,
             fill,
             cursor,
+            prompt,
             pad_x: self.spacing.pad_x,
         }
     }
@@ -795,8 +1314,15 @@ impl DesignSystem {
             Role::TextMuted
         });
         let shortcut = secondary;
+        // The gutter says "selected"; its color says whether this collection
+        // owns the keyboard. Accent while focused, muted while parked.
         let gutter = if state.selected {
-            Some((self.glyphs.selection_gutter(), self.style(Role::Accent)))
+            let tone = if state.focused {
+                Role::Accent
+            } else {
+                Role::TextMuted
+            };
+            Some((self.glyphs.selection_gutter(), self.style(tone)))
         } else {
             None
         };
@@ -813,9 +1339,8 @@ impl DesignSystem {
             use_fill,
             use_tint,
             hover_fill,
-            show_focus_underline: state.focused && state.selected && !disabled,
             focus: self.style(Role::Focus),
-            hover: self.style(Role::LinkHover),
+            hover: self.style(Role::TextStrong),
             hover_wash: self.style(Role::HoverTint),
             tint: self.style(Role::SelectionTint),
             check_on: self.glyphs.check_on(),
@@ -827,6 +1352,10 @@ impl DesignSystem {
             ),
             checked: state.checked,
             loading: state.loading,
+            // Law P6: a row's actions appear when the row is the one you are
+            // on. Idle rows keep a faint marker so the affordance is still
+            // discoverable (plans/021 Step 3).
+            show_actions: state.revealed(),
         }
     }
 }
@@ -852,11 +1381,13 @@ pub struct ListRowRecipe {
     pub use_tint: bool,
     /// Whether hover should tint the row background.
     pub hover_fill: bool,
-    /// Whether to paint a focus underline cue on the primary label.
-    pub show_focus_underline: bool,
-    /// Focus accent style (underline / border role).
+    /// Focus accent style for non-border focus cues.
     pub focus: Style,
-    /// Hover style when not selected.
+    /// Hover label style when not selected.
+    ///
+    /// Hover never borrows link styling: the row lifts with
+    /// [`Self::hover_wash`] behind a strong label, so a hovered row is not
+    /// mistaken for a clickable hyperlink.
     pub hover: Style,
     /// Background wash for hovered rows.
     pub hover_wash: Style,
@@ -874,6 +1405,8 @@ pub struct ListRowRecipe {
     pub checked: bool,
     /// Loading flag for leading glyph override.
     pub loading: bool,
+    /// Whether row actions are revealed this frame (law P6).
+    pub show_actions: bool,
 }
 
 #[cfg(test)]
@@ -904,15 +1437,47 @@ mod tests {
 
     #[test]
     fn tint_recipe_keeps_wash_when_label_repaints_cells() {
+        let system = DesignSystem::phosphor().selection(SelectionChrome::Tint);
+        let state = ListRowVisualState {
+            selected: true,
+            focused: true,
+            enabled: true,
+            ..Default::default()
+        };
+        let recipe = system.resolve_list_row(state);
+        assert!(recipe.use_tint);
+        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
+
+        // The shipped default is quieter: gutter + strong label, no wash.
+        let quiet = DesignSystem::phosphor().resolve_list_row(state);
+        assert!(!quiet.use_tint && !quiet.use_fill);
+        assert_eq!(quiet.label.bg, None);
+        assert!(quiet.gutter.is_some());
+    }
+
+    #[test]
+    fn selection_gutter_tone_tracks_collection_focus() {
         let system = DesignSystem::phosphor();
-        let recipe = system.resolve_list_row(ListRowVisualState {
+        let focused = system.resolve_list_row(ListRowVisualState {
             selected: true,
             focused: true,
             enabled: true,
             ..Default::default()
         });
-        assert!(recipe.use_tint);
-        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
+        let parked = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: false,
+            enabled: true,
+            ..Default::default()
+        });
+        assert_eq!(
+            focused.gutter.expect("selected rows carry a gutter").1,
+            system.style(Role::Accent)
+        );
+        assert_eq!(
+            parked.gutter.expect("selected rows carry a gutter").1,
+            system.style(Role::TextMuted)
+        );
     }
 
     #[test]
@@ -926,9 +1491,9 @@ mod tests {
     #[test]
     fn reduced_motion_is_distinct() {
         let full = DesignSystem::default();
-        let reduced = DesignSystem::default().motion(Motion::Reduced);
+        let reduced = DesignSystem::default().motion(MotionPolicy::Basic);
         assert!(full.motion.animate_spinners());
-        assert!(!Motion::Off.animate_spinners());
+        assert!(!MotionPolicy::Off.animate_spinners());
         assert_ne!(full.motion, reduced.motion);
     }
 
@@ -966,6 +1531,27 @@ mod tests {
     }
 
     #[test]
+    fn tick_defaults_to_none_so_snapshots_stay_deterministic() {
+        let system = DesignSystem::default();
+        assert_eq!(
+            system.tick(),
+            None,
+            "a design system must not invent a clock"
+        );
+        assert_eq!(system.elapsed_ms(), 0);
+
+        let start = crate::runtime::Instant::now();
+        let tick = FrameTick::manual(
+            start + std::time::Duration::from_millis(750),
+            std::time::Duration::from_millis(750),
+            std::time::Duration::from_millis(16),
+        );
+        let timed = system.at(tick);
+        assert_eq!(timed.tick(), Some(tick));
+        assert_eq!(timed.elapsed_ms(), 750);
+    }
+
+    #[test]
     fn no_color_forces_mono_and_ascii() {
         let system = DesignSystem::phosphor().no_color();
         assert_eq!(system.capability, ColorCapability::Monochrome);
@@ -994,7 +1580,16 @@ mod tests {
         let system = DesignSystem::slate();
         assert_eq!(
             system.elevation(Elevation::Raised),
+            system.style(Role::Raised)
+        );
+        assert_eq!(
+            system.elevation(Elevation::Overlay),
             system.style(Role::Elevated)
+        );
+        assert_ne!(
+            system.elevation(Elevation::Raised),
+            system.elevation(Elevation::Overlay),
+            "an in-flow card and an overlay must not share a rung"
         );
         assert_eq!(Elevation::Canvas.role(), Role::Canvas);
     }
@@ -1013,5 +1608,100 @@ mod tests {
         let system = DesignSystem::paper().quantize(ColorCapability::Ansi16);
         let _ = system.style(Role::Accent);
         assert_eq!(system.capability, ColorCapability::Ansi16);
+    }
+
+    #[test]
+    fn bordered_chrome_always_reserves_a_column_at_every_density() {
+        for density in [Density::Comfortable, Density::Compact, Density::Dashboard] {
+            let system = DesignSystem::phosphor().density(density);
+            let bordered = system.content_inset(true);
+            assert!(bordered.x >= 1, "{density:?} bordered inset collapsed");
+            assert_eq!(bordered.y, 0, "{density:?} border owns vertical rhythm");
+            let plain = system.content_inset(false);
+            assert_eq!(plain.x, system.spacing.pad_x);
+            assert_eq!(plain.y, system.spacing.pad_y);
+        }
+    }
+
+    #[test]
+    fn content_inset_shrinks_a_rect_symmetrically() {
+        let area = ratatui_core::layout::Rect::new(4, 2, 10, 6);
+        let inset = ContentInset { x: 2, y: 1 };
+        let inner = inset.apply(area);
+        assert_eq!((inner.x, inner.y, inner.width, inner.height), (6, 3, 6, 4));
+        // Never past empty on a rect narrower than the inset.
+        let tiny = ContentInset { x: 3, y: 3 }.apply(ratatui_core::layout::Rect::new(0, 0, 2, 2));
+        assert_eq!((tiny.width, tiny.height), (0, 0));
+    }
+
+    #[test]
+    fn rhythm_band_is_surrendered_before_content_rows() {
+        let band = DesignSystem::phosphor().spacing.band();
+        assert_eq!(band.rows, 1);
+        assert_eq!(band.resolve(10, 4), 1);
+        assert_eq!(band.resolve(5, 5), 0);
+        assert_eq!(SpacerBand { rows: 2 }.resolve(6, 4), 2);
+        assert_eq!(
+            DesignSystem::phosphor()
+                .density(Density::Dashboard)
+                .spacing
+                .band()
+                .rows,
+            0
+        );
+    }
+
+    #[test]
+    fn focus_borders_cross_fade_and_settle() {
+        let system = DesignSystem::default();
+        let settled = system.panel_recipe(PanelChrome::Focused, Elevation::Surface);
+        let mid = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5);
+        let start = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.0);
+        assert_ne!(mid.border.fg, settled.border.fg, "mid-transition differs");
+        assert_eq!(
+            start.border.fg,
+            system.style(Role::Border).fg,
+            "a fade starts from the border it is leaving"
+        );
+        assert_eq!(
+            system
+                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 1.0)
+                .border
+                .fg,
+            settled.border.fg
+        );
+
+        // `Basic` still crosses over — capped, not cancelled (motion law §5).
+        let basic = DesignSystem::default().motion(MotionPolicy::Basic);
+        assert_ne!(
+            basic
+                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
+                .border
+                .fg,
+            basic.style(Role::BorderFocused).fg
+        );
+        // `Off` never blends: it paints the settled frame.
+        let off = DesignSystem::default().motion(MotionPolicy::Off);
+        assert_eq!(
+            off.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
+                .border
+                .fg,
+            off.style(Role::BorderFocused).fg
+        );
+    }
+
+    #[test]
+    fn key_value_surfaces_share_one_separator_token() {
+        let system = DesignSystem::phosphor();
+        assert_eq!(system.kv_separator(), KvSeparator::Gutter);
+        assert_eq!(system.kv_separator().text(), "  ");
+        let colon = system.with_kv_separator(KvSeparator::Colon);
+        assert_eq!(colon.kv_separator().text(), " : ");
+        for separator in [KvSeparator::Gutter, KvSeparator::Colon] {
+            assert_eq!(
+                usize::from(separator.cols()),
+                crate::text::display_cols(separator.text())
+            );
+        }
     }
 }

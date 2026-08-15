@@ -10,6 +10,17 @@
 //! Integrate with [`super::StatusBar`] and notifications via projection helpers.
 //!
 //! Research: agent activity indicators, build queues, IDE background tasks.
+//!
+//! Teaches: how to compose compact persistent summary of active/blocked
+//! operations.
+//!
+//! Composes: [`crate::widgets::NotificationItem`],
+//! [`crate::widgets::SemanticStatus`], [`crate::widgets::StatusKind`],
+//! [`crate::widgets::StatusRegion`], [`crate::widgets::StatusSlot`],
+//! [`crate::widgets::ToastKind`], [`crate::widgets::ToastPriority`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
@@ -18,7 +29,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         NotificationItem, SemanticStatus, StatusKind, StatusRegion, StatusSlot, ToastKind,
@@ -881,37 +892,26 @@ impl<'a> ActivityShelf<'a> {
         } else {
             self.system.style(Role::StatusBar)
         };
-        for x in area.x..area.right() {
-            for y in area.y..area.bottom() {
-                if let Some(cell) = buffer.cell_mut((x, y)) {
-                    cell.set_style(bar_style);
-                    if cell.symbol() == " " || cell.symbol().is_empty() {
-                        cell.set_symbol(" ");
-                    }
-                }
-            }
-        }
+        buffer.set_style(area, bar_style);
 
         match plan.presentation {
             ActivityShelfPresentation::Badge => {
                 let label = activity_badge_label(self.items, ascii);
                 let style = urgency_style(self.system, self.items, self.colorless, state.focused);
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    take_display_cols(&label, usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, area.y, area.width, 1),
+                    &label,
                     style,
                 );
             }
             ActivityShelfPresentation::Summary => {
                 let label = activity_status_summary(self.items, ascii);
                 let style = urgency_style(self.system, self.items, self.colorless, state.focused);
-                buffer.set_stringn(
-                    area.x,
-                    area.y,
-                    take_display_cols(&label, usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, area.y, area.width, 1),
+                    &label,
                     style,
                 );
             }
@@ -956,11 +956,10 @@ impl<'a> ActivityShelf<'a> {
                 };
                 let sel = state.focused && vi == state.selected;
                 let style = chip_style(self.system, item, self.colorless, sel);
-                buffer.set_stringn(
-                    rect.x,
-                    rect.y,
-                    take_display_cols(&label, usize::from(rect.width)),
-                    usize::from(rect.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(rect.x, rect.y, rect.width, 1),
+                    &label,
                     style,
                 );
                 state.hits.push((item.id.clone(), rect));
@@ -978,11 +977,10 @@ impl<'a> ActivityShelf<'a> {
                 let sel = state.focused && vi == state.selected;
                 let style = chip_style(self.system, item, self.colorless, sel);
                 let text = format!(" {label} ");
-                buffer.set_stringn(
-                    rect.x,
-                    rect.y,
-                    take_display_cols(&text, usize::from(rect.width)),
-                    usize::from(rect.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(rect.x, rect.y, rect.width, 1),
+                    &text,
                     style,
                 );
                 state.hits.push((item.id.clone(), rect));
@@ -1000,11 +998,10 @@ impl<'a> ActivityShelf<'a> {
                         width: area.width,
                         height: 1,
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        take_display_cols(&ov, usize::from(rect.width)),
-                        usize::from(rect.width),
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(rect.x, rect.y, rect.width, 1),
+                        &ov,
                         self.system.style(Role::TextMuted),
                     );
                     state.overflow_hit = rect;
@@ -1023,7 +1020,12 @@ impl<'a> ActivityShelf<'a> {
                     } else {
                         self.system.style(Role::TextMuted)
                     };
-                    buffer.set_stringn(rect.x, rect.y, &ov, usize::from(rect.width), st);
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(rect.x, rect.y, rect.width, 1),
+                        &ov,
+                        st,
+                    );
                     state.overflow_hit = rect;
                 }
             }
@@ -1088,7 +1090,15 @@ fn chip_style(
     };
     let mut s = system.style(role);
     if selected {
-        s = s.add_modifier(Modifier::REVERSED | Modifier::BOLD);
+        // Selection is chrome: weight and the row tint mark it, so a chip
+        // keeps its own status instead of turning into a slab (plans/010).
+        let recipe = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: true,
+            enabled: true,
+            ..Default::default()
+        });
+        s = s.patch(recipe.tint).add_modifier(Modifier::BOLD);
     }
     s
 }
@@ -1303,7 +1313,10 @@ mod tests {
         let src = include_str!("activity_shelf.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
         assert!(!body.contains("ListState"));
-        assert!(!body.contains("ListRow"));
+        // `ListRowVisualState` is the shared row *recipe* input, not the list
+        // model: the shelf resolves selection chrome from it (plans/010).
+        assert!(!body.contains("ListRow<"));
+        assert!(!body.contains("ListRow {"));
         assert!(!body.contains("std::process"));
         assert!(!body.contains("Command::new"));
         // Mentions of TaskRail in docs are OK; no List façade re-export.

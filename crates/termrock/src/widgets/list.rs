@@ -28,7 +28,7 @@ use crate::{
         default_list_intent,
     },
     scroll::max_offset,
-    style::{Density, DesignSystem, ListRowVisualState, Role},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
 use super::{ComposedRow, Selection};
@@ -1145,10 +1145,23 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         };
         let mut y = body.y;
         let mut painted_rows = 0usize;
+        // Breathing rows: under Comfortable density a group header opens with
+        // one blank canvas row, so sections read as sections instead of as one
+        // unbroken column (law P1, audit D8; plans/015 Step 4).
+        let breathing = matches!(self.density, Density::Comfortable);
+        let mut painted_any = false;
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
                 break;
             }
+            if breathing
+                && painted_any
+                && matches!(row.role, RowRole::GroupHeader)
+                && y.saturating_add(1) < body.bottom()
+            {
+                y = y.saturating_add(1);
+            }
+            painted_any = true;
             let secondary_below = matches!(self.density, Density::Comfortable)
                 && row.secondary.is_some()
                 && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
@@ -1257,10 +1270,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         if show_shortcut {
                             budget = budget.saturating_sub(shortcut_need);
                         }
-                        let show_actions =
-                            row.actions.is_some() && content_w >= 14 && budget >= actions_need + 2;
+                        // Actions belong to the row you are on (law P6): the
+                        // width ladder is the cap, not the gate. An idle row
+                        // with actions keeps a faint marker so the affordance
+                        // stays discoverable (plans/021 Step 3).
+                        let has_actions = row.actions.is_some();
+                        let fits_actions = content_w >= 14 && budget >= actions_need + 2;
+                        let show_actions = has_actions && fits_actions && recipe.show_actions;
+                        let show_action_marker = has_actions && fits_actions && !show_actions;
                         if show_actions {
                             budget = budget.saturating_sub(actions_need);
+                        } else if show_action_marker {
+                            budget = budget.saturating_sub(2);
                         }
                         let badge_need = badge
                             .map(|b| {
@@ -1347,12 +1368,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
                                 style,
                             );
-                            if recipe.show_focus_underline && primary_w > 0 {
-                                buffer.set_style(
-                                    Rect::new(x, rect.y, primary_w, 1),
-                                    recipe.focus.add_modifier(Modifier::UNDERLINED),
-                                );
-                            }
                             x = x.saturating_add(primary_w);
                         }
                         if show_secondary && let Some(sec) = row.secondary.as_ref() {
@@ -1381,6 +1396,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     sc,
                                     usize::from(w),
                                     recipe.shortcut,
+                                );
+                            }
+                        }
+                        if show_action_marker {
+                            let marker = self.tokens.glyphs.ellipsis();
+                            let w = u16::try_from(crate::text::display_cols(marker))
+                                .unwrap_or(1)
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_stringn(
+                                    cursor,
+                                    rect.y,
+                                    marker,
+                                    usize::from(w),
+                                    self.tokens.style(Role::TextFaint),
                                 );
                             }
                         }
@@ -1438,6 +1469,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         }
         let _ = painted_rows;
         if scrollable {
+            // The cut edges say there is more; the scrollbar says where.
+            let offset = state.collection.offset();
+            crate::scroll::paint_scroll_edges(
+                buffer,
+                body,
+                self.tokens,
+                offset > 0,
+                offset.saturating_add(usize::from(body.height)) < total,
+            );
             crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),
@@ -1680,7 +1720,7 @@ mod tests {
     }
 
     #[test]
-    fn phosphor_selection_is_tinted_not_neon() {
+    fn phosphor_selection_is_a_gutter_not_neon() {
         let rows = rows();
         let system = DesignSystem::default();
         let mut state = ListState::new(Some("second"));
@@ -1693,9 +1733,17 @@ mod tests {
             .find(|r| r.id == "second")
             .unwrap()
             .area;
-        let cell = &buffer[(row.x.saturating_add(1), row.y)];
-        assert_eq!(cell.bg, system.style(Role::SelectionTint).bg.unwrap());
-        assert_ne!(cell.fg, system.style(Role::ActionFocused).fg.unwrap());
+        assert_eq!(
+            buffer[(row.x, row.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "the selected row is marked by its gutter"
+        );
+        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        assert_ne!(
+            label.bg,
+            system.style(Role::Selection).bg.unwrap(),
+            "selection never fills the row by default"
+        );
     }
 
     #[test]
@@ -1952,10 +2000,8 @@ mod tests {
         let text: String = (0..24)
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
-        assert!(
-            text.contains('…') || text.contains('.'),
-            "loading glyph present: {text:?}"
-        );
+        let loading = Glyph::Loading.resolve(tokens.glyphs).text;
+        assert!(text.contains(loading), "loading glyph present: {text:?}");
         assert!(text.contains("Build"), "{text:?}");
     }
 
@@ -2006,7 +2052,12 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), ">");
+        assert_eq!(
+            buffer[(0, 0)].symbol(),
+            Glyph::SelectionGutter
+                .resolve(crate::style::GlyphSet::Ascii)
+                .text
+        );
         let check = buffer[(2, 0)].symbol();
         assert!(check == "[" || check == "x", "ascii check: {check:?}");
     }

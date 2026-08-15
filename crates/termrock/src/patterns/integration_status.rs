@@ -19,6 +19,15 @@
 //!
 //! Research: Grok Build extension/MCP views, editor extension managers,
 //! service health panels.
+//!
+//! Teaches: how to compose status and management for MCP servers, plugins,
+//! extensions, tools, and external integrations.
+//!
+//! Composes: [`crate::widgets::Panel`], [`crate::widgets::StatefulWidget`],
+//! [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -32,9 +41,10 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Glyph, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::Panel,
+    widgets::{EmptyKind, EmptyState},
 };
 
 /// Overlay id for full integration panel.
@@ -1013,6 +1023,19 @@ pub struct IntegrationStatus<'a> {
     colorless: bool,
 }
 
+/// The row a clipping list must stop at, so the cut has somewhere to be said.
+///
+/// A list that fills its last row has nowhere left to admit what it dropped,
+/// which is how a surface goes silent: it looks complete because the sentence
+/// explaining otherwise never had a cell (plans/017 §B2).
+fn clip_bottom(bottom: u16, total: usize, shown: usize) -> u16 {
+    if total > shown.saturating_add(1) {
+        bottom.saturating_sub(1)
+    } else {
+        bottom
+    }
+}
+
 impl<'a> IntegrationStatus<'a> {
     /// System only.
     #[must_use]
@@ -1053,7 +1076,7 @@ impl<'a> IntegrationStatus<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &IntegrationStatusState) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let (text, role) = if let Some(e) = state.current() {
             let g = e.health.glyph(self.ascii);
             let k = e.kind.glyph(self.ascii);
@@ -1067,11 +1090,10 @@ impl<'a> IntegrationStatus<'a> {
         } else {
             (state.aggregate_badge(), Role::TextMuted)
         };
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&text, w),
-            w,
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &text,
             self.system.style(role),
         );
     }
@@ -1095,13 +1117,9 @@ impl<'a> IntegrationStatus<'a> {
         let max_y = inner.bottom().saturating_sub(1);
 
         if state.entries.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("(no integrations)", w),
-                w,
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No integrations", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             return;
         }
 
@@ -1127,7 +1145,13 @@ impl<'a> IntegrationStatus<'a> {
             let kg = e.kind.glyph(self.ascii);
             let hg = e.health.glyph(self.ascii);
             let party = if e.provenance.third_party { "3p" } else { "1p" };
-            let egress = if e.may_egress() { " ↗" } else { "" };
+            // Egress is a fact worth a glyph, and the glyph has to survive an
+            // ASCII terminal (plans/013 Step 2).
+            let egress = if e.may_egress() {
+                format!(" {}", self.system.glyphs.resolve(Glyph::ArrowUp).text)
+            } else {
+                String::new()
+            };
             let text = format!(
                 "{mark}{kg}{hg} {} · {} · {party}{egress}",
                 e.name,
@@ -1140,7 +1164,8 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 self.system.style(e.health.role())
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
             state.row_hits.push((
                 e.id.clone(),
                 Rect {
@@ -1199,7 +1224,8 @@ impl<'a> IntegrationStatus<'a> {
                 } else {
                     self.system.style(Role::TextMuted)
                 };
-                buffer.set_stringn(x, y, &t, usize::from(tw), style);
+                self.system
+                    .paint_row(buffer, Rect::new(x, y, tw, 1), &t, style);
                 x = x.saturating_add(tw.saturating_add(1));
             }
             y = y.saturating_add(1);
@@ -1217,11 +1243,10 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 Role::TextMuted
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
                 self.system.style(role),
             );
             y = y.saturating_add(1);
@@ -1230,11 +1255,10 @@ impl<'a> IntegrationStatus<'a> {
         // Egress warning
         if let Some(eg) = e.egress_line() {
             if y < max_y {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&format!("! {eg}"), w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &format!("! {eg}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -1266,21 +1290,22 @@ impl<'a> IntegrationStatus<'a> {
                     if line.is_empty() || y >= content_bottom {
                         continue;
                     }
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(Role::Text),
                     );
                     y = y.saturating_add(1);
                 }
             }
             IntegrationDetailTab::Capabilities => {
+                let mut shown = 0usize;
                 for c in &e.capabilities {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, e.capabilities.len(), shown) {
                         break;
                     }
+                    shown = shown.saturating_add(1);
                     let eg = if c.may_egress { " [egress]" } else { "" };
                     let line = format!("· {}{eg}", c.label);
                     let role = if c.may_egress {
@@ -1288,30 +1313,33 @@ impl<'a> IntegrationStatus<'a> {
                     } else {
                         Role::Text
                     };
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(role),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.capabilities.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no capabilities declared)", w),
-                        w,
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No capabilities declared", self.system)
+                        .kind(EmptyKind::NoData)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    e.capabilities.len().saturating_sub(shown),
+                );
             }
             IntegrationDetailTab::Permissions => {
+                let mut shown = 0usize;
                 for p in &e.permissions {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, e.permissions.len(), shown) {
                         break;
                     }
+                    shown = shown.saturating_add(1);
                     let g = if p.granted { "granted" } else { "not granted" };
                     let el = if p.elevated { " · elevated" } else { "" };
                     let line = format!("· {} — {g}{el}", p.label);
@@ -1322,49 +1350,55 @@ impl<'a> IntegrationStatus<'a> {
                     } else {
                         Role::Text
                     };
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&line, w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        &line,
                         self.system.style(role),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.permissions.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no permissions declared)", w),
-                        w,
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No permissions declared", self.system)
+                        .kind(EmptyKind::NoData)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    e.permissions.len().saturating_sub(shown),
+                );
             }
             IntegrationDetailTab::Logs => {
                 let start = state.log_scroll.min(e.logs.len());
+                let after_start = e.logs.len().saturating_sub(start);
+                let mut shown = 0usize;
                 for line in e.logs.iter().skip(start).take(INTEGRATION_LOG_WINDOW) {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, after_start, shown) {
                         break;
                     }
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(line, w),
-                        w,
+                    shown = shown.saturating_add(1);
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        line,
                         self.system.style(Role::TextMuted),
                     );
                     y = y.saturating_add(1);
                 }
                 if e.logs.is_empty() && y < content_bottom {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols("(no logs — g requests host stream)", w),
-                        w,
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No logs", self.system)
+                        .kind(EmptyKind::NoData)
+                        .explanation("g requests the host stream")
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    after_start.saturating_sub(shown),
+                );
             }
         }
 
@@ -1372,6 +1406,24 @@ impl<'a> IntegrationStatus<'a> {
         if fy >= inner.y {
             self.paint_actions(inner.x, fy, w, buffer, state);
         }
+    }
+
+    /// States what a detail list held back, on the row the clip reserved.
+    fn paint_more_note(&self, buffer: &mut Buffer, row: Rect, bottom: u16, hidden: usize) {
+        let Some(note) = crate::text::more_note(hidden) else {
+            return;
+        };
+        if row.y >= bottom {
+            return;
+        }
+        self.system.paint_row(
+            buffer,
+            row,
+            &note,
+            self.system
+                .style(Role::TextMuted)
+                .add_modifier(Modifier::DIM),
+        );
     }
 
     fn paint_actions(
@@ -1384,11 +1436,10 @@ impl<'a> IntegrationStatus<'a> {
     ) {
         let actions = state.actions_for_current();
         if actions.is_empty() {
-            buffer.set_stringn(
-                x,
-                y,
-                take_display_cols("j/k select · d panel · b badge", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(x, y, u16::try_from(w).unwrap_or(u16::MAX), 1),
+                "j/k select · d panel · b badge",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1412,7 +1463,8 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
+            self.system
+                .paint_row(buffer, Rect::new(col, y, tw, 1), &text, style);
             state.action_hits.push((
                 *action,
                 Rect {

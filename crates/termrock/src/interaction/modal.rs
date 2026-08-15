@@ -12,6 +12,7 @@
 use ratatui_core::layout::Rect;
 use ratatui_core::terminal::Frame;
 
+use crate::style::DesignSystem;
 use crate::widgets::Backdrop;
 
 /// Stack of modal dialogs with "Esc walks back one step" semantics.
@@ -105,10 +106,15 @@ impl<M> ModalStack<M> {
     }
 }
 
-/// Render the full-screen opaque backdrop. Call this before drawing the modal
-/// so everything behind it (other dialogs, main UI) is hidden.
-pub fn render_backdrop(frame: &mut Frame<'_>, full_area: Rect) {
-    frame.render_widget(Backdrop::default(), full_area);
+/// Render the themed backdrop across the whole overlay layer.
+///
+/// Call this with the layer rect (usually the frame area) before drawing the
+/// modal, whenever the overlay stack asks for
+/// [`BackdropPolicy::Dim`](crate::interaction::BackdropPolicy::Dim): the widget
+/// itself only ever receives its own rect, so the dim belongs to the host that
+/// owns the layer.
+pub fn render_backdrop(frame: &mut Frame<'_>, full_area: Rect, tokens: &DesignSystem) {
+    frame.render_widget(Backdrop::from_tokens(tokens), full_area);
 }
 
 /// Classify a mouse click relative to an open modal rect.

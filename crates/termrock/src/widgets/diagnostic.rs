@@ -29,10 +29,11 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::code_block::{CodeGutterMark, CodeHighlight, CodeHighlightKind},
     widgets::scroll_area::ScrollAreaState,
+    widgets::tiered_row::TieredRow,
 };
 
 // ── Severity ────────────────────────────────────────────────────────────────
@@ -123,7 +124,8 @@ impl DiagnosticSeverity {
             Self::Error => Role::Danger,
             Self::Warning => Role::Warning,
             Self::Info => Role::Info,
-            Self::Hint | Self::Help => Role::Accent,
+            // Hints assist; they do not compete with the current intent.
+            Self::Hint | Self::Help => Role::Info,
             Self::Note => Role::TextMuted,
         }
     }
@@ -1524,11 +1526,8 @@ fn paint_list_item(
         return area.y;
     }
     let mut y = area.y;
-    let gutter = if cursor && surface {
-        if ascii { ">" } else { "›" }
-    } else {
-        " "
-    };
+    // The cursor column is stamped by the shared row chrome.
+    let gutter = " ";
     let g = d.severity.glyph(ascii);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
@@ -1539,21 +1538,40 @@ fn paint_list_item(
         _ => String::new(),
     };
     let src = d.source.map(|s| format!(" ({s})")).unwrap_or_default();
-    let line = format!("{gutter}{g}{letter} {code}{}{loc}{src}", d.message);
+    // The severity rides its glyph and letter; the message is a sentence and
+    // stays readable, and the location trails quietly (plans/012 Step 3).
+    let tone = |role: Role| (!colorless).then(|| system.style(role));
+    let severity = tone(d.severity.role());
+    let mut tiers = TieredRow::with_separator("");
+    tiers.push_joined(gutter, None);
+    tiers.push_joined(g, severity);
+    tiers.push_joined(&letter.to_string(), severity);
+    tiers.push_joined(" ", None);
+    tiers.push_joined(&code, tone(Role::TextFaint));
+    tiers.push_joined(d.message, None);
+    tiers.push_joined(&loc, tone(Role::TextMuted));
+    tiers.push_joined(&src, tone(Role::TextFaint));
+    let line = tiers.text().to_string();
     let style = if colorless {
         if cursor {
             system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
         } else {
             system.style(Role::Text)
         }
-    } else if cursor && surface {
-        match system.selection {
-            SelectionChrome::Fill => system.style(Role::Selection),
-            SelectionChrome::Tint | SelectionChrome::Gutter => system.style(Role::Focus),
-        }
     } else {
-        system.style(d.severity.role())
+        system.style(Role::Text)
     };
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        system,
+        ListRowVisualState {
+            selected: cursor,
+            focused: surface,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let row = Rect::new(area.x, y, area.width, 1);
+    let style = chrome.label_style(style);
     buffer.set_stringn(
         area.x,
         y,
@@ -1561,6 +1579,8 @@ fn paint_list_item(
         usize::from(area.width),
         style,
     );
+    chrome.paint(buffer, row);
+    tiers.paint_tiers(buffer, row, 0);
     y = y.saturating_add(1);
 
     if !expanded && !force_frame {
@@ -2009,7 +2029,7 @@ mod tests {
         let view = DiagnosticView::new(&items, &system)
             .recipe(DiagnosticRecipe::Full)
             .source_lines(&lines)
-            .title("problems");
+            .title("Problems");
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
         view.render(area, &mut buf, &mut state);

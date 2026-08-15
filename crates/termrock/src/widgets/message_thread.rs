@@ -1070,7 +1070,7 @@ impl<'a> MessageThread<'a> {
             .focused(self.focused)
             .ascii(self.ascii)
             .colorless(self.colorless)
-            .empty_label("(empty thread)");
+            .empty_label("No messages yet");
         StatefulWidget::render(&transcript, body, buffer, &mut state.transcript);
 
         if footer_h > 0 {
@@ -1086,7 +1086,7 @@ impl<'a> MessageThread<'a> {
                 }
             } else if state.show_new_content() {
                 format!(
-                    "↓ {} new  Ctrl+N jump · zoom:{}",
+                    "↓ {} new  C-n jump · zoom:{}",
                     state.unread_below,
                     state.zoom.id()
                 )
@@ -1133,7 +1133,7 @@ pub fn example_message_session() -> Vec<MessageEntry> {
             .status_letter('✓')
             .actions(vec![
                 MessageAction::new("retry", "Retry").chord("r"),
-                MessageAction::new("copy", "Copy").chord("Ctrl+C"),
+                MessageAction::new("copy", "Copy").chord("C-c"),
             ]),
         MessageEntry::event("e1", "stream coalesced 12 chunks").timestamp("12:02"),
         MessageEntry::error("err1", "preview paint failed once — retrying")
@@ -1145,8 +1145,8 @@ pub fn example_message_session() -> Vec<MessageEntry> {
             "a2",
             MessageKind::Assistant,
             [
-                "Done. Follow preserves anchors; Ctrl+N jumps when unread.",
-                "Zoom: Compact · Summary · Full via Ctrl+Z.",
+                "Done. Follow preserves anchors; C-n jumps when unread.",
+                "Zoom: Compact · Summary · Full via C-z.",
                 "Tools stay collapsed at Summary until activated.",
             ],
         )

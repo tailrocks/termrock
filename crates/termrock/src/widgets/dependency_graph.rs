@@ -1222,13 +1222,8 @@ impl<'a> DependencyGraph<'a> {
 
         if state.filter.is_some() && h > 0 {
             let q = state.filter.as_deref().unwrap_or("");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&format!("/{q}_"), usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::Accent),
-            );
+            crate::widgets::ChromeRow::query(q, self.system)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }
@@ -1287,7 +1282,7 @@ fn paint_graph(
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols("(no nodes)", usize::from(area.width)),
+            take_display_cols("No nodes", usize::from(area.width)),
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -1443,7 +1438,7 @@ fn paint_list_or_tree(
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols("(no nodes)", usize::from(area.width)),
+            take_display_cols("No nodes", usize::from(area.width)),
             usize::from(area.width),
             system.style(Role::TextMuted),
         );
@@ -1673,7 +1668,7 @@ mod tests {
         let area = Rect::new(0, 0, 72, 16);
         let mut buf = Buffer::empty(area);
         DependencyGraph::new(&nodes, &edges, &system)
-            .title("crates")
+            .title("Crates")
             .render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Graph);
         let text: String = buf

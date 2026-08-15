@@ -22,7 +22,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -31,11 +31,23 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
-    widgets::scroll_area::ScrollAreaState,
+    widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
+/// Appends one part, toned when the surface has color to spend.
+fn push_tier(row: &mut TieredRow, text: &str, tone: Option<Style>) {
+    match tone {
+        Some(style) => row.push(text, style),
+        None => row.push_plain(text),
+    }
+}
+
+/// Selection gutter width: one marker cell plus its breathing space.
+///
+/// Stated once so the gutter cannot drift between the row, the header and the
+/// hit regions (plans/022 Step 6).
 const GUTTER: u16 = 2;
 
 /// Severity for structured events (maps to no-color letters).
@@ -1053,22 +1065,24 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     } else {
                         self.system.style(Role::Text)
                     }
-                } else if selected && surface {
-                    match self.system.selection {
-                        SelectionChrome::Fill => self.system.style(Role::Selection),
-                        SelectionChrome::Tint | SelectionChrome::Gutter => {
-                            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                        }
-                    }
                 } else {
-                    self.system.style(event.severity.role())
+                    // A selected warning is still a warning — and its severity
+                    // rides the glyph, not the sentence (plans/007).
+                    self.system.style(Role::Text)
                 };
+                let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                    self.system,
+                    ListRowVisualState {
+                        selected: selected || cursor,
+                        focused: surface,
+                        enabled: true,
+                        ..Default::default()
+                    },
+                );
+                let style = chrome.label_style(style);
 
-                let gutter = if cursor && surface {
-                    if ascii { ">" } else { "›" }
-                } else {
-                    " "
-                };
+                // The cursor column is stamped by the shared row chrome.
+                let gutter = " ";
                 buffer.set_stringn(
                     area.x,
                     y,
@@ -1088,49 +1102,67 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 } else {
                     String::new()
                 };
-                let line = if tiny {
-                    format!("{sev} {}", event.summary)
-                } else if narrow {
-                    format!(
-                        "{sev} {} {}{batch}",
-                        event.event_type,
-                        event.summary,
-                        batch = batch
-                    )
-                } else {
-                    let mut parts = vec![
-                        sev.to_string(),
-                        event.timestamp.to_string(),
-                        event.event_type.to_string(),
-                    ];
-                    if let Some(s) = event.source {
-                        parts.push(s.to_string());
-                    }
-                    parts.push(event.summary.to_string());
-                    if let Some(f) = event.fields {
-                        if area.width >= 72 {
-                            parts.push(f.to_string());
-                        }
-                    }
-                    if let Some(c) = event.correlation {
-                        if area.width >= 80 {
-                            parts.push(format!("#{c}"));
-                        }
-                    }
-                    if !batch.is_empty() {
-                        parts.push(batch);
-                    }
+                // Tiers, not a sentence: the severity owns its glyph, the
+                // timestamp and the type sit under the summary, and the
+                // fields trail behind it (plans/012 Step 3).
+                let tone = |role: Role| {
                     if colorless {
-                        parts.insert(1, format!("{}", event.severity.letter()));
+                        None
+                    } else {
+                        Some(self.system.style(role))
                     }
-                    parts.join("  ")
                 };
+                let meta = tone(Role::TextFaint);
+                let type_tone = tone(Role::TextMuted);
+                let mut row = TieredRow::with_separator("  ");
+                if tiny {
+                    row.push_joined(sev, tone(event.severity.role()));
+                    row.push_plain(event.summary);
+                } else if narrow {
+                    row.push_joined(sev, tone(event.severity.role()));
+                    push_tier(&mut row, event.event_type, type_tone);
+                    row.push_plain(event.summary);
+                    row.push_joined(&batch, type_tone);
+                } else {
+                    row.push_joined(sev, tone(event.severity.role()));
+                    if colorless {
+                        row.push_plain(&event.severity.letter().to_string());
+                    }
+                    push_tier(&mut row, event.timestamp, meta);
+                    push_tier(&mut row, event.event_type, type_tone);
+                    if let Some(s) = event.source {
+                        push_tier(&mut row, s, type_tone);
+                    }
+                    row.push_plain(event.summary);
+                    if let Some(f) = event.fields
+                        && area.width >= 72
+                    {
+                        push_tier(&mut row, f, meta);
+                    }
+                    if let Some(c) = event.correlation
+                        && area.width >= 80
+                    {
+                        push_tier(&mut row, &format!("#{c}"), meta);
+                    }
+                    push_tier(&mut row, &batch, type_tone);
+                }
+                let line = row.text().to_string();
                 buffer.set_stringn(
                     area.x.saturating_add(GUTTER),
                     y,
                     take_display_cols(&line, usize::from(area.width.saturating_sub(GUTTER))),
                     usize::from(area.width.saturating_sub(GUTTER)),
                     style,
+                );
+                row.paint_tiers(
+                    buffer,
+                    Rect::new(
+                        area.x.saturating_add(GUTTER),
+                        y,
+                        area.width.saturating_sub(GUTTER),
+                        1,
+                    ),
+                    0,
                 );
                 if event.focusable() {
                     state.regions.push(EventStreamRegion {

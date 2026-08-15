@@ -19,6 +19,18 @@
 //! not re-detect terminal capabilities.
 //!
 //! Research: Vim/Helix help, Zellij key help, CLI man pages, command palettes.
+//!
+//! Teaches: how to compose HelpCenter / CommandReference — contextual product
+//! help composed from.
+//!
+//! Composes: [`crate::widgets::CommandEntry`], [`crate::widgets::HelpEntry`],
+//! [`crate::widgets::KeyboardHelp`], [`crate::widgets::KeyboardHelpMode`],
+//! [`crate::widgets::KeyboardHelpOutcome`],
+//! [`crate::widgets::KeyboardHelpState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], and 15 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -38,11 +50,11 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        CommandEntry, HelpEntry, KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome,
-        KeyboardHelpState, List, ListRow, ListState, MarkdownBlock, MarkdownOutcome, MarkdownView,
-        MarkdownViewState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot, example_help_entries, filter_help_entries,
-        project_markdown,
+        CommandEntry, EmptyKind, EmptyState, HelpEntry, KeyboardHelp, KeyboardHelpMode,
+        KeyboardHelpOutcome, KeyboardHelpState, List, ListRow, ListState, MarkdownBlock,
+        MarkdownOutcome, MarkdownView, MarkdownViewState, Panel, SearchInput, SearchInputOutcome,
+        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        example_help_entries, filter_help_entries, project_markdown,
     },
 };
 
@@ -763,7 +775,7 @@ impl HelpCenterState {
             StatusSlot::focus_zone("focus", self.focus).priority(20),
             StatusSlot::shortcut(
                 "keys",
-                "enter open · / search · c cmd · k keys · d doctor · i inspect · tab · esc",
+                "enter open · / search · k keys · d doctor · esc close",
             )
             .priority(90),
         ];
@@ -1413,15 +1425,13 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         let focused = state.focus == "search";
         state.search.set_focused(focused);
         if r.height >= 3 {
-            let panel = Panelish {
-                system,
-                title: match state.mode {
+            let inner = Panel::new(system)
+                .title(match state.mode {
                     HelpCenterMode::Full => "Help · docs",
                     HelpCenterMode::Compact => "Help · overlay",
-                },
-                focused,
-            };
-            let inner = panel.paint(r, buffer);
+                })
+                .emphasis(PanelChrome::for_focus(focused))
+                .paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("search topics, keys, commands…")
@@ -1437,22 +1447,16 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Nav
     if let Some(r) = pane_area(&panes, "nav") {
         let focused = state.focus == "nav";
-        let panel = Panelish {
-            system,
-            title: "Topics",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Topics")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = help_topic_rows(&filtered_topics);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no topics)", usize::from(inner.width)),
-                    usize::from(inner.width),
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No topics", system)
+                    .kind(EmptyKind::NoResults)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.nav);
@@ -1476,12 +1480,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Commands — from command_entries_from_help / host catalog
     if let Some(r) = pane_area(&panes, "commands") {
         let focused = state.focus == "commands";
-        let panel = Panelish {
-            system,
-            title: "Commands",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Commands")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let filtered: Vec<CommandEntry<String>> = commands
                 .iter()
@@ -1502,13 +1504,9 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 .collect();
             let rows = command_list_rows(&filtered);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no commands)", usize::from(inner.width)),
-                    usize::from(inner.width),
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No commands", system)
+                    .kind(EmptyKind::NoResults)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.commands);
@@ -1527,24 +1525,18 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             .or_else(|| filtered_topics.first().copied())
             .or_else(|| topics.first());
         let title = topic.map(|t| t.title.as_str()).unwrap_or("Help");
-        let panel = Panelish {
-            system,
-            title,
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title(title)
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             if let Some(t) = topic {
                 let blocks = project_markdown(&t.markdown);
                 MarkdownView::new(&blocks, system).paint(inner, buffer, &mut state.body);
             } else {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(select a topic)", usize::from(inner.width)),
-                    usize::from(inner.width),
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("Pick a topic", system)
+                    .kind(EmptyKind::NoData)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             }
         }
     }
@@ -1552,22 +1544,17 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Diagnostics
     if let Some(r) = pane_area(&panes, "diagnostics") {
         let focused = state.focus == "diagnostics";
-        let panel = Panelish {
-            system,
-            title: "Diagnostics · doctor",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Diagnostics · doctor")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = diagnostics_rows(doctor, component_ids);
             if rows.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
-                    take_display_cols("(no findings — d open doctor)", usize::from(inner.width)),
-                    usize::from(inner.width),
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No findings", system)
+                    .kind(EmptyKind::NoData)
+                    .explanation("d opens the doctor")
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.diagnostics);
@@ -1589,28 +1576,6 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             buffer,
             &mut state.status,
         );
-    }
-}
-
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 

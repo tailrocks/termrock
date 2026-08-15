@@ -412,7 +412,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
             density: Density::Comfortable,
             layout: KvLayout::Auto,
             key_width: 0,
-            separator: "  ",
+            separator: system.kv_separator().text(),
         }
     }
 
@@ -425,7 +425,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
             density: Density::Compact,
             layout: KvLayout::Auto,
             key_width: 0,
-            separator: " ",
+            separator: system.kv_separator().text(),
         }
     }
 
@@ -814,11 +814,25 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             }
         }
         if selected {
-            // underline full row as non-color focus cue
+            // The selected row washes and carries the gutter; each cell keeps
+            // its own foreground so key/value tones survive.
+            let wash = self.system.style(Role::SelectionTint).bg;
             for x in area.x..area.x.saturating_add(area.width) {
                 let cell = &mut buffer[(x, area.y)];
-                let s = cell.style().add_modifier(Modifier::UNDERLINED);
+                let mut s = cell.style();
+                if let Some(bg) = wash {
+                    s = s.bg(bg);
+                }
                 cell.set_style(s);
+            }
+            if area.width > 0 {
+                let cell = &mut buffer[(area.x, area.y)];
+                let mut marked = cell.style().patch(self.system.style(Role::Accent));
+                if let Some(bg) = wash {
+                    marked = marked.bg(bg);
+                }
+                cell.set_symbol(self.system.glyphs.selection_gutter());
+                cell.set_style(marked);
             }
         }
     }
@@ -864,7 +878,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 if self.system.glyphs.is_ascii() {
                     " hide"
                 } else {
-                    " 👁"
+                    " ◉"
                 }
             } else if self.system.glyphs.is_ascii() {
                 " show"
@@ -1223,6 +1237,22 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+
+    #[test]
+    fn separator_comes_from_the_shared_key_value_token() {
+        let system = crate::style::DesignSystem::phosphor();
+        let entries = sample_entries();
+        assert_eq!(
+            KeyValueList::new(&entries, &system).separator,
+            system.kv_separator().text()
+        );
+        assert_eq!(
+            KeyValueList::dense(&entries, &system).separator,
+            system.kv_separator().text()
+        );
+        let colon = system.with_kv_separator(crate::style::KvSeparator::Colon);
+        assert_eq!(KeyValueList::new(&entries, &colon).separator, " : ");
+    }
 
     fn sample_entries() -> [KvEntry<'static, &'static str>; 5] {
         [

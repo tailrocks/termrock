@@ -7,7 +7,7 @@ use ratatui::{Frame, layout::Rect};
 use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     keymap::KeyChord,
-    style::{DesignSystem, Role, RolePalette},
+    style::{Role, RolePalette},
     widgets::{
         FieldToken, JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, KeybindingRecorder,
         KeybindingRecorderOutcome, KeybindingRecorderState, PermissionActionKind,
@@ -45,7 +45,7 @@ impl ProgressStepsInteractor {
 }
 impl StoryInteraction for ProgressStepsInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let steps = Self::steps();
         ProgressSteps::new(&steps, &system)
             .title("Agent plan")
@@ -101,7 +101,7 @@ impl StepperInteractor {
 }
 impl StoryInteraction for StepperInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         Stepper::new(&items, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
@@ -149,7 +149,7 @@ impl KeybindingRecorderInteractor {
 }
 impl StoryInteraction for KeybindingRecorderInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         KeybindingRecorder::new(&system).ascii(true).paint(
             area,
             frame.buffer_mut(),
@@ -210,7 +210,7 @@ impl QuestionFlowInteractor {
 impl StoryInteraction for QuestionFlowInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         if !self.state.is_open() {
-            let system = DesignSystem::from_palette(self.theme.clone());
+            let system = crate::design::lookbook_system(self.theme.clone());
             frame.buffer_mut().set_stringn(
                 area.x,
                 area.y,
@@ -220,7 +220,7 @@ impl StoryInteraction for QuestionFlowInteractor {
             );
             return;
         }
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         frame.render_stateful_widget(&QuestionFlow::new(&system), area, &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -289,7 +289,7 @@ impl TokenFieldInteractor {
 }
 impl StoryInteraction for TokenFieldInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = TokenField::new(&system)
             .label("To")
             .placeholder("Add recipient…")
@@ -367,7 +367,7 @@ impl PermissionPromptInteractor {
 impl StoryInteraction for PermissionPromptInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         if self.state.is_empty() {
-            let system = DesignSystem::from_palette(self.theme.clone());
+            let system = crate::design::lookbook_system(self.theme.clone());
             frame.buffer_mut().set_stringn(
                 area.x,
                 area.y,
@@ -377,7 +377,7 @@ impl StoryInteraction for PermissionPromptInteractor {
             );
             return;
         }
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         frame.render_stateful_widget(&PermissionPrompt::new(&system), area, &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -447,7 +447,7 @@ impl JumpOverlayInteractor {
 }
 impl StoryInteraction for JumpOverlayInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         self.targets = vec![
             JumpTarget::new(
                 "files",

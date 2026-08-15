@@ -48,6 +48,7 @@ mise run docs-quality
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
+mise run preview-goldens
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
@@ -64,6 +65,14 @@ cargo package -p termrock --locked --allow-dirty
 (cd docs && bun run build:preview-posters)
 (cd docs && bun install --frozen-lockfile && bun run build)
 """
+
+[tasks.bless-previews]
+description = "Regenerate the flagship preview baselines after an intended paint change"
+run = "TERMROCK_BLESS_PREVIEWS=1 cargo nextest run -p termrock-lookbook --all-features --test goldens --no-capture"
+
+[tasks.preview-goldens]
+description = "Diff the flagship previews against their committed baselines"
+run = "cargo nextest run -p termrock-lookbook --all-features --test goldens --locked"
 
 [tasks.docs-quality]
 description = "Placeholder rustdoc ban + component quality contracts (v2)"

@@ -947,7 +947,7 @@ impl<'a> Combobox<'a> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             buffer.set_stringn(
                 area.x,
@@ -999,32 +999,41 @@ impl<'a> Combobox<'a> {
         state.draft.set_focused(state.focused);
         let invalid = matches!(self.validation, Validation::Invalid(_))
             || matches!(state.status, SuggestionStatus::Error);
-        let validation = if invalid && matches!(self.validation, Validation::Valid) {
-            if let Some(msg) = state.error_message.as_deref() {
-                Validation::Invalid(msg)
-            } else {
-                Validation::Invalid("invalid")
-            }
-        } else {
-            self.validation
+        // A suggestion-source error is a validation failure: it reaches the
+        // field instead of being computed and dropped. Owning the message
+        // locally keeps it alive past the borrow of `state.draft`
+        // (plans/009 Step 3).
+        let escalated: Option<String> = (invalid && matches!(self.validation, Validation::Valid))
+            .then(|| {
+                state
+                    .error_message
+                    .clone()
+                    .unwrap_or_else(|| "invalid".to_string())
+            });
+        let validation = match escalated.as_deref() {
+            Some(msg) => Validation::Invalid(msg),
+            None => self.validation,
         };
-        // Validation::Invalid needs 'a lifetime - use placeholder path
-        let _ = validation;
         let input = TextInput::new("", self.system)
             .placeholder(self.placeholder)
-            .validation(self.validation);
+            .validation(validation);
         let _ = input.paint(field, buffer, &mut state.draft);
 
-        // chevron for open menu
-        if area.width > 2 {
-            let _chev = if state.menu.is_open() {
-                if self.ascii { "^" } else { "▴" }
-            } else if self.ascii {
-                "v"
+        // The chevron says whether the menu is open; it goes in the cell the
+        // status did not take.
+        if status.is_empty() && area.width > 4 {
+            let chevron = self.system.glyphs.resolve(if state.menu.is_open() {
+                crate::style::Glyph::ChevronUp
             } else {
-                "▾"
-            };
-            // already used right for status; skip if tight
+                crate::style::Glyph::ChevronDown
+            });
+            buffer.set_stringn(
+                field.right().saturating_sub(1),
+                field.y,
+                chevron.text,
+                1,
+                self.system.style(Role::TextMuted),
+            );
         }
 
         if area.height >= 3 {

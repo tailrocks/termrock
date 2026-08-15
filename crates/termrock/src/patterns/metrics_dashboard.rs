@@ -14,16 +14,24 @@
 //! chrome, thresholds, comparison deltas, and layout contraction.
 //!
 //! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
+//!
+//! Teaches: how to compose reusable observability dashboard block.
+//!
+//! Composes: [`crate::widgets::CommandEntry`], [`crate::widgets::LoadState`],
+//! [`crate::widgets::MetricTile`], [`crate::widgets::MetricTileHealth`],
+//! [`crate::widgets::MetricTilePresentation`], [`crate::widgets::MetricViz`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
-    widgets::{CommandEntry, Gauge, LoadState, ScaleMode, Sparkline, VizGlyphSet},
+    widgets::{CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation},
 };
 
 /// Width at or below which layout becomes a vertical summary stack.
@@ -53,6 +61,9 @@ pub enum MetricsTimeRange {
     /// Custom (host).
     Custom,
 }
+
+/// Alerts listed before the dashboard defers to `+N more`.
+const ALERTS_SHOWN: usize = 3;
 
 impl MetricsTimeRange {
     /// Stable id.
@@ -163,210 +174,6 @@ impl MetricsComparison {
 }
 
 // ── Metric / alert model ────────────────────────────────────────────────────
-
-/// How a metric tile paints its body.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum MetricViz {
-    /// Value + sparkline trend (default).
-    #[default]
-    Sparkline,
-    /// Single gauge fill.
-    Gauge,
-    /// Value only (no spark/gauge).
-    ValueOnly,
-}
-
-impl MetricViz {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Sparkline => "sparkline",
-            Self::Gauge => "gauge",
-            Self::ValueOnly => "value",
-        }
-    }
-}
-
-/// Health of one tile (partial failure support).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum MetricTileHealth {
-    /// Ok.
-    #[default]
-    Ok,
-    /// Crossing warning threshold.
-    Warning,
-    /// Crossing danger threshold / error.
-    Danger,
-    /// Loading.
-    Loading,
-    /// Failed to load this metric (others may succeed).
-    Failed,
-    /// Stale data.
-    Stale,
-}
-
-impl MetricTileHealth {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ok => "ok",
-            Self::Warning => "warning",
-            Self::Danger => "danger",
-            Self::Loading => "loading",
-            Self::Failed => "failed",
-            Self::Stale => "stale",
-        }
-    }
-
-    /// Letter (never color alone).
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Ok => '·',
-            Self::Warning => '!',
-            Self::Danger => '‼',
-            Self::Loading => '…',
-            Self::Failed => 'x',
-            Self::Stale => '~',
-        }
-    }
-
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter_ascii(self) -> char {
-        match self {
-            Self::Ok => '.',
-            Self::Warning => '!',
-            Self::Danger => 'X',
-            Self::Loading => '.',
-            Self::Failed => 'x',
-            Self::Stale => '~',
-        }
-    }
-
-    /// Role.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Ok => Role::Success,
-            Self::Warning | Self::Stale | Self::Loading => Role::Warning,
-            Self::Danger | Self::Failed => Role::Danger,
-        }
-    }
-}
-
-/// One metric card projection (host-owned samples).
-#[derive(Debug, Clone, PartialEq)]
-pub struct MetricTile<'a> {
-    /// Stable id (drill-down / commands).
-    pub id: &'a str,
-    /// Title.
-    pub title: &'a str,
-    /// Formatted primary value (`42.1%`, `1.2k rps`).
-    pub value: &'a str,
-    /// Unit / subtitle.
-    pub unit: &'a str,
-    /// Comparison delta text (`+3.2%`, `−12`). Empty = hide.
-    pub delta: &'a str,
-    /// True when delta is “bad” direction (host policy).
-    pub delta_bad: bool,
-    /// Samples for sparkline / gauge domain (NaN = missing).
-    pub samples: &'a [f64],
-    /// Current numeric value for gauge (optional).
-    pub gauge_value: Option<f64>,
-    /// Thresholds in domain units (warning/danger).
-    pub thresholds: &'a [f64],
-    /// Visualization.
-    pub viz: MetricViz,
-    /// Health.
-    pub health: MetricTileHealth,
-    /// Error message when Failed.
-    pub error: Option<&'a str>,
-}
-
-impl<'a> MetricTile<'a> {
-    /// Construct value-only tile.
-    #[must_use]
-    pub const fn new(id: &'a str, title: &'a str, value: &'a str) -> Self {
-        Self {
-            id,
-            title,
-            value,
-            unit: "",
-            delta: "",
-            delta_bad: false,
-            samples: &[],
-            gauge_value: None,
-            thresholds: &[],
-            viz: MetricViz::Sparkline,
-            health: MetricTileHealth::Ok,
-            error: None,
-        }
-    }
-
-    /// Unit.
-    #[must_use]
-    pub const fn unit(mut self, u: &'a str) -> Self {
-        self.unit = u;
-        self
-    }
-
-    /// Delta.
-    #[must_use]
-    pub const fn delta(mut self, d: &'a str, bad: bool) -> Self {
-        self.delta = d;
-        self.delta_bad = bad;
-        self
-    }
-
-    /// Samples.
-    #[must_use]
-    pub const fn samples(mut self, s: &'a [f64]) -> Self {
-        self.samples = s;
-        self
-    }
-
-    /// Gauge value.
-    #[must_use]
-    pub const fn gauge(mut self, v: f64) -> Self {
-        self.gauge_value = Some(v);
-        self.viz = MetricViz::Gauge;
-        self
-    }
-
-    /// Thresholds.
-    #[must_use]
-    pub const fn thresholds(mut self, t: &'a [f64]) -> Self {
-        self.thresholds = t;
-        self
-    }
-
-    /// Viz.
-    #[must_use]
-    pub const fn viz(mut self, v: MetricViz) -> Self {
-        self.viz = v;
-        self
-    }
-
-    /// Health.
-    #[must_use]
-    pub const fn health(mut self, h: MetricTileHealth) -> Self {
-        self.health = h;
-        self
-    }
-
-    /// Failed with message.
-    #[must_use]
-    pub const fn failed(mut self, msg: &'a str) -> Self {
-        self.health = MetricTileHealth::Failed;
-        self.error = Some(msg);
-        self
-    }
-}
 
 /// Severity for dashboard alerts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
@@ -1105,6 +912,7 @@ pub struct MetricsDashboard<'a> {
     focused: bool,
     title: Option<&'a str>,
     ascii: bool,
+    hints: bool,
 }
 
 impl<'a> MetricsDashboard<'a> {
@@ -1120,6 +928,7 @@ impl<'a> MetricsDashboard<'a> {
             alerts,
             system,
             focused: true,
+            hints: true,
             title: None,
             ascii: false,
         }
@@ -1129,6 +938,17 @@ impl<'a> MetricsDashboard<'a> {
     #[must_use]
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
+        self
+    }
+
+    /// Whether this surface owns the frame's hint row.
+    ///
+    /// A dashboard embedded in a shell does not: the shell already has a
+    /// status bar, and two footers on one frame is two answers to the same
+    /// question (plans/017 §B2 — one hint row per default frame).
+    #[must_use]
+    pub const fn hints(mut self, on: bool) -> Self {
+        self.hints = on;
         self
     }
 
@@ -1178,23 +998,32 @@ impl<'a> MetricsDashboard<'a> {
         if !slots.toolbar.is_empty() {
             let title = self.title.unwrap_or("metrics");
             let pause = if state.paused { "paused" } else { "live" };
-            let line = format!(
-                "{title} · {} · {} · {}ms · {pause} · {}",
-                state.time_range.label(),
-                state.comparison.label(),
-                state.refresh_ms,
-                mode.id()
-            );
+            let failed = self
+                .tiles
+                .iter()
+                .filter(|t| matches!(t.health, MetricTileHealth::Failed))
+                .count();
+            // Title band carries what the operator changed, not the whole
+            // control state: refresh cadence and layout mode are visible in
+            // the frame itself, and a default comparison says nothing
+            // (information budget, plans/017 Part B).
+            let mut line = format!("{title} · {} · {pause}", state.time_range.label());
+            if !matches!(state.comparison, MetricsComparison::None) {
+                line.push_str(" · ");
+                line.push_str(state.comparison.label());
+            }
+            if failed > 0 {
+                line.push_str(&format!(" · {failed} failed"));
+            }
             let style = if matches!(state.focus, MetricsFocus::Toolbar) && self.focused {
                 self.system.style(Role::Focus)
             } else {
                 self.system.style(Role::TextStrong)
             };
-            buffer.set_stringn(
-                slots.toolbar.x,
-                slots.toolbar.y,
-                take_display_cols(&line, usize::from(slots.toolbar.width)),
-                usize::from(slots.toolbar.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(slots.toolbar.x, slots.toolbar.y, slots.toolbar.width, 1),
+                &line,
                 style,
             );
         }
@@ -1209,21 +1038,22 @@ impl<'a> MetricsDashboard<'a> {
             }
             let focused =
                 matches!(state.focus, MetricsFocus::Tiles) && i == state.focus_tile && self.focused;
-            match mode {
-                MetricsDashboardLayoutMode::Summary => {
-                    paint_summary_tile(tile, rect, buffer, self.system, focused, ascii);
-                }
-                MetricsDashboardLayoutMode::Grid => {
-                    paint_grid_tile(tile, rect, buffer, self.system, focused, ascii);
-                }
-            }
+            let presentation = match mode {
+                MetricsDashboardLayoutMode::Summary => MetricTilePresentation::Row,
+                MetricsDashboardLayoutMode::Grid => MetricTilePresentation::Card,
+            };
+            tile.view(self.system)
+                .presentation(presentation)
+                .focused(focused)
+                .ascii(ascii)
+                .paint(rect, buffer);
         }
 
         // Alerts
         if !slots.alerts.is_empty() && !self.alerts.is_empty() {
             let mut y = slots.alerts.y;
             let max_y = slots.alerts.bottom();
-            for (i, a) in self.alerts.iter().enumerate().take(3) {
+            for (i, a) in self.alerts.iter().enumerate().take(ALERTS_SHOWN) {
                 if y >= max_y {
                     break;
                 }
@@ -1232,11 +1062,10 @@ impl<'a> MetricsDashboard<'a> {
                     && self.focused;
                 let letter = a.severity.letter();
                 let line = format!("{letter} {}", a.message);
-                buffer.set_stringn(
-                    slots.alerts.x,
-                    y,
-                    take_display_cols(&line, usize::from(slots.alerts.width)),
-                    usize::from(slots.alerts.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
+                    &line,
                     if focused {
                         self.system.style(Role::Focus)
                     } else {
@@ -1245,278 +1074,41 @@ impl<'a> MetricsDashboard<'a> {
                 );
                 y = y.saturating_add(1);
             }
+            // An alert list that stops at three says so.
+            let hidden = self.alerts.len().saturating_sub(ALERTS_SHOWN);
+            if let Some(note) = crate::text::more_note(hidden)
+                && y < max_y
+            {
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
+                    &note,
+                    self.system.style(Role::TextMuted),
+                );
+            }
         }
 
         // Footer
-        if !slots.footer.is_empty() {
+        if self.hints && !slots.footer.is_empty() {
             let failed = self
                 .tiles
                 .iter()
                 .filter(|t| matches!(t.health, MetricTileHealth::Failed))
                 .count();
-            let warn = self
-                .tiles
-                .iter()
-                .filter(|t| {
-                    matches!(
-                        t.health,
-                        MetricTileHealth::Warning | MetricTileHealth::Danger
-                    )
-                })
-                .count();
             let footer = if failed > 0 {
-                format!(
-                    "Tab zones · hjkl tiles · Enter drill · Ctrl+R refresh · {failed} failed · {warn} thr"
-                )
+                "Tab zones · hjkl tiles · Enter drill · C-r refresh · C-k cmds"
             } else {
-                "Tab zones · hjkl tiles · Enter drill · Ctrl+T range · Ctrl+D compare · Ctrl+K cmds"
-                    .to_string()
+                "Tab zones · hjkl tiles · Enter drill · C-t range · C-k cmds"
             };
-            buffer.set_stringn(
-                slots.footer.x,
-                slots.footer.y,
-                take_display_cols(&footer, usize::from(slots.footer.width)),
-                usize::from(slots.footer.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
+                footer,
                 self.system.style(Role::TextMuted),
             );
         }
 
         state.slots = slots;
-    }
-}
-
-fn paint_summary_tile(
-    tile: &MetricTile<'_>,
-    area: Rect,
-    buffer: &mut Buffer,
-    system: &DesignSystem,
-    focused: bool,
-    ascii: bool,
-) {
-    let letter = if ascii {
-        tile.health.letter_ascii()
-    } else {
-        tile.health.letter()
-    };
-    let mark = if focused {
-        if ascii { ">" } else { "›" }
-    } else {
-        " "
-    };
-    let delta = if tile.delta.is_empty() {
-        String::new()
-    } else {
-        format!(" {}", tile.delta)
-    };
-    let line = if let Some(err) = tile.error {
-        format!("{mark}{letter} {}: {err}", tile.title)
-    } else {
-        format!(
-            "{mark}{letter} {} {}{}{}",
-            tile.title,
-            tile.value,
-            if tile.unit.is_empty() {
-                String::new()
-            } else {
-                format!(" {}", tile.unit)
-            },
-            delta
-        )
-    };
-    let style = if focused {
-        system.style(Role::Focus)
-    } else if matches!(
-        tile.health,
-        MetricTileHealth::Failed | MetricTileHealth::Danger
-    ) {
-        system.style(tile.health.role())
-    } else if tile.delta_bad && !tile.delta.is_empty() {
-        system.style(Role::Danger)
-    } else {
-        system.style(Role::Text)
-    };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(&line, usize::from(area.width)),
-        usize::from(area.width),
-        style,
-    );
-}
-
-fn paint_grid_tile(
-    tile: &MetricTile<'_>,
-    area: Rect,
-    buffer: &mut Buffer,
-    system: &DesignSystem,
-    focused: bool,
-    ascii: bool,
-) {
-    if area.height == 0 || area.width == 0 {
-        return;
-    }
-    // Border-ish fill with title line
-    let letter = if ascii {
-        tile.health.letter_ascii()
-    } else {
-        tile.health.letter()
-    };
-    let border = if focused {
-        system.style(Role::BorderFocused)
-    } else {
-        system.style(Role::Border)
-    };
-    // top edge
-    for x in area.x..area.right() {
-        if let Some(cell) = buffer.cell_mut((x, area.y)) {
-            cell.set_symbol(if ascii { "-" } else { "─" });
-            cell.set_style(border);
-        }
-    }
-    let title = format!(
-        "{} {}",
-        letter,
-        take_display_cols(tile.title, usize::from(area.width.saturating_sub(4)))
-    );
-    buffer.set_stringn(
-        area.x.saturating_add(1),
-        area.y,
-        take_display_cols(&title, usize::from(area.width.saturating_sub(2))),
-        usize::from(area.width.saturating_sub(2)),
-        if focused {
-            system.style(Role::Focus)
-        } else {
-            system.style(Role::TextStrong)
-        },
-    );
-
-    let mut y = area.y.saturating_add(1);
-    // Value line
-    if y < area.bottom() {
-        if let Some(err) = tile.error {
-            buffer.set_stringn(
-                area.x.saturating_add(1),
-                y,
-                take_display_cols(err, usize::from(area.width.saturating_sub(2))),
-                usize::from(area.width.saturating_sub(2)),
-                system.style(Role::Danger),
-            );
-        } else {
-            let val = format!(
-                "{}{}",
-                tile.value,
-                if tile.unit.is_empty() {
-                    String::new()
-                } else {
-                    format!(" {}", tile.unit)
-                }
-            );
-            buffer.set_stringn(
-                area.x.saturating_add(1),
-                y,
-                take_display_cols(&val, usize::from(area.width.saturating_sub(2))),
-                usize::from(area.width.saturating_sub(2)),
-                system.style(Role::Text),
-            );
-            if !tile.delta.is_empty() {
-                let dw = crate::text::display_cols(tile.delta) as u16;
-                if dw + 2 < area.width {
-                    buffer.set_stringn(
-                        area.right().saturating_sub(dw.saturating_add(1)),
-                        y,
-                        tile.delta,
-                        usize::from(dw),
-                        system.style(if tile.delta_bad {
-                            Role::Danger
-                        } else {
-                            Role::Success
-                        }),
-                    );
-                }
-            }
-        }
-        y = y.saturating_add(1);
-    }
-
-    // Viz body
-    let body = Rect {
-        x: area.x.saturating_add(1),
-        y,
-        width: area.width.saturating_sub(2),
-        height: area.bottom().saturating_sub(y).max(0),
-    };
-    if body.height == 0 || body.width == 0 {
-        return;
-    }
-    if matches!(
-        tile.health,
-        MetricTileHealth::Failed | MetricTileHealth::Loading
-    ) {
-        let msg = match tile.health {
-            MetricTileHealth::Loading => "loading…",
-            _ => tile.error.unwrap_or("failed"),
-        };
-        buffer.set_stringn(
-            body.x,
-            body.y,
-            take_display_cols(msg, usize::from(body.width)),
-            usize::from(body.width),
-            system.style(tile.health.role()),
-        );
-        return;
-    }
-
-    match tile.viz {
-        MetricViz::Sparkline if !tile.samples.is_empty() => {
-            let mut sp = Sparkline::new(tile.samples, system).role(tile.health.role());
-            if let Some(&t) = tile.thresholds.first() {
-                sp = sp.threshold(t);
-            }
-            if ascii {
-                sp = sp.glyphs(VizGlyphSet::Ascii);
-            }
-            Widget::render(&sp, body, buffer);
-        }
-        MetricViz::Gauge => {
-            let v = tile.gauge_value.unwrap_or(0.0);
-            let mut g = Gauge::percent(v, system)
-                .label(tile.title)
-                .thresholds(tile.thresholds)
-                .role(tile.health.role());
-            if ascii {
-                g = g.glyphs(VizGlyphSet::Ascii);
-            }
-            // if value not percent-like, use fixed scale from samples max
-            if v > 100.0 {
-                let max = tile
-                    .samples
-                    .iter()
-                    .copied()
-                    .filter(|x| x.is_finite())
-                    .fold(v, f64::max)
-                    .max(1.0);
-                g = Gauge::new(v, system)
-                    .scale(ScaleMode::Fixed { min: 0.0, max })
-                    .thresholds(tile.thresholds)
-                    .role(tile.health.role());
-                if ascii {
-                    g = g.glyphs(VizGlyphSet::Ascii);
-                }
-            }
-            Widget::render(&g, body, buffer);
-        }
-        MetricViz::ValueOnly | MetricViz::Sparkline => {
-            // empty spark → status only
-            if matches!(tile.health, MetricTileHealth::Stale) {
-                buffer.set_stringn(
-                    body.x,
-                    body.y,
-                    take_display_cols("stale", usize::from(body.width)),
-                    usize::from(body.width),
-                    system.style(Role::Warning),
-                );
-            }
-        }
     }
 }
 
@@ -1536,6 +1128,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::MetricViz;
 
     fn samples() -> &'static [f64] {
         &[1.0, 2.0, 3.0, 2.5, 4.0, 3.5, 5.0, 4.2]
@@ -1656,7 +1249,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
         MetricsDashboard::new(&tiles, &alerts, &system)
-            .title("ops")
+            .title("Ops")
             .render(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
         let text: String = buf
@@ -1752,11 +1345,16 @@ mod tests {
 
     #[test]
     fn uses_only_public_viz() {
-        // Guard: dashboard must not reimplement chart raster.
+        // Guard: the dashboard composes the public tile widget and neither
+        // reimplements chart raster nor re-rolls tile chrome (plans/016).
         let src = include_str!("metrics_dashboard.rs");
         let body = src.split("#[cfg(test)]").next().unwrap_or(src);
-        assert!(body.contains("Sparkline::"));
-        assert!(body.contains("Gauge::"));
+        assert!(body.contains("tile.view("));
         assert!(!body.contains("braille_plot"));
+        assert!(
+            !body.contains("Sparkline::"),
+            "raster belongs to MetricTile"
+        );
+        assert!(!body.contains("Gauge::"), "raster belongs to MetricTile");
     }
 }

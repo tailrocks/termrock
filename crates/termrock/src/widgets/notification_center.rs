@@ -34,6 +34,7 @@ use crate::{
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
+    widgets::{Hint, HintBar},
 };
 
 use super::drawer::DRAWER_DEFAULT_WIDTH;
@@ -45,9 +46,53 @@ use super::toast::{
 pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
 /// Default max retained items in memory (host may trim further for disk).
 pub const NOTIFICATION_CENTER_DEFAULT_CAPACITY: usize = 500;
-/// Hint footer.
-pub const NOTIFICATION_CENTER_HINT: &str =
-    "j/k move · enter open · u read · x dismiss · c clear · / filter · esc close";
+/// Formats an age in seconds the way a person reads it.
+fn format_age_secs(secs: u64) -> String {
+    match secs {
+        0..=44 => "just now".to_string(),
+        45..=5399 => format!("{}m ago", secs.div_ceil(60)),
+        5400..=86_399 => format!("{}h ago", secs.div_ceil(3600)),
+        _ => format!("{}d ago", secs.div_ceil(86_400)),
+    }
+}
+
+/// Footer chords, painted through [`HintBar`].
+///
+/// One separator and one alignment rule for every overlay footer; the flat
+/// sentence this replaced joined its chords by hand and picked its own
+/// spacing under ASCII (plans/009 Step 1).
+pub const NOTIFICATION_CENTER_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "j/k",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "open",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "x",
+        label: "dismiss",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "/",
+        label: "filter",
+        priority: 50,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 60,
+        visible: true,
+    },
+];
 
 // ── Models (shared kinds from Toast) ────────────────────────────────────────
 
@@ -469,6 +514,8 @@ pub fn dismiss_notification_center_overlay<FocusId: Clone>(
 /// Live notification center state (host loads/saves [`Self::items`]).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NotificationCenterState {
+    /// Host clock, when the host keeps it current.
+    now_secs: Option<u64>,
     open: bool,
     focused: bool,
     accepts_input: bool,
@@ -500,6 +547,7 @@ impl NotificationCenterState {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            now_secs: None,
             open: false,
             focused: false,
             accepts_input: true,
@@ -654,6 +702,14 @@ impl NotificationCenterState {
             .into_iter()
             .filter_map(|i| self.items.get(i))
             .collect()
+    }
+
+    /// Tells the list what time it is, so rows can say "3m ago".
+    ///
+    /// Without it a row can only state the raw age it was given. TermRock has
+    /// no clock of its own — the host owns time (plans/009 Step 6).
+    pub const fn set_now_secs(&mut self, now_secs: u64) {
+        self.now_secs = Some(now_secs);
     }
 
     /// Ingest archives from toast queue (NotificationCenter route).
@@ -1151,7 +1207,7 @@ impl<'a> NotificationCenter<'a> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(bs)
-            .padding(0, 0)
+            .content_inset()
             .paint(panel, buffer);
         if inner.is_empty() {
             return;
@@ -1241,13 +1297,9 @@ impl<'a> NotificationCenter<'a> {
         }
 
         if indices.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                &take_display_cols("(no notifications)", usize::from(inner.width)),
-                usize::from(inner.width),
-                self.system.style(Role::TextMuted),
-            );
+            super::EmptyState::new("No notifications", self.system)
+                .inline()
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
         } else {
             for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
                 let Some(item) = state.items.get(item_idx) else {
@@ -1281,11 +1333,18 @@ impl<'a> NotificationCenter<'a> {
                 if let Some(pct) = item.progress {
                     line = format!("{line} {pct}%");
                 }
-                // Relative timestamp (host secs — show raw compact)
-                line = format!("{line}  t{}", item.created_at_secs);
+                // Relative when the host keeps a clock; otherwise the raw age
+                // it was given, which is still a duration and not an epoch.
+                let when = match state.now_secs {
+                    Some(now) => format_age_secs(now.saturating_sub(item.created_at_secs)),
+                    None => format!("{}s", item.created_at_secs),
+                };
+                line = format!("{line}  {when}");
 
                 let style = if selected {
-                    self.system.style(Role::Selection)
+                    self.system
+                        .style(Role::TextStrong)
+                        .patch(self.system.style(Role::SelectionTint))
                 } else if item.unread {
                     self.system.style(Role::Text)
                 } else {
@@ -1318,17 +1377,10 @@ impl<'a> NotificationCenter<'a> {
 
         // Footer
         state.slots.footer = Rect::new(inner.x, y, inner.width, footer_h);
-        let hint = if ascii {
-            "j/k enter u x c / esc"
-        } else {
-            NOTIFICATION_CENTER_HINT
-        };
-        buffer.set_stringn(
-            inner.x,
-            y,
-            &take_display_cols(hint, usize::from(inner.width)),
-            usize::from(inner.width),
-            self.system.style(Role::TextMuted),
+        ratatui_core::widgets::Widget::render(
+            &HintBar::new(NOTIFICATION_CENTER_HINTS, self.system),
+            Rect::new(inner.x, y, inner.width, 1),
+            buffer,
         );
     }
 
@@ -1433,7 +1485,7 @@ mod tests {
         let a = ToastArchive {
             id: "t1".into(),
             kind: ToastKind::Success,
-            title: Some("Ok".into()),
+            title: Some("OK".into()),
             message: "done".into(),
             reason: ToastArchiveReason::Expired,
             announcement: "done".into(),
@@ -1455,11 +1507,14 @@ mod tests {
             ToastSpec::message("x", "bye")
                 .lifetime(ToastLifetime::ExpiresAfter(Duration::from_secs(1))),
         );
-        let _ = q.advance(FrameTick::manual(
-            start + Duration::from_secs(2),
-            Duration::from_secs(2),
-            Duration::ZERO,
-        ));
+        let _ = q.advance(
+            FrameTick::manual(
+                start + Duration::from_secs(2),
+                Duration::from_secs(2),
+                Duration::ZERO,
+            ),
+            crate::style::MotionPolicy::Off,
+        );
         assert_eq!(q.missed_len(), 1);
         let mut center = NotificationCenterState::new();
         let out = center.ingest_from_toast_queue(&mut q, 50);

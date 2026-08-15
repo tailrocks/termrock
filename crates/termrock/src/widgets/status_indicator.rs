@@ -348,13 +348,10 @@ impl<'a> StatusIndicator<'a> {
             return;
         }
         let text = self.text(state);
-        let mut style = self.system.style(self.kind.role());
-        if self.strong
-            || matches!(
-                self.kind,
-                SemanticStatus::Running | SemanticStatus::Failed | SemanticStatus::Online
-            )
-        {
+        // The label is words, not a signal: it stays in the body tone and the
+        // status color lands on the glyph cell alone (plans/007).
+        let mut style = self.system.style(crate::style::Role::Text);
+        if self.strong {
             style = style.add_modifier(Modifier::BOLD);
         }
         buffer.set_stringn(
@@ -364,6 +361,32 @@ impl<'a> StatusIndicator<'a> {
             usize::from(area.width),
             style,
         );
+        let mut glyph_style = self.system.style(self.kind.role());
+        if self.strong
+            || matches!(
+                self.kind,
+                SemanticStatus::Running | SemanticStatus::Failed | SemanticStatus::Online
+            )
+        {
+            glyph_style = glyph_style.add_modifier(Modifier::BOLD);
+        }
+        // The status *cell* breathes; the label never does. Amplitude is capped
+        // at AMBIENT_PEAK, and terminal states resolve to 1.0, so a finished or
+        // failed row is perfectly still.
+        let brightness = crate::style::breathe_over(
+            self.system.motion,
+            self.system.elapsed_ms(),
+            self.kind.period_ms(),
+        );
+        if brightness < 1.0 {
+            let canvas = self
+                .system
+                .style(crate::style::Role::Canvas)
+                .bg
+                .unwrap_or(ratatui_core::style::Color::Reset);
+            glyph_style = crate::style::fade_style(glyph_style, brightness, canvas);
+        }
+        crate::widgets::row_chrome::paint_status_glyph(buffer, area, 0, self.glyph(), glyph_style);
     }
 
     /// Semantic registration — always exposes text name even for compact dots.
@@ -443,6 +466,88 @@ pub fn example_status_catalog() -> [(SemanticStatus, &'static str); 11] {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn only_live_states_breathe_and_terminal_states_are_still() {
+        // Gravity: a finished, failed, or offline status must cost no frames.
+        for status in [
+            SemanticStatus::Success,
+            SemanticStatus::Failed,
+            SemanticStatus::Warning,
+            SemanticStatus::Offline,
+            SemanticStatus::Paused,
+            SemanticStatus::Queued,
+            SemanticStatus::Idle,
+            SemanticStatus::Unknown,
+        ] {
+            assert_eq!(
+                status.channel(),
+                crate::style::MotionChannel::Static,
+                "{status:?} claims a rate it does not have"
+            );
+        }
+        assert_eq!(
+            SemanticStatus::Running.channel(),
+            crate::style::MotionChannel::Live
+        );
+        assert_eq!(
+            SemanticStatus::Waiting.channel(),
+            crate::style::MotionChannel::Wait
+        );
+        // Presence is barely perceptible; anything faster reads as activity.
+        assert_eq!(
+            SemanticStatus::Online.period_ms(),
+            crate::style::HEARTBEAT_PERIOD_MS
+        );
+        assert!(SemanticStatus::Online.period_ms() > SemanticStatus::Running.period_ms());
+    }
+
+    #[test]
+    fn the_glyph_breathes_and_the_label_never_does() {
+        let base = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 1);
+        let paint = |ms: u64| -> Buffer {
+            let system = base.clone().at(crate::runtime::FrameTick::manual(
+                crate::runtime::Instant::now(),
+                std::time::Duration::from_millis(ms),
+                std::time::Duration::from_millis(16),
+            ));
+            let mut buf = Buffer::empty(area);
+            StatusIndicator::new(SemanticStatus::Running, &system).paint(area, &mut buf);
+            buf
+        };
+        let trough = paint(0);
+        let peak = paint(1_000);
+        assert_ne!(
+            trough[(0, 0)].style(),
+            peak[(0, 0)].style(),
+            "the status cell must breathe"
+        );
+        for x in 2..area.width {
+            assert_eq!(
+                trough[(x, 0)].style(),
+                peak[(x, 0)].style(),
+                "column {x} of the label moved; words are not a signal"
+            );
+        }
+    }
+
+    #[test]
+    fn reduced_motion_stops_the_breathe() {
+        let base = DesignSystem::default().motion(crate::style::MotionPolicy::Basic);
+        let area = Rect::new(0, 0, 20, 1);
+        let paint = |ms: u64| -> Buffer {
+            let system = base.clone().at(crate::runtime::FrameTick::manual(
+                crate::runtime::Instant::now(),
+                std::time::Duration::from_millis(ms),
+                std::time::Duration::from_millis(16),
+            ));
+            let mut buf = Buffer::empty(area);
+            StatusIndicator::new(SemanticStatus::Running, &system).paint(area, &mut buf);
+            buf
+        };
+        assert_eq!(paint(0), paint(1_000));
+    }
     use super::*;
     use crate::style::GlyphSet;
 

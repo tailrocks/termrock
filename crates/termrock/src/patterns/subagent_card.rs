@@ -19,6 +19,14 @@
 //! **Ownership.** Host owns agent runtime. Outcomes are requests only.
 //!
 //! Research: multi-agent products, Grok Build subagents, orchestration UIs.
+//!
+//! Teaches: how to compose reusable representation of delegated agent work.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Card`],
+//! [`crate::widgets::SemanticStatus`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
@@ -28,7 +36,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::{ActivityKind, ActivityModel, ActivityScope},
-    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, Card, SemanticStatus},
 };
@@ -915,23 +923,17 @@ impl<'a> SubagentCard<'a> {
         // Nesting indent cue
         if run.depth > 0 && y < max_y {
             let ind = format!("{}nested d{}", if ascii { ">> " } else { "↳ " }, run.depth);
-            buffer.set_stringn(
-                body.x,
-                y,
-                take_display_cols(&ind, usize::from(body.width)),
-                usize::from(body.width),
-                muted,
-            );
+            self.system
+                .paint_row(buffer, Rect::new(body.x, y, body.width, 1), &ind, muted);
             y = y.saturating_add(1);
         }
 
         if let Some(p) = run.provenance_line(ascii) {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("via {p}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("via {p}"),
                     muted,
                 );
                 y = y.saturating_add(1);
@@ -951,13 +953,8 @@ impl<'a> SubagentCard<'a> {
                 meta.push_str(c);
             }
             if !meta.is_empty() && y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&meta, usize::from(body.width)),
-                    usize::from(body.width),
-                    muted,
-                );
+                self.system
+                    .paint_row(buffer, Rect::new(body.x, y, body.width, 1), &meta, muted);
                 y = y.saturating_add(1);
             }
         }
@@ -980,11 +977,10 @@ impl<'a> SubagentCard<'a> {
                     }
                 }
             };
-            buffer.set_stringn(
-                body.x,
-                y,
-                take_display_cols(banner, usize::from(body.width)),
-                usize::from(body.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(body.x, y, body.width, 1),
+                banner,
                 if matches!(phase, SubagentPhase::Artifact) {
                     self.system.style(Role::Success)
                 } else {
@@ -996,13 +992,8 @@ impl<'a> SubagentCard<'a> {
 
         if let Some(s) = &run.latest_summary {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(s, usize::from(body.width)),
-                    usize::from(body.width),
-                    text_style,
-                );
+                self.system
+                    .paint_row(buffer, Rect::new(body.x, y, body.width, 1), s, text_style);
                 y = y.saturating_add(1);
             }
         }
@@ -1012,11 +1003,10 @@ impl<'a> SubagentCard<'a> {
                 if y >= max_y {
                     break;
                 }
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("│ {l}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("│ {l}"),
                     muted,
                 );
                 y = y.saturating_add(1);
@@ -1026,11 +1016,10 @@ impl<'a> SubagentCard<'a> {
         if matches!(phase, SubagentPhase::Artifact) {
             if let Some(r) = &run.result_summary {
                 if y < max_y {
-                    buffer.set_stringn(
-                        body.x,
-                        y,
-                        take_display_cols(&format!("result: {r}"), usize::from(body.width)),
-                        usize::from(body.width),
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(body.x, y, body.width, 1),
+                        &format!("result: {r}"),
                         self.system.style(Role::Accent),
                     );
                     y = y.saturating_add(1);
@@ -1049,11 +1038,10 @@ impl<'a> SubagentCard<'a> {
                     break;
                 }
                 let sel = state.focused && i == state.action_cursor;
-                buffer.set_stringn(
-                    x,
-                    y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(x, y, w, 1),
                     &label,
-                    usize::from(w),
                     if sel {
                         self.system.style(Role::Focus)
                     } else {
@@ -1084,7 +1072,7 @@ impl<'a> SubagentCard<'a> {
     ) {
         let run = self.run;
         let pulse = if matches!(run.status, SemanticStatus::Running) {
-            if ascii || !matches!(self.system.motion, Motion::Full) {
+            if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
                 if ascii { "." } else { "●" }
             } else {
                 SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
@@ -1115,11 +1103,10 @@ impl<'a> SubagentCard<'a> {
         } else {
             self.system.style(run.status.role())
         };
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            take_display_cols(&text, usize::from(area.width)),
-            usize::from(area.width),
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &text,
             style,
         );
         state.header_hit = area;
@@ -1339,7 +1326,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let run =
             SubagentRun::new("sa", "reviewer", "review changes").status(SemanticStatus::Running);
         let render = |tick| {

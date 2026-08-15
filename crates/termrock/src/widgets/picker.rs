@@ -370,8 +370,11 @@ impl<'a, Id> Picker<'a, Id> {
             placeholder: "Type to filter",
             empty_message: "No matches",
             focused: true,
-            ascii: false,
-            colorless: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
+            colorless: system.mono(),
         }
     }
 
@@ -459,11 +462,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             } else {
                 format!("{mark}{}", self.empty_message)
             };
-            let style = if self.colorless || !self.focused {
-                self.system.style(Role::TextMuted)
-            } else {
-                self.system.style(Role::TextMuted)
-            };
+            let style = self.system.style(Role::TextMuted);
             buffer.set_stringn(
                 list_area.x,
                 list_area.y,

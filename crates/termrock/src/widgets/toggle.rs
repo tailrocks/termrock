@@ -474,11 +474,11 @@ impl<'a> Toggle<'a> {
             _ => self.system.style(Role::Text),
         };
         if state.focused {
+            // Pressed-and-focused stays bold; focus alone is the Focus role.
+            // The bracket chrome around the label already says "pressed".
             style = self.system.style(Role::Focus);
             if matches!(state.value, ToggleValue::Pressed) {
-                style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
-            } else {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
         } else if matches!(state.value, ToggleValue::Pressed) {
             style = style.add_modifier(Modifier::BOLD);
@@ -486,7 +486,7 @@ impl<'a> Toggle<'a> {
                 style = style.add_modifier(Modifier::REVERSED);
             }
         } else if state.hovered {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            style = self.system.style(Role::TextStrong);
         }
         // Brackets already encode pressed without color; reverse reinforces mono.
         style

@@ -28,6 +28,7 @@ use crate::{
     widgets::{
         data_view::VirtualWindow,
         object_inspector::{InspectKind, InspectorField},
+        tiered_row::TieredRow,
         timeline::{TimelineEvent, TimelineStatus},
     },
 };
@@ -1024,39 +1025,43 @@ impl<'a> TraceWaterfall<'a> {
         if h > 0 {
             let title = self.title.unwrap_or("trace");
             let crit = if state.critical_only { "crit" } else { "all" };
-            let line = format!(
-                "{title} · {} · win {}–{} / {} · {} · {}",
-                state.nav_mode.id(),
+            // The header names the trace and then states its window: the name
+            // is the headline and the numbers are the caption (plans/012).
+            let mut header = TieredRow::with_separator(" · ");
+            header.push(
+                title,
+                if self.focused {
+                    self.system.style(Role::TextStrong)
+                } else {
+                    self.system.style(Role::Text)
+                },
+            );
+            header.push_plain(state.nav_mode.id());
+            header.push_plain(&format!(
+                "win {}–{} / {}",
                 format_trace_offset_ms(state.time_start_ms),
                 format_trace_offset_ms(state.time_start_ms + state.time_duration_ms),
                 format_trace_duration_ms(state.total_ms),
-                crit,
-                self.spans.len()
-            );
+            ));
+            header.push_plain(crit);
+            header.push_plain(&self.spans.len().to_string());
+            let line = header.text().to_string();
             buffer.set_stringn(
                 area.x,
                 y,
                 take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                if self.focused {
-                    self.system.style(Role::TextStrong)
-                } else {
-                    self.system.style(Role::TextMuted)
-                },
+                self.system.style(Role::TextMuted),
             );
+            header.paint_tiers(buffer, Rect::new(area.x, y, area.width, 1), 0);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }
 
         if state.filter.is_some() && h > 0 {
             let q = state.filter.as_deref().unwrap_or("");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&format!("/{q}_"), usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::Accent),
-            );
+            crate::widgets::ChromeRow::query(q, self.system)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }
@@ -1094,14 +1099,10 @@ impl<'a> TraceWaterfall<'a> {
         state.window.clamp();
 
         if visible.is_empty() {
-            let msg = state.empty_message.as_deref().unwrap_or("(no spans)");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(msg, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
+            let msg = state.empty_message.as_deref().unwrap_or("No spans");
+            super::EmptyState::new(msg, self.system)
+                .inline()
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         }
 
@@ -1154,21 +1155,34 @@ impl<'a> TraceWaterfall<'a> {
             } else {
                 " "
             };
-            let label = format!(
-                "{mark}{disc}{indent}{letter}{crit}{}",
-                if span.service.is_empty() {
-                    span.name.to_string()
-                } else {
-                    format!("{}.{}", span.service, span.name)
-                }
-            );
+            // The status is the letter's, not the whole name's: a column of
+            // trace rows reads as one column of state instead of as five
+            // colored sentences (plans/012 Step 3).
             let style = if selected && self.focused {
                 self.system.style(Role::Focus)
-            } else if span.critical {
-                self.system.style(Role::Warning)
             } else {
-                self.system.style(span.status.role())
+                self.system.style(Role::Text)
             };
+            let mut row = TieredRow::with_separator("");
+            row.push_joined(mark, None);
+            row.push_joined(disc, None);
+            row.push_joined(&indent, None);
+            row.push_joined(
+                &letter.to_string(),
+                Some(self.system.style(span.status.role())),
+            );
+            row.push_joined(
+                crit,
+                span.critical.then(|| self.system.style(Role::Warning)),
+            );
+            if !span.service.is_empty() {
+                row.push_joined(
+                    &format!("{}.", span.service),
+                    Some(self.system.style(Role::TextMuted)),
+                );
+            }
+            row.push_joined(span.name, None);
+            let label = row.text().to_string();
             buffer.set_stringn(
                 area.x,
                 py,
@@ -1176,6 +1190,7 @@ impl<'a> TraceWaterfall<'a> {
                 usize::from(name_w),
                 style,
             );
+            row.paint_tiers(buffer, Rect::new(area.x, py, name_w, 1), 0);
 
             // Duration label at end of name col if space
             let dur = format_trace_duration_ms(span.duration_ms);
@@ -1224,12 +1239,14 @@ impl<'a> TraceWaterfall<'a> {
                     } else {
                         "█"
                     };
+                    // Bars are data, so they read as a series. A waterfall
+                    // painted in severity was a wall of colour with no shape
+                    // in it; failure still shows in the fill glyph above and
+                    // in the status letter in the name column.
                     let bar_role = if selected && self.focused {
-                        Role::Focus
-                    } else if span.critical {
-                        Role::Warning
+                        Role::ChartSeries2
                     } else {
-                        span.status.role()
+                        Role::ChartSeries1
                     };
                     let bx = bar_x.saturating_add(c0);
                     for dx in 0..bw {
@@ -1446,7 +1463,7 @@ mod tests {
         let area = Rect::new(0, 0, 72, 14);
         let mut buf = Buffer::empty(area);
         TraceWaterfall::new(&spans, &system)
-            .title("req")
+            .title("Request")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

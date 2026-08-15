@@ -1,5 +1,8 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use crate::style::{DesignSystem, Role, RolePalette};
+use crate::{
+    style::{DesignSystem, Role, RolePalette},
+    text::{CellAlignment, LinePlacement, paint_line_overflow},
+};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -27,6 +30,16 @@ pub enum HintSpan<'a> {
     GroupSep,
 }
 
+/// Blank join painted between adjacent hint groups.
+///
+/// Groups are separated by blank space rather than a glyph so the eye reads them
+/// as two clusters, not two facts. Its width matches the dotted separator, so
+/// both wrap identically.
+pub const HINT_GROUP_JOIN: &str = "   ";
+
+/// Display columns every hint separator occupies, dotted or blank.
+pub const HINT_SEPARATOR_COLS: usize = 3;
+
 impl HintSpan<'_> {
     /// Display-column width contribution of this span.
     #[must_use]
@@ -36,7 +49,7 @@ impl HintSpan<'_> {
             Self::DynKey(key) => UnicodeWidthStr::width(key.as_str()),
             Self::Text(text) => 1 + UnicodeWidthStr::width(*text),
             Self::Dyn(text) => 1 + UnicodeWidthStr::width(text.as_str()),
-            Self::Sep | Self::GroupSep => 3,
+            Self::Sep | Self::GroupSep => HINT_SEPARATOR_COLS,
         }
     }
 }
@@ -66,6 +79,7 @@ pub struct HintBar<'a> {
     hints: &'a [Hint<'a>],
     separator: &'a str,
     leading_spacer: bool,
+    alignment: CellAlignment,
     system: &'a DesignSystem,
 }
 
@@ -75,8 +89,9 @@ impl<'a> HintBar<'a> {
     pub const fn new(hints: &'a [Hint<'a>], system: &'a DesignSystem) -> Self {
         Self {
             hints,
-            separator: " · ",
+            separator: system.glyphs.meta_join(),
             leading_spacer: false,
+            alignment: CellAlignment::Left,
             system,
         }
     }
@@ -92,6 +107,16 @@ impl<'a> HintBar<'a> {
     #[must_use]
     pub const fn leading_spacer(mut self, leading_spacer: bool) -> Self {
         self.leading_spacer = leading_spacer;
+        self
+    }
+
+    /// Places the hint rows against an edge of their area.
+    ///
+    /// This is the only alignment control for footer hints: the rich-span
+    /// painter [`render_hint_bar`] resolves through the same path.
+    #[must_use]
+    pub const fn alignment(mut self, alignment: CellAlignment) -> Self {
+        self.alignment = alignment;
         self
     }
 
@@ -158,7 +183,43 @@ impl Widget for &HintBar<'_> {
             area.width,
             area.height.saturating_sub(spacer_rows),
         );
-        Paragraph::new(self.lines(area.width)).render(body, buffer);
+        paint_hint_lines(
+            buffer,
+            body,
+            &self.lines(area.width),
+            self.alignment,
+            self.system,
+        );
+    }
+}
+
+/// Paints hint rows through the shared line painter: one alignment path, one
+/// contraction rule, wherever hints appear.
+fn paint_hint_lines(
+    buffer: &mut Buffer,
+    area: Rect,
+    lines: &[Line<'_>],
+    alignment: CellAlignment,
+    system: &DesignSystem,
+) {
+    let mut scratch = String::new();
+    let placement = LinePlacement::contracting(system.glyphs.ellipsis()).align(alignment);
+    for (index, line) in lines.iter().take(usize::from(area.height)).enumerate() {
+        let row = Rect::new(
+            area.x,
+            area.y
+                .saturating_add(u16::try_from(index).unwrap_or(u16::MAX)),
+            area.width,
+            1,
+        );
+        paint_line_overflow(
+            buffer,
+            row,
+            line,
+            system.style(Role::HintText),
+            placement,
+            &mut scratch,
+        );
     }
 }
 
@@ -179,10 +240,13 @@ pub fn render_hint_bar(
     spans: &[HintSpan<'_>],
     system: &DesignSystem,
 ) {
-    frame.render_widget(
-        Paragraph::new(Line::from(styled_hint_spans(spans, system, |color| color)))
-            .alignment(ratatui_core::layout::Alignment::Center),
+    let line = Line::from(styled_hint_spans(spans, system, |color| color));
+    paint_hint_lines(
+        frame.buffer_mut(),
         area,
+        std::slice::from_ref(&line),
+        CellAlignment::Center,
+        system,
     );
 }
 
@@ -203,8 +267,8 @@ pub fn styled_hint_spans(
             HintSpan::DynKey(value) => out.push(Span::styled(value.clone(), key)),
             HintSpan::Text(value) => out.push(Span::styled(format!(" {value}"), text)),
             HintSpan::Dyn(value) => out.push(Span::styled(format!(" {value}"), dim)),
-            HintSpan::Sep => out.push(Span::styled(" · ", sep)),
-            HintSpan::GroupSep => out.push(Span::raw("   ")),
+            HintSpan::Sep => out.push(Span::styled(system.glyphs.meta_join(), sep)),
+            HintSpan::GroupSep => out.push(Span::raw(HINT_GROUP_JOIN)),
         }
     }
     out
@@ -284,7 +348,7 @@ pub fn wrapped_hint_lines(
     let mut row = Vec::new();
     let mut row_width: usize = 0;
     for chunk in chunks {
-        let separator_width = usize::from(!row.is_empty()) * 3;
+        let separator_width = usize::from(!row.is_empty()) * HINT_SEPARATOR_COLS;
         if !row.is_empty()
             && row_width
                 .saturating_add(separator_width)
@@ -299,9 +363,9 @@ pub fn wrapped_hint_lines(
                 Separator::Dot => {
                     row.extend(styled_hint_spans(&[HintSpan::Sep], system, |color| color));
                 }
-                Separator::Group => row.push(Span::raw("   ")),
+                Separator::Group => row.push(Span::raw(HINT_GROUP_JOIN)),
             }
-            row_width += 3;
+            row_width += HINT_SEPARATOR_COLS;
         }
         row.extend(chunk.spans);
         row_width += chunk.width;

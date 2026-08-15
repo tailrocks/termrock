@@ -36,7 +36,7 @@ use crate::{
     },
     layout::{Center, CenterAxis, center_line_x},
     runtime::{AnimationDemand, FrameTick},
-    style::{DesignSystem, GlyphSet, Motion, Role},
+    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::{ActivityPhase, SpinnerState},
 };
@@ -377,7 +377,7 @@ impl BusyBoundaryState {
 
     /// Animation demand from composed spinner.
     #[must_use]
-    pub fn animation_demand(&self, tick: FrameTick, motion: Motion) -> AnimationDemand {
+    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
         if !self.active {
             return AnimationDemand::idle();
         }
@@ -532,7 +532,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer: &mut Buffer,
         state: &mut BusyBoundaryState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if area.is_empty() || !state.is_active() || !state.should_show_chrome() {
             return;
@@ -595,7 +595,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer: &mut Buffer,
         state: &mut BusyBoundaryState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         let glyph = {
             let g = state.spinner.frame_glyph(tick, motion);
@@ -622,7 +622,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer: &mut Buffer,
         state: &BusyBoundaryState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         let glyph = state.spinner.frame_glyph(tick, motion);
         let mut lines: Vec<(String, Role, bool)> = Vec::new();
@@ -713,7 +713,7 @@ impl BusyBoundary {
         state: &mut BusyBoundaryState,
         system: &DesignSystem,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         // Copy fields so LoadingOverlay does not borrow state while painting.
         let label = state.label().to_string();
@@ -739,7 +739,7 @@ impl BusyBoundary {
         child: &mut BusyBoundaryState,
         system: &DesignSystem,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if parent.is_active() {
             Self::paint(parent_area, buffer, parent, system, tick, motion);
@@ -987,7 +987,7 @@ mod tests {
                 &mut child,
                 &system,
                 tick(400),
-                Motion::Off,
+                MotionPolicy::Off,
             );
         });
         assert!(
@@ -1005,7 +1005,7 @@ mod tests {
         let (overlay, mut st) = example_busy_optimistic(&system);
         let text = painted(Rect::new(0, 0, 30, 4), |a, b| {
             b.set_stringn(a.x, a.y, "saved draft body", 16, Style::default());
-            overlay.paint(a, b, &mut st, tick(50), Motion::Off);
+            overlay.paint(a, b, &mut st, tick(50), MotionPolicy::Off);
         });
         assert!(
             text.contains("saved") || text.contains("updating"),
@@ -1019,7 +1019,7 @@ mod tests {
         let (overlay, mut st) = example_busy_stale(&system);
         let text = painted(Rect::new(0, 0, 36, 6), |a, b| {
             b.set_stringn(a.x, a.y + 2, "old rows", 8, Style::default());
-            overlay.paint(a, b, &mut st, tick(300), Motion::Off);
+            overlay.paint(a, b, &mut st, tick(300), MotionPolicy::Off);
         });
         assert!(
             text.contains("stale") || text.contains("Revalidat") || text.contains("previous"),
@@ -1032,7 +1032,7 @@ mod tests {
         let system = system();
         let (overlay, mut st) = example_busy_blocking(&system);
         let text = painted(Rect::new(0, 0, 40, 8), |a, b| {
-            overlay.paint(a, b, &mut st, tick(400), Motion::Off);
+            overlay.paint(a, b, &mut st, tick(400), MotionPolicy::Off);
         });
         assert!(
             text.contains("Loading") || text.contains("unavailable") || text.contains('░'),
@@ -1091,14 +1091,14 @@ mod tests {
                 &mut buf,
                 &mut st,
                 tick(0),
-                Motion::Off,
+                MotionPolicy::Off,
             );
         LoadingOverlay::new("X", &system).paint(
             Rect::new(0, 0, 0, 0),
             &mut buf,
             &mut st,
             tick(0),
-            Motion::Off,
+            MotionPolicy::Off,
         );
     }
 
@@ -1130,7 +1130,7 @@ mod tests {
                 &mut buf,
                 &mut st,
                 tick(seed % 800),
-                Motion::Off,
+                MotionPolicy::Off,
             );
         }
     }
@@ -1142,7 +1142,13 @@ mod tests {
             let mut t = Terminal::new(TestBackend::new(40, 8)).unwrap();
             let (overlay, mut st) = example_busy_blocking(&system);
             t.draw(|f| {
-                overlay.paint(f.area(), f.buffer_mut(), &mut st, tick(400), Motion::Off);
+                overlay.paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut st,
+                    tick(400),
+                    MotionPolicy::Off,
+                );
             })
             .unwrap();
             t.backend()
@@ -1164,7 +1170,13 @@ mod tests {
         for _ in 0..100 {
             terminal
                 .draw(|f| {
-                    overlay.paint(f.area(), f.buffer_mut(), &mut st, tick(500), Motion::Off);
+                    overlay.paint(
+                        f.area(),
+                        f.buffer_mut(),
+                        &mut st,
+                        tick(500),
+                        MotionPolicy::Off,
+                    );
                 })
                 .unwrap();
         }

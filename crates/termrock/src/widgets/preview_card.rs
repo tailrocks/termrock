@@ -39,7 +39,7 @@ use crate::{
         place_overlay,
     },
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, GlyphSet, Motion, Role},
+    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -56,7 +56,7 @@ pub const PREVIEW_CARD_DEFAULT_MAX_WIDTH: u16 = 48;
 /// Default preferred height (content may shrink).
 pub const PREVIEW_CARD_DEFAULT_MAX_HEIGHT: u16 = 16;
 /// Footer hint when unpinned.
-pub const PREVIEW_CARD_HINT: &str = "pin · enter open · esc dismiss";
+pub const PREVIEW_CARD_HINT: &str = "pin · enter open · esc cancel";
 /// Footer hint when pinned.
 pub const PREVIEW_CARD_PINNED_HINT: &str = "pinned · enter open · esc unpin";
 
@@ -830,7 +830,7 @@ impl PreviewCardState {
         self.presence = Presence::tooltip(Duration::ZERO);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
         self.presence.request_show(tick);
-        let _ = self.presence.advance(tick, Motion::Off);
+        let _ = self.presence.advance(tick, MotionPolicy::Off);
         PreviewCardOutcome::Pinned
     }
 
@@ -856,14 +856,14 @@ impl PreviewCardState {
         }
     }
 
-    fn effective_delay(&self, motion: Motion) -> Duration {
+    fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            Motion::Off | Motion::Reduced => Duration::ZERO,
-            Motion::Full => self.delay,
+            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Full => self.delay,
         }
     }
 
-    fn rebuild_presence(&mut self, motion: Motion) {
+    fn rebuild_presence(&mut self, motion: MotionPolicy) {
         let d = self.effective_delay(motion);
         self.presence = Presence::tooltip(d);
     }
@@ -900,7 +900,7 @@ impl PreviewCardState {
             return PreviewCardOutcome::Pending;
         }
         if !self.show_requested && !self.presence.is_visible() {
-            self.rebuild_presence(Motion::Full);
+            self.rebuild_presence(MotionPolicy::Full);
             let tick = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -910,12 +910,12 @@ impl PreviewCardState {
             Duration::from_millis(self.synth_elapsed_ms),
             Duration::from_millis(delta_ms),
         );
-        let _ = self.presence.advance(tick, Motion::Full);
+        let _ = self.presence.advance(tick, MotionPolicy::Full);
         self.visibility_outcome()
     }
 
     /// FrameTick-driven advance (canonical).
-    pub fn advance(&mut self, tick: FrameTick, motion: Motion) -> PreviewCardOutcome {
+    pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> PreviewCardOutcome {
         if self.disabled {
             self.force_hide();
             return PreviewCardOutcome::Disabled;
@@ -943,7 +943,8 @@ impl PreviewCardState {
             self.show_requested = true;
         }
         let _ = self.presence.advance(tick, motion);
-        if matches!(motion, Motion::Reduced | Motion::Off) && !self.presence.is_visible() {
+        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.presence.is_visible()
+        {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -959,7 +960,7 @@ impl PreviewCardState {
         pointer_over: bool,
         focus_within: bool,
         selection_active: bool,
-        motion: Motion,
+        motion: MotionPolicy,
     ) -> PreviewCardOutcome {
         self.pointer_over = pointer_over;
         self.focus_within = focus_within;
@@ -1133,7 +1134,7 @@ impl<'a> PreviewCard<'a> {
             })
             .bordered(true)
             .border_style(self.system.style(border))
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;
@@ -1218,7 +1219,9 @@ impl<'a> PreviewCard<'a> {
         };
         match load {
             PreviewLoadState::Loading => {
-                let msg = if ascii { "... loading" } else { "… loading" };
+                // Verb first, ellipsis trailing: the row reads as an action in
+                // progress, not as an elision.
+                let msg = if ascii { "loading..." } else { "loading…" };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1798,7 +1801,7 @@ mod tests {
         let mut state = PreviewCardState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let out = state.advance(tick, Motion::Reduced);
+        let out = state.advance(tick, MotionPolicy::Basic);
         assert!(
             matches!(
                 out,

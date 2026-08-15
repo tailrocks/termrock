@@ -6,7 +6,7 @@
 use ratatui::{Frame, layout::Rect, widgets::Widget};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
-    style::{DesignSystem, Role, RolePalette},
+    style::{Role, RolePalette},
     widgets::{
         Action, Button, ButtonState, CheckpointTimeline, CheckpointTimelineState, DiffHunk,
         DiffLine, DiffReview, DiffReviewFileRow, DiffReviewState, Drawer, DrawerOutcome,
@@ -42,16 +42,16 @@ impl EmptyStateInteractor {
 }
 impl StoryInteraction for EmptyStateInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         example_empty_search(&system).paint_with_state(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = example_empty_search(&system).handle_key(key, &mut self.state);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = example_empty_search(&system).handle_mouse(mouse, area, &mut self.state);
         self.apply(outcome)
     }
@@ -90,16 +90,16 @@ impl ErrorStateInteractor {
 }
 impl StoryInteraction for ErrorStateInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         example_error_network(&system).paint_with_state(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = example_error_network(&system).handle_key(key, &mut self.state);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = example_error_network(&system).handle_mouse(mouse, area, &mut self.state);
         self.apply(outcome)
     }
@@ -163,7 +163,7 @@ impl DrawerInteractor {
 impl StoryInteraction for DrawerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.state.is_open() {
             let _ = Button::new(
                 if self.sheet {
@@ -292,7 +292,7 @@ impl FullscreenViewerInteractor {
 }
 impl StoryInteraction for FullscreenViewerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.state.is_open() {
             let _ = Button::new("Open fullscreen viewer", &system).paint(
                 Rect::new(area.x, area.y, area.width.min(24), 1.min(area.height)),
@@ -393,7 +393,7 @@ impl ModeRibbonInteractor {
 }
 impl StoryInteraction for ModeRibbonInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let selected = self.state.selected().copied();
         let modes = [
             WorkbenchMode {
@@ -490,7 +490,7 @@ impl OfflineBannerInteractor {
 impl StoryInteraction for OfflineBannerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if self.full {
             OfflineSurface::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
         } else {
@@ -554,7 +554,7 @@ impl PreviewCardInteractor {
 impl StoryInteraction for PreviewCardInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if self.state.is_visible() {
             let (content, _, _) = example_file_preview();
             PreviewCard::new(content, &system).paint(area, frame.buffer_mut(), &mut self.state);
@@ -624,7 +624,7 @@ impl CheckpointTimelineInteractor {
 
 impl StoryInteraction for CheckpointTimelineInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         CheckpointTimeline::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
 
@@ -682,7 +682,7 @@ impl DiffReviewInteractor {
 
 impl StoryInteraction for DiffReviewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         DiffReview::new(&self.lines, &system)
             .hunks(&self.hunks)
             .files(&self.files)
@@ -766,7 +766,7 @@ impl KeyValueListInteractor {
 
 impl StoryInteraction for KeyValueListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = key_value_entries();
         let _ = KeyValueList::reading(&entries, &system).paint(
             area,
@@ -776,14 +776,14 @@ impl StoryInteraction for KeyValueListInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = key_value_entries();
         let outcome = KeyValueList::reading(&entries, &system).handle_key(&mut self.state, key);
         record(&mut self.outcome, "KeyValueList", outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = key_value_entries();
         let outcome = KeyValueList::reading(&entries, &system).handle_mouse(&mut self.state, mouse);
         record(&mut self.outcome, "KeyValueList", outcome)
@@ -860,14 +860,14 @@ fn key_value_table_fields(content_type: &str) -> [KvtField<'_, &'static str>; 6]
 
 impl StoryInteraction for KeyValueTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         KeyValueTable::new(&fields, &system).render(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         let outcome = KeyValueTable::new(&fields, &system).handle_key(&mut self.state, key);
@@ -878,7 +878,7 @@ impl StoryInteraction for KeyValueTableInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         let outcome = KeyValueTable::new(&fields, &system).handle_mouse(&mut self.state, mouse);

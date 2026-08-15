@@ -18,15 +18,15 @@ use termrock::{
         OverlayKind, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
     },
     patterns::{
-        MetricAlert, MetricAlertSeverity, MetricTile, MetricTileHealth, MetricViz,
-        MetricsDashboard, MetricsDashboardState, PlanReview, PlanReviewState, ProcessKey,
-        ProcessRow, ProcessSignal, ProcessSignalConfirm, ProcessStatus, ProcessTable,
-        ProcessTableState, ProcessViewMode, QueryEditor, QueryEditorMode, QueryEditorState,
-        QueryFocus, QueryLanguage, QueryParameter, QueryResultSummary, QueryRunStatus, ResultCell,
-        ResultColumn, ResultColumnStats, ResultGrid, ResultGridState, ResultQueryStatus,
-        ResultRedaction, ResultRow, SchemaBrowser, SchemaBrowserEntry, SchemaBrowserPresentation,
-        SchemaBrowserState, SchemaConnStatus, SchemaNodeKind, SessionPicker, SessionPickerState,
-        TaskRail, example_agent_workbench_nav, example_database_nav,
+        MetricAlert, MetricAlertSeverity, MetricsDashboard, MetricsDashboardState, PlanReview,
+        PlanReviewState, ProcessKey, ProcessRow, ProcessSignal, ProcessSignalConfirm,
+        ProcessStatus, ProcessTable, ProcessTableState, ProcessViewMode, QueryEditor,
+        QueryEditorMode, QueryEditorState, QueryFocus, QueryLanguage, QueryParameter,
+        QueryResultSummary, QueryRunStatus, ResultCell, ResultColumn, ResultColumnStats,
+        ResultGrid, ResultGridState, ResultQueryStatus, ResultRedaction, ResultRow, SchemaBrowser,
+        SchemaBrowserEntry, SchemaBrowserPresentation, SchemaBrowserState, SchemaConnStatus,
+        SchemaNodeKind, SessionPicker, SessionPickerState, TaskRail, example_agent_workbench_nav,
+        example_database_nav,
     },
     scroll::DialogScroll,
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
@@ -68,13 +68,13 @@ use termrock::{
         LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane, LogPaneState, LogStream,
         LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
         MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar, MenuBarState, MenuItem,
-        MenuNode, MenuState, MessageDialog, MeterSegment, ModeRibbon, MultiSelect,
-        MultiSelectState, NavItem, NavigationList, NavigationListState, NotificationCenter,
-        NotificationCenterState, NotificationRecipe, NumberConstraints, NumberInput,
-        NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState, OfflineBanner,
-        OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome, PasswordInput,
-        PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus, PathInput,
-        PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
+        MenuNode, MenuState, MessageDialog, MeterSegment, MetricTile, MetricTileHealth, MetricViz,
+        ModeRibbon, MultiSelect, MultiSelectState, NavItem, NavigationList, NavigationListState,
+        NotificationCenter, NotificationCenterState, NotificationRecipe, NumberConstraints,
+        NumberInput, NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState,
+        OfflineBanner, OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome,
+        PasswordInput, PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus,
+        PathInput, PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
         PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
         PickerState, Popover, PopoverState, PresenceStatus, PreviewCard, PreviewCardContent,
         PreviewCardState, PreviewLoadState, PreviewResourceKind, Progress, ProgressKind,
@@ -268,6 +268,222 @@ pub(crate) const PATTERN_DEMO_IDS: &[&str] = &[
     "terminal-run-card/running",
     "working-state-card/basic",
 ];
+
+/// Components shown inside a real application, and the scene that shows them.
+///
+/// A component page could only ever show the component alone, which is the one
+/// context nobody ships it in. These variants mount an EXISTING application
+/// story — no new state machines, no new interactors — and label it with the
+/// component, so the page's variant picker offers "In application"
+/// (plans/018 Step 2).
+const IN_APP_SCENES: &[(&str, &str, &str)] = &[
+    // Collections, inputs and chrome live in the workbench shells.
+    ("List", "list/in-app", "app-shell/workbench"),
+    ("Panel", "panel/in-app", "app-shell/workbench"),
+    ("Sidebar", "sidebar/in-app", "app-shell/workbench"),
+    ("StatusBar", "status-bar/in-app", "app-shell/workbench"),
+    ("Tabs", "tabs/in-app", "app-shell/workbench"),
+    ("Toolbar", "toolbar/in-app", "app-shell/workbench"),
+    ("Transcript", "transcript/in-app", "agent-workbench/basic"),
+    (
+        "PromptComposer",
+        "prompt-composer/in-app",
+        "agent-workbench/basic",
+    ),
+    ("TaskRail", "task-rail/in-app", "agent-workbench/basic"),
+    ("ModeRibbon", "mode-ribbon/in-app", "agent-workbench/basic"),
+    (
+        "PermissionPrompt",
+        "permission-prompt/in-app",
+        "approval-queue/basic",
+    ),
+    (
+        "ApprovalQueue",
+        "approval-queue/in-app",
+        "approval-queue/basic",
+    ),
+    (
+        "AgentStatusHeader",
+        "agent-status-header/in-app",
+        "agent-status-header/basic",
+    ),
+    (
+        "WorkingStateCard",
+        "working-state-card/in-app",
+        "working-state-card/basic",
+    ),
+    (
+        "ThinkingBlock",
+        "thinking-block/in-app",
+        "working-state-card/basic",
+    ),
+    ("ToolCard", "tool-card/in-app", "subagent-card/running"),
+    ("Timeline", "timeline/in-app", "checkpoint-timeline/basic"),
+    // Data surfaces.
+    ("DataTable", "data-table/in-app", "result-grid/basic"),
+    ("Table", "table/in-app", "process-table/basic"),
+    ("TreeTable", "tree-table/in-app", "process-table/basic"),
+    ("Tree", "tree/in-app", "schema-browser/basic"),
+    (
+        "TreeNavigation",
+        "tree-navigation/in-app",
+        "file-manager/basic",
+    ),
+    ("VirtualList", "virtual-list/in-app", "session-picker/basic"),
+    (
+        "ObjectInspector",
+        "object-inspector/in-app",
+        "observability-dashboard/basic",
+    ),
+    (
+        "LogStream",
+        "log-stream/in-app",
+        "observability-dashboard/basic",
+    ),
+    (
+        "EventStream",
+        "event-stream/in-app",
+        "observability-dashboard/basic",
+    ),
+    (
+        "DetailTable",
+        "detail-table/in-app",
+        "integration-status/list",
+    ),
+    (
+        "KeyValueList",
+        "key-value-list/in-app",
+        "integration-status/list",
+    ),
+    ("DiffReview", "diff-review/in-app", "git-workbench/basic"),
+    ("DiffView", "diff-view/in-app", "git-workbench/basic"),
+    (
+        "CheckpointTimeline",
+        "checkpoint-timeline/in-app",
+        "git-workbench/basic",
+    ),
+    (
+        "TerminalOutput",
+        "terminal-output/in-app",
+        "terminal-run-card/running",
+    ),
+    ("CodeBlock", "code-block/in-app", "query-editor/basic"),
+    (
+        "DiagnosticView",
+        "diagnostic-view/in-app",
+        "error-recovery/basic",
+    ),
+    // Feedback.
+    ("Toast", "toast/in-app", "background-tasks/mixed-statuses"),
+    (
+        "Progress",
+        "progress/in-app",
+        "background-tasks/mixed-statuses",
+    ),
+    (
+        "ProgressBar",
+        "progress-bar/in-app",
+        "background-tasks/mixed-statuses",
+    ),
+    (
+        "Spinner",
+        "spinner/in-app",
+        "background-tasks/mixed-statuses",
+    ),
+    (
+        "StatusIndicator",
+        "status-indicator/in-app",
+        "process-table/basic",
+    ),
+    (
+        "ActivityIndicator",
+        "activity-indicator/in-app",
+        "activity-shelf/statuses",
+    ),
+    (
+        "NotificationCenter",
+        "notification-center/in-app",
+        "activity-shelf/statuses",
+    ),
+    ("Sparkline", "sparkline/in-app", "metrics-dashboard/basic"),
+    ("Gauge", "gauge/in-app", "metrics-dashboard/basic"),
+    ("Chart", "chart/in-app", "metrics-dashboard/basic"),
+    // Forms.
+    ("Form", "form/in-app", "settings-screen/basic"),
+    ("Fieldset", "fieldset/in-app", "settings-screen/basic"),
+    ("FieldRow", "field-row/in-app", "settings-screen/basic"),
+    ("Checkbox", "checkbox/in-app", "settings-screen/basic"),
+    ("Switch", "switch/in-app", "settings-screen/basic"),
+    ("RadioGroup", "radio-group/in-app", "settings-screen/basic"),
+    (
+        "ThemePicker",
+        "theme-picker/in-app",
+        "settings-screen/basic",
+    ),
+    (
+        "KeybindingRecorder",
+        "keybinding-recorder/in-app",
+        "settings-screen/basic",
+    ),
+    ("TextInput", "text-input/in-app", "auth-entry/basic"),
+    ("PasswordInput", "password-input/in-app", "auth-entry/basic"),
+    ("Button", "button/in-app", "auth-entry/basic"),
+    ("FormWizard", "form-wizard/in-app", "setup-wizard/welcome"),
+    (
+        "ProgressSteps",
+        "progress-steps/in-app",
+        "setup-wizard/welcome",
+    ),
+    // Overlays and navigation.
+    (
+        "CommandPalette",
+        "command-palette/in-app",
+        "app-shell/workbench",
+    ),
+    ("QuickOpen", "quick-open/in-app", "project-launcher/basic"),
+    ("Dialog", "dialog/in-app", "session-picker/basic"),
+    ("SearchInput", "search-input/in-app", "help-center/basic"),
+    ("MarkdownView", "markdown-view/in-app", "help-center/basic"),
+    ("KeyboardHelp", "keyboard-help/in-app", "help-center/basic"),
+    ("Breadcrumbs", "breadcrumbs/in-app", "file-manager/basic"),
+    ("PreviewCard", "preview-card/in-app", "file-manager/basic"),
+    ("Select", "select/in-app", "connection-manager/full"),
+    (
+        "EmptyState",
+        "empty-state/in-app",
+        "connection-manager/full",
+    ),
+];
+
+/// The application scene an "in application" variant mounts, if `id` is one.
+///
+/// The variant borrows the host's interactor wholesale, so the delegate lookup
+/// has to resolve through the host's id rather than the variant's.
+#[must_use]
+pub fn in_app_host(id: &str) -> Option<&'static str> {
+    IN_APP_SCENES
+        .iter()
+        .find(|(_, variant, _)| *variant == id)
+        .map(|(_, _, host)| *host)
+}
+
+/// Builds the "in application" variant of every component in [`IN_APP_SCENES`].
+fn in_app_stories(catalog: &[Story]) -> Vec<Story> {
+    let mut out = Vec::new();
+    for (component, id, host_id) in IN_APP_SCENES {
+        let Some(host) = catalog.iter().find(|story| story.id == *host_id) else {
+            continue;
+        };
+        out.push(Story {
+            id,
+            title: "In application",
+            component,
+            description: "The component inside a real application scene.",
+            ..*host
+        });
+    }
+    out
+}
 
 fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(PanelInteractor::new(render))
@@ -1581,7 +1797,7 @@ pub fn stories() -> Vec<Story> {
             "breadcrumbs/path",
             "Breadcrumbs path",
             "Breadcrumbs",
-            "Full path trail with current segment underlined.",
+            "Full path trail with the current segment in bold.",
             48,
             1,
             breadcrumbs_path_story,
@@ -2363,7 +2579,7 @@ pub fn stories() -> Vec<Story> {
             "diagnostic/ascii",
             "Diagnostic ASCII",
             "DiagnosticView",
-            "ASCII severity letters and underlines.",
+            "ASCII severity letters and caret rows.",
             64,
             12,
             diagnostic_ascii,
@@ -3622,7 +3838,7 @@ pub fn stories() -> Vec<Story> {
             "motion/presence-spinner",
             "FrameClock presence + spinner",
             "FrameClock",
-            "Motion::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
+            "MotionPolicy::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
             48,
             10,
             motion_presence_story,
@@ -3647,7 +3863,7 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "motion/presence",
-            "Motion presence kit",
+            "MotionPolicy presence kit",
             "Spinner",
             "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
             48,
@@ -3667,7 +3883,7 @@ pub fn stories() -> Vec<Story> {
             "spinner/ascii",
             "Spinner ASCII",
             "Spinner",
-            "ASCII |/-\\ frames with Motion::Off static glyph.",
+            "ASCII |/-\\ frames with MotionPolicy::Off static glyph.",
             24,
             2,
             spinner_ascii_story,
@@ -4636,7 +4852,7 @@ pub fn stories() -> Vec<Story> {
             "code-block/no-color",
             "CodeBlock no-color",
             "CodeBlock",
-            "Monochrome syntax fallback — bold/dim/underline roles.",
+            "Monochrome syntax fallback — bold/dim/italic roles.",
             48,
             6,
             code_block_no_color_story,
@@ -4740,6 +4956,15 @@ pub fn stories() -> Vec<Story> {
             36,
             1,
             gauge_basic,
+        ),
+        Story::new(
+            "metric-tile/basic",
+            "Metric tile",
+            "MetricTileView",
+            "One measured number with health and trend context.",
+            32,
+            6,
+            metric_tile_basic,
         ),
         Story::new(
             "metric-radar/basic",
@@ -5292,7 +5517,7 @@ pub fn stories() -> Vec<Story> {
             "button/no-color",
             "Button no-color",
             "Button",
-            "Weight/underline affordance without color fill.",
+            "Weight and border affordance without color fill.",
             40,
             4,
             button_no_color_story,
@@ -6514,7 +6739,7 @@ pub fn stories() -> Vec<Story> {
             "heading/basic",
             "Heading H1 reading",
             "Heading",
-            "H1 with underline weight and rule row.",
+            "H1 with heading weight and rule row.",
             40,
             3,
             heading_story,
@@ -6649,7 +6874,7 @@ pub fn stories() -> Vec<Story> {
             "highlighted-text/no-color",
             "HighlightedText no-color",
             "HighlightedText",
-            "Monochrome match emphasis (underline/bold).",
+            "Monochrome match emphasis (reverse/bold).",
             40,
             2,
             highlighted_text_no_color_story,
@@ -6813,7 +7038,7 @@ pub fn stories() -> Vec<Story> {
             "link/no-color",
             "Link no-color",
             "Link",
-            "No-color path: underline + focus bold; destination still visible.",
+            "No-color path: links underline, focus adds bold; destination still visible.",
             56,
             3,
             link_no_color_story,
@@ -10221,6 +10446,7 @@ pub fn stories() -> Vec<Story> {
             story.interactive = true;
         }
     }
+    catalog.extend(in_app_stories(&catalog));
     catalog
 }
 
@@ -11420,7 +11646,7 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::{ProgressBar, ProgressBarState, ProgressRecipe, ProgressStatus};
     let mut state = ProgressBarState::transfer(12_582_912, 31_457_280);
     state.set_label("Download");
@@ -11434,7 +11660,7 @@ fn progress_detailed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         frame.buffer_mut(),
         &mut state,
         FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
@@ -12789,11 +13015,11 @@ fn tooltip_visible_state() -> TooltipState {
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = TooltipState::with_delay(Duration::ZERO);
     state.set_pointer_over(true);
     let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-    let _ = state.advance(tick, Motion::Off);
+    let _ = state.advance(tick, MotionPolicy::Off);
     state
 }
 
@@ -13185,19 +13411,10 @@ fn tabs_closable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        DesignSystem::from_palette(
-            system
-                .palette()
-                .clone()
-                .with_role(Role::HintKey, Style::new().bold())
-                .with_role(Role::HintText, Style::new())
-                .with_role(Role::HintDim, Style::new())
-                .with_role(Role::HintSeparator, Style::new()),
-        )
-    } else {
-        system.clone()
-    };
+    // The story paints the palette it is documenting: blanking the four Hint
+    // roles under phosphor meant the hint ladder never appeared in its own
+    // preview (plans/011 Step 2).
+    let system = system.clone();
     let hints = [
         Hint {
             chord: "↑↓",
@@ -17026,7 +17243,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let state = SpinnerState::new();
     let tick = crate::demo::demo_tick(400);
     Spinner::labeled("Fetching packages", system).paint(
@@ -17034,7 +17251,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 
@@ -17042,7 +17259,7 @@ fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let tick = crate::demo::demo_tick(320);
     let chunks = Layout::vertical([
         Constraint::Length(1),
@@ -17068,7 +17285,7 @@ fn spinner_phases_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
             frame.buffer_mut(),
             &state,
             tick,
-            Motion::Full,
+            MotionPolicy::Full,
         );
     }
 }
@@ -17077,7 +17294,7 @@ fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::SpinnerVariant;
     let mut state = SpinnerState::new();
     state.set_embedded_in_labeled_control(true);
@@ -17086,14 +17303,14 @@ fn spinner_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     Spinner::new(system)
         .embedded(true)
         .variant(SpinnerVariant::CompactInline)
-        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+        .paint(area, frame.buffer_mut(), &state, tick, MotionPolicy::Full);
 }
 
 fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
     state.set_ascii(true);
     let tick = crate::demo::demo_tick(160);
@@ -17102,7 +17319,7 @@ fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 
@@ -17110,13 +17327,13 @@ fn activity_indicator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
     state.set_phase(ActivityPhase::Reconnecting);
     let tick = crate::demo::demo_tick(200);
     ActivityIndicator::new("Reconnecting to agent", system)
         .detail("attempt 2/5 · backoff 1.2s")
-        .paint(area, frame.buffer_mut(), &state, tick, Motion::Full);
+        .paint(area, frame.buffer_mut(), &state, tick, MotionPolicy::Full);
 }
 
 fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -17882,12 +18099,8 @@ fn notification_center_empty_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        Style::new().dim()
-    } else {
-        system.style(Role::Backdrop)
-    };
-    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
+    // The shipped default: a solid recede from the theme, not a stipple.
+    frame.render_widget(Backdrop::from_tokens(system), area);
 }
 
 fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -17899,13 +18112,9 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         Line::from("epsilon: fifth row"),
         Line::from("zeta: sixth row"),
     ];
-    let border_style = system.style(Role::BorderFocused);
-    let system = DesignSystem::from_palette(
-        system
-            .palette()
-            .clone()
-            .with_role(Role::Border, border_style),
-    );
+    // The viewport is not the focused surface in this story; painting its
+    // border as if it were made the focus language unreadable (plans/011).
+    let system = system.clone();
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport::new(&lines, &system)
@@ -17972,7 +18181,7 @@ fn loading_tick() -> termrock::runtime::FrameTick {
 }
 
 fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::Panel;
     let _ = Panel::new(system)
         .title("table")
@@ -17983,24 +18192,24 @@ fn loading_overlay_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &De
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_cancellable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let (overlay, mut st) = example_busy_cancellable(system);
     overlay.paint(
         area,
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_non_blocking_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(1),
@@ -18014,12 +18223,12 @@ fn loading_overlay_non_blocking_story(frame: &mut Frame<'_>, area: Rect, system:
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_optimistic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(1),
@@ -18033,12 +18242,12 @@ fn loading_overlay_optimistic_story(frame: &mut Frame<'_>, area: Rect, system: &
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     frame.buffer_mut().set_stringn(
         area.x,
         area.y.saturating_add(2),
@@ -18052,12 +18261,12 @@ fn loading_overlay_stale_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.buffer_mut(),
         &mut st,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
 fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     use termrock::widgets::Panel;
     let _ = Panel::new(system)
         .title("workbench")
@@ -18084,7 +18293,7 @@ fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         &mut child,
         system,
         loading_tick(),
-        Motion::Off,
+        MotionPolicy::Off,
     );
 }
 
@@ -18731,7 +18940,8 @@ fn chart_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn chart_nocolor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = DesignSystem::from_palette(system.palette().clone())
+    let system = system
+        .clone()
         .glyphs(termrock::style::GlyphSet::Ascii)
         .no_color();
     let a = [1.0, 3.0, 2.0, 5.0, 4.0, 6.0, 3.0];
@@ -18774,6 +18984,16 @@ fn metric_radar_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         MetricRadar::new(&axes, &series, system).title("services"),
         area,
     );
+}
+
+fn metric_tile_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    const SAMPLES: &[f64] = &[38.0, 41.0, 39.0, 44.0, 47.0, 46.0, 52.0];
+    MetricTile::new("latency", "p95 latency", "52ms")
+        .delta("+8%", true)
+        .samples(SAMPLES)
+        .health(MetricTileHealth::Warning)
+        .view(system)
+        .paint(area, frame.buffer_mut());
 }
 
 fn progress_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

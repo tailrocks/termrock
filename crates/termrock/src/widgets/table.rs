@@ -18,10 +18,16 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 
+use super::data_view::ColumnKind;
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, ListRowVisualState, Role, SelectionChrome},
+    style::{
+        DesignSystem, FocusEmphasis, ListRowVisualState, Role, SelectionChrome, SurfaceFamily,
+    },
+    text::{LinePlacement, paint_line_overflow},
 };
+
+pub use crate::text::{CellAlignment, CellOverflow};
 
 const MARKER_WIDTH: u16 = 2;
 
@@ -98,36 +104,13 @@ pub enum ColumnWidth {
     Fill(NonZeroU16),
 }
 
-/// Horizontal alignment of a table cell.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum CellAlignment {
-    /// Align content to the left edge.
-    #[default]
-    Left,
-    /// Center content in the resolved width.
-    Center,
-    /// Align content to the right edge.
-    Right,
-}
-
 /// Visible sort direction for a sortable column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SortDirection {
-    /// Ascending order, rendered as `▲` / `^`.
+    /// Ascending order, rendered as `↑` / `^`.
     Ascending,
-    /// Descending order, rendered as `▼` / `v`.
+    /// Descending order, rendered as `↓` / `v`.
     Descending,
-}
-
-/// How cell text treats a width that is too small.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum CellOverflow {
-    /// Clip at a display-column boundary (default).
-    #[default]
-    Clip,
-    /// Clip and append an ellipsis when content is wider than the cell.
-    Ellipsis,
 }
 
 /// Borrowed description of one table column.
@@ -147,6 +130,8 @@ pub struct Column<'a, Id> {
     pub sort: Option<SortDirection>,
     /// Drop priority under width pressure (higher kept longer; default 50).
     pub priority: u8,
+    /// What the column holds, which decides its tone.
+    pub kind: ColumnKind,
 }
 
 impl<'a, Id> Column<'a, Id> {
@@ -161,7 +146,18 @@ impl<'a, Id> Column<'a, Id> {
             sortable: false,
             sort: None,
             priority: 50,
+            kind: ColumnKind::Text,
         }
+    }
+
+    /// States what the column holds, which decides its tone.
+    ///
+    /// A numeric column reads quieter than the name beside it; a status
+    /// column contracts to its letter instead of to an ellipsis.
+    #[must_use]
+    pub const fn kind(mut self, kind: ColumnKind) -> Self {
+        self.kind = kind;
+        self
     }
 
     /// Sets cell and header alignment.
@@ -1050,6 +1046,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .is_some_and(|position| row_area.contains(position));
             let striped = matches!(self.recipe, TableRecipe::Striped) && painted % 2 == 1;
             let style = row_style(self.tokens, row, selected, hovered, self.focused, striped);
+            let quiet = row_quiet_style(self.tokens, row, selected, hovered, self.focused, style);
             paint_selection_gutter(self.tokens, buffer, area.x, y, selected, style);
 
             // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
@@ -1063,8 +1060,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .unwrap_or(u16::MAX)
                     .min(area.right().saturating_sub(content_x));
                 if lw > 0 {
-                    buffer.set_line(content_x, y, leading, lw);
                     buffer.set_style(Rect::new(content_x, y, lw, 1), style);
+                    buffer.set_line(content_x, y, leading, lw);
                     content_x = content_x.saturating_add(lw).saturating_add(1);
                 }
             }
@@ -1092,6 +1089,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 columns_right,
                 gap,
                 style,
+                quiet,
                 selected,
             );
             if show_badge && let Some(badge) = row.badge.as_ref() {
@@ -1100,8 +1098,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .min(area.width);
                 if bw > 0 {
                     let bx = area.right().saturating_sub(bw);
+                    buffer.set_style(Rect::new(bx, y, bw, 1), quiet);
                     buffer.set_line(bx, y, badge, bw);
-                    buffer.set_style(Rect::new(bx, y, bw, 1), style);
                 }
             }
             if owns_id && row.enabled {
@@ -1168,6 +1166,33 @@ fn row_style(
     style
 }
 
+/// The quiet tier for a row already painted in `base`.
+///
+/// Keeps the row's ground and its weight and lowers only the voice, so a
+/// numeric column inside a selected row stays inside the selection instead of
+/// falling out of it.
+fn row_quiet_style(
+    tokens: &DesignSystem,
+    row: &TableRow<'_, impl Clone>,
+    selected: bool,
+    hovered: bool,
+    table_focused: bool,
+    base: Style,
+) -> Style {
+    if !row.enabled || row.style.is_some() {
+        return base;
+    }
+    let recipe = tokens.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: selected && table_focused,
+        hovered,
+        enabled: true,
+        loading: false,
+        checked: false,
+    });
+    recipe.secondary.fg.map_or(base, |fg| base.fg(fg))
+}
+
 fn paint_selection_gutter(
     tokens: &DesignSystem,
     buffer: &mut Buffer,
@@ -1214,10 +1239,10 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     gap: u16,
     bordered: bool,
 ) {
-    let header_style = table.tokens.palette.style(Role::TextMuted);
+    let header_style = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
         Rect::new(area.x, area.y, area.width, 1),
-        table.tokens.palette.style(Role::Raised),
+        super::table_chrome::header_band(table.tokens),
     );
     let origin_x = area.x.saturating_add(MARKER_WIDTH);
     // Clear gutter under header for alignment.
@@ -1244,7 +1269,13 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
             if paint_w > 0 {
                 let sort = column.sort.filter(|_| column.sortable && !shown_sort);
                 shown_sort |= sort.is_some();
-                let sort_width = u16::from(sort.is_some()).saturating_mul(2).min(paint_w);
+                // A sortable column says so before it is sorted (plans/021
+                // Step 3): the neutral marker states the capability, the
+                // direction arrow replaces it once a sort is applied.
+                let sortable_hint = column.sortable && sort.is_none();
+                let sort_width = u16::from(sort.is_some() || sortable_hint)
+                    .saturating_mul(2)
+                    .min(paint_w);
                 // Only show title when the left edge of the column is visible enough.
                 let skip_left = paint_x.saturating_sub(col_left.max(0) as u16);
                 let title_w = paint_w.saturating_sub(sort_width);
@@ -1259,19 +1290,23 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         &mut state.scratch_text,
                     );
                 }
-                if let Some(direction) = sort
-                    && sort_width > 0
-                    && col_right as u16 <= clip_right
-                {
+                if sort_width > 0 && col_right as u16 <= clip_right {
                     let sort_x = paint_end.saturating_sub(sort_width);
                     buffer.set_stringn(sort_x, area.y, " ", 1, header_style);
                     if sort_width > 1 {
+                        let (marker, marker_style) = match sort {
+                            Some(direction) => (sort_glyph(table.tokens, direction), header_style),
+                            None => (
+                                super::table_chrome::sortable_marker(table.tokens),
+                                super::table_chrome::sortable_marker_style(table.tokens),
+                            ),
+                        };
                         buffer.set_stringn(
                             sort_x.saturating_add(1),
                             area.y,
-                            sort_glyph(direction),
+                            marker,
                             1,
-                            header_style,
+                            marker_style,
                         );
                     }
                 }
@@ -1325,6 +1360,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     columns_right: u16,
     gap: u16,
     style: Style,
+    quiet: Style,
     selected: bool,
 ) {
     let bordered = matches!(table.recipe, TableRecipe::Bordered);
@@ -1347,9 +1383,21 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .focused_column
                         .as_ref()
                         .is_some_and(|id| id == &table.columns[column_index].id);
-                let mut cell_style = style;
+                let kind = table.columns[column_index].kind;
+                let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
-                    cell_style = cell_style.add_modifier(Modifier::UNDERLINED);
+                    // A cell cursor is a cell: the Cell family's focus cue
+                    // says how it marks itself (plans/015 Step 1).
+                    cell_style = match table.tokens.focus_emphasis(SurfaceFamily::Cell) {
+                        FocusEmphasis::Reversed => cell_style.add_modifier(Modifier::REVERSED),
+                        FocusEmphasis::BoldKey => cell_style.add_modifier(Modifier::BOLD),
+                        FocusEmphasis::SelectionFill | FocusEmphasis::FocusTint => {
+                            cell_style.patch(table.tokens.style(Role::SelectionTint))
+                        }
+                        FocusEmphasis::BrightBorder | FocusEmphasis::PillGlyph => {
+                            cell_style.patch(table.tokens.style(Role::Focus))
+                        }
+                    };
                 }
                 if matches!(table.tokens.selection, SelectionChrome::Fill) && selected {
                     buffer.set_style(rect, cell_style);
@@ -1357,12 +1405,17 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
                 if fully_left && let Some(value) = row.cells.get(column_index) {
+                    let overflow = if kind.clips_instead_of_ellipsizing() {
+                        CellOverflow::Clip
+                    } else {
+                        table.overflow
+                    };
                     render_line_overflow(
                         value,
                         rect,
                         table.columns[column_index].alignment,
                         cell_style,
-                        table.overflow,
+                        overflow,
                         buffer,
                         &mut state.scratch_text,
                         table.tokens,
@@ -1624,67 +1677,22 @@ fn render_line_overflow(
     scratch: &mut String,
     tokens: &DesignSystem,
 ) {
-    if area.is_empty() {
-        return;
-    }
-    buffer.set_style(area, style);
-    let line_width = line
-        .spans
-        .iter()
-        .map(|span| crate::text::display_cols(span.content.as_ref()))
-        .sum::<usize>();
-    let ellipsis = matches!(overflow, CellOverflow::Ellipsis)
-        && line_width > usize::from(area.width)
-        && area.width > 0;
-    let budget = if ellipsis {
-        area.width.saturating_sub(1)
-    } else {
-        area.width
-    };
-    let painted = u16::try_from(line_width).unwrap_or(u16::MAX).min(budget);
-    let left = match alignment {
-        CellAlignment::Left => 0,
-        CellAlignment::Center => budget.saturating_sub(painted) / 2,
-        CellAlignment::Right => budget.saturating_sub(painted),
-    };
-    let available = usize::from(budget.saturating_sub(left));
-    let mut logical_col = 0usize;
-    let mut painted_col = 0usize;
-    for span in &line.spans {
-        if logical_col >= available {
-            break;
-        }
-        let span_width = crate::text::display_cols(span.content.as_ref());
-        crate::text::display_cols_slice_into(
-            span.content.as_ref(),
-            0,
-            available - logical_col,
-            scratch,
-        );
-        let scratch_width = crate::text::display_cols(scratch);
-        buffer.set_stringn(
-            area.x
-                .saturating_add(left)
-                .saturating_add(u16::try_from(painted_col).unwrap_or(u16::MAX)),
-            area.y,
-            scratch.as_str(),
-            available.saturating_sub(painted_col),
-            style.patch(span.style),
-        );
-        painted_col += scratch_width;
-        logical_col += span_width;
-    }
-    if ellipsis {
-        let ex = area.x.saturating_add(area.width.saturating_sub(1));
-        buffer.set_stringn(ex, area.y, tokens.glyphs.ellipsis(), 1, style);
-    }
+    paint_line_overflow(
+        buffer,
+        area,
+        line,
+        style,
+        LinePlacement {
+            alignment,
+            overflow,
+            ellipsis: tokens.glyphs.ellipsis(),
+        },
+        scratch,
+    );
 }
 
-const fn sort_glyph(direction: SortDirection) -> &'static str {
-    match direction {
-        SortDirection::Ascending => "▲",
-        SortDirection::Descending => "▼",
-    }
+fn sort_glyph(system: &DesignSystem, direction: SortDirection) -> &'static str {
+    super::table_chrome::sort_marker(system, matches!(direction, SortDirection::Ascending))
 }
 
 #[cfg(test)]
@@ -1818,6 +1826,7 @@ mod tests {
                 sortable: true,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: "region",
@@ -1827,6 +1836,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: "cpu",
@@ -1836,6 +1846,7 @@ mod tests {
                 sortable: true,
                 sort: Some(SortDirection::Descending),
                 priority: 50,
+                kind: ColumnKind::Text,
             },
         ]
     }
@@ -1929,7 +1940,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains("CPU ▼"));
+        assert!(text.contains("CPU ↓"));
         assert!(text.contains("東 京 🧪"));
         assert!(
             state
@@ -2152,6 +2163,7 @@ mod tests {
             sortable: false,
             sort: None,
             priority: 50,
+            kind: ColumnKind::Text,
         }];
         let cells = [
             [Line::from("e\u{301}")],
@@ -2184,6 +2196,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
             Column {
                 id: 1,
@@ -2193,6 +2206,7 @@ mod tests {
                 sortable: false,
                 sort: None,
                 priority: 50,
+                kind: ColumnKind::Text,
             },
         ];
         let rows: [TableRow<'_, u8>; 0] = [];
@@ -2359,6 +2373,53 @@ mod tests {
     }
 
     /// Property-style: layout is deterministic and never panics for narrow budgets.
+    #[test]
+    fn numeric_columns_read_quieter_than_text_columns() {
+        let tokens = DesignSystem::default();
+        let columns = [
+            Column::new("name", Line::from("Name"), ColumnWidth::Fixed(8)),
+            Column::new("size", Line::from("Size"), ColumnWidth::Fixed(6))
+                .kind(ColumnKind::Numeric),
+            Column::new("state", Line::from("S"), ColumnWidth::Fixed(3)).kind(ColumnKind::Status),
+        ];
+        let cells = [[
+            Line::from("deploy"),
+            Line::from("1024"),
+            Line::from("running"),
+        ]];
+        let rows = [TableRow::new(1, &cells[0])];
+        let mut state = TableState::default();
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('d')))
+            .expect("the data row must be painted");
+        let find = |needle: char| {
+            (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted: {buffer:?}"))
+        };
+        let name = buffer[(find('d'), row_y)].style().fg;
+        let size = buffer[(find('1'), row_y)].style().fg;
+        assert_ne!(
+            name, size,
+            "a count must not read as loudly as the identity beside it"
+        );
+        assert_eq!(size, tokens.style(Role::TextMuted).fg);
+
+        // A status column contracts to its letter, never to an ellipsis.
+        let status_x = find('r');
+        let painted: String = (status_x..area.width)
+            .map(|x| buffer[(x, row_y)].symbol())
+            .collect();
+        assert!(
+            !painted.contains(tokens.glyphs.ellipsis()),
+            "status column must clip, not ellipsize: {painted:?}"
+        );
+    }
+
     #[test]
     fn layout_fuzz_narrow_budgets_are_deterministic() {
         let policies = [

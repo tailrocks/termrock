@@ -332,7 +332,9 @@ impl<'a, Id> Menu<'a, Id> {
             } else if !item.enabled {
                 self.system.style(Role::TextDisabled)
             } else if cursor && surface {
-                self.system.style(Role::Selection)
+                self.system
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
             } else {
                 self.system.style(Role::Text)
             };

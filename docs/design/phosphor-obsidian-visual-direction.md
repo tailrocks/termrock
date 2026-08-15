@@ -1,6 +1,8 @@
 # Phosphor Obsidian — visual audit and direction
 
-**Status:** design SoT (audit of HEAD lookbook + `Theme::tailrocks_phosphor` + recipes)  
+**Status:** design SoT for the phosphor palette values (audit of HEAD lookbook +
+`Theme::tailrocks_phosphor` + recipes). Interaction underline rules are superseded by
+[`termrock-design-language.md`](./termrock-design-language.md) §5 (binding).  
 **Audience:** product, design, implementers  
 **Related:** [`terminal-design-system.md`](./terminal-design-system.md), component anatomy, AGENTS cross-surface consistency  
 **Not:** a CSS mood board. Specs are terminal-cell paint rules.
@@ -332,11 +334,11 @@ inactive tabs muted on canvas; no underline bar, no solid web pill.
 ```text
       A        B        C
  1   10       20       30
- 2   11   ▌   21_      31     ← cursor cell: gutter or underline, not full neon cell
+ 2   11   ▌   21_      31     ← cursor cell: reverse cell + optional gutter, not full neon cell
  3   12       22       32
 ```
 
-**Spec:** cursor = underline or reverse one cell + optional gutter; range selection = tint only; headers muted; O(visible) paint unchanged.
+**Spec:** cursor = reverse one cell + optional gutter; range selection = tint only; headers muted; O(visible) paint unchanged.
 
 ---
 

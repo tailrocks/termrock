@@ -58,12 +58,8 @@ use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
 // Exact paint setup used by the shared catalog story.
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let style = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        Style::new().dim()
-    } else {
-        system.style(Role::Backdrop)
-    };
-    frame.render_widget(Backdrop::new().symbol('░').style(style), area);
+    // The shipped default: a solid recede from the theme, not a stipple.
+    frame.render_widget(Backdrop::from_tokens(system), area);
 }
 ```
 
@@ -94,3 +90,7 @@ a static multi-image gallery.
 - Rust source: [`crates/termrock/src/widgets/dialog.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/dialog.rs)
 - Native preview: `cargo run -p termrock-lookbook -- terminal`
 - Demo id: `backdrop/basic`
+
+## Seen in applications
+
+<SeenInApplications component="Backdrop" />

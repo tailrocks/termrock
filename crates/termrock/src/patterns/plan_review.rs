@@ -16,6 +16,17 @@
 //! **vs [`super::QuestionFlow`].** Interview Q&A, not plan approval.
 //!
 //! Research: Grok Build plan approval, code review workflows, document annotation.
+//!
+//! Teaches: how to compose interactive review surface for agent-generated
+//! plans.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Action`],
+//! [`crate::widgets::ActionBar`], [`crate::widgets::ActionBarState`],
+//! [`crate::widgets::FieldRow`], [`crate::widgets::FieldRowValue`],
+//! [`crate::widgets::Panel`], [`crate::widgets::PermissionRisk`], and 2 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
@@ -34,8 +45,8 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        AccentRail, Action, ActionBar, ActionBarState, FieldRow, FieldRowValue, Panel,
-        PermissionRisk,
+        AccentRail, Action, ActionBar, ActionBarState, EmptyKind, EmptyState, FieldRow,
+        FieldRowValue, Panel, PanelTitleSpec, PermissionRisk, tiered_row::TieredRow,
     },
 };
 
@@ -1529,6 +1540,29 @@ pub struct PlanReview<'a> {
     colorless: bool,
 }
 
+/// How many rows the open pane holds, for the panel title's count segment.
+///
+/// The title states the size of what you are looking at, not the size of the
+/// document: a `[7]` beside `Tasks` answers "how much is there" without a
+/// body row spending itself on the same fact (plans/017 §B2).
+fn pane_row_count(pane: PlanReviewPane, plan: &PlanDocument, comments: usize) -> usize {
+    match pane {
+        PlanReviewPane::Document => {
+            let lines = plan.body_lines().len();
+            if lines == 0 {
+                plan.sections.len()
+            } else {
+                lines
+            }
+        }
+        PlanReviewPane::Tasks => plan.tasks.len(),
+        PlanReviewPane::Risks => plan.risks.len(),
+        PlanReviewPane::Files => plan.affected_files.len(),
+        PlanReviewPane::Comments => comments,
+        PlanReviewPane::Diff => plan.previous.as_ref().map_or(0, |_| plan.tasks.len()),
+    }
+}
+
 impl<'a> PlanReview<'a> {
     /// System only — plan lives in state.
     #[must_use]
@@ -1577,11 +1611,10 @@ impl<'a> PlanReview<'a> {
                 } else {
                     "∅ no plan"
                 };
-                buffer.set_stringn(
-                    inner.x,
-                    inner.y,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, inner.y, inner.width, 1),
                     m,
-                    usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
             }
@@ -1589,7 +1622,6 @@ impl<'a> PlanReview<'a> {
         };
 
         let risk = plan.risk;
-        let title = format!("Plan v{} · {} · {}", plan.version, plan.title, risk.label());
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1599,24 +1631,21 @@ impl<'a> PlanReview<'a> {
         let panel_area = rail.layout(area).1;
         use ratatui_core::widgets::Widget;
         Widget::render(rail, area, buffer);
+        // The title states what the pane is, what version, and how much the
+        // open pane holds — through the one title grammar every panel uses.
+        // It used to be repainted over the border in bold `ActorPlan`, which
+        // said "plan" a second time in the colour the accent rail beside it
+        // already spends, and spent a bold budget on chrome (plans/017 §B2).
+        let version = format!("v{}", plan.version);
         let panel = Panel::new(self.system)
-            .title(title.as_str())
+            .title_spec(
+                PanelTitleSpec::new(plan.title.as_str())
+                    .scope(version.as_str())
+                    .count(pane_row_count(state.pane, &plan, state.comments.len())),
+            )
             .emphasis(emphasis);
         let inner = panel.inner(panel_area);
         Widget::render(&panel, panel_area, buffer);
-        let title_x = panel_area.x.saturating_add(2);
-        let title_width = panel_area.right().saturating_sub(title_x).saturating_sub(1);
-        if title_width > 0 {
-            buffer.set_stringn(
-                title_x,
-                panel_area.y,
-                take_display_cols(&title, usize::from(title_width)),
-                usize::from(title_width),
-                self.system
-                    .style(Role::ActorPlan)
-                    .add_modifier(Modifier::BOLD),
-            );
-        }
         if inner.is_empty() {
             state.plan = Some(plan);
             return;
@@ -1636,7 +1665,12 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(risk.role())
                 };
-                buffer.set_stringn(inner.x, y, take_display_cols(sum, w), w, style);
+                // Risk left the title with the version and the count; it rides
+                // the glyph and the summary tone instead, and the full list is
+                // one pane tab away.
+                let line = format!("{} {sum}", risk.glyph());
+                self.system
+                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1661,11 +1695,10 @@ impl<'a> PlanReview<'a> {
                 PlanReviewPhase::Review => "",
             };
             let line = format!("{label}{draft}▌");
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(&line, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
                 self.system.style(Role::Accent),
             );
             y = y.saturating_add(1);
@@ -1703,7 +1736,12 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(inner.x, cons_y, take_display_cols(&line, w), w, style);
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, cons_y, inner.width, 1),
+                &line,
+                style,
+            );
         }
 
         state.plan = Some(plan);
@@ -1740,7 +1778,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::TextMuted)
             };
-            buffer.set_stringn(col, y, &text, usize::from(tw), style);
+            self.system
+                .paint_row(buffer, Rect::new(col, y, tw, 1), &text, style);
             state.pane_hits.push((
                 *pane,
                 Rect {
@@ -1763,7 +1802,7 @@ impl<'a> PlanReview<'a> {
         plan: &PlanDocument,
     ) {
         let lines = plan.body_lines();
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let (sel_start, sel_end) = state.selection_range();
         let mut y = area.y;
         let max_y = area.bottom();
@@ -1785,13 +1824,27 @@ impl<'a> PlanReview<'a> {
             } else {
                 " "
             };
-            let text = format!("{mark}{i:>3}│{line}");
+            // The gutter is address, not content: mark, line number and rule
+            // take the faint tier so the prose is the brightest thing on the
+            // row (plans/017 §B2, plans/012 row anatomy).
+            let mut row = TieredRow::default();
+            row.push(
+                &format!("{mark}{i:>3}│"),
+                if selected {
+                    self.system.style(Role::Accent)
+                } else {
+                    self.system.style(Role::TextFaint)
+                },
+            );
+            row.push_plain(line);
             let style = if selected {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            let cells = Rect::new(area.x, y, area.width, 1);
+            self.system.paint_row(buffer, cells, row.text(), style);
+            row.paint_tiers(buffer, cells, 0);
             y = y.saturating_add(1);
         }
         if lines.is_empty() && y < max_y {
@@ -1808,7 +1861,8 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(Role::Text)
                 };
-                buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+                self.system
+                    .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1821,7 +1875,7 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         for (i, task) in plan.tasks.iter().enumerate() {
@@ -1854,13 +1908,9 @@ impl<'a> PlanReview<'a> {
             y = y.saturating_add(1);
         }
         if plan.tasks.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no tasks)", w),
-                w,
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No tasks", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
@@ -1871,15 +1921,14 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Risks", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Risks",
                 self.system.style(Role::Warning),
             );
             y = y.saturating_add(1);
@@ -1902,15 +1951,15 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(risk.severity.role())
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Assumptions", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Assumptions",
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1920,21 +1969,19 @@ impl<'a> PlanReview<'a> {
                 break;
             }
             let text = format!(" · {}", a.text);
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&text, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &text,
                 self.system.style(Role::Text),
             );
             y = y.saturating_add(1);
         }
         if !plan.source_refs.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("Sources", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "Sources",
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -1948,11 +1995,10 @@ impl<'a> PlanReview<'a> {
                     .map(|l| format!(" ({l})"))
                     .unwrap_or_default();
                 let text = format!(" · {}{loc}", s.label);
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&text, w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                    &text,
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1967,7 +2013,7 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         for (i, f) in plan.affected_files.iter().enumerate() {
@@ -1992,30 +2038,26 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
         if plan.affected_files.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no files)", w),
-                w,
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No files", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
     fn paint_comments(&self, area: Rect, buffer: &mut Buffer, state: &PlanReviewState) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         if state.comments.is_empty() {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("No comments · m to annotate", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "No comments · m to annotate",
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -2049,7 +2091,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
             y = y.saturating_add(1);
         }
     }
@@ -2061,26 +2104,24 @@ impl<'a> PlanReview<'a> {
         state: &PlanReviewState,
         plan: &PlanDocument,
     ) {
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(prev) = plan.previous.as_ref() else {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("No previous revision", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                "No previous revision",
                 self.system.style(Role::TextMuted),
             );
             return;
         };
         if y < max_y {
             let hdr = format!("v{} → v{}", prev.version, plan.version);
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&hdr, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &hdr,
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -2153,7 +2194,8 @@ impl<'a> PlanReview<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(row, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), row, style);
             y = y.saturating_add(1);
         }
     }
@@ -2615,9 +2657,19 @@ mod tests {
 
         PlanReview::new(&system).paint(area, &mut buf, &mut st);
 
+        // The rail is where the actor tone lives. The title used to be
+        // repainted in the same hue and bold on top of the panel border, which
+        // said "plan" twice and spent the bold budget on chrome; it now comes
+        // from the panel's own title grammar (plans/017 §B2).
         let plan_fg = system.style(Role::ActorPlan).fg;
         assert_eq!(buf[(0, 0)].fg, plan_fg.unwrap());
-        assert_eq!(buf[(4, 0)].fg, plan_fg.unwrap());
+        let title_row_in_actor_tone = (2..area.width)
+            .filter(|x| buf[(*x, 0)].fg == plan_fg.unwrap())
+            .count();
+        assert_eq!(
+            title_row_in_actor_tone, 0,
+            "the title repeats the tone the rail already spends"
+        );
         let mut text = String::new();
         for y in 0..area.height {
             for x in 0..area.width {
@@ -2625,6 +2677,9 @@ mod tests {
             }
         }
         assert!(text.contains("Step 1"));
+        // Version and pane count ride the title, not a body row.
+        assert!(text.contains("(v"), "{text}");
+        assert!(text.contains('['), "{text}");
         assert!(!st.action_regions.is_empty());
     }
 

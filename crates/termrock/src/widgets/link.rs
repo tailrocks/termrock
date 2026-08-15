@@ -77,13 +77,11 @@ impl<'a> LinkDestination<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum LinkVariant {
-    /// Underlined link text (default).
+    /// Bare label in the `Link` role (default).
     #[default]
-    Underline,
+    Plain,
     /// Brackets around label `[docs]`.
     Bracketed,
-    /// Compact bare text (still Link role).
-    Plain,
 }
 
 impl LinkVariant {
@@ -91,9 +89,49 @@ impl LinkVariant {
     #[must_use]
     pub const fn id(self) -> &'static str {
         match self {
-            Self::Underline => "underline",
-            Self::Bracketed => "bracketed",
             Self::Plain => "plain",
+            Self::Bracketed => "bracketed",
+        }
+    }
+}
+
+/// When a link draws the underline.
+///
+/// Underline is the one interaction cue the grammar keeps
+/// (`docs/design/termrock-design-language.md` §5.7), and even here it is
+/// opt-in: the default affordance is the `Link` color plus the external
+/// chevron. Monochrome always underlines regardless of this policy — without
+/// color there is nothing else that says "link".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum LinkStyle {
+    /// Color (and the `↗` cue for external destinations) only.
+    #[default]
+    Color,
+    /// Underline while hovered or focused.
+    UnderlineOnHover,
+    /// Classic web link: always underlined.
+    AlwaysUnderline,
+}
+
+impl LinkStyle {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Color => "color",
+            Self::UnderlineOnHover => "underline-on-hover",
+            Self::AlwaysUnderline => "always-underline",
+        }
+    }
+
+    /// Whether this policy underlines in the given interaction state.
+    #[must_use]
+    pub const fn underlines(self, hovered: bool) -> bool {
+        match self {
+            Self::Color => false,
+            Self::UnderlineOnHover => hovered,
+            Self::AlwaysUnderline => true,
         }
     }
 }
@@ -215,6 +253,7 @@ pub struct Link<'a> {
     destination: LinkDestination<'a>,
     system: &'a DesignSystem,
     variant: LinkVariant,
+    link_style: LinkStyle,
     destination_display: DestinationDisplay,
     /// Capability: OSC 8 available this session.
     hyperlinks: bool,
@@ -234,7 +273,8 @@ impl<'a> Link<'a> {
             label,
             destination: LinkDestination::Url(url),
             system,
-            variant: LinkVariant::Underline,
+            variant: LinkVariant::Plain,
+            link_style: LinkStyle::Color,
             destination_display: DestinationDisplay::Auto,
             hyperlinks: false,
             show_external_cue: true,
@@ -250,13 +290,21 @@ impl<'a> Link<'a> {
             label,
             destination: LinkDestination::AppRoute(route),
             system,
-            variant: LinkVariant::Underline,
+            variant: LinkVariant::Plain,
+            link_style: LinkStyle::Color,
             destination_display: DestinationDisplay::Never,
             hyperlinks: false,
             show_external_cue: false,
             osc_id: None,
             max_cols: 0,
         }
+    }
+
+    /// Sets when this link underlines (default: [`LinkStyle::Color`]).
+    #[must_use]
+    pub const fn link_style(mut self, link_style: LinkStyle) -> Self {
+        self.link_style = link_style;
+        self
     }
 
     /// Variant chrome.
@@ -337,7 +385,7 @@ impl<'a> Link<'a> {
         let _ = state;
         let mut s = match self.variant {
             LinkVariant::Bracketed => format!("[{}]", self.label.trim()),
-            LinkVariant::Underline | LinkVariant::Plain => self.label.trim().to_string(),
+            LinkVariant::Plain => self.label.trim().to_string(),
         };
         if self.shows_destination() {
             let dest = self.destination.as_str();
@@ -420,7 +468,7 @@ impl<'a> Link<'a> {
         } else {
             self.system.style(Role::Link)
         };
-        if matches!(self.variant, LinkVariant::Underline) || state.focused {
+        if self.underlines(state.hovered || state.focused) {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
         if state.focused {
@@ -428,6 +476,15 @@ impl<'a> Link<'a> {
         }
         style = ratatui_core::style::Style { bg: None, ..style };
         style
+    }
+
+    /// Whether this link underlines right now: policy, or no color at all.
+    fn underlines(&self, hovered: bool) -> bool {
+        self.link_style.underlines(hovered)
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
     }
 
     /// Whether OSC 8 should wrap this paint (host emits bytes).
@@ -677,6 +734,7 @@ pub struct ActionLink<'a> {
     label: &'a str,
     system: &'a DesignSystem,
     variant: LinkVariant,
+    link_style: LinkStyle,
     /// Optional risk / scope note always visible when set (e.g. "runs cargo").
     risk_note: Option<&'a str>,
 }
@@ -688,9 +746,17 @@ impl<'a> ActionLink<'a> {
         Self {
             label,
             system,
-            variant: LinkVariant::Underline,
+            variant: LinkVariant::Plain,
+            link_style: LinkStyle::Color,
             risk_note: None,
         }
+    }
+
+    /// Sets when this link underlines (default: [`LinkStyle::Color`]).
+    #[must_use]
+    pub const fn link_style(mut self, link_style: LinkStyle) -> Self {
+        self.link_style = link_style;
+        self
     }
 
     /// Variant.
@@ -769,7 +835,12 @@ impl<'a> ActionLink<'a> {
         } else {
             self.system.style(Role::Link)
         };
-        if matches!(self.variant, LinkVariant::Underline) || state.focused {
+        if self.link_style.underlines(state.hovered || state.focused)
+            || matches!(
+                self.system.capability,
+                crate::style::ColorCapability::Monochrome
+            )
+        {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
         if state.focused {
@@ -1005,13 +1076,54 @@ mod tests {
     }
 
     #[test]
-    fn no_color_still_underlines_when_focused() {
+    fn monochrome_links_underline_whatever_the_policy_says() {
+        // Without color there is nothing else that says "link", so the mono
+        // projection underlines even under the quiet default.
+        let mono = DesignSystem::default().capability(crate::style::ColorCapability::Monochrome);
+        let link = Link::url("x", "https://example.invalid", &mono);
+        let state = LinkState::new();
+        assert!(
+            link.style(&state)
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
+    }
+
+    #[test]
+    fn link_underline_is_a_policy_not_a_focus_cue() {
         let system = DesignSystem::default();
         let link = Link::url("x", "https://example.invalid", &system);
-        let mut state = LinkState::new();
-        state.set_focused(true);
-        let style = link.style(&state);
-        assert!(style.add_modifier.contains(Modifier::UNDERLINED));
+        let mut focused = LinkState::new();
+        focused.set_focused(true);
+
+        // Default: color carries the link; focus adds weight, not a rule.
+        let style = link.style(&focused);
+        assert!(!style.add_modifier.contains(Modifier::UNDERLINED));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+
+        let on_hover = Link::url("x", "https://example.invalid", &system)
+            .link_style(LinkStyle::UnderlineOnHover);
+        assert!(
+            !on_hover
+                .style(&LinkState::new())
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
+        assert!(
+            on_hover
+                .style(&focused)
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
+
+        let always = Link::url("x", "https://example.invalid", &system)
+            .link_style(LinkStyle::AlwaysUnderline);
+        assert!(
+            always
+                .style(&LinkState::new())
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
     }
 
     #[test]

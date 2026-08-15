@@ -775,6 +775,46 @@ impl<'a> StreamingMarkdown<'a> {
         self
     }
 
+    /// Runs `f` over the blocks this stream currently projects.
+    ///
+    /// The projection borrows buffers that only live for the call, so the
+    /// blocks cannot be returned. Hosts that need to measure a stream before
+    /// they lay it out — the case GAP-MD-1 named — reach it through here or
+    /// through [`Self::measure_height`], rather than reparsing the document
+    /// themselves and disagreeing with the paint.
+    pub fn with_blocks<R>(
+        &self,
+        state: &StreamingMarkdownState,
+        f: impl FnOnce(&[MarkdownBlock<'_>]) -> R,
+    ) -> R {
+        let owned = state.build_owned_blocks();
+        let bufs: Vec<String> = owned.iter().map(|ob| ob.text.clone()).collect();
+        let lang_bufs: Vec<Option<String>> = owned.iter().map(|ob| ob.language.clone()).collect();
+        let mut blocks: Vec<MarkdownBlock<'_>> = Vec::with_capacity(owned.len());
+        for (i, ob) in owned.iter().enumerate() {
+            let mut b = MarkdownBlock::new(ob.kind, bufs[i].as_str())
+                .incomplete(ob.incomplete)
+                .depth(ob.depth);
+            b.heading_level = ob.heading_level;
+            b.list_index = ob.list_index;
+            b.task_checked = ob.task_checked;
+            b.source = ob.source;
+            if let Some(l) = lang_bufs[i].as_ref() {
+                b.language = Some(l.as_str());
+            }
+            blocks.push(b);
+        }
+        f(&blocks)
+    }
+
+    /// Display rows this stream needs at `width`, including an open fence.
+    #[must_use]
+    pub fn measure_height(&self, state: &StreamingMarkdownState, width: u16) -> u16 {
+        self.with_blocks(state, |blocks| {
+            MarkdownView::new(blocks, self.system).measure_height(width)
+        })
+    }
+
     /// Paint streaming document.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut StreamingMarkdownState) {
         if area.is_empty() {
@@ -823,7 +863,8 @@ impl<'a> StreamingMarkdown<'a> {
 
         // caret / failed strip
         if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
-            let cue = if self.ascii { "|" } else { "▌" };
+            // Not `▌`: that bar means "this row is selected".
+            let cue = if self.ascii { "|" } else { "▍" };
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
                 area.x.saturating_add(area.width.saturating_sub(2)),
@@ -986,6 +1027,66 @@ mod tests {
         assert_eq!(st.phase, StreamPhase::Done);
         assert!(st.tail.is_empty());
         assert!(!has_open_fence(&st.text()));
+    }
+
+    /// GAP-MD-1: an open fence must not break the wrap contract.
+    ///
+    /// The failure this guards against is not "the fence looks wrong" — it is
+    /// the row map drifting from the measured height while the fence is open,
+    /// which makes every row below the fence paint one line off and scroll to
+    /// the wrong place.
+    #[test]
+    fn an_open_fence_keeps_paint_and_measurement_agreeing() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::default();
+        let mut state = StreamingMarkdownState::new();
+        state.coalesce_deltas = 1;
+        state.coalesce_chars = 1;
+
+        // Prose, then a fence that never closes, one token at a time.
+        for delta in [
+            "Explanation first.\n\n",
+            "```rust\n",
+            "fn main() {\n",
+            "    println!(\"a line long enough to need clipping in a narrow pane\");\n",
+        ] {
+            state.push_delta(delta);
+            state.apply_pending();
+
+            StreamingMarkdown::new(&system).with_blocks(&state, |blocks| {
+                let view = crate::widgets::MarkdownView::new(blocks, &system);
+                for width in [12u16, 24, 80] {
+                    assert_eq!(
+                        usize::from(view.measure_height(width)),
+                        view.row_map(width).len(),
+                        "row map drifted from the measured height at {width} cols"
+                    );
+                }
+            });
+        }
+
+        // The open fence is marked, so the view can paint its streaming cue.
+        StreamingMarkdown::new(&system).with_blocks(&state, |blocks| {
+            assert!(
+                blocks
+                    .iter()
+                    .any(|b| b.kind == MarkdownBlockKind::Fence && b.incomplete),
+                "an unterminated fence must project as incomplete"
+            );
+        });
+
+        // And it paints inside a narrow pane without losing the prose above it.
+        let area = Rect::new(0, 0, 16, 8);
+        let mut buffer = Buffer::empty(area);
+        StreamingMarkdown::new(&system).paint(area, &mut buffer, &mut state);
+        let painted: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(painted.contains("rust"), "{painted}");
     }
 
     #[test]

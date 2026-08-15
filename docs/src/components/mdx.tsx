@@ -2,12 +2,16 @@ import defaultMdxComponents from 'fumadocs-ui/mdx'
 import type { MDXComponents } from 'mdx/types'
 import { TerminalPreview } from '@/components/TerminalPreview'
 import { PatternGallery } from '@/components/PatternGallery'
+import { SeenInApplications } from '@/components/SeenInApplications'
+import { ComponentGallery } from '@/components/ComponentGallery'
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
     TerminalPreview,
     PatternGallery,
+    SeenInApplications,
+    ComponentGallery,
     ...components,
   } satisfies MDXComponents
 }

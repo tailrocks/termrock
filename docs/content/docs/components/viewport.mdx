@@ -66,13 +66,9 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         Line::from("epsilon: fifth row"),
         Line::from("zeta: sixth row"),
     ];
-    let border_style = system.style(Role::BorderFocused);
-    let system = DesignSystem::from_palette(
-        system
-            .palette()
-            .clone()
-            .with_role(Role::Border, border_style),
-    );
+    // The viewport is not the focused surface in this story; painting its
+    // border as if it were made the focus language unreadable (plans/011).
+    let system = system.clone();
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport::new(&lines, &system)
@@ -111,3 +107,7 @@ a static multi-image gallery.
 - Rust source: [`crates/termrock/src/widgets/viewport.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/viewport.rs)
 - Native preview: `cargo run -p termrock-lookbook -- terminal`
 - Demo id: `viewport/both-axes`
+
+## Seen in applications
+
+<SeenInApplications component="Viewport" />

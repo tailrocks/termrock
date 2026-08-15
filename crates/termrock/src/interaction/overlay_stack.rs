@@ -891,6 +891,56 @@ impl<FocusId> OverlayStack<FocusId> {
             .unwrap_or(BackdropPolicy::None)
     }
 
+    /// Paints the backdrop the open overlays ask for, across the whole layer.
+    ///
+    /// The stack is the only thing that knows both halves of this: the policy
+    /// ([`Self::backdrop_policy`]) and the layer rect the overlays were placed
+    /// against ([`Self::bounds`]). A widget's `render` only ever receives its
+    /// own rect, so a dialog painting its own dim could only ever darken
+    /// itself. Call this once, before rendering the overlay widgets:
+    ///
+    /// ```
+    /// # use ratatui_core::{buffer::Buffer, layout::Rect};
+    /// # use termrock::{interaction::{OverlaySize, OverlayStack, OverlayId, OverlaySpec},
+    /// #               style::DesignSystem};
+    /// # let system = DesignSystem::phosphor();
+    /// # let bounds = Rect::new(0, 0, 40, 12);
+    /// # let mut buffer = Buffer::empty(bounds);
+    /// # let mut stack = OverlayStack::<&'static str>::new();
+    /// # stack.open(
+    /// #     bounds,
+    /// #     OverlaySpec::dialog(OverlayId::from_static("confirm"), OverlaySize::dialog(24, 6), None),
+    /// # );
+    /// stack.paint_backdrop(&mut buffer, &system);
+    /// // … then render the overlay widget into `stack.top().unwrap().rect`
+    /// ```
+    ///
+    /// [`BackdropPolicy::None`] paints nothing; [`BackdropPolicy::Dim`] washes
+    /// the layer with `Role::BackdropWash`; [`BackdropPolicy::Occlude`] fills
+    /// it with `Role::Canvas` so nothing behind it shows through.
+    pub fn paint_backdrop(
+        &self,
+        buffer: &mut ratatui_core::buffer::Buffer,
+        system: &crate::style::DesignSystem,
+    ) {
+        let policy = self.backdrop_policy();
+        let role = match policy {
+            BackdropPolicy::None => return,
+            BackdropPolicy::Dim => crate::style::Role::BackdropWash,
+            BackdropPolicy::Occlude => crate::style::Role::Canvas,
+        };
+        let area = self.bounds.intersection(*buffer.area());
+        if area.is_empty() {
+            return;
+        }
+        let style = system.style(role);
+        for y in area.top()..area.bottom() {
+            for x in area.left()..area.right() {
+                buffer[(x, y)].set_char(' ').set_style(style);
+            }
+        }
+    }
+
     /// Clears every overlay and the modal queue.
     pub fn clear(&mut self) {
         self.entries.clear();
@@ -2374,6 +2424,57 @@ mod tests {
         let _ = stack.handle_pointer_down(outside);
         assert_eq!(stack.handle_pointer_up(outside), OverlayOutcome::Ignored);
         assert_eq!(stack.entries().len(), 1);
+    }
+
+    #[test]
+    fn dim_policy_washes_the_whole_layer_not_just_the_overlay() {
+        use crate::style::{DesignSystem, Role};
+        use ratatui_core::buffer::Buffer;
+
+        let bounds = Rect::new(0, 0, 40, 12);
+        let system = DesignSystem::phosphor();
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::dialog("confirm", OverlaySize::dialog(20, 6), None),
+        );
+        assert_eq!(stack.backdrop_policy(), BackdropPolicy::Dim);
+
+        let mut buffer = Buffer::empty(bounds);
+        stack.paint_backdrop(&mut buffer, &system);
+
+        let wash = system
+            .style(Role::BackdropWash)
+            .bg
+            .expect("the wash carries a background");
+        let dialog = stack.top().expect("one overlay is open").rect;
+        assert_eq!(
+            buffer[(0, 0)].bg,
+            wash,
+            "the layer outside the dialog recedes"
+        );
+        assert_eq!(buffer[(dialog.x, dialog.y)].bg, wash);
+        assert_ne!(
+            wash,
+            system.style(Role::Canvas).bg.expect("canvas carries a bg"),
+            "a dim that equals the canvas dims nothing"
+        );
+    }
+
+    #[test]
+    fn no_backdrop_policy_paints_nothing() {
+        use crate::style::DesignSystem;
+        use ratatui_core::buffer::Buffer;
+
+        let bounds = Rect::new(0, 0, 20, 6);
+        let system = DesignSystem::phosphor();
+        let stack = OverlayStack::<()>::new();
+        assert_eq!(stack.backdrop_policy(), BackdropPolicy::None);
+
+        let mut buffer = Buffer::empty(bounds);
+        let before = buffer.clone();
+        stack.paint_backdrop(&mut buffer, &system);
+        assert_eq!(buffer, before, "no overlay, no paint");
     }
 
     #[test]

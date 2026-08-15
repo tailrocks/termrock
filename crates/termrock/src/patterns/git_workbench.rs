@@ -17,6 +17,19 @@
 //! **vs standalone [`DiffReview`] / [`FileTree`].** Composed, not re-painted.
 //!
 //! Research: lazygit, GitUI, delta, IDE source-control panels.
+//!
+//! Teaches: how to compose modern source-owned Git workflow composition from.
+//!
+//! Composes: [`crate::widgets::Checkpoint`],
+//! [`crate::widgets::CheckpointTimeline`],
+//! [`crate::widgets::CheckpointTimelineOutcome`],
+//! [`crate::widgets::CheckpointTimelineState`],
+//! [`crate::widgets::ConfirmFocus`], [`crate::widgets::ConfirmPrompt`],
+//! [`crate::widgets::Diagnostic`], [`crate::widgets::DiagnosticSeverity`],
+//! and 31 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -29,19 +42,20 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::{
-        PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+        ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
+        WorkspaceState, modal_rect,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
-        Diagnostic, DiagnosticSeverity, DiagnosticState, DiagnosticView, DiffHunk, DiffLine,
-        DiffReview, DiffReviewFileRow, DiffReviewOutcome, DiffReviewState, DiffReviewUnit,
-        DiffReviewUnitKind, FileGitStatus, FileTree, FileTreeEntry, FileTreeOutcome, FileTreeState,
-        HelpEntry, KeyboardHelp, KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot, TerminalCommandMeta, TerminalLine,
-        TerminalOutput, TerminalOutputState, TerminalRunStatus, example_checkpoints,
-        example_help_entries,
+        ConfirmFocus, ConfirmPrompt, Diagnostic, DiagnosticSeverity, DiagnosticState,
+        DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow, DiffReviewOutcome,
+        DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus, FileTree,
+        FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
+        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
+        TerminalRunStatus, example_checkpoints, example_help_entries,
     },
 };
 
@@ -1014,7 +1028,7 @@ impl GitWorkbenchState {
             StatusSlot::focus_zone("focus", self.focus).priority(40),
             StatusSlot::shortcut(
                 "keys",
-                "? help · t stage · T unstage · x discard · C-f full · tab",
+                "t stage · T unstage · x discard · C-f full · ? help",
             )
             .priority(90),
         ];
@@ -1208,18 +1222,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 }
 
 fn centered_modal(area: Rect) -> Rect {
-    let width = (area.width * 3 / 5).clamp(28, area.width.saturating_sub(2).max(1));
-    let height = (area.height / 2).clamp(8, area.height.saturating_sub(2).max(1));
-    let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area
-        .y
-        .saturating_add(area.height.saturating_sub(height) / 4);
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
+    modal_rect(area, ModalSpec::new(3, 5, 28).height(1, 2, 8))
 }
 
 // ── Render ──────────────────────────────────────────────────────────────────
@@ -1373,7 +1376,7 @@ fn paint_branch_list(
     if inner.is_empty() {
         return;
     }
-    let w = usize::from(inner.width);
+    let _w = usize::from(inner.width);
     let mut y = inner.y;
     let max_y = inner.bottom();
     for (i, b) in state.branches.iter().enumerate() {
@@ -1386,18 +1389,36 @@ fn paint_branch_list(
         } else {
             " "
         };
+        // Ahead / behind is stated with catalog arrows, so an ASCII terminal
+        // gets ASCII instead of a box (plans/013 Step 2).
+        let up = system.glyphs.resolve(Glyph::ArrowUp).text;
+        let down = system.glyphs.resolve(Glyph::ArrowDown).text;
         let track = match (b.ahead, b.behind) {
             (0, 0) => String::new(),
-            (a, 0) => format!(" ↑{a}"),
-            (0, be) => format!(" ↓{be}"),
-            (a, be) => format!(" ↑{a}↓{be}"),
+            (a, 0) => format!(" {up}{a}"),
+            (0, be) => format!(" {down}{be}"),
+            (a, be) => format!(" {up}{a}{down}{be}"),
         };
         let line = format!("{sel}{cur}{}{track}", b.name);
         let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
         if i == state.branch_cursor && focused {
-            style = style.add_modifier(Modifier::REVERSED | Modifier::BOLD);
+            // Selection is chrome: the gutter marks it and the weight carries
+            // it. A reversed slab hides which branch is current (plans/010).
+            style = system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD)
+                .patch(
+                    system
+                        .resolve_list_row(ListRowVisualState {
+                            selected: true,
+                            focused: true,
+                            enabled: true,
+                            ..Default::default()
+                        })
+                        .tint,
+                );
         }
-        buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+        system.paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
         y = y.saturating_add(1);
     }
 }
@@ -1409,32 +1430,15 @@ fn paint_confirm_banner(
     kind: &GitDestructiveKind,
     proceed: bool,
 ) {
-    let y = area.bottom().saturating_sub(2);
-    if y < area.y {
-        return;
-    }
-    let w = usize::from(area.width);
-    buffer.set_stringn(
-        area.x,
-        y,
-        take_display_cols(&format!("! {} — {}", kind.label(), kind.consequence()), w),
-        w,
-        system.style(Role::Danger),
-    );
-    let bar_y = area.bottom().saturating_sub(1);
-    let cancel = if !proceed { "[Cancel]" } else { " Cancel " };
-    let go = if proceed {
-        format!("[{}]", kind.label())
-    } else {
-        format!(" {} ", kind.label())
-    };
-    buffer.set_stringn(
-        area.x,
-        bar_y,
-        take_display_cols(&format!("{cancel}  {go}"), w),
-        w,
-        system.style(Role::Accent),
-    );
+    let consequence = kind.consequence();
+    ConfirmPrompt::new(kind.label(), kind.label(), system)
+        .detail(&consequence)
+        .focus(if proceed {
+            ConfirmFocus::Confirm
+        } else {
+            ConfirmFocus::Cancel
+        })
+        .paint(area, buffer);
 }
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -1529,7 +1533,7 @@ pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
         DiffLine::added("a2", "    println!(\"ready\");")
             .hunk_id("h1")
             .file_id("src/main.rs"),
-        DiffLine::added("a3", "    // sample 🧪")
+        DiffLine::added("a3", "    // sample")
             .hunk_id("h1")
             .file_id("src/main.rs"),
     ]

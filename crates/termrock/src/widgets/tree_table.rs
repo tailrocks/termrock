@@ -36,13 +36,20 @@ use crate::{
     style::{Density, DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
+        data_view::{
+            ColumnKind, ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow,
+        },
         tree::TreeNodeStatus,
     },
 };
 
 const GUTTER_W: u16 = 2;
-const SEP: &str = "│";
+
+/// Column separator, from the glyph catalog rather than a file-local literal.
+fn system_rule_v(system: &DesignSystem) -> &'static str {
+    system.glyphs.rule_v()
+}
+
 /// Cells of indent per depth (compact default).
 const INDENT_STEP: u16 = 2;
 const INDENT_STEP_COMPACT: u16 = 1;
@@ -933,6 +940,7 @@ pub fn default_tree_table_intent(key: KeyEvent, mode: TreeTableNavMode) -> Optio
 /// TreeTable widget.
 #[derive(Debug, Clone)]
 pub struct TreeTable<'a, Id, ColId> {
+    empty_message: &'a str,
     system: &'a DesignSystem,
     columns: &'a ColumnModel<ColId>,
     rows: &'a [TreeTableRow<'a, Id>],
@@ -950,6 +958,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         rows: &'a [TreeTableRow<'a, Id>],
     ) -> Self {
         Self {
+            empty_message: "No rows",
             system,
             columns,
             rows,
@@ -957,6 +966,16 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             sticky_header: true,
             compact_indent: false,
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     /// Scene focus chrome for this surface.
@@ -988,6 +1007,16 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         state.header_regions.clear();
         state.row_regions.clear();
         if area.is_empty() {
+            return;
+        }
+        if self.rows.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
             return;
         }
         let surface_focused = self.focused || state.accepts_input;
@@ -1026,7 +1055,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
                     y,
                     buffer,
                     if state.ascii { "[ ] " } else { "∅ " },
-                    message.as_deref().unwrap_or("(empty)"),
+                    message.as_deref().unwrap_or("No rows"),
                     Role::TextMuted,
                 );
                 state.body_origin = (area.x, y);
@@ -1155,15 +1184,16 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut TreeTableState<Id, ColId>,
-    surface_focused: bool,
+    _surface_focused: bool,
 ) where
     ColId: Clone,
 {
-    let style = if surface_focused {
-        table.system.style(Role::TextStrong)
-    } else {
-        table.system.style(Role::TextMuted)
-    };
+    // The header never brightens with focus; the panel border says that.
+    let style = super::table_chrome::header_style(table.system);
+    buffer.set_style(
+        Rect::new(area.x, y, area.width, 1),
+        super::table_chrome::header_band(table.system),
+    );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
     let origin = area.x.saturating_add(GUTTER_W);
     let clip_right = area.right();
@@ -1192,13 +1222,10 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            title.push_str(if state.ascii {
-                if sort.ascending { "^" } else { "v" }
-            } else if sort.ascending {
-                "▲"
-            } else {
-                "▼"
-            });
+            title.push_str(super::table_chrome::sort_marker(
+                table.system,
+                sort.ascending,
+            ));
         }
         buffer.set_stringn(
             paint_x,
@@ -1218,7 +1245,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1245,18 +1272,14 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let cursor = state.cursor_row == row_index;
     let hovered = state.hovered.as_ref() == Some(&row.id);
     let loading = matches!(row.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
-    let recipe = table
-        .system
-        .clone()
-        .selection(crate::style::SelectionChrome::Tint)
-        .resolve_list_row(ListRowVisualState {
-            selected,
-            focused: surface_focused && selected,
-            hovered,
-            enabled: row.enabled,
-            loading,
-            checked,
-        });
+    let recipe = table.system.resolve_list_row(ListRowVisualState {
+        selected,
+        focused: surface_focused && selected,
+        hovered,
+        enabled: row.enabled,
+        loading,
+        checked,
+    });
 
     let mut base_style = match row.status {
         TreeNodeStatus::Error => table.system.style(Role::Danger),
@@ -1285,6 +1308,12 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         base_style = recipe.hover;
     }
 
+    // The quiet tier for this row: same ground and weight, lower voice.
+    let quiet_style = recipe
+        .secondary
+        .fg
+        .map_or(base_style, |fg| base_style.fg(fg));
+
     let row_area = Rect::new(area.x, y, area.width, 1);
     if recipe.use_fill && selected {
         buffer.set_style(row_area, base_style);
@@ -1294,10 +1323,11 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_style(row_area, recipe.hover_wash);
     }
 
-    let gutter = if checked {
-        if state.ascii { "*" } else { "▌" }
-    } else if selected && surface_focused {
-        if state.ascii { ">" } else { "›" }
+    // Selection owns the gutter; "checked" is a check glyph, not a bar.
+    let gutter = if selected && surface_focused {
+        table.system.glyphs.selection_gutter()
+    } else if checked {
+        table.system.glyphs.check_on()
     } else {
         " "
     };
@@ -1365,9 +1395,15 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
 
-        let mut cell_style = base_style;
+        // The hierarchy column is the row's identity; it never drops a tier.
+        let mut cell_style = if ord == 0 {
+            base_style
+        } else {
+            col.kind.cell_style(base_style, quiet_style)
+        };
         if cursor && surface_focused && state.cursor_col == ord {
-            cell_style = cell_style.add_modifier(Modifier::UNDERLINED);
+            // A cell cursor is a cell: reverse it.
+            cell_style = cell_style.add_modifier(Modifier::REVERSED);
         }
 
         if ord == 0 {
@@ -1430,7 +1466,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1497,7 +1533,7 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::data_view::{DataColumn, DataColumnWidth, bench};
+    use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
     use ratatui_core::layout::Position;
 
     fn cols() -> ColumnModel<&'static str> {
@@ -1800,6 +1836,40 @@ mod tests {
             let indent = depth.saturating_mul(INDENT_STEP).min(40);
             assert!(indent <= 40);
         }
+    }
+
+    #[test]
+    fn numeric_columns_read_quieter_than_the_hierarchy_column() {
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6))
+                .priority(40)
+                .kind(ColumnKind::Numeric),
+        ]);
+        let r0: &[&str] = &["systemd", "4096"];
+        let rows = [TreeTableRow::new(1u64, 0, r0)];
+        let mut state = TreeTableState::new(None);
+        state.load = LoadState::Ready { count: 1 };
+        let area = Rect::new(0, 0, 40, 6);
+        let mut buffer = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
+
+        let row_y = (0..area.height)
+            .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('s')))
+            .expect("the data row must be painted");
+        let at = |needle: char| {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, row_y)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted"));
+            buffer[(x, row_y)].style().fg
+        };
+        assert_ne!(
+            at('s'),
+            at('4'),
+            "a byte count must not read as loudly as the process name"
+        );
+        assert_eq!(at('4'), system.style(Role::TextMuted).fg);
     }
 
     #[test]

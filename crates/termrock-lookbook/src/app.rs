@@ -17,7 +17,7 @@ use termrock::{
     patterns::{StudioShellLayout, layout_studio_shell},
     runtime::{FrameTick, Instant},
     scroll::{self, ScrollSpan},
-    style::{ColorCapability, Density, Role, RolePalette},
+    style::{Density, Role, RolePalette},
     widgets::{
         DesignInspector, DesignInspectorFrame, InspectorPanel, List as ComponentList, ListRow,
         ListState as ComponentListState, Panel, Progress, ProgressKind,
@@ -313,6 +313,11 @@ impl Lookbook {
         let component = Rect::new(x, y.max(canvas.y), content_width, height);
         if !component.is_empty() {
             frame.render_widget(ratatui::widgets::Clear, component);
+            // The story's ground is the palette's canvas (plans/011).
+            frame.buffer_mut().set_style(
+                component,
+                self.host.system().style(termrock::style::Role::Canvas),
+            );
             let resized = self.demo.dispatch_event(Event::Resize {
                 width: component.width,
                 height: component.height,
@@ -336,16 +341,15 @@ impl Lookbook {
         };
         let layers = ["root"];
         let recipes = ["list_row", "panel", "studio_shell"];
+        // The inspector reports the system that is painting, not three
+        // hardcoded strings (plans/011 Step 4).
+        let system = self.host.system();
         let snap = DesignInspectorFrame {
             focused: Some(focused),
             layer: Some("root"),
-            capability: ColorCapability::Truecolor,
-            density: "compact",
             layers: &layers,
             recipes: &recipes,
-            selection_chrome: "gutter",
-            semantics: &[],
-            focus_graph: &[],
+            ..DesignInspectorFrame::from_system(&system)
         };
         frame.render_widget(
             DesignInspector::new(snap, &self.host.system()).panel(InspectorPanel::Focus),
@@ -427,8 +431,12 @@ impl Lookbook {
                 | termrock::widgets::HintSpan::Text(value) => (*value).to_owned(),
                 termrock::widgets::HintSpan::DynKey(value)
                 | termrock::widgets::HintSpan::Dyn(value) => value.clone(),
-                termrock::widgets::HintSpan::Sep => " · ".to_owned(),
-                termrock::widgets::HintSpan::GroupSep => "   ".to_owned(),
+                termrock::widgets::HintSpan::Sep => {
+                    termrock::style::GlyphSet::default().meta_join().to_owned()
+                }
+                termrock::widgets::HintSpan::GroupSep => {
+                    termrock::widgets::HINT_GROUP_JOIN.to_owned()
+                }
             })
             .collect::<Vec<_>>()
             .join(" ")

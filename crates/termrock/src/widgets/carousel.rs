@@ -273,13 +273,11 @@ impl<'a> Carousel<'a> {
             return;
         }
         if self.slides.is_empty() {
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols("(no slides)", usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
+            // Empty bodies speak one language: glyph + sentence, through the
+            // widget that owns it (plans/009 Step 2).
+            super::EmptyState::new("No slides", self.system)
+                .inline()
+                .paint(area, buffer);
             return;
         }
         let i = state.index.min(self.slides.len() - 1);

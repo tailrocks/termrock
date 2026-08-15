@@ -348,7 +348,7 @@ mod tests {
     fn card_inner_for_tool_style() {
         let system = DesignSystem::default();
         let card = Card::new(&system)
-            .title("shell")
+            .title("Shell")
             .leading("◉")
             .emphasis(PanelChrome::Focused);
         let body = card.inner(Rect::new(0, 0, 40, 6));

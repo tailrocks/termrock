@@ -27,7 +27,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
 };
 
@@ -140,6 +140,24 @@ impl TimelineStatus {
             Self::Success => Role::Success,
             Self::Failed => Role::Danger,
             Self::Warning => Role::Warning,
+        }
+    }
+
+    /// Motion channel for this status, matching [`SemanticStatus::channel`].
+    ///
+    /// A running step is the same fact as a running status indicator, so it
+    /// breathes on the same channel at the same period. Every terminal state
+    /// is `Static`: a finished row that keeps moving reads as still working.
+    ///
+    /// [`SemanticStatus::channel`]: crate::widgets::SemanticStatus::channel
+    #[must_use]
+    pub const fn channel(self) -> crate::style::MotionChannel {
+        match self {
+            Self::Running => crate::style::MotionChannel::Live,
+            Self::Pending => crate::style::MotionChannel::Wait,
+            Self::Success | Self::Failed | Self::Warning | Self::Cancelled | Self::Info => {
+                crate::style::MotionChannel::Static
+            }
         }
     }
 }
@@ -839,6 +857,7 @@ pub fn filter_timeline_events<'a, Id>(
 /// Chronological timeline widget.
 #[derive(Debug, Clone)]
 pub struct Timeline<'a, Id = ()> {
+    empty_message: &'a str,
     events: &'a [TimelineEvent<'a, Id>],
     system: &'a DesignSystem,
     recipe: TimelineRecipe,
@@ -852,6 +871,7 @@ impl<'a> Timeline<'a, ()> {
     #[must_use]
     pub const fn new(events: &'a [TimelineEvent<'a, ()>], system: &'a DesignSystem) -> Self {
         Self {
+            empty_message: "No events",
             events,
             system,
             recipe: TimelineRecipe::Detailed,
@@ -859,6 +879,16 @@ impl<'a> Timeline<'a, ()> {
             ascii: false,
             colorless: false,
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 }
 
@@ -870,6 +900,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         system: &'a DesignSystem,
     ) -> Self {
         Self {
+            empty_message: "No events",
             events,
             system,
             recipe: TimelineRecipe::Detailed,
@@ -943,7 +974,10 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&format!("{mark}(no events)"), usize::from(area.width)),
+                take_display_cols(
+                    &format!("{mark}{}", self.empty_message),
+                    usize::from(area.width),
+                ),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -976,13 +1010,6 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if selected && surface {
-                match self.system.selection {
-                    SelectionChrome::Fill => self.system.style(Role::Selection),
-                    SelectionChrome::Tint | SelectionChrome::Gutter => {
-                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                    }
-                }
             } else if event.active {
                 self.system.style(Role::Accent)
             } else {
@@ -992,24 +1019,20 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             if !event.enabled {
                 style = self.system.style(Role::TextDisabled);
             }
-
-            let line = self.format_line(event, area.width, ascii, colorless);
-            let gutter = if cursor && surface {
-                if ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            buffer.set_stringn(
-                area.x,
-                row_y,
-                gutter,
-                1,
-                if cursor {
-                    self.system.style(Role::Accent)
-                } else {
-                    style
+            // A selected event keeps its status tone; the chrome marks it.
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: selected || cursor,
+                    focused: surface,
+                    enabled: event.enabled,
+                    ..Default::default()
                 },
             );
+            let style = chrome.label_style(style);
+
+            let line = self.format_line(event, area.width, ascii, colorless);
+            buffer.set_stringn(area.x, row_y, " ", 1, style);
             buffer.set_stringn(area.x.saturating_add(1), row_y, " ", 1, style);
             let body = format!("{marker} {line}");
             buffer.set_stringn(
@@ -1019,6 +1042,29 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width.saturating_sub(GUTTER)),
                 style,
             );
+            // The marker cell breathes while the step runs; the label never
+            // does. Same channel and period as `StatusIndicator`, so a running
+            // step and a running status agree instead of each inventing a
+            // rhythm (plans/014 Step 4).
+            let brightness = crate::style::breathe_over(
+                self.system.motion,
+                self.system.elapsed_ms(),
+                event.status.channel().period_ms(),
+            );
+            if brightness < 1.0 && !colorless {
+                let canvas = self
+                    .system
+                    .style(Role::Canvas)
+                    .bg
+                    .unwrap_or(ratatui_core::style::Color::Reset);
+                let marker_x = area.x.saturating_add(GUTTER);
+                if marker_x < area.right() {
+                    let faded = crate::style::fade_style(style, brightness, canvas);
+                    buffer.set_stringn(marker_x, row_y, marker, 1, faded);
+                }
+            }
+
+            chrome.paint(buffer, Rect::new(area.x, row_y, area.width, 1));
 
             if event.focusable() {
                 state.regions.push(TimelineRegion {
@@ -1387,5 +1433,33 @@ mod tests {
         let view = filter_timeline_events(&events, "");
         let out = state.handle_intent(UiIntent::Activate, &view);
         assert!(matches!(out, TimelineOutcome::RestoreRequested("a")));
+    }
+
+    #[test]
+    fn only_a_running_step_breathes_and_it_breathes_like_a_status() {
+        use crate::style::MotionChannel;
+
+        assert_eq!(TimelineStatus::Running.channel(), MotionChannel::Live);
+        assert_eq!(TimelineStatus::Pending.channel(), MotionChannel::Wait);
+        for status in [
+            TimelineStatus::Success,
+            TimelineStatus::Failed,
+            TimelineStatus::Warning,
+            TimelineStatus::Cancelled,
+            TimelineStatus::Info,
+        ] {
+            assert_eq!(
+                status.channel(),
+                MotionChannel::Static,
+                "{status:?} has finished; it must be still"
+            );
+        }
+        // The same channel a running status indicator uses, so the two agree.
+        assert_eq!(
+            TimelineStatus::Running.channel().period_ms(),
+            crate::widgets::SemanticStatus::Running
+                .channel()
+                .period_ms()
+        );
     }
 }

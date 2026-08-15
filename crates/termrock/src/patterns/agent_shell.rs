@@ -5,10 +5,22 @@
 //!
 //! Thin wrapper over [`crate::patterns::layout_app_shell`] (Workbench recipe
 //! with command strip = prompt). Prefer AppShell directly for new hosts.
+//!
+//! Teaches: how to compose the agent shell's geometry — stream, prompt,
+//! status, and an optional side rail — as slots a host paints into.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::layout::Rect;
 
-use crate::style::Density;
+use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
+
+use crate::style::{Density, DesignSystem};
+use crate::widgets::{
+    PromptComposer, PromptComposerState, StatusBar, StatusBarState, StatusSlot, Transcript,
+    TranscriptBlock, TranscriptState, Tree, TreeNode, TreeState,
+};
 
 use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
@@ -107,8 +119,122 @@ pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlo
     }
 }
 
+// ── Reference paint ─────────────────────────────────────────────────────────
+
+/// Which pane of the agent shell owns interaction this frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum AgentShellFocus {
+    /// The side rail.
+    Rail,
+    /// The conversation stream.
+    Stream,
+    /// The prompt composer.
+    #[default]
+    Prompt,
+}
+
+/// Host-owned content for one agent shell frame.
+#[derive(Debug, Clone, Copy)]
+pub struct AgentShellView<'a, BlockId, NodeId> {
+    /// Conversation blocks.
+    pub blocks: &'a [TranscriptBlock<'a, BlockId>],
+    /// Optional rail nodes (files, sessions).
+    pub rail: &'a [TreeNode<'a, NodeId>],
+    /// Footer hints.
+    pub hints: &'a [StatusSlot<'a, &'a str>],
+}
+
+/// Paints a reference agent shell over [`layout_agent_shell`]'s slots.
+///
+/// Rail is a [`Tree`], stream a [`Transcript`], prompt a
+/// [`PromptComposer`], footer a [`StatusBar`]. Copy and swap.
+pub fn render_agent_shell<BlockId: Clone + Eq, NodeId: Clone + Eq>(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    config: AgentShellLayout,
+    view: AgentShellView<'_, BlockId, NodeId>,
+    focus: AgentShellFocus,
+    rail_state: &mut TreeState<NodeId>,
+    transcript_state: &mut TranscriptState<BlockId>,
+    prompt_state: &mut PromptComposerState,
+) -> AgentShellSlots {
+    let slots = layout_agent_shell(area, config);
+
+    if let Some(rail) = slots.rail
+        && rail.height > 0
+    {
+        Tree::new(view.rail, system)
+            .focused(matches!(focus, AgentShellFocus::Rail))
+            .render(rail, buffer, rail_state);
+    }
+
+    if slots.stream.height > 0 {
+        Transcript::new(view.blocks, system).render(slots.stream, buffer, transcript_state);
+    }
+
+    if slots.prompt.height > 0 {
+        PromptComposer::new(system).render(slots.prompt, buffer, prompt_state);
+    }
+
+    if slots.status.height > 0 {
+        let mut status = StatusBarState::new();
+        StatusBar::new(view.hints, &[], system).render(slots.status, buffer, &mut status);
+    }
+
+    slots
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn reference_paint_fills_stream_prompt_and_status() {
+        use crate::style::DesignSystem;
+        use crate::widgets::{
+            PromptComposerState, StatusSlot, TranscriptBlock, TranscriptKind, TranscriptState,
+            TreeNode, TreeState,
+        };
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::text::Line;
+
+        let system = DesignSystem::default();
+        let lines = ["how do I run the tests?"];
+        let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
+        let rail = [TreeNode::new("src", Line::from("src"), 0)];
+        let hints = [StatusSlot::new("tab", "tab pane")];
+        let view = AgentShellView {
+            blocks: &blocks,
+            rail: &rail,
+            hints: &hints,
+        };
+        let mut rail_state = TreeState::new(Some("src"));
+        let mut transcript_state = TranscriptState::new();
+        let mut prompt_state = PromptComposerState::new();
+        let area = Rect::new(0, 0, 80, 24);
+        let mut buffer = Buffer::empty(area);
+        let slots = render_agent_shell(
+            area,
+            &mut buffer,
+            &system,
+            AgentShellLayout::default(),
+            view,
+            AgentShellFocus::Prompt,
+            &mut rail_state,
+            &mut transcript_state,
+            &mut prompt_state,
+        );
+
+        let painted = |rect: Rect| {
+            (rect.x..rect.right()).any(|x| {
+                (rect.y..rect.bottom()).any(|y| !buffer[(x, y)].symbol().trim().is_empty())
+            })
+        };
+        assert!(painted(slots.stream), "stream painted nothing");
+        assert!(painted(slots.prompt), "prompt painted nothing");
+        assert!(painted(slots.status), "status painted nothing");
+    }
     use super::*;
 
     #[test]

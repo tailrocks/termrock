@@ -264,7 +264,11 @@ impl StatefulWidget for &ThemePicker<'_> {
         {
             let y = inner.y.saturating_add(index as u16);
             let selected = index == state.selected;
-            let marker = if selected { "›" } else { " " };
+            let marker = if selected {
+                tokens.glyphs.selection_gutter()
+            } else {
+                " "
+            };
             let tc = if preset.requires_truecolor {
                 " · truecolor"
             } else {
@@ -272,7 +276,7 @@ impl StatefulWidget for &ThemePicker<'_> {
             };
             let line = format!("{marker} {}{tc}", preset.label);
             let role = if selected {
-                Role::Selection
+                Role::TextStrong
             } else {
                 Role::Text
             };

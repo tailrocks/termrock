@@ -15,6 +15,18 @@
 //!
 //! Migrates thin [`SettingsShellState`](crate::widgets::SettingsShellState)
 //! surface (0056) into this elevated composition (**0237**).
+//!
+//! Teaches: how to compose a searchable settings experience: sections,
+//! fields, validation and an explicit apply action.
+//!
+//! Composes: [`crate::widgets::BUILTIN_THEME_PRESETS`],
+//! [`crate::widgets::Field`], [`crate::widgets::FieldStatus`],
+//! [`crate::widgets::Fieldset`], [`crate::widgets::Form`],
+//! [`crate::widgets::FormOutcome`], [`crate::widgets::FormState`],
+//! [`crate::widgets::HelpEntry`], and 24 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -27,12 +39,13 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        BUILTIN_THEME_PRESETS, Field, FieldStatus, Fieldset, Form, FormOutcome, FormState,
-        KeybindingRecorder, KeybindingRecorderOutcome, KeybindingRecorderState, KeyboardHelp,
-        KeyboardHelpState, NavItem, Panel, SearchInput, SearchInputOutcome, SearchInputState,
-        Sidebar, SidebarOutcome, SidebarPresentation, SidebarState, StatusBar, StatusBarState,
-        StatusSlot, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset, any_dirty,
-        collect_errors, example_settings_nav,
+        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, Callout, CalloutTone, Field,
+        FieldStatus, Fieldset, Form, FormOutcome, FormState, KeybindingRecorder,
+        KeybindingRecorderOutcome, KeybindingRecorderState, KeyboardHelp, KeyboardHelpState,
+        NavItem, Panel, SearchInput, SearchInputOutcome, SearchInputState, Sidebar, SidebarOutcome,
+        SidebarPresentation, SidebarState, StatusBar, StatusBarState, StatusSlot, ThemePicker,
+        ThemePickerOutcome, ThemePickerState, ThemePreset, any_dirty, collect_errors,
+        example_settings_nav,
     },
 };
 
@@ -702,6 +715,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
             state.sidebar.set_focused(focused);
             Sidebar::new(nav, system)
                 .title("Settings")
+                .focused(focused)
                 .ascii(state.ascii)
                 .paint(nav_area, buffer, &mut state.sidebar);
         }
@@ -714,31 +728,28 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
             .paint(slots.search, buffer, &mut state.search);
     }
 
-    // Banner
+    // Banner — a notice is a Callout, not a full-width warning string. The
+    // glyph carries the severity; the sentence stays readable (plans/010).
     if !slots.banner.is_empty() && show_banner {
-        let mut parts = Vec::new();
-        if state.has_conflicts {
-            parts.push(if state.ascii {
-                "! conflicts"
-            } else {
-                "⚠ conflicts"
-            });
+        let (title, description) = match (state.has_conflicts, state.restart_required) {
+            (true, true) => (
+                "Conflicting shortcuts",
+                Some("restart required before the new chrome applies"),
+            ),
+            (true, false) => ("Conflicting shortcuts", None),
+            (false, _) => (
+                "Restart required",
+                Some("the new chrome applies on next launch"),
+            ),
+        };
+        let mut callout = Callout::new(title, system)
+            .tone(CalloutTone::Warning)
+            .ascii(state.ascii)
+            .colorless(state.colorless);
+        if let Some(description) = description {
+            callout = callout.description(description);
         }
-        if state.restart_required {
-            parts.push(if state.ascii {
-                "* restart required"
-            } else {
-                "↻ restart required"
-            });
-        }
-        let line = parts.join(" · ");
-        buffer.set_stringn(
-            slots.banner.x,
-            slots.banner.y,
-            crate::text::take_display_cols(&line, usize::from(slots.banner.width)),
-            usize::from(slots.banner.width),
-            system.style(Role::Warning),
-        );
+        callout.paint(slots.banner, buffer);
     }
 
     // Body
@@ -795,15 +806,32 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
 
     // Footer
     if !slots.footer.is_empty() {
+        // Applying settings is a shippable action, so it is a button and not
+        // only a chord (plans/016 Step 3). It appears when there is something
+        // to apply rather than sitting greyed out.
+        if state.dirty {
+            let apply = Button::new("Apply", system).variant(ButtonVariant::Primary);
+            let width = apply.preferred_width().min(slots.footer.width);
+            if width > 0 {
+                let rect = Rect::new(
+                    slots.footer.right().saturating_sub(width),
+                    slots.footer.y,
+                    width,
+                    1,
+                );
+                let mut apply_state = ButtonState::new();
+                apply_state.activation.set_accepts_input(true);
+                apply.paint(rect, buffer, &mut apply_state);
+            }
+        }
         if status_slots.is_empty() {
             let dirty = if state.dirty { "modified" } else { "clean" };
-            let save = if state.dirty { "Ctrl+S save" } else { "Ctrl+S" };
+            let save = if state.dirty { "C-s save" } else { "C-s" };
             let text = format!("{dirty} · {save} · ? help · r reset");
-            buffer.set_stringn(
-                slots.footer.x,
-                slots.footer.y,
-                crate::text::take_display_cols(&text, usize::from(slots.footer.width)),
-                usize::from(slots.footer.width),
+            system.paint_row(
+                buffer,
+                Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
+                &crate::text::take_display_cols(&text, usize::from(slots.footer.width)),
                 system.style(Role::TextMuted),
             );
         } else {
@@ -828,6 +856,7 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
             state.sidebar.set_presentation(SidebarPresentation::Drawer);
             Sidebar::new(nav, system)
                 .title("Settings")
+                .focused(true)
                 .ascii(state.ascii)
                 .paint(inner, buffer, &mut state.sidebar);
         }
@@ -838,8 +867,6 @@ pub fn render_settings_screen<SectionId: Clone + PartialEq>(
         let entries = example_settings_help_entries();
         KeyboardHelp::new(&entries, system).paint(help_area, buffer, &mut state.help);
     }
-
-    let _ = state.colorless; // reserved for colorless chrome pass
 }
 
 fn paint_no_results(
@@ -858,22 +885,20 @@ fn paint_no_results(
     } else {
         format!("{glyph} No results for “{query}” — clear search or pick another category")
     };
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        crate::text::take_display_cols(&q, usize::from(area.width)),
-        usize::from(area.width),
+    system.paint_row(
+        buffer,
+        Rect::new(area.x, area.y, area.width, 1),
+        &crate::text::take_display_cols(&q, usize::from(area.width)),
         system.style(Role::TextMuted),
     );
     if area.height > 1 {
-        buffer.set_stringn(
-            area.x,
-            area.y.saturating_add(1),
-            crate::text::take_display_cols(
+        system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+            &crate::text::take_display_cols(
                 "/ focus search · Esc clear drawer",
                 usize::from(area.width),
             ),
-            usize::from(area.width),
             system.style(Role::TextMuted),
         );
     }
@@ -1005,7 +1030,7 @@ pub fn example_settings_appearance_fields() -> [Field<'static, &'static str>; 3]
 #[must_use]
 pub fn example_settings_keys_fields() -> [Field<'static, &'static str>; 2] {
     [
-        Field::new("submit", "Submit chord", "Ctrl+Enter")
+        Field::new("submit", "Submit chord", "C-enter")
             .dirty(true)
             .warning("conflict with send-queue"),
         Field::new("cancel", "Cancel", "Esc"),
@@ -1040,11 +1065,11 @@ pub fn example_settings_fieldsets() -> Vec<Fieldset<'static, &'static str>> {
 pub fn example_settings_help_entries() -> Vec<crate::widgets::HelpEntry> {
     use crate::widgets::HelpEntry;
     vec![
-        HelpEntry::new("save", "General", "Ctrl+S", "Save settings"),
-        HelpEntry::new("discard", "General", "Ctrl+Z", "Discard dirty"),
-        HelpEntry::new("reset-section", "General", "Ctrl+R", "Reset section"),
-        HelpEntry::new("reset-field", "General", "Alt+R", "Reset field"),
-        HelpEntry::new("drawer", "Navigation", "Ctrl+B", "Toggle category drawer"),
+        HelpEntry::new("save", "General", "C-s", "Save settings"),
+        HelpEntry::new("discard", "General", "C-z", "Discard dirty"),
+        HelpEntry::new("reset-section", "General", "C-r", "Reset section"),
+        HelpEntry::new("reset-field", "General", "A-r", "Reset field"),
+        HelpEntry::new("drawer", "Navigation", "C-b", "Toggle category drawer"),
         HelpEntry::new(
             "cycle",
             "Navigation",

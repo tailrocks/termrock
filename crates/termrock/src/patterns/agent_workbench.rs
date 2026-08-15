@@ -16,6 +16,18 @@
 //!
 //! Research: Grok Build, Amp, OpenCode, Claude Code, Posting, Zellij, Glow
 //! (experience references, not product clones).
+//!
+//! Teaches: how to compose a full agent workbench: transcript, prompt
+//! composer, task rail, approvals and diagnostics in one focus-routed shell.
+//!
+//! Composes: [`crate::widgets::DiffHunk`], [`crate::widgets::DiffReview`],
+//! [`crate::widgets::DiffReviewOutcome`],
+//! [`crate::widgets::DiffReviewState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], [`crate::widgets::ListState`],
+//! [`crate::widgets::ModeRibbon`], and 30 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{
     buffer::Buffer,
@@ -32,14 +44,15 @@ use crate::{
         LayerDismissPolicy, LayerKind, Outcome, SemanticRole,
     },
     layout::{
-        PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+        ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
+        WorkspaceState, modal_rect,
     },
     patterns::{
         ActivityItem, ActivityModel, ActivityShelf, ActivityShelfOutcome, ActivityShelfState,
         PlanReview, PlanReviewState, SessionPicker, SessionPickerState, TaskRail, TaskRailOutcome,
         TaskRailState, WorkingStateCard, WorkingStateCardState,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, PanelChrome},
     widgets::{
         DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon,
         ModeRibbonState, Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState,
@@ -722,37 +735,19 @@ pub struct WorkbenchModals {
 /// Centered modal geometry.
 #[must_use]
 pub fn permission_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 3, 4, 6, 16)
+    modal_rect(area, ModalSpec::new(3, 4, 16).height(1, 3, 6))
 }
 
 /// Question / plan / session modal.
 #[must_use]
 pub fn dialog_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 4, 5, 8, 20)
+    modal_rect(area, ModalSpec::new(4, 5, 20).height(1, 3, 8))
 }
 
 /// Diff modal (taller).
 #[must_use]
 pub fn diff_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 5, 6, 10, 24)
-}
-
-fn centered_modal(area: Rect, w_num: u16, w_den: u16, h_min: u16, w_min: u16) -> Rect {
-    let width = area.width.saturating_mul(w_num) / w_den;
-    let height = (area.height / 3)
-        .max(h_min)
-        .min(area.height.saturating_sub(2));
-    let width = width.clamp(w_min, area.width.saturating_sub(2).max(1));
-    let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area
-        .y
-        .saturating_add(area.height.saturating_sub(height) / 4);
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
+    modal_rect(area, ModalSpec::new(5, 6, 24).height(1, 3, 10))
 }
 
 fn ensure_layer(
@@ -1071,7 +1066,6 @@ pub fn render_agent_workbench(
         && let Some(modal) = permission_rect
     {
         StatefulWidget::render(card, modal, buffer, permission_state);
-        let _ = system.style(Role::BorderFocused);
     }
     if let Some(flow) = question
         && let Some(modal) = question_rect
@@ -1741,6 +1735,26 @@ mod tests {
         assert!(workbench.permission_open());
         assert!(!pstate.accepts_input());
         assert_eq!(pstate.text(), "draft");
+    }
+
+    #[test]
+    fn modals_survive_a_terminal_narrower_than_their_minimum() {
+        // 20x5 is the tiny tier the design law names; every modal helper has
+        // to produce a rect there rather than panicking.
+        for area in [
+            Rect::new(0, 0, 20, 5),
+            Rect::new(0, 0, 8, 3),
+            Rect::new(0, 0, 1, 1),
+        ] {
+            for rect in [
+                permission_modal_rect(area),
+                dialog_modal_rect(area),
+                diff_modal_rect(area),
+            ] {
+                assert!(rect.width <= area.width, "{rect:?} escapes {area:?}");
+                assert!(rect.height <= area.height, "{rect:?} escapes {area:?}");
+            }
+        }
     }
 
     #[test]

@@ -23,7 +23,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1010,7 +1010,7 @@ impl<'a> PathInput<'a> {
             };
             let mut style = self.system.style(role);
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             if destructive {
                 style = style.add_modifier(Modifier::BOLD);
@@ -1066,14 +1066,14 @@ impl<'a> PathInput<'a> {
                     if self.ascii {
                         "d"
                     } else {
-                        "📁"
+                        self.system.glyphs.resolve(Glyph::Folder).text
                     }
                 }
                 PathFsStatus::File => {
                     if self.ascii {
                         "f"
                     } else {
-                        "📄"
+                        self.system.glyphs.resolve(Glyph::File).text
                     }
                 }
                 PathFsStatus::Missing => {
@@ -1196,11 +1196,11 @@ impl<'a> PathInput<'a> {
 
         // Emphasize destructive field
         if destructive {
+            // A path that would overwrite something reads as danger through
+            // its own role and weight — the field keeps its border language.
             buffer.set_style(
                 field,
-                self.system
-                    .style(Role::Danger)
-                    .add_modifier(Modifier::UNDERLINED),
+                self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
             );
         }
 

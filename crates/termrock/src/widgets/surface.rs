@@ -41,10 +41,16 @@ pub enum SurfaceRecipe {
     /// Recessed / ordinary component surface (default).
     #[default]
     Inset,
-    /// Raised card / preview body.
+    /// Well recessed below the ordinary surface (input fields, code wells).
+    Sunken,
+    /// Raised card / preview body — one step above the ordinary surface.
     Raised,
     /// Overlay host (dialog, popover body) above backdrop.
     Overlay,
+    /// Overlay host that owns interaction — elevated fill, focused border.
+    OverlayFocused,
+    /// Destructive overlay host — elevated fill, danger border.
+    OverlayDanger,
     /// Interactive but unfocused chrome (hoverable card, clickable tile).
     Interactive,
     /// Interaction owner — uses [`Role::BorderFocused`].
@@ -64,8 +70,11 @@ impl SurfaceRecipe {
         match self {
             Self::Canvas => "canvas",
             Self::Inset => "inset",
+            Self::Sunken => "sunken",
             Self::Raised => "raised",
             Self::Overlay => "overlay",
+            Self::OverlayFocused => "overlay-focused",
+            Self::OverlayDanger => "overlay-danger",
             Self::Interactive => "interactive",
             Self::Focused => "focused",
             Self::Selected => "selected",
@@ -85,6 +94,8 @@ impl SurfaceRecipe {
                 | Self::Warning
                 | Self::Destructive
                 | Self::Overlay
+                | Self::OverlayFocused
+                | Self::OverlayDanger
         )
     }
 
@@ -95,6 +106,8 @@ impl SurfaceRecipe {
             self,
             Self::Raised
                 | Self::Overlay
+                | Self::OverlayFocused
+                | Self::OverlayDanger
                 | Self::Interactive
                 | Self::Focused
                 | Self::Selected
@@ -208,6 +221,7 @@ pub struct Surface<'a> {
     fill: SurfaceFill,
     pad_x: Option<u16>,
     pad_y: Option<u16>,
+    borders: Option<ratatui_widgets::borders::Borders>,
     /// When true (default for interactive), hit uses root; else content.
     hit_full: Option<bool>,
 }
@@ -224,6 +238,7 @@ impl<'a> Surface<'a> {
             fill: SurfaceFill::Auto,
             pad_x: None,
             pad_y: None,
+            borders: None,
             hit_full: None,
         }
     }
@@ -271,6 +286,41 @@ impl<'a> Surface<'a> {
         self
     }
 
+    /// Draws only the named edges of the border.
+    ///
+    /// A docked surface butts against the pane it slid out of; drawing all
+    /// four edges there stacks its rule on the host's, and on any handle the
+    /// widget paints at the seam. Defaults to all four edges.
+    #[must_use]
+    pub const fn borders(mut self, borders: ratatui_widgets::borders::Borders) -> Self {
+        self.borders = Some(borders);
+        self
+    }
+
+    /// Reserves the border's content inset, and nothing else.
+    ///
+    /// Bordered chrome floors at one column at every density, so text never
+    /// sits flush against a border glyph — the rule that
+    /// [`crate::style::DesignSystem::content_inset`] owns. A borderless
+    /// surface has no glyph to clear, so it keeps its full rect and lets the
+    /// caller's own layout own the spacing. Prefer this over `padding(0, 0)`
+    /// on any bordered overlay.
+    #[must_use]
+    pub const fn content_inset(mut self) -> Self {
+        let bordered = match self.bordered {
+            Some(bordered) => bordered,
+            None => self.recipe.default_bordered(),
+        };
+        let inset = if bordered {
+            self.system.content_inset(true)
+        } else {
+            crate::style::ContentInset { x: 0, y: 0 }
+        };
+        self.pad_x = Some(inset.x);
+        self.pad_y = Some(inset.y);
+        self
+    }
+
     /// Hit region policy: full outer rect vs content only.
     #[must_use]
     pub const fn hit_full(mut self, hit_full: bool) -> Self {
@@ -307,7 +357,7 @@ impl<'a> Surface<'a> {
             && matches!(self.fill, SurfaceFill::Auto)
         {
             plan.fill = match self.recipe {
-                SurfaceRecipe::Canvas | SurfaceRecipe::Inset => {
+                SurfaceRecipe::Canvas | SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
                     Some(Style::default().bg(Color::Reset))
                 }
                 // Keep modifier cues on border; skip solid fill soup.
@@ -316,7 +366,11 @@ impl<'a> Surface<'a> {
             if let Some(border) = plan.border.as_mut()
                 && matches!(
                     self.recipe,
-                    SurfaceRecipe::Focused | SurfaceRecipe::Selected | SurfaceRecipe::Destructive
+                    SurfaceRecipe::Focused
+                        | SurfaceRecipe::OverlayFocused
+                        | SurfaceRecipe::Selected
+                        | SurfaceRecipe::Destructive
+                        | SurfaceRecipe::OverlayDanger
                 )
             {
                 *border = border.add_modifier(Modifier::BOLD);
@@ -357,7 +411,11 @@ impl<'a> Surface<'a> {
             fill_rect(buffer, area, fill);
         }
         if let Some(border) = plan.border {
-            Block::bordered()
+            Block::default()
+                .borders(
+                    self.borders
+                        .unwrap_or(ratatui_widgets::borders::Borders::ALL),
+                )
                 .border_style(border)
                 .border_set(self.system.border_set())
                 .render(area, buffer);
@@ -444,11 +502,20 @@ impl DesignSystem {
         let (fill_role, border_role, bordered) = match recipe {
             SurfaceRecipe::Canvas => (None, None, false),
             SurfaceRecipe::Inset => (Some(Role::Surface), None, false),
-            SurfaceRecipe::Raised => (Some(Role::Elevated), Some(Role::Border), true),
+            SurfaceRecipe::Sunken => (Some(Role::Sunken), None, false),
+            // The ladder only reads as a ladder if each rung has its own role:
+            // in-flow cards sit on `Raised`, overlays keep `Elevated`.
+            SurfaceRecipe::Raised => (Some(Role::Raised), Some(Role::Border), true),
             SurfaceRecipe::Overlay => (Some(Role::Elevated), Some(Role::Border), true),
+            SurfaceRecipe::OverlayFocused => {
+                (Some(Role::Elevated), Some(Role::BorderFocused), true)
+            }
+            SurfaceRecipe::OverlayDanger => (Some(Role::Elevated), Some(Role::Danger), true),
             SurfaceRecipe::Interactive => (Some(Role::Surface), Some(Role::Border), true),
             SurfaceRecipe::Focused => (Some(Role::Surface), Some(Role::BorderFocused), true),
-            SurfaceRecipe::Selected => (Some(Role::Selection), Some(Role::Border), true),
+            // Membership is a wash, not a slab: `Role::Selection` is a saturated
+            // fill meant for one row, never for a whole panel.
+            SurfaceRecipe::Selected => (Some(Role::SelectionTint), Some(Role::Border), true),
             SurfaceRecipe::Warning => (Some(Role::Surface), Some(Role::Warning), true),
             SurfaceRecipe::Destructive => (Some(Role::Surface), Some(Role::Danger), true),
         };
@@ -605,9 +672,9 @@ mod tests {
             .bordered(false)
             .padding(0, 0)
             .paint(Rect::new(0, 0, 8, 4), &mut buf);
-        let elevated = system.style(Role::Elevated);
-        assert!(elevated.bg.is_some(), "slate Elevated must carry bg");
-        assert_eq!(buf[(3, 1)].style().bg, elevated.bg);
+        let raised = system.style(Role::Raised);
+        assert!(raised.bg.is_some(), "slate Raised must carry bg");
+        assert_eq!(buf[(3, 1)].style().bg, raised.bg);
     }
 
     #[test]
@@ -631,7 +698,27 @@ mod tests {
     fn phosphor_raised_fill_is_painted() {
         let system = DesignSystem::default();
         let plan = system.surface_recipe(SurfaceRecipe::Raised);
-        assert_eq!(plan.fill, Some(system.style(Role::Elevated)));
+        assert_eq!(plan.fill, Some(system.style(Role::Raised)));
         assert!(plan.border.is_some());
+
+        // Overlays own the top rung, and a focused overlay keeps it.
+        let overlay = system.surface_recipe(SurfaceRecipe::Overlay);
+        let focused_overlay = system.surface_recipe(SurfaceRecipe::OverlayFocused);
+        assert_eq!(overlay.fill, Some(system.style(Role::Elevated)));
+        assert_eq!(focused_overlay.fill, overlay.fill);
+        assert_eq!(
+            focused_overlay.border,
+            Some(system.style(Role::BorderFocused))
+        );
+        assert_ne!(plan.fill, overlay.fill);
+
+        // Wells recess: a sunken surface fills below the ordinary surface.
+        let sunken = system.surface_recipe(SurfaceRecipe::Sunken);
+        assert_eq!(sunken.fill, Some(system.style(Role::Sunken)));
+        assert!(sunken.border.is_none());
+
+        // Membership washes; it never slabs the panel with the selection fill.
+        let selected = system.surface_recipe(SurfaceRecipe::Selected);
+        assert_eq!(selected.fill, Some(system.style(Role::SelectionTint)));
     }
 }

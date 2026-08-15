@@ -854,7 +854,7 @@ impl<'a> MarkdownView<'a> {
                     h = h.rule(false);
                     let _ = h.paint(area, buffer);
                     if selected {
-                        underline_row(buffer, area, self.system);
+                        select_row(buffer, area, self.system);
                     }
                 }
             }
@@ -964,7 +964,7 @@ impl<'a> MarkdownView<'a> {
             }
         }
         if selected {
-            underline_row(buffer, area, self.system);
+            select_row(buffer, area, self.system);
         }
     }
 
@@ -1021,7 +1021,7 @@ impl<'a> MarkdownView<'a> {
                 );
         }
         if selected {
-            underline_row(buffer, area, self.system);
+            select_row(buffer, area, self.system);
         }
     }
 
@@ -1623,20 +1623,31 @@ fn list_prefix_width(block: &MarkdownBlock<'_>) -> u16 {
     }
 }
 
-fn underline_row(buffer: &mut Buffer, area: Rect, system: &DesignSystem) {
-    // Non-color selection cue: bold already may apply; add dim reverse via role.
-    let style = system
-        .style(Role::Selection)
-        .add_modifier(Modifier::UNDERLINED);
+/// Marks the selected row: a quiet wash plus the gutter glyph.
+///
+/// Each cell keeps its own foreground and modifiers — a selected heading is
+/// still a heading — so only the ground moves.
+fn select_row(buffer: &mut Buffer, area: Rect, system: &DesignSystem) {
+    if area.width == 0 {
+        return;
+    }
+    let wash = system.style(Role::SelectionTint).bg;
     for x in area.x..area.x.saturating_add(area.width) {
         let cell = &mut buffer[(x, area.y)];
         let mut s = cell.style();
-        s = s.add_modifier(Modifier::UNDERLINED);
-        if let Some(fg) = style.fg {
-            s = s.fg(fg);
+        if let Some(bg) = wash {
+            s = s.bg(bg);
         }
         cell.set_style(s);
     }
+    let gutter = system.glyphs.selection_gutter();
+    let cell = &mut buffer[(area.x, area.y)];
+    let mut marked = cell.style().patch(system.style(Role::Accent));
+    if let Some(bg) = wash {
+        marked = marked.bg(bg);
+    }
+    cell.set_symbol(gutter);
+    cell.set_style(marked);
 }
 
 fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) -> Vec<TextSpan<'a>> {
@@ -1884,7 +1895,7 @@ fn paint_table_row(
         );
     }
     if selected {
-        underline_row(buffer, area, system);
+        select_row(buffer, area, system);
     }
 }
 

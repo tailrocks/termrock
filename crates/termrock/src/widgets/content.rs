@@ -325,7 +325,10 @@ impl<'a> Heading<'a> {
 
         let mut span = TextSpan::new(self.plain_with_prefix()).role(Role::TextStrong);
         span = match self.level {
-            HeadingLevel::H1 => span.strong().underline(true),
+            // H1 already gets the heavy rule row below it; underlining the
+            // text too is a second cue for one fact, and underline is spoken
+            // for (design-language §5.9).
+            HeadingLevel::H1 => span.strong(),
             HeadingLevel::H2 => span.strong(),
             HeadingLevel::H3 => span, // strong role only — weight via palette
         };
@@ -877,7 +880,7 @@ mod tests {
     fn paragraph_ascii_list_bullet() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let p = Paragraph::list_item("x", &system);
-        assert_eq!(p.resolved_prefix(), "* ");
+        assert_eq!(p.resolved_prefix(), "- ");
     }
 
     #[test]

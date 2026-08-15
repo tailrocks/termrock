@@ -208,6 +208,8 @@ pub enum SelectOutcome<Id> {
     },
     /// List closed without commit (Esc / outside).
     Closed,
+    /// The pointer moved onto (or off) an option.
+    HoverChanged,
     /// Highlight moved in the open list.
     HighlightChanged {
         /// New highlight id.
@@ -252,6 +254,8 @@ pub struct SelectState<Id> {
     trigger: Rect,
     panel: Rect,
     option_regions: Vec<(Id, Rect)>,
+    /// Option the pointer is over (hover wash; never a commit).
+    hovered: Option<Id>,
     search_region: Option<Rect>,
 }
 
@@ -280,6 +284,7 @@ impl<Id> SelectState<Id> {
             trigger: Rect::default(),
             panel: Rect::default(),
             option_regions: Vec::new(),
+            hovered: None,
             search_region: None,
         }
     }
@@ -708,6 +713,21 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         if !self.enabled {
             return SelectOutcome::Ignored;
         }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated per event, unconditionally: a pointer that
+            // leaves the list must clear it (plans/021 Step 1).
+            let was = self.hovered.clone();
+            self.hovered = self
+                .option_regions
+                .iter()
+                .find(|(_, rect)| rect.contains(event.position))
+                .map(|(id, _)| id.clone());
+            return if was == self.hovered {
+                SelectOutcome::Ignored
+            } else {
+                SelectOutcome::HoverChanged
+            };
+        }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             return SelectOutcome::Ignored;
         }
@@ -827,7 +847,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             buffer.set_stringn(
                 area.x,
@@ -860,17 +880,18 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             state.panel = Rect::default();
         }
 
-        // Validation under trigger
-        if area.height >= 3 {
-            if let Validation::Invalid(msg) = self.validation {
-                buffer.set_stringn(
-                    area.x,
-                    area.bottom().saturating_sub(1),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
-                );
-            }
+        // Validation directly under the trigger — not pinned to the bottom
+        // edge, where it drifted away from the field it describes.
+        if area.height >= 3
+            && let Validation::Invalid(msg) = self.validation
+        {
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                msg,
+            );
         }
     }
 
@@ -900,16 +921,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             return;
         }
         let invalid = matches!(self.validation, Validation::Invalid(_));
-        let role = if !state.enabled {
-            Role::TextDisabled
-        } else if invalid {
-            Role::InputInvalid
+        // The trigger is a field, so it wears the field's chrome. Swapping the
+        // whole style to `Role::Focus` on focus threw away the well underneath
+        // it — the box stopped looking like something you type into at the one
+        // moment it mattered.
+        let control_state = if !state.enabled {
+            crate::style::ControlState::Disabled
         } else if state.focused || state.is_open() {
-            Role::Focus
+            crate::style::ControlState::Focused
         } else {
-            Role::Input
+            crate::style::ControlState::Default
         };
-        buffer.set_style(area, self.system.style(role));
+        let recipe = self.system.input_recipe(control_state, invalid);
+        buffer.set_style(area, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt
+            && area.width > 0
+        {
+            buffer.set_stringn(area.x, area.y, glyph, 1, style);
+        }
 
         let value_label = state
             .value
@@ -979,11 +1008,29 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             list_top = list_top.saturating_add(1);
         }
 
-        let list_area = Rect::new(
+        let full_list = Rect::new(
             inner.x,
             list_top,
             inner.width,
             inner.bottom().saturating_sub(list_top),
+        );
+        if full_list.is_empty() {
+            return;
+        }
+        // Reserve the scroll gutter whether or not it is painted, so rows do
+        // not reflow the moment the list grows past its viewport
+        // (plans/022 Step 2).
+        let gutter = Rect::new(
+            full_list.right().saturating_sub(1),
+            full_list.y,
+            1,
+            full_list.height,
+        );
+        let list_area = Rect::new(
+            full_list.x,
+            full_list.y,
+            full_list.width.saturating_sub(1),
+            full_list.height,
         );
         if list_area.is_empty() {
             return;
@@ -1023,7 +1070,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             match opt.kind {
                 SelectRowKind::Separator => {
                     if skipped >= offset || option_idx == 0 {
-                        let line = "─".repeat(usize::from(list_area.width).min(64));
+                        let line = self
+                            .system
+                            .glyphs
+                            .rule()
+                            .repeat(usize::from(list_area.width));
                         buffer.set_stringn(
                             list_area.x,
                             row_y,
@@ -1057,18 +1108,14 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_val = state.value.as_ref() == Some(&opt.id);
-                    let recipe = self
-                        .system
-                        .clone()
-                        .selection(crate::style::SelectionChrome::Tint)
-                        .resolve_list_row(ListRowVisualState {
-                            selected: is_hi,
-                            focused: is_hi && state.focused,
-                            hovered: false,
-                            enabled: !opt.disabled,
-                            loading: false,
-                            checked: is_val,
-                        });
+                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                        selected: is_hi,
+                        focused: is_hi && state.focused,
+                        hovered: state.hovered.as_ref() == Some(&opt.id),
+                        enabled: !opt.disabled,
+                        loading: false,
+                        checked: is_val,
+                    });
                     if recipe.use_fill {
                         buffer.set_style(rect, recipe.label);
                     } else if recipe.use_tint {
@@ -1109,6 +1156,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 }
             }
         }
+
+        crate::scroll::paint_scrolled_region(
+            buffer,
+            list_area,
+            gutter,
+            coll_items.len(),
+            vp,
+            u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+            self.system,
+        );
     }
 
     /// Semantic registration for trigger.

@@ -9,7 +9,7 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
-    scroll::{DialogScroll, UNCACHED_REVISION, full_cell_thumb, is_scrollable, max_line_width},
+    scroll::{DialogScroll, UNCACHED_REVISION, max_line_width},
     style::{DesignSystem, Role, RolePalette},
 };
 
@@ -120,22 +120,28 @@ impl StatefulWidget for &Viewport<'_> {
             )
             .scroll((0, state.scroll_x))
             .render(area, buffer);
-        if is_scrollable(self.lines.len(), viewport_height) {
-            render_vertical_scrollbar(
-                buffer,
-                Rect::new(
-                    area.right().saturating_sub(1),
-                    area.y.saturating_add(1),
-                    1,
-                    area.height.saturating_sub(2),
-                ),
-                self.lines.len(),
-                viewport_height,
-                state.scroll_y,
-                self.system.style(Role::ScrollTrack),
-                self.system.style(Role::ScrollThumb),
-            );
-        }
+        // The fade belongs to the content, never to the chrome: a dimmed
+        // border reads as a disabled pane, not as "there is more below".
+        let content = Rect::new(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(2),
+        );
+        crate::scroll::paint_scrolled_region(
+            buffer,
+            content,
+            Rect::new(
+                area.right().saturating_sub(1),
+                area.y.saturating_add(1),
+                1,
+                area.height.saturating_sub(2),
+            ),
+            self.lines.len(),
+            viewport_height,
+            state.scroll_y,
+            self.system,
+        );
     }
 }
 
@@ -144,30 +150,5 @@ impl StatefulWidget for Viewport<'_> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
-    }
-}
-
-fn render_vertical_scrollbar(
-    buffer: &mut Buffer,
-    area: Rect,
-    content_len: usize,
-    viewport_len: usize,
-    offset: u16,
-    track_style: Style,
-    thumb_style: Style,
-) {
-    let Some(thumb) = full_cell_thumb(content_len, viewport_len, area.height, usize::from(offset))
-    else {
-        return;
-    };
-    let thumb_end = thumb.start.saturating_add(thumb.len);
-    for row in 0..area.height {
-        let in_thumb = (thumb.start..thumb_end).contains(&row);
-        buffer.set_string(
-            area.x,
-            area.y.saturating_add(row),
-            if in_thumb { "┃" } else { "·" },
-            if in_thumb { thumb_style } else { track_style },
-        );
     }
 }

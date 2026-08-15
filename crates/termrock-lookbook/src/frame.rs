@@ -223,13 +223,7 @@ fn color_to_rgb(color: Color, is_fg: bool) -> [u8; 3] {
         Color::LightCyan => [0x7a, 0xff, 0xff],
         Color::White => [0xff, 0xff, 0xff],
         Color::Rgb(r, g, b) => [r, g, b],
-        Color::Indexed(_) => {
-            if is_fg {
-                [0xff, 0xff, 0xff]
-            } else {
-                [0x00, 0x00, 0x00]
-            }
-        }
+        Color::Indexed(index) => crate::palette256::xterm256_to_rgb(index),
     }
 }
 
@@ -269,6 +263,11 @@ pub fn paint_story_frame(
                 height: story_rows,
             };
             frame.render_widget(Clear, inner);
+            // The story's ground is the palette's canvas (plans/011).
+            frame.buffer_mut().set_style(
+                inner,
+                crate::design::lookbook_system(theme.clone()).style(termrock::style::Role::Canvas),
+            );
             interactor.render(frame, inner);
         })
         .expect("draw");

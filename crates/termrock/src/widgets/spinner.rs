@@ -22,12 +22,12 @@
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionChannel, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -42,6 +42,10 @@ pub const SPINNER_WAITING_UNICODE: &[&str] = &["·", "•", "●", "•"];
 pub const SPINNER_WAITING_ASCII: &[&str] = &[".", "o", "O", "o"];
 /// Reconnecting uses reverse braille cadence.
 pub const SPINNER_RECONNECT_UNICODE: &[&str] = &["⠏", "⠇", "⠧", "⠦", "⠴", "⠼", "⠸", "⠹", "⠙", "⠋"];
+/// Streaming ripple — content is arriving, not work spinning (Unicode).
+pub const SPINNER_STREAM_UNICODE: &[&str] = &["∻", "≈", "∿", "≋"];
+/// Streaming ripple (ASCII).
+pub const SPINNER_STREAM_ASCII: &[&str] = &["~", "-", "~", "="];
 
 // ── Phase / variant / glyphs ────────────────────────────────────────────────
 
@@ -58,6 +62,10 @@ pub enum ActivityPhase {
     Queued,
     /// Transport or session reconnect.
     Reconnecting,
+    /// Content is arriving — a ripple, not a spin.
+    Streaming,
+    /// Terminal success. Gravity: never animates.
+    Done,
 }
 
 impl ActivityPhase {
@@ -69,6 +77,8 @@ impl ActivityPhase {
             Self::Waiting => "waiting",
             Self::Queued => "queued",
             Self::Reconnecting => "reconnecting",
+            Self::Streaming => "streaming",
+            Self::Done => "done",
         }
     }
 
@@ -80,22 +90,38 @@ impl ActivityPhase {
             Self::Waiting => "Waiting",
             Self::Queued => "Queued",
             Self::Reconnecting => "Reconnecting",
+            Self::Streaming => "Streaming",
+            Self::Done => "Done",
+        }
+    }
+
+    /// What this phase is *saying*, in the shared motion vocabulary.
+    ///
+    /// The channel owns the period and the frame-rate rung, so a spinner and a
+    /// status dot in the same state breathe together instead of drifting.
+    #[must_use]
+    pub const fn channel(self) -> MotionChannel {
+        match self {
+            Self::Indeterminate | Self::Reconnecting => MotionChannel::Work,
+            Self::Waiting => MotionChannel::Wait,
+            Self::Streaming => MotionChannel::Stream,
+            // Gravity: a queued or finished thing is not happening at a rate.
+            Self::Queued | Self::Done => MotionChannel::Static,
         }
     }
 
     /// Whether this phase advances frames under Full motion.
     #[must_use]
     pub const fn animates(self) -> bool {
-        !matches!(self, Self::Queued)
+        !matches!(self.channel(), MotionChannel::Static)
     }
 
-    /// Period multiplier (waiting is slower).
+    /// Frame period for this phase, from its channel.
     #[must_use]
-    pub const fn period_scale(self) -> u64 {
-        match self {
-            Self::Indeterminate | Self::Reconnecting => 1,
-            Self::Waiting => 3,
-            Self::Queued => 1,
+    pub const fn period_ms(self) -> u64 {
+        match self.channel() {
+            MotionChannel::Static => SPINNER_DEFAULT_PERIOD_MS,
+            channel => channel.period_ms(),
         }
     }
 }
@@ -133,7 +159,7 @@ pub enum SpinnerGlyphSet {
     Ascii,
     /// Quiet one-cell dot pulse for presence indicators.
     DotPulse,
-    /// Auto: Braille unless `ascii` flag / Motion prefers static.
+    /// Auto: Braille unless the `ascii` flag or the motion tier prefers static.
     Auto,
 }
 
@@ -260,14 +286,11 @@ impl SpinnerState {
 
     /// Animation demand for host frame clock. Idle when not ticking.
     #[must_use]
-    pub fn animation_demand(&self, tick: FrameTick, motion: Motion) -> AnimationDemand {
+    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
         if !self.should_tick() {
             return AnimationDemand::idle();
         }
-        let period = self
-            .period_ms
-            .saturating_mul(self.phase.period_scale())
-            .max(16);
+        let period = self.frame_period_ms().max(16);
         // spinner_demand uses fixed 80ms — scale deadline to our period
         let base = spinner_demand(tick, motion, true);
         if !base.needs_redraw {
@@ -280,9 +303,22 @@ impl SpinnerState {
         }
     }
 
+    /// Frame period in milliseconds.
+    ///
+    /// The phase's [`MotionChannel`] owns the cadence; a host override still
+    /// wins, so a caller that has measured its own rhythm keeps it.
+    #[must_use]
+    pub fn frame_period_ms(&self) -> u64 {
+        if self.period_ms == SPINNER_DEFAULT_PERIOD_MS {
+            self.phase.period_ms()
+        } else {
+            self.period_ms
+        }
+    }
+
     /// Effective frames for phase + capability.
     #[must_use]
-    pub fn frames(&self, motion: Motion) -> &'static [&'static str] {
+    pub fn frames(&self, motion: MotionPolicy) -> &'static [&'static str] {
         let ascii = self.ascii_force
             || matches!(self.glyph_set, SpinnerGlyphSet::Ascii)
             || (matches!(self.glyph_set, SpinnerGlyphSet::Auto) && self.ascii_force);
@@ -290,19 +326,27 @@ impl SpinnerState {
         let use_ascii = ascii || matches!(self.glyph_set, SpinnerGlyphSet::Ascii);
 
         if !motion.animate_spinners() || !self.phase.animates() {
+            // Reduced motion is not frozen: each phase keeps a distinct static
+            // mark. `Indeterminate` must NOT fall back to a filled `●` — filled
+            // reads as "terminal state reached", which is the one thing an
+            // in-flight spinner is not.
             return if use_ascii {
                 match self.phase {
                     ActivityPhase::Queued => &["o"],
                     ActivityPhase::Waiting => &["."],
                     ActivityPhase::Reconnecting => &["?"],
-                    ActivityPhase::Indeterminate => &["o"],
+                    ActivityPhase::Streaming => &["~"],
+                    ActivityPhase::Done => &["+"],
+                    ActivityPhase::Indeterminate => &["O"],
                 }
             } else {
                 match self.phase {
-                    ActivityPhase::Queued => &["○"],
+                    ActivityPhase::Queued => &["◌"],
                     ActivityPhase::Waiting => &["·"],
-                    ActivityPhase::Reconnecting => &["◌"],
-                    ActivityPhase::Indeterminate => &["●"],
+                    ActivityPhase::Reconnecting => &["◍"],
+                    ActivityPhase::Streaming => &["≈"],
+                    ActivityPhase::Done => &["✓"],
+                    ActivityPhase::Indeterminate => &["○"],
                 }
             };
         }
@@ -328,7 +372,22 @@ impl SpinnerState {
                 if use_ascii {
                     &["o"]
                 } else {
-                    &["○"]
+                    &["◌"]
+                }
+            }
+            ActivityPhase::Streaming => {
+                if use_ascii {
+                    SPINNER_STREAM_ASCII
+                } else {
+                    SPINNER_STREAM_UNICODE
+                }
+            }
+            // Done is terminal: one settled mark, never a sequence.
+            ActivityPhase::Done => {
+                if use_ascii {
+                    &["+"]
+                } else {
+                    &["✓"]
                 }
             }
             ActivityPhase::Reconnecting => {
@@ -343,7 +402,7 @@ impl SpinnerState {
 
     /// Glyph for tick.
     #[must_use]
-    pub fn frame_glyph(&self, tick: FrameTick, motion: Motion) -> &'static str {
+    pub fn frame_glyph(&self, tick: FrameTick, motion: MotionPolicy) -> &'static str {
         let frames = self.frames(motion);
         if frames.is_empty() {
             return " ";
@@ -351,8 +410,7 @@ impl SpinnerState {
         if !self.should_tick() || !motion.animate_spinners() || !self.phase.animates() {
             return frames[0];
         }
-        let period = self.period_ms.saturating_mul(self.phase.period_scale());
-        let step = spinner_step(tick, frames.len(), period, motion);
+        let step = spinner_step(tick, frames.len(), self.frame_period_ms(), motion);
         frames[step]
     }
 }
@@ -450,7 +508,7 @@ impl<'a> Spinner<'a> {
 
     /// Frame glyph (legacy API preserved).
     #[must_use]
-    pub fn frame_glyph(&self, tick: FrameTick, motion: Motion) -> &'static str {
+    pub fn frame_glyph(&self, tick: FrameTick, motion: MotionPolicy) -> &'static str {
         let mut state = SpinnerState::new();
         state.set_ascii(self.ascii);
         if let Some(p) = self.phase {
@@ -493,7 +551,7 @@ impl<'a> Spinner<'a> {
         buffer: &mut Buffer,
         state: &SpinnerState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if area.is_empty() || !state.is_visible() {
             return;
@@ -531,7 +589,7 @@ impl<'a> Spinner<'a> {
     }
 
     /// Legacy paint without state (always active/visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, tick: FrameTick, motion: Motion) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, tick: FrameTick, motion: MotionPolicy) {
         let mut state = SpinnerState::new();
         state.set_ascii(self.ascii);
         if let Some(p) = self.phase {
@@ -642,7 +700,7 @@ impl<'a> ActivityIndicator<'a> {
         buffer: &mut Buffer,
         state: &SpinnerState,
         tick: FrameTick,
-        motion: Motion,
+        motion: MotionPolicy,
     ) {
         if area.is_empty() || !state.is_visible() {
             return;
@@ -653,12 +711,20 @@ impl<'a> ActivityIndicator<'a> {
         }
         let glyph = local.frame_glyph(tick, motion);
         let line1 = format!("{glyph} {}", self.label);
+        // The verb is words; the spinner cell is the signal (plans/007).
         buffer.set_stringn(
             area.x,
             area.y,
             &take_display_cols(&line1, usize::from(area.width)),
             usize::from(area.width),
-            self.system.style(self.role).add_modifier(Modifier::BOLD),
+            self.system.style(Role::TextMuted),
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            0,
+            glyph,
+            self.system.style(self.role),
         );
         if let Some(detail) = self.detail {
             if area.height > 1 {
@@ -724,7 +790,7 @@ impl Widget for &Spinner<'_> {
             Duration::ZERO,
             Duration::ZERO,
         );
-        self.render(area, buffer, tick, Motion::Off);
+        self.render(area, buffer, tick, MotionPolicy::Off);
     }
 }
 
@@ -741,16 +807,78 @@ mod tests {
     }
 
     #[test]
+    fn every_phase_declares_its_channel_and_cadence() {
+        // The channel owns the period, so a spinner and a status dot in the
+        // same state breathe together instead of drifting apart.
+        assert_eq!(ActivityPhase::Indeterminate.channel(), MotionChannel::Work);
+        assert_eq!(ActivityPhase::Reconnecting.channel(), MotionChannel::Work);
+        assert_eq!(ActivityPhase::Waiting.channel(), MotionChannel::Wait);
+        assert_eq!(ActivityPhase::Streaming.channel(), MotionChannel::Stream);
+        assert_eq!(ActivityPhase::Queued.channel(), MotionChannel::Static);
+        assert_eq!(ActivityPhase::Done.channel(), MotionChannel::Static);
+
+        assert_eq!(ActivityPhase::Indeterminate.period_ms(), 80);
+        assert_eq!(ActivityPhase::Waiting.period_ms(), 240);
+        assert_eq!(ActivityPhase::Streaming.period_ms(), 120);
+
+        // Terminal states cost no frames at all.
+        assert!(!ActivityPhase::Queued.animates());
+        assert!(!ActivityPhase::Done.animates());
+        assert!(ActivityPhase::Streaming.animates());
+    }
+
+    #[test]
+    fn done_is_a_settled_mark_not_a_sequence() {
+        let mut state = SpinnerState::new();
+        state.set_phase(ActivityPhase::Done);
+        assert_eq!(state.frames(MotionPolicy::Full), &["✓"]);
+        assert_eq!(
+            state.frame_glyph(tick_at(0), MotionPolicy::Full),
+            state.frame_glyph(tick_at(4_000), MotionPolicy::Full),
+            "a finished spinner must not keep moving"
+        );
+    }
+
+    #[test]
+    fn reduced_motion_marks_stay_distinct_per_phase() {
+        // Reduced is not frozen: the phase must still be readable, and no two
+        // phases may share a mark or the tier destroys the distinction.
+        let mut marks = Vec::new();
+        for phase in [
+            ActivityPhase::Indeterminate,
+            ActivityPhase::Waiting,
+            ActivityPhase::Queued,
+            ActivityPhase::Reconnecting,
+            ActivityPhase::Streaming,
+            ActivityPhase::Done,
+        ] {
+            let mut state = SpinnerState::new();
+            state.set_phase(phase);
+            let mark = state.frame_glyph(tick_at(500), MotionPolicy::Off);
+            assert_ne!(mark, "●", "{phase:?} fell back to a filled dot");
+            marks.push(mark);
+        }
+        let unique: std::collections::HashSet<_> = marks.iter().collect();
+        assert_eq!(
+            unique.len(),
+            marks.len(),
+            "phases share a static mark: {marks:?}"
+        );
+    }
+
+    #[test]
     fn spinner_motion_off_static() {
         let tokens = DesignSystem::default();
         let spinner = Spinner::new(&tokens);
         let now = Instant::now();
         let tick = FrameTick::manual(now, Duration::from_millis(560), Duration::from_millis(16));
-        assert_eq!(spinner.frame_glyph(tick, Motion::Off), "●");
-        let a = spinner.frame_glyph(tick, Motion::Full);
+        // Hollow, never filled: a filled dot reads as "terminal state reached",
+        // which an in-flight spinner has not.
+        assert_eq!(spinner.frame_glyph(tick, MotionPolicy::Off), "○");
+        let a = spinner.frame_glyph(tick, MotionPolicy::Full);
         let b = spinner.frame_glyph(
             FrameTick::manual(now, Duration::from_millis(640), Duration::from_millis(16)),
-            Motion::Full,
+            MotionPolicy::Full,
         );
         assert_ne!(a, b);
     }
@@ -759,12 +887,24 @@ mod tests {
     fn idle_when_not_visible_or_inactive() {
         let mut state = SpinnerState::new();
         let tick = tick_at(500);
-        assert!(state.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(
+            state
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
         state.set_visible(false);
-        assert!(!state.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(
+            !state
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
         state.set_visible(true);
         state.set_active(false);
-        assert!(!state.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(
+            !state
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
         assert!(!state.should_tick());
     }
 
@@ -774,8 +914,8 @@ mod tests {
         state.set_phase(ActivityPhase::Queued);
         assert!(!state.phase().animates());
         assert!(!state.should_tick());
-        let g1 = state.frame_glyph(tick_at(0), Motion::Full);
-        let g2 = state.frame_glyph(tick_at(10_000), Motion::Full);
+        let g1 = state.frame_glyph(tick_at(0), MotionPolicy::Full);
+        let g2 = state.frame_glyph(tick_at(10_000), MotionPolicy::Full);
         assert_eq!(g1, g2);
     }
 
@@ -791,7 +931,7 @@ mod tests {
             ActivityPhase::Reconnecting,
         ] {
             state.set_phase(p);
-            glyphs.push(state.frame_glyph(tick_at(0), Motion::Off));
+            glyphs.push(state.frame_glyph(tick_at(0), MotionPolicy::Off));
         }
         // Not all identical (queued vs indeterminate)
         assert!(glyphs.iter().any(|g| *g != glyphs[0]) || glyphs.len() == 4);
@@ -824,7 +964,7 @@ mod tests {
             &mut buf,
             &state,
             tick_at(200),
-            Motion::Full,
+            MotionPolicy::Full,
         );
         let text: String = buf
             .content()
@@ -843,7 +983,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         ActivityIndicator::new("Reconnecting", &system)
             .detail("attempt 3/5")
-            .paint(area, &mut buf, &state, tick_at(100), Motion::Full);
+            .paint(area, &mut buf, &state, tick_at(100), MotionPolicy::Full);
         let text: String = buf
             .content()
             .iter()
@@ -857,28 +997,31 @@ mod tests {
     fn ascii_and_reduced_motion() {
         let mut state = SpinnerState::new();
         state.set_ascii(true);
-        let g = state.frame_glyph(tick_at(0), Motion::Off);
-        assert!(g == "o" || g == "|" || g == "." || g == "?");
-        let a = state.frame_glyph(tick_at(80), Motion::Full);
-        let b = state.frame_glyph(tick_at(160), Motion::Full);
+        let g = state.frame_glyph(tick_at(0), MotionPolicy::Off);
+        assert!(
+            g == "O" || g == "o" || g == "|" || g == "." || g == "?",
+            "{g}"
+        );
+        let a = state.frame_glyph(tick_at(80), MotionPolicy::Full);
+        let b = state.frame_glyph(tick_at(160), MotionPolicy::Full);
         // may or may not differ depending on step; at least valid ascii set
         assert!(SPINNER_ASCII_FRAMES.contains(&a) || a == "o");
         let _ = b;
         assert!(
             !state
-                .animation_demand(tick_at(0), Motion::Reduced)
+                .animation_demand(tick_at(0), MotionPolicy::Basic)
                 .needs_redraw
-                || !Motion::Reduced.animate_spinners()
+                || !MotionPolicy::Basic.animate_spinners()
         );
     }
 
     #[test]
     fn deterministic_cadence() {
         let state = SpinnerState::new();
-        let a = state.frame_glyph(tick_at(800), Motion::Full);
-        let b = state.frame_glyph(tick_at(800), Motion::Full);
+        let a = state.frame_glyph(tick_at(800), MotionPolicy::Full);
+        let b = state.frame_glyph(tick_at(800), MotionPolicy::Full);
         assert_eq!(a, b);
-        let c = state.frame_glyph(tick_at(880), Motion::Full);
+        let c = state.frame_glyph(tick_at(880), MotionPolicy::Full);
         // 80ms later may advance
         let _ = c;
     }
@@ -888,22 +1031,30 @@ mod tests {
         // Active visible Full → demand
         let active = SpinnerState::new();
         let tick = tick_at(0);
-        assert!(active.animation_demand(tick, Motion::Full).needs_redraw);
         assert!(
             active
-                .animation_demand(tick, Motion::Full)
+                .animation_demand(tick, MotionPolicy::Full)
+                .needs_redraw
+        );
+        assert!(
+            active
+                .animation_demand(tick, MotionPolicy::Full)
                 .next_deadline
                 .is_some()
         );
-        // Motion Off → no demand even if active
-        assert!(!active.animation_demand(tick, Motion::Off).needs_redraw);
+        // Motion off → no demand even if active
+        assert!(
+            !active
+                .animation_demand(tick, MotionPolicy::Off)
+                .needs_redraw
+        );
         // Inactive → idle
         let mut idle = SpinnerState::new();
         idle.set_active(false);
-        assert!(!idle.animation_demand(tick, Motion::Full).needs_redraw);
+        assert!(!idle.animation_demand(tick, MotionPolicy::Full).needs_redraw);
         // Matches runtime spinner_demand contract
-        assert!(!spinner_demand(tick, Motion::Full, false).needs_redraw);
-        assert!(spinner_demand(tick, Motion::Full, true).needs_redraw);
+        assert!(!spinner_demand(tick, MotionPolicy::Full, false).needs_redraw);
+        assert!(spinner_demand(tick, MotionPolicy::Full, true).needs_redraw);
     }
 
     #[test]
@@ -941,8 +1092,8 @@ mod tests {
             state.set_active(seed % 5 != 0);
             state.set_visible(seed % 7 != 0);
             state.set_ascii(seed % 2 == 0);
-            let _ = state.frame_glyph(tick_at(i * 40), Motion::Full);
-            let _ = state.animation_demand(tick_at(i * 40), Motion::Full);
+            let _ = state.frame_glyph(tick_at(i * 40), MotionPolicy::Full);
+            let _ = state.animation_demand(tick_at(i * 40), MotionPolicy::Full);
         }
     }
 
@@ -964,7 +1115,7 @@ mod tests {
                             f.buffer_mut(),
                             &state,
                             tick_at(i * 16),
-                            Motion::Full,
+                            MotionPolicy::Full,
                         );
                 })
                 .unwrap();
@@ -989,7 +1140,7 @@ mod tests {
                         f.buffer_mut(),
                         &state,
                         tick_at(0),
-                        Motion::Off,
+                        MotionPolicy::Off,
                     );
                 })
                 .unwrap();
@@ -1008,7 +1159,7 @@ mod tests {
     fn reconnecting_uses_reverse_sequence() {
         let mut state = SpinnerState::new();
         state.set_phase(ActivityPhase::Reconnecting);
-        let g = state.frame_glyph(tick_at(0), Motion::Full);
+        let g = state.frame_glyph(tick_at(0), MotionPolicy::Full);
         assert!(
             SPINNER_RECONNECT_UNICODE.contains(&g) || SPINNER_BRAILLE_FRAMES.contains(&g),
             "{g}"

@@ -294,6 +294,52 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0278 | `v0.13.0` | [Typed Form values through FieldRow](migrations/0278-v0.13.0-form-field-row-values.md) |
 | 0279 | `v0.13.0` | [Visual cascade completion](migrations/0279-v0.13.0-visual-cascade-completion.md) |
 | 0280 | `v0.13.0` | [Portable frame time](migrations/0280-v0.13.0-portable-frame-time.md) |
+| 0281 | `v0.14.0` | [Craft helpers: label painter, path contraction, inset token](migrations/0281-v0.14.0-craft-helpers.md) |
+| 0282 | `v0.14.0` | [Honest capability ladder: quantizer, projections, glyph de-collision](migrations/0282-v0.14.0-honest-capability-ladder.md) |
+| 0283 | `v0.14.0` | [The contrast floor](migrations/0283-v0.14.0-contrast-floor.md) |
+| 0284 | `v0.14.0` | [Graphite role ladder: text tiers, accent de-collapse, retired tab-underline roles](migrations/0284-v0.14.0-graphite-role-ladder.md) |
+| 0285 | `v0.14.0` | [Row rhythm and alignment](migrations/0285-v0.14.0-row-rhythm-and-alignment.md) |
+| 0286 | `v0.14.0` | [One voice: the microcopy standard](migrations/0286-v0.14.0-one-voice-microcopy.md) |
+| 0287 | `v0.14.0` | [Light-preset contrast and the faint tier](migrations/0287-v0.14.0-light-preset-contrast.md) |
+| 0288 | `v0.14.0` | [One paint authority for selection, focus, and elevation](migrations/0288-v0.14.0-selection-focus-paint-authority.md) |
+| 0289 | `v0.14.0` | [Motion: demand-driven pipeline, policy tiers, layer-1 animation](migrations/0289-v0.14.0-motion-pipeline-and-policy.md) |
+| 0290 | `v0.14.0` | [The information budget](migrations/0290-v0.14.0-information-budget.md) |
+| 0291 | `v0.14.0` | [One scrollbar language](migrations/0291-v0.14.0-one-scrollbar-language.md) |
+| 0292 | `v0.14.0` | [Bordered overlays reserve their gutter](migrations/0292-v0.14.0-overlay-content-inset.md) |
+| 0293 | `v0.14.0` | [Honest truncation: chrome labels, paths, held-back errors](migrations/0293-v0.14.0-honest-truncation.md) |
+| 0294 | `v0.14.0` | [Silent clips say what they held back](migrations/0294-v0.14.0-silent-clips.md) |
+| 0295 | `v0.14.0` | [Underline means "link", and nothing else](migrations/0295-v0.14.0-underline-free-interaction.md) |
+| 0296 | `v0.14.0` | [One selection language for every collection](migrations/0296-v0.14.0-one-selection-language.md) |
+| 0297 | `v0.14.0` | [Skeleton sweeps instead of pulsing](migrations/0297-v0.14.0-skeleton-shimmer-sweep.md) |
+| 0298 | `v0.14.0` | [Status lives in the glyph](migrations/0298-v0.14.0-status-in-the-glyph.md) |
+| 0299 | `v0.14.0` | [The design system carries the frame tick](migrations/0299-v0.14.0-design-system-carries-the-tick.md) |
+| 0300 | `v0.14.0` | [The accent budget](migrations/0300-v0.14.0-accent-budget.md) |
+| 0301 | `v0.14.0` | [Stream rows keep their words](migrations/0301-v0.14.0-stream-rows-keep-their-words.md) |
+| 0302 | `v0.14.0` | [Overlay affordances restored, and the neon-fill gate goes live](migrations/0302-v0.14.0-overlay-affordances-restored.md) |
+| 0303 | `v0.14.0` | [Spinner phases declare a motion channel](migrations/0303-v0.14.0-spinner-channels.md) |
+| 0304 | `v0.14.0` | [The underline scan covers the builder too](migrations/0304-v0.14.0-underline-scan-covers-the-builder.md) |
+| 0305 | `v0.14.0` | [A live status breathes in its own cell](migrations/0305-v0.14.0-status-breathes-in-its-cell.md) |
+| 0306 | `v0.14.0` | [Toasts fade in, errors do not](migrations/0306-v0.14.0-toast-entrance-motion.md) |
+| 0307 | `v0.14.0` | [Empty bodies speak one language](migrations/0307-v0.14.0-empty-bodies-speak-one-language.md) |
+| 0308 | `v0.14.0` | [Overlay hints share one vocabulary](migrations/0308-v0.14.0-overlay-hints-share-one-vocabulary.md) |
+| 0309 | `v0.14.0` | [Danger is quiet by default](migrations/0309-v0.14.0-danger-is-quiet-by-default.md) |
+| 0310 | `v0.14.0` | [Floating surfaces actually float](migrations/0310-v0.14.0-floating-surfaces-float.md) |
+| 0311 | `v0.14.0` | [Picker columns hold still, and notifications get a clock](migrations/0311-v0.14.0-picker-columns-and-a-clock.md) |
+| 0312 | `v0.14.0` | [Control chrome parity](migrations/0312-v0.14.0-control-chrome-parity.md) |
+| 0313 | `v0.14.0` | [Rows get anatomy](migrations/0313-v0.14.0-rows-get-anatomy.md) |
+| 0314 | `v0.14.0` | [Examples only compose](migrations/0314-v0.14.0-examples-only-compose.md) |
+| 0315 | `v0.14.0` | [Examples stop hand-rolling chrome](migrations/0315-v0.14.0-examples-stop-hand-rolling.md) |
+| 0316 | `v0.14.0` | [One token family, one focus vocabulary](migrations/0316-v0.14.0-one-token-family.md) |
+| 0317 | `v0.14.0` | [Every state paints, and Space works](migrations/0317-v0.14.0-every-state-paints.md) |
+| 0318 | `v0.14.0` | [Tables say where they are cut](migrations/0318-v0.14.0-tables-say-where-they-are-cut.md) |
+| 0319 | `v0.14.0` | [Empty states, one-column glyphs, honest card chrome](migrations/0319-v0.14.0-empty-states-and-one-column-glyphs.md) |
+| 0320 | `v0.14.0` | [Transitions reach the widgets](migrations/0320-v0.14.0-transitions-reach-the-widgets.md) |
+| 0321 | `v0.14.0` | [The catalog tells the truth](migrations/0321-v0.14.0-the-catalog-tells-the-truth.md) |
+| 0322 | `v0.14.0` | [Overlays survive any terminal](migrations/0322-v0.14.0-overlays-survive-any-terminal.md) |
+| 0323 | `v0.14.0` | [One modal geometry](migrations/0323-v0.14.0-one-modal-geometry.md) |
+| 0324 | `v0.14.0` | [The default frame goes on a diet](migrations/0324-v0.14.0-the-default-frame-goes-on-a-diet.md) |
+| 0325 | `v0.14.0` | [Departures, edges, and acknowledgements](migrations/0325-v0.14.0-departures-edges-and-acknowledgements.md) |
+| 0326 | `v0.14.0` | [One ellipsis and five visible elevation rungs](migrations/0326-v0.14.0-one-ellipsis-five-elevation-rungs.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

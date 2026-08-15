@@ -40,7 +40,7 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -376,6 +376,12 @@ pub struct TabsState<Id> {
     overflow_open: bool,
     enabled: bool,
     root: Rect,
+    /// The tab the strip is moving away from, and when the move started.
+    ///
+    /// An active fill that snaps reads as a jump between two unrelated
+    /// strips; carrying the previous tab lets the fill blend (plans/014).
+    previous: Option<Id>,
+    changed_at_ms: u64,
 }
 
 impl<Id> Default for TabsState<Id> {
@@ -406,6 +412,8 @@ impl<Id> TabsState<Id> {
             overflow_open: false,
             enabled: true,
             root: Rect::default(),
+            previous: None,
+            changed_at_ms: 0,
         }
     }
 
@@ -496,10 +504,34 @@ impl<Id> TabsState<Id> {
     where
         Id: Clone + PartialEq,
     {
+        if self.selected != id {
+            self.previous = self.selected.clone();
+        }
         self.selected = id.clone();
         if let Some(id) = id {
             self.collection.set_active(Some(id));
         }
+    }
+
+    /// Records when the active tab changed, in runner milliseconds.
+    ///
+    /// Hosts that animate call this from their tick; hosts that do not leave
+    /// it alone and the fill snaps, which is the settled frame.
+    pub const fn mark_changed_at(&mut self, elapsed_ms: u64) {
+        self.changed_at_ms = elapsed_ms;
+    }
+
+    /// How far the active-fill blend has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn blend_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if self.previous.is_none() || duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.changed_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
     }
 
     /// Presentation for bounds.
@@ -541,6 +573,7 @@ impl<Id> TabsState<Id> {
         if self.selected.as_ref() == Some(&id) {
             return TabsOutcome::Changed;
         }
+        self.previous = self.selected.clone();
         self.selected = Some(id.clone());
         self.collection.set_active(Some(id.clone()));
         TabsOutcome::SelectionChanged { id }
@@ -791,6 +824,40 @@ impl<Id> TabsState<Id> {
 
 // ── Widget ──────────────────────────────────────────────────────────────────
 
+/// How a tab strip marks the active tab.
+///
+/// The rule row is retired (plans/002); this names what replaced it and lets a
+/// shell pick a different answer without inventing one (audit D2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum TabsActiveCue {
+    /// Selection wash behind a bold label (default).
+    #[default]
+    AccentPill,
+    /// The active tab sits on the body's own ground, joined to the pane below.
+    Connected,
+    /// A leading marker plus weight — the colourless-safe fallback.
+    Marker,
+    /// An accent rule under the active tab, for shells that want the rail.
+    Rule,
+}
+
+impl TabsActiveCue {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::AccentPill => "accent-pill",
+            Self::Connected => "connected",
+            Self::Marker => "marker",
+            Self::Rule => "rule",
+        }
+    }
+}
+
+/// How long the active fill takes to arrive.
+const TAB_FILL_BLEND_MS: u64 = 100;
+
 /// Keyboard- and pointer-navigable tab strip.
 #[derive(Debug, Clone, Copy)]
 pub struct Tabs<'a, Id> {
@@ -799,17 +866,29 @@ pub struct Tabs<'a, Id> {
     system: &'a DesignSystem,
     ascii: bool,
     show_close: bool,
+    active_cue: TabsActiveCue,
 }
 
 impl<'a, Id> Tabs<'a, Id> {
+    /// Chooses how the active tab is marked (default [`TabsActiveCue::AccentPill`]).
+    #[must_use]
+    pub const fn active_cue(mut self, cue: TabsActiveCue) -> Self {
+        self.active_cue = cue;
+        self
+    }
+
     /// Creates a tab strip over borrowed tabs.
     #[must_use]
     pub const fn new(tabs: &'a [Tab<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             tabs,
+            active_cue: TabsActiveCue::AccentPill,
             gap: TAB_GAP,
             system,
-            ascii: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
             show_close: true,
         }
     }
@@ -1021,7 +1100,12 @@ impl<'a, Id> Tabs<'a, Id> {
             buffer.set_stringn(
                 tr.x,
                 tr.y,
-                if self.ascii { "..." } else { " … " },
+                // Catalog-resolved and padded to the same budget in both
+                // profiles, so the overflow trigger does not shift by a cell
+                // between Unicode and ASCII.
+                &Glyph::Ellipsis
+                    .resolve(self.system.glyphs)
+                    .aligned(ellipsis_w),
                 usize::from(tr.width),
                 self.system.style(Role::TabInactive),
             );
@@ -1169,19 +1253,78 @@ impl<'a, Id> Tabs<'a, Id> {
             (false, false) => Role::TabInactive,
         };
         let mut style = self.system.style(role);
+        let mut marker = "";
         if selected {
+            // The active cue is named, not improvised (plans/015 Step 3). A
+            // themed `TabActive` background always wins, so consumers keep
+            // full control of the strip's fill.
             style = style.add_modifier(Modifier::BOLD);
+            match self.active_cue {
+                TabsActiveCue::AccentPill => {
+                    if style.bg.is_none()
+                        && let Some(bg) = self.system.style(Role::SelectionTint).bg
+                    {
+                        // The fill arrives rather than snapping: a strip that
+                        // jumps reads as two unrelated strips (plans/014).
+                        let settled =
+                            state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
+                        let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
+                            let canvas = self
+                                .system
+                                .style(Role::Canvas)
+                                .bg
+                                .unwrap_or(ratatui_core::style::Color::Reset);
+                            crate::style::blend_toward(canvas, bg, settled)
+                        } else {
+                            bg
+                        };
+                        style = style.bg(bg);
+                    }
+                }
+                TabsActiveCue::Connected => {
+                    if style.bg.is_none()
+                        && let Some(bg) = self.system.style(Role::Surface).bg
+                    {
+                        style = style.bg(bg);
+                    }
+                }
+                TabsActiveCue::Marker => {
+                    marker = if self.ascii || self.system.glyphs.is_ascii() {
+                        ">"
+                    } else {
+                        self.system
+                            .glyphs
+                            .resolve(crate::style::Glyph::ChevronRight)
+                            .text
+                    };
+                }
+                TabsActiveCue::Rule => {}
+            }
         }
         if focused_tab && !selected {
-            style = style.add_modifier(Modifier::UNDERLINED | Modifier::REVERSED);
-        } else if hovered {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            // Roving focus that has not committed yet: brighten the tab's
+            // leading edge rather than reversing the whole label, so the cue
+            // does not depend on the strip having a second row (plans/021
+            // Step 4, design law §5.2).
+            style = style
+                .patch(self.system.style(Role::BorderFocused))
+                .add_modifier(Modifier::BOLD);
+        } else if focused_tab && selected {
+            style = style.add_modifier(Modifier::BOLD);
+        } else if hovered && let Some(bg) = self.system.style(Role::HoverTint).bg {
+            style = style.bg(bg);
         }
         if !tab.enabled {
-            style = self.system.style(Role::TextMuted);
+            // Disabled is a different fact from "inactive": muting both meant a
+            // tab you cannot click looked exactly like one you can.
+            style = self.system.style(Role::TextDisabled);
         }
 
         let mut parts = String::from(" ");
+        if !marker.is_empty() {
+            parts.push_str(marker);
+            parts.push(' ');
+        }
         if show_status {
             if let Some(g) = &tab.glyph {
                 parts.push_str(g.content.as_ref());
@@ -1211,6 +1354,18 @@ impl<'a, Id> Tabs<'a, Id> {
             style,
         );
 
+        if selected && matches!(self.active_cue, TabsActiveCue::Rule) && rect.height > 1 {
+            let rule = self.system.glyphs.rule();
+            let line: String = std::iter::repeat_n(rule, usize::from(rect.width)).collect();
+            buffer.set_stringn(
+                rect.x,
+                rect.y.saturating_add(1),
+                &line,
+                usize::from(rect.width),
+                self.system.style(Role::Accent),
+            );
+        }
+
         // Restyle glyph span color when present
         if show_status
             && label_rect.width > 1
@@ -1221,23 +1376,6 @@ impl<'a, Id> Tabs<'a, Id> {
                 label_rect.y,
                 glyph,
                 label_rect.width.saturating_sub(1),
-            );
-        }
-
-        // Underline selection cue (horizontal two-row strip)
-        if selected && rect.height > 1 {
-            let underline_style = if state.focused {
-                self.system.style(Role::TabUnderlineFocused)
-            } else {
-                self.system.style(Role::TabUnderlineUnfocused)
-            };
-            let ch = if self.ascii { "-" } else { "━" };
-            buffer.set_stringn(
-                label_rect.x,
-                rect.y.saturating_add(1),
-                ch.repeat(usize::from(label_rect.width)),
-                usize::from(label_rect.width),
-                underline_style,
             );
         }
 
@@ -1367,15 +1505,9 @@ mod tests {
         let system = DesignSystem::from_palette(theme.clone());
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(3, 5)].symbol(), "━");
-        assert_eq!(
-            buffer[(3, 5)].fg,
-            theme
-                .style(Role::TabUnderlineFocused)
-                .fg
-                .expect("focused underline role has a foreground")
-        );
-        assert!(buffer[(3, 4)].modifier.contains(Modifier::UNDERLINED));
+        assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
+        // The active tab is a bold label on a wash — never a rule row.
+        assert_eq!(buffer[(3, 5)].symbol(), " ");
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }
@@ -1405,9 +1537,9 @@ mod tests {
         assert_eq!(
             buffer[(1, 0)].bg,
             theme
-                .style(Role::TabActive)
+                .style(Role::SelectionTint)
                 .bg
-                .expect("active tab role has a background")
+                .expect("the active tab wash carries a background")
         );
     }
 
@@ -1616,6 +1748,45 @@ mod tests {
             &state,
         );
         assert!(scene.get(&"tabs").is_some());
+    }
+
+    #[test]
+    fn every_active_cue_marks_the_active_tab_differently() {
+        let system = DesignSystem::default();
+        let tabs = [Tab::new("a", "Files").active(true), Tab::new("b", "Search")];
+        let area = Rect::new(0, 0, 30, 2);
+        let mut frames = Vec::new();
+        for cue in [
+            TabsActiveCue::AccentPill,
+            TabsActiveCue::Connected,
+            TabsActiveCue::Marker,
+            TabsActiveCue::Rule,
+        ] {
+            let mut state = TabsState::new().with_selected("a");
+            let mut buffer = Buffer::empty(area);
+            Tabs::new(&tabs, &system)
+                .active_cue(cue)
+                .render(area, &mut buffer, &mut state);
+            frames.push((cue, buffer));
+        }
+        for (i, (cue, frame)) in frames.iter().enumerate() {
+            for (other_cue, other) in frames.iter().skip(i + 1) {
+                assert_ne!(
+                    frame.content(),
+                    other.content(),
+                    "{cue:?} and {other_cue:?} paint the same frame"
+                );
+            }
+        }
+        // The default is the pill, and it is a wash rather than a rule row.
+        let mut state = TabsState::new().with_selected("a");
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
+        let tint = system.style(Role::SelectionTint).bg;
+        assert!(
+            (0..area.width).any(|x| buffer[(x, 0)].style().bg == tint),
+            "the default cue is an accent pill"
+        );
     }
 
     #[test]

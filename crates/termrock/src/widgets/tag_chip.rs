@@ -26,7 +26,7 @@ use crate::interaction::{
     EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
     SemanticRole, SemanticScene, SemanticState,
 };
-use crate::style::{DesignSystem, Glyph, Role};
+use crate::style::{DesignSystem, FocusEmphasis, Glyph, Role, SurfaceFamily};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Shared token chrome ─────────────────────────────────────────────────────
@@ -290,90 +290,27 @@ impl TagState {
 
 impl<'a, Id: Clone> Tag<'a, Id> {
     /// Paint; updates state geometry.
+    /// Paint; updates state geometry.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
-            let z = TokenParts::default();
-            return z;
+            return TokenParts::default();
         }
-        let body_s = self.decorated_body();
-        let rem = if self.is_removable() {
-            remove_glyph(self.system)
-        } else {
-            ""
-        };
-        // Format: [ body ] or [ body × ]
-        let mut full = String::from("[");
-        full.push_str(&body_s);
-        if self.is_removable() {
-            full.push(' ');
-            full.push_str(rem);
+        // A tag is a neutral label: angle brackets, no selection pip.
+        let parts = TokenPaint {
+            system: self.system,
+            bracket: BracketStyle::Angle,
+            mark: None,
+            prefix: token_prefix(self.system, self.status),
+            label: self.label,
+            removable: self.is_removable(),
+            status: self.status,
+            focused: state.focused,
+            selected: false,
+            disabled: self.disabled,
+            part: state.part,
         }
-        full.push(']');
-        let clipped = take_display_cols(&full, usize::from(area.width));
-        let style = token_style(
-            self.system,
-            self.status,
-            state.focused,
-            false,
-            self.disabled,
-        );
-        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
-        // Geometry: approximate body vs remove from measured widths.
-        let open_w = 1u16; // [
-        let body_w = u16::try_from(display_cols(&body_s)).unwrap_or(0);
-        let rem_w = if self.is_removable() {
-            1 + u16::try_from(display_cols(rem)).unwrap_or(1)
-        } else {
-            0
-        };
-        let used = u16::try_from(display_cols(&clipped))
-            .unwrap_or(0)
-            .min(area.width);
-        let body = Rect {
-            x: area.x.saturating_add(open_w),
-            y: area.y,
-            width: body_w.min(used.saturating_sub(open_w)),
-            height: 1.min(area.height),
-        };
-        let remove = if self.is_removable() && used > open_w + body_w {
-            let rx = area
-                .x
-                .saturating_add(open_w)
-                .saturating_add(body_w)
-                .saturating_add(1);
-            Rect {
-                x: rx.min(area.right().saturating_sub(2)),
-                y: area.y,
-                width: rem_w.min(2).max(1),
-                height: 1.min(area.height),
-            }
-        } else {
-            Rect {
-                x: area.x,
-                y: area.y,
-                width: 0,
-                height: 0,
-            }
-        };
-        // Highlight remove part when focused there.
-        if state.focused && matches!(state.part, TokenPart::Remove) && remove.width > 0 {
-            let st = self
-                .system
-                .style(Role::Danger)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
-            buffer.set_style(remove, st);
-        }
-        let parts = TokenParts {
-            root: Rect {
-                x: area.x,
-                y: area.y,
-                width: used,
-                height: 1.min(area.height),
-            },
-            body,
-            remove,
-        };
+        .paint(area, buffer);
         state.parts = Some(parts);
         parts
     }
@@ -516,6 +453,187 @@ fn offset_rect(r: Rect, ox: u16, oy: u16) -> Rect {
     }
 }
 
+/// Which brackets a token wears.
+///
+/// The shape says what kind of token it is before any colour does: a neutral
+/// label is angled, an interactive one is squared (law P13, audit F4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum BracketStyle {
+    /// `⟨ label ⟩` — a neutral tag (ASCII `< >`).
+    Angle,
+    /// `[ label ]` — an interactive chip or keycap.
+    #[default]
+    Square,
+}
+
+impl BracketStyle {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Angle => "angle",
+            Self::Square => "square",
+        }
+    }
+
+    /// Opening and closing brackets under the active glyph profile.
+    #[must_use]
+    pub const fn pair(self, ascii: bool) -> (&'static str, &'static str) {
+        match (self, ascii) {
+            (Self::Angle, false) => ("⟨", "⟩"),
+            (Self::Angle, true) => ("<", ">"),
+            (Self::Square, _) => ("[", "]"),
+        }
+    }
+}
+
+/// One token's paint plan: brackets, an optional mark, a label, a remove slot.
+///
+/// Tag, Chip, keycaps, token-field entries and attachment chips are one family
+/// with different brackets and marks — not five paint bodies that drift apart
+/// (plans/015 Step 2).
+struct TokenPaint<'a> {
+    system: &'a DesignSystem,
+    bracket: BracketStyle,
+    /// Selection pip for interactive tokens (shape before colour).
+    mark: Option<&'a str>,
+    /// Status glyph painted before the label.
+    prefix: Option<&'a str>,
+    label: &'a str,
+    removable: bool,
+    status: TokenStatus,
+    focused: bool,
+    selected: bool,
+    disabled: bool,
+    part: TokenPart,
+}
+
+impl TokenPaint<'_> {
+    fn paint(&self, area: Rect, buffer: &mut Buffer) -> TokenParts {
+        if area.is_empty() {
+            return TokenParts::default();
+        }
+        let (open, close) = self.bracket.pair(self.system.glyphs.is_ascii());
+        let remove = if self.removable {
+            remove_glyph(self.system)
+        } else {
+            ""
+        };
+
+        let mut inner = String::new();
+        if let Some(prefix) = self.prefix {
+            inner.push_str(prefix);
+            inner.push(' ');
+        }
+        if let Some(mark) = self.mark {
+            inner.push_str(mark);
+            inner.push(' ');
+        }
+        inner.push_str(self.label);
+
+        let mut full = String::from(open);
+        full.push_str(&inner);
+        if self.removable {
+            full.push(' ');
+            full.push_str(remove);
+        }
+        full.push_str(close);
+
+        let clipped = take_display_cols(&full, usize::from(area.width));
+        let mut style = token_style(
+            self.system,
+            self.status,
+            self.focused,
+            self.selected,
+            self.disabled,
+        );
+        let emphasis = self.system.focus_emphasis(SurfaceFamily::Token);
+        if self.focused && matches!(emphasis, FocusEmphasis::Reversed) {
+            style = style.add_modifier(Modifier::REVERSED);
+        }
+        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
+
+        let used = u16::try_from(display_cols(&clipped))
+            .unwrap_or(0)
+            .min(area.width);
+        let open_w = u16::try_from(display_cols(open)).unwrap_or(1);
+        let inner_w = u16::try_from(display_cols(&inner)).unwrap_or(0);
+        let remove_w = if self.removable {
+            1 + u16::try_from(display_cols(remove)).unwrap_or(1)
+        } else {
+            0
+        };
+        let body = Rect {
+            x: area.x.saturating_add(open_w),
+            y: area.y,
+            width: inner_w.min(used.saturating_sub(open_w)),
+            height: 1.min(area.height),
+        };
+        let remove_rect = if self.removable && used > open_w.saturating_add(inner_w) {
+            Rect {
+                x: area
+                    .x
+                    .saturating_add(used.saturating_sub(remove_w.saturating_add(open_w)))
+                    .min(area.right().saturating_sub(1)),
+                y: area.y,
+                width: remove_w.min(2).max(1),
+                height: 1.min(area.height),
+            }
+        } else {
+            Rect::default()
+        };
+
+        if self.focused && matches!(emphasis, FocusEmphasis::PillGlyph) && used > 0 {
+            // The bracket carries focus so the mark keeps stating membership
+            // (audit D18): only the two bracket cells brighten.
+            let bracket = self.system.style(Role::BorderFocused);
+            for x in [area.x, area.x.saturating_add(used.saturating_sub(1))] {
+                if x < area.right() {
+                    let cell = &mut buffer[(x, area.y)];
+                    let ground = cell.style().bg;
+                    let mut bracket_style = bracket;
+                    if let Some(bg) = ground {
+                        bracket_style = bracket_style.bg(bg);
+                    }
+                    cell.set_style(bracket_style);
+                }
+            }
+        }
+
+        if self.focused && matches!(self.part, TokenPart::Remove) && remove_rect.width > 0 {
+            // The remove affordance is one or two cells: reverse them so the
+            // focus lands on the `×` itself.
+            buffer.set_style(
+                remove_rect,
+                self.system
+                    .style(Role::Danger)
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+            );
+        }
+
+        TokenParts {
+            root: Rect {
+                x: area.x,
+                y: area.y,
+                width: used,
+                height: 1.min(area.height),
+            },
+            body,
+            remove: remove_rect,
+        }
+    }
+}
+
+/// The status glyph a token wears before its label, if any.
+fn token_prefix(system: &DesignSystem, status: TokenStatus) -> Option<&'static str> {
+    match status {
+        TokenStatus::Loading => Some(loading_glyph(system)),
+        TokenStatus::Error => Some(system.glyphs.resolve(Glyph::Error).text),
+        TokenStatus::Default => None,
+    }
+}
+
 fn token_style(
     system: &DesignSystem,
     status: TokenStatus,
@@ -526,13 +644,19 @@ fn token_style(
     if disabled {
         return system.style(Role::TextDisabled);
     }
+    // Status and membership are different facts and compose: an errored chip
+    // that is also selected used to lose its selection entirely, because the
+    // status arm matched first and returned (plans/021 Step 4).
     let mut style = match status {
         TokenStatus::Error => system.style(Role::Danger),
         TokenStatus::Loading => system.style(Role::TextMuted),
-        TokenStatus::Default if selected => system.style(Role::Selection),
+        TokenStatus::Default if selected => system.style(Role::TextStrong),
         TokenStatus::Default if focused => system.style(Role::Focus),
         TokenStatus::Default => system.style(Role::TextMuted),
     };
+    if selected {
+        style = style.patch(system.style(Role::SelectionTint));
+    }
     if !selected {
         if let Some(bg) = system.style(Role::Raised).bg {
             style = style.bg(bg);
@@ -770,95 +894,32 @@ impl<'a, Id: Clone> Chip<'a, Id> {
         if area.is_empty() {
             return TokenParts::default();
         }
-        let mark = self
-            .system
-            .glyphs
-            .resolve(if state.selected {
-                Glyph::RadioOn
-            } else {
-                Glyph::RadioOff
-            })
-            .text;
-        let mut inner = String::new();
-        if matches!(self.status, TokenStatus::Loading) {
-            inner.push_str(loading_glyph(self.system));
-            inner.push(' ');
-        } else if matches!(self.status, TokenStatus::Error) {
-            inner.push_str(self.system.glyphs.resolve(Glyph::Error).text);
-            inner.push(' ');
+        // A chip is interactive: square brackets and a selection pip whose
+        // shape states membership before any colour does.
+        let mark = self.interactive.then(|| {
+            self.system
+                .glyphs
+                .resolve(if state.selected {
+                    Glyph::RadioOn
+                } else {
+                    Glyph::RadioOff
+                })
+                .text
+        });
+        let parts = TokenPaint {
+            system: self.system,
+            bracket: BracketStyle::Square,
+            mark,
+            prefix: token_prefix(self.system, self.status),
+            label: self.label,
+            removable: self.is_removable(),
+            status: self.status,
+            focused: state.focused,
+            selected: state.selected,
+            disabled: self.disabled,
+            part: state.part,
         }
-        if self.interactive {
-            inner.push_str(mark);
-            inner.push(' ');
-        }
-        inner.push_str(self.label);
-        let rem = if self.is_removable() {
-            remove_glyph(self.system)
-        } else {
-            ""
-        };
-        let mut full = String::from("[");
-        full.push_str(&inner);
-        if self.is_removable() {
-            full.push(' ');
-            full.push_str(rem);
-        }
-        full.push(']');
-        let clipped = take_display_cols(&full, usize::from(area.width));
-        let style = token_style(
-            self.system,
-            self.status,
-            state.focused,
-            state.selected,
-            self.disabled,
-        );
-        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
-        let used = u16::try_from(display_cols(&clipped))
-            .unwrap_or(0)
-            .min(area.width);
-        let open_w = 1u16;
-        let inner_w = u16::try_from(display_cols(&inner)).unwrap_or(0);
-        let rem_w = if self.is_removable() {
-            1 + u16::try_from(display_cols(rem)).unwrap_or(1)
-        } else {
-            0
-        };
-        let body = Rect {
-            x: area.x.saturating_add(open_w),
-            y: area.y,
-            width: inner_w.min(used.saturating_sub(open_w)),
-            height: 1.min(area.height),
-        };
-        let remove = if self.is_removable() && used > 3 {
-            Rect {
-                x: area
-                    .x
-                    .saturating_add(used.saturating_sub(rem_w.saturating_add(1))),
-                y: area.y,
-                width: rem_w.min(2).max(1),
-                height: 1.min(area.height),
-            }
-        } else {
-            Rect::default()
-        };
-        if state.focused && matches!(state.part, TokenPart::Remove) && remove.width > 0 {
-            buffer.set_style(
-                remove,
-                self.system
-                    .style(Role::Danger)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-            );
-        }
-        let parts = TokenParts {
-            root: Rect {
-                x: area.x,
-                y: area.y,
-                width: used,
-                height: 1.min(area.height),
-            },
-            body,
-            remove,
-        };
+        .paint(area, buffer);
         state.parts = Some(parts);
         parts
     }

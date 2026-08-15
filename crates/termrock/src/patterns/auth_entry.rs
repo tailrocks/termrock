@@ -17,19 +17,36 @@
 //!
 //! Research: shadcn signup-01…04, login-01…05, CLI login prompts, cloud auth
 //! TUI gates.
+//!
+//! Teaches: how to compose keyboard-first sign-up / sign-in / email-only
+//! composition (shadcn signup + login blocks peer for TUI).
+//!
+//! Composes: [`crate::widgets::Checkbox`],
+//! [`crate::widgets::CheckboxOutcome`], [`crate::widgets::CheckboxState`],
+//! [`crate::widgets::Panel`], [`crate::widgets::PanelState`],
+//! [`crate::widgets::PanelVariant`],
+//! [`crate::widgets::PasswordConfirmState`],
+//! [`crate::widgets::PasswordInput`], and 5 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
+    style::{DesignSystem, Glyph, PanelChrome, Role},
     widgets::{
-        Checkbox, CheckboxOutcome, CheckboxState, Panel, PanelVariant, PasswordConfirmState,
-        PasswordInput, PasswordInputOutcome, TextInput, TextInputOutcome, TextInputState,
-        Validation,
+        Button, ButtonState, ButtonVariant, Callout, CalloutTone, Checkbox, CheckboxOutcome,
+        CheckboxState, Panel, PanelVariant, PasswordConfirmState, PasswordInput,
+        PasswordInputOutcome, TextInput, TextInputOutcome, TextInputState, Validation,
     },
 };
+
+/// The waiting marker, from the glyph catalog rather than a literal.
+fn pending_glyph(system: &DesignSystem) -> &'static str {
+    system.glyphs.resolve(Glyph::Loading).text
+}
 
 // ── Mode & fields ───────────────────────────────────────────────────────────
 
@@ -64,6 +81,16 @@ impl AuthEntryMode {
             Self::SignUp => "Create account",
             Self::SignIn => "Sign in",
             Self::EmailOnly => "Continue with email",
+        }
+    }
+
+    /// What the surface says while a submit is in flight.
+    #[must_use]
+    pub const fn pending_verb(self) -> &'static str {
+        match self {
+            Self::SignUp => "Creating account…",
+            Self::SignIn => "Signing in…",
+            Self::EmailOnly => "Sending link…",
         }
     }
 
@@ -701,6 +728,17 @@ pub fn auth_entry_form_width(total: u16, has_aside: bool) -> u16 {
     }
 }
 
+/// Fixed-width secret placeholder, resolved from the glyph catalog.
+///
+/// One mask glyph for every masked field in the library; the width is fixed so
+/// an empty field never advertises how long the real secret is.
+fn mask_placeholder(system: &DesignSystem) -> String {
+    Glyph::Mask
+        .resolve(system.glyphs)
+        .text
+        .repeat(crate::style::MASK_CELLS)
+}
+
 /// Paint auth entry panel.
 pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
     if area.is_empty() {
@@ -739,33 +777,31 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
     let w = body.width.saturating_sub(2);
     let bottom = body.y.saturating_add(body.height);
 
-    // Host error banner
-    if let Some(err) = state.host_error.as_deref() {
-        if y < bottom && w > 0 {
-            buffer.set_stringn(
-                x,
-                y,
-                take_display_cols(err, usize::from(w)),
-                usize::from(w),
-                system.style(Role::Danger),
-            );
-            y = y.saturating_add(1);
-        }
+    // What the host told us, as a callout — the glyph carries the failure and
+    // the sentence stays readable. Field problems are stated once, inline on
+    // the field that has them, never also as a summary that leaks field ids
+    // (plans/010 Step 2).
+    if let Some(err) = state.host_error.as_deref()
+        && y < bottom
+        && w > 0
+    {
+        let height = 1u16.max(1).min(bottom.saturating_sub(y));
+        Callout::new(err, system)
+            .tone(CalloutTone::Danger)
+            .ascii(system.glyphs.is_ascii())
+            .paint(Rect::new(x, y, w, height), buffer);
+        y = y.saturating_add(height).saturating_add(1);
     }
 
-    // Field errors summary (first line)
-    if let Some(err) = state.field_errors.first() {
-        if y < bottom && w > 0 {
-            let msg = format!("{}: {}", err.field.id(), err.message);
-            buffer.set_stringn(
-                x,
-                y,
-                take_display_cols(&msg, usize::from(w)),
-                usize::from(w),
-                system.style(Role::Danger),
-            );
-            y = y.saturating_add(1);
-        }
+    // A submit in flight says so, rather than silently swallowing input.
+    if state.pending && y < bottom && w > 0 {
+        system.paint_row(
+            buffer,
+            Rect::new(x, y, w, 1),
+            &format!("{} {}", pending_glyph(system), state.mode.pending_verb()),
+            system.style(Role::TextMuted),
+        );
+        y = y.saturating_add(1);
     }
 
     let id_err = state
@@ -810,7 +846,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
             Validation::Valid
         };
         let _ = PasswordInput::new(surfaces.password_label, system)
-            .placeholder("••••••••")
+            .placeholder(&mask_placeholder(system))
             .validation(val)
             .paint(fa, buffer, &mut state.secrets.password);
         y = y.saturating_add(field_h.saturating_add(1));
@@ -827,7 +863,7 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
                 Validation::Valid
             };
             let _ = PasswordInput::new(surfaces.confirm_label, system)
-                .placeholder("••••••••")
+                .placeholder(&mask_placeholder(system))
                 .validation(val)
                 .paint(fa, buffer, &mut state.secrets.confirm);
             y = y.saturating_add(field_h.saturating_add(1));
@@ -853,22 +889,39 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
         }
     }
 
+    // The submit action is a button, not only a chord (plans/016 Step 3).
+    if y < bottom && w > 0 {
+        let label = match state.mode {
+            AuthEntryMode::SignUp => "Create account",
+            AuthEntryMode::SignIn => "Sign in",
+            AuthEntryMode::EmailOnly => "Send link",
+        };
+        let submit = Button::new(label, system).variant(ButtonVariant::Primary);
+        let width = submit.preferred_width().min(w);
+        if width > 0 {
+            let mut submit_state = ButtonState::new();
+            submit_state.activation.set_accepts_input(true);
+            submit_state.activation.set_loading(state.pending);
+            submit.paint(Rect::new(x, y, width, 1), buffer, &mut submit_state);
+            y = y.saturating_add(2);
+        }
+    }
+
     // Footer hints
     if y < bottom && w > 0 {
         let hint = match state.mode {
-            AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · Ctrl+G sign in",
+            AuthEntryMode::SignUp => "Tab fields · Enter submit · Esc cancel · C-g sign in",
             AuthEntryMode::SignIn => {
-                "Tab · Enter submit · Esc · Ctrl+G sign up · Ctrl+F forgot · Ctrl+E email"
+                "Enter submit · Tab next · C-g sign up · C-f forgot · Esc cancel"
             }
             AuthEntryMode::EmailOnly => {
-                "Enter request link · Esc cancel · Ctrl+G password · Ctrl+O oauth"
+                "Enter request link · Esc cancel · C-g password · C-o oauth"
             }
         };
-        buffer.set_stringn(
-            x,
-            y.min(bottom.saturating_sub(1)),
-            take_display_cols(hint, usize::from(w)),
-            usize::from(w),
+        system.paint_row(
+            buffer,
+            Rect::new(x, y.min(bottom.saturating_sub(1)), w, 1),
+            hint,
             system.style(Role::TextMuted),
         );
     }
@@ -882,11 +935,10 @@ pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySur
             if ay >= aside_area.bottom() || aw == 0 {
                 break;
             }
-            buffer.set_stringn(
-                ax,
-                ay,
-                take_display_cols(line, usize::from(aw)),
-                usize::from(aw),
+            system.paint_row(
+                buffer,
+                Rect::new(ax, ay, aw, 1),
+                line,
                 system.style(Role::TextMuted),
             );
             ay = ay.saturating_add(1);

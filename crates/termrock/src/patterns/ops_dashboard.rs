@@ -5,6 +5,18 @@
 //!
 //! Thin wrapper over [`crate::patterns::layout_app_shell`]
 //! ([`AppShellRecipe::Dashboard`]).
+//!
+//! Teaches: how to compose an ops dashboard's geometry — metric strip, main
+//! pane, log and status bar — as slots a host paints into.
+//!
+//! Composes: [`crate::widgets::ColumnModel`], [`crate::widgets::DataColumn`],
+//! [`crate::widgets::DataColumnWidth`], [`crate::widgets::DataTableOutcome`],
+//! [`crate::widgets::DataTableState`], [`crate::widgets::LogStreamOutcome`],
+//! [`crate::widgets::LogStreamState`],
+//! [`crate::widgets::ObjectInspectorState`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::layout::Rect;
 
@@ -96,6 +108,80 @@ pub fn layout_ops_dashboard(area: Rect, config: OpsDashboardLayout) -> OpsDashbo
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn reference_paint_fills_every_slot_within_budget() {
+        use crate::style::DesignSystem;
+        use crate::widgets::{
+            ColumnModel, DataColumn, DataColumnWidth, LogLevel, LogLine, MetricTile, StatusSlot,
+        };
+        use ratatui_core::buffer::Buffer;
+
+        let system = DesignSystem::default();
+        let tiles = [
+            MetricTile::new("cpu", "CPU", "42%"),
+            MetricTile::new("mem", "Memory", "7.1G"),
+        ];
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("pod", "Pod", DataColumnWidth::Min(10)),
+            DataColumn::new("age", "Age", DataColumnWidth::Fixed(6)),
+        ]);
+        let row0: &[&str] = &["api-7", "3h"];
+        let rows = [(1u64, row0)];
+        let logs = [LogLine::new("1", LogLevel::Info, "started").timestamp("12:00:00")];
+        let hints = [StatusSlot::new("tab", "tab pane")];
+        let view = OpsDashboardView {
+            tiles: &tiles,
+            columns: &columns,
+            rows: &rows,
+            logs: &logs,
+            hints: &hints,
+        };
+        let mut state = OpsDashboardState::<u64, &str>::new();
+        let area = Rect::new(0, 0, 80, 24);
+        let mut buffer = Buffer::empty(area);
+        let slots = render_ops_dashboard(
+            area,
+            &mut buffer,
+            &system,
+            OpsDashboardLayout::default(),
+            view,
+            &mut state,
+        );
+
+        for (name, rect) in [
+            ("metrics", slots.metrics),
+            ("main", slots.main),
+            ("log", slots.log),
+            ("status", slots.status),
+        ] {
+            if rect.height == 0 {
+                continue;
+            }
+            let painted = (rect.x..rect.right()).any(|x| {
+                (rect.y..rect.bottom()).any(|y| !buffer[(x, y)].symbol().trim().is_empty())
+            });
+            assert!(painted, "{name} slot painted nothing");
+        }
+
+        // Focus is visible: moving it changes the frame.
+        let mut moved = OpsDashboardState::<u64, &str>::new();
+        moved.region = OpsRegion::Log;
+        let mut other = Buffer::empty(area);
+        render_ops_dashboard(
+            area,
+            &mut other,
+            &system,
+            OpsDashboardLayout::default(),
+            view,
+            &mut moved,
+        );
+        assert_ne!(
+            buffer.content(),
+            other.content(),
+            "which pane owns focus must be visible"
+        );
+    }
     use super::*;
 
     #[test]
@@ -119,13 +205,16 @@ mod tests {
 
 // ── Ops dashboard state machine (example composite) ──────────────────────────
 
+use crate::style::DesignSystem;
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     widgets::{
-        ColumnModel, DataTableOutcome, DataTableState, LogStreamOutcome, LogStreamState,
-        ObjectInspectorState,
+        ColumnModel, DataTable, DataTableOutcome, DataTableState, LogLine, LogStream,
+        LogStreamOutcome, LogStreamState, MetricTile, MetricTilePresentation, ObjectInspectorState,
+        StatusBar, StatusBarState, StatusSlot,
     },
 };
+use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
 // ── OpsDashboard ────────────────────────────────────────────────────────────
 
@@ -204,11 +293,12 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
             return OpsDashboardOutcome::Ignored;
         }
         if key.code == KeyCode::Tab && !key.modifiers.contains(KeyModifiers::SHIFT) {
+            // Tab visits regions that own interaction. The metrics strip and
+            // the status bar are read-only, so stopping there was a focus
+            // ring that did nothing (plans/016 Step 2).
             self.region = match self.region {
-                OpsRegion::Metrics => OpsRegion::Main,
                 OpsRegion::Main => OpsRegion::Log,
-                OpsRegion::Log => OpsRegion::Status,
-                OpsRegion::Status => OpsRegion::Metrics,
+                OpsRegion::Metrics | OpsRegion::Log | OpsRegion::Status => OpsRegion::Main,
             };
             return OpsDashboardOutcome::FocusRegion(self.region);
         }
@@ -227,6 +317,82 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
             _ => OpsDashboardOutcome::Ignored,
         }
     }
+}
+
+// ── Reference paint ─────────────────────────────────────────────────────────
+
+/// Host-owned content for one ops dashboard frame.
+///
+/// Everything here belongs to the host: what the metrics are, which rows the
+/// table shows, what the log holds. The recipe owns only the assembly.
+#[derive(Debug, Clone, Copy)]
+pub struct OpsDashboardView<'a, RowId, ColId> {
+    /// Metric tiles for the top strip.
+    pub tiles: &'a [MetricTile<'a>],
+    /// Table columns.
+    pub columns: &'a ColumnModel<ColId>,
+    /// Visible projected rows.
+    pub rows: &'a [(RowId, &'a [&'a str])],
+    /// Log lines for the stream pane.
+    pub logs: &'a [LogLine<'a>],
+    /// Footer hints (`tab pane`, `^r retry`, …).
+    pub hints: &'a [StatusSlot<'a, &'a str>],
+}
+
+/// Paints a reference ops dashboard over [`layout_ops_dashboard`]'s slots.
+///
+/// This is the example: a host that wants a different assembly copies it and
+/// changes the widgets, and a host that only wants the geometry keeps calling
+/// [`layout_ops_dashboard`] and paints its own panes.
+pub fn render_ops_dashboard<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    config: OpsDashboardLayout,
+    view: OpsDashboardView<'_, RowId, ColId>,
+    state: &mut OpsDashboardState<RowId, ColId>,
+) -> OpsDashboardSlots {
+    let slots = layout_ops_dashboard(area, config);
+
+    if slots.metrics.height > 0 && !view.tiles.is_empty() {
+        let width = slots.metrics.width / u16::try_from(view.tiles.len()).unwrap_or(1).max(1);
+        for (i, tile) in view.tiles.iter().enumerate() {
+            let x = slots
+                .metrics
+                .x
+                .saturating_add(width.saturating_mul(u16::try_from(i).unwrap_or(0)));
+            let rect = Rect::new(x, slots.metrics.y, width, slots.metrics.height);
+            if rect.right() > slots.metrics.right() || rect.width == 0 {
+                break;
+            }
+            tile.view(system)
+                .presentation(if slots.metrics.height > 2 {
+                    MetricTilePresentation::Card
+                } else {
+                    MetricTilePresentation::Row
+                })
+                .paint(rect, buffer);
+        }
+    }
+
+    if slots.main.height > 0 {
+        DataTable::new(system, view.columns, view.rows)
+            .focused(matches!(state.region, OpsRegion::Main))
+            .render(slots.main, buffer, &mut state.table);
+    }
+
+    if slots.log.height > 0 {
+        LogStream::new(view.logs, system)
+            .focused(matches!(state.region, OpsRegion::Log))
+            .render(slots.log, buffer, &mut state.log);
+    }
+
+    if slots.status.height > 0 {
+        let mut status = StatusBarState::new();
+        StatusBar::new(view.hints, &[], system).render(slots.status, buffer, &mut status);
+    }
+
+    slots
 }
 
 #[cfg(test)]

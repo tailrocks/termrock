@@ -32,9 +32,9 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Role, SelectionChrome},
+    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
-    widgets::{data_view::LoadState, scroll_area::ScrollAreaState},
+    widgets::{data_view::LoadState, scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
 const GUTTER: u16 = 2;
@@ -1403,11 +1403,12 @@ impl<'a> ObjectInspector<'a> {
         state: &ObjectInspectorState,
     ) -> String {
         if field.secret && !state.is_revealed(field.path) {
-            return if self.ascii || state.ascii {
-                "********".into()
+            let set = if self.ascii || state.ascii {
+                GlyphSet::Ascii
             } else {
-                "••••••••".into()
+                GlyphSet::Unicode
             };
+            return Glyph::Mask.resolve(set).text.repeat(MASK_CELLS);
         }
         if state.editing && state.cursor_path.as_deref() == Some(field.path) {
             return escape_inspect_value(&state.edit_draft);
@@ -1541,7 +1542,7 @@ impl<'a> ObjectInspector<'a> {
             }
             let cursor = i == state.cursor;
             let gutter = if cursor && surface {
-                if ascii { ">" } else { "›" }
+                self.system.glyphs.selection_gutter()
             } else if cursor {
                 if ascii { "." } else { "·" }
             } else {
@@ -1591,49 +1592,61 @@ impl<'a> ObjectInspector<'a> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if cursor && surface {
-                match self.system.selection {
-                    SelectionChrome::Fill => self.system.style(Role::Selection),
-                    SelectionChrome::Tint | SelectionChrome::Gutter => {
-                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-                    }
-                }
             } else if field.depth > 0 {
                 self.system.style(Role::TextMuted)
             } else {
                 self.system.style(Role::Text)
             };
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: cursor,
+                    focused: surface,
+                    enabled: true,
+                    ..Default::default()
+                },
+            );
+            let style = chrome.label_style(style);
 
-            let line = if tiny {
+            // The key names the fact; the value is the fact. They are not the
+            // same tier, and the type annotation is quieter than both
+            // (plans/012 Step 3).
+            let tone = |role: Role| (!colorless).then(|| self.system.style(role));
+            let key_tone = tone(Role::TextMuted);
+            let meta_tone = tone(Role::TextFaint);
+            let mut tiers = TieredRow::with_separator("");
+            if tiny {
                 if cursor {
-                    value.clone()
+                    tiers.push_joined(&value, None);
                 } else {
-                    field.key.to_string()
+                    tiers.push_joined(field.key, key_tone);
                 }
             } else if narrow {
-                format!("{}={}", field.key, value)
+                tiers.push_joined(field.key, key_tone);
+                tiers.push_joined("=", meta_tone);
+                tiers.push_joined(&value, None);
             } else {
-                let mut s = format!("{}: {}", field.key, value);
+                tiers.push_joined(field.key, key_tone);
+                tiers.push_joined(":", meta_tone);
+                tiers.push_joined(" ", None);
+                tiers.push_joined(&value, None);
                 if self.show_types && area.width >= 48 {
                     let tl = field.type_label.unwrap_or_else(|| field.kind.id());
-                    // Append type at end if room
                     let type_part = format!("  <{tl}>");
-                    if display_cols(&s) + display_cols(&type_part)
+                    if display_cols(tiers.text()) + display_cols(&type_part)
                         < usize::from(area.right().saturating_sub(x))
                     {
-                        s.push_str(&type_part);
+                        tiers.push_joined(&type_part, meta_tone);
                     }
                 }
-                if compare {
-                    if let Some(c) = field.compare {
-                        let esc = escape_inspect_value(c);
-                        let mark = if ascii { " ~ " } else { " ↔ " };
-                        s.push_str(mark);
-                        s.push_str(&esc);
-                    }
+                if compare && let Some(c) = field.compare {
+                    let esc = escape_inspect_value(c);
+                    let mark = if ascii { " ~ " } else { " ↔ " };
+                    tiers.push_joined(mark, meta_tone);
+                    tiers.push_joined(&esc, key_tone);
                 }
-                s
-            };
+            }
+            let line = tiers.text().to_string();
             let remain = area.right().saturating_sub(x);
             buffer.set_stringn(
                 x,
@@ -1642,6 +1655,7 @@ impl<'a> ObjectInspector<'a> {
                 usize::from(remain),
                 style,
             );
+            tiers.paint_tiers(buffer, Rect::new(x, y, remain, 1), 0);
 
             state.regions.push(InspectRegion {
                 index: i,

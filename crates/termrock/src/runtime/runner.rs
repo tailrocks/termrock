@@ -4,13 +4,16 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crossterm::event;
+use crossterm::{
+    event, execute,
+    terminal::{BeginSynchronizedUpdate, EndSynchronizedUpdate},
+};
 use ratatui_core::{terminal::Frame, terminal::Terminal};
 
-use super::{FrameTick, time::FrameClock};
+use super::{FrameTick, Presenter, QuietBackend, time::FrameClock};
 use crate::{
     crossterm::{CrosstermBackend, Session, SessionOptions},
-    input::Event,
+    input::{Event, MouseEventKind},
 };
 
 /// Terminal-session and idle-cadence options for [`run`].
@@ -19,7 +22,16 @@ pub struct RunOptions {
     /// Terminal modes acquired for the application lifetime.
     pub session: SessionOptions,
     /// Maximum wait between frames when no backend event arrives.
+    ///
+    /// This is a ceiling, not a cadence: an idle screen blocks here without
+    /// drawing, and the [`Presenter`] shortens the wait when something is owed.
     pub poll_timeout: Duration,
+    /// Wrap every frame in synchronized output (DEC mode 2026).
+    ///
+    /// Terminals that do not implement it ignore the sequence, which is the
+    /// silent degrade the motion SoT §2 asks for; set `false` only to debug a
+    /// terminal that mishandles it.
+    pub synchronized_output: bool,
 }
 
 impl Default for RunOptions {
@@ -27,6 +39,7 @@ impl Default for RunOptions {
         Self {
             session: SessionOptions::default(),
             poll_timeout: Duration::from_millis(120),
+            synchronized_output: true,
         }
     }
 }
@@ -37,6 +50,11 @@ impl Default for RunOptions {
 /// and the event update for that poll cycle. Effects and domain messages remain
 /// consumer-owned. `next_deadline` returns the model's earliest timed wakeup;
 /// return `None` while no timed state is active.
+///
+/// **Demand-driven.** A frame is drawn when input arrives, when a deadline the
+/// model reported comes due, or when a scroll flush is owed — never on a fixed
+/// cadence. An idle screen emits nothing and burns no CPU. State that changes
+/// outside of events must be announced through `next_deadline`.
 pub fn run<Model>(
     model: &mut Model,
     options: RunOptions,
@@ -45,15 +63,31 @@ pub fn run<Model>(
     mut next_deadline: impl FnMut(&Model) -> Option<Instant>,
 ) -> io::Result<()> {
     let mut session = Session::enter(io::stdout(), options.session)?;
-    let backend = CrosstermBackend::new(session.writer_mut());
+    // Cursor de-dup lives in the backend so an unchanged frame emits nothing.
+    let backend = QuietBackend::new(CrosstermBackend::new(session.writer_mut()));
     let mut terminal = Terminal::new(backend)?;
     let mut clock = FrameClock::start();
+    let synchronized = options.synchronized_output;
 
     let result = drive_loop(
         model,
         &mut clock,
+        Presenter::new(),
         options.poll_timeout,
-        |model, tick| terminal.draw(|frame| render(model, frame, tick)).map(drop),
+        |model, tick| {
+            // BSU/ESU span stays as short as possible: one draw, nothing else
+            // (ConPTY latency, rio#1753). The sequences go through the same
+            // stdout the backend writes to, and `execute!` flushes, so the
+            // frame lands strictly between them.
+            if synchronized {
+                execute!(io::stdout(), BeginSynchronizedUpdate)?;
+            }
+            let drawn = terminal.draw(|frame| render(model, frame, tick)).map(drop);
+            if synchronized {
+                execute!(io::stdout(), EndSynchronizedUpdate)?;
+            }
+            drawn
+        },
         event::poll,
         || event::read().map(Event::from),
         &mut update,
@@ -62,6 +96,15 @@ pub fn run<Model>(
 
     drop(terminal);
     finish_with_restore(result, || session.restore())
+}
+
+/// Whether an event only asks for a scroll flush rather than a full repaint.
+const fn is_scroll(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Mouse(mouse)
+            if matches!(mouse.kind, MouseEventKind::ScrollUp | MouseEventKind::ScrollDown)
+    )
 }
 
 fn finish_with_restore(
@@ -79,6 +122,7 @@ fn finish_with_restore(
 fn drive_loop<Model, Draw, Poll, Read, Update, Deadline>(
     model: &mut Model,
     clock: &mut FrameClock,
+    mut presenter: Presenter,
     poll_timeout: Duration,
     mut draw: Draw,
     mut poll: Poll,
@@ -96,13 +140,19 @@ where
     let mut consumed_overdue_deadline = None;
     loop {
         let tick = clock.tick();
-        draw(model, tick)?;
+        if presenter.should_draw(tick.now()) {
+            presenter.begin_draw(tick.now());
+            let drawn = draw(model, tick);
+            presenter.end_draw(tick.now());
+            drawn?;
+        }
         let timeout = match next_deadline(model) {
             Some(deadline) if deadline <= tick.now() => {
                 if consumed_overdue_deadline == Some(deadline) {
                     poll_timeout
                 } else {
                     consumed_overdue_deadline = Some(deadline);
+                    presenter.mark_dirty();
                     Duration::ZERO
                 }
             }
@@ -115,8 +165,20 @@ where
                 poll_timeout
             }
         };
-        if poll(timeout)? && matches!(update(model, read()?, tick), ControlFlow::Break(())) {
-            return Ok(());
+        // The presenter may owe a frame sooner than the model's next deadline.
+        let timeout = presenter
+            .next_wake(tick.now())
+            .map_or(timeout, |wake| timeout.min(wake));
+        if poll(timeout)? {
+            let event = read()?;
+            if is_scroll(&event) {
+                presenter.mark_scrolled();
+            } else {
+                presenter.mark_dirty();
+            }
+            if matches!(update(model, event, tick), ControlFlow::Break(())) {
+                return Ok(());
+            }
         }
     }
 }
@@ -126,6 +188,20 @@ mod tests {
     use std::{cell::Cell, collections::VecDeque};
 
     use super::*;
+    use crate::input::{KeyModifiers, MouseEvent};
+
+    /// Presenter without the min-draw throttle, so tests are wall-clock free.
+    fn unthrottled() -> Presenter {
+        Presenter::new().min_draw_interval(Duration::ZERO)
+    }
+
+    fn scroll_event() -> Event {
+        Event::Mouse(MouseEvent {
+            kind: MouseEventKind::ScrollDown,
+            position: ratatui_core::layout::Position::new(0, 0),
+            modifiers: KeyModifiers::NONE,
+        })
+    }
 
     #[test]
     fn loop_draws_through_timeouts_and_stops_on_break_event() {
@@ -137,6 +213,7 @@ mod tests {
         drive_loop(
             &mut model,
             &mut clock,
+            unthrottled(),
             Duration::from_millis(7),
             |model: &mut (u8, u8), _| {
                 model.0 += 1;
@@ -159,7 +236,9 @@ mod tests {
         )
         .expect("runner exits cleanly");
 
-        assert_eq!(model, (3, 2));
+        // Three loop iterations, two frames: the middle iteration had nothing
+        // dirty to paint, which is the whole point of the presenter.
+        assert_eq!(model, (2, 2));
     }
 
     #[test]
@@ -169,6 +248,7 @@ mod tests {
             let error = drive_loop(
                 &mut (),
                 &mut clock,
+                unthrottled(),
                 Duration::ZERO,
                 |_: &mut (), _| stage_result(failing_stage, 0),
                 |_| stage_result(failing_stage, 1).map(|()| true),
@@ -191,6 +271,7 @@ mod tests {
         drive_loop(
             &mut (),
             &mut clock,
+            unthrottled(),
             Duration::from_secs(5),
             |_: &mut (), tick: FrameTick| {
                 rendered_tick.set(Some(tick));
@@ -221,6 +302,7 @@ mod tests {
         drive_loop(
             &mut (),
             &mut clock,
+            unthrottled(),
             Duration::from_millis(120),
             |_: &mut (), _| Ok(()),
             |timeout| {
@@ -234,6 +316,126 @@ mod tests {
         .expect("overdue deadline handled");
 
         assert_eq!(observed, [Duration::ZERO, Duration::from_millis(120)]);
+    }
+
+    #[test]
+    fn wheel_flood_paints_no_ghost_frames() {
+        // Grok's regression test, ported: a burst of wheel events inside one
+        // 16 ms window must produce one frame, not one frame per event.
+        let mut draws = 0_u32;
+        let mut updates = 0_u32;
+        let start = std::time::Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut polls = VecDeque::from(vec![true; 64]);
+
+        drive_loop(
+            &mut (),
+            &mut clock,
+            // Real throttle on purpose: this is the behaviour under test.
+            Presenter::new(),
+            Duration::ZERO,
+            |_: &mut (), _| {
+                draws += 1;
+                Ok(())
+            },
+            |_| Ok(polls.pop_front().unwrap_or(false)),
+            || Ok(scroll_event()),
+            |_, _, _| {
+                updates += 1;
+                if updates == 64 {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            |_| None,
+        )
+        .expect("wheel flood drains");
+
+        assert_eq!(updates, 64, "every wheel event still reaches the model");
+        assert!(
+            draws <= 2,
+            "wheel flood queued {draws} frames; scroll must coalesce onto its own clock"
+        );
+    }
+
+    #[test]
+    fn idle_loop_emits_no_frames() {
+        // Idle CPU = 0 is the quality signal (motion SoT §2 rule 4): with
+        // nothing dirty and no animation registered, the loop must not paint.
+        let mut draws = 0_u32;
+        let start = std::time::Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut polls = VecDeque::from([false, false, false, true]);
+
+        drive_loop(
+            &mut (),
+            &mut clock,
+            unthrottled(),
+            Duration::from_millis(1),
+            |_: &mut (), _| {
+                draws += 1;
+                Ok(())
+            },
+            |_| Ok(polls.pop_front().unwrap_or(true)),
+            || Ok(Event::Unknown),
+            |_, _, _| ControlFlow::Break(()),
+            |_| None,
+        )
+        .expect("idle loop exits on the first event");
+
+        assert_eq!(
+            draws, 1,
+            "only the first frame is owed; three idle polls must paint nothing"
+        );
+    }
+
+    /// Writer that keeps every emitted byte visible to the test.
+    #[derive(Clone, Default)]
+    struct TappedWriter(std::rc::Rc<std::cell::RefCell<Vec<u8>>>);
+
+    impl std::io::Write for TappedWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.0.borrow_mut().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn idle_redraw_emits_zero_bytes() {
+        // Double-buffer diff law (§2 rule 1): repainting an unchanged frame
+        // must put nothing on the wire, or the hardware cursor blink dies and
+        // muxes see traffic for a screen that did not change.
+        use ratatui_core::widgets::Widget;
+
+        let tap = TappedWriter::default();
+        let mut terminal = Terminal::with_options(
+            QuietBackend::new(CrosstermBackend::new(tap.clone())),
+            ratatui_core::terminal::TerminalOptions {
+                viewport: ratatui_core::terminal::Viewport::Fixed(ratatui_core::layout::Rect::new(
+                    0, 0, 80, 24,
+                )),
+            },
+        )
+        .expect("in-memory terminal");
+        let paint = |frame: &mut Frame<'_>| {
+            ratatui_core::text::Line::from("static").render(frame.area(), frame.buffer_mut());
+        };
+
+        terminal.draw(paint).expect("first frame");
+        let first = tap.0.borrow().len();
+        assert!(first > 0, "the first frame must paint something");
+
+        terminal.draw(paint).expect("second frame");
+        assert_eq!(
+            tap.0.borrow().len(),
+            first,
+            "an unchanged frame emitted bytes"
+        );
     }
 
     #[test]

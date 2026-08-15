@@ -17,6 +17,8 @@
 //! See `docs/design/data-presentation.md` for the full component redesign.
 
 use std::collections::BTreeSet;
+
+use ratatui_core::style::Style;
 use std::num::NonZeroU16;
 
 // ── Load / empty / error ────────────────────────────────────────────────────
@@ -214,6 +216,47 @@ pub enum ColumnPin {
     End,
 }
 
+/// What a column holds, which decides how loudly it reads.
+///
+/// A table of ten columns painted in one tone is ten equals: the identity you
+/// scan for and the byte count you rarely read arrive with the same weight.
+/// The kind is the column's tier — the design language's numeric-faint /
+/// status-letter rule (`docs/design/termrock-design-language.md` §4.2) — and
+/// it is the host's to state, because only the host knows what the column is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ColumnKind {
+    /// Prose, names, paths: the row's own tone.
+    #[default]
+    Text,
+    /// Counts, sizes, durations: the quiet tone, so the identity stays loud.
+    Numeric,
+    /// A state letter or glyph. Keeps the row tone and, unlike every other
+    /// column, contracts to its first grapheme instead of ellipsizing — a
+    /// one-cell status column shows the letter, not an ellipsis.
+    Status,
+}
+
+impl ColumnKind {
+    /// Picks between the row tone and the quiet tone for this column's cells.
+    ///
+    /// The caller supplies both because only it knows the row's visual state:
+    /// a selected row's quiet tier is not the canvas's quiet tier.
+    #[must_use]
+    pub const fn cell_style(self, base: Style, quiet: Style) -> Style {
+        match self {
+            Self::Text | Self::Status => base,
+            Self::Numeric => quiet,
+        }
+    }
+
+    /// Whether an over-wide cell contracts by clipping rather than by ellipsis.
+    #[must_use]
+    pub const fn clips_instead_of_ellipsizing(self) -> bool {
+        matches!(self, Self::Status)
+    }
+}
+
 /// One column descriptor (id is consumer-owned).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataColumn<Id> {
@@ -234,6 +277,8 @@ pub struct DataColumn<Id> {
     pub sortable: bool,
     /// Inline editable.
     pub editable: bool,
+    /// What the column holds, which decides its tone.
+    pub kind: ColumnKind,
 }
 
 impl<Id> DataColumn<Id> {
@@ -249,7 +294,15 @@ impl<Id> DataColumn<Id> {
             priority: 50,
             sortable: false,
             editable: false,
+            kind: ColumnKind::Text,
         }
+    }
+
+    /// States what the column holds, which decides its tone.
+    #[must_use]
+    pub const fn kind(mut self, kind: ColumnKind) -> Self {
+        self.kind = kind;
+        self
     }
 
     /// Sets responsive priority (higher survives longer).

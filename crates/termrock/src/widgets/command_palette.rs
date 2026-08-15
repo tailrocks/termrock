@@ -37,8 +37,8 @@ use crate::{
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate,
-        Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState,
+        HighlightVisual, HighlightedText, Hint, HintBar, MatchKind, MatchRange, MatchRanges,
+        MatchTruncate, Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState,
     },
 };
 
@@ -50,6 +50,13 @@ pub const COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH: u16 = 48;
 pub const COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT: u16 = 14;
 /// Max remembered query history entries.
 pub const COMMAND_PALETTE_HISTORY_CAP: usize = 32;
+
+/// Default "still fetching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so host-supplied copy survives
+/// the ASCII profile: only the *default* is swapped.
+const COMMAND_PALETTE_LOADING: &str = "Loading…";
+const COMMAND_PALETTE_LOADING_ASCII: &str = "Loading...";
 
 // ── Size / placement ────────────────────────────────────────────────────────
 
@@ -564,6 +571,8 @@ pub struct CommandPaletteState<Id> {
     presentation_override: Option<CommandPalettePresentation>,
     /// Hit regions for mouse: (flat result index, rect).
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     origin: (u16, u16),
     /// Pending activation id while in argument phase.
     pending_id: Option<Id>,
@@ -599,6 +608,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             presentation: CommandPalettePresentation::Centered,
             presentation_override: None,
             hits: Vec::new(),
+            hovered: None,
             origin: (0, 0),
             pending_id: None,
             pending_command: None,
@@ -1117,6 +1127,12 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) {
                         if self.cursor_index() != *idx {
@@ -1195,6 +1211,34 @@ pub struct CommandPalette<'a, Id> {
     show_preview: bool,
 }
 
+/// Footer chords for the command palette, painted through [`HintBar`].
+const COMMAND_PALETTE_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "↑↓",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "run",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "C-p",
+        label: "history",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 50,
+        visible: true,
+    },
+];
+
 impl<'a, Id> CommandPalette<'a, Id> {
     /// Title + visible (already filtered) entries + design system.
     #[must_use]
@@ -1210,10 +1254,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
             focused: true,
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ move · enter run · esc clear/close · ctrl+p history"),
+            footer_hint: None,
             empty_message: "Type to search commands",
             no_result_message: "No matching commands",
-            loading_message: "Loading…",
+            loading_message: COMMAND_PALETTE_LOADING,
             show_preview: true,
         }
     }
@@ -1359,7 +1403,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         let narrow = area.width < 28;
         let tiny = area.height < 6;
-        let show_footer = self.footer_hint.is_some() && !tiny && area.height >= 8 && !narrow;
+        let show_footer = !tiny && area.height >= 8 && !narrow;
         let show_preview = self.show_preview
             && !tiny
             && area.height >= 10
@@ -1493,14 +1537,20 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         // Footer.
         if show_footer {
+            let footer = Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1);
             if let Some(hint) = self.footer_hint {
-                let y = inner.bottom().saturating_sub(1);
                 buffer.set_stringn(
-                    inner.x,
-                    y,
-                    &take_display_cols(hint, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    footer.x,
+                    footer.y,
+                    &take_display_cols(hint, usize::from(footer.width)),
+                    usize::from(footer.width),
                     self.system.style(Role::TextMuted),
+                );
+            } else {
+                ratatui_core::widgets::Widget::render(
+                    &HintBar::new(COMMAND_PALETTE_HINTS, self.system),
+                    footer,
+                    buffer,
                 );
             }
         }
@@ -1516,8 +1566,8 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = if self.ascii {
-                "[...] loading"
+            let msg = if self.ascii && self.loading_message == COMMAND_PALETTE_LOADING {
+                COMMAND_PALETTE_LOADING_ASCII
             } else {
                 self.loading_message
             };
@@ -1633,18 +1683,14 @@ impl<'a, Id> CommandPalette<'a, Id> {
             let active = i == cursor && surface;
             let row_rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row_rect));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: entry.enabled,
-                    loading: false,
-                    checked: false,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some(i),
+                enabled: entry.enabled,
+                loading: false,
+                checked: false,
+            });
             if recipe.use_fill {
                 buffer.set_style(row_rect, recipe.label);
             } else if recipe.use_tint {
@@ -1685,7 +1731,9 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 let style = if !entry.enabled {
                     self.system.style(Role::TextDisabled)
                 } else if active {
-                    self.system.style(Role::Selection)
+                    self.system
+                        .style(Role::TextStrong)
+                        .patch(self.system.style(Role::SelectionTint))
                 } else {
                     self.system.style(Role::TextMuted)
                 };
@@ -1828,7 +1876,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
     vec![
         CommandEntry::new("theme", "Toggle theme")
             .group("Appearance")
-            .shortcut("Ctrl+T")
+            .shortcut("C-t")
             .command_key("view.theme")
             .preview("Cycle phosphor / high-contrast")
             .keywords(["appearance", "color"]),
@@ -1843,12 +1891,12 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
         CommandEntry::new("goto-line", "Go to line…")
             .group("Navigation")
             .argument_prompt("Line")
-            .shortcut("Ctrl+G")
+            .shortcut("C-g")
             .command_key("nav.goto")
             .contextual(true),
         CommandEntry::new("quit", "Quit")
             .group("App")
-            .shortcut("Ctrl+Q")
+            .shortcut("C-q")
             .command_key("app.quit"),
         CommandEntry::new("disabled-demo", "Deploy (unavailable)")
             .group("App")
@@ -1858,11 +1906,11 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
         CommandEntry::new("key-save", "Save file")
             .page("keys")
             .group("File")
-            .shortcut("Ctrl+S"),
+            .shortcut("C-s"),
         CommandEntry::new("key-find", "Find in file")
             .page("keys")
             .group("Edit")
-            .shortcut("Ctrl+F"),
+            .shortcut("C-f"),
     ]
 }
 

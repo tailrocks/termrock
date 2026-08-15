@@ -15,6 +15,17 @@
 //! product shell.
 //!
 //! Research: shadcn dashboard-01, IDE shells, ops TUIs.
+//!
+//! Teaches: how to compose keyboard-first app dashboard composition (shadcn
+//! `dashboard-01` peer for TUI).
+//!
+//! Composes: [`crate::widgets::NavItem`], [`crate::widgets::Panel`],
+//! [`crate::widgets::PanelState`], [`crate::widgets::PanelVariant`],
+//! [`crate::widgets::Sidebar`], [`crate::widgets::SidebarOutcome`],
+//! [`crate::widgets::SidebarPresentation`], [`crate::widgets::SidebarState`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
@@ -370,6 +381,8 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
     }
     let system = surfaces.system;
     let state = surfaces.state;
+    // The glyph profile is the design system's answer, not a hardcoded true.
+    let ascii = system.glyphs.is_ascii();
     let layout = AppDashboardLayout {
         sidebar_width: state.sidebar_width,
         metrics_height: if state.show_metrics { 3 } else { 0 },
@@ -381,11 +394,10 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
     if let Some(h) = slots.shell.header {
         if !h.is_empty() {
             let title = take_display_cols(surfaces.title, usize::from(h.width));
-            buffer.set_stringn(
-                h.x,
-                h.y,
+            system.paint_row(
+                buffer,
+                Rect::new(h.x, h.y, h.width, 1),
                 &title,
-                usize::from(h.width),
                 system.style(Role::TextStrong),
             );
         }
@@ -408,7 +420,8 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
         let nav_area = if body.height > 0 { body } else { slots.sidebar };
         let _ = rail;
         Sidebar::new(surfaces.nav, system)
-            .ascii(true)
+            .focused(state.pane == AppDashboardPane::Sidebar)
+            .ascii(ascii)
             .show_panel(false)
             .paint(nav_area, buffer, &mut state.sidebar);
     }
@@ -426,11 +439,10 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
             })
             .paint(slots.metrics, buffer, Some(&mut panel_state));
         if body.height > 0 && body.width > 0 {
-            buffer.set_stringn(
-                body.x,
-                body.y,
-                take_display_cols("host: charts / KPIs", usize::from(body.width)),
-                usize::from(body.width),
+            system.paint_row(
+                buffer,
+                Rect::new(body.x, body.y, body.width, 1),
+                "host: charts / KPIs",
                 system.style(Role::TextMuted),
             );
         }
@@ -450,11 +462,10 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
             .paint(slots.main, buffer, Some(&mut panel_state));
         if body.height > 0 && body.width > 0 {
             let ph = surfaces.main_placeholder;
-            buffer.set_stringn(
-                body.x,
-                body.y,
-                take_display_cols(ph, usize::from(body.width)),
-                usize::from(body.width),
+            system.paint_row(
+                buffer,
+                Rect::new(body.x, body.y, body.width, 1),
+                ph,
                 system.style(Role::TextMuted),
             );
         }
@@ -463,11 +474,10 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
     // Footer hint
     if !slots.footer.is_empty() {
         let hint = "Tab panes · [ rail · sidebar keys · host main";
-        buffer.set_stringn(
-            slots.footer.x,
-            slots.footer.y,
-            take_display_cols(hint, usize::from(slots.footer.width)),
-            usize::from(slots.footer.width),
+        system.paint_row(
+            buffer,
+            Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
+            hint,
             system.style(Role::TextMuted),
         );
     }

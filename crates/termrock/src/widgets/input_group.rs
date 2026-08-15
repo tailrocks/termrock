@@ -17,7 +17,7 @@
 //!
 //! Research: shadcn Input Group, browser URL bars, CLI flag+value pairs.
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -268,12 +268,6 @@ impl<'a> InputGroup<'a> {
         let _ = TextInput::new("", self.system)
             .placeholder(self.placeholder.unwrap_or(""))
             .paint(field_area, buffer, &mut state.field);
-
-        // Emphasize border-ish underline when focused
-        if state.focused && area.height >= 1 {
-            // already painted by TextInput; no extra
-            let _ = Modifier::UNDERLINED;
-        }
 
         x = x.saturating_add(field_w).saturating_add(1);
         for s in &suffixes {

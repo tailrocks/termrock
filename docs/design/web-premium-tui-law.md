@@ -134,6 +134,69 @@ Tokens referenced: `Role` enum, `GlyphSet`, `SpacingScale`, `Density`, recipes
 13. **One recipe per family** — one chip, one overlay, one row, one kbd recipe; no parallel paint paths (inconsistency is a defect).
 14. **Flat full-width messages** — actor rail + Fg ladder, not bubbles.
 15. **Content column ~80 cols centered** — no edge-to-edge body; Canvas side-bands.
+16. **One voice** — case, punctuation, and key notation are hierarchy channels on a cell grid, spent deliberately. See §4.1.
+
+### 4.1 One voice — the microcopy standard (binding)
+
+Two microcopy systems used to coexist with no arbitration: a terse terminal
+voice and an app voice, sometimes inside one string. This clause arbitrates.
+
+1. **Labels, buttons, titles: sentence case.** `Cancel`, `Sign in`,
+   `Git output`, `Search settings…`. ALL-CAPS is never structure (allowed only
+   where a SoT names it, e.g. sidebar section headers). Panel titles capitalize
+   the first word: `Procs`, not `procs`.
+2. **Hints: lowercase action verbs, keys as chips.** `[esc] cancel ·
+   [enter] open`. `·` separates hint pairs only — never a key from its label.
+   One verb per key where the meaning matches: `esc` = cancel (dismiss one
+   layer), `enter` = confirm/open. No trailing periods.
+3. **Key notation: one system.** Modifier-dash, lowercase key: `C-s`, `S-tab`,
+   `M-x`; bare keys spelled `esc enter tab space ↑↓←→` (ASCII
+   `up/down/left/right`). Painted strings never hardcode `Ctrl+S` or `⌘K` —
+   they route through `widgets::kbd::format_chord` / `Kbd`, which owns platform
+   and ASCII fallbacks. Documentation prose may spell "Ctrl+S" when explaining
+   a binding. A chord separator inside one keycap is a space.
+4. **Ellipsis resolves through the glyph catalog** (`GlyphSet::ellipsis()` /
+   `Glyph::Ellipsis`), never as a bare `...` literal in a painted string, so
+   both the `…` and `...` forms stay width-checked at the call site.
+5. **Error copy: what failed, then one recovery.** `<what failed> — <recovery>`
+   in sentence case, no terminal period for one-liners: `Could not reach the
+   API — check connectivity and retry`. The `error · message` and
+   `error: message` prefixes are dead: severity is carried by the glyph and
+   role, not by the word "error".
+6. **Placeholders: sentence case, conversational, ellipsis** —
+   `Search settings…`, `Filter projects…`.
+7. **Running verbs: lowercase gerund** beside the spinner — `⠹ running tests`,
+   `streaming…`.
+8. **`OK` is `OK`**, never `Ok`.
+
+Two gates enforce the mechanical half: `design_gate.rs::no_bare_ellipsis_in_paint`
+and `design_gate.rs::one_chord_notation`.
+
+### 4.2 The information budget — radical calm, measured (binding)
+
+A default frame shows **≤3 content zones**, spends **≤1 hint row** carrying
+**≤5 chords**, keeps **metadata to ≤⅓ of visible rows**, and speaks in **≤8
+content hues** — a hue that paints a status *glyph* is not a content hue, which
+is the whole point of putting status in the glyph.
+
+Everything else is **one keypress away** (focus, expand, or overlay) **and its
+affordance is visible in the frame**: `i details`, `d details`, `s segments`.
+Removing information from the default frame requires providing that keypress
+path in the same commit. Detail is never deleted, only moved.
+
+Safety information does not bend to the budget. A permission prompt's risk
+line, a destructive confirmation's consequence, and an error's cause stay in
+the default frame however crowded it gets.
+
+Charts are exempt from the hue budget: series colors are data, not decoration.
+Keyboard-path parity is exempt from the chord budget: where a surface advertises
+the keyboard path for every pointer action, the list is an accessibility
+contract and stays complete.
+
+Three gates enforce the mechanical half: `design_gate.rs::pattern_hint_budget`,
+`design_gate.rs::pattern_style_diversity`, and the contrast floor in
+`style/contrast_floor.rs`, which keeps a quieted tone from becoming an
+unreadable one.
 
 ---
 

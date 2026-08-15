@@ -25,7 +25,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Glyph, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, Glyph, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, agent::ToolStatus, card::Card},
 };
@@ -137,8 +137,8 @@ impl ToolCallAction {
             Self::OpenDiff => "d",
             Self::OpenLog => "l",
             Self::PermissionFocus => "p",
-            Self::CopyArgs => "Ctrl+A",
-            Self::CopyResult => "Ctrl+C",
+            Self::CopyArgs => "C-a",
+            Self::CopyResult => "C-c",
             Self::Fullscreen => "f",
         }
     }
@@ -773,7 +773,7 @@ impl<'a> ToolCallCard<'a> {
             let diamond = Glyph::DiamondFilled.resolve(self.system.glyphs).text;
             let disclosure = self.system.glyphs.disclosure_closed();
             let pulse = if running {
-                if matches!(self.system.motion, Motion::Full) {
+                if matches!(self.system.motion, MotionPolicy::Full) {
                     SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
                 } else if self.ascii || self.colorless {
                     "o"
@@ -1040,7 +1040,7 @@ pub fn example_tool_calls() -> Vec<ToolCall> {
             .args_summary("eslint .")
             .result_summary("exit 1")
             .args_detail("eslint .\n# token=supersecret")
-            .result_detail("error: Unexpected token")
+            .result_detail("Unexpected token")
             .secrets_redacted(true)
             .has_diff(true)
             .has_log(true),
@@ -1198,7 +1198,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_card_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let call = ToolCall::new("t", "bash", "Run tests").args_summary("cargo test");
         let render = |tick| {
             let area = Rect::new(0, 0, 48, 1);

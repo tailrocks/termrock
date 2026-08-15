@@ -26,6 +26,7 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
+    widgets::{Hint, HintBar},
 };
 
 /// Overlay id for fullscreen question flow.
@@ -1056,6 +1057,40 @@ pub struct QuestionFlow<'a> {
     colorless: bool,
 }
 
+/// Footer chords for the question flow, painted through [`HintBar`].
+const QUESTION_FLOW_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "j/k",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "answer",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "space",
+        label: "multi",
+        priority: 30,
+        visible: true,
+    },
+    Hint {
+        chord: "v",
+        label: "review",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 50,
+        visible: true,
+    },
+];
+
 impl<'a> QuestionFlow<'a> {
     /// System only — questions live in state.
     #[must_use]
@@ -1089,6 +1124,7 @@ impl<'a> QuestionFlow<'a> {
         }
         let Some(set) = state.set.as_ref() else {
             let panel = Panel::new(self.system)
+                .overlay(true)
                 .title("Questions")
                 .emphasis(PanelChrome::Normal);
             let inner = panel.inner(area);
@@ -1118,6 +1154,7 @@ impl<'a> QuestionFlow<'a> {
             PanelChrome::Normal
         };
         let panel = Panel::new(self.system)
+            .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
@@ -1301,14 +1338,11 @@ impl<'a> QuestionFlow<'a> {
         // footer
         let foot_y = inner.bottom().saturating_sub(1);
         if foot_y >= y || inner.height > 2 {
-            let foot = "j/k · enter · space multi · [] step · v review · f full · esc cancel";
             // composer draft preserved — never cleared by this widget
-            buffer.set_stringn(
-                inner.x,
-                foot_y,
-                take_display_cols(foot, w),
-                w,
-                self.system.style(Role::TextMuted),
+            ratatui_core::widgets::Widget::render(
+                &HintBar::new(QUESTION_FLOW_HINTS, self.system),
+                Rect::new(inner.x, foot_y, u16::try_from(w).unwrap_or(u16::MAX), 1),
+                buffer,
             );
         }
         let _ = display_cols;

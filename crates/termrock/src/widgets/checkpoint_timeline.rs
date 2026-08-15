@@ -37,6 +37,7 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
+    widgets::tiered_row::TieredRow,
     widgets::timeline::{
         Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRowKind, TimelineState,
         TimelineStatus,
@@ -1129,13 +1130,9 @@ impl<'a> CheckpointTimeline<'a> {
         }
 
         if state.checkpoints.is_empty() {
-            buffer.set_stringn(
-                inner.x,
-                inner.y,
-                take_display_cols("(no checkpoints)", usize::from(inner.width)),
-                usize::from(inner.width),
-                self.system.style(Role::TextMuted),
-            );
+            super::EmptyState::new("No checkpoints yet", self.system)
+                .inline()
+                .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             return;
         }
 
@@ -1219,7 +1216,7 @@ impl<'a> CheckpointTimeline<'a> {
             }
             let selected = i == state.cursor;
             let mark = if selected {
-                if self.ascii { ">" } else { "›" }
+                self.system.glyphs.selection_gutter()
             } else if cp.is_head {
                 if self.ascii { "*" } else { "●" }
             } else {
@@ -1232,17 +1229,44 @@ impl<'a> CheckpointTimeline<'a> {
                 .as_ref()
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
-            let text = format!("{mark}{bound} {} {}{}{}", cp.when, cp.label, head, branch);
+            // The boundary rides its glyph and the timestamp sits under the
+            // label: a column of checkpoints reads as one column of state
+            // instead of a stack of colored sentences (plans/012 Step 3).
+            let tone = |role: Role| (!self.colorless).then(|| self.system.style(role));
+            let mut tiers = TieredRow::with_separator("");
+            tiers.push_joined(
+                mark,
+                cp.is_head
+                    .then(|| self.system.style(Role::Info))
+                    .filter(|_| !self.colorless),
+            );
+            tiers.push_joined(
+                bound,
+                cp.boundary
+                    .needs_warning()
+                    .then(|| self.system.style(cp.boundary.role()))
+                    .filter(|_| !self.colorless),
+            );
+            tiers.push_joined(" ", None);
+            tiers.push_joined(&cp.when, tone(Role::TextFaint));
+            tiers.push_joined(" ", None);
+            tiers.push_joined(&cp.label, None);
+            tiers.push_joined(head, tone(Role::Info));
+            tiers.push_joined(&branch, tone(Role::TextMuted));
+            let text = tiers.text().to_string();
+            // Selection is chrome — the gutter and weight mark it; the row
+            // keeps its own meaning (plans/007).
             let style = if selected {
-                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if cp.boundary.needs_warning() && !self.colorless {
-                self.system.style(cp.boundary.role())
-            } else if cp.is_head {
-                self.system.style(Role::Info)
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
             buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            if !selected {
+                tiers.paint_tiers(buffer, Rect::new(area.x, y, area.width, 1), 0);
+            }
             state.row_hits.push((
                 cp.id.clone(),
                 Rect {
@@ -1269,7 +1293,7 @@ impl<'a> CheckpointTimeline<'a> {
 
         let lines: Vec<(String, Role)> = {
             let mut v = Vec::new();
-            v.push((format!("{} · {}", cp.kind.id(), cp.label), Role::Accent));
+            v.push((format!("{} · {}", cp.kind.id(), cp.label), Role::TextStrong));
             if let Some(a) = cp.actor.as_ref() {
                 v.push((format!("actor {a}"), Role::TextMuted));
             }

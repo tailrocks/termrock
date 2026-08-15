@@ -14,6 +14,18 @@
 //! status/stats chrome, and typed request outcomes.
 //!
 //! Research: database clients, VisiData, TablePlus, SQL terminal tools.
+//!
+//! Teaches: how to compose database / query result component on
+//! [`super::DataTable`].
+//!
+//! Composes: [`crate::widgets::ColumnModel`], [`crate::widgets::ColumnPin`],
+//! [`crate::widgets::CopyPayload`], [`crate::widgets::DataColumn`],
+//! [`crate::widgets::DataColumnWidth`], [`crate::widgets::DataTable`],
+//! [`crate::widgets::DataTableNavMode`],
+//! [`crate::widgets::DataTableOutcome`], and 8 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
@@ -417,7 +429,8 @@ impl ResultQueryStatus {
                     None => format!("{rows} rows · {columns} cols"),
                 }
             }
-            Self::Failed { message } => format!("error · {message}"),
+            // Severity rides the Danger role and the status glyph, not the word.
+            Self::Failed { message } => message.clone(),
             Self::Cancelled => "cancelled".into(),
         }
     }
@@ -1156,6 +1169,8 @@ fn map_table_outcome(out: DataTableOutcome<u64, String>) -> ResultGridOutcome {
         DataTableOutcome::CursorMoved | DataTableOutcome::ToggleRow(_) => {
             ResultGridOutcome::CursorMoved
         }
+        // A hover wash is chrome; the grid's host has nothing to do about it.
+        DataTableOutcome::HoverChanged => ResultGridOutcome::Ignored,
         DataTableOutcome::SortRequested(col) => ResultGridOutcome::SortRequested {
             column: col,
             ascending: true,
@@ -1291,13 +1306,8 @@ impl<'a> ResultGrid<'a> {
                 _ if self.focused => self.system.style(Role::TextStrong),
                 _ => self.system.style(Role::TextMuted),
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                style,
-            );
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }
@@ -1306,14 +1316,10 @@ impl<'a> ResultGrid<'a> {
         let stats_h = u16::from(state.show_stats && !state.stats.is_empty() && h >= 3);
         if stats_h > 0 {
             let st = &state.stats[state.stats_cursor.min(state.stats.len() - 1)];
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(
-                    &format!("stats {}", st.summary_line()),
-                    usize::from(area.width),
-                ),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &format!("stats {}", st.summary_line()),
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);

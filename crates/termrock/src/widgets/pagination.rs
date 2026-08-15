@@ -922,9 +922,8 @@ impl<'a> Pagination<'a> {
                     .style(Role::Focus)
                     .add_modifier(Modifier::REVERSED | Modifier::BOLD)
             } else if active {
-                system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                // The current page is the bold one; the focused page reverses.
+                system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
             } else {
                 system.style(Role::Text)
             };

@@ -15,8 +15,23 @@ use crate::text::display_cols;
 
 /// Shared vertical block ramp from empty through a full cell.
 pub const BLOCK_RAMP: &[char; 9] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+/// Shared horizontal (left-half) block ramp from empty through a full cell.
+///
+/// Powers sub-cell precision where the vertical ramp cannot: histogram bar
+/// tops, slider thumbs between cells, and meter fills.
+pub const LEFT_BLOCK_RAMP: &[char; 9] = &[' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
+/// Shared shade ramp for hatching and soft fills.
+///
+/// The colorless carrier for multi-series charts and backdrop stipple: density
+/// separates series when hue cannot.
+pub const SHADE_RAMP: &[char; 4] = &[' ', '░', '▒', '▓'];
 /// Shared braille density ramp.
 pub const BRAILLE_RAMP: &[char; 5] = &[' ', '⣀', '⣤', '⣶', '⣿'];
+/// Cells painted for a fully masked secret.
+///
+/// Fixed width on purpose: a mask whose length tracked the secret would leak
+/// it. Every masked field uses [`Glyph::Mask`] repeated this many times.
+pub const MASK_CELLS: usize = 8;
 /// Canonical deterministic braille spinner.
 pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 /// Quiet four-step presence pulse; every frame is one display cell.
@@ -141,10 +156,16 @@ pub enum Glyph {
     RuleV,
     /// Strong horizontal rule.
     RuleHStrong,
+    /// Rule meeting a border on the left (`├`).
+    RuleTeeLeft,
+    /// Rule meeting a border on the right (`┤`).
+    RuleTeeRight,
     /// Selection gutter bar.
     SelectionGutter,
     /// List bullet.
     Bullet,
+    /// Inline meta separator between adjacent facts on one row.
+    MetaSeparator,
     /// More / overflow ellipsis.
     Ellipsis,
     /// Mode indicator dot.
@@ -177,6 +198,30 @@ pub enum Glyph {
     RailHeavy,
     /// Compact/collapsed vertical accent rail.
     RailCollapsed,
+    /// Live edge / checkpoint marker on a timeline.
+    NowEdge,
+    /// Masked (secret) character stand-in.
+    Mask,
+    /// Slider handle.
+    SliderThumb,
+    /// Filled part of a slider track.
+    SliderFill,
+    /// Empty part of a slider track.
+    SliderRail,
+    /// Slider scale tick.
+    SliderTick,
+    /// Idle vertical pane divider.
+    DividerVertical,
+    /// Focused vertical pane divider.
+    DividerVerticalActive,
+    /// Hovered (resizable) vertical pane divider.
+    DividerVerticalHint,
+    /// Idle horizontal pane divider.
+    DividerHorizontal,
+    /// Focused horizontal pane divider.
+    DividerHorizontalActive,
+    /// Hovered (resizable) horizontal pane divider.
+    DividerHorizontalHint,
 }
 
 impl Glyph {
@@ -220,8 +265,11 @@ impl Glyph {
             Self::RuleH => "rule-h",
             Self::RuleV => "rule-v",
             Self::RuleHStrong => "rule-h-strong",
+            Self::RuleTeeLeft => "rule-tee-left",
+            Self::RuleTeeRight => "rule-tee-right",
             Self::SelectionGutter => "selection-gutter",
             Self::Bullet => "bullet",
+            Self::MetaSeparator => "meta-separator",
             Self::Ellipsis => "ellipsis",
             Self::ModeDot => "mode-dot",
             Self::Connection => "connection",
@@ -238,6 +286,18 @@ impl Glyph {
             Self::StatusDotRing => "status-dot-ring",
             Self::RailHeavy => "rail-heavy",
             Self::RailCollapsed => "rail-collapsed",
+            Self::NowEdge => "now-edge",
+            Self::Mask => "mask",
+            Self::SliderThumb => "slider-thumb",
+            Self::SliderFill => "slider-fill",
+            Self::SliderRail => "slider-rail",
+            Self::SliderTick => "slider-tick",
+            Self::DividerVertical => "divider-vertical",
+            Self::DividerVerticalActive => "divider-vertical-active",
+            Self::DividerVerticalHint => "divider-vertical-hint",
+            Self::DividerHorizontal => "divider-horizontal",
+            Self::DividerHorizontalActive => "divider-horizontal-active",
+            Self::DividerHorizontalHint => "divider-horizontal-hint",
         }
     }
 
@@ -281,8 +341,11 @@ impl Glyph {
             Self::RuleH => "horizontal rule",
             Self::RuleV => "vertical rule",
             Self::RuleHStrong => "strong horizontal rule",
+            Self::RuleTeeLeft => "rule meeting the left border",
+            Self::RuleTeeRight => "rule meeting the right border",
             Self::SelectionGutter => "selected",
             Self::Bullet => "list item",
+            Self::MetaSeparator => "separator",
             Self::Ellipsis => "more",
             Self::ModeDot => "mode",
             Self::Connection => "connection",
@@ -299,6 +362,18 @@ impl Glyph {
             Self::StatusDotRing => "ring status",
             Self::RailHeavy => "accent rail",
             Self::RailCollapsed => "collapsed accent rail",
+            Self::NowEdge => "now",
+            Self::Mask => "hidden character",
+            Self::SliderThumb => "slider handle",
+            Self::SliderFill => "filled track",
+            Self::SliderRail => "remaining track",
+            Self::SliderTick => "scale tick",
+            Self::DividerVertical => "vertical divider",
+            Self::DividerVerticalActive => "focused vertical divider",
+            Self::DividerVerticalHint => "resizable vertical divider",
+            Self::DividerHorizontal => "horizontal divider",
+            Self::DividerHorizontalActive => "focused horizontal divider",
+            Self::DividerHorizontalHint => "resizable horizontal divider",
         }
     }
 
@@ -321,6 +396,7 @@ impl Glyph {
             | Self::Info
             | Self::Loading
             | Self::Busy
+            | Self::NowEdge
             | Self::CheckOn
             | Self::CheckOff
             | Self::CheckMixed
@@ -339,8 +415,11 @@ impl Glyph {
             Self::RuleH
             | Self::RuleV
             | Self::RuleHStrong
+            | Self::RuleTeeLeft
+            | Self::RuleTeeRight
             | Self::SelectionGutter
             | Self::Bullet
+            | Self::MetaSeparator
             | Self::Ellipsis
             | Self::ModeDot
             | Self::Connection
@@ -356,7 +435,18 @@ impl Glyph {
             | Self::StatusDotTarget
             | Self::StatusDotRing
             | Self::RailHeavy
-            | Self::RailCollapsed => GlyphGroup::Chrome,
+            | Self::RailCollapsed
+            | Self::Mask
+            | Self::SliderThumb
+            | Self::SliderFill
+            | Self::SliderRail
+            | Self::SliderTick
+            | Self::DividerVertical
+            | Self::DividerVerticalActive
+            | Self::DividerVerticalHint
+            | Self::DividerHorizontal
+            | Self::DividerHorizontalActive
+            | Self::DividerHorizontalHint => GlyphGroup::Chrome,
         }
     }
 
@@ -397,9 +487,12 @@ impl Glyph {
         Self::Remove,
         Self::RuleH,
         Self::RuleV,
+        Self::RuleTeeLeft,
+        Self::RuleTeeRight,
         Self::RuleHStrong,
         Self::SelectionGutter,
         Self::Bullet,
+        Self::MetaSeparator,
         Self::Ellipsis,
         Self::ModeDot,
         Self::Connection,
@@ -416,6 +509,18 @@ impl Glyph {
         Self::StatusDotRing,
         Self::RailHeavy,
         Self::RailCollapsed,
+        Self::NowEdge,
+        Self::Mask,
+        Self::SliderThumb,
+        Self::SliderFill,
+        Self::SliderRail,
+        Self::SliderTick,
+        Self::DividerVertical,
+        Self::DividerVerticalActive,
+        Self::DividerVerticalHint,
+        Self::DividerHorizontal,
+        Self::DividerHorizontalActive,
+        Self::DividerHorizontalHint,
     ];
 
     /// Glyphs in a group.
@@ -451,6 +556,13 @@ impl Glyph {
         }
     }
 
+    /// Cells for each profile.
+    ///
+    /// **One glyph, one concept.** Two catalog entries that can appear in the
+    /// same surface must not share an encoding in any profile — see
+    /// [`GLYPH_CONTEXTS`] and the test that enforces it. Mutually exclusive
+    /// *states* of one element (divider idle/focused) are exempt: they differ in
+    /// weight and role, never side by side.
     const fn encodings(self) -> (&'static str, &'static str, &'static str) {
         // (unicode, ascii, enhanced)
         match self {
@@ -467,17 +579,17 @@ impl Glyph {
             Self::Success => ("✓", "+", "✓"),
             Self::Warning => ("!", "!", "⚠"),
             Self::Error => ("✕", "x", "✕"),
-            Self::Info => ("i", "i", "ℹ"),
-            Self::Loading => ("…", "...", "…"),
-            Self::Busy => ("◉", "o", "◉"),
+            Self::Info => ("·", "i", "ℹ"),
+            Self::Loading => ("◔", ":", "◔"),
+            Self::Busy => ("◐", "o", "◐"),
             Self::CheckOn => ("☑", "[x]", "☑"),
             Self::CheckOff => ("☐", "[ ]", "☐"),
             Self::CheckMixed => ("▣", "[-]", "▣"),
             Self::RadioOn => ("●", "(*)", "●"),
             Self::RadioOff => ("○", "( )", "○"),
-            Self::File => ("·", ".", "📄"),
-            Self::Folder => ("▸", ">", "📁"),
-            Self::FolderOpen => ("▾", "v", "📂"),
+            Self::File => ("▫", ".", "📄"),
+            Self::Folder => ("▪", "/", "📁"),
+            Self::FolderOpen => ("▨", "\\", "📂"),
             Self::Search => ("/", "/", "🔍"),
             Self::Close => ("✕", "x", "✕"),
             Self::Settings => ("⚙", "*", "⚙"),
@@ -489,41 +601,58 @@ impl Glyph {
             Self::Remove => ("−", "-", "−"),
             Self::RuleH => ("─", "-", "─"),
             Self::RuleV => ("│", "|", "│"),
+            Self::RuleTeeLeft => ("├", "+", "├"),
+            Self::RuleTeeRight => ("┤", "+", "┤"),
             Self::RuleHStrong => ("═", "=", "═"),
-            Self::SelectionGutter => ("▌", ">", "▌"),
-            Self::Bullet => ("•", "*", "•"),
+            Self::SelectionGutter => ("▌", "*", "▌"),
+            Self::Bullet => ("•", "-", "•"),
+            Self::MetaSeparator => ("·", "|", "·"),
             Self::Ellipsis => ("…", "...", "…"),
             Self::ModeDot => ("●", "*", "●"),
-            Self::Connection => ("◉", "o", "◉"),
-            Self::SelectionMark => ("▣", "#", "▣"),
-            Self::FocusDiamond => ("◇", "+", "◇"),
+            Self::Connection => ("◍", "=", "◍"),
+            Self::SelectionMark => ("▮", "#", "▮"),
+            Self::FocusDiamond => ("◊", ">", "◊"),
             Self::EmptyCircle => ("○", "o", "○"),
-            Self::DisabledMark => ("⊘", "x", "⊘"),
+            Self::DisabledMark => ("⊘", "~", "⊘"),
             Self::DiamondFilled => ("◆", "*", "◆"),
             Self::Prompt => ("❯", ">", "❯"),
-            Self::Token => ("◉", "#", "◉"),
+            Self::Token => ("◧", "%", "◧"),
             Self::DiamondDouble => ("◈", "#", "◈"),
-            Self::StatusDotHollow => ("○", "o", "○"),
+            Self::StatusDotHollow => ("○", ".", "○"),
             Self::StatusDotTarget => ("◉", "@", "◉"),
             Self::StatusDotRing => ("◎", "O", "◎"),
             Self::RailHeavy => ("┃", "|", "┃"),
             Self::RailCollapsed => ("❙", "|", "❙"),
+            Self::NowEdge => ("◇", "|", "◇"),
+            Self::Mask => ("●", "*", "●"),
+            Self::SliderThumb => ("●", "*", "●"),
+            Self::SliderFill => ("━", "=", "━"),
+            Self::SliderRail => ("─", "-", "─"),
+            Self::SliderTick => ("┊", "|", "┊"),
+            Self::DividerVertical => ("│", "|", "│"),
+            Self::DividerVerticalActive => ("┃", "|", "┃"),
+            Self::DividerVerticalHint => ("┋", "|", "┋"),
+            Self::DividerHorizontal => ("─", "-", "─"),
+            Self::DividerHorizontalActive => ("━", "=", "━"),
+            Self::DividerHorizontalHint => ("┅", "=", "┅"),
         }
     }
 
+    /// Nominal Unicode width: every catalog encoding is one narrow cell.
+    ///
+    /// East-Asian-Ambiguous members (`✓ ● ○ ◆ ◇ …`) are *assumed narrow*. A
+    /// terminal configured for wide ambiguous width will double them; handling
+    /// that needs a capability flag plus a layout audit and is deliberately
+    /// deferred (see the plan's maintenance notes).
     const fn unicode_cols(self) -> u16 {
-        match self {
-            Self::CheckOn | Self::CheckOff | Self::CheckMixed => 1,
-            Self::Loading | Self::Ellipsis => 1,
-            _ => 1,
-        }
+        1
     }
 
     const fn ascii_cols(self) -> u16 {
         match self {
             Self::CheckOn | Self::CheckOff | Self::CheckMixed => 3,
             Self::RadioOn | Self::RadioOff => 3,
-            Self::Loading | Self::Ellipsis => 3,
+            Self::Ellipsis => 3,
             _ => 1,
         }
     }
@@ -582,6 +711,90 @@ pub fn glyph_by_id(id: &str) -> Option<Glyph> {
     Glyph::ALL.iter().copied().find(|g| g.id() == id)
 }
 
+/// Glyph sets that share one surface, where an encoding collision would read as
+/// two meanings wearing the same character.
+///
+/// Membership is "can a reader see these together and have to tell them apart" —
+/// side by side in a row, or column-wise down a list. Two kinds of glyph are
+/// deliberately *not* members:
+///
+/// - **Mutually exclusive states of one element** (a divider that is idle *or*
+///   focused): separated by role and weight, never by shape.
+/// - **Delimiters.** [`Glyph::MetaSeparator`] shares `·` with [`Glyph::Info`],
+///   but a separator is always painted inside spaces (` · `) between facts,
+///   while `Info` occupies a status cell. Listing it would force one of the two
+///   to change shape to satisfy a rule neither of them breaks.
+/// - **Header vs body cells.** [`Glyph::ArrowDown`] renders `v` in ASCII, the
+///   same character as [`Glyph::DisclosureOpen`]. A table shows both, but never
+///   in the same cell: the sort marker sits in the header row's column label
+///   and disclosure sits in a body row's leading cell, one column-aligned band
+///   apart. They are separate contexts below for that reason — the alternative
+///   was breaking a disclosure encoding migrated in 0282 and trading this
+///   collision for `-` vs [`Glyph::Bullet`] in the same file.
+pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
+    (
+        "collection row",
+        &[
+            Glyph::SelectionGutter,
+            Glyph::SelectionMark,
+            Glyph::Bullet,
+            Glyph::DisclosureOpen,
+            Glyph::DisclosureClosed,
+            Glyph::CheckOn,
+            Glyph::CheckOff,
+            Glyph::CheckMixed,
+            Glyph::RadioOn,
+            Glyph::RadioOff,
+            Glyph::File,
+            Glyph::Folder,
+            Glyph::FolderOpen,
+            Glyph::Success,
+            Glyph::Warning,
+            Glyph::Error,
+            Glyph::Info,
+            Glyph::Busy,
+            Glyph::Loading,
+            Glyph::Ellipsis,
+            Glyph::DisabledMark,
+        ],
+    ),
+    (
+        "status strip",
+        &[
+            Glyph::StatusDotHollow,
+            Glyph::StatusDotTarget,
+            Glyph::StatusDotRing,
+            Glyph::Connection,
+            Glyph::Token,
+            Glyph::ModeDot,
+            Glyph::Busy,
+            Glyph::Loading,
+            Glyph::NowEdge,
+            Glyph::FocusDiamond,
+            Glyph::SelectionMark,
+            Glyph::Success,
+            Glyph::Warning,
+            Glyph::Error,
+            Glyph::Info,
+        ],
+    ),
+    (
+        // Column labels only. Disclosure and the row gutter live one band below,
+        // in the body rows — see the header/body note above.
+        "table header",
+        &[Glyph::ArrowUp, Glyph::ArrowDown],
+    ),
+    (
+        "slider track",
+        &[
+            Glyph::SliderThumb,
+            Glyph::SliderFill,
+            Glyph::SliderRail,
+            Glyph::SliderTick,
+        ],
+    ),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -639,6 +852,35 @@ mod tests {
         let r = Glyph::Add.resolve(GlyphSet::Unicode);
         let s = r.aligned(3);
         assert_eq!(display_cols(&s), 3);
+    }
+
+    #[test]
+    fn co_occurring_glyphs_never_share_an_encoding() {
+        for (context, members) in GLYPH_CONTEXTS {
+            for set in [GlyphSet::Unicode, GlyphSet::Ascii, GlyphSet::Enhanced] {
+                for (i, glyph) in members.iter().enumerate() {
+                    for other in &members[i + 1..] {
+                        assert_ne!(
+                            glyph.resolve(set).text,
+                            other.resolve(set).text,
+                            "{context}/{set:?}: {glyph:?} and {other:?} paint the same cell",
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_glyph_context_member_is_in_the_catalog() {
+        for (context, members) in GLYPH_CONTEXTS {
+            for glyph in *members {
+                assert!(
+                    Glyph::ALL.contains(glyph),
+                    "{context}: {glyph:?} is not in the catalog",
+                );
+            }
+        }
     }
 
     #[test]

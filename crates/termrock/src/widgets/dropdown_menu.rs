@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -353,6 +353,8 @@ pub enum DropdownMenuOutcome<Id> {
     Ignored,
     /// Cursor moved in a panel.
     CursorMoved,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Root panel opened.
     Opened {
         /// Trigger used.
@@ -433,6 +435,8 @@ pub struct DropdownMenuState {
     presentation_override: Option<DropdownMenuPresentation>,
     /// Panel hits: (depth, item_index, rect).
     panel_hits: Vec<(usize, usize, Rect)>,
+    /// (depth, item) the pointer is over. Hover washes; it never commits.
+    hovered: Option<(usize, usize)>,
     /// Custom-preview hit rects for host paint.
     preview_hits: Vec<(usize, usize, Rect)>,
     /// Root panel origin for mouse.
@@ -462,6 +466,7 @@ impl DropdownMenuState {
             presentation: DropdownMenuPresentation::Cascading,
             presentation_override: None,
             panel_hits: Vec::new(),
+            hovered: None,
             preview_hits: Vec::new(),
             origin: (0, 0),
             typeahead: String::new(),
@@ -949,6 +954,21 @@ impl DropdownMenuState {
             return DropdownMenuOutcome::Ignored;
         }
         match event.kind {
+            MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving a panel clears it.
+                let was = self.hovered;
+                self.hovered = self
+                    .panel_hits
+                    .iter()
+                    .rev()
+                    .find(|(_, _, rect)| rect.contains(event.position))
+                    .map(|(depth, idx, _)| (*depth, *idx));
+                if was == self.hovered {
+                    DropdownMenuOutcome::Ignored
+                } else {
+                    DropdownMenuOutcome::HoverChanged
+                }
+            }
             MouseEventKind::Down(MouseButton::Left) => {
                 let pos = event.position;
                 // Find deepest hit first.
@@ -1182,7 +1202,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;
@@ -1190,8 +1210,25 @@ impl<'a, Id> DropdownMenu<'a, Id> {
 
         let cursor = state.panel_cursor(depth).unwrap_or(0);
         let surface_focus = state.focused && state.accepts_input;
+
+        // A menu longer than its panel used to paint until it ran out of rows
+        // and drop the rest in silence — including the row the cursor was on,
+        // which could sit below the fold with nothing on screen moving. The
+        // frame already owns a `CollectionState`; it just was never asked
+        // (plans/022 Step 5).
+        let viewport = usize::from(inner.height);
+        let stored = state
+            .cascade
+            .get(depth)
+            .map_or(0, |frame| frame.collection.offset());
+        let offset = crate::scroll::cursor_follow_offset(cursor, items.len(), viewport, stored);
+        if let Some(frame) = state.cascade.get_mut(depth) {
+            frame.collection.set_viewport(offset, viewport, items.len());
+        }
+        let gutter = Rect::new(inner.right().saturating_sub(1), inner.y, 1, inner.height);
+
         let mut y = inner.y;
-        for (i, item) in items.iter().enumerate() {
+        for (i, item) in items.iter().enumerate().skip(offset) {
             if y >= inner.bottom() {
                 break;
             }
@@ -1199,11 +1236,16 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             state.panel_hits.push((depth, i, hit));
 
             if matches!(item.kind, MenuRowKind::Separator) {
-                let line = if self.ascii {
-                    "-".repeat(usize::from(inner.width))
+                // A separator that stops one cell short of the panel border
+                // leaves a visible notch; it meets the border with a tee
+                // instead (plans/022 Step 2).
+                let glyphs = self.system.glyphs;
+                let rule = if self.ascii {
+                    "-"
                 } else {
-                    "─".repeat(usize::from(inner.width))
+                    glyphs.resolve(Glyph::RuleH).text
                 };
+                let line: String = std::iter::repeat_n(rule, usize::from(inner.width)).collect();
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1211,6 +1253,25 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     usize::from(inner.width),
                     self.system.style(Role::Border),
                 );
+                if !self.ascii && inner.x > area.x {
+                    buffer.set_stringn(
+                        inner.x.saturating_sub(1),
+                        y,
+                        glyphs.resolve(Glyph::RuleTeeLeft).text,
+                        1,
+                        self.system.style(Role::Border),
+                    );
+                    let right = inner.x.saturating_add(inner.width);
+                    if right < area.right() {
+                        buffer.set_stringn(
+                            right,
+                            y,
+                            glyphs.resolve(Glyph::RuleTeeRight).text,
+                            1,
+                            self.system.style(Role::Border),
+                        );
+                    }
+                }
                 y = y.saturating_add(1);
                 continue;
             }
@@ -1254,22 +1315,18 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: item.enabled,
-                    loading: false,
-                    checked: matches!(
-                        item.kind,
-                        MenuRowKind::Checkbox { checked: true }
-                            | MenuRowKind::Radio { selected: true, .. }
-                    ),
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some((depth, i)),
+                enabled: item.enabled,
+                loading: false,
+                checked: matches!(
+                    item.kind,
+                    MenuRowKind::Checkbox { checked: true }
+                        | MenuRowKind::Radio { selected: true, .. }
+                ),
+            });
             if recipe.use_fill {
                 buffer.set_style(hit, recipe.label);
             } else if recipe.use_tint {
@@ -1347,6 +1404,18 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             );
             y = y.saturating_add(1);
         }
+
+        // The cut edges and the gutter say the same thing every other scrolled
+        // surface in the library says.
+        crate::scroll::paint_scrolled_region(
+            buffer,
+            inner,
+            gutter,
+            items.len(),
+            viewport,
+            u16::try_from(offset).unwrap_or(u16::MAX),
+            self.system,
+        );
     }
 
     /// Semantic registration for open menu.
@@ -1803,6 +1872,59 @@ mod tests {
         let flat = flatten_menu_nodes(&root);
         assert!(flat.iter().any(|c| c.id == "png"));
         assert!(flat.iter().any(|c| c.path_label.contains("Export")));
+    }
+
+    #[test]
+    fn a_menu_taller_than_its_panel_scrolls_to_its_cursor() {
+        let system = DesignSystem::default();
+        // Below MENU_PROMOTE_MAX_ITEMS, so this stays a menu rather than being
+        // promoted to the command palette.
+        let root: Vec<MenuNode<&'static str>> = (0..20)
+            .map(|i| {
+                let label: &'static str = Box::leak(format!("Item {i}").into_boxed_str());
+                let id: &'static str = Box::leak(format!("item-{i}").into_boxed_str());
+                MenuNode::command(id, label)
+            })
+            .collect();
+        let mut state = DropdownMenuState::new();
+        let bounds = Rect::new(0, 0, 80, 24);
+        // Production defaults correctly promote 30 commands to a palette. This
+        // test exercises the explicit cascading override available to hosts
+        // whose menu must remain anchored.
+        state.set_presentation_override(Some(DropdownMenuPresentation::Cascading));
+        assert!(matches!(
+            state.open_from_keyboard(&root, bounds),
+            DropdownMenuOutcome::Opened { .. }
+        ));
+        // A short panel: the menu cannot show all thirty rows.
+        let area = Rect::new(0, 0, 24, 8);
+
+        // Walk the cursor past the fold.
+        for _ in 0..15 {
+            let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &root);
+        }
+        let mut buf = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buf, &mut state);
+
+        let painted: String = (0..area.height)
+            .flat_map(|y| (0..area.width).map(move |x| (x, y)))
+            .map(|(x, y)| buf[(x, y)].symbol().to_string())
+            .collect();
+        assert!(
+            painted.contains("Item 15"),
+            "the cursor row must be on screen: {painted}"
+        );
+        assert!(
+            !painted.contains("Item 0 "),
+            "rows above the fold must scroll away: {painted}"
+        );
+        // Every hit region reported belongs to a row that was actually painted.
+        for (_, index, rect) in state.panel_hits() {
+            assert!(
+                rect.y >= area.y && rect.y < area.bottom(),
+                "{index} {rect:?}"
+            );
+        }
     }
 
     #[test]

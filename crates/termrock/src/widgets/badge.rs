@@ -458,7 +458,7 @@ impl<'a> Badge<'a> {
         if self.interactive {
             if state.is_some_and(|s| s.focused) {
                 style = style
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                    .add_modifier(Modifier::BOLD)
                     .patch(self.system.style(Role::Focus));
             } else if state.is_some_and(|s| s.selected) {
                 style = style.add_modifier(Modifier::BOLD);
@@ -533,7 +533,31 @@ impl<'a> Badge<'a> {
         if matches!(self.fill, BadgeFill::Soft) && !parts.content.is_empty() {
             buffer.set_style(parts.content, style);
         }
-        buffer.set_stringn(parts.content.x, parts.content.y, &text, budget, style);
+        // The label is a word, not a signal: the variant's color lands on the
+        // status glyph and the fill, while the text stays legible in the body
+        // tone (plans/007).
+        let label_style = if self.disabled {
+            style
+        } else {
+            ratatui_core::style::Style {
+                fg: self.system.style(Role::Text).fg,
+                ..style
+            }
+        };
+        buffer.set_stringn(parts.content.x, parts.content.y, &text, budget, label_style);
+        if !self.disabled
+            && self.show_glyph
+            && let Some(glyph) = self.variant.status_glyph()
+        {
+            // `decorated` always opens with one delimiter cell before the glyph.
+            crate::widgets::row_chrome::paint_status_glyph(
+                buffer,
+                parts.content,
+                1,
+                self.system.glyphs.resolve(glyph).text,
+                style,
+            );
+        }
         parts
     }
 

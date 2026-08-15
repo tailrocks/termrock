@@ -65,6 +65,12 @@ Answer in order. Stop at the first decisive yes.
 - [ ] Composite **composes** public `widgets` APIs (and kernel modules)—no
       private parallel paint stack inside widgets for the product job.
 - [ ] **No** `use crate::patterns` from `widgets` (doc links allowed).
+- [ ] Composite contains **zero raw buffer paint** (`set_stringn`, `cell_mut`).
+      Single rows go through `DesignSystem::paint_row`; anything else is a
+      widget. A composite that cannot be expressed through widgets has found a
+      missing widget, which is the finding to report.
+- [ ] Composite opens with a `//! Teaches:` header naming the assembly and the
+      widgets it composes.
 - [ ] Lookbook: blocks from `widgets`, composites from `patterns`.
 - [ ] Registry catalog: primary file + provenance paths match the real home.
 - [ ] Breaking moves: sequential `migrations/` + `MIGRATING.md` index.
@@ -84,6 +90,11 @@ Answer in order. Stop at the first decisive yes.
 | `ModeRibbon` + `WorkbenchMode` | Neutral mode strip; labels projected by host |
 | `PromptQueueItem` / `PromptQueueRef` / `PromptQueueStatus` | Neutral FIFO identity for composer + recipes |
 | `three_pane_panels` / `main_end_panels` | Layout presets without product names |
+| `MetricTile` / `MetricTileView` | One measured number; the dashboard around it is the product |
+| `StatusStrip` | Priority-dropped segment row with one status hue and one accent |
+| `ConfirmPrompt` | Neutral destructive confirmation (same precedent as `PermissionPrompt`) |
+| `ChromeRow` | The query / mode / notice row a pane grows while a mode is active |
+| `PanelTitleSpec` | `Name(scope)[count] /filter` title composition |
 
 ### Example composites (`patterns`)
 

@@ -18,6 +18,18 @@
 //! **Ownership.** Host owns PTY/process. Outcomes are **requests only**.
 //!
 //! Research: agent CLIs, CI command cards, terminal output panes.
+//!
+//! Teaches: how to compose shell/terminal command card with live output.
+//!
+//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Card`],
+//! [`crate::widgets::TerminalCommandMeta`],
+//! [`crate::widgets::TerminalEnvEntry`], [`crate::widgets::TerminalLine`],
+//! [`crate::widgets::TerminalOutput`],
+//! [`crate::widgets::TerminalOutputOutcome`],
+//! [`crate::widgets::TerminalOutputRecipe`], and 6 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -25,7 +37,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Motion, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{
         AccentRail, Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
@@ -898,7 +910,7 @@ impl<'a> TerminalRunCard<'a> {
         if matches!(state.presentation, TerminalRunPresentation::Compact) {
             let running = matches!(run.status, TerminalRunStatus::Running);
             let marker = if running {
-                if ascii || !matches!(self.system.motion, Motion::Full) {
+                if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
                     if ascii { "." } else { "●" }
                 } else {
                     SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
@@ -911,11 +923,10 @@ impl<'a> TerminalRunCard<'a> {
                 run.display_command(),
                 run.status.label()
             );
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, area.y, area.width, 1),
+                &line,
                 self.system.style(if colorless {
                     Role::Text
                 } else {
@@ -949,22 +960,20 @@ impl<'a> TerminalRunCard<'a> {
             subtitle.push_str(" · redacted");
         }
 
+        // Focus chrome means "the keyboard is here", not "this is busy": ten
+        // running cards used to claim ten bright borders. Running states
+        // itself through the status glyph and the badge (plans/013 Step 3).
         let emphasis = match run.status {
             TerminalRunStatus::Failed
             | TerminalRunStatus::Signaled
             | TerminalRunStatus::TimedOut => PanelChrome::Danger,
-            TerminalRunStatus::Running | TerminalRunStatus::WaitingPermission => {
-                PanelChrome::Focused
-            }
             _ if state.focused => PanelChrome::Focused,
             _ => PanelChrome::Normal,
         };
 
-        let leading = if ascii || colorless {
-            ""
-        } else {
-            run.status.glyph(false)
-        };
+        // Colorless is exactly when the glyph matters most: dropping it left
+        // the card with no status cue at all (plans/013 Step 2).
+        let leading = run.status.glyph(ascii);
         let badge = phase.badge();
         let card = Card::new(self.system)
             .title(title.as_str())
@@ -1001,11 +1010,10 @@ impl<'a> TerminalRunCard<'a> {
                         usize::from(body.width).saturating_sub(10)
                     )
                 );
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&line, usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &line,
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1020,11 +1028,10 @@ impl<'a> TerminalRunCard<'a> {
                         usize::from(body.width).saturating_sub(10)
                     )
                 );
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&line, usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &line,
                     self.system.style(Role::Accent),
                 );
                 y = y.saturating_add(1);
@@ -1032,11 +1039,10 @@ impl<'a> TerminalRunCard<'a> {
         }
         if let Some(cwd) = &run.cwd {
             if y < max_y && body.width >= 24 {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("cwd: {cwd}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("cwd: {cwd}"),
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
@@ -1044,33 +1050,30 @@ impl<'a> TerminalRunCard<'a> {
         }
         if let Some(a) = &run.actor {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("via {a}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("via {a}"),
                     self.system.style(Role::TextMuted),
                 );
                 y = y.saturating_add(1);
             }
         }
         if run.status.needs_permission() && y < max_y {
-            buffer.set_stringn(
-                body.x,
-                y,
-                take_display_cols("permission required · p", usize::from(body.width)),
-                usize::from(body.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(body.x, y, body.width, 1),
+                "permission required · p",
                 self.system.style(Role::Warning),
             );
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
             if y < max_y {
-                buffer.set_stringn(
-                    body.x,
-                    y,
-                    take_display_cols(&format!("egress: {e}"), usize::from(body.width)),
-                    usize::from(body.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(body.x, y, body.width, 1),
+                    &format!("egress: {e}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -1339,7 +1342,7 @@ mod tests {
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(Motion::Reduced);
+        let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let run = TerminalRun::new("r", "cargo test")
             .execute("cargo test")
             .status(TerminalRunStatus::Running);
@@ -1471,6 +1474,45 @@ mod tests {
         ] {
             assert!(!p.id().is_empty());
         }
+    }
+
+    #[test]
+    fn colorless_cards_keep_their_status_glyph_and_their_borders_quiet() {
+        let system = DesignSystem::default();
+        let lines = example_terminal_run_lines();
+        let run = example_terminal_runs()
+            .into_iter()
+            .find(|r| matches!(r.status, TerminalRunStatus::Running))
+            .expect("a running fixture");
+        let mut state = TerminalRunCardState::new();
+        let area = Rect::new(0, 0, 60, 10);
+        let mut buffer = Buffer::empty(area);
+        TerminalRunCard::new(&run, &lines, &system)
+            .colorless(true)
+            .paint(area, &mut buffer, &mut state);
+        // The card leads with a status glyph — a spinner frame while running,
+        // the status glyph otherwise. Colorless must not blank it.
+        let first: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>()
+            .trim_start()
+            .chars()
+            .next()
+            .into_iter()
+            .collect();
+        assert!(
+            !first.is_empty() && first != "c",
+            "a colorless card needs its status glyph most of all: {first:?}"
+        );
+
+        // A running card is not a focused card: no bright border unless focus.
+        let focused = system.style(Role::BorderFocused).fg;
+        let bright = buffer
+            .content()
+            .iter()
+            .filter(|cell| Some(cell.fg) == focused && !cell.symbol().trim().is_empty())
+            .count();
+        assert_eq!(bright, 0, "running must not claim the focus border");
     }
 
     #[test]

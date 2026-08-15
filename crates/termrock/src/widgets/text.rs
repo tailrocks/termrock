@@ -124,7 +124,7 @@ pub enum TextEmphasis {
     Normal,
     /// Bold weight.
     Strong,
-    /// Italic when available; underline fallback.
+    /// Italic emphasis.
     Emphasis,
     /// Dim / secondary (modifier + optional muted role).
     Dim,
@@ -152,8 +152,10 @@ pub struct TextSpan<'a> {
     content: Cow<'a, str>,
     role: Role,
     emphasis: TextEmphasis,
-    /// Extra underline (composes with emphasis).
+    /// Author-set underline for content that is underlined (composes with
+    /// emphasis). This is content, not a state cue.
     underline: bool,
+    reverse: bool,
     /// Syntax-independent annotation tag (search, diagnostic, link id, …).
     annotation: Option<Cow<'a, str>>,
     /// Highlight mark (search hit, selection preview) without requiring bg fill.
@@ -169,6 +171,7 @@ impl<'a> TextSpan<'a> {
             role: Role::Text,
             emphasis: TextEmphasis::Normal,
             underline: false,
+            reverse: false,
             annotation: None,
             highlight: false,
         }
@@ -182,6 +185,7 @@ impl<'a> TextSpan<'a> {
             role: Role::Text,
             emphasis: TextEmphasis::Normal,
             underline: false,
+            reverse: false,
             annotation: None,
             highlight: false,
         }
@@ -233,6 +237,13 @@ impl<'a> TextSpan<'a> {
     #[must_use]
     pub const fn underline(mut self, on: bool) -> Self {
         self.underline = on;
+        self
+    }
+
+    /// Reverse this run — the colorless way to say "this one".
+    #[must_use]
+    pub const fn reverse(mut self, on: bool) -> Self {
+        self.reverse = on;
         self
     }
 
@@ -528,25 +539,30 @@ impl<'a> Text<'a> {
                 style = style.add_modifier(Modifier::BOLD);
             }
             TextEmphasis::Emphasis => {
-                style = style.add_modifier(Modifier::ITALIC | Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::ITALIC);
             }
             TextEmphasis::Dim => {
                 style = style.add_modifier(Modifier::DIM);
             }
             TextEmphasis::Code => {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                // Inline code reads through the syntax tone, keeping the
+                // "no filled background" promise this widget makes.
+                style = style.patch(self.system.style(Role::Info));
             }
         }
         if span.underline {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
+        if span.reverse {
+            style = style.add_modifier(Modifier::REVERSED);
+        }
         if span.highlight {
-            // Non-bg highlight: underline + accent foreground when available.
+            // Non-bg highlight: accent foreground plus weight.
             let accent = self.system.style(Role::Accent);
             if let Some(fg) = accent.fg {
                 style = style.fg(fg);
             }
-            style = style.add_modifier(Modifier::UNDERLINED | Modifier::BOLD);
+            style = style.add_modifier(Modifier::BOLD);
         }
         style
     }
@@ -870,12 +886,6 @@ impl Widget for Text<'_> {
     }
 }
 
-/// ASCII-friendly ellipsis helper for low-capability profiles.
-#[must_use]
-pub fn ascii_ellipsis() -> &'static str {
-    "..."
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1019,10 +1029,12 @@ mod tests {
 
     #[test]
     fn ascii_ellipsis_truncate() {
-        let system = DesignSystem::default();
+        // The ASCII ellipsis comes from the glyph catalog under the ASCII
+        // profile, not from a second helper beside it (plans/020).
+        let system = DesignSystem::default().ascii();
         let t = Text::new("abcdefghij", &system)
             .truncate()
-            .ellipsis(ascii_ellipsis());
+            .ellipsis(system.glyphs.ellipsis());
         let layout = t.layout(6, 1);
         assert!(layout.lines[0].plain().contains('.'));
     }

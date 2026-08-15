@@ -8,7 +8,7 @@ use std::fmt::Debug;
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{Event, KeyEvent, MouseEvent},
-    style::{Density, DesignSystem, RolePalette},
+    style::{Density, RolePalette},
     widgets::{
         CivilDate, ColumnModel, Combobox, ComboboxOutcome, ComboboxState, CompletionCandidate,
         CompletionMenu, CompletionMenuOutcome, CompletionMenuSize, CompletionMenuState, DataColumn,
@@ -74,7 +74,7 @@ impl SearchInputInteractor {
 
 impl StoryInteraction for SearchInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = SearchInput::new(&system)
             .placeholder("Search…")
             .status(SearchStatus::Results { count: 12 })
@@ -150,7 +150,7 @@ impl PathInputInteractor {
 
 impl StoryInteraction for PathInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = PathInput::new(&system)
             .label("Install dir")
             .ascii(true)
@@ -231,7 +231,7 @@ impl ComboboxInteractor {
 
 impl StoryInteraction for ComboboxInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let values = candidates();
         Combobox::new(&system)
             .label("Language")
@@ -311,7 +311,7 @@ impl CompletionMenuInteractor {
 
 impl StoryInteraction for CompletionMenuInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let values = candidates();
         let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
         CompletionMenu::new(&values, &system, area, anchor)
@@ -382,7 +382,7 @@ impl DataTableInteractor {
 
 impl StoryInteraction for DataTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone()).density(Density::default());
+        let system = crate::design::lookbook_system(self.theme.clone()).density(Density::default());
         let cells = [
             ["1", "alpha", "ready"],
             ["2", "beta", "running"],
@@ -458,7 +458,7 @@ impl DateTimePickerInteractor {
 
 impl StoryInteraction for DateTimePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         DateTimePicker::new(&system)
             .label("Due date")
             .ascii(true)
@@ -537,7 +537,7 @@ impl FilePickerInteractor {
 
 impl StoryInteraction for FilePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         FilePicker::new(&system)
             .title("Open file")
             .ascii(true)
@@ -620,7 +620,7 @@ impl QuickOpenInteractor {
 
 impl StoryInteraction for QuickOpenInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         QuickOpen::new(&self.providers, &self.visible, &system).paint(
             area,
             frame.buffer_mut(),
@@ -682,7 +682,7 @@ impl MenuBarInteractor {
 
 impl StoryInteraction for MenuBarInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
         MenuBar::new(&self.menus, &system).paint_all(
             bar,
@@ -744,7 +744,7 @@ impl TreeNavigationInteractor {
 
 impl StoryInteraction for TreeNavigationInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         TreeNavigation::new(&self.nodes, &system).ascii(true).paint(
             area,
             frame.buffer_mut(),
@@ -805,7 +805,7 @@ impl NotificationCenterInteractor {
 
 impl StoryInteraction for NotificationCenterInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         NotificationCenter::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {

@@ -32,13 +32,13 @@ use crate::{
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, PathExpect, PathFsStatus, PathInput, PathInputOutcome, PathInputState,
-    PathStyle, Selection, Validation, join_path, normalize_separators,
+    Panel, PanelChrome, PanelTitleSpec, PathExpect, PathFsStatus, PathInput, PathInputOutcome,
+    PathInputState, PathStyle, Selection, Validation, join_path, normalize_separators,
 };
 
 /// Overlay id for modal file pickers.
@@ -383,6 +383,8 @@ pub enum FilePickerOutcome {
     Ignored,
     /// Chrome / cursor changed.
     Changed,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// Host should list `path` for `generation` (cancellable).
     ListRequested {
         /// Directory to list.
@@ -463,6 +465,8 @@ pub struct FilePickerState {
     // geometry
     breadcrumb_hits: Vec<(String, Rect)>,
     entry_hits: Vec<(String, Rect)>,
+    /// Entry the pointer is over (hover wash; never a commit).
+    hovered: Option<String>,
     list_area: Rect,
     path_area: Rect,
     preview_area: Rect,
@@ -514,6 +518,7 @@ impl FilePickerState {
             click_seq: 0,
             breadcrumb_hits: Vec::new(),
             entry_hits: Vec::new(),
+            hovered: None,
             list_area: Rect::default(),
             path_area: Rect::default(),
             preview_area: Rect::default(),
@@ -690,6 +695,12 @@ impl FilePickerState {
     pub fn set_show_hidden(&mut self, on: bool) {
         self.show_hidden = on;
         self.reprocess_visible();
+    }
+
+    /// Active name filter, for the pane title.
+    #[must_use]
+    pub fn filter_text(&self) -> &str {
+        &self.name_filter
     }
 
     /// Name filter (client-side) and rebuild visible projection.
@@ -1133,6 +1144,20 @@ impl FilePickerState {
         if !click && !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             // only left down for most
         }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated every event, so leaving the list clears it.
+            let was = self.hovered.clone();
+            self.hovered = self
+                .entry_hits
+                .iter()
+                .find(|(_, rect)| rect.contains(event.position))
+                .map(|(id, _)| id.clone());
+            return if was == self.hovered {
+                FilePickerOutcome::Ignored
+            } else {
+                FilePickerOutcome::HoverChanged
+            };
+        }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             return FilePickerOutcome::Ignored;
         }
@@ -1271,13 +1296,23 @@ impl<'a> FilePicker<'a> {
             state.presentation = FilePickerPresentation::Fullscreen;
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        // The title carries the listing size and the active filter, like every
+        // other pane title (plans/009, 017 §B2).
+        let filter = state.filter_text();
+        let mut spec = PanelTitleSpec::new(self.title).count(state.entries().len());
+        if !filter.is_empty() {
+            spec = spec.filter(filter);
+        }
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .title_spec(spec)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
-        Widget::render(&panel.title(self.title), area, buffer);
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1359,7 +1394,16 @@ impl<'a> FilePicker<'a> {
             }
         }
 
-        let body = Rect::new(inner.x, y, inner.width, inner.bottom().saturating_sub(y));
+        // Reserve the footer row before the body claims the space, so the
+        // hints have somewhere to go instead of being computed and dropped
+        // (plans/009 Step 3).
+        let footer_h = u16::from(inner.bottom().saturating_sub(y) > 2);
+        let body = Rect::new(
+            inner.x,
+            y,
+            inner.width,
+            inner.bottom().saturating_sub(y).saturating_sub(footer_h),
+        );
         if body.is_empty() {
             return;
         }
@@ -1394,15 +1438,18 @@ impl<'a> FilePicker<'a> {
         }
 
         // Footer: selection count / hints
-        if area.height > 0 {
+        if footer_h > 0 {
             let n = state.selection.checked().len();
-            let hint = if self.ascii {
-                format!("{n} sel  Enter open  Space multi  ^H hidden  Esc cancel")
-            } else {
-                format!("{n} selected · Enter open · Space multi · ^H hidden · Esc")
-            };
-            // paint on bottom border inside if possible - skip to avoid overwrite
-            let _ = hint;
+            let join = self.system.glyphs.meta_join();
+            let hint = format!("{n} selected{join}enter open{join}space multi{join}esc close");
+            let fy = inner.bottom().saturating_sub(1);
+            buffer.set_stringn(
+                inner.x,
+                fy,
+                take_display_cols(&hint, usize::from(inner.width)),
+                usize::from(inner.width),
+                self.system.style(Role::TextMuted),
+            );
         }
     }
 
@@ -1435,18 +1482,14 @@ impl<'a> FilePicker<'a> {
             let is_hi = state.collection.active() == Some(&entry.id);
             let is_sel = state.selection.is_checked(&entry.id);
             let active = is_hi && matches!(state.pane, FilePickerPane::List);
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active && state.focused,
-                    hovered: false,
-                    enabled: entry.error.is_none(),
-                    loading: false,
-                    checked: is_sel,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active && state.focused,
+                hovered: state.hovered.as_deref() == Some(entry.id.as_str()),
+                enabled: entry.error.is_none(),
+                loading: false,
+                checked: is_sel,
+            });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
             } else if recipe.use_tint {
@@ -1460,7 +1503,9 @@ impl<'a> FilePicker<'a> {
                 }
             } else {
                 match entry.kind {
-                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => "📁",
+                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => {
+                        self.system.glyphs.resolve(Glyph::Folder).text
+                    }
                     _ => " ",
                 }
             };
@@ -1508,13 +1553,9 @@ impl<'a> FilePicker<'a> {
         }
 
         if state.entries.is_empty() && matches!(state.status, FileListingStatus::Ready) {
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols("(empty)", usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
+            super::EmptyState::new("Empty folder", self.system)
+                .inline()
+                .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
         }
     }
 

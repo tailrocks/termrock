@@ -1040,7 +1040,7 @@ impl<'a> NumberInput<'a> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             buffer.set_stringn(
                 area.x,
@@ -1141,12 +1141,12 @@ impl<'a> NumberInput<'a> {
         // Validation row
         if area.height >= 3 {
             if let Validation::Invalid(msg) = self.validation {
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
                 );
             } else if matches!(
                 state.validity(),

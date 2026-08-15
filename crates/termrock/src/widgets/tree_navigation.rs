@@ -865,7 +865,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             nodes,
             system,
             ascii: false,
-            empty_message: "(empty)",
+            empty_message: "Nothing here",
         }
     }
 
@@ -956,7 +956,8 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                 self.system.style(Role::TextDisabled)
             } else if is_route {
                 self.system
-                    .style(Role::Selection)
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if is_focus {
                 self.system

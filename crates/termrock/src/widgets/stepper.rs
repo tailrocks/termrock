@@ -789,8 +789,11 @@ impl<'a> Stepper<'a> {
         Self {
             items,
             system,
-            ascii: false,
-            colorless: false,
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
+            colorless: system.mono(),
             show_descriptions: true,
         }
     }
@@ -859,7 +862,7 @@ impl<'a> Stepper<'a> {
                 StepStatus::Error => self
                     .system
                     .style(Role::TextStrong)
-                    .add_modifier(Modifier::UNDERLINED),
+                    .add_modifier(Modifier::BOLD),
                 StepStatus::Disabled | StepStatus::Skipped | StepStatus::Future => {
                     self.system.style(Role::TextMuted)
                 }
@@ -868,10 +871,13 @@ impl<'a> Stepper<'a> {
             };
         }
         let mut style = match status {
+            // The current step is stated by its glyph and its weight, not by a
+            // reversed slab — a solid block reads as a selection the operator
+            // made, not as where they are (plans/008 Step 4).
             StepStatus::Current => self
                 .system
-                .style(Role::Focus)
-                .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::BOLD),
             StepStatus::Complete => self.system.style(Role::Success),
             StepStatus::Error => self.system.style(Role::Danger),
             StepStatus::Disabled => self.system.style(Role::TextDisabled),
@@ -879,7 +885,7 @@ impl<'a> Stepper<'a> {
             StepStatus::Optional => self.system.style(Role::Text),
         };
         if active_cursor && focused && !matches!(status, StepStatus::Current) {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD);
         }
         style
     }

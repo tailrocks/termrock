@@ -1679,27 +1679,22 @@ pub fn prompt_composer_help_entries() -> Vec<HelpEntry> {
         HelpEntry::new(
             "newline",
             "Prompt",
-            "Alt/Ctrl/Shift+Enter",
+            "A-enter / C-enter / S-enter",
             "Insert newline when submit-on-enter",
         ),
-        HelpEntry::new("undo", "Edit", "Ctrl+Z", "Undo draft snapshot"),
-        HelpEntry::new("redo", "Edit", "Ctrl+Y", "Redo draft snapshot"),
-        HelpEntry::new("select-all", "Edit", "Ctrl+A", "Select entire draft"),
+        HelpEntry::new("undo", "Edit", "C-z", "Undo draft snapshot"),
+        HelpEntry::new("redo", "Edit", "C-y", "Redo draft snapshot"),
+        HelpEntry::new("select-all", "Edit", "C-a", "Select entire draft"),
         HelpEntry::new(
             "interrupt",
             "Agent",
-            "Ctrl+C",
+            "C-c",
             "Soft interrupt when busy (draft kept)",
         ),
-        HelpEntry::new("cancel", "Agent", "Ctrl+U", "Hard cancel / stop when busy"),
-        HelpEntry::new("external", "Edit", "Ctrl+E", "Open external editor"),
-        HelpEntry::new("attach", "Prompt", "Ctrl+Shift+O", "Request file attach"),
-        HelpEntry::new(
-            "fullscreen",
-            "View",
-            "Ctrl+Shift+F",
-            "Request fullscreen overlay",
-        ),
+        HelpEntry::new("cancel", "Agent", "C-u", "Hard cancel / stop when busy"),
+        HelpEntry::new("external", "Edit", "C-e", "Open external editor"),
+        HelpEntry::new("attach", "Prompt", "C-S-o", "Request file attach"),
+        HelpEntry::new("fullscreen", "View", "C-S-f", "Request fullscreen overlay"),
         HelpEntry::new(
             "history",
             "Prompt",
@@ -1985,12 +1980,19 @@ impl StatefulWidget for &PromptComposer<'_> {
                 Rect::new(area.x, layout.editor.y, area.width, layout.editor.height);
             buffer.set_style(editor_surface, self.system.style(Role::Sunken));
             let prompt = Glyph::Prompt.resolve(self.system.glyphs).text;
+            // The caret is the accent only while the composer can be typed
+            // into; a blocked composer is not the current intent (plans/007).
+            let prompt_role = if state.accepts_input() {
+                Role::Accent
+            } else {
+                Role::TextMuted
+            };
             buffer.set_stringn(
                 area.x,
                 layout.editor.y,
                 prompt,
                 usize::from(area.width.min(1)),
-                self.system.style(Role::Accent),
+                self.system.style(prompt_role),
             );
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(
@@ -2001,12 +2003,12 @@ impl StatefulWidget for &PromptComposer<'_> {
             );
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
+                // Selected text keeps its own foreground; the range washes.
                 let sel = if state.colorless {
-                    self.system
-                        .style(Role::Selection)
+                    ratatui_core::style::Style::new()
                         .add_modifier(ratatui_core::style::Modifier::REVERSED)
                 } else {
-                    self.system.style(Role::Selection)
+                    self.system.style(Role::SelectionTint)
                 };
                 paint_editor_selection(buffer, layout.editor, state, sel);
             }

@@ -103,3 +103,35 @@ fn submit_chord_and_focus_first_invalid() {
     );
     assert_eq!(state.focus_first_invalid(&sections), Some("a"));
 }
+
+#[test]
+fn error_summary_says_how_many_it_held_back() {
+    let fields: Vec<Field<'static, &'static str>> = vec![
+        Field::new("a", "A", "1").error("A is wrong"),
+        Field::new("b", "B", "2").error("B is wrong"),
+        Field::new("c", "C", "3").error("C is wrong"),
+        Field::new("d", "D", "4").error("D is wrong"),
+        Field::new("e", "E", "5").error("E is wrong"),
+    ];
+    let sections = [Fieldset::new("General", &fields)];
+    let system = DesignSystem::from_palette(RolePalette::default());
+    let area = Rect::new(0, 0, 48, 20);
+    let mut buffer = Buffer::empty(area);
+    let mut state = FormState::new();
+    StatefulWidget::render(
+        &Form::new(&sections, &system),
+        area,
+        &mut buffer,
+        &mut state,
+    );
+    let painted: String = buffer
+        .content()
+        .iter()
+        .map(|cell| cell.symbol().to_string())
+        .collect();
+    // Three listed, and the frame says what it is not showing.
+    assert!(painted.contains("A is wrong"), "{painted}");
+    assert!(painted.contains("C is wrong"), "{painted}");
+    assert!(!painted.contains("E is wrong"), "{painted}");
+    assert!(painted.contains("+2 more"), "{painted}");
+}

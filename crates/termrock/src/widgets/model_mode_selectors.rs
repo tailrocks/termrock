@@ -1145,7 +1145,7 @@ impl<'a> ModelSelector<'a> {
                         buffer.set_stringn(
                             area.x,
                             y,
-                            take_display_cols("(no models)", usize::from(area.width)),
+                            take_display_cols("No models", usize::from(area.width)),
                             usize::from(area.width),
                             self.system.style(Role::TextMuted),
                         );

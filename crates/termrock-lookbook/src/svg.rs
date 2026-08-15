@@ -17,7 +17,7 @@ use ratatui::{
     backend::TestBackend,
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     widgets::{Block, Clear},
 };
 use termrock::style::{DesignSystem, PREVIEW_CARD, RolePalette};
@@ -41,7 +41,10 @@ fn stderr_line(args: Arguments<'_>) {
 
 /// Render the story into a ratatui test buffer and return it.
 pub(crate) fn render_story_to_buffer(story: Story, theme: &RolePalette) -> Buffer {
-    render_story_to_buffer_with_system(story, &DesignSystem::from_palette(theme.clone()))
+    render_story_to_buffer_with_system(
+        story,
+        &termrock_lookbook::design::lookbook_system(theme.clone()),
+    )
 }
 
 pub(crate) fn render_story_to_buffer_with_system(story: Story, system: &DesignSystem) -> Buffer {
@@ -67,10 +70,13 @@ pub(crate) fn render_story_to_buffer_with_system(story: Story, system: &DesignSy
             width: story.width,
             height: story.height,
         };
-        // Clear the component area to the terminal default (black) so the story
-        // renders on the same surface as the real app, with PREVIEW_CARD only
-        // as the surround — identical to the interactive preview.
+        // The story sits on the palette's own canvas, not on terminal black:
+        // clearing to black meant every preview of a light preset was painted
+        // over a dark ground (plans/011 Step 2).
         frame.render_widget(Clear, inner);
+        frame
+            .buffer_mut()
+            .set_style(inner, system.style(termrock::style::Role::Canvas));
         story.render(frame, inner, system);
     }) {
         Ok(_) => {}
@@ -83,7 +89,13 @@ pub(crate) fn render_story_to_buffer_with_system(story: Story, system: &DesignSy
 #[must_use]
 pub(crate) fn render_story_to_svg(story: Story, theme: &RolePalette) -> String {
     let buffer = render_story_to_buffer(story, theme);
-    buffer_to_svg(&buffer, story.title)
+    // The page ground is the palette's canvas: hardcoding black meant every
+    // light-preset preview was matted onto a dark page (plans/011 Step 3).
+    let canvas = termrock_lookbook::design::lookbook_system(theme.clone())
+        .style(termrock::style::Role::Canvas)
+        .bg
+        .map_or_else(|| "#000000".to_string(), color_to_css);
+    buffer_to_svg(&buffer, story.title, &canvas)
 }
 
 /// Canonical filename for a story's SVG preview.
@@ -164,7 +176,7 @@ pub(crate) fn actual_svg_names(dir: &Path) -> Result<BTreeSet<String>, Box<dyn s
     Ok(names)
 }
 
-fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
+fn buffer_to_svg(buffer: &Buffer, title: &str, canvas: &str) -> String {
     const CELL_W: u16 = 9;
     const CELL_H: u16 = 18;
     const BASELINE: u16 = 14;
@@ -174,10 +186,12 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
     let height = area.height.saturating_mul(CELL_H);
     let mut out = String::new();
     out.push_str(&format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{}" style="background:#000000">"#,
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{}" style="background:{canvas}">"#,
         escape_xml(title)
     ));
-    out.push_str(r##"<rect width="100%" height="100%" fill="#000000"/>"##);
+    out.push_str(&format!(
+        r#"<rect width="100%" height="100%" fill="{canvas}"/>"#
+    ));
     out.push_str(r#"<g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">"#);
 
     for y in 0..area.height {
@@ -186,7 +200,7 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
             let px = x.saturating_mul(CELL_W);
             let py = y.saturating_mul(CELL_H);
             let bg = color_to_css(cell.bg);
-            if bg != "#000000" {
+            if bg != canvas {
                 out.push_str(&format!(
                     r#"<rect x="{px}" y="{py}" width="{CELL_W}" height="{CELL_H}" fill="{bg}"/>"#
                 ));
@@ -197,15 +211,28 @@ fn buffer_to_svg(buffer: &Buffer, title: &str) -> String {
                 // when the theme only set modifiers without explicit RGB pairs.
                 let (fg, swap_bg) = resolve_text_paint(cell.fg, cell.bg, cell.modifier);
                 if let Some(bg_css) = swap_bg {
-                    if bg_css != "#000000" {
+                    if bg_css != canvas {
                         out.push_str(&format!(
                             r#"<rect x="{px}" y="{py}" width="{CELL_W}" height="{CELL_H}" fill="{bg_css}"/>"#
                         ));
                     }
                 }
                 let text_y = py.saturating_add(BASELINE);
+                // Weight and underline are design cues, not decoration: an
+                // exporter that drops them cannot show the text ladder or a
+                // link (plans/011 Step 3).
+                let mut attrs = String::new();
+                if cell.modifier.contains(Modifier::BOLD) {
+                    attrs.push_str(r#" font-weight="700""#);
+                }
+                if cell.modifier.contains(Modifier::UNDERLINED) {
+                    attrs.push_str(r#" text-decoration="underline""#);
+                }
+                if cell.modifier.contains(Modifier::ITALIC) {
+                    attrs.push_str(r#" font-style="italic""#);
+                }
                 out.push_str(&format!(
-                    r#"<text x="{px}" y="{text_y}" fill="{fg}">{}</text>"#,
+                    r#"<text x="{px}" y="{text_y}" fill="{fg}"{attrs}>{}</text>"#,
                     escape_xml(symbol)
                 ));
             }
@@ -234,7 +261,10 @@ fn color_to_css(color: Color) -> String {
         Color::White => "#ffffff".into(),
         Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
         Color::Reset => "#000000".into(),
-        Color::Indexed(_) => "#ffffff".into(),
+        Color::Indexed(index) => {
+            let [r, g, b] = termrock_lookbook::palette256::xterm256_to_rgb(index);
+            format!("#{r:02x}{g:02x}{b:02x}")
+        }
     }
 }
 
@@ -335,7 +365,7 @@ mod color_tests {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
         buffer[(0, 0)].set_symbol("x");
 
-        let svg = buffer_to_svg(&buffer, "default foreground");
+        let svg = buffer_to_svg(&buffer, "default foreground", "#000000");
 
         assert!(svg.contains(r##"<text x="0" y="14" fill="#ffffff">x</text>"##));
     }
@@ -350,7 +380,7 @@ mod color_tests {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
         buffer.set_string(1, 0, "Ａ", Style::default());
 
-        let svg = buffer_to_svg(&buffer, "wide");
+        let svg = buffer_to_svg(&buffer, "wide", "#000000");
 
         assert_eq!(svg.matches(">Ａ</text>").count(), 1);
         assert!(svg.contains(r##"<text x="9" y="14" fill="#ffffff">Ａ</text>"##));
@@ -388,6 +418,33 @@ mod color_tests {
         assert!(
             d.contains("#") && a.contains("#"),
             "both SVGs must serialize explicit fills"
+        );
+    }
+
+    #[test]
+    fn weight_and_underline_survive_the_export() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 4, 1));
+        buffer.set_string(
+            0,
+            0,
+            "ab",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .add_modifier(Modifier::UNDERLINED),
+        );
+        let svg = buffer_to_svg(&buffer, "modifiers", "#000000");
+        assert!(svg.contains(r#"font-weight="700""#), "{svg}");
+        assert!(svg.contains(r#"text-decoration="underline""#), "{svg}");
+    }
+
+    #[test]
+    fn indexed_colors_are_not_all_white() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 2, 1));
+        buffer.set_string(0, 0, "x", Style::default().fg(Color::Indexed(196)));
+        let svg = buffer_to_svg(&buffer, "indexed", "#000000");
+        assert!(
+            svg.contains("#ff0000"),
+            "a 256-colour preview must show colour: {svg}"
         );
     }
 

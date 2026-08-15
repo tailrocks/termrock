@@ -151,6 +151,12 @@ impl InputOtpState {
         self.enabled = on;
     }
 
+    /// Whether the row accepts input at all.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -399,21 +405,31 @@ impl<'a> InputOtp<'a> {
                     }
                 }
             };
-            let focused_slot = state.focused && i == state.cursor;
-            let style = if focused_slot {
+            // A disabled OTP row was pixel-identical to an editable one: the
+            // state existed in the model and never reached paint (plans/021
+            // Step 4).
+            let disabled = !state.is_enabled();
+            let focused_slot = state.focused && i == state.cursor && !disabled;
+            // Slots are fields: they sit in the same sunken well the rest of
+            // the input family uses, so an OTP row reads as somewhere to type
+            // rather than as three loose brackets (plans/008 Step 5).
+            let well = self.system.style(Role::Sunken).bg;
+            let mut style = if focused_slot {
+                // The slot under the cursor is one cell: reverse it.
                 self.system
                     .style(Role::Accent)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                    .add_modifier(Modifier::REVERSED)
+            } else if disabled {
+                self.system.style(Role::TextDisabled)
             } else if slot.is_some() {
                 self.system.style(Role::TextStrong)
             } else {
                 self.system.style(Role::TextMuted)
             };
-            let cell = if self.ascii {
-                format!("[{ch}]")
-            } else {
-                format!("[{ch}]")
-            };
+            if !focused_slot && let Some(bg) = well {
+                style = style.bg(bg);
+            }
+            let cell = format!("[{ch}]");
             buffer.set_stringn(x, y, &cell, 3, style);
             x = x.saturating_add(4);
         }

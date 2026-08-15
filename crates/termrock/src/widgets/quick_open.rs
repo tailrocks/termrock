@@ -60,6 +60,13 @@ pub const QUICK_OPEN_DEFAULT_LIMIT: usize = 200;
 /// Max providers shown in the tab strip before compact mode.
 pub const QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX: u16 = 40;
 
+/// Default "still searching" copy, and its ASCII twin.
+///
+/// Two constants rather than one gated literal so host-supplied copy survives
+/// the ASCII profile: only the *default* is swapped.
+const QUICK_OPEN_SEARCHING: &str = "Searching…";
+const QUICK_OPEN_SEARCHING_ASCII: &str = "Searching...";
+
 // ── Size / placement ────────────────────────────────────────────────────────
 
 /// Preferred size.
@@ -592,6 +599,8 @@ pub struct QuickOpenState<Id> {
     presentation_override: Option<QuickOpenPresentation>,
     show_preview: bool,
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     provider_hits: Vec<(usize, Rect)>,
     scroll: usize,
     painted_rows: u16,
@@ -626,6 +635,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             presentation_override: None,
             show_preview: true,
             hits: Vec::new(),
+            hovered: None,
             provider_hits: Vec::new(),
             scroll: 0,
             painted_rows: 0,
@@ -1194,6 +1204,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), providers, visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
@@ -1299,12 +1315,15 @@ impl<'a, Id> QuickOpen<'a, Id> {
             items,
             system,
             focused: true,
-            ascii: false,
-            colorless: false,
-            footer_hint: Some("↑↓ open · enter · @provider · ctrl+n/p switch · ctrl+j jump · esc"),
+            // Seeded from the system: a widget that defaults to false is
+            // claiming the terminal has Unicode and colour before anyone
+            // asked it. Builders below still force either way.
+            ascii: system.ascii_glyphs(),
+            colorless: system.mono(),
+            footer_hint: Some("↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc"),
             empty_message: "Type to search resources",
             no_result_message: "No matching resources",
-            loading_message: "Searching…",
+            loading_message: QUICK_OPEN_SEARCHING,
             title: "Quick Open",
         }
     }
@@ -1557,7 +1576,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 }
             } else if active && surface {
                 self.system
-                    .style(Role::Selection)
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::TextMuted)
@@ -1584,8 +1604,8 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if state.loading && self.items.is_empty() {
-            let msg = if self.ascii {
-                "[...] searching"
+            let msg = if self.ascii && self.loading_message == QUICK_OPEN_SEARCHING {
+                QUICK_OPEN_SEARCHING_ASCII
             } else {
                 self.loading_message
             };
@@ -1636,18 +1656,14 @@ impl<'a, Id> QuickOpen<'a, Id> {
             let active = i == cursor && surface;
             let row = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, row));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: true,
-                    loading: false,
-                    checked: false,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some(i),
+                enabled: true,
+                loading: false,
+                checked: false,
+            });
             if recipe.use_fill {
                 buffer.set_style(row, recipe.label);
             } else if recipe.use_tint {
@@ -1731,10 +1747,18 @@ impl<'a, Id> QuickOpen<'a, Id> {
             if detail_w > 0 {
                 if let Some(d) = &item.detail {
                     let dx = area.right().saturating_sub(detail_w);
+                    // A path end-cut loses exactly the token that tells two
+                    // candidates apart, so drop leading segments instead
+                    // (plans/022 Step 3).
+                    let shown = crate::text::truncate_path(
+                        d,
+                        usize::from(detail_w),
+                        self.system.glyphs.ellipsis(),
+                    );
                     buffer.set_stringn(
                         dx,
                         y,
-                        &take_display_cols(d, usize::from(detail_w)),
+                        shown.as_ref(),
                         usize::from(detail_w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1972,6 +1996,29 @@ mod tests {
         s.set_focused(true);
         s.set_accepts_input(true);
         s
+    }
+
+    #[test]
+    fn narrow_paths_keep_their_filename() {
+        use ratatui_core::buffer::Buffer;
+        let system = crate::style::DesignSystem::default();
+        let items = example_quick_open_files();
+        let mut state = focused();
+        let area = Rect::new(0, 0, 40, 14);
+        let mut buffer = Buffer::empty(area);
+        QuickOpen::new(&providers(), &items, &system).paint(area, &mut buffer, &mut state);
+        let painted: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        // `src/widgets/quick_open.rs` end-cut to `src/widgets/quick_o…`, which
+        // loses the only token that tells two candidates apart. Dropping
+        // leading segments keeps it.
+        assert!(painted.contains("quick_open.rs"), "{painted}");
+        // Nothing is left showing only the directories it came from.
+        assert!(!painted.contains("src/widgets/q"), "{painted}");
+        assert!(painted.contains("src/main.rs"), "{painted}");
     }
 
     #[test]

@@ -44,9 +44,10 @@ Choose **Variant** above the preview. A variant is a separate configuration and 
 
 | Demo | Configuration | Input |
 |---|---|---|
-| `motion/presence` | Motion presence kit | paint-only |
+| `motion/presence` | MotionPolicy presence kit | paint-only |
 | `spinner/ascii` | Spinner ASCII | paint-only |
 | `spinner/compact` | Spinner compact embedded | paint-only |
+| `spinner/in-app` | In application | interactive |
 | `spinner/labeled` | Spinner labeled | paint-only |
 | `spinner/phases` | Spinner phases | paint-only |
 
@@ -63,7 +64,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     use std::time::Duration;
     use termrock::runtime::FrameTick;
     use termrock::runtime::Instant;
-    use termrock::style::Motion;
+    use termrock::style::MotionPolicy;
     let state = SpinnerState::new();
     let tick = crate::demo::demo_tick(400);
     Spinner::labeled("Fetching packages", system).paint(
@@ -71,7 +72,7 @@ fn spinner_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         frame.buffer_mut(),
         &state,
         tick,
-        Motion::Full,
+        MotionPolicy::Full,
     );
 }
 ```
@@ -105,3 +106,7 @@ a static multi-image gallery.
 - Rust source: [`crates/termrock/src/widgets/spinner.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/spinner.rs)
 - Native preview: `cargo run -p termrock-lookbook -- terminal`
 - Demo id: `spinner/labeled`
+
+## Seen in applications
+
+<SeenInApplications component="Spinner" />

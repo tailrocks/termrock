@@ -34,7 +34,7 @@ use ratatui_core::{
 use super::{Surface, SurfaceRecipe};
 use crate::{
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -334,6 +334,17 @@ pub enum ToastOutcome {
 
 /// Visibility and expiry state for a **single** transient notification.
 ///
+/// Entrance fade window (motion SoT §6: overlays fade in, ≤ 120 ms).
+pub const TOAST_ENTER_MS: u64 = 120;
+/// Single acknowledging pulse after a success toast arrives, then static.
+pub const TOAST_SUCCESS_PULSE_MS: u64 = 400;
+/// Exit fade window: the stack reflows once the leaving toast has faded.
+///
+/// A toast that vanishes between two frames moves every toast under it in the
+/// same frame, and the eye reads that as a new stack rather than a departure.
+/// Fading first is what makes the reflow legible (motion SoT §6).
+pub const TOAST_EXIT_MS: u64 = 120;
+
 /// Backed by [`Presence`] so TTL, deadlines, and focus rules share one motion
 /// primitive (toasts are never focusable).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -353,9 +364,14 @@ impl Default for ToastState {
 impl ToastState {
     /// Creates hidden toast state with an explicit lifetime policy.
     pub const fn new(lifetime: ToastLifetime) -> Self {
+        // Every presence constructor starts with a zero exit, which made
+        // `PresencePhase::Exiting` unreachable for toasts: they could only
+        // vanish. The tier still decides — `MotionPolicy::Off` collapses this
+        // back to an instant hide (plans/014 Step 3b).
+        let exit = Duration::from_millis(TOAST_EXIT_MS);
         let presence = match lifetime {
-            ToastLifetime::Persistent => Presence::persistent(),
-            ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl),
+            ToastLifetime::Persistent => Presence::persistent().with_exit(exit),
+            ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl).with_exit(exit),
         };
         Self {
             presence,
@@ -393,22 +409,93 @@ impl ToastState {
     }
 
     /// Advance TTL (call once per frame when shown). No-op while paused.
-    pub fn advance(&mut self, tick: FrameTick) {
+    ///
+    /// The policy is the caller's, not `Off`: hardcoding it here is what kept
+    /// the exit phase unreachable no matter what the design system said.
+    pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) {
         if self.paused {
             return;
         }
-        let _ = self.presence.advance(tick, Motion::Off);
+        let _ = self.presence.advance(tick, motion);
+    }
+
+    /// When this toast became visible, if it is.
+    #[must_use]
+    pub const fn shown_at(self) -> Option<Instant> {
+        match self.presence.phase() {
+            crate::runtime::PresencePhase::Visible { since } => Some(since),
+            _ => None,
+        }
+    }
+
+    /// Paint alpha for this frame: entrance fade, then the per-kind rule.
+    ///
+    /// - **Errors never animate.** A failure must be readable the instant it
+    ///   lands; fading one in delays the only message that cannot wait.
+    /// - **Success pulses once, then goes still** — an acknowledgement, not an
+    ///   ongoing state.
+    /// - Everything else fades in over [`TOAST_ENTER_MS`] and then holds.
+    #[must_use]
+    pub fn paint_alpha(self, tick: FrameTick, kind: ToastKind, policy: MotionPolicy) -> f32 {
+        if !policy.allows_transitions() {
+            return 1.0;
+        }
+        // The exit is checked first because a leaving toast has no `shown_at`:
+        // `Presence` has left `Visible`, so every rule below it — including the
+        // error rule, which is about arrival — has nothing to measure from. A
+        // departure fades whatever the kind: "read me now" is not "stay after
+        // you are gone".
+        if self.is_leaving() {
+            return self.presence.exit_alpha(tick);
+        }
+        if matches!(kind, ToastKind::Error) {
+            return 1.0;
+        }
+        let Some(since) = self.shown_at() else {
+            return 1.0;
+        };
+        let age = tick.now().saturating_duration_since(since).as_millis() as u64;
+        let enter = policy.clamp_duration(Duration::from_millis(TOAST_ENTER_MS));
+        let enter_ms = enter.as_millis() as u64;
+        if enter_ms > 0 && age < enter_ms {
+            return (age as f32 / enter_ms as f32).clamp(0.0, 1.0);
+        }
+        if matches!(kind, ToastKind::Success) && policy.allows_ambient() {
+            let pulse_age = age.saturating_sub(enter_ms);
+            if pulse_age < TOAST_SUCCESS_PULSE_MS {
+                // One dip and back to full: it starts and ends at 1.0, so the
+                // pulse cannot snap when it stops. A breathe would end at its
+                // trough and jump.
+                let phase = pulse_age as f32 / TOAST_SUCCESS_PULSE_MS as f32;
+                let dip = (std::f32::consts::PI * phase).sin().powi(2);
+                return 1.0 - crate::style::AMBIENT_PEAK * dip;
+            }
+        }
+        1.0
     }
 
     /// Returns whether the toast is visible at this frame.
-    pub fn is_visible(&self, tick: FrameTick) -> bool {
+    ///
+    /// Takes the tier for the same reason [`Self::advance`] does: whether a
+    /// toast past its TTL is still on screen depends on whether the tier gives
+    /// it an exit, and guessing here would contradict the frame that paints it.
+    pub fn is_visible(&self, tick: FrameTick, motion: MotionPolicy) -> bool {
         // Lazily apply TTL without requiring host to call advance (unless paused).
         if self.paused {
             return self.presence.is_visible();
         }
         let mut copy = *self;
-        copy.advance(tick);
+        copy.advance(tick, motion);
         copy.presence.is_visible()
+    }
+
+    /// Whether the toast is on its way out (still painted, no longer live).
+    #[must_use]
+    pub const fn is_leaving(self) -> bool {
+        matches!(
+            self.presence.phase(),
+            crate::runtime::PresencePhase::Exiting { .. }
+        )
     }
 
     /// Returns the expiration deadline, or `None` when hidden or persistent.
@@ -878,6 +965,38 @@ impl ToastQueue {
         ToastOutcome::Ignored
     }
 
+    /// Dismisses the newest live toast — the `esc` path.
+    ///
+    /// A toast that can only be waited out is a modal with no exit. `esc`
+    /// takes the top one; repeated presses walk the stack (plans/021 Step 6).
+    pub fn dismiss_top(&mut self) -> ToastOutcome {
+        // Newest first: the queue pushes to the front.
+        let Some(id) = self.live.front().map(|t| t.id.clone()) else {
+            return ToastOutcome::Ignored;
+        };
+        self.dismiss(&id)
+    }
+
+    /// Keyboard path: `esc` dismisses the newest toast.
+    pub fn handle_key(&mut self, key: crate::input::KeyEvent) -> ToastOutcome {
+        if key.kind != crate::input::KeyEventKind::Press {
+            return ToastOutcome::Ignored;
+        }
+        match key.code {
+            crate::input::KeyCode::Esc => self.dismiss_top(),
+            _ => ToastOutcome::Ignored,
+        }
+    }
+
+    /// Pauses or resumes every live toast's TTL.
+    ///
+    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`): a
+    /// notification that expires while the window is in the background was
+    /// never actually shown to anyone.
+    pub fn set_focus_paused(&mut self, paused: bool) -> ToastOutcome {
+        self.set_paused(paused)
+    }
+
     /// Activate undo / action for top matching id (host maps hotkey).
     pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
         if self.live.iter().any(|t| t.id == id) {
@@ -891,15 +1010,19 @@ impl ToastQueue {
     }
 
     /// Advance all live toasts; expire and archive.
-    pub fn advance(&mut self, tick: FrameTick) -> Vec<ToastOutcome> {
+    ///
+    /// The tier reaches the queue because the exit phase lives here: a toast
+    /// stays in the stack while it fades, so the toasts beneath it hold their
+    /// rows until it is gone.
+    pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> Vec<ToastOutcome> {
         let mut outs = Vec::new();
         if self.paused {
             return outs;
         }
         let mut i = 0;
         while i < self.live.len() {
-            self.live[i].state.advance(tick);
-            if !self.live[i].state.is_visible(tick) {
+            self.live[i].state.advance(tick, motion);
+            if !self.live[i].state.is_visible(tick, motion) {
                 if let Some(t) = self.live.remove(i) {
                     let id = t.id.clone();
                     self.archive(t, ToastArchiveReason::Expired);
@@ -1043,10 +1166,12 @@ fn paint_one_toast(
     if inner.is_empty() {
         return;
     }
-    let rail = system.style(kind.role());
+    // The rail is chrome, not a signal: severity lives on the icon, so a
+    // stack of toasts is not a stack of colored bars (plans/007).
+    let rail = system.style(Role::Border);
     for y in inner.y..inner.bottom() {
         buffer[(inner.x, y)].set_style(rail);
-        buffer[(inner.x, y)].set_symbol("│");
+        buffer[(inner.x, y)].set_symbol(system.glyphs.rule_v());
     }
     let content = Rect::new(
         inner.x.saturating_add(2),
@@ -1398,6 +1523,21 @@ impl<'a> ToastStack<'a> {
                 entry.region = None;
                 continue;
             }
+            // The tick rides the design system (migration 0299), so the stack
+            // fades without a new paint parameter.
+            let alpha = self.system.tick().map_or(1.0, |tick| {
+                entry
+                    .state
+                    .paint_alpha(tick, entry.kind, self.system.motion)
+            });
+            let faded = (alpha < 1.0).then(|| {
+                let canvas = self
+                    .system
+                    .style(Role::Canvas)
+                    .bg
+                    .unwrap_or(ratatui_core::style::Color::Reset);
+                crate::style::fade_style(self.system.style(Role::Text), alpha, canvas)
+            });
             paint_one_toast(
                 area,
                 buffer,
@@ -1408,7 +1548,7 @@ impl<'a> ToastStack<'a> {
                 entry.progress,
                 entry.undo_label.as_deref(),
                 self.ascii,
-                None,
+                faded,
             );
             entry.region = Some(area);
         }
@@ -1419,10 +1559,176 @@ impl<'a> ToastStack<'a> {
 
 #[cfg(test)]
 mod state_tests {
+
+    #[test]
+    fn errors_never_fade_in() {
+        // A failure must be readable the instant it lands. Fading one in delays
+        // the one message that cannot wait.
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        for ms in [0, 40, 119, 200] {
+            assert_eq!(
+                state.paint_alpha(
+                    tick(start, Duration::from_millis(ms)),
+                    ToastKind::Error,
+                    MotionPolicy::Full
+                ),
+                1.0,
+                "error faded at {ms}ms"
+            );
+        }
+    }
+
+    #[test]
+    fn ordinary_toasts_fade_in_then_hold() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        let alpha = |ms: u64| {
+            state.paint_alpha(
+                tick(start, Duration::from_millis(ms)),
+                ToastKind::Info,
+                MotionPolicy::Full,
+            )
+        };
+
+        assert!(alpha(0) < 0.2, "entrance starts dim");
+        assert!(alpha(60) > alpha(0) && alpha(60) < 1.0, "entrance ramps");
+        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "entrance completes at the cap");
+        assert_eq!(alpha(5_000), 1.0, "and then holds — no ongoing motion");
+    }
+
+    #[test]
+    fn success_pulses_once_and_then_goes_still() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+        let alpha = |ms: u64| {
+            state.paint_alpha(
+                tick(start, Duration::from_millis(ms)),
+                ToastKind::Success,
+                MotionPolicy::Full,
+            )
+        };
+        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "the pulse starts at full");
+        let deepest = alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS / 2);
+        assert!(deepest < 1.0, "success should acknowledge with one dip");
+        assert!(
+            deepest >= 1.0 - crate::style::AMBIENT_PEAK,
+            "the dip must whisper, not flash: {deepest}"
+        );
+        assert_eq!(
+            alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS + 1),
+            1.0,
+            "one pulse, not a loop — a finished thing must not keep moving"
+        );
+    }
+
+    #[test]
+    fn off_lands_every_toast_instantly_and_basic_keeps_only_the_entrance() {
+        let start = Instant::now();
+        let mut state = ToastState::new(ToastLifetime::Persistent);
+        state.show(tick(start, Duration::ZERO));
+
+        // `Off`: nothing moves, for any kind.
+        for kind in [ToastKind::Info, ToastKind::Success, ToastKind::Error] {
+            let a = state.paint_alpha(tick(start, Duration::ZERO), kind, MotionPolicy::Off);
+            let b = state.paint_alpha(
+                tick(start, Duration::from_millis(300)),
+                kind,
+                MotionPolicy::Off,
+            );
+            assert_eq!(a, 1.0);
+            assert_eq!(b, 1.0, "{kind:?} moved under Off");
+        }
+
+        // `Basic` is "transitions ≤ 120 ms only" (SoT §3), so the entrance
+        // survives — but the ambient success pulse does not.
+        let entrance = state.paint_alpha(
+            tick(start, Duration::from_millis(60)),
+            ToastKind::Info,
+            MotionPolicy::Basic,
+        );
+        assert!(entrance < 1.0, "Basic should keep a short entrance fade");
+        assert_eq!(
+            state.paint_alpha(
+                tick(start, Duration::from_millis(TOAST_ENTER_MS + 200)),
+                ToastKind::Success,
+                MotionPolicy::Basic
+            ),
+            1.0,
+            "Basic must not run the ambient success pulse"
+        );
+    }
     use super::*;
 
     fn tick(start: Instant, elapsed: Duration) -> FrameTick {
         FrameTick::manual(start + elapsed, elapsed, elapsed)
+    }
+
+    #[test]
+    fn a_toast_fades_out_before_the_stack_reflows() {
+        let start = Instant::now();
+        let ttl = Duration::from_secs(2);
+        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
+        state.show(tick(start, Duration::ZERO));
+
+        // Past its TTL the toast is leaving, not gone: it holds its row while
+        // it fades, so the toasts under it do not jump.
+        let leaving = tick(start, ttl + Duration::from_millis(20));
+        state.advance(leaving, MotionPolicy::Full);
+        assert!(state.is_leaving(), "TTL must open the exit, not skip it");
+        assert!(state.is_visible(leaving, MotionPolicy::Full));
+        // Sampled inside the window: at the instant the exit opens the fade
+        // has not travelled yet, so alpha is still exactly 1.0 there.
+        let mid = tick(start, ttl + Duration::from_millis(20 + TOAST_EXIT_MS / 2));
+        let alpha = state.paint_alpha(mid, ToastKind::Info, MotionPolicy::Full);
+        assert!(alpha < 1.0 && alpha > 0.0, "alpha {alpha}");
+
+        // And it is gone once the exit window closes.
+        let gone = tick(start, ttl + Duration::from_millis(TOAST_EXIT_MS + 20));
+        state.advance(gone, MotionPolicy::Full);
+        assert!(!state.is_leaving());
+        assert!(!state.is_visible(gone, MotionPolicy::Full));
+    }
+
+    #[test]
+    fn reduced_motion_skips_the_exit_entirely() {
+        let start = Instant::now();
+        let ttl = Duration::from_secs(2);
+        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
+        state.show(tick(start, Duration::ZERO));
+        let after = tick(start, ttl + Duration::from_millis(20));
+        state.advance(after, MotionPolicy::Off);
+        assert!(
+            !state.is_leaving(),
+            "a tier that forbids transitions hides at once"
+        );
+    }
+
+    #[test]
+    fn an_error_toast_never_fades_in_but_still_fades_out() {
+        let start = Instant::now();
+        let ttl = Duration::from_secs(2);
+        let mut state = ToastState::new(ToastLifetime::ExpiresAfter(ttl));
+        state.show(tick(start, Duration::ZERO));
+        // Arrival: full strength immediately — a failure cannot wait 120 ms.
+        assert_eq!(
+            state.paint_alpha(
+                tick(start, Duration::from_millis(20)),
+                ToastKind::Error,
+                MotionPolicy::Full
+            ),
+            1.0
+        );
+        let leaving = tick(start, ttl + Duration::from_millis(20));
+        state.advance(leaving, MotionPolicy::Full);
+        let mid = tick(start, ttl + Duration::from_millis(20 + TOAST_EXIT_MS / 2));
+        assert!(
+            state.paint_alpha(mid, ToastKind::Error, MotionPolicy::Full) < 1.0,
+            "leaving is a departure, not a message"
+        );
     }
 
     #[test]
@@ -1431,8 +1737,8 @@ mod state_tests {
         let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
         state.show(tick(start, Duration::ZERO));
 
-        assert!(state.is_visible(tick(start, Duration::from_millis(1_999))));
-        assert!(!state.is_visible(tick(start, Duration::from_secs(2))));
+        assert!(state.is_visible(tick(start, Duration::from_millis(1_999)), MotionPolicy::Off));
+        assert!(!state.is_visible(tick(start, Duration::from_secs(2)), MotionPolicy::Off));
         assert_eq!(
             state.next_deadline(),
             start.checked_add(Duration::from_secs(2))
@@ -1445,10 +1751,10 @@ mod state_tests {
         let mut state = ToastState::new(ToastLifetime::Persistent);
         state.show(tick(start, Duration::ZERO));
 
-        assert!(state.is_visible(tick(start, Duration::from_secs(86_400))));
+        assert!(state.is_visible(tick(start, Duration::from_secs(86_400)), MotionPolicy::Off));
         assert_eq!(state.next_deadline(), None);
         state.dismiss();
-        assert!(!state.is_visible(tick(start, Duration::ZERO)));
+        assert!(!state.is_visible(tick(start, Duration::ZERO), MotionPolicy::Off));
     }
 
     #[test]
@@ -1457,10 +1763,10 @@ mod state_tests {
         let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
         state.show(tick(start, Duration::ZERO));
         state.set_paused(true);
-        assert!(state.is_visible(tick(start, Duration::from_secs(10))));
+        assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
         state.set_paused(false);
         // After unpause, presence still advances from original show time
-        assert!(!state.is_visible(tick(start, Duration::from_secs(10))));
+        assert!(!state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
     }
 }
 
@@ -1534,7 +1840,7 @@ mod tests {
             ToastSpec::message("x", "bye")
                 .lifetime(ToastLifetime::ExpiresAfter(Duration::from_secs(1))),
         );
-        let outs = q.advance(tick(start, Duration::from_secs(2)));
+        let outs = q.advance(tick(start, Duration::from_secs(2)), MotionPolicy::Off);
         assert!(
             outs.iter()
                 .any(|o| matches!(o, ToastOutcome::Expired { .. }))
@@ -1565,7 +1871,10 @@ mod tests {
         assert_eq!(q.len(), 1);
         assert!(matches!(q.set_paused(true), ToastOutcome::Paused));
         assert!(q.is_paused());
-        assert!(q.advance(tick(start, Duration::from_secs(9))).is_empty());
+        assert!(
+            q.advance(tick(start, Duration::from_secs(9)), MotionPolicy::Off)
+                .is_empty()
+        );
         assert_eq!(q.len(), 1);
     }
 
@@ -1644,7 +1953,7 @@ mod tests {
     }
 
     #[test]
-    fn toast_border_is_muted_severity_on_icon_and_rail() {
+    fn toast_chrome_is_muted_and_severity_lives_on_the_icon() {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 24, 4);
         let mut buffer = Buffer::empty(area);
@@ -1660,8 +1969,15 @@ mod tests {
             false,
             None,
         );
+        // Border and rail are chrome; only the icon carries the severity
+        // (plans/007).
         assert_eq!(buffer[(0, 0)].fg, system.style(Role::Border).fg.unwrap());
-        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Warning).fg.unwrap());
+        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Border).fg.unwrap());
+        let warning = system.style(Role::Warning).fg.unwrap();
+        let icon_cells = (0..area.width)
+            .filter(|x| buffer[(*x, 1)].fg == warning)
+            .count();
+        assert_eq!(icon_cells, 1, "severity belongs to the icon cell alone");
     }
 
     #[test]
@@ -1707,7 +2023,7 @@ mod tests {
                     let _ = q.set_paused(seed % 2 == 0);
                 }
                 3 => {
-                    let _ = q.advance(t);
+                    let _ = q.advance(t, MotionPolicy::Off);
                 }
                 _ => {
                     let id = q.live_ids().next().map(str::to_string);
@@ -1742,6 +2058,33 @@ mod tests {
                 .unwrap();
         }
         assert!(t0.elapsed().as_millis() < 5_000);
+    }
+
+    #[test]
+    fn esc_dismisses_the_newest_toast() {
+        use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+
+        let start = Instant::now();
+        let mut queue = ToastQueue::new();
+        let _ = queue.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("a", "Saved"),
+        );
+        let _ = queue.push(
+            tick(start, Duration::from_millis(10)),
+            ToastSpec::message("b", "Copied"),
+        );
+        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(
+            matches!(out, ToastOutcome::Dismissed { ref id } if id == "b"),
+            "esc takes the newest toast: {out:?}"
+        );
+        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(matches!(out, ToastOutcome::Dismissed { ref id } if id == "a"));
+        assert!(matches!(
+            queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ToastOutcome::Ignored
+        ));
     }
 
     #[test]

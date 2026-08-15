@@ -7,6 +7,8 @@ doctests. Run before every commit.
 no-default-features and examples checks, rustdoc with warnings denied,
 feature powerset (cargo-hack), dependency policy (cargo-deny: advisories,
 bans, licenses, sources), unused-dependency check (cargo-shear), packaging,
-and the deterministic lookbook preview check. CI additionally verifies the
+and the flagship preview baselines (`mise run preview-goldens` — a real diff
+against committed cell dumps, not a render diffed against itself; bless an
+intended change with `mise run bless-previews`). CI additionally verifies the
 Rust 1.97.1 (toolchain-pinned latest stable), and REUSE compliance. Run before every
 push.

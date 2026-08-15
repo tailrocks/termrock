@@ -21,7 +21,7 @@ use crate::{
     },
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Motion, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -69,6 +69,8 @@ pub struct ActivationState {
     pending_confirmation: bool,
     /// First activate received; next Activate fires.
     confirm_armed: bool,
+    /// Whether this terminal reports key releases.
+    release_reporting: crate::input::KeyReleaseReporting,
 }
 
 impl ActivationState {
@@ -82,6 +84,7 @@ impl ActivationState {
             armed: false,
             pending_confirmation: false,
             confirm_armed: false,
+            release_reporting: crate::input::KeyReleaseReporting::PressOnly,
         }
     }
 
@@ -122,6 +125,20 @@ impl ActivationState {
             self.armed = false;
             self.confirm_armed = false;
         }
+    }
+
+    /// States whether this terminal reports key releases.
+    ///
+    /// Hosts that negotiate the Kitty keyboard protocol pass `Reported`, which
+    /// restores press-to-arm / release-to-fire for Space.
+    pub const fn set_release_reporting(&mut self, reporting: crate::input::KeyReleaseReporting) {
+        self.release_reporting = reporting;
+    }
+
+    /// Whether this control waits for a key release before activating.
+    #[must_use]
+    pub const fn release_reporting(&self) -> crate::input::KeyReleaseReporting {
+        self.release_reporting
     }
 
     /// Require two Activate intents (e.g. destructive).
@@ -200,8 +217,20 @@ impl ActivationState {
         if !self.can_activate() {
             return ActivationOutcome::Ignored;
         }
-        // Space: arm on press, fire on release (desktop dialog discipline).
+        // Space: arm on press, fire on release — but only where releases are
+        // actually reported. On an ordinary terminal that half of the
+        // handshake never arrives, so Space armed the control forever and
+        // never activated it (plans/021 Step 2).
         if matches!(key.code, KeyCode::Char(' ')) {
+            if !self.release_reporting.can_wait_for_release() {
+                return match key.kind {
+                    KeyEventKind::Press => {
+                        self.armed = false;
+                        self.fire_or_confirm()
+                    }
+                    KeyEventKind::Repeat | KeyEventKind::Release => ActivationOutcome::Ignored,
+                };
+            }
             match key.kind {
                 KeyEventKind::Press => {
                     self.armed = true;
@@ -283,7 +312,7 @@ pub enum ButtonVariant {
     /// Default secondary action (pad + border role when focused).
     #[default]
     Secondary,
-    /// Quiet / ghost (minimal chrome; focus underline).
+    /// Quiet / ghost (minimal chrome; focus = bold label + border role).
     Quiet,
     /// Outline (border role + pad; brackets only secondary ASCII cue).
     Outline,
@@ -373,7 +402,7 @@ pub struct ButtonParts {
 /// - Pending confirmation → first Activate yields `ConfirmRequired`.
 ///
 /// Outcomes are pure ([`ActivationOutcome`]); effects stay consumer-owned.
-/// Affordance is **role + weight + underline/fill cues**, not brackets alone.
+/// Affordance is **role + weight + border/fill cues**, not brackets alone.
 #[derive(Debug, Clone, Copy)]
 pub struct Button<'a> {
     label: &'a str,
@@ -694,25 +723,21 @@ impl Button<'_> {
             ButtonVariant::Link => {
                 style = style.add_modifier(Modifier::UNDERLINED);
             }
-            ButtonVariant::Outline => {
+            ButtonVariant::Outline | ButtonVariant::Quiet | ButtonVariant::Secondary => {
+                // Focus speaks through the recipe's border and a bold label.
+                // Underlining every focusable button made a form of ordinary
+                // controls look like a page of hyperlinks.
                 if surface {
-                    style = style.add_modifier(Modifier::UNDERLINED);
+                    style = style.add_modifier(Modifier::BOLD);
                 }
             }
             ButtonVariant::Destructive => {
                 style = style.add_modifier(Modifier::BOLD);
-                if mono {
-                    style = style.add_modifier(Modifier::UNDERLINED);
-                }
-            }
-            ButtonVariant::Quiet | ButtonVariant::Secondary => {
-                if surface {
-                    style = style.add_modifier(Modifier::UNDERLINED);
-                }
             }
         }
         if armed {
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            // The press is the one moment the button inverts.
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         }
 
         let narrow = area.width < 12;
@@ -721,8 +746,10 @@ impl Button<'_> {
         let show_leading =
             self.leading.is_some() && !tiny && (area.width >= 10 || self.label.is_empty());
 
+        // Catalog on both paths: the ASCII profile already carries the
+        // degraded form, so no literal is needed to spell it out.
         let load_g = if mono || self.ascii {
-            "..."
+            Glyph::Loading.resolve(GlyphSet::Ascii).text
         } else {
             theme.glyphs.resolve(Glyph::Loading).text
         };
@@ -785,7 +812,7 @@ impl Button<'_> {
                 }
             }
             ButtonVariant::Outline if mono => {
-                // Brackets only as ASCII secondary chrome alongside underline.
+                // Brackets only as ASCII secondary chrome alongside the border.
                 format!("{pad_s}[{body}]")
             }
             _ => format!("{pad_s}{body}{pad_s}"),
@@ -1233,7 +1260,7 @@ impl<'a> IconButton<'a> {
         };
         let face = if loading {
             if mono {
-                "...".to_string()
+                Glyph::Loading.resolve(GlyphSet::Ascii).text.to_string()
             } else {
                 self.system.glyphs.resolve(Glyph::Loading).text.to_string()
             }
@@ -1289,9 +1316,11 @@ impl<'a> IconButton<'a> {
             recipe.fill.patch(recipe.label)
         };
         if toggled || armed {
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            // A pressed or latched icon button inverts its face; there is no
+            // label here for a weight change to land on.
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         } else if surface {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD);
         }
         if matches!(self.variant, ButtonVariant::Destructive) {
             style = style.add_modifier(Modifier::BOLD);
@@ -1416,6 +1445,34 @@ mod tests {
     }
 
     #[test]
+    fn space_activates_on_a_terminal_without_release_reporting() {
+        use crate::input::{KeyCode, KeyEvent, KeyModifiers, KeyReleaseReporting};
+
+        let mut state = ActivationState::new();
+        state.set_accepts_input(true);
+        // The default terminal reports presses only.
+        assert_eq!(state.release_reporting(), KeyReleaseReporting::PressOnly);
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert!(
+            matches!(out, ActivationOutcome::Activated),
+            "Space must activate where releases are never reported: {out:?}"
+        );
+        assert!(!state.is_armed(), "and it must not stay armed");
+
+        // Where releases are reported, the dialog discipline stands.
+        let mut kitty = ActivationState::new();
+        kitty.set_accepts_input(true);
+        kitty.set_release_reporting(KeyReleaseReporting::Reported);
+        let armed = kitty.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert!(matches!(armed, ActivationOutcome::Pressed));
+        let fired = kitty.handle_key(KeyEvent {
+            kind: KeyEventKind::Release,
+            ..KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)
+        });
+        assert!(matches!(fired, ActivationOutcome::Activated));
+    }
+
+    #[test]
     fn primary_button_is_accent_chip() {
         let system = DesignSystem::default();
         let mut state = ButtonState::new();
@@ -1477,6 +1534,10 @@ mod tests {
     fn button_space_arms_then_release_activates() {
         let mut state = ButtonState::new();
         state.activation.set_accepts_input(true);
+        // Press-to-arm needs a terminal that reports the release (plans/021).
+        state
+            .activation
+            .set_release_reporting(crate::input::KeyReleaseReporting::Reported);
         assert_eq!(
             state.handle_key(press(KeyCode::Char(' '))),
             ActivationOutcome::Pressed

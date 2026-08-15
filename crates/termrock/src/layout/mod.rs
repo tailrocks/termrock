@@ -16,8 +16,8 @@ use ratatui_core::layout::Rect;
 
 pub use crate::interaction::HitRegion;
 pub use center::{
-    Center, CenterAxis, CenterLayout, CenterSpec, center_block_y, center_line_x, centered_rect,
-    layout_center,
+    Center, CenterAxis, CenterLayout, CenterSpec, ModalSpec, center_block_y, center_line_x,
+    centered_rect, layout_center, modal_rect,
 };
 pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use grid::{

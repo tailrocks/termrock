@@ -93,7 +93,7 @@ impl IdentityRole {
     pub const fn paint_role(self) -> Role {
         match self {
             Self::User => Role::Info,
-            Self::Agent => Role::Accent,
+            Self::Agent => Role::ActorAssistant,
             Self::Service => Role::TextMuted,
             Self::System => Role::Warning,
             Self::Collaborator => Role::Success,
@@ -286,13 +286,15 @@ pub fn identity_seed(s: &str) -> u64 {
 /// Palette role cycled by seed (colorful avatars without per-user assets).
 #[must_use]
 pub fn role_for_seed(seed: u64) -> Role {
+    // Identity hues come from the actor and series families: an avatar is
+    // not a warning, a success, or the current intent (plans/007).
     const ROLES: [Role; 6] = [
-        Role::Accent,
-        Role::Info,
-        Role::Success,
-        Role::Warning,
-        Role::Link,
-        Role::ActionFocused,
+        Role::ActorUser,
+        Role::ActorAssistant,
+        Role::ActorTool,
+        Role::ActorPlan,
+        Role::ActorSystem,
+        Role::ChartSeries2,
     ];
     ROLES[(seed as usize) % ROLES.len()]
 }
@@ -566,7 +568,7 @@ impl<'a> AvatarGlyph<'a> {
             crate::style::ColorCapability::Monochrome
         ) {
             style.fg = None;
-            style = style.add_modifier(Modifier::BOLD | Modifier::UNDERLINED);
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         }
         buffer.set_stringn(
             parts.face.x,
@@ -587,7 +589,7 @@ impl<'a> AvatarGlyph<'a> {
                     ps = match self.presence {
                         PresenceStatus::Online => ps.add_modifier(Modifier::BOLD),
                         PresenceStatus::Busy | PresenceStatus::Error => {
-                            ps.add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                            ps.add_modifier(Modifier::BOLD | Modifier::REVERSED)
                         }
                         PresenceStatus::Away => ps.add_modifier(Modifier::DIM),
                         _ => ps.add_modifier(Modifier::DIM),

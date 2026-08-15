@@ -6,7 +6,12 @@
 //! painted viewport.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
+};
 
 use crate::{
     input::{
@@ -830,6 +835,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
 /// Borrowed virtualized grid widget.
 #[derive(Debug, Clone)]
 pub struct VirtualGrid<'a, RowId, ColId> {
+    empty_message: &'a str,
     focused: bool,
     columns: &'a [GridColumn<'a, ColId>],
     rows: &'a [GridRow<'a, RowId>],
@@ -849,6 +855,7 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
         system: &'a DesignSystem,
     ) -> Self {
         Self {
+            empty_message: "No rows",
             focused: true,
             columns,
             rows,
@@ -857,6 +864,16 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
             show_gutter: true,
             show_header: true,
         }
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     /// Whether this surface owns keyboard focus this frame (host / scene).
@@ -903,6 +920,16 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             return;
         }
 
+        if self.rows.is_empty() && self.total_rows == Some(0) {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            return;
+        }
         let header_rows: u16 = u16::from(self.show_header);
         let body_height = area.height.saturating_sub(header_rows);
         state.body_rows = body_height;
@@ -956,12 +983,17 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         }
         state.body_cols_visible = visible.len();
 
-        let header_style = self.system.style(Role::TextMuted);
+        let header_style = super::table_chrome::header_style(self.system);
         let cell_style = self.system.style(Role::Text);
+        // The cursor is one cell, and it reverses. Unfocused it stops
+        // reversing but keeps its gutter marker, so the position is never
+        // invisible — losing focus must not lose your place.
         let cursor_style = if self.focused {
-            self.system.style(Role::Accent)
+            self.system
+                .style(Role::TextStrong)
+                .add_modifier(Modifier::REVERSED)
         } else {
-            self.system.style(Role::Text)
+            self.system.style(Role::TextStrong)
         };
         let pending_style = self.system.style(Role::TextMuted);
         let gutter_style = self.system.style(Role::TextMuted);
@@ -1007,6 +1039,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 break;
             }
             let resident = resident_at(self.rows, abs_row);
+            let cursor_row = abs_row == state.cursor_row;
             if self.show_gutter {
                 let label = format!("{abs_row}");
                 buffer.set_stringn(
@@ -1014,8 +1047,23 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                     y,
                     &label,
                     usize::from(state.gutter_width.saturating_sub(1)),
-                    gutter_style,
+                    if cursor_row {
+                        self.system.style(Role::TextStrong)
+                    } else {
+                        gutter_style
+                    },
                 );
+                if cursor_row && state.gutter_width > 0 {
+                    let marker_x = area.x.saturating_add(state.gutter_width.saturating_sub(1));
+                    if let Some(cell) = buffer.cell_mut((marker_x, y)) {
+                        cell.set_symbol(self.system.glyphs.selection_gutter());
+                        cell.set_style(if self.focused {
+                            self.system.style(Role::Accent)
+                        } else {
+                            self.system.style(Role::TextMuted)
+                        });
+                    }
+                }
             }
             let mut x = content_x;
             for &(col_index, width) in &visible {
@@ -1039,7 +1087,8 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 } else if cell.pending {
                     pending_style
                 } else if in_range {
-                    self.system.style(Role::Accent)
+                    // A range is a ground, not a wall of accent.
+                    cell_style.patch(self.system.style(Role::SelectionTint))
                 } else {
                     cell.style.unwrap_or(cell_style)
                 };

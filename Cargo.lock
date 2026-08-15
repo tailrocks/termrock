@@ -1441,6 +1441,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-showcase"
+version = "0.11.0"
+dependencies = [
+ "ratatui-core",
+ "termrock",
+]
+
+[[package]]
 name = "termwiz"
 version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

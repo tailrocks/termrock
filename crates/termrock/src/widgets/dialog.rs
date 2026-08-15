@@ -518,39 +518,53 @@ impl Backdrop {
         Self::default()
     }
 
-    /// Terminal-default background (Reset).
+    /// Terminal-default background (`Color::Reset`).
+    ///
+    /// For hosts that opt out of dimming: the layer behind the modal keeps the
+    /// operator's terminal background instead of receding.
     #[must_use]
     pub fn reset() -> Self {
         Self {
             symbol: ' ',
-            style: Style::new()
-                .fg(Color::Reset)
-                .bg(crate::style::DIALOG_BACKDROP),
+            style: Style::new().fg(Color::Reset).bg(Color::Reset),
         }
     }
 
-    /// Dim wash glyph field.
+    /// Stippled wash for terminals with no usable background color.
     #[must_use]
     pub fn dim_wash(ascii: bool) -> Self {
         Self {
             symbol: if ascii { '.' } else { '░' },
             style: Style::new()
                 .fg(Color::DarkGray)
-                .bg(crate::style::DIALOG_BACKDROP)
                 .add_modifier(ratatui_core::style::Modifier::DIM),
         }
     }
 
-    /// From design tokens (dim wash by default).
+    /// From design tokens — a solid recede, not a stipple.
+    ///
+    /// Paints `Role::BackdropWash` (the canvas blended toward black), so the
+    /// covered content actually darkens. The old `░` field over `Color::Reset`
+    /// left themed terminals with no dim at all: the background never changed,
+    /// only a sprinkle of gray glyphs appeared.
     #[must_use]
     pub fn from_tokens(tokens: &DesignSystem) -> Self {
         Self {
-            symbol: if tokens.glyphs.is_ascii() { '.' } else { '░' },
-            style: tokens
-                .style(Role::Backdrop)
-                .bg(crate::style::DIALOG_BACKDROP)
-                .add_modifier(ratatui_core::style::Modifier::DIM),
+            symbol: ' ',
+            style: tokens.style(Role::BackdropWash),
         }
+    }
+
+    /// How far the backdrop has arrived (`0.0` invisible, `1.0` full).
+    ///
+    /// A modal whose backdrop appears at full strength in one frame reads as
+    /// the lights being switched off. Blending it toward the canvas over the
+    /// first frames is the whole of the overlay entrance (plans/014 Step 3b).
+    #[must_use]
+    pub fn alpha(mut self, alpha: f32, tokens: &DesignSystem) -> Self {
+        let canvas = tokens.style(Role::Canvas).bg.unwrap_or(Color::Reset);
+        self.style = crate::style::fade_style(self.style, alpha.clamp(0.0, 1.0), canvas);
+        self
     }
 
     /// Fill symbol.
@@ -1114,6 +1128,7 @@ pub struct Dialog<'a> {
     variant: DialogVariant,
     recipe: DialogRecipe,
     footer_hint: Option<&'a str>,
+    hints: &'a [super::Hint<'a>],
     loading: bool,
     ascii: bool,
     colorless: bool,
@@ -1133,6 +1148,7 @@ impl<'a> Dialog<'a> {
             variant: DialogVariant::Default,
             recipe: DialogRecipe::Normal,
             footer_hint: None,
+            hints: &[],
             loading: false,
             ascii: false,
             colorless: false,
@@ -1192,7 +1208,19 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    /// Footer hint row.
+    /// Footer hints as chords, painted through [`super::HintBar`].
+    ///
+    /// This is the structured path: one separator from the glyph catalog, one
+    /// alignment rule, and hints that contract as a row instead of as a
+    /// sentence. Prefer it over [`Self::footer_hint`], which stays for plain
+    /// copy that is not a chord list (plans/009 Step 1).
+    #[must_use]
+    pub const fn hints(mut self, hints: &'a [super::Hint<'a>]) -> Self {
+        self.hints = hints;
+        self
+    }
+
+    /// Footer hint row as plain copy.
     #[must_use]
     pub const fn footer_hint(mut self, hint: &'a str) -> Self {
         self.footer_hint = Some(hint);
@@ -1224,10 +1252,10 @@ impl<'a> Dialog<'a> {
         if self.recipe.is_destructive() || matches!(self.variant, DialogVariant::Danger) {
             return PanelChrome::Danger;
         }
-        match self.variant {
-            DialogVariant::Info => PanelChrome::Focused,
-            DialogVariant::Default | DialogVariant::Danger => self.emphasis,
-        }
+        // Variant says what the dialog is about; emphasis says whether it owns
+        // interaction. An informational dialog does not get a focus border for
+        // being informational.
+        self.emphasis
     }
 
     fn title_for_paint(&self) -> String {
@@ -1293,7 +1321,7 @@ impl<'a> Dialog<'a> {
 
         let has_desc = self.description.is_some() && area.height >= 5;
         let has_validation = state.validation_message.is_some() && area.height >= 6;
-        let has_footer = self.footer_hint.is_some() && area.height >= 5;
+        let has_footer = (self.footer_hint.is_some() || !self.hints.is_empty()) && area.height >= 5;
         let footer_rows = u16::from(has_footer);
         let validation_rows = u16::from(has_validation);
         let desc_rows = u16::from(has_desc);
@@ -1403,7 +1431,14 @@ impl<'a> Dialog<'a> {
 
         if has_footer {
             state.slots.footer = Rect::new(content.x, y, content.width, 1);
-            if let Some(hint) = self.footer_hint {
+            let footer = Rect::new(content.x, y, content.width, 1);
+            if !self.hints.is_empty() {
+                ratatui_core::widgets::Widget::render(
+                    &super::HintBar::new(self.hints, self.tokens),
+                    footer,
+                    buffer,
+                );
+            } else if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
                     content.x,
                     y,
@@ -1902,16 +1937,33 @@ mod backdrop_tests {
     fn default_backdrop_dims_terminal_background() {
         let backdrop = Backdrop::default();
         assert_eq!(backdrop.symbol, '░');
-        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+        assert!(
+            backdrop
+                .style
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::DIM),
+            "the stipple fallback still has to read as dimmed"
+        );
     }
 
     #[test]
     fn backdrop_from_tokens_dims() {
         let system = DesignSystem::default();
         let backdrop = Backdrop::from_tokens(&system);
-        assert_eq!(backdrop.symbol, '░');
-        assert_eq!(backdrop.style.fg, system.style(Role::Backdrop).fg);
-        assert_eq!(backdrop.style.bg, Some(Color::Reset));
+        // A solid recede, not a sprinkle of glyphs over an unchanged terminal
+        // background: the covered layer must actually darken.
+        assert_eq!(backdrop.symbol, ' ');
+        assert_eq!(backdrop.style.bg, system.style(Role::BackdropWash).bg);
+        assert_ne!(
+            backdrop.style.bg,
+            Some(Color::Reset),
+            "Reset leaves themed terminals undimmed"
+        );
+        assert_ne!(
+            backdrop.style.bg,
+            system.style(Role::Canvas).bg,
+            "the wash has to sit below the canvas it covers"
+        );
     }
 
     #[test]
@@ -2228,7 +2280,7 @@ mod backdrop_tests {
     fn empty_body_and_from_system() {
         let system = DesignSystem::phosphor();
         let dialog =
-            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc dismiss");
+            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc cancel");
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
@@ -2241,7 +2293,7 @@ mod backdrop_tests {
     fn dim_wash_backdrop_is_not_hard_black() {
         let wash = Backdrop::dim_wash(false);
         assert_ne!(wash.symbol, '\0');
-        assert_eq!(wash.style.bg, Some(Color::Reset));
+        assert_eq!(wash.style.bg, None, "the stipple never forces a background");
     }
 
     #[test]

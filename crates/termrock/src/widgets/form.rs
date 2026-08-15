@@ -748,7 +748,16 @@ impl<'a, Id> Form<'a, Id> {
     }
 }
 
-const COLUMN_GAP: u16 = 2;
+/// Gap between a form's columns.
+///
+/// Density owns rhythm: a dashboard form should not carry a comfortable
+/// form's gutters (plans/022 Step 6).
+fn column_gap(system: &DesignSystem) -> u16 {
+    system.spacing.gap.max(1)
+}
+
+/// Validation errors listed before the summary defers to `+N more`.
+const ERROR_SUMMARY_ROWS: usize = 3;
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
     type State = FormState<Id>;
@@ -767,8 +776,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         }
 
         let errors = collect_errors(self.fieldsets);
+        // Header + the errors shown + a `+N more` row when some are held back.
+        // Three of five errors used to vanish with nothing saying so
+        // (plans/022 Step 3).
+        let shown_errors = errors.len().min(ERROR_SUMMARY_ROWS);
+        let hidden_errors = errors.len().saturating_sub(shown_errors);
         let summary_rows = if self.show_error_summary && !errors.is_empty() {
-            1usize.saturating_add(errors.len().min(3))
+            1usize
+                .saturating_add(shown_errors)
+                .saturating_add(usize::from(hidden_errors > 0))
         } else {
             0
         };
@@ -819,9 +835,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 self.system.style(Role::Danger).add_modifier(Modifier::BOLD),
             );
             content_y = content_y.saturating_add(1);
-            for (label, msg) in errors.iter().take(3) {
-                let line = format!("• {label}: {msg}");
-                let text = take_display_cols(&line, usize::from(content_area.width));
+            for (label, msg) in errors.iter().take(shown_errors) {
+                let line = format!("{} {label}: {msg}", self.system.glyphs.bullet());
+                let text = crate::text::truncate_cols(
+                    &line,
+                    usize::from(content_area.width),
+                    self.system.glyphs.ellipsis(),
+                );
                 paint_string(
                     buffer,
                     content_area,
@@ -833,10 +853,23 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 );
                 content_y = content_y.saturating_add(1);
             }
+            if let Some(note) = crate::text::more_note(hidden_errors) {
+                paint_string(
+                    buffer,
+                    content_area,
+                    state.offset,
+                    content_y,
+                    content_area.x,
+                    &note,
+                    self.system.style(Role::TextMuted),
+                );
+                content_y = content_y.saturating_add(1);
+            }
         }
 
+        let gap = column_gap(self.system);
         let column_width = if columns == 2 {
-            content_area.width.saturating_sub(COLUMN_GAP) / 2
+            content_area.width.saturating_sub(gap) / 2
         } else {
             content_area.width
         };
@@ -886,7 +919,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 let x = content_area.x.saturating_add(
                     u16::try_from(column)
                         .unwrap_or(u16::MAX)
-                        .saturating_mul(column_width.saturating_add(COLUMN_GAP)),
+                        .saturating_mul(column_width.saturating_add(gap)),
                 );
                 let field_area = Rect::new(x, content_area.y, column_width, 3);
                 let is_focused =
@@ -953,24 +986,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
             state.scrollbar_region = Some(scrollbar);
-            for y in scrollbar.top()..scrollbar.bottom() {
-                buffer.set_string(scrollbar.x, y, "│", self.system.style(Role::ScrollTrack));
-            }
-            if let Some(thumb) = crate::scroll::full_cell_thumb(
+            crate::scroll::paint_scrolled_region(
+                buffer,
+                area,
+                scrollbar,
                 content_height,
                 state.viewport_height,
-                scrollbar.height,
-                state.offset,
-            ) {
-                for y in thumb.start..thumb.start.saturating_add(thumb.len) {
-                    buffer.set_string(
-                        scrollbar.x,
-                        scrollbar.y.saturating_add(y),
-                        "█",
-                        self.system.style(Role::ScrollThumb),
-                    );
-                }
-            }
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.system,
+            );
         }
     }
 }

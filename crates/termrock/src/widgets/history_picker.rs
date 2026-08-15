@@ -34,11 +34,12 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HighlightVisual, HighlightedText, MatchRanges, MatchTruncate, Panel, PanelChrome,
-        TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
+        HighlightVisual, HighlightedText, Hint, HintBar, MatchRanges, MatchTruncate, Panel,
+        PanelChrome, PanelTitleSpec, TextInput, TextInputOutcome, TextInputState,
+        fuzzy_match_label,
     },
 };
 
@@ -256,24 +257,34 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
             if text.is_empty() {
                 String::new()
             } else {
-                "••••••••".into()
+                Glyph::Mask
+                    .resolve(GlyphSet::Unicode)
+                    .text
+                    .repeat(MASK_CELLS)
             }
         }
         HistoryRedaction::MaskMiddle {
             keep_start,
             keep_end,
         } => {
-            let chars: Vec<char> = text.chars().collect();
-            let n = chars.len();
+            // Grapheme clusters, not chars: masking by code point splits a
+            // family emoji or a combining accent and leaks half of it
+            // (plans/022 Step 3).
+            let clusters: Vec<&str> =
+                unicode_segmentation::UnicodeSegmentation::graphemes(text, true).collect();
+            let n = clusters.len();
             if n == 0 {
                 return String::new();
             }
             if keep_start + keep_end >= n {
-                return "•".repeat(n.min(8).max(1));
+                return Glyph::Mask
+                    .resolve(GlyphSet::Unicode)
+                    .text
+                    .repeat(n.min(MASK_CELLS).max(1));
             }
-            let mut out: String = chars.iter().take(keep_start).collect();
-            out.push('…');
-            out.extend(chars.iter().skip(n - keep_end));
+            let mut out: String = clusters[..keep_start].concat();
+            out.push_str(Glyph::Ellipsis.resolve(GlyphSet::Unicode).text);
+            out.push_str(&clusters[n - keep_end..].concat());
             out
         }
     }
@@ -561,6 +572,8 @@ pub struct HistoryPickerState<Id> {
     redaction: HistoryRedaction,
     show_preview: bool,
     hits: Vec<(usize, Rect)>,
+    /// Row the pointer is over. Hover washes; it never commits.
+    hovered: Option<usize>,
     scroll: usize,
     painted_rows: u16,
     _id: std::marker::PhantomData<Id>,
@@ -588,6 +601,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             redaction: HistoryRedaction::None,
             show_preview: true,
             hits: Vec::new(),
+            hovered: None,
             scroll: 0,
             painted_rows: 0,
             _id: std::marker::PhantomData,
@@ -899,6 +913,12 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                 self.handle_intent(UiIntent::Move(NavigationMove::Previous), visible)
             }
             MouseEventKind::Moved => {
+                // Hover is stated every event, so leaving the list clears it.
+                self.hovered = self
+                    .hits
+                    .iter()
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
                     if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
@@ -970,6 +990,43 @@ pub struct HistoryPicker<'a, Id> {
     empty_message: &'a str,
 }
 
+/// Footer chords for the history picker, painted through [`HintBar`].
+///
+/// One separator and one alignment rule for every overlay footer: the flat
+/// sentence these replaced joined its chords by hand (plans/009 Step 1).
+const HISTORY_PICKER_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "↑↓",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "apply",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "C-p",
+        label: "pin",
+        priority: 40,
+        visible: true,
+    },
+    Hint {
+        chord: "C-d",
+        label: "delete",
+        priority: 50,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 60,
+        visible: true,
+    },
+];
+
 impl<'a, Id> HistoryPicker<'a, Id> {
     /// Visible entries + design system.
     #[must_use]
@@ -980,7 +1037,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             title: "History",
             ascii: false,
             colorless: false,
-            footer_hint: Some("↑↓ · enter apply · ctrl+p pin · ctrl+d delete · esc restore draft"),
+            footer_hint: None,
             empty_message: "No history yet",
         }
     }
@@ -1040,7 +1097,17 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
+        // The title states how much the picker holds and what is filtering it,
+        // through the one title grammar every panel uses (plans/009, 017 §B2).
+        let query = state.query_text();
+        let mut spec = PanelTitleSpec::new(self.title).count(self.entries.len());
+        if !query.is_empty() {
+            spec = spec.filter(query);
+        }
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .title_spec(spec)
+            .emphasis(emphasis);
         let inner = panel.inner(area);
         ratatui_core::widgets::Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -1049,7 +1116,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
         let narrow = area.width < 36;
         let tiny = area.height < 8;
-        let show_footer = self.footer_hint.is_some() && !tiny && area.height >= 8 && !narrow;
+        let show_footer = !tiny && area.height >= 8 && !narrow;
         let show_preview = state.show_preview && !tiny && area.width >= 52 && area.height >= 10;
 
         let mut y = inner.y;
@@ -1147,13 +1214,20 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         self.paint_list(list_area, buffer, state);
 
         if show_footer {
+            let footer = Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1);
             if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
-                    inner.x,
-                    inner.bottom().saturating_sub(1),
-                    &take_display_cols(hint, usize::from(inner.width)),
-                    usize::from(inner.width),
+                    footer.x,
+                    footer.y,
+                    &take_display_cols(hint, usize::from(footer.width)),
+                    usize::from(footer.width),
                     self.system.style(Role::TextMuted),
+                );
+            } else {
+                ratatui_core::widgets::Widget::render(
+                    &HintBar::new(HISTORY_PICKER_HINTS, self.system),
+                    footer,
+                    buffer,
                 );
             }
         }
@@ -1224,18 +1298,14 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             let active = i == cursor && surface;
             let rect = Rect::new(area.x, y, area.width, 1);
             state.hits.push((i, rect));
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: true,
-                    loading: false,
-                    checked: entry.pinned,
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some(i),
+                enabled: true,
+                loading: false,
+                checked: entry.pinned,
+            });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
             } else if recipe.use_tint {
@@ -1258,10 +1328,13 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             } else {
                 "  "
             };
+            // The pin slot is reserved on every row: a column that only exists
+            // when a row is pinned shifts every other column beside it, so a
+            // pinned list read as a ragged one (plans/009 Step 6).
             let pin = if entry.pinned {
                 if self.ascii { "* " } else { "★ " }
             } else {
-                ""
+                "  "
             };
             let kind = entry.kind.badge(self.ascii);
             let mut x = area.x;
@@ -1281,17 +1354,15 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
             buffer.set_stringn(x, y, gutter, 2, base);
             x = x.saturating_add(2);
-            if !pin.is_empty() {
-                let pw = display_cols(pin) as u16;
-                buffer.set_stringn(
-                    x,
-                    y,
-                    pin,
-                    usize::from(pw),
-                    self.system.style(Role::TextMuted),
-                );
-                x = x.saturating_add(pw);
-            }
+            let pw = display_cols(pin) as u16;
+            buffer.set_stringn(
+                x,
+                y,
+                pin,
+                usize::from(pw),
+                self.system.style(Role::TextMuted),
+            );
+            x = x.saturating_add(pw);
             let kb = format!("{kind} ");
             let kw = display_cols(&kb) as u16;
             buffer.set_stringn(
@@ -1508,6 +1579,40 @@ mod tests {
         let mut s = HistoryPickerState::new();
         let _ = s.open(Some("draft text".into()));
         s
+    }
+
+    #[test]
+    fn pinned_and_unpinned_rows_start_their_text_at_one_column() {
+        use ratatui_core::buffer::Buffer;
+        let system = DesignSystem::default();
+        let entries = catalog();
+        let mut state = open_state();
+        let area = Rect::new(0, 0, 60, 16);
+        let mut buffer = Buffer::empty(area);
+        HistoryPicker::new(&entries, &system).paint(area, &mut buffer, &mut state);
+
+        // A pinned row and an unpinned row must agree on where their kind
+        // badge starts: the pin slot is reserved either way.
+        let row_text = |y: u16| -> String {
+            (0..area.width)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        // Unicode kind badges: command, prompt, search. Position by cell, not
+        // by byte — a `★` is three bytes and one column.
+        let badge_col = |line: &str| line.chars().position(|ch| matches!(ch, '⌘' | '✎' | '⌕'));
+        let mut columns: Vec<usize> = Vec::new();
+        for y in 0..area.height {
+            let line = row_text(y);
+            if let Some(col) = badge_col(&line) {
+                columns.push(col);
+            }
+        }
+        assert!(columns.len() >= 2, "expected several rows with kind badges");
+        assert!(
+            columns.windows(2).all(|pair| pair[0] == pair[1]),
+            "kind badges start at different columns: {columns:?}"
+        );
     }
 
     #[test]

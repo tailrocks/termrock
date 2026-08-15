@@ -16,6 +16,17 @@
 //!
 //! Research: Grok Build tasks pane, Amp sessions, OpenCode agents, CI lists,
 //! Zellij panes.
+//!
+//! Teaches: how to compose unified task and agent activity side panel.
+//!
+//! Composes: [`crate::widgets::List`], [`crate::widgets::ListRow`],
+//! [`crate::widgets::ListState`], [`crate::widgets::Panel`],
+//! [`crate::widgets::RowRole`], [`crate::widgets::SemanticStatus`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::StatusKind`], and 3
+//! more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
@@ -1351,11 +1362,10 @@ impl<'a> TaskRail<'a> {
         // Status-summary only: one line
         if matches!(state.recommended, TaskRailPresentation::StatusSummary) && area.height <= 1 {
             let s = task_rail_status_summary(self.items, self.ascii);
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(&s, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, area.y, area.width, 1),
+                &s,
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1424,11 +1434,10 @@ impl<'a> TaskRail<'a> {
             if self.colorless && state.focused {
                 style = style.add_modifier(Modifier::REVERSED);
             }
-            buffer.set_stringn(
-                inner.x,
-                footer_y,
-                take_display_cols(&foot, usize::from(inner.width)),
-                usize::from(inner.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, footer_y, inner.width, 1),
+                &foot,
                 style,
             );
         }

@@ -33,6 +33,7 @@ mod card;
 mod carousel;
 mod charts;
 mod checkpoint_timeline;
+mod chrome_row;
 mod citation;
 mod code_block;
 mod collapsible;
@@ -40,6 +41,7 @@ mod combobox;
 mod command_palette;
 mod completion_menu;
 mod composed_row;
+mod confirm_prompt;
 mod connectivity;
 mod content;
 mod context_meter;
@@ -59,6 +61,7 @@ mod edit_core;
 mod empty_state;
 mod error_state;
 mod event_stream;
+mod field_message;
 mod field_row;
 mod file_picker;
 mod file_tree;
@@ -91,6 +94,7 @@ mod mention;
 mod menu_bar;
 mod menu_nav;
 mod message_thread;
+mod metric_tile;
 mod model_mode_selectors;
 mod multi_select;
 mod notification_center;
@@ -113,6 +117,7 @@ mod question_flow;
 mod quick_open;
 mod resizable_panel_group;
 mod review;
+mod row_chrome;
 mod scroll_area;
 mod search_input;
 mod search_results;
@@ -130,10 +135,12 @@ mod spinner;
 mod split_pane;
 mod status_bar;
 mod status_indicator;
+mod status_strip;
 mod stepper;
 mod streaming_markdown;
 mod surface;
 mod table;
+mod table_chrome;
 mod tabs;
 mod tag_chip;
 mod terminal_output;
@@ -141,6 +148,7 @@ mod text;
 mod text_area;
 mod text_input;
 mod theme_picker;
+pub(crate) mod tiered_row;
 mod timeline;
 mod toast;
 mod toggle;
@@ -294,8 +302,9 @@ pub use charts::{
 };
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
-    CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeWrap, ControlRender, PlainSyntax,
-    RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display, syntax_role_style,
+    CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeTokenKind, CodeWrap, ControlRender,
+    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display,
+    syntax_role_style,
 };
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,
@@ -334,9 +343,9 @@ pub use data_table::{
 };
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
-    CellCoord, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataViewOutcome,
-    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
-    VirtualWindow,
+    CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth,
+    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
+    SelectionModel, SortSpec, VirtualWindow,
 };
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
@@ -398,7 +407,8 @@ pub use highlighted_text::{
     substring_ranges_ignore_ascii_case,
 };
 pub use hint_bar::{
-    Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar, styled_hint_spans, wrapped_hint_lines,
+    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar,
+    styled_hint_spans, wrapped_hint_lines,
 };
 pub use icon::{Icon, IconParts};
 pub use identity::{
@@ -416,6 +426,7 @@ pub use jump_overlay::{
 pub use kbd::{
     ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
     format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
+    keycap_text,
 };
 pub use key_value_list::{
     KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvEntry, KvEntryParts,
@@ -443,7 +454,7 @@ pub use label::{
 };
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
-    LinkParts, LinkState, LinkVariant,
+    LinkParts, LinkState, LinkStyle, LinkVariant,
 };
 pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,
@@ -480,7 +491,7 @@ pub use surface::{
 };
 pub use text::{
     SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow,
-    TextSegment, TextSpan, ascii_ellipsis,
+    TextSegment, TextSpan,
 };
 /// Context menu paint widget (same cascade engine as [`DropdownMenu`]).
 pub type ContextMenu<'a, Id> = DropdownMenu<'a, Id>;
@@ -494,15 +505,15 @@ pub use attachment_chips::{
     paste_semantic_summary,
 };
 pub use breadcrumbs::{
-    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BREADCRUMBS_ELLIPSIS, BREADCRUMBS_ELLIPSIS_ASCII,
-    BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs,
-    BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation, BreadcrumbsState,
-    crumbs_from_labels,
+    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
+    BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
+    BreadcrumbsState, crumbs_from_labels,
 };
 pub use card::{Card, CardParts};
 pub use carousel::{
     Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
 };
+pub use chrome_row::{ChromeRow, ChromeRowKind};
 pub use citation::bench as citation_bench;
 pub use citation::{
     CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
@@ -514,6 +525,7 @@ pub use combobox::{
     Autocomplete, AutocompleteState, ComboMode, Combobox, ComboboxOutcome, ComboboxState,
     DEFAULT_COMBO_RECENT_LIMIT, SuggestionStatus,
 };
+pub use confirm_prompt::{CONFIRM_PROMPT_ROWS, ConfirmFocus, ConfirmPrompt, ConfirmPromptHits};
 pub use connectivity::{
     ConnectivityFocus, ConnectivityOutcome, ConnectivityPhase, ConnectivityPresentation,
     OfflineBanner, OfflineCapability, OfflineChrome, OfflineSurface, QueuedConnectivityAction,
@@ -598,6 +610,9 @@ pub use message_thread::{
     MessageZoom, ProjectedEntryMeta, ThreadProjection, build_transcript_blocks, compact_entries,
     example_message_session, filter_entries, project_message_thread,
 };
+pub use metric_tile::{
+    MetricTile, MetricTileHealth, MetricTilePresentation, MetricTileView, MetricViz,
+};
 pub use model_mode_selectors::bench as model_mode_selectors_bench;
 pub use model_mode_selectors::{
     AgentModeKind, AgentModeOption, AgentModePresentation, AgentModeSelector,
@@ -610,11 +625,11 @@ pub use model_mode_selectors::{
 };
 pub use multi_select::{MultiSelect, MultiSelectOutcome, MultiSelectState};
 pub use notification_center::{
-    NOTIFICATION_CENTER_DEFAULT_CAPACITY, NOTIFICATION_CENTER_HINT, NOTIFICATION_CENTER_OVERLAY_ID,
-    NotificationCenter, NotificationCenterOutcome, NotificationCenterSlots,
-    NotificationCenterState, NotificationFilter, NotificationItem, NotificationRecipe,
-    dismiss_notification_center_overlay, example_notifications, open_notification_center_drawer,
-    open_notification_center_overlay,
+    NOTIFICATION_CENTER_DEFAULT_CAPACITY, NOTIFICATION_CENTER_HINTS,
+    NOTIFICATION_CENTER_OVERLAY_ID, NotificationCenter, NotificationCenterOutcome,
+    NotificationCenterSlots, NotificationCenterState, NotificationFilter, NotificationItem,
+    NotificationRecipe, dismiss_notification_center_overlay, example_notifications,
+    open_notification_center_drawer, open_notification_center_overlay,
 };
 pub use number_input::{
     NumberConstraints, NumberInput, NumberInputOutcome, NumberInputParts, NumberInputState,
@@ -631,7 +646,8 @@ pub use pagination::{
     guidance as pagination_guidance,
 };
 pub use panel::{
-    Panel, PanelAction, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState, PanelVariant,
+    Panel, PanelAction, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState,
+    PanelTitleSpec, PanelVariant,
 };
 pub use password_input::{
     ClipboardPolicy, PasswordConfirmState, PasswordInput, PasswordInputOutcome, PasswordInputParts,
@@ -643,7 +659,7 @@ pub use path_input::{
     expand_env_vars, expand_tilde, is_absolute_path, join_path, normalize_separators,
 };
 pub use permission::{
-    DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
+    DangerChrome, DataMovement, EditField, ExecutionLocation, InitiatorKind, PERMISSION_OVERLAY_ID,
     PermissionAction, PermissionActionKind, PermissionActionRegion, PermissionAuditEntry,
     PermissionOutcome, PermissionPrompt, PermissionPromptState, PermissionProvenance,
     PermissionQueue, PermissionRequest, PermissionRisk, PermissionScope, PermissionTarget,
@@ -680,7 +696,7 @@ pub use progress::{
     ProgressRecipe, ProgressStatus, ProgressUnit,
 };
 pub use progress_steps::{
-    PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINT, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
+    PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
     ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsOutcome,
     ProgressStepsPresentation, ProgressStepsState, example_agent_plan_steps,
     example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_list_rows,
@@ -734,8 +750,8 @@ pub use sidebar::{
     sidebar_presentation_for_width,
 };
 pub use skeleton::{
-    SKELETON_FILL_ASCII, SKELETON_FILL_UNICODE, SKELETON_PULSE_PERIOD_MS, Skeleton, SkeletonLayout,
-    SkeletonRecipe, SkeletonShape, SkeletonState,
+    SKELETON_FILL_ASCII, SKELETON_FILL_UNICODE, SKELETON_SHIMMER_PERIOD_MS, Skeleton,
+    SkeletonLayout, SkeletonRecipe, SkeletonShape, SkeletonState,
 };
 pub use slash_command_menu::bench as slash_command_menu_bench;
 pub use slash_command_menu::{
@@ -754,8 +770,9 @@ pub use slider::{
 };
 pub use spinner::{
     ActivityIndicator, ActivityPhase, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
-    SPINNER_DEFAULT_PERIOD_MS, SPINNER_RECONNECT_UNICODE, SPINNER_WAITING_ASCII,
-    SPINNER_WAITING_UNICODE, Spinner, SpinnerGlyphSet, SpinnerState, SpinnerVariant,
+    SPINNER_DEFAULT_PERIOD_MS, SPINNER_RECONNECT_UNICODE, SPINNER_STREAM_ASCII,
+    SPINNER_STREAM_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Spinner,
+    SpinnerGlyphSet, SpinnerState, SpinnerVariant,
 };
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,
@@ -768,6 +785,7 @@ pub use status_bar::{
 pub use status_indicator::{
     StatusIndicator, StatusIndicatorState, StatusIndicatorVariant, example_status_catalog,
 };
+pub use status_strip::{StatusSegment, StatusStrip};
 pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{
@@ -782,12 +800,13 @@ pub use table::{
 };
 pub use tabs::{
     TAB_GAP, TABS_OVERFLOW_MAX_WIDTH, TABS_SELECT_MAX_WIDTH, Tab, TabCell, TabStatus, Tabs,
-    TabsActivation, TabsOrientation, TabsOutcome, TabsPresentation, TabsState, lay_out_tabs,
-    tab_at_column,
+    TabsActivation, TabsActiveCue, TabsOrientation, TabsOutcome, TabsPresentation, TabsState,
+    lay_out_tabs, tab_at_column,
 };
 pub use tag_chip::{
-    Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts,
-    TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
+    BracketStyle, Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart,
+    TokenParts, TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState,
+    remove_label,
 };
 pub use text_area::{
     TextArea, TextAreaOutcome, TextAreaState, TextAreaVariant, TextCursor, TextWrap,
@@ -820,9 +839,10 @@ pub use toolbar::{
     ToolbarState, ToolbarVariant,
 };
 pub use tooltip::{
-    TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH, TOOLTIP_OVERLAY_ID, Tooltip,
-    TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState, TooltipTrigger, TooltipVariant,
-    dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
+    TOOLTIP_CHROME_COLS, TOOLTIP_CHROME_ROWS, TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH,
+    TOOLTIP_OVERLAY_ID, Tooltip, TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState,
+    TooltipTrigger, TooltipVariant, dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip,
+    tooltip_overlay_size,
 };
 pub use transcript::{
     Transcript, TranscriptAnchor, TranscriptBlock, TranscriptKind, TranscriptOutcome,

@@ -133,6 +133,9 @@ impl CollapsibleOutcome {
     }
 }
 
+/// How long a section takes to reveal its body.
+const REVEAL_MS: u64 = 120;
+
 /// Interaction + uncontrolled open state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CollapsibleState {
@@ -142,9 +145,29 @@ pub struct CollapsibleState {
     pub focused: bool,
     /// Cached parts from last paint.
     pub parts: Option<CollapsibleParts>,
+    /// When the section last toggled, in runner milliseconds.
+    toggled_at_ms: u64,
 }
 
 impl CollapsibleState {
+    /// Records a toggle so the next frames can reveal the body gradually.
+    pub const fn mark_toggled_at(&mut self, elapsed_ms: u64) {
+        self.toggled_at_ms = elapsed_ms;
+    }
+
+    /// How far the reveal has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn reveal_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.toggled_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
+    }
+
     /// Closed, unfocused.
     #[must_use]
     pub const fn new() -> Self {
@@ -152,6 +175,7 @@ impl CollapsibleState {
             open: false,
             focused: false,
             parts: None,
+            toggled_at_ms: 0,
         }
     }
 
@@ -426,6 +450,34 @@ impl<'a> Collapsible<'a> {
         self.open.unwrap_or(state.open)
     }
 
+    /// How many body rows to reveal this frame.
+    ///
+    /// A section that snaps from zero rows to twelve moves everything below
+    /// it in one frame; revealing over ~120 ms keeps the reader's place. A
+    /// host that never calls [`CollapsibleState::mark_toggled_at`] gets the
+    /// settled count, which is the honest static answer (plans/014 Step 3b).
+    #[must_use]
+    pub fn reveal_rows(
+        &self,
+        state: &CollapsibleState,
+        content_rows: u16,
+        elapsed_ms: u64,
+        motion: crate::style::MotionPolicy,
+    ) -> u16 {
+        if !self.resolved_open(state) {
+            return 0;
+        }
+        if !motion.allows_transitions() {
+            return content_rows;
+        }
+        let settled = state.reveal_fraction(elapsed_ms, REVEAL_MS);
+        if settled >= 1.0 {
+            return content_rows;
+        }
+        let rows = f32::from(content_rows) * settled;
+        (rows.round() as u16).clamp(1, content_rows.max(1))
+    }
+
     fn left_pad(&self) -> u16 {
         self.indent
             .saturating_add(u16::from(self.depth).saturating_mul(2))
@@ -511,17 +563,35 @@ impl<'a> Collapsible<'a> {
             label.push_str(" ·");
         }
 
+        // A Section trigger is already TextStrong, so "focused" repainted the
+        // same style and the focus ring vanished — including for the three
+        // Accordion recipes that inherit it. Focus adds weight and an accent
+        // gutter; the label tone stays its own (plans/021 Step 4).
+        let focused = state.focused && !self.disabled;
         let style = if self.disabled {
             self.system.style(Role::TextDisabled)
-        } else if state.focused {
-            self.system.style(Role::TextStrong)
         } else {
-            match self.variant {
+            let base = match self.variant {
                 CollapsibleVariant::Section => self.system.style(Role::TextStrong),
                 CollapsibleVariant::Inline => self.system.style(Role::Text),
+            };
+            if focused {
+                base.add_modifier(ratatui_core::style::Modifier::BOLD)
+            } else {
+                base
             }
         };
 
+        if focused && parts.trigger.width > 0 {
+            let gutter = self.system.glyphs.selection_gutter();
+            buffer.set_stringn(
+                parts.trigger.x,
+                parts.trigger.y,
+                gutter,
+                1,
+                self.system.style(Role::Accent),
+            );
+        }
         let t = take_display_cols(&label, usize::from(parts.trigger.width));
         buffer.set_stringn(
             parts.trigger.x,

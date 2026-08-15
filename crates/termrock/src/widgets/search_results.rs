@@ -29,6 +29,7 @@ use crate::{
         data_view::{LoadState, VirtualWindow},
         highlighted_text::{HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate},
         quick_open::{QuickOpenItem, QuickOpenPreview},
+        tiered_row::TieredRow,
     },
 };
 
@@ -102,7 +103,7 @@ impl SearchResultKind {
         match self {
             Self::File => Role::Text,
             Self::Log => Role::Info,
-            Self::Object => Role::Accent,
+            Self::Object => Role::Info,
             Self::Command => Role::Warning,
             Self::Doc => Role::Link,
             Self::Symbol => Role::Success,
@@ -187,7 +188,9 @@ impl SearchResultsStatus {
                 None => format!("{visible} results"),
             },
             Self::Empty { message } => message.clone().unwrap_or_else(|| "no matches".into()),
-            Self::Error { message, .. } => format!("error · {message}"),
+            // No "error" prefix: severity is carried by the Danger role and the
+            // status glyph, so the word would spend a cell saying it twice.
+            Self::Error { message, .. } => message.clone(),
             Self::Stale { generation } => format!("stale gen {generation} · refresh"),
             Self::Cancelled => "cancelled".into(),
         }
@@ -1195,7 +1198,7 @@ impl<'a> SearchResults<'a> {
                 SearchResultsStatus::Cancelled => "cancelled",
                 SearchResultsStatus::Idle => "type to search",
                 SearchResultsStatus::Stale { .. } => "stale — press r to refresh",
-                _ => "(no results)",
+                _ => "No results",
             };
             buffer.set_stringn(
                 area.x,
@@ -1227,7 +1230,7 @@ impl<'a> SearchResults<'a> {
                         "▾"
                     };
                     let mark = if selected {
-                        if ascii { "*" } else { "›" }
+                        self.system.glyphs.selection_gutter()
                     } else {
                         " "
                     };
@@ -1257,7 +1260,7 @@ impl<'a> SearchResults<'a> {
                 }
                 SearchFlatRow::Item { item, .. } => {
                     let mark = if selected {
-                        if ascii { ">" } else { "›" }
+                        self.system.glyphs.selection_gutter()
                     } else if state.multi && state.checked.iter().any(|c| c == item.id) {
                         if ascii { "*" } else { "★" }
                     } else {
@@ -1277,7 +1280,17 @@ impl<'a> SearchResults<'a> {
                         let _ = ranges;
                         take_display_cols(item.title, title_budget).to_string()
                     };
-                    let head = format!("{mark}{glyph} {title_disp}");
+                    // The kind rides its glyph; the title is what you read
+                    // (plans/012 Step 3).
+                    let mut tiers = TieredRow::with_separator("");
+                    tiers.push_joined(mark, None);
+                    tiers.push_joined(
+                        glyph,
+                        item.enabled.then(|| self.system.style(item.kind.role())),
+                    );
+                    tiers.push_joined(" ", None);
+                    tiers.push_joined(&title_disp, None);
+                    let head = tiers.text().to_string();
                     let style = if selected && self.focused {
                         self.system.style(Role::Focus)
                     } else if !item.enabled {
@@ -1292,6 +1305,9 @@ impl<'a> SearchResults<'a> {
                         usize::from(area.width),
                         style,
                     );
+                    if !selected {
+                        tiers.paint_tiers(buffer, Rect::new(area.x, py, area.width, 1), 0);
+                    }
                     // Paint title highlights on top when not selected focus
                     if !selected {
                         let ranges = MatchRanges::from_ranges(title_ranges.iter().copied())
@@ -1356,11 +1372,7 @@ impl<'a> SearchResults<'a> {
                             py,
                             take_display_cols(&sn_line, usize::from(area.width)),
                             usize::from(area.width),
-                            if selected {
-                                self.system.style(Role::TextMuted)
-                            } else {
-                                self.system.style(Role::TextMuted)
-                            },
+                            self.system.style(Role::TextMuted),
                         );
                         if !selected {
                             let ranges = MatchRanges::from_ranges(sn_ranges.iter().copied())
@@ -1580,7 +1592,7 @@ mod tests {
         let area = Rect::new(0, 0, 64, 14);
         let mut buf = Buffer::empty(area);
         SearchResults::new(&groups, &items, &system)
-            .title("find")
+            .title("Find")
             .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()

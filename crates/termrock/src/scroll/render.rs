@@ -12,6 +12,80 @@ use crate::{
     text::{display_cols, fixed_prefix_scroll_segments},
 };
 
+/// Rows at each edge that dim when the content keeps going past them.
+///
+/// Two rows: one is a hard line, three eats a screenful on a short pane.
+pub const SCROLL_EDGE_FADE_ROWS: u16 = 2;
+
+/// Fades the rows a scrolled region is cut at, so the cut reads as "more".
+///
+/// A scrollbar answers *where* you are; it does not answer whether the row
+/// under your eye is the end of the content or the end of the pane. The edge
+/// fade answers that in the one channel a terminal has to spare — colour —
+/// because position is cell-quantised and cannot express a partial row.
+///
+/// `above` and `below` say whether content continues past that edge. Reduced
+/// motion is not consulted: this is a static gradient, not a transition, and a
+/// tier that forbids animation still wants to know the list continues.
+pub fn paint_scroll_edges(
+    buffer: &mut Buffer,
+    area: Rect,
+    system: &DesignSystem,
+    above: bool,
+    below: bool,
+) {
+    if area.is_empty() || (!above && !below) {
+        return;
+    }
+    let canvas = system
+        .style(Role::Canvas)
+        .bg
+        .unwrap_or(ratatui_core::style::Color::Reset);
+    let rows = SCROLL_EDGE_FADE_ROWS.min(area.height / 2).max(1);
+    for step in 0..rows {
+        // The outermost row fades hardest; `edge_fade` gives the ramp its
+        // shape so every fading edge in the library agrees on the curve.
+        let alpha = crate::style::edge_fade(step, rows.saturating_mul(2), rows);
+        if above {
+            fade_row(buffer, area, area.y.saturating_add(step), alpha, canvas);
+        }
+        if below {
+            let y = area.bottom().saturating_sub(1).saturating_sub(step);
+            fade_row(buffer, area, y, alpha, canvas);
+        }
+    }
+}
+
+/// Blends one painted row toward the canvas.
+fn fade_row(
+    buffer: &mut Buffer,
+    area: Rect,
+    y: u16,
+    alpha: f32,
+    canvas: ratatui_core::style::Color,
+) {
+    if y < area.y || y >= area.bottom() {
+        return;
+    }
+    for x in area.x..area.right() {
+        let cell = &mut buffer[(x, y)];
+        let faded = crate::style::fade_style(
+            ratatui_core::style::Style::default()
+                .fg(cell.fg)
+                .bg(cell.bg)
+                .add_modifier(cell.modifier),
+            alpha,
+            canvas,
+        );
+        if let Some(fg) = faded.fg {
+            cell.set_fg(fg);
+        }
+        if let Some(bg) = faded.bg {
+            cell.set_bg(bg);
+        }
+    }
+}
+
 /// Dim track glyph shared by every scrollbar.
 pub const SCROLLBAR_TRACK: &str = "·";
 /// Heavy horizontal scrollbar thumb glyph.
@@ -201,6 +275,80 @@ impl ScrollbarSpec {
         self.style = style;
         self
     }
+}
+
+/// Paints the list-family scrollbar into a reserved gutter column.
+///
+/// This is the one sanctioned entry point for scroll indication: menus,
+/// pickers, viewports, and text areas all reach the canonical `·` track /
+/// `┃` thumb language through it instead of re-deriving thumb math. Nothing
+/// is painted when the content already fits, so a reserved gutter stays blank
+/// rather than showing a full-height thumb.
+pub fn paint_list_scrollbar(
+    buffer: &mut Buffer,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    system: &DesignSystem,
+) {
+    if gutter.is_empty() || !scroll::is_scrollable(total, viewport) {
+        return;
+    }
+    render_scrollbar(
+        buffer,
+        gutter,
+        ScrollbarSpec::new(
+            scroll::ScrollAxis::Vertical,
+            ScrollbarGeometry::new(total, viewport, offset),
+        ),
+        system,
+    );
+}
+
+/// Paints one scrolled region: faded cut edges plus the gutter scrollbar.
+///
+/// Every scrolled surface in the library goes through here, so "there is more
+/// above" and "there is more below" are stated the same way everywhere instead
+/// of each widget deciding whether to say it at all (plans/014 Step 3b,
+/// plans/022 Step 5).
+pub fn paint_scrolled_region(
+    buffer: &mut Buffer,
+    content: Rect,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    system: &DesignSystem,
+) {
+    if scroll::is_scrollable(total, viewport) {
+        let offset = usize::from(offset);
+        paint_scroll_edges(
+            buffer,
+            content_without_gutter(content, gutter),
+            system,
+            offset > 0,
+            offset.saturating_add(viewport) < total,
+        );
+    }
+    paint_list_scrollbar(buffer, gutter, total, viewport, offset, system);
+}
+
+/// The content columns, with the scroll gutter taken back out.
+///
+/// Callers hand in the rectangle they painted rows into, and for most widgets
+/// that rectangle already contains the gutter column. Fading it would dim the
+/// scrollbar's own thumb at exactly the edge the thumb is reporting.
+fn content_without_gutter(content: Rect, gutter: Rect) -> Rect {
+    if gutter.width == 0 || gutter.right() < content.right() || gutter.x <= content.x {
+        return content;
+    }
+    Rect::new(
+        content.x,
+        content.y,
+        content.width.saturating_sub(gutter.width),
+        content.height,
+    )
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.

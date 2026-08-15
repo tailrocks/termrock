@@ -2026,11 +2026,13 @@ impl<'a> DateTimePicker<'a> {
             state.rebuild_collections();
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(body);
         Widget::render(&panel, body, buffer);
         if inner.is_empty() {
@@ -2139,9 +2141,9 @@ impl<'a> DateTimePicker<'a> {
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::BOLD)
                 } else if is_today {
-                    self.system
-                        .style(Role::Text)
-                        .add_modifier(Modifier::UNDERLINED)
+                    // "Today" is a fact about the date, not a selection: it
+                    // reads through the accent, and the cursor still reverses.
+                    self.system.style(Role::Accent)
                 } else if in_month {
                     self.system.style(Role::Text)
                 } else {

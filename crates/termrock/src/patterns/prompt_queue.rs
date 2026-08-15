@@ -16,6 +16,18 @@
 //! **vs OverlayStack queue.** Overlay FIFO is focus chrome, not user prompts.
 //!
 //! Research: async chat products, agent prompt queues, task schedulers.
+//!
+//! Teaches: how to compose visible, editable queue of user messages waiting
+//! behind active agent work.
+//!
+//! Composes: [`crate::widgets::AgentBusyState`],
+//! [`crate::widgets::ConfirmFocus`], [`crate::widgets::ConfirmPrompt`],
+//! [`crate::widgets::Panel`], [`crate::widgets::PromptQueueItem`],
+//! [`crate::widgets::PromptQueueRef`], [`crate::widgets::PromptQueueStatus`],
+//! [`crate::widgets::StatefulWidget`], and 1 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -31,7 +43,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
+    widgets::{ConfirmFocus, ConfirmPrompt, Panel},
 };
 
 /// Overlay id for expanded queue manager.
@@ -721,7 +733,7 @@ impl<'a> PromptQueue<'a> {
         if summary.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let style = if state.agent.is_busy() {
             self.system.style(Role::Warning)
         } else {
@@ -732,7 +744,12 @@ impl<'a> PromptQueue<'a> {
         } else {
             format!("▸ {summary}")
         };
-        buffer.set_stringn(area.x, area.y, take_display_cols(&line, w), w, style);
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            &line,
+            style,
+        );
         state.compact_hit = Some(Rect {
             x: area.x,
             y: area.y,
@@ -771,13 +788,12 @@ impl<'a> PromptQueue<'a> {
             let banner = if state.agent.is_busy() {
                 "agent busy · Enter sends next when free · i interrupt+send · no auto-drain on fail"
             } else {
-                "idle · Enter/s send · e edit · d delete · J/K reorder · Esc compact"
+                "Enter send · e edit · d delete · J/K reorder · Esc compact"
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(banner, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                banner,
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -787,11 +803,10 @@ impl<'a> PromptQueue<'a> {
         match &state.phase {
             PromptQueuePhase::Edit { .. } if y < max_y => {
                 let line = format!("edit › {}▌", state.edit_draft);
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&line, w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    &line,
                     self.system.style(Role::Accent),
                 );
                 y = y.saturating_add(1);
@@ -809,11 +824,10 @@ impl<'a> PromptQueue<'a> {
 
         if state.items.is_empty() {
             if y < list_bottom {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols("(queue empty)", w),
-                    w,
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    "(queue empty)",
                     self.system.style(Role::TextMuted),
                 );
             }
@@ -852,7 +866,8 @@ impl<'a> PromptQueue<'a> {
                 } else {
                     self.system.style(item.status.role())
                 };
-                buffer.set_stringn(inner.x, y, take_display_cols(&text, w), w, style);
+                self.system
+                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
                 state.row_hits.push((
                     item.id.clone(),
                     Rect {
@@ -872,11 +887,10 @@ impl<'a> PromptQueue<'a> {
                         .or(item.when.as_deref())
                         .unwrap_or("");
                     if !detail.is_empty() {
-                        buffer.set_stringn(
-                            inner.x,
-                            y,
-                            take_display_cols(&format!("   {detail}"), w),
-                            w,
+                        self.system.paint_row(
+                            buffer,
+                            Rect::new(inner.x, y, inner.width, 1),
+                            &format!("   {detail}"),
                             self.system.style(Role::TextMuted),
                         );
                         y = y.saturating_add(1);
@@ -889,71 +903,30 @@ impl<'a> PromptQueue<'a> {
             self.paint_confirm(inner, buffer, state);
         } else if max_y > inner.y {
             let fy = max_y.saturating_sub(1);
-            buffer.set_stringn(
-                inner.x,
-                fy,
-                take_display_cols(
-                    "enter send · i interrupt+send · e edit · d del · J/K reorder · esc",
-                    w,
-                ),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, fy, inner.width, 1),
+                "enter send · i interrupt+send · e edit · d del · esc close",
                 self.system.style(Role::TextMuted),
             );
         }
     }
 
     fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptQueueState) {
-        let y = area.bottom().saturating_sub(2);
-        if y < area.y {
-            return;
+        let hits = ConfirmPrompt::new("Delete queue entry", "Delete", self.system)
+            .detail("the host may drop its persistence")
+            .focus(if state.confirm_proceed_focused {
+                ConfirmFocus::Confirm
+            } else {
+                ConfirmFocus::Cancel
+            })
+            .paint(area, buffer);
+        if let Some(cancel) = hits.cancel {
+            state.confirm_hits.push((false, cancel));
         }
-        let w = usize::from(area.width);
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols("! delete queue entry (host may drop persistence)", w),
-            w,
-            self.system.style(Role::Danger),
-        );
-        let bar_y = area.bottom().saturating_sub(1);
-        let cancel = if !state.confirm_proceed_focused {
-            "[Cancel]"
-        } else {
-            " Cancel "
-        };
-        let proceed = if state.confirm_proceed_focused {
-            "[Delete]"
-        } else {
-            " Delete "
-        };
-        let line = format!("{cancel}  {proceed}");
-        buffer.set_stringn(
-            area.x,
-            bar_y,
-            take_display_cols(&line, w),
-            w,
-            self.system.style(Role::Accent),
-        );
-        let cw = display_cols(cancel) as u16;
-        state.confirm_hits.push((
-            false,
-            Rect {
-                x: area.x,
-                y: bar_y,
-                width: cw,
-                height: 1,
-            },
-        ));
-        let px = area.x.saturating_add(cw.saturating_add(2));
-        state.confirm_hits.push((
-            true,
-            Rect {
-                x: px,
-                y: bar_y,
-                width: display_cols(proceed) as u16,
-                height: 1,
-            },
-        ));
+        if let Some(confirm) = hits.confirm {
+            state.confirm_hits.push((true, confirm));
+        }
     }
 }
 

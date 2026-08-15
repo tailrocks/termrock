@@ -583,12 +583,12 @@ Every component below uses sections **1–24**:
 ## Tabs
 
 1. **Purpose:** Switch among peer views.  
-2. **Anatomy:** `root` · `tab[]` · `label` · `icon` · `badge` · `underline` · `close`  
+2. **Anatomy:** `root` · `tab[]` · `label` · `icon` · `badge` · `active_marker` · `close`  
 3. **Public properties:** `tabs`, `selected_id`, `closable`, `design`  
 4. **State:** Controlled `selected_id` preferred; hover internal.  
 5. **Variants:** `line` · `enclosed`  
 6. **Sizes/density:** strip height 1–2 rows by density.  
-7. **Visual states:** active, inactive, hover, disabled, focus-visible underline.  
+7. **Visual states:** active, inactive, hover, disabled, focus-visible marker + reverse.  
 8. **Interaction states:** selecting · closing.  
 9. **Keyboard:** Left/Right, Home/End, Enter; optional 1–9.  
 10. **Mouse:** click tab; click close.  
@@ -598,12 +598,12 @@ Every component below uses sections **1–24**:
 14. **Error:** N/A (badge tone optional).  
 15. **Narrow:** truncate labels; drop badge → icon; horizontal scroll strip.  
 16. **Tiny:** active tab first grapheme only.  
-17. **Unicode/ASCII:** underline focus; close `×`/`x`.  
-18. **Colorless:** active = bold + underline.  
+17. **Unicode/ASCII:** reverse focus; close `×`/`x`.  
+18. **Colorless:** active = bold + `▸` marker.  
 19. **Composition:** Workspace tab_strip, Dialog multi-page.  
 20. **Outcomes:** `Selected(Id)` · `Close(Id)`  
 21. **Stories:** `tabs/status`, `tabs/closable`, `tabs/narrow`  
-22. **Snapshots:** active underline; narrow truncate.  
+22. **Snapshots:** active marker; narrow truncate.  
 23. **Interaction tests:** keyboard roving; close.  
 24. **Perf:** O(tabs).
 
@@ -859,14 +859,14 @@ Every component below uses sections **1–24**:
 8. **Interaction states:** editing · clearing.  
 9. **Keyboard:** edit keys; Enter → Submit; Esc → Cancel when configured; Ctrl-U clear optional.  
 10. **Mouse:** click set cursor; optional drag select.  
-11. **Focus:** caret visible; focus-visible border/underline.  
+11. **Focus:** caret visible; focus-visible border.  
 12. **Disabled:** no edit; dim.  
 13. **Loading:** N/A (async validation is consumer).  
 14. **Error/validation:** invalid style + message below (consumer text); `TextInputValidity`.  
 15. **Narrow:** drop label → prefix/suffix → clear.  
 16. **Tiny:** value only.  
 17. **Unicode:** grapheme cursor and delete.  
-18. **Colorless:** underline invalid; reverse selection.  
+18. **Colorless:** `!` prefix + bold invalid; reverse selection.  
 19. **Composition:** Form fields, Combobox query, CommandPalette query.  
 20. **Outcomes:** `Changed` · `Submit` · `Cancelled` · `Cleared`  
 21. **Stories:** `text-input/basic`, `text-input/unicode`, `text-input/invalid`, `text-input/password`  
@@ -1112,7 +1112,7 @@ Every component below uses sections **1–24**:
 15. **Narrow:** part drop priority: shortcut → badge → secondary → leading → primary (never drop primary first).  
 16. **Tiny:** primary only + selection cue.  
 17. **Unicode/ASCII:** gutter glyphs.  
-18. **Colorless:** gutter `>` + reverse/underline.  
+18. **Colorless:** gutter `>` + reverse.  
 19. **Composition:** CommandPalette body, Sidebar, Combobox list.  
 20. **Outcomes:** `Changed` · `Activated(Id)` · `Toggled` · `Cancelled` · `Ignored`  
 21. **Stories:** existing + `list/composed-row`, `list/narrow`, `list/multi`  
@@ -2700,7 +2700,7 @@ Every component below uses sections **1–24**:
 15. **Narrow:** collapse TaskRail to rail; stack south.  
 16. **Tiny:** Transcript + Prompt only.  
 17. **Unicode/ASCII:** child glyph catalogs.  
-18. **Colorless:** child non-color cues; pane focus underline/border role.  
+18. **Colorless:** child non-color cues; pane focus border role.  
 19. **Composition:** only block; **no domain I/O**.  
 20. **Outcomes:** union of children.  
 21. **Stories:** `blocks/agent-workbench`, `blocks/agent-workbench-narrow`  

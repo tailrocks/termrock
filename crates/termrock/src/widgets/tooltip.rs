@@ -26,7 +26,7 @@ use crate::{
         OverlayStack, place_overlay,
     },
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, Motion, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -251,11 +251,22 @@ impl<'a> TooltipContent<'a> {
                 w = w.saturating_add(display_cols(s) as u16 + 2);
             }
         }
-        w.min(max_width.max(1))
+        // Border and inset on both sides: the caller sizes the whole floating
+        // surface, not just its words.
+        w.saturating_add(TOOLTIP_CHROME_COLS).min(max_width.max(1))
     }
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
+
+/// Columns a tooltip spends on its own chrome: one border and one inset cell
+/// on each side.
+pub const TOOLTIP_CHROME_COLS: u16 = 4;
+
+/// Rows a tooltip spends on its own chrome: one border row above and below.
+///
+/// A caller sizing a one-line tooltip needs three rows, not one.
+pub const TOOLTIP_CHROME_ROWS: u16 = 2;
 
 /// Host coordination (tooltip never steals focus).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -408,14 +419,14 @@ impl TooltipState {
         self.was_visible = false;
     }
 
-    fn effective_delay(&self, motion: Motion) -> Duration {
+    fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            Motion::Off | Motion::Reduced => Duration::ZERO,
-            Motion::Full => self.delay,
+            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Full => self.delay,
         }
     }
 
-    fn rebuild_presence(&mut self, motion: Motion) {
+    fn rebuild_presence(&mut self, motion: MotionPolicy) {
         let d = self.effective_delay(motion);
         // Only rebuild if delay differs — Presence has no getter for delay;
         // always set via constructor when arming.
@@ -442,7 +453,7 @@ impl TooltipState {
         }
         let origin = *self.synth_origin.get_or_insert_with(Instant::now);
         if !self.show_requested && !self.is_visible() {
-            self.rebuild_presence(Motion::Full);
+            self.rebuild_presence(MotionPolicy::Full);
             let tick = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -453,14 +464,14 @@ impl TooltipState {
             Duration::from_millis(self.synth_elapsed_ms),
             Duration::from_millis(delta_ms),
         );
-        let _ = self.presence.advance(tick, Motion::Full);
+        let _ = self.presence.advance(tick, MotionPolicy::Full);
         self.visibility_outcome()
     }
 
     /// FrameTick-driven advance (canonical).
     ///
-    /// Under [`Motion::Reduced`] / [`Motion::Off`], show delay is zero.
-    pub fn advance(&mut self, tick: FrameTick, motion: Motion) -> TooltipOutcome {
+    /// Under [`MotionPolicy::Basic`] / [`MotionPolicy::Off`], show delay is zero.
+    pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> TooltipOutcome {
         if self.disabled {
             self.force_hide();
             return TooltipOutcome::Disabled;
@@ -482,7 +493,7 @@ impl TooltipState {
         }
         let _ = self.presence.advance(tick, motion);
         // Reduced motion: if still pending after request, force zero-delay show.
-        if matches!(motion, Motion::Reduced | Motion::Off) && !self.is_visible() {
+        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.is_visible() {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -497,7 +508,7 @@ impl TooltipState {
         tick: FrameTick,
         pointer_over: bool,
         focus_within: bool,
-        motion: Motion,
+        motion: MotionPolicy,
     ) -> TooltipOutcome {
         self.pointer_over = pointer_over;
         self.focus_within = focus_within;
@@ -656,6 +667,19 @@ impl<'a> Tooltip<'a> {
         if area.is_empty() {
             return;
         }
+        // Every variant floats: a tooltip that writes bare text over live
+        // content is unreadable against whatever it lands on. One overlay
+        // surface, one quiet outline, one cell of breathing room
+        // (plans/009 Step 4).
+        let area = super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(true)
+            .border_style(self.system.style(Role::Border))
+            .content_inset()
+            .paint(area, buffer);
+        if area.is_empty() {
+            return;
+        }
         let muted = if self.colorless {
             self.system.style(Role::TextMuted)
         } else {
@@ -673,16 +697,6 @@ impl<'a> Tooltip<'a> {
         } else {
             self.system.style(Role::HintKey)
         };
-
-        // Optional elevated fill for rich
-        if matches!(self.variant, TooltipVariant::Rich) {
-            let fill = self.system.style(Role::Elevated);
-            for y in area.y..area.bottom() {
-                for x in area.x..area.right() {
-                    buffer[(x, y)].set_style(fill);
-                }
-            }
-        }
 
         match self.variant {
             TooltipVariant::Plain => {
@@ -787,13 +801,13 @@ mod tests {
         state.set_focus_within(true);
         let origin = Instant::now();
         let tick0 = FrameTick::manual(origin, Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick0, Motion::Full);
+        let _ = state.advance(tick0, MotionPolicy::Full);
         let tick1 = FrameTick::manual(
             origin + Duration::from_millis(150),
             Duration::from_millis(150),
             Duration::from_millis(150),
         );
-        let _ = state.advance(tick1, Motion::Full);
+        let _ = state.advance(tick1, MotionPolicy::Full);
         assert!(state.is_visible());
     }
 
@@ -802,10 +816,10 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::ZERO).trigger(TooltipTrigger::Pointer);
         state.set_focus_within(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, Motion::Full);
+        let _ = state.advance(tick, MotionPolicy::Full);
         assert!(!state.is_visible());
         state.set_pointer_over(true);
-        let _ = state.advance(tick, Motion::Off);
+        let _ = state.advance(tick, MotionPolicy::Off);
         assert!(state.is_visible());
     }
 
@@ -814,7 +828,7 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, Motion::Reduced);
+        let _ = state.advance(tick, MotionPolicy::Basic);
         assert!(state.is_visible());
     }
 
@@ -824,7 +838,10 @@ mod tests {
         state.set_disabled(true);
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        assert_eq!(state.advance(tick, Motion::Full), TooltipOutcome::Disabled);
+        assert_eq!(
+            state.advance(tick, MotionPolicy::Full),
+            TooltipOutcome::Disabled
+        );
         assert!(!state.is_visible());
     }
 
@@ -846,7 +863,7 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::ZERO);
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, Motion::Off);
+        let _ = state.advance(tick, MotionPolicy::Off);
         assert!(state.is_visible());
         let tip = Tooltip::content(
             TooltipContent::plain("only on hover").essential_elsewhere(false),
@@ -869,9 +886,10 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::ZERO);
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, Motion::Off);
+        let _ = state.advance(tick, MotionPolicy::Off);
 
-        let area = Rect::new(0, 0, 24, 2);
+        // The floating surface costs a border row above and below.
+        let area = Rect::new(0, 0, 24, 3);
         let mut buf = Buffer::empty(area);
         Tooltip::new("Save file", &system).paint(area, &mut buf, &state);
         let t: String = buf
@@ -891,7 +909,7 @@ mod tests {
         .shortcut()
         .paint(area, &mut buf2, &state);
 
-        let mut buf3 = Buffer::empty(Rect::new(0, 0, 28, 2));
+        let mut buf3 = Buffer::empty(Rect::new(0, 0, 28, 4));
         Tooltip::content(
             TooltipContent::plain("Writes buffer")
                 .title("Save")
@@ -900,7 +918,7 @@ mod tests {
             &system,
         )
         .rich()
-        .paint(Rect::new(0, 0, 28, 2), &mut buf3, &state);
+        .paint(Rect::new(0, 0, 28, 4), &mut buf3, &state);
         let t3: String = buf3
             .content()
             .iter()
@@ -954,9 +972,9 @@ mod tests {
                 Duration::from_millis(30),
             );
             let motion = if seed % 5 == 0 {
-                Motion::Reduced
+                MotionPolicy::Basic
             } else {
-                Motion::Full
+                MotionPolicy::Full
             };
             let _ = state.advance(tick, motion);
         }
@@ -968,7 +986,7 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::ZERO);
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, Motion::Off);
+        let _ = state.advance(tick, MotionPolicy::Off);
         let area = Rect::new(0, 0, 30, 2);
         let mut buf = Buffer::empty(area);
         Tooltip::content(

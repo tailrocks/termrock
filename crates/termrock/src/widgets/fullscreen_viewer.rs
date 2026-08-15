@@ -1144,7 +1144,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             })
             .bordered(true)
             .border_style(self.system.style(border))
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;
@@ -1178,7 +1178,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         let title_style = if matches!(state.chrome_focus, ViewerChromeFocus::Title) {
             self.system
                 .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
         } else {
             self.system
                 .style(Role::TextStrong)
@@ -1206,9 +1206,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 let sep = if self.ascii { " > " } else { " › " };
                 let path = src.path_labels.join(sep);
                 let style = if matches!(state.chrome_focus, ViewerChromeFocus::Breadcrumbs) {
-                    self.system
-                        .style(Role::Text)
-                        .add_modifier(Modifier::UNDERLINED)
+                    self.system.style(Role::Text).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::TextMuted)
                 };
@@ -1244,7 +1242,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 let style = if !a.enabled {
                     self.system.style(Role::TextDisabled)
                 } else if active {
-                    self.system.style(Role::Selection)
+                    self.system
+                        .style(Role::TextStrong)
+                        .patch(self.system.style(Role::SelectionTint))
                 } else {
                     self.system.style(Role::Text)
                 };
@@ -1295,14 +1295,12 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         // Footer
         state.slots.footer = Rect::new(inner.x, y, inner.width, footer_h);
         let hint = if state.help_open {
-            "help: esc close help · tab chrome · arrows body (host)"
+            "help: esc cancel · tab chrome · arrows body (host)"
         } else {
             FULLSCREEN_VIEWER_HINT
         };
         let style = if matches!(state.chrome_focus, ViewerChromeFocus::Help) {
-            self.system
-                .style(Role::Text)
-                .add_modifier(Modifier::UNDERLINED)
+            self.system.style(Role::Text).add_modifier(Modifier::BOLD)
         } else {
             self.system.style(Role::TextMuted)
         };

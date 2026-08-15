@@ -69,7 +69,7 @@ impl CodeBlockInteractor {
 
 impl StoryInteraction for CodeBlockInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let lines = Self::lines();
         let _ = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -78,7 +78,7 @@ impl StoryInteraction for CodeBlockInteractor {
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let lines = Self::lines();
         let outcome = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -87,7 +87,7 @@ impl StoryInteraction for CodeBlockInteractor {
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let lines = Self::lines();
         let outcome = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -175,7 +175,7 @@ impl DetailTableInteractor {
 
 impl StoryInteraction for DetailTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let rows = Self::rows();
         frame.render_stateful_widget(
             &DetailTable::new(&rows, &system).label_width(14).wrap(true),
@@ -241,7 +241,7 @@ impl DiagnosticViewInteractor {
 
 impl StoryInteraction for DiagnosticViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         DiagnosticView::new(&items, &system)
             .recipe(DiagnosticRecipe::List)
@@ -295,7 +295,7 @@ impl DiffViewInteractor {
 }
 impl StoryInteraction for DiffViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let (lines, hunks) = diff_sample_lines();
         DiffView::new(&lines, &system)
             .hunks(&hunks)
@@ -355,7 +355,7 @@ impl EventStreamInteractor {
 }
 impl StoryInteraction for EventStreamInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let events = event_stream_sample();
         self.state
             .on_append(events.len() as u16, area.height.saturating_sub(1));
@@ -414,7 +414,7 @@ impl HexViewerInteractor {
 }
 impl StoryInteraction for HexViewerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let data = hex_viewer_sample();
         let window = HexWindow::new(0, &data, data.len() as u64);
         HexViewer::new(window, &system).title("blob.bin").render(
@@ -482,7 +482,7 @@ impl HistoryPickerInteractor {
 }
 impl StoryInteraction for HistoryPickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = self.entries();
         self.state.reconcile(&entries);
         HistoryPicker::new(&entries, &system).paint(area, frame.buffer_mut(), &mut self.state);
@@ -553,18 +553,18 @@ impl KeyboardHelpInteractor {
 }
 impl StoryInteraction for KeyboardHelpInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = self.entries(&system);
         KeyboardHelp::new(&entries, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = self.entries(&system);
         let outcome = self.state.handle_key(key, &entries);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = self.entries(&system);
         let outcome = self.state.handle_mouse(mouse, &entries);
         self.apply(outcome)
@@ -611,7 +611,7 @@ impl LogStreamInteractor {
 }
 impl StoryInteraction for LogStreamInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let lines = log_stream_sample_lines();
         self.state
             .on_append(lines.len() as u16, area.height.saturating_sub(1));
@@ -673,19 +673,19 @@ impl MarkdownViewInteractor {
 }
 impl StoryInteraction for MarkdownViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let blocks = project_markdown(Self::source());
         let _ =
             MarkdownView::new(&blocks, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let blocks = project_markdown(Self::source());
         let outcome = MarkdownView::new(&blocks, &system).handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let blocks = project_markdown(Self::source());
         let outcome = MarkdownView::new(&blocks, &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome)
@@ -749,7 +749,7 @@ impl ObjectInspectorInteractor {
 }
 impl StoryInteraction for ObjectInspectorInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let fields = Self::fields();
         ObjectInspector::new(&fields, &system).render(area, frame.buffer_mut(), &mut self.state);
     }
@@ -810,7 +810,7 @@ impl TerminalOutputInteractor {
 }
 impl StoryInteraction for TerminalOutputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let lines = terminal_output_sample_lines();
         let meta = Self::meta();
         self.state
@@ -886,7 +886,7 @@ impl TimelineInteractor {
 }
 impl StoryInteraction for TimelineInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let events = Self::events();
         Timeline::with_events(&events, &system)
             .focused(true)

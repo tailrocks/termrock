@@ -981,7 +981,13 @@ impl<'a> KeyboardHelp<'a> {
         // paint key/label pairs with priority drop already applied.
         let mut x = area.x;
         let y = area.y;
-        let sep = if self.ascii { " | " } else { " · " };
+        // The widget's own ASCII switch outranks the system profile here.
+        let glyphs = if self.ascii {
+            crate::style::GlyphSet::Ascii
+        } else {
+            self.system.glyphs
+        };
+        let sep = glyphs.meta_join();
         for (i, e) in slice.iter().enumerate() {
             if x >= area.right() {
                 break;
@@ -1074,7 +1080,7 @@ impl<'a> KeyboardHelp<'a> {
             state.query.set_focused(surface);
             let _ = crate::widgets::TextInput::new("", self.system)
                 .placeholder(if self.ascii {
-                    "filter bindings..."
+                    "Filter bindings..."
                 } else {
                     "Filter bindings…"
                 })
@@ -1198,14 +1204,17 @@ impl<'a> KeyboardHelp<'a> {
                         .style(Role::TextStrong)
                         .add_modifier(Modifier::REVERSED)
                 } else if e.conflict {
+                    // A conflicting binding is a warning, and says so.
                     self.system
-                        .style(Role::TextStrong)
-                        .add_modifier(Modifier::UNDERLINED)
+                        .style(Role::Warning)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }
             } else if active {
-                self.system.style(Role::Selection)
+                self.system
+                    .style(Role::TextStrong)
+                    .patch(self.system.style(Role::SelectionTint))
             } else if e.conflict {
                 self.system.style(Role::Danger)
             } else if e.remapped {

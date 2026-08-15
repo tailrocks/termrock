@@ -50,6 +50,8 @@ pub enum MultiSelectOutcome<Id> {
     Ignored,
     /// Chrome / highlight / open state changed without membership change.
     Changed,
+    /// The pointer moved onto (or off) a row.
+    HoverChanged,
     /// List opened.
     Opened {
         /// Presentation.
@@ -125,6 +127,8 @@ pub struct MultiSelectState<Id: Clone + PartialEq> {
     trigger: Rect,
     panel: Rect,
     option_regions: Vec<(Id, Rect)>,
+    /// Option the pointer is over (hover wash; never a commit).
+    hovered: Option<Id>,
     search_region: Option<Rect>,
     clear_region: Option<Rect>,
 }
@@ -157,6 +161,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             trigger: Rect::default(),
             panel: Rect::default(),
             option_regions: Vec::new(),
+            hovered: None,
             search_region: None,
             clear_region: None,
         }
@@ -702,6 +707,20 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         if !self.enabled {
             return MultiSelectOutcome::Ignored;
         }
+        if matches!(event.kind, MouseEventKind::Moved) {
+            // Hover is stated every event, so leaving the list clears it.
+            let was = self.hovered.clone();
+            self.hovered = self
+                .option_regions
+                .iter()
+                .find(|(_, rect)| rect.contains(event.position))
+                .map(|(id, _)| id.clone());
+            return if was == self.hovered {
+                MultiSelectOutcome::Ignored
+            } else {
+                MultiSelectOutcome::HoverChanged
+            };
+        }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
             return MultiSelectOutcome::Ignored;
         }
@@ -876,7 +895,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 Role::Text
             });
             if state.focused {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::BOLD);
             }
             buffer.set_stringn(
                 area.x,
@@ -996,11 +1015,13 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .overlay(true)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
         Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -1121,18 +1142,14 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_on = state.selection.is_checked(&opt.id);
-                    let recipe = self
-                        .system
-                        .clone()
-                        .selection(crate::style::SelectionChrome::Tint)
-                        .resolve_list_row(ListRowVisualState {
-                            selected: is_hi,
-                            focused: is_hi && state.focused,
-                            hovered: false,
-                            enabled: !opt.disabled,
-                            loading: false,
-                            checked: is_on,
-                        });
+                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                        selected: is_hi,
+                        focused: is_hi && state.focused,
+                        hovered: state.hovered.as_ref() == Some(&opt.id),
+                        enabled: !opt.disabled,
+                        loading: false,
+                        checked: is_on,
+                    });
                     if recipe.use_fill {
                         buffer.set_style(rect, recipe.label);
                     } else if recipe.use_tint {

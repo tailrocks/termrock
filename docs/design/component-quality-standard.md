@@ -78,7 +78,7 @@ no_color | color_ladder | streaming | large_data | resize | panic_safety
 
 | Pass |
 |------|
-| Entry paints focus-visible chrome (`Role::BorderFocused` / gutter / underline) |
+| Entry paints focus-visible chrome (`Role::BorderFocused` / gutter / reverse — never underline; `termrock-design-language.md` §5) |
 | Exit restores prior chrome (opener restoration for overlays) |
 | Focus order stable and inspectable |
 

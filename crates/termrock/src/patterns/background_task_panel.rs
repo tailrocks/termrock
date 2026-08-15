@@ -18,6 +18,17 @@
 //!
 //! Research: IDE task terminals, process supervisors, Grok Build watchers,
 //! Zellij sessions.
+//!
+//! Teaches: how to compose persistent monitoring for detached jobs.
+//!
+//! Composes: [`crate::widgets::List`], [`crate::widgets::ListRow`],
+//! [`crate::widgets::ListState`], [`crate::widgets::NotificationItem`],
+//! [`crate::widgets::Panel`], [`crate::widgets::RowRole`],
+//! [`crate::widgets::SemanticStatus`], [`crate::widgets::StatefulWidget`],
+//! and 11 more.
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 use std::collections::VecDeque;
 
@@ -33,9 +44,9 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        List, ListRow, ListState, NotificationItem, Panel, RowRole, SemanticStatus, TerminalLine,
-        TerminalOutput, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TerminalStream,
-        ToastKind, ToastPriority, format_duration_ms,
+        EmptyKind, EmptyState, List, ListRow, ListState, NotificationItem, Panel, RowRole,
+        SemanticStatus, TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
+        TerminalRunStatus, TerminalStream, ToastKind, ToastPriority, format_duration_ms,
     },
 };
 
@@ -174,7 +185,8 @@ impl BackgroundTaskStatus {
     pub const fn role(self) -> Role {
         match self {
             Self::Pending | Self::Detached => Role::TextMuted,
-            Self::Running => Role::Accent,
+            // Live work reads as information, not as the brand (plans/007).
+            Self::Running => Role::InfoDim,
             Self::Reconnecting => Role::Warning,
             Self::Lost | Self::Failed => Role::Danger,
             Self::Succeeded => Role::Success,
@@ -1180,27 +1192,17 @@ impl<'a> BackgroundTaskPanel<'a> {
             {
                 self.paint_detail(detail_area, buffer, state, task, ascii);
             } else {
-                let msg = if ascii {
-                    "(select a task)"
-                } else {
-                    "∅ select a task"
-                };
-                buffer.set_stringn(
-                    detail_area.x,
-                    detail_area.y,
-                    msg,
-                    usize::from(detail_area.width),
-                    self.system.style(Role::TextMuted),
-                );
+                EmptyState::new("Pick a task", self.system)
+                    .kind(EmptyKind::NoData)
+                    .paint(detail_area, buffer);
             }
         }
 
-        let foot = "j/k · enter open · x stop · r restart · d detach · f follow · C clear · esc";
-        buffer.set_stringn(
-            inner.x,
-            foot_y,
-            take_display_cols(foot, usize::from(inner.width)),
-            usize::from(inner.width),
+        let foot = "enter open · x stop · r restart · f follow · esc close";
+        self.system.paint_row(
+            buffer,
+            Rect::new(inner.x, foot_y, inner.width, 1),
+            foot,
             self.system.style(Role::TextMuted),
         );
     }
@@ -1249,11 +1251,10 @@ impl<'a> BackgroundTaskPanel<'a> {
             task.status.label(),
             take_display_cols(task.command.as_deref().unwrap_or(&task.title), 48)
         );
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(&head, usize::from(area.width)),
-            usize::from(area.width),
+        self.system.paint_row(
+            buffer,
+            Rect::new(area.x, y, area.width, 1),
+            &head,
             if self.colorless {
                 self.system.style(Role::Text)
             } else {
@@ -1279,11 +1280,10 @@ impl<'a> BackgroundTaskPanel<'a> {
             meta.push_str(&format_duration_ms(ms));
         }
         if !meta.is_empty() && y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&meta, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                &meta,
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1291,11 +1291,10 @@ impl<'a> BackgroundTaskPanel<'a> {
 
         if let Some(banner) = task.output.dropped_banner(ascii) {
             if y < max_y {
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&banner, usize::from(area.width)),
-                    usize::from(area.width),
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                    &banner,
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
@@ -1314,11 +1313,10 @@ impl<'a> BackgroundTaskPanel<'a> {
                     "reconnecting…"
                 },
             );
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(note, usize::from(area.width)),
-                usize::from(area.width),
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                note,
                 self.system.style(Role::Danger),
             );
             y = y.saturating_add(1);

@@ -470,6 +470,8 @@ pub struct MenuBarState {
     bar_hits: Vec<(usize, Rect)>,
     /// Panel hits: (depth, item_index, rect).
     panel_hits: Vec<(usize, usize, Rect)>,
+    /// (depth, item) the pointer is over.
+    hovered: Option<(usize, usize)>,
     /// Painted bar origin.
     bar_origin: (u16, u16),
     /// Painted bar size.
@@ -501,6 +503,7 @@ impl MenuBarState {
             presentation_override: None,
             bar_hits: Vec::new(),
             panel_hits: Vec::new(),
+            hovered: None,
             bar_origin: (0, 0),
             bar_size: (0, 0),
             opener_focus_hint: None,
@@ -1082,6 +1085,13 @@ impl MenuBarState {
                 MenuBarOutcome::Ignored
             }
             MouseEventKind::Moved if self.is_open() => {
+                // Hover is stated every event, so leaving a panel clears it.
+                self.hovered = self
+                    .panel_hits
+                    .iter()
+                    .rev()
+                    .find(|(_, _, rect)| rect_contains(*rect, event.position))
+                    .map(|(depth, idx, _)| (*depth, *idx));
                 // Desktop: hover switches top menus.
                 for (idx, rect) in &self.bar_hits {
                     if rect_contains(*rect, event.position) && Some(*idx) != self.open_top {
@@ -1405,7 +1415,8 @@ impl<'a, Id> MenuBar<'a, Id> {
                         self.system.style(Role::TextDisabled)
                     } else if active {
                         self.system
-                            .style(Role::Selection)
+                            .style(Role::TextStrong)
+                            .patch(self.system.style(Role::SelectionTint))
                             .add_modifier(Modifier::BOLD)
                     } else if state.mnemonic_mode {
                         self.system.style(Role::Focus)
@@ -1512,7 +1523,7 @@ impl<'a, Id> MenuBar<'a, Id> {
             .recipe(super::SurfaceRecipe::Overlay)
             .bordered(true)
             .border_style(border_style)
-            .padding(0, 0)
+            .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
             return;
@@ -1598,22 +1609,18 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self
-                .system
-                .clone()
-                .selection(crate::style::SelectionChrome::Tint)
-                .resolve_list_row(ListRowVisualState {
-                    selected: active,
-                    focused: active,
-                    hovered: false,
-                    enabled: item.enabled,
-                    loading: false,
-                    checked: matches!(
-                        item.kind,
-                        MenuRowKind::Checkbox { checked: true }
-                            | MenuRowKind::Radio { selected: true, .. }
-                    ),
-                });
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some((depth, i)),
+                enabled: item.enabled,
+                loading: false,
+                checked: matches!(
+                    item.kind,
+                    MenuRowKind::Checkbox { checked: true }
+                        | MenuRowKind::Radio { selected: true, .. }
+                ),
+            });
             let row = Rect::new(inner.x, y, inner.width, 1);
             if recipe.use_fill {
                 buffer.set_style(row, recipe.label);
@@ -1810,11 +1817,11 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             vec![
                 MenuNode::command("new", "New")
                     .mnemonic('N')
-                    .shortcut("Ctrl+N")
+                    .shortcut("C-n")
                     .command_key("file.new"),
                 MenuNode::command("open", "Open…")
                     .mnemonic('O')
-                    .shortcut("Ctrl+O")
+                    .shortcut("C-o")
                     .command_key("file.open"),
                 MenuNode::separator("file-sep-1"),
                 MenuNode::section("recent-h", "Recent"),
@@ -1837,7 +1844,7 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
                 MenuNode::separator("file-sep-3"),
                 MenuNode::command("quit", "Quit")
                     .mnemonic('Q')
-                    .shortcut("Ctrl+Q")
+                    .shortcut("C-q")
                     .command_key("file.quit"),
             ],
         )
@@ -1848,7 +1855,7 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             vec![
                 MenuNode::command("undo", "Undo")
                     .mnemonic('U')
-                    .shortcut("Ctrl+Z")
+                    .shortcut("C-z")
                     .command_key("edit.undo"),
                 MenuNode::command("redo", "Redo")
                     .enabled(false)

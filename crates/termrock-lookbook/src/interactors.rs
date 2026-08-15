@@ -253,8 +253,11 @@ impl StoryInteraction for PatternAppInteractor {
     }
 
     fn set_demo_id(&mut self, id: &'static str) {
-        let mut delegate = application_interactor(id)
-            .or_else(|| composite_interactor(id))
+        // An "in application" variant is the host scene wearing a component's
+        // name: resolve its delegate through the host (plans/018 Step 2).
+        let host = crate::stories::in_app_host(id).unwrap_or(id);
+        let mut delegate = application_interactor(host)
+            .or_else(|| composite_interactor(host))
             .unwrap_or_else(|| panic!("pattern demo {id} has no public state-machine delegate"));
         delegate.set_theme(self.theme.clone());
         self.delegate = Some(delegate);
@@ -281,7 +284,7 @@ impl PanelInteractor {
 
 impl StoryInteraction for PanelInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let body = Panel::new(&system)
             .title("Summary")
             .variant(PanelVariant::Interactive)
@@ -329,7 +332,11 @@ impl StoryInteraction for PanelInteractor {
 
 impl StoryInteraction for StaticStory {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        (self.render_fn)(frame, area, &DesignSystem::from_palette(self.theme.clone()));
+        (self.render_fn)(
+            frame,
+            area,
+            &crate::design::lookbook_system(self.theme.clone()),
+        );
     }
     fn handle_key(&mut self, _key: KeyEvent) -> bool {
         false
@@ -361,7 +368,7 @@ impl TextAreaInteractor {
 impl StoryInteraction for TextAreaInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &TextArea::new(&DesignSystem::from_palette(self.theme.clone())).title("Compose"),
+            &TextArea::new(&crate::design::lookbook_system(self.theme.clone())).title("Compose"),
             area,
             &mut self.state,
         );
@@ -442,7 +449,7 @@ impl ChoiceDialogInteractor {
 
 impl StoryInteraction for ChoiceDialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.open {
             Button::new("Choose action", &system)
                 .variant(ButtonVariant::Primary)
@@ -676,7 +683,7 @@ impl LogPaneInteractor {
 impl StoryInteraction for LogPaneInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_stateful_widget(
-            &LogPane::new(&DesignSystem::from_palette(self.theme.clone())).title("Build log"),
+            &LogPane::new(&crate::design::lookbook_system(self.theme.clone())).title("Build log"),
             area,
             &mut self.state,
         );
@@ -823,8 +830,11 @@ impl StoryInteraction for FormInteractor {
             self.state.ensure_visible(Some(id));
         }
         frame.render_stateful_widget(
-            &Form::new(&sections, &DesignSystem::from_palette(self.theme.clone()))
-                .focused_field(self.focused.as_ref()),
+            &Form::new(
+                &sections,
+                &crate::design::lookbook_system(self.theme.clone()),
+            )
+            .focused_field(self.focused.as_ref()),
             area,
             &mut self.state,
         );
@@ -958,12 +968,12 @@ impl StoryInteraction for SplitPaneInteractor {
             frame,
             area,
             &mut self.state,
-            &DesignSystem::from_palette(self.theme.clone()),
+            &crate::design::lookbook_system(self.theme.clone()),
         );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let split = SplitPane::new(
             SplitDirection::Horizontal,
             SPLIT_PANE_MIN,
@@ -976,7 +986,7 @@ impl StoryInteraction for SplitPaneInteractor {
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
         let position = mouse.position;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let split = SplitPane::new(
             SplitDirection::Horizontal,
             SPLIT_PANE_MIN,
@@ -1086,7 +1096,7 @@ impl ToastInteractor {
 
 impl StoryInteraction for ToastInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         Button::new(
             if self.visible {
                 "Dismiss toast"
@@ -1182,8 +1192,11 @@ impl StoryInteraction for ToastInteractor {
     fn render_knob_editor(&mut self, selected: usize, frame: &mut Frame<'_>, area: Rect) {
         if selected == 2 {
             frame.render_stateful_widget(
-                &TextInput::new("Message", &DesignSystem::from_palette(self.theme.clone()))
-                    .placeholder("Toast message"),
+                &TextInput::new(
+                    "Message",
+                    &crate::design::lookbook_system(self.theme.clone()),
+                )
+                .placeholder("Toast message"),
                 area,
                 &mut self.message,
             );
@@ -1290,7 +1303,7 @@ impl StoryInteraction for TabsInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let tabs = Self::tabs();
         frame.render_stateful_widget(
-            &Tabs::new(&tabs, &DesignSystem::from_palette(self.theme.clone())).gap(1),
+            &Tabs::new(&tabs, &crate::design::lookbook_system(self.theme.clone())).gap(1),
             area,
             &mut self.state,
         );
@@ -1388,7 +1401,7 @@ impl StoryInteraction for ThemePickerInteractor {
         frame.render_stateful_widget(
             &ThemePicker::new(
                 BUILTIN_THEME_PRESETS,
-                &DesignSystem::from_palette(self.theme.clone()),
+                &crate::design::lookbook_system(self.theme.clone()),
             ),
             area,
             &mut self.state,
@@ -1487,7 +1500,7 @@ impl StoryInteraction for DesignInspectorInteractor {
             focus_graph: &[],
         };
         frame.render_widget(
-            DesignInspector::new(snap, &DesignSystem::from_palette(self.theme.clone()))
+            DesignInspector::new(snap, &crate::design::lookbook_system(self.theme.clone()))
                 .panel(self.panel),
             area,
         );
@@ -1574,7 +1587,7 @@ impl StoryInteraction for TranscriptInteractor {
         ];
         self.state.set_focused(true);
         frame.render_stateful_widget(
-            &Transcript::new(&blocks, &DesignSystem::from_palette(self.theme.clone()))
+            &Transcript::new(&blocks, &crate::design::lookbook_system(self.theme.clone()))
                 .focused(true)
                 .tick(7),
             area,
@@ -1715,7 +1728,7 @@ impl ActionLinkInteractor {
 
 impl StoryInteraction for ActionLinkInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = Self::action(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
 
@@ -1723,14 +1736,14 @@ impl StoryInteraction for ActionLinkInteractor {
         if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
             self.state.set_focused(true);
         }
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Self::action(&system).handle_key(&mut self.state, key);
         self.apply(outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
         let before = self.state.hovered;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Self::action(&system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || self.state.hovered != before
     }
@@ -1791,7 +1804,7 @@ impl ButtonInteractor {
 
 impl StoryInteraction for ButtonInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         Button::new("Save", &system)
             .variant(ButtonVariant::Primary)
             .leading("✓")
@@ -1899,7 +1912,7 @@ impl DialogInteractor {
 
 impl StoryInteraction for DialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.open {
             Button::new("Open dialog", &system)
                 .variant(ButtonVariant::Primary)
@@ -2024,7 +2037,7 @@ impl TextInputInteractor {
 
 impl StoryInteraction for TextInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = TextInput::new("Query", &system)
             .placeholder("Search…")
             .show_clear(true)
@@ -2037,7 +2050,7 @@ impl StoryInteraction for TextInputInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = preview_area;
         let outcome = TextInput::new("Query", &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome)
@@ -2105,14 +2118,14 @@ impl SliderInteractor {
 
 impl StoryInteraction for SliderInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = Slider::new(SliderBounds::percent(), &system)
             .label("Volume")
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome =
             Slider::new(SliderBounds::percent(), &system).handle_key(&mut self.state, key);
         self.apply(outcome)
@@ -2120,7 +2133,7 @@ impl StoryInteraction for SliderInteractor {
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
         let before = (self.state.hovered, self.state.dragging, self.state.value);
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome =
             Slider::new(SliderBounds::percent(), &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || before != (self.state.hovered, self.state.dragging, self.state.value)
@@ -2174,14 +2187,14 @@ impl RangeSliderInteractor {
 
 impl StoryInteraction for RangeSliderInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = RangeSlider::new(SliderBounds::percent(), &system)
             .label("Price range")
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome =
             RangeSlider::new(SliderBounds::percent(), &system).handle_key(&mut self.state, key);
         self.apply(outcome)
@@ -2194,7 +2207,7 @@ impl StoryInteraction for RangeSliderInteractor {
             self.state.hovered,
             self.state.dragging,
         );
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome =
             RangeSlider::new(SliderBounds::percent(), &system).handle_mouse(&mut self.state, mouse);
         let changed = self.apply(outcome);
@@ -2287,7 +2300,7 @@ impl PasswordInputInteractor {
 
 impl StoryInteraction for PasswordInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         self.parts = Some(
             PasswordInput::new("Password", &system)
                 .placeholder("Enter secret")
@@ -2398,7 +2411,7 @@ impl AlertDialogInteractor {
 
 impl StoryInteraction for AlertDialogInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.open {
             Button::new("Delete project…", &system)
                 .variant(ButtonVariant::Destructive)
@@ -2496,7 +2509,7 @@ impl PopoverInteractor {
 
 impl StoryInteraction for PopoverInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.state.is_open() {
             Button::new("Open details", &system)
                 .variant(ButtonVariant::Secondary)
@@ -2644,7 +2657,7 @@ impl DropdownMenuInteractor {
 
 impl StoryInteraction for DropdownMenuInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if !self.state.is_open() {
             Button::new("Actions ▾", &system)
                 .variant(ButtonVariant::Secondary)
@@ -2768,7 +2781,7 @@ impl MenuInteractor {
 
 impl StoryInteraction for MenuInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         if self.open {
             Menu::new(&Self::items(), &system).render(area, frame.buffer_mut(), &mut self.state);
         } else {
@@ -2885,7 +2898,7 @@ impl SidebarInteractor {
 
 impl StoryInteraction for SidebarInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         Sidebar::new(&Self::items(), &system)
             .title("Settings")
             .show_panel(true)
@@ -2959,7 +2972,7 @@ impl ResizablePanelGroupInteractor {
 
 impl StoryInteraction for ResizablePanelGroupInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let specs = Self::specs();
         let group = ResizablePanelGroup::new(&specs, &system).workbench();
         let layout = group.layout(area, &mut self.state);
@@ -2972,7 +2985,7 @@ impl StoryInteraction for ResizablePanelGroupInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let specs = Self::specs();
         let group = ResizablePanelGroup::new(&specs, &system).workbench();
         let area = self.state.layout().area;
@@ -2981,7 +2994,7 @@ impl StoryInteraction for ResizablePanelGroupInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let specs = Self::specs();
         let group = ResizablePanelGroup::new(&specs, &system).workbench();
         let before = self.state.sizes().to_vec();
@@ -3051,7 +3064,7 @@ impl FormWizardInteractor {
 
 impl StoryInteraction for FormWizardInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         FormWizard::new(&system).title("Create workspace").paint(
             area,
             frame.buffer_mut(),
@@ -3176,7 +3189,7 @@ impl StoryInteraction for TreeTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let rows = self.rows();
         let columns = Self::columns();
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         self.state.load = LoadState::Ready {
             count: u64::try_from(rows.len()).unwrap_or(u64::MAX),
         };
@@ -3263,7 +3276,7 @@ impl StoryInteraction for VirtualListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.state.set_viewport_extent(area.height.max(4));
         let projected = self.projected();
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         VirtualList::new(&projected, &system)
             .show_diagnostics(true)
             .paint(area, frame.buffer_mut(), &mut self.state);
@@ -3366,7 +3379,7 @@ impl AccordionInteractor {
 
 impl StoryInteraction for AccordionInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let parts =
             Accordion::section(&items, &system).paint(area, frame.buffer_mut(), &mut self.state);
@@ -3385,14 +3398,14 @@ impl StoryInteraction for AccordionInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let outcome = Accordion::section(&items, &system).handle_key(&mut self.state, key);
         self.resolve(outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let outcome = Accordion::section(&items, &system).handle_mouse(&mut self.state, mouse);
         self.resolve(outcome)
@@ -3448,7 +3461,7 @@ impl CollapsibleInteractor {
 
 impl StoryInteraction for CollapsibleInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let body = Collapsible::new("Tool details", &system).paint(
             area,
             frame.buffer_mut(),
@@ -3538,7 +3551,7 @@ impl NumberInputInteractor {
 
 impl StoryInteraction for NumberInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = NumberInput::new("Opacity", &system)
             .unit("%")
             .ascii(true)
@@ -3647,7 +3660,7 @@ impl SelectInteractor {
 impl StoryInteraction for SelectInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.bounds = area;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let options = Self::options();
         Select::new(&options, &system)
             .label("Fruit")
@@ -3766,7 +3779,7 @@ impl MultiSelectInteractor {
 impl StoryInteraction for MultiSelectInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.bounds = area;
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let options = Self::options();
         MultiSelect::new(&options, &system)
             .label("Filters")
@@ -3855,7 +3868,7 @@ impl PaginationInteractor {
 
 impl StoryInteraction for PaginationInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         Pagination::new(&system)
             .ascii(true)
             .paint(area, frame.buffer_mut(), &mut self.state);
@@ -3932,21 +3945,21 @@ impl CheckboxInteractor {
 
 impl StoryInteraction for CheckboxInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = Checkbox::new("notifications", "Desktop notifications", &system)
             .description("Toggle a controlled form value")
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Checkbox::new("notifications", "Desktop notifications", &system)
             .handle_key(&mut self.state, key);
         self.resolve(outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Checkbox::new("notifications", "Desktop notifications", &system)
             .handle_mouse(&mut self.state, mouse);
         self.resolve(outcome)
@@ -3999,21 +4012,21 @@ impl SwitchInteractor {
 
 impl StoryInteraction for SwitchInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = Switch::new("sync", "Background sync", &system)
             .description("Down then up inside commits")
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome =
             Switch::new("sync", "Background sync", &system).handle_key(&mut self.state, key);
         self.resolve(outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let changed_hover = matches!(mouse.kind, MouseEventKind::Moved | MouseEventKind::Drag(_));
         let outcome =
             Switch::new("sync", "Background sync", &system).handle_mouse(&mut self.state, mouse);
@@ -4068,18 +4081,18 @@ impl ToggleInteractor {
 
 impl StoryInteraction for ToggleInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let _ = Toggle::new("Bold", &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Toggle::new("Bold", &system).handle_key(&mut self.state, key);
         self.resolve(outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let outcome = Toggle::new("Bold", &system).handle_mouse(&mut self.state, mouse);
         self.resolve(outcome)
     }
@@ -4160,7 +4173,7 @@ impl ToggleGroupInteractor {
 
 impl StoryInteraction for ToggleGroupInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = self.items();
         let _ = ToggleGroup::new(&items, &system)
             .multiple()
@@ -4169,7 +4182,7 @@ impl StoryInteraction for ToggleGroupInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = self.items();
         let outcome = ToggleGroup::new(&items, &system)
             .multiple()
@@ -4179,7 +4192,7 @@ impl StoryInteraction for ToggleGroupInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = self.items();
         let outcome = ToggleGroup::new(&items, &system)
             .multiple()
@@ -4249,7 +4262,7 @@ impl SegmentedControlInteractor {
 
 impl StoryInteraction for SegmentedControlInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let _ = SegmentedControl::new(&items, &system)
             .collapse_below(0)
@@ -4257,7 +4270,7 @@ impl StoryInteraction for SegmentedControlInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let outcome = SegmentedControl::new(&items, &system)
             .collapse_below(0)
@@ -4266,7 +4279,7 @@ impl StoryInteraction for SegmentedControlInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _preview_area: Rect) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let items = Self::items();
         let outcome = SegmentedControl::new(&items, &system)
             .collapse_below(0)
@@ -4380,7 +4393,7 @@ impl VirtualGridInteractor {
 
 impl StoryInteraction for VirtualGridInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         frame.render_stateful_widget(
             &VirtualGrid::new(&VIRTUAL_GRID_COLUMNS, &VIRTUAL_GRID_ROWS, &system).total_rows(20),
             area,

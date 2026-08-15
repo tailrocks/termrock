@@ -16,6 +16,16 @@
 //!
 //! Research: Amp sessions, OpenCode sessions, Grok Build picker, project launchers.
 //! Outcomes are **requests only** — no persistence, network, or draft mutation.
+//!
+//! Teaches: how to compose polished selector for creating, resuming,
+//! searching, renaming, archiving, and deleting agent sessions.
+//!
+//! Composes: [`crate::widgets::ConfirmFocus`],
+//! [`crate::widgets::ConfirmPrompt`], [`crate::widgets::Panel`],
+//! [`crate::widgets::StatefulWidget`], [`crate::widgets::Widget`].
+//!
+//! Copy-adapt: keep the widget composition and the focus routing;
+//! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
@@ -31,7 +41,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
+    widgets::{ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel},
 };
 
 /// Overlay id for session picker (dialog / fullscreen).
@@ -589,6 +599,8 @@ pub struct SessionPickerState {
     pub show_archived: bool,
     /// Filter pins only.
     pub pins_only: bool,
+    /// Preview shows the full metadata sheet instead of its five-line core.
+    pub preview_details: bool,
     /// Focused.
     pub focused: bool,
     accepts_input: bool,
@@ -626,6 +638,7 @@ impl SessionPickerState {
             confirm_proceed_focused: false,
             show_archived: false,
             pins_only: false,
+            preview_details: false,
             focused: true,
             accepts_input: true,
             search_mode: true,
@@ -916,6 +929,10 @@ impl SessionPickerState {
             KeyCode::Char('o') if key.modifiers.is_empty() && self.query.is_empty() => {
                 SessionPickerOutcome::PopoverRequested
             }
+            KeyCode::Char('i') if key.modifiers.is_empty() && self.query.is_empty() => {
+                self.preview_details = !self.preview_details;
+                SessionPickerOutcome::Ignored
+            }
             KeyCode::Char('z') if key.modifiers.is_empty() && self.query.is_empty() => {
                 self.show_archived = !self.show_archived;
                 self.refilter();
@@ -1202,16 +1219,15 @@ impl<'a> SessionPicker<'a> {
         }
 
         let mut y = inner.y;
-        let w = usize::from(inner.width);
+        let _w = usize::from(inner.width);
         let max_y = inner.bottom();
 
         // Draft preservation banner
         if y < max_y {
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols("draft & context preserved on cancel", w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                "draft & context preserved on cancel",
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
@@ -1241,7 +1257,8 @@ impl<'a> SessionPicker<'a> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
             y = y.saturating_add(1);
         }
 
@@ -1256,11 +1273,10 @@ impl<'a> SessionPicker<'a> {
             } else {
                 "loading…"
             };
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(m, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                m,
                 self.system.style(Role::Info),
             );
             y = y.saturating_add(1);
@@ -1270,11 +1286,10 @@ impl<'a> SessionPicker<'a> {
                 .load_error
                 .as_deref()
                 .unwrap_or("load failed · r retry");
-            buffer.set_stringn(
-                inner.x,
-                y,
-                take_display_cols(msg, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                msg,
                 self.system.style(Role::Danger),
             );
             y = y.saturating_add(1);
@@ -1335,14 +1350,10 @@ impl<'a> SessionPicker<'a> {
             self.paint_confirm(inner, buffer, state);
         } else if max_y > inner.y {
             let fy = max_y.saturating_sub(1);
-            buffer.set_stringn(
-                inner.x,
-                fy,
-                take_display_cols(
-                    "enter open · n new · r rename · p pin · a archive · del delete · esc cancel",
-                    w,
-                ),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, fy, inner.width, 1),
+                "enter open · n new · i details · del delete · esc close",
                 self.system.style(Role::TextMuted),
             );
         }
@@ -1352,7 +1363,7 @@ impl<'a> SessionPicker<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let viewport = max_y.saturating_sub(y) as usize;
@@ -1365,11 +1376,10 @@ impl<'a> SessionPicker<'a> {
             } else {
                 "no matches"
             };
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(msg, w),
-                w,
+            self.system.paint_row(
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+                msg,
                 self.system.style(Role::TextMuted),
             );
             return;
@@ -1412,18 +1422,29 @@ impl<'a> SessionPicker<'a> {
             };
             let loc = s.location.glyph(self.ascii);
             let text = format!("{mark}{pin}{st}{loc} {}{unread}{dirty}", s.title);
+            // Status lives in its glyph cell, not across the whole row: a
+            // list of five sessions used to paint five hues over its titles
+            // (information budget, plans/017 Part B).
             let style = if !s.enabled {
                 self.system.style(Role::TextMuted)
             } else if selected {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if s.action_required && !self.colorless {
-                self.system.style(Role::Warning)
-            } else if !self.colorless {
-                self.system.style(s.status.role())
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&text, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
+            if !self.colorless && s.enabled && !selected {
+                let status_role = if s.action_required {
+                    Role::Warning
+                } else {
+                    s.status.role()
+                };
+                let glyph_x = area.x.saturating_add(2);
+                if glyph_x < area.x.saturating_add(area.width) {
+                    buffer[(glyph_x, y)].set_style(self.system.style(status_role));
+                }
+            }
             state.row_hits.push((
                 s.id.clone(),
                 Rect {
@@ -1453,11 +1474,10 @@ impl<'a> SessionPicker<'a> {
                     meta.push_str(r);
                 }
                 if !meta.is_empty() {
-                    buffer.set_stringn(
-                        area.x,
-                        y,
-                        take_display_cols(&format!("    {meta}"), w),
-                        w,
+                    self.system.paint_row(
+                        buffer,
+                        Rect::new(area.x, y, area.width, 1),
+                        &format!("    {meta}"),
                         self.system.style(Role::TextMuted),
                     );
                     y = y.saturating_add(1);
@@ -1470,21 +1490,19 @@ impl<'a> SessionPicker<'a> {
         if area.is_empty() {
             return;
         }
-        let w = usize::from(area.width);
+        let _w = usize::from(area.width);
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(s) = state.current() else {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols("(no selection)", w),
-                w,
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No session selected", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         };
-        let lines: Vec<(String, Role)> = {
-            let mut v = vec![(s.title.clone(), Role::Accent)];
+        // Default frame: five quiet lines. Everything else is one keypress
+        // away behind `i` (information budget, plans/017 Part B).
+        let lines: Vec<(String, Role)> = if state.preview_details {
+            let mut v = vec![(s.title.clone(), Role::TextStrong)];
             if let Some(p) = s.project.as_ref() {
                 v.push((format!("project {p}"), Role::TextMuted));
             }
@@ -1496,29 +1514,46 @@ impl<'a> SessionPicker<'a> {
                 s.status.role(),
             ));
             if let Some(m) = s.model.as_ref() {
-                v.push((format!("model {m}"), Role::Text));
+                v.push((format!("model {m}"), Role::TextMuted));
             }
             if let Some(m) = s.mode.as_ref() {
-                v.push((format!("mode {m}"), Role::Text));
+                v.push((format!("mode {m}"), Role::TextMuted));
             }
             if let Some(d) = s.device.as_ref() {
-                v.push((format!("device {d}"), Role::Info));
+                v.push((format!("device {d}"), Role::TextMuted));
             }
             if let Some(sum) = s.summary.as_ref() {
                 v.push((sum.clone(), Role::Text));
             }
             if s.pinned {
-                v.push(("pinned".into(), Role::Warning));
+                v.push(("pinned".into(), Role::TextMuted));
             }
             if s.dirty {
                 v.push(("dirty / local draft elsewhere".into(), Role::Warning));
             }
             if s.unread > 0 {
-                v.push((format!("{} unread", s.unread), Role::Info));
+                v.push((format!("{} unread", s.unread), Role::TextMuted));
             }
             if s.action_required {
                 v.push(("action required".into(), Role::Warning));
             }
+            v
+        } else {
+            let mut v = vec![(s.title.clone(), Role::TextStrong)];
+            if let Some(r) = s.recency.as_ref() {
+                v.push((r.clone(), Role::TextFaint));
+            }
+            if let Some(m) = s.model.as_ref() {
+                v.push((format!("model {m}"), Role::TextMuted));
+            }
+            v.push((
+                format!("{} {}", s.status.glyph(self.ascii), s.status.id()),
+                s.status.role(),
+            ));
+            if let Some(sum) = s.summary.as_ref() {
+                v.push((sum.clone(), Role::Text));
+            }
+            v.push(("i details".into(), Role::TextFaint));
             v
         };
         for (line, role) in lines {
@@ -1530,81 +1565,36 @@ impl<'a> SessionPicker<'a> {
             } else {
                 self.system.style(role)
             };
-            buffer.set_stringn(area.x, y, take_display_cols(&line, w), w, style);
+            self.system
+                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
             y = y.saturating_add(1);
         }
     }
 
     fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut SessionPickerState) {
-        let y = area.bottom().saturating_sub(2);
-        if y < area.y {
-            return;
-        }
-        let w = usize::from(area.width);
         let action = state.confirm_action.unwrap_or(SessionConfirmAction::Delete);
         let title = state
             .current()
-            .map(|s| s.title.as_str())
-            .unwrap_or("session");
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(
-                &format!(
-                    "! {} “{}” — {}",
-                    action.label(),
-                    title,
-                    action.consequence()
-                ),
-                w,
-            ),
-            w,
-            if action.is_destructive() {
-                self.system.style(Role::Danger)
+            .map(|s| s.title.clone())
+            .unwrap_or_else(|| "session".to_string());
+        let message = format!("{} “{title}”", action.label());
+        let consequence = action.consequence();
+        let hits = ConfirmPrompt::new(&message, action.label(), self.system)
+            .detail(&consequence)
+            .destructive(action.is_destructive())
+            .colorless(self.colorless)
+            .focus(if state.confirm_proceed_focused {
+                ConfirmFocus::Confirm
             } else {
-                self.system.style(Role::Warning)
-            },
-        );
-        let bar_y = area.bottom().saturating_sub(1);
-        let cancel = if !state.confirm_proceed_focused {
-            "[Cancel]"
-        } else {
-            " Cancel "
-        };
-        let proceed = if state.confirm_proceed_focused {
-            format!("[{}]", action.label())
-        } else {
-            format!(" {} ", action.label())
-        };
-        let line = format!("{cancel}  {proceed}");
-        buffer.set_stringn(
-            area.x,
-            bar_y,
-            take_display_cols(&line, w),
-            w,
-            self.system.style(Role::Accent),
-        );
-        let cw = display_cols(cancel) as u16;
-        state.confirm_hits.push((
-            false,
-            Rect {
-                x: area.x,
-                y: bar_y,
-                width: cw,
-                height: 1,
-            },
-        ));
-        let px = area.x.saturating_add(cw.saturating_add(2));
-        let pw = display_cols(&proceed) as u16;
-        state.confirm_hits.push((
-            true,
-            Rect {
-                x: px,
-                y: bar_y,
-                width: pw,
-                height: 1,
-            },
-        ));
+                ConfirmFocus::Cancel
+            })
+            .paint(area, buffer);
+        if let Some(cancel) = hits.cancel {
+            state.confirm_hits.push((false, cancel));
+        }
+        if let Some(confirm) = hits.confirm {
+            state.confirm_hits.push((true, confirm));
+        }
     }
 }
 

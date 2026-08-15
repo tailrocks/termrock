@@ -1,0 +1,9 @@
+list/selection 44x8 (story 42x6)
+                                            
+ ─ Workspace                                
+   ☑ Alpha                            12 ms 
+ ▌ ☐ Beta                             28 ms 
+   ☐ Gamma                                  
+                                            
+                                            
+                                            
