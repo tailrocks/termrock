@@ -147,6 +147,7 @@ function orderCanonicalSections(body: string): string {
     'Test recipe',
     'Stories',
     'Source and related material',
+    'Seen in applications',
   ]
   const extracted = new Map<string, string>()
   let remainder = body
@@ -234,4 +235,4 @@ for (const name of (await readdir(componentDir)).filter((name) => name.endsWith(
   await Bun.write(path, body.trimEnd() + '\n')
 }
 
-console.log('synchronized 165 component interaction contracts from the shared Rust catalog')
+console.log('synchronized 166 component interaction contracts from the shared Rust catalog')

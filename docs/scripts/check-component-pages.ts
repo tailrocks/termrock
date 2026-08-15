@@ -35,8 +35,8 @@ if (passiveExceptionKeys.size !== passiveExceptions.length) {
   throw new Error('duplicate passive interaction exception')
 }
 
-if (routeManifest.length !== 165) {
-  throw new Error(`canonical route manifest drift: expected 165, got ${routeManifest.length}`)
+if (routeManifest.length !== 166) {
+  throw new Error(`canonical route manifest drift: expected 166, got ${routeManifest.length}`)
 }
 if (new Set(routeManifest.map((entry) => entry.component)).size !== routeManifest.length) {
   throw new Error('duplicate component in canonical route manifest')
@@ -199,4 +199,4 @@ for (const migration of migrations) {
   }
 }
 
-console.log(`component docs: ${publicWidgets.size}/135 public widget inventory; ${routeManifest.length}/165 canonical routes; 84/84 Handbook migrations`)
+console.log(`component docs: ${publicWidgets.size}/136 public widget inventory; ${routeManifest.length}/166 canonical routes; 84/84 Handbook migrations`)

@@ -4958,6 +4958,15 @@ pub fn stories() -> Vec<Story> {
             gauge_basic,
         ),
         Story::new(
+            "metric-tile/basic",
+            "Metric tile",
+            "MetricTileView",
+            "One measured number with health and trend context.",
+            32,
+            6,
+            metric_tile_basic,
+        ),
+        Story::new(
             "metric-radar/basic",
             "Metric radar",
             "MetricRadar",
@@ -18975,6 +18984,16 @@ fn metric_radar_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         MetricRadar::new(&axes, &series, system).title("services"),
         area,
     );
+}
+
+fn metric_tile_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    const SAMPLES: &[f64] = &[38.0, 41.0, 39.0, 44.0, 47.0, 46.0, 52.0];
+    MetricTile::new("latency", "p95 latency", "52ms")
+        .delta("+8%", true)
+        .samples(SAMPLES)
+        .health(MetricTileHealth::Warning)
+        .view(system)
+        .paint(area, frame.buffer_mut());
 }
 
 fn progress_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

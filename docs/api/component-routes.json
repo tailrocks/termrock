@@ -440,6 +440,11 @@
     "demo": "message-dialog/details"
   },
   {
+    "component": "MetricTileView",
+    "slug": "metric-tile",
+    "demo": "metric-tile/basic"
+  },
+  {
     "component": "MetricRadar",
     "slug": "metric-radar",
     "demo": "metric-radar/basic"

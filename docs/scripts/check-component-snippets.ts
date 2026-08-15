@@ -7,7 +7,7 @@ const mkdir = Bun.spawnSync(['mkdir', '-p', `${scratch}/src`])
 if (mkdir.exitCode !== 0) throw new Error(mkdir.stderr.toString())
 
 const files = (await readdir(docs)).filter((name) => name.endsWith('.mdx')).toSorted()
-if (files.length !== 165) throw new Error(`canonical component page drift: ${files.length}`)
+if (files.length !== 166) throw new Error(`canonical component page drift: ${files.length}`)
 const stories = await Bun.file(`${root}/crates/termrock-lookbook/src/stories.rs`).text()
 
 for (const file of files) {
@@ -33,7 +33,7 @@ const names = [
       .map((match) => match[1]!),
   ),
 ].toSorted()
-if (names.length !== 135) throw new Error(`public widget inventory drift: ${names.length}`)
+if (names.length !== 136) throw new Error(`public widget inventory drift: ${names.length}`)
 
 await Bun.write(
   `${scratch}/Cargo.toml`,
@@ -66,4 +66,4 @@ const catalog = Bun.spawnSync(
   { cwd: root, stdout: 'inherit', stderr: 'inherit' },
 )
 if (catalog.exitCode !== 0) throw new Error('compiled shared story source is invalid')
-console.log(`verified 165 exact catalog snippets and ${names.length} public widget imports`)
+console.log(`verified 166 exact catalog snippets and ${names.length} public widget imports`)
