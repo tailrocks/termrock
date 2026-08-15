@@ -559,6 +559,14 @@
     "nonColor": "covered",
     "unicode": "covered"
   },
+  "MetricTileView": {
+    "focus": "covered",
+    "keyboard": "covered",
+    "mouse": "covered",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
   "ModeRibbon": {
     "focus": "covered",
     "keyboard": "covered",
