@@ -256,6 +256,13 @@ pub enum ObservabilityDashboardOutcome {
     },
     /// Esc root cancel.
     Cancelled,
+    /// A stream or the inspector joined or left the default frame.
+    PaneToggled {
+        /// Stable pane id.
+        pane: &'static str,
+        /// Sharing the frame after the toggle.
+        open: bool,
+    },
 }
 
 // ── Surfaces ────────────────────────────────────────────────────────────────
@@ -321,6 +328,8 @@ pub struct ObservabilityDashboardState {
     last_panes: Vec<PaneGeom>,
     /// Last paint width for density=None.
     last_area_width: Option<u16>,
+    /// Streams and inspector sharing the default frame.
+    open_panes: ObservabilityPanes,
 }
 
 impl Default for ObservabilityDashboardState {
@@ -337,6 +346,7 @@ impl ObservabilityDashboardState {
         search.set_focused(false);
         Self {
             workspace: WorkspaceState::new(),
+            open_panes: ObservabilityPanes::default(),
             search,
             logs: LogStreamState::new(),
             events: EventStreamState::new(),
@@ -344,7 +354,7 @@ impl ObservabilityDashboardState {
             inspector: ObjectInspectorState::new(),
             status: StatusBarState::new(),
             live: ObservabilityLiveState::Live,
-            focus: ObservabilityPane::Logs.id(),
+            focus: ObservabilityPane::Metrics.id(),
             density: None,
             drill_kind: None,
             drill_id: None,
@@ -394,8 +404,15 @@ impl ObservabilityDashboardState {
     #[must_use]
     pub fn focus_order_for(&self, density: ObservabilityDensity) -> Vec<&'static str> {
         match density {
+            // Tab reaches what the frame shows, never a pane with no cells.
             ObservabilityDensity::Normal => ObservabilityPane::focus_order()
                 .iter()
+                .filter(|pane| match pane {
+                    ObservabilityPane::Logs => self.open_panes.logs,
+                    ObservabilityPane::Events => self.open_panes.events,
+                    ObservabilityPane::Inspector => self.open_panes.inspector,
+                    _ => true,
+                })
                 .map(|p| p.id())
                 .collect(),
             ObservabilityDensity::Narrow => vec![
@@ -410,11 +427,65 @@ impl ObservabilityDashboardState {
         }
     }
 
+    /// Which streams the operator has opened.
+    #[must_use]
+    pub const fn open_panes(&self) -> ObservabilityPanes {
+        self.open_panes
+    }
+
+    /// Opens or closes the log stream.
+    pub fn toggle_logs(&mut self) -> ObservabilityDashboardOutcome {
+        self.open_panes.logs = !self.open_panes.logs;
+        ObservabilityDashboardOutcome::PaneToggled {
+            pane: ObservabilityPane::Logs.id(),
+            open: self.open_panes.logs,
+        }
+    }
+
+    /// Opens or closes the event stream.
+    pub fn toggle_events(&mut self) -> ObservabilityDashboardOutcome {
+        self.open_panes.events = !self.open_panes.events;
+        ObservabilityDashboardOutcome::PaneToggled {
+            pane: ObservabilityPane::Events.id(),
+            open: self.open_panes.events,
+        }
+    }
+
+    /// Opens or closes the alert list.
+    pub fn toggle_alerts(&mut self) -> ObservabilityDashboardOutcome {
+        self.open_panes.alerts = !self.open_panes.alerts;
+        ObservabilityDashboardOutcome::PaneToggled {
+            pane: "alerts",
+            open: self.open_panes.alerts,
+        }
+    }
+
+    /// Opens or closes the inspector.
+    pub fn toggle_inspector(&mut self) -> ObservabilityDashboardOutcome {
+        self.open_panes.inspector = !self.open_panes.inspector;
+        ObservabilityDashboardOutcome::PaneToggled {
+            pane: ObservabilityPane::Inspector.id(),
+            open: self.open_panes.inspector,
+        }
+    }
+
     /// Clamp focus to visible panes.
+    ///
+    /// Falls back to the main pane, never to the search row. The search row is
+    /// a text input: landing there turns every unmodified key into typing, so
+    /// `space`, `a` and `m` stop working without anything saying why — which is
+    /// exactly what happened the first time a stream pane closed.
     pub fn clamp_focus_to_density(&mut self, density: ObservabilityDensity) {
         let order = self.focus_order_for(density);
         if !order.contains(&self.focus) {
-            self.focus = order.first().copied().unwrap_or("logs");
+            let main = ObservabilityPane::Metrics.id();
+            self.focus = order
+                .iter()
+                .copied()
+                .find(|id| *id == main)
+                .or_else(|| order.iter().copied().find(|id| *id != "search"))
+                .or_else(|| order.first().copied())
+                .unwrap_or("logs");
             self.apply_focus_gates();
         }
     }
@@ -475,7 +546,8 @@ impl ObservabilityDashboardState {
     pub fn layout(&mut self, area: Rect) -> Vec<PaneGeom> {
         self.last_area_width = Some(area.width);
         let density = self.effective_density();
-        let panes = observability_dashboard_layout_density(area, &self.workspace, density);
+        let panes =
+            observability_dashboard_layout_density(area, &self.workspace, density, self.open_panes);
         self.last_panes = panes.clone();
         self.clamp_focus_to_density(density);
         panes
@@ -560,7 +632,15 @@ impl ObservabilityDashboardState {
                     .priority(4),
             );
         }
-        let _ = (self.log_count, self.event_count, self.alert_count);
+        if self.alert_count > 0 && !self.open_panes.alerts {
+            slots.insert(
+                0,
+                StatusSlot::new("alerts", "alerts")
+                    .region(StatusRegion::Left)
+                    .priority(6),
+            );
+        }
+        let _ = (self.log_count, self.event_count);
         slots
     }
 
@@ -590,6 +670,18 @@ impl ObservabilityDashboardState {
             KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.set_reconnecting("reconnecting…");
                 return ObservabilityDashboardOutcome::ReconnectRequested;
+            }
+            KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_logs();
+            }
+            KeyCode::Char('e') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_events();
+            }
+            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_inspector();
+            }
+            KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_alerts();
             }
             KeyCode::Char('a') if key.modifiers.is_empty() && !in_search => {
                 self.logs.ack_dropped();
@@ -792,7 +884,34 @@ impl ObservabilityDashboardState {
 /// Width-derived layout.
 #[must_use]
 pub fn observability_dashboard_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    observability_dashboard_layout_density(area, state, ObservabilityDensity::for_width(area.width))
+    observability_dashboard_layout_density(
+        area,
+        state,
+        ObservabilityDensity::for_width(area.width),
+        ObservabilityPanes::default(),
+    )
+}
+
+/// Which streams share the default frame beside the metrics.
+///
+/// A dashboard answers "is it healthy" first; the log and event streams are
+/// what you open once it says no, and the inspector is what you open once a
+/// line looks wrong. Off by default, one chord away (`^l` logs, `^e` events,
+/// `^i` inspector), advertised in the status strip (plans/017 §B2, law §4.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ObservabilityPanes {
+    /// Log stream.
+    pub logs: bool,
+    /// Structured event stream.
+    pub events: bool,
+    /// Selection inspector.
+    pub inspector: bool,
+    /// Alert list under the metric tiles.
+    ///
+    /// Each tile already states its own health in a letter; the list restates
+    /// the same crossings in a second colour band, which is what pushed the
+    /// default frame past its hue budget. The status strip keeps the count.
+    pub alerts: bool,
 }
 
 /// Search strip height: enough for bordered chrome + SearchInput body.
@@ -807,6 +926,7 @@ pub fn observability_dashboard_layout_density(
     area: Rect,
     state: &WorkspaceState,
     density: ObservabilityDensity,
+    panes: ObservabilityPanes,
 ) -> Vec<PaneGeom> {
     // Carve search as absolute rows — percent splits at h=36 give ~1–2 rows and
     // Panel borders then leave height 0 for SearchInput.
@@ -890,46 +1010,63 @@ pub fn observability_dashboard_layout_density(
             }
         }
         ObservabilityDensity::Normal => {
-            // metrics | (logs | events | inspector) | status
+            // search + metrics + status is the default frame; the streams and
+            // the inspector join it when the operator asks.
+            let mut stream_nodes: Vec<WorkspaceNode> = Vec::new();
+            if panes.logs {
+                stream_nodes.push(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Logs.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                });
+            }
+            if panes.events {
+                stream_nodes.push(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Events.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                });
+            }
+            if panes.inspector {
+                stream_nodes.push(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Inspector.id()),
+                    constraint: PaneConstraint::Min(18),
+                    collapse_priority: 0,
+                });
+            }
+            let metrics = WorkspaceNode::Leaf {
+                id: PaneId::from_static(ObservabilityPane::Metrics.id()),
+                constraint: PaneConstraint::Min(5),
+                collapse_priority: 0,
+            };
+            let body = match stream_nodes.len() {
+                0 => metrics,
+                _ => {
+                    let mut stacked = stream_nodes.pop().expect("non-empty");
+                    while let Some(node) = stream_nodes.pop() {
+                        stacked = WorkspaceNode::Split {
+                            axis: WorkspaceAxis::Horizontal,
+                            ratio_percent: 50,
+                            first: Box::new(node),
+                            second: Box::new(stacked),
+                        };
+                    }
+                    WorkspaceNode::Split {
+                        axis: WorkspaceAxis::Vertical,
+                        ratio_percent: 30,
+                        first: Box::new(metrics),
+                        second: Box::new(stacked),
+                    }
+                }
+            };
             WorkspaceNode::Split {
                 axis: WorkspaceAxis::Vertical,
-                ratio_percent: 30,
-                first: Box::new(WorkspaceNode::Leaf {
-                    id: PaneId::from_static(ObservabilityPane::Metrics.id()),
-                    constraint: PaneConstraint::Min(5),
-                    collapse_priority: 0,
-                }),
-                second: Box::new(WorkspaceNode::Split {
-                    axis: WorkspaceAxis::Vertical,
-                    ratio_percent: 92,
-                    first: Box::new(WorkspaceNode::Split {
-                        axis: WorkspaceAxis::Horizontal,
-                        ratio_percent: 40,
-                        first: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(ObservabilityPane::Logs.id()),
-                            constraint: PaneConstraint::Weight(1),
-                            collapse_priority: 1,
-                        }),
-                        second: Box::new(WorkspaceNode::Split {
-                            axis: WorkspaceAxis::Horizontal,
-                            ratio_percent: 55,
-                            first: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(ObservabilityPane::Events.id()),
-                                constraint: PaneConstraint::Weight(1),
-                                collapse_priority: 1,
-                            }),
-                            second: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(ObservabilityPane::Inspector.id()),
-                                constraint: PaneConstraint::Min(18),
-                                collapse_priority: 0,
-                            }),
-                        }),
-                    }),
-                    second: Box::new(WorkspaceNode::Leaf {
-                        id: PaneId::from_static(ObservabilityPane::Status.id()),
-                        constraint: PaneConstraint::Fixed(1),
-                        collapse_priority: 3,
-                    }),
+                ratio_percent: 94,
+                first: Box::new(body),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(ObservabilityPane::Status.id()),
+                    constraint: PaneConstraint::Fixed(1),
+                    collapse_priority: 3,
                 }),
             }
         }
@@ -974,7 +1111,8 @@ pub fn render_observability_dashboard(
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let panes = observability_dashboard_layout_density(area, &state.workspace, density);
+    let panes =
+        observability_dashboard_layout_density(area, &state.workspace, density, state.open_panes);
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
@@ -1022,9 +1160,12 @@ pub fn render_observability_dashboard(
 
     if let Some(r) = pane_area(&panes, "metrics") {
         let focused = state.focus == "metrics";
-        MetricsDashboard::new(tiles, alerts, system)
+        let shown_alerts: &[MetricAlert<'_>] = if state.open_panes.alerts { alerts } else { &[] };
+        MetricsDashboard::new(tiles, shown_alerts, system)
             .title("Metrics")
             .focused(focused)
+            // The shell's status bar is the frame's one hint row.
+            .hints(false)
             .ascii(state.ascii)
             .render(r, buffer, &mut state.metrics);
     }
@@ -1265,6 +1406,16 @@ mod tests {
         KeyEvent::new(code, KeyModifiers::NONE)
     }
 
+    /// The frame with every consult-pane asked for, for layout assertions.
+    fn every_pane_open() -> ObservabilityPanes {
+        ObservabilityPanes {
+            logs: true,
+            events: true,
+            inspector: true,
+            alerts: true,
+        }
+    }
+
     fn ctrl(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::CONTROL)
     }
@@ -1276,9 +1427,34 @@ mod tests {
     }
 
     #[test]
+    fn tab_skips_closed_panes() {
+        let mut st = open();
+        st.density = Some(ObservabilityDensity::Normal);
+        let order = st.focus_order_for(ObservabilityDensity::Normal);
+        assert!(
+            !order.contains(&"logs") && !order.contains(&"events"),
+            "a closed stream has no cells to focus: {order:?}"
+        );
+        // And focus never falls into the search row, where every key becomes
+        // typing and the dashboard's own chords stop answering.
+        st.clamp_focus_to_density(ObservabilityDensity::Normal);
+        assert_ne!(st.focus, "search");
+        let _ = st.toggle_logs();
+        assert!(
+            st.focus_order_for(ObservabilityDensity::Normal)
+                .contains(&"logs")
+        );
+    }
+
+    #[test]
     fn focus_cycle_visits_zones() {
         let mut st = open();
         st.density = Some(ObservabilityDensity::Normal);
+        // Tab reaches what the frame shows; the diet frame's cycle is covered
+        // by `tab_skips_closed_panes`.
+        let _ = st.toggle_logs();
+        let _ = st.toggle_events();
+        let _ = st.toggle_inspector();
         let order = st.focus_order_for(ObservabilityDensity::Normal);
         assert!(order.contains(&"search"));
         assert!(order.contains(&"logs"));
@@ -1311,11 +1487,13 @@ mod tests {
     #[test]
     fn search_pane_has_body_at_lookbook_heights() {
         let ws = WorkspaceState::new();
+        let opened = every_pane_open();
         for (w, h) in [(120u16, 36u16), (100, 28), (70, 24), (48, 16)] {
             let panes = observability_dashboard_layout_density(
                 Rect::new(0, 0, w, h),
                 &ws,
                 ObservabilityDensity::for_width(w),
+                opened,
             );
             let search = panes
                 .iter()
@@ -1428,20 +1606,24 @@ mod tests {
     #[test]
     fn narrow_tiny_drop_panes_and_tab_clamps() {
         let ws = WorkspaceState::new();
+        let opened = every_pane_open();
         let normal = observability_dashboard_layout_density(
             Rect::new(0, 0, 120, 40),
             &ws,
             ObservabilityDensity::Normal,
+            opened,
         );
         let narrow = observability_dashboard_layout_density(
             Rect::new(0, 0, 70, 24),
             &ws,
             ObservabilityDensity::Narrow,
+            opened,
         );
         let tiny = observability_dashboard_layout_density(
             Rect::new(0, 0, 40, 16),
             &ws,
             ObservabilityDensity::Tiny,
+            opened,
         );
         let ids = |p: &[PaneGeom]| {
             p.iter()
@@ -1482,6 +1664,9 @@ mod tests {
     #[test]
     fn live_pause_and_bookmark_through_workbench() {
         let mut st = open();
+        // The log stream is a consult-pane now: this test drives it, so it asks
+        // for it. Focus cannot rest on a pane the frame does not show.
+        let _ = st.toggle_logs();
         st.focus = "logs";
         st.logs.set_accepts_input(true);
         let logs = example_observability_logs();

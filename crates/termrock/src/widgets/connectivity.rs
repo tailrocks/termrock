@@ -954,15 +954,11 @@ impl<'a> OfflineSurface<'a> {
                 Role::Warning,
                 false,
             ));
-            for (i, q) in state.queued.iter().take(3).enumerate() {
+            for q in state.queued.iter().take(3) {
                 rows.push((format!("  · {}", q.label), Role::TextDisabled, false));
-                if i == 2 && state.queued.len() > 3 {
-                    rows.push((
-                        format!("  · +{} more", state.queued.len() - 3),
-                        Role::TextDisabled,
-                        false,
-                    ));
-                }
+            }
+            if let Some(note) = crate::text::more_note(state.queued.len().saturating_sub(3)) {
+                rows.push((format!("  · {note}"), Role::TextDisabled, false));
             }
         }
         if !state.offline_caps.is_empty() {
@@ -981,8 +977,8 @@ impl<'a> OfflineSurface<'a> {
             }
             // Say what was held back, the way the queued list above does.
             let hidden = state.offline_caps.len().saturating_sub(OFFLINE_CAPS_SHOWN);
-            if hidden > 0 {
-                rows.push((format!("  +{hidden} more"), Role::TextDisabled, false));
+            if let Some(note) = crate::text::more_note(hidden) {
+                rows.push((format!("  {note}"), Role::TextDisabled, false));
             }
         }
         // Preserve cues

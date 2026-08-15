@@ -912,6 +912,7 @@ pub struct MetricsDashboard<'a> {
     focused: bool,
     title: Option<&'a str>,
     ascii: bool,
+    hints: bool,
 }
 
 impl<'a> MetricsDashboard<'a> {
@@ -927,6 +928,7 @@ impl<'a> MetricsDashboard<'a> {
             alerts,
             system,
             focused: true,
+            hints: true,
             title: None,
             ascii: false,
         }
@@ -936,6 +938,17 @@ impl<'a> MetricsDashboard<'a> {
     #[must_use]
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
+        self
+    }
+
+    /// Whether this surface owns the frame's hint row.
+    ///
+    /// A dashboard embedded in a shell does not: the shell already has a
+    /// status bar, and two footers on one frame is two answers to the same
+    /// question (plans/017 §B2 — one hint row per default frame).
+    #[must_use]
+    pub const fn hints(mut self, on: bool) -> Self {
+        self.hints = on;
         self
     }
 
@@ -1063,18 +1076,20 @@ impl<'a> MetricsDashboard<'a> {
             }
             // An alert list that stops at three says so.
             let hidden = self.alerts.len().saturating_sub(ALERTS_SHOWN);
-            if hidden > 0 && y < max_y {
+            if let Some(note) = crate::text::more_note(hidden)
+                && y < max_y
+            {
                 self.system.paint_row(
                     buffer,
                     Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
-                    &format!("+{hidden} more"),
+                    &note,
                     self.system.style(Role::TextMuted),
                 );
             }
         }
 
         // Footer
-        if !slots.footer.is_empty() {
+        if self.hints && !slots.footer.is_empty() {
             let failed = self
                 .tiles
                 .iter()

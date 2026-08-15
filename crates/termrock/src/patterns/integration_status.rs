@@ -1023,6 +1023,19 @@ pub struct IntegrationStatus<'a> {
     colorless: bool,
 }
 
+/// The row a clipping list must stop at, so the cut has somewhere to be said.
+///
+/// A list that fills its last row has nowhere left to admit what it dropped,
+/// which is how a surface goes silent: it looks complete because the sentence
+/// explaining otherwise never had a cell (plans/017 §B2).
+fn clip_bottom(bottom: u16, total: usize, shown: usize) -> u16 {
+    if total > shown.saturating_add(1) {
+        bottom.saturating_sub(1)
+    } else {
+        bottom
+    }
+}
+
 impl<'a> IntegrationStatus<'a> {
     /// System only.
     #[must_use]
@@ -1287,10 +1300,12 @@ impl<'a> IntegrationStatus<'a> {
                 }
             }
             IntegrationDetailTab::Capabilities => {
+                let mut shown = 0usize;
                 for c in &e.capabilities {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, e.capabilities.len(), shown) {
                         break;
                     }
+                    shown = shown.saturating_add(1);
                     let eg = if c.may_egress { " [egress]" } else { "" };
                     let line = format!("· {}{eg}", c.label);
                     let role = if c.may_egress {
@@ -1311,12 +1326,20 @@ impl<'a> IntegrationStatus<'a> {
                         .kind(EmptyKind::NoData)
                         .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    e.capabilities.len().saturating_sub(shown),
+                );
             }
             IntegrationDetailTab::Permissions => {
+                let mut shown = 0usize;
                 for p in &e.permissions {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, e.permissions.len(), shown) {
                         break;
                     }
+                    shown = shown.saturating_add(1);
                     let g = if p.granted { "granted" } else { "not granted" };
                     let el = if p.elevated { " · elevated" } else { "" };
                     let line = format!("· {} — {g}{el}", p.label);
@@ -1340,13 +1363,22 @@ impl<'a> IntegrationStatus<'a> {
                         .kind(EmptyKind::NoData)
                         .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    e.permissions.len().saturating_sub(shown),
+                );
             }
             IntegrationDetailTab::Logs => {
                 let start = state.log_scroll.min(e.logs.len());
+                let after_start = e.logs.len().saturating_sub(start);
+                let mut shown = 0usize;
                 for line in e.logs.iter().skip(start).take(INTEGRATION_LOG_WINDOW) {
-                    if y >= content_bottom {
+                    if y >= clip_bottom(content_bottom, after_start, shown) {
                         break;
                     }
+                    shown = shown.saturating_add(1);
                     self.system.paint_row(
                         buffer,
                         Rect::new(inner.x, y, inner.width, 1),
@@ -1361,6 +1393,12 @@ impl<'a> IntegrationStatus<'a> {
                         .explanation("g requests the host stream")
                         .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
+                self.paint_more_note(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    content_bottom,
+                    after_start.saturating_sub(shown),
+                );
             }
         }
 
@@ -1368,6 +1406,24 @@ impl<'a> IntegrationStatus<'a> {
         if fy >= inner.y {
             self.paint_actions(inner.x, fy, w, buffer, state);
         }
+    }
+
+    /// States what a detail list held back, on the row the clip reserved.
+    fn paint_more_note(&self, buffer: &mut Buffer, row: Rect, bottom: u16, hidden: usize) {
+        let Some(note) = crate::text::more_note(hidden) else {
+            return;
+        };
+        if row.y >= bottom {
+            return;
+        }
+        self.system.paint_row(
+            buffer,
+            row,
+            &note,
+            self.system
+                .style(Role::TextMuted)
+                .add_modifier(Modifier::DIM),
+        );
     }
 
     fn paint_actions(

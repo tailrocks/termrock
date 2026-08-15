@@ -853,14 +853,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 );
                 content_y = content_y.saturating_add(1);
             }
-            if hidden_errors > 0 {
+            if let Some(note) = crate::text::more_note(hidden_errors) {
                 paint_string(
                     buffer,
                     content_area,
                     state.offset,
                     content_y,
                     content_area.x,
-                    &format!("+{hidden_errors} more"),
+                    &note,
                     self.system.style(Role::TextMuted),
                 );
                 content_y = content_y.saturating_add(1);

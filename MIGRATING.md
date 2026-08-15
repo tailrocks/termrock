@@ -337,6 +337,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0321 | `v0.14.0` | [The catalog tells the truth](migrations/0321-v0.14.0-the-catalog-tells-the-truth.md) |
 | 0322 | `v0.14.0` | [Overlays survive any terminal](migrations/0322-v0.14.0-overlays-survive-any-terminal.md) |
 | 0323 | `v0.14.0` | [One modal geometry](migrations/0323-v0.14.0-one-modal-geometry.md) |
+| 0324 | `v0.14.0` | [The default frame goes on a diet](migrations/0324-v0.14.0-the-default-frame-goes-on-a-diet.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

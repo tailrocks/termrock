@@ -46,7 +46,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         AccentRail, Action, ActionBar, ActionBarState, EmptyKind, EmptyState, FieldRow,
-        FieldRowValue, Panel, PermissionRisk,
+        FieldRowValue, Panel, PanelTitleSpec, PermissionRisk, tiered_row::TieredRow,
     },
 };
 
@@ -1540,6 +1540,29 @@ pub struct PlanReview<'a> {
     colorless: bool,
 }
 
+/// How many rows the open pane holds, for the panel title's count segment.
+///
+/// The title states the size of what you are looking at, not the size of the
+/// document: a `[7]` beside `Tasks` answers "how much is there" without a
+/// body row spending itself on the same fact (plans/017 §B2).
+fn pane_row_count(pane: PlanReviewPane, plan: &PlanDocument, comments: usize) -> usize {
+    match pane {
+        PlanReviewPane::Document => {
+            let lines = plan.body_lines().len();
+            if lines == 0 {
+                plan.sections.len()
+            } else {
+                lines
+            }
+        }
+        PlanReviewPane::Tasks => plan.tasks.len(),
+        PlanReviewPane::Risks => plan.risks.len(),
+        PlanReviewPane::Files => plan.affected_files.len(),
+        PlanReviewPane::Comments => comments,
+        PlanReviewPane::Diff => plan.previous.as_ref().map_or(0, |_| plan.tasks.len()),
+    }
+}
+
 impl<'a> PlanReview<'a> {
     /// System only — plan lives in state.
     #[must_use]
@@ -1599,7 +1622,6 @@ impl<'a> PlanReview<'a> {
         };
 
         let risk = plan.risk;
-        let title = format!("Plan v{} · {} · {}", plan.version, plan.title, risk.label());
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1609,23 +1631,21 @@ impl<'a> PlanReview<'a> {
         let panel_area = rail.layout(area).1;
         use ratatui_core::widgets::Widget;
         Widget::render(rail, area, buffer);
+        // The title states what the pane is, what version, and how much the
+        // open pane holds — through the one title grammar every panel uses.
+        // It used to be repainted over the border in bold `ActorPlan`, which
+        // said "plan" a second time in the colour the accent rail beside it
+        // already spends, and spent a bold budget on chrome (plans/017 §B2).
+        let version = format!("v{}", plan.version);
         let panel = Panel::new(self.system)
-            .title(title.as_str())
+            .title_spec(
+                PanelTitleSpec::new(plan.title.as_str())
+                    .scope(version.as_str())
+                    .count(pane_row_count(state.pane, &plan, state.comments.len())),
+            )
             .emphasis(emphasis);
         let inner = panel.inner(panel_area);
         Widget::render(&panel, panel_area, buffer);
-        let title_x = panel_area.x.saturating_add(2);
-        let title_width = panel_area.right().saturating_sub(title_x).saturating_sub(1);
-        if title_width > 0 {
-            self.system.paint_row(
-                buffer,
-                Rect::new(title_x, panel_area.y, title_width, 1),
-                &title,
-                self.system
-                    .style(Role::ActorPlan)
-                    .add_modifier(Modifier::BOLD),
-            );
-        }
         if inner.is_empty() {
             state.plan = Some(plan);
             return;
@@ -1645,8 +1665,12 @@ impl<'a> PlanReview<'a> {
                 } else {
                     self.system.style(risk.role())
                 };
+                // Risk left the title with the version and the count; it rides
+                // the glyph and the summary tone instead, and the full list is
+                // one pane tab away.
+                let line = format!("{} {sum}", risk.glyph());
                 self.system
-                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), sum, style);
+                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
                 y = y.saturating_add(1);
             }
         }
@@ -1800,14 +1824,27 @@ impl<'a> PlanReview<'a> {
             } else {
                 " "
             };
-            let text = format!("{mark}{i:>3}│{line}");
+            // The gutter is address, not content: mark, line number and rule
+            // take the faint tier so the prose is the brightest thing on the
+            // row (plans/017 §B2, plans/012 row anatomy).
+            let mut row = TieredRow::default();
+            row.push(
+                &format!("{mark}{i:>3}│"),
+                if selected {
+                    self.system.style(Role::Accent)
+                } else {
+                    self.system.style(Role::TextFaint)
+                },
+            );
+            row.push_plain(line);
             let style = if selected {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
-            self.system
-                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
+            let cells = Rect::new(area.x, y, area.width, 1);
+            self.system.paint_row(buffer, cells, row.text(), style);
+            row.paint_tiers(buffer, cells, 0);
             y = y.saturating_add(1);
         }
         if lines.is_empty() && y < max_y {
@@ -2620,9 +2657,19 @@ mod tests {
 
         PlanReview::new(&system).paint(area, &mut buf, &mut st);
 
+        // The rail is where the actor tone lives. The title used to be
+        // repainted in the same hue and bold on top of the panel border, which
+        // said "plan" twice and spent the bold budget on chrome; it now comes
+        // from the panel's own title grammar (plans/017 §B2).
         let plan_fg = system.style(Role::ActorPlan).fg;
         assert_eq!(buf[(0, 0)].fg, plan_fg.unwrap());
-        assert_eq!(buf[(4, 0)].fg, plan_fg.unwrap());
+        let title_row_in_actor_tone = (2..area.width)
+            .filter(|x| buf[(*x, 0)].fg == plan_fg.unwrap())
+            .count();
+        assert_eq!(
+            title_row_in_actor_tone, 0,
+            "the title repeats the tone the rail already spends"
+        );
         let mut text = String::new();
         for y in 0..area.height {
             for x in 0..area.width {
@@ -2630,6 +2677,9 @@ mod tests {
             }
         }
         assert!(text.contains("Step 1"));
+        // Version and pane count ride the title, not a body row.
+        assert!(text.contains("(v"), "{text}");
+        assert!(text.contains('['), "{text}");
         assert!(!st.action_regions.is_empty());
     }
 

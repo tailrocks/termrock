@@ -464,7 +464,11 @@ impl<'a> MetricTileView<'a> {
                 // A trend is data, so it reads as a series; the health is
                 // already stated by the letter in the title row.
                 let mut spark = Sparkline::new(tile.samples, system).role(Role::ChartSeries1);
-                if let Some(&threshold) = tile.thresholds.first() {
+                // A threshold is the second question, asked after "what is the
+                // number": it draws a line across every tile on a dashboard
+                // whether or not the operator is looking at that one. Focus is
+                // the keypress that asks it (plans/017 §B2).
+                if let Some(&threshold) = tile.thresholds.first().filter(|_| self.focused) {
                     spark = spark.threshold(threshold);
                 }
                 if ascii {
@@ -474,9 +478,10 @@ impl<'a> MetricTileView<'a> {
             }
             MetricViz::Gauge => {
                 let value = tile.gauge_value.unwrap_or(0.0);
+                let thresholds: &[f64] = if self.focused { tile.thresholds } else { &[] };
                 let mut gauge = Gauge::percent(value, system)
                     .label(tile.title)
-                    .thresholds(tile.thresholds)
+                    .thresholds(thresholds)
                     .role(tile.health.role());
                 if ascii {
                     gauge = gauge.glyphs(VizGlyphSet::Ascii);
@@ -491,7 +496,7 @@ impl<'a> MetricTileView<'a> {
                         .max(1.0);
                     gauge = Gauge::new(value, system)
                         .scale(ScaleMode::Fixed { min: 0.0, max })
-                        .thresholds(tile.thresholds)
+                        .thresholds(thresholds)
                         .role(tile.health.role());
                     if ascii {
                         gauge = gauge.glyphs(VizGlyphSet::Ascii);

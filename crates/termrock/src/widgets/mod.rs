@@ -148,7 +148,7 @@ mod text;
 mod text_area;
 mod text_input;
 mod theme_picker;
-mod tiered_row;
+pub(crate) mod tiered_row;
 mod timeline;
 mod toast;
 mod toggle;

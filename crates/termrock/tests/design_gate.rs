@@ -160,6 +160,31 @@ fn no_bare_ellipsis_in_paint() {
 }
 
 #[test]
+fn one_overflow_note() {
+    // `text::more_note` is the one voice that says what a surface cut. A
+    // hand-rolled copy is how plan 022 left four sites agreeing by accident
+    // and a fifth (`integration_status`) clipping in silence.
+    let mut offenders = Vec::new();
+    for source in painted_sources() {
+        for (line_no, line) in &source.lines {
+            let compact: String = line.chars().filter(|c| !c.is_whitespace()).collect();
+            if compact.contains("}more\"") || compact.contains("{hidden}more") {
+                offenders.push(format!(
+                    "{}:{line_no}: {}",
+                    source.path.display(),
+                    line.trim()
+                ));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "overflow notes must come from `text::more_note`, not a local format!:\n{}",
+        offenders.join("\n")
+    );
+}
+
+#[test]
 fn one_chord_notation() {
     // `kbd.rs` owns the spelled and symbolic renderings; it is the formatter,
     // not a caller.
@@ -740,10 +765,15 @@ fn pattern_hint_copy_budget() {
 
 use termrock::patterns::{
     AgentStatusHeader, AgentStatusHeaderState, AgentStatusPresentation, ConnectionManager,
-    ConnectionManagerState, IntegrationStatus, IntegrationStatusPresentation,
-    IntegrationStatusState, PlanReview, PlanReviewState, SessionPicker, SessionPickerState,
-    example_agent_status, example_connections, example_integrations, example_plan_document,
-    example_sessions,
+    ConnectionManagerState, DatabaseWorkbenchState, DatabaseWorkbenchSurfaces, IntegrationStatus,
+    IntegrationStatusPresentation, IntegrationStatusState, ObservabilityDashboardState,
+    ObservabilityDashboardSurfaces, PlanReview, PlanReviewState, SessionPicker, SessionPickerState,
+    example_agent_status, example_connections, example_db_commands, example_db_history,
+    example_inspect_fields, example_integrations, example_log_inspect_fields,
+    example_observability_alerts, example_observability_events, example_observability_logs,
+    example_observability_tiles, example_plan_document, example_result_columns,
+    example_result_row_refs, example_result_rows, example_schema_entries, example_sessions,
+    render_database_workbench, render_observability_dashboard,
 };
 
 /// Foreground colors that paint *content* in `buffer`, not single glyphs.
@@ -822,6 +852,25 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
     integrations.set_entries(example_integrations());
     integrations.presentation = IntegrationStatusPresentation::Panel;
 
+    // Workbenches need room to show what they choose to show.
+    let wide = Rect::new(0, 0, 120, 32);
+    let mut database = DatabaseWorkbenchState::new();
+    let schema = example_schema_entries();
+    let columns = example_result_columns();
+    let raw_rows = example_result_rows();
+    let mut cell_store = Vec::new();
+    let rows = example_result_row_refs(&raw_rows, &mut cell_store);
+    let db_fields = example_inspect_fields();
+    let history = example_db_history();
+    let commands = example_db_commands();
+
+    let mut observability = ObservabilityDashboardState::new();
+    let logs = example_observability_logs();
+    let events = example_observability_events();
+    let tiles = example_observability_tiles();
+    let alerts = example_observability_alerts();
+    let obs_fields = example_log_inspect_fields();
+
     vec![
         (
             "agent_status_header",
@@ -851,6 +900,45 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
             "integration_status",
             painted(area, |buffer| {
                 IntegrationStatus::new(system).paint(area, buffer, &mut integrations);
+            }),
+        ),
+        // The two workbench dashboards are the surfaces plans/017 §B2 put on a
+        // three-pane diet; without a frame here the budget was a claim.
+        (
+            "database_workbench",
+            painted(wide, |buffer| {
+                render_database_workbench(
+                    buffer,
+                    wide,
+                    DatabaseWorkbenchSurfaces {
+                        system,
+                        state: &mut database,
+                        schema_entries: &schema,
+                        result_columns: &columns,
+                        result_rows: &rows,
+                        inspect_fields: &db_fields,
+                        history: &history,
+                        commands: &commands,
+                    },
+                );
+            }),
+        ),
+        (
+            "observability_dashboard",
+            painted(wide, |buffer| {
+                render_observability_dashboard(
+                    buffer,
+                    wide,
+                    ObservabilityDashboardSurfaces {
+                        system,
+                        state: &mut observability,
+                        logs: &logs,
+                        events: &events,
+                        tiles: &tiles,
+                        alerts: &alerts,
+                        inspect_fields: &obs_fields,
+                    },
+                );
             }),
         ),
     ]

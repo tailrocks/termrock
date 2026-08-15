@@ -607,6 +607,21 @@ pub fn truncate_path<'a>(path: &'a str, budget: usize, ellipsis: &str) -> Cow<'a
     ))
 }
 
+/// States how many rows a surface cut, in the one voice that says it.
+///
+/// A list that stops painting is telling the operator "that's all of it"
+/// unless it says otherwise. Plan 022 fixed four such surfaces by writing
+/// `format!("+{hidden} more")` four times, which is a template, not an
+/// authority — the fifth surface to clip (`integration_status`) simply went
+/// silent. One function, one gate (`design_gate.rs::one_overflow_note`), and
+/// the phrasing stays a single decision (plans/017 §B2, plans/022 Step 3).
+///
+/// Returns `None` when nothing was hidden, so callers spend no row on it.
+#[must_use]
+pub fn more_note(hidden: usize) -> Option<String> {
+    (hidden > 0).then(|| format!("+{hidden} more"))
+}
+
 /// Collapse a terminal-window title to one printable line.
 #[must_use]
 pub fn sanitize_terminal_title(title: &str) -> String {

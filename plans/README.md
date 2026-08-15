@@ -334,6 +334,18 @@ behind `d`), `connection_manager` (identity-only rows), `metrics_dashboard`
 across ten patterns. Law §4.2 + `pattern_style_diversity`,
 `pattern_hint_budget`, `pattern_hint_copy_budget` enforce it.
 
+**Closed 2026-08-15 (migrations/0324).** Every row below has landed: the plans
+that owned the missing pieces (013, 016, 022) have since run, so the reasons
+expired. `plan_review` states its size through `PanelTitleSpec` and drops the
+bold title over-paint; `MetricTile` thresholds wait for focus; `+N more` became
+`text::more_note` with a gate, which exposed `integration_status` clipping three
+tabs in silence; `setup_wizard` takes typed `SetupSummaryLine`s and shows only
+what the operator changed; both workbenches default to nav + main + status with
+consult-panes on chords. Measuring the two workbench frames for the first time
+found two more defects: `MetricsDashboard` painted a second footer inside a
+shell that already had a status bar, and its alert list restated tile health in
+a second colour band, taking the frame to nine hues against a budget of eight.
+
 Deferred, each to the plan that owns the missing piece:
 
 1. **`plan_review` counts into `PanelTitleSpec`** — `PanelTitleSpec` is a

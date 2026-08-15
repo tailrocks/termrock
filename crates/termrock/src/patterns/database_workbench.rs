@@ -406,6 +406,13 @@ pub enum DatabaseWorkbenchOutcome {
     OpenHistory,
     /// Escape cancelled root (host may blur workbench).
     Cancelled,
+    /// A consult-pane joined or left the default frame.
+    PaneToggled {
+        /// Stable pane id.
+        pane: &'static str,
+        /// Sharing the frame after the toggle.
+        open: bool,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -453,6 +460,10 @@ pub struct DatabaseWorkbenchState {
     history_open: bool,
     /// Palette overlay open.
     palette_open: bool,
+    /// Connection rail sharing the default frame.
+    connections_open: bool,
+    /// Inspector sharing the default frame.
+    inspector_open: bool,
     /// Last painted pane rects (for tests).
     last_panes: Vec<PaneGeom>,
     /// Last layout/paint width — drives density when `density` override is `None`.
@@ -522,6 +533,8 @@ impl DatabaseWorkbenchState {
             ascii: false,
             colorless: false,
             history_open: false,
+            connections_open: false,
+            inspector_open: false,
             palette_open: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -579,6 +592,33 @@ impl DatabaseWorkbenchState {
     #[must_use]
     pub const fn palette_open(&self) -> bool {
         self.palette_open
+    }
+
+    /// Which consult-panes the operator has opened.
+    #[must_use]
+    pub const fn panes(&self) -> DatabaseWorkbenchPanes {
+        DatabaseWorkbenchPanes {
+            connections: self.connections_open,
+            inspector: self.inspector_open,
+        }
+    }
+
+    /// Opens or closes the connection rail.
+    pub fn toggle_connections(&mut self) -> DatabaseWorkbenchOutcome {
+        self.connections_open = !self.connections_open;
+        DatabaseWorkbenchOutcome::PaneToggled {
+            pane: DatabaseWorkbenchPane::Connections.id(),
+            open: self.connections_open,
+        }
+    }
+
+    /// Opens or closes the inspector.
+    pub fn toggle_inspector(&mut self) -> DatabaseWorkbenchOutcome {
+        self.inspector_open = !self.inspector_open;
+        DatabaseWorkbenchOutcome::PaneToggled {
+            pane: DatabaseWorkbenchPane::Inspector.id(),
+            open: self.inspector_open,
+        }
     }
 
     /// Last layout panes (after paint or [`Self::layout`]).
@@ -715,8 +755,15 @@ impl DatabaseWorkbenchState {
     #[must_use]
     pub fn focus_order_for(&self, density: DatabaseWorkbenchDensity) -> Vec<&'static str> {
         match density {
+            // Tab reaches what the frame shows; a closed consult-pane is not
+            // in the cycle, so focus never lands on a pane with no cells.
             DatabaseWorkbenchDensity::Normal => DatabaseWorkbenchPane::focus_order()
                 .iter()
+                .filter(|pane| match pane {
+                    DatabaseWorkbenchPane::Connections => self.connections_open,
+                    DatabaseWorkbenchPane::Inspector => self.inspector_open,
+                    _ => true,
+                })
                 .map(|p| p.id())
                 .collect(),
             DatabaseWorkbenchDensity::Narrow => vec![
@@ -762,7 +809,7 @@ impl DatabaseWorkbenchState {
     pub fn layout(&mut self, area: Rect) -> Vec<PaneGeom> {
         self.last_area_width = Some(area.width);
         let density = self.effective_density();
-        let panes = database_workbench_layout_density(area, &self.workspace, density);
+        let panes = database_workbench_layout_density(area, &self.workspace, density, self.panes());
         self.last_panes = panes.clone();
         self.clamp_focus_to_density(density);
         panes
@@ -935,6 +982,12 @@ impl DatabaseWorkbenchState {
             KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.history_open = true;
                 return DatabaseWorkbenchOutcome::OpenHistory;
+            }
+            KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_connections();
+            }
+            KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return self.toggle_inspector();
             }
             KeyCode::Char('e')
                 if key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1174,7 +1227,27 @@ impl DatabaseWorkbenchState {
 /// Layout with width-derived density.
 #[must_use]
 pub fn database_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    database_workbench_layout_density(area, state, DatabaseWorkbenchDensity::for_width(area.width))
+    database_workbench_layout_density(
+        area,
+        state,
+        DatabaseWorkbenchDensity::for_width(area.width),
+        DatabaseWorkbenchPanes::default(),
+    )
+}
+
+/// Which consult-panes share the default frame.
+///
+/// Everything here is off by default: the frame states the nav, the work and
+/// the status, and the panes an operator consults rather than works in arrive
+/// on a chord (`^b` connections, `^i` inspector). Removing a pane from the
+/// default frame is only honest when the keypress that brings it back is
+/// visible, which is why the status strip advertises both.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct DatabaseWorkbenchPanes {
+    /// Connection inventory rail.
+    pub connections: bool,
+    /// Object / cell inspector.
+    pub inspector: bool,
 }
 
 /// Layout with explicit density.
@@ -1183,6 +1256,7 @@ pub fn database_workbench_layout_density(
     area: Rect,
     state: &WorkspaceState,
     density: DatabaseWorkbenchDensity,
+    panes: DatabaseWorkbenchPanes,
 ) -> Vec<PaneGeom> {
     let root = match density {
         DatabaseWorkbenchDensity::Tiny => WorkspaceNode::Split {
@@ -1253,50 +1327,68 @@ pub fn database_workbench_layout_density(
             }
         }
         DatabaseWorkbenchDensity::Normal => {
-            // west connections+schema | center query/results | east inspector | status
+            // Nav | main | status is the default frame. The connection
+            // inventory and the object inspector are the two panes an operator
+            // consults rather than works in, so they open on a chord instead of
+            // spending a column of every frame (plans/017 §B2, law §4.2).
+            let nav = if panes.connections {
+                WorkspaceNode::Split {
+                    axis: WorkspaceAxis::Vertical,
+                    ratio_percent: 38,
+                    first: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(DatabaseWorkbenchPane::Connections.id()),
+                        constraint: PaneConstraint::Min(8),
+                        collapse_priority: 0,
+                    }),
+                    second: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(DatabaseWorkbenchPane::Schema.id()),
+                        constraint: PaneConstraint::Weight(1),
+                        collapse_priority: 1,
+                    }),
+                }
+            } else {
+                WorkspaceNode::Leaf {
+                    id: PaneId::from_static(DatabaseWorkbenchPane::Schema.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 1,
+                }
+            };
+            let editor = WorkspaceNode::Split {
+                axis: WorkspaceAxis::Vertical,
+                ratio_percent: 40,
+                first: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(DatabaseWorkbenchPane::Query.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 2,
+                }),
+                second: Box::new(WorkspaceNode::Leaf {
+                    id: PaneId::from_static(DatabaseWorkbenchPane::Results.id()),
+                    constraint: PaneConstraint::Weight(1),
+                    collapse_priority: 2,
+                }),
+            };
+            let main = if panes.inspector {
+                WorkspaceNode::Split {
+                    axis: WorkspaceAxis::Horizontal,
+                    ratio_percent: 72,
+                    first: Box::new(editor),
+                    second: Box::new(WorkspaceNode::Leaf {
+                        id: PaneId::from_static(DatabaseWorkbenchPane::Inspector.id()),
+                        constraint: PaneConstraint::Min(16),
+                        collapse_priority: 0,
+                    }),
+                }
+            } else {
+                editor
+            };
             WorkspaceNode::Split {
                 axis: WorkspaceAxis::Vertical,
                 ratio_percent: 94,
                 first: Box::new(WorkspaceNode::Split {
                     axis: WorkspaceAxis::Horizontal,
                     ratio_percent: 20,
-                    first: Box::new(WorkspaceNode::Split {
-                        axis: WorkspaceAxis::Vertical,
-                        ratio_percent: 38,
-                        first: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(DatabaseWorkbenchPane::Connections.id()),
-                            constraint: PaneConstraint::Min(8),
-                            collapse_priority: 0,
-                        }),
-                        second: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(DatabaseWorkbenchPane::Schema.id()),
-                            constraint: PaneConstraint::Weight(1),
-                            collapse_priority: 1,
-                        }),
-                    }),
-                    second: Box::new(WorkspaceNode::Split {
-                        axis: WorkspaceAxis::Horizontal,
-                        ratio_percent: 72,
-                        first: Box::new(WorkspaceNode::Split {
-                            axis: WorkspaceAxis::Vertical,
-                            ratio_percent: 40,
-                            first: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(DatabaseWorkbenchPane::Query.id()),
-                                constraint: PaneConstraint::Weight(1),
-                                collapse_priority: 2,
-                            }),
-                            second: Box::new(WorkspaceNode::Leaf {
-                                id: PaneId::from_static(DatabaseWorkbenchPane::Results.id()),
-                                constraint: PaneConstraint::Weight(1),
-                                collapse_priority: 2,
-                            }),
-                        }),
-                        second: Box::new(WorkspaceNode::Leaf {
-                            id: PaneId::from_static(DatabaseWorkbenchPane::Inspector.id()),
-                            constraint: PaneConstraint::Min(16),
-                            collapse_priority: 0,
-                        }),
-                    }),
+                    first: Box::new(nav),
+                    second: Box::new(main),
                 }),
                 second: Box::new(WorkspaceNode::Leaf {
                     id: PaneId::from_static(DatabaseWorkbenchPane::Status.id()),
@@ -1368,7 +1460,7 @@ pub fn render_database_workbench(
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    let panes = database_workbench_layout_density(area, &state.workspace, density);
+    let panes = database_workbench_layout_density(area, &state.workspace, density, state.panes());
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
@@ -1762,9 +1854,30 @@ mod tests {
     }
 
     #[test]
+    fn tab_skips_closed_panes() {
+        let mut st = open();
+        st.density = Some(DatabaseWorkbenchDensity::Normal);
+        let order = st.focus_order_for(DatabaseWorkbenchDensity::Normal);
+        assert!(
+            !order.contains(&"inspector") && !order.contains(&"connections"),
+            "a closed pane has no cells to focus: {order:?}"
+        );
+        let _ = st.toggle_inspector();
+        assert!(
+            st.focus_order_for(DatabaseWorkbenchDensity::Normal)
+                .contains(&"inspector"),
+            "^i puts the inspector back in the cycle"
+        );
+    }
+
+    #[test]
     fn focus_cycle_visits_zones() {
         let mut st = open();
         st.density = Some(DatabaseWorkbenchDensity::Normal);
+        // Tab reaches what the frame shows, so the consult-panes are asked for
+        // first; the diet frame's cycle is covered by `tab_skips_closed_panes`.
+        let _ = st.toggle_connections();
+        let _ = st.toggle_inspector();
         let order = st.focus_order_for(DatabaseWorkbenchDensity::Normal);
         assert!(order.contains(&"connections"));
         assert!(order.contains(&"query"));
@@ -1787,20 +1900,28 @@ mod tests {
     #[test]
     fn narrow_and_tiny_drop_panes() {
         let ws = WorkspaceState::new();
+        // Normal is the diet frame; the consult-panes are asked for.
+        let opened = DatabaseWorkbenchPanes {
+            connections: true,
+            inspector: true,
+        };
         let normal = database_workbench_layout_density(
             Rect::new(0, 0, 120, 40),
             &ws,
             DatabaseWorkbenchDensity::Normal,
+            opened,
         );
         let narrow = database_workbench_layout_density(
             Rect::new(0, 0, 70, 24),
             &ws,
             DatabaseWorkbenchDensity::Narrow,
+            opened,
         );
         let tiny = database_workbench_layout_density(
             Rect::new(0, 0, 40, 16),
             &ws,
             DatabaseWorkbenchDensity::Tiny,
+            opened,
         );
 
         let ids = |p: &[PaneGeom]| {
@@ -2136,6 +2257,7 @@ mod tests {
     fn inspector_keys_with_fields() {
         let mut st = open();
         st.density = Some(DatabaseWorkbenchDensity::Normal);
+        let _ = st.toggle_inspector();
         st.set_focus(DatabaseWorkbenchPane::Inspector);
         st.inspector.set_accepts_input(true);
         let fields = example_inspect_fields();

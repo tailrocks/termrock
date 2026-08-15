@@ -227,6 +227,11 @@ pub enum SetupWizardOutcome {
         /// Step index after restore.
         step: usize,
     },
+    /// Review step switched between changed-only and every value.
+    SummaryDetailToggled {
+        /// Showing every value after the toggle.
+        all: bool,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -261,6 +266,8 @@ pub struct SetupWizardState {
     pub colorless: bool,
     /// Title override.
     pub title: String,
+    /// Whether the review step shows every value or only what changed.
+    show_all_summary: bool,
 }
 
 impl Default for SetupWizardState {
@@ -295,6 +302,7 @@ impl SetupWizardState {
             ascii: false,
             colorless: false,
             title: "Setup".into(),
+            show_all_summary: false,
         }
     }
 
@@ -425,6 +433,17 @@ impl SetupWizardState {
         // Esc → safe cancel (never one-shot leave)
         if matches!(key.code, KeyCode::Esc) {
             return self.request_cancel();
+        }
+
+        // Review step: `a` opens the values the diet held back.
+        if matches!(self.current_kind(), SetupStepKind::Summary)
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Char('a' | 'A'))
+        {
+            self.show_all_summary = !self.show_all_summary;
+            return SetupWizardOutcome::SummaryDetailToggled {
+                all: self.show_all_summary,
+            };
         }
 
         // Ctrl+S progress save (wizard)
@@ -567,6 +586,44 @@ pub fn layout_setup_wizard(area: Rect, mode: SetupWizardMode) -> SetupWizardSlot
     }
 }
 
+/// One line of the review step.
+///
+/// `changed` is the host's answer to "did the operator touch this?" — the
+/// pattern cannot know, and a review that repeats the twenty defaults it was
+/// handed buries the two values that were actually chosen. Everything the
+/// operator did not change is one keypress away, never deleted (plans/017 §B2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SetupSummaryLine<'a> {
+    /// What the value is called.
+    pub label: &'a str,
+    /// The value, formatted by the host.
+    pub value: &'a str,
+    /// Whether the operator changed it during this run.
+    pub changed: bool,
+}
+
+impl<'a> SetupSummaryLine<'a> {
+    /// A value the operator chose.
+    #[must_use]
+    pub const fn edited(label: &'a str, value: &'a str) -> Self {
+        Self {
+            label,
+            value,
+            changed: true,
+        }
+    }
+
+    /// A value left at what the host proposed.
+    #[must_use]
+    pub const fn untouched(label: &'a str, value: &'a str) -> Self {
+        Self {
+            label,
+            value,
+            changed: false,
+        }
+    }
+}
+
 // ── Surfaces & paint ────────────────────────────────────────────────────────
 
 /// Borrowed surfaces for one setup paint.
@@ -579,8 +636,8 @@ pub struct SetupWizardSurfaces<'a> {
     pub fieldsets: &'a [Fieldset<'a, &'static str>],
     /// Capability doctor lines (Capability step).
     pub capabilities: &'a [CapabilityLine<'a>],
-    /// Summary lines (Summary / review).
-    pub summary_lines: &'a [&'a str],
+    /// Review lines, each stating whether the operator changed it.
+    pub summary_lines: &'a [SetupSummaryLine<'a>],
     /// Welcome title / body.
     pub welcome_title: &'a str,
     /// Welcome explanation (one short line — not marketing paragraphs).
@@ -692,7 +749,14 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
             );
         }
         SetupStepKind::Summary => {
-            paint_summary(buffer, body, system, summary_lines, state.ascii);
+            paint_summary(
+                buffer,
+                body,
+                system,
+                summary_lines,
+                state.show_all_summary,
+                state.ascii,
+            );
         }
         SetupStepKind::Recovery => {
             let msg = state
@@ -829,7 +893,8 @@ fn paint_summary(
     buffer: &mut Buffer,
     area: Rect,
     system: &DesignSystem,
-    lines: &[&str],
+    lines: &[SetupSummaryLine<'_>],
+    show_all: bool,
     _ascii: bool,
 ) {
     if area.is_empty() {
@@ -859,18 +924,46 @@ fn paint_summary(
         );
         return;
     }
-    // Summary rows arrive as `label: value` or as plain sentences; both read
-    // as a list, not as a paragraph of bullets.
-    let entries: Vec<KvEntry<'_, usize>> = lines
+    // The default frame is what the operator decided; `a` opens the rest.
+    let shown: Vec<&SetupSummaryLine<'_>> = lines
         .iter()
-        .enumerate()
-        .map(|(i, line)| match line.split_once(": ") {
-            Some((key, value)) => KvEntry::pair(i, key, value),
-            None => KvEntry::pair(i, line, ""),
-        })
+        .filter(|line| show_all || line.changed)
         .collect();
-    let mut state = KeyValueListState::new();
-    KeyValueList::new(&entries, system).paint(body, buffer, &mut state);
+    let hidden = lines.len().saturating_sub(shown.len());
+    let note_rows = u16::from(hidden > 0);
+    let list_area = Rect::new(
+        body.x,
+        body.y,
+        body.width,
+        body.height.saturating_sub(note_rows),
+    );
+    if shown.is_empty() {
+        system.paint_row(
+            buffer,
+            Rect::new(body.x, body.y, body.width, 1),
+            "Nothing changed from the defaults",
+            system.style(Role::TextMuted),
+        );
+    } else if list_area.height > 0 {
+        let entries: Vec<KvEntry<'_, usize>> = shown
+            .iter()
+            .enumerate()
+            .map(|(i, line)| KvEntry::pair(i, line.label, line.value))
+            .collect();
+        let mut state = KeyValueListState::new();
+        KeyValueList::new(&entries, system).paint(list_area, buffer, &mut state);
+    }
+    if let Some(note) = crate::text::more_note(hidden) {
+        let y = body.y.saturating_add(list_area.height.min(body.height));
+        if y < body.bottom() {
+            system.paint_row(
+                buffer,
+                Rect::new(body.x, y, body.width, 1),
+                &format!("{note} · a all"),
+                system.style(Role::TextMuted),
+            );
+        }
+    }
 }
 
 fn paint_body_hint(
@@ -965,12 +1058,12 @@ pub fn example_setup_choices_fields() -> [Field<'static, &'static str>; 2] {
 
 /// Demo summary lines.
 #[must_use]
-pub fn example_setup_summary_lines() -> Vec<&'static str> {
+pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     vec![
-        "Account: Ada <ada@example>",
-        "Endpoint: https://api.example",
-        "Theme: phosphor",
-        "Trust: default-deny tools",
+        SetupSummaryLine::edited("Account", "Ada <ada@example>"),
+        SetupSummaryLine::edited("Endpoint", "https://api.example"),
+        SetupSummaryLine::untouched("Theme", "phosphor"),
+        SetupSummaryLine::untouched("Trust", "default-deny tools"),
     ]
 }
 
