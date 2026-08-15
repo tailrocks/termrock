@@ -44,6 +44,10 @@ fn push_tier(row: &mut TieredRow, text: &str, tone: Option<Style>) {
     }
 }
 
+/// Selection gutter width: one marker cell plus its breathing space.
+///
+/// Stated once so the gutter cannot drift between the row, the header and the
+/// hit regions (plans/022 Step 6).
 const GUTTER: u16 = 2;
 
 /// Severity for structured events (maps to no-color letters).

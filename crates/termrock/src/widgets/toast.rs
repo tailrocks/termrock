@@ -927,6 +927,38 @@ impl ToastQueue {
         ToastOutcome::Ignored
     }
 
+    /// Dismisses the newest live toast — the `esc` path.
+    ///
+    /// A toast that can only be waited out is a modal with no exit. `esc`
+    /// takes the top one; repeated presses walk the stack (plans/021 Step 6).
+    pub fn dismiss_top(&mut self) -> ToastOutcome {
+        // Newest first: the queue pushes to the front.
+        let Some(id) = self.live.front().map(|t| t.id.clone()) else {
+            return ToastOutcome::Ignored;
+        };
+        self.dismiss(&id)
+    }
+
+    /// Keyboard path: `esc` dismisses the newest toast.
+    pub fn handle_key(&mut self, key: crate::input::KeyEvent) -> ToastOutcome {
+        if key.kind != crate::input::KeyEventKind::Press {
+            return ToastOutcome::Ignored;
+        }
+        match key.code {
+            crate::input::KeyCode::Esc => self.dismiss_top(),
+            _ => ToastOutcome::Ignored,
+        }
+    }
+
+    /// Pauses or resumes every live toast's TTL.
+    ///
+    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`): a
+    /// notification that expires while the window is in the background was
+    /// never actually shown to anyone.
+    pub fn set_focus_paused(&mut self, paused: bool) -> ToastOutcome {
+        self.set_paused(paused)
+    }
+
     /// Activate undo / action for top matching id (host maps hotkey).
     pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
         if self.live.iter().any(|t| t.id == id) {
@@ -1917,6 +1949,33 @@ mod tests {
                 .unwrap();
         }
         assert!(t0.elapsed().as_millis() < 5_000);
+    }
+
+    #[test]
+    fn esc_dismisses_the_newest_toast() {
+        use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+
+        let start = Instant::now();
+        let mut queue = ToastQueue::new();
+        let _ = queue.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("a", "Saved"),
+        );
+        let _ = queue.push(
+            tick(start, Duration::from_millis(10)),
+            ToastSpec::message("b", "Copied"),
+        );
+        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(
+            matches!(out, ToastOutcome::Dismissed { ref id } if id == "b"),
+            "esc takes the newest toast: {out:?}"
+        );
+        let out = queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(matches!(out, ToastOutcome::Dismissed { ref id } if id == "a"));
+        assert!(matches!(
+            queue.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ToastOutcome::Ignored
+        ));
     }
 
     #[test]

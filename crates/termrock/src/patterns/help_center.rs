@@ -50,11 +50,11 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        CommandEntry, HelpEntry, KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome,
-        KeyboardHelpState, List, ListRow, ListState, MarkdownBlock, MarkdownOutcome, MarkdownView,
-        MarkdownViewState, Panel, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot, example_help_entries, filter_help_entries,
-        project_markdown,
+        CommandEntry, EmptyKind, EmptyState, HelpEntry, KeyboardHelp, KeyboardHelpMode,
+        KeyboardHelpOutcome, KeyboardHelpState, List, ListRow, ListState, MarkdownBlock,
+        MarkdownOutcome, MarkdownView, MarkdownViewState, Panel, SearchInput, SearchInputOutcome,
+        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        example_help_entries, filter_help_entries, project_markdown,
     },
 };
 
@@ -1454,12 +1454,9 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         if !inner.is_empty() {
             let rows = help_topic_rows(&filtered_topics);
             if rows.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(no topics)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No topics", system)
+                    .kind(EmptyKind::NoResults)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.nav);
@@ -1507,12 +1504,9 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 .collect();
             let rows = command_list_rows(&filtered);
             if rows.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(no commands)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No commands", system)
+                    .kind(EmptyKind::NoResults)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.commands);
@@ -1540,12 +1534,9 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 let blocks = project_markdown(&t.markdown);
                 MarkdownView::new(&blocks, system).paint(inner, buffer, &mut state.body);
             } else {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(select a topic)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("Pick a topic", system)
+                    .kind(EmptyKind::NoData)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             }
         }
     }
@@ -1560,12 +1551,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         if !inner.is_empty() {
             let rows = diagnostics_rows(doctor, component_ids);
             if rows.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(no findings — d open doctor)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No findings", system)
+                    .kind(EmptyKind::NoData)
+                    .explanation("d opens the doctor")
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.diagnostics);

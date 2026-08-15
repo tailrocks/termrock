@@ -878,7 +878,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 if self.system.glyphs.is_ascii() {
                     " hide"
                 } else {
-                    " 👁"
+                    " ◉"
                 }
             } else if self.system.glyphs.is_ascii() {
                 " show"

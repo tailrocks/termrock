@@ -156,6 +156,10 @@ pub enum Glyph {
     RuleV,
     /// Strong horizontal rule.
     RuleHStrong,
+    /// Rule meeting a border on the left (`├`).
+    RuleTeeLeft,
+    /// Rule meeting a border on the right (`┤`).
+    RuleTeeRight,
     /// Selection gutter bar.
     SelectionGutter,
     /// List bullet.
@@ -261,6 +265,8 @@ impl Glyph {
             Self::RuleH => "rule-h",
             Self::RuleV => "rule-v",
             Self::RuleHStrong => "rule-h-strong",
+            Self::RuleTeeLeft => "rule-tee-left",
+            Self::RuleTeeRight => "rule-tee-right",
             Self::SelectionGutter => "selection-gutter",
             Self::Bullet => "bullet",
             Self::MetaSeparator => "meta-separator",
@@ -335,6 +341,8 @@ impl Glyph {
             Self::RuleH => "horizontal rule",
             Self::RuleV => "vertical rule",
             Self::RuleHStrong => "strong horizontal rule",
+            Self::RuleTeeLeft => "rule meeting the left border",
+            Self::RuleTeeRight => "rule meeting the right border",
             Self::SelectionGutter => "selected",
             Self::Bullet => "list item",
             Self::MetaSeparator => "separator",
@@ -407,6 +415,8 @@ impl Glyph {
             Self::RuleH
             | Self::RuleV
             | Self::RuleHStrong
+            | Self::RuleTeeLeft
+            | Self::RuleTeeRight
             | Self::SelectionGutter
             | Self::Bullet
             | Self::MetaSeparator
@@ -477,6 +487,8 @@ impl Glyph {
         Self::Remove,
         Self::RuleH,
         Self::RuleV,
+        Self::RuleTeeLeft,
+        Self::RuleTeeRight,
         Self::RuleHStrong,
         Self::SelectionGutter,
         Self::Bullet,
@@ -589,6 +601,8 @@ impl Glyph {
             Self::Remove => ("−", "-", "−"),
             Self::RuleH => ("─", "-", "─"),
             Self::RuleV => ("│", "|", "│"),
+            Self::RuleTeeLeft => ("├", "+", "├"),
+            Self::RuleTeeRight => ("┤", "+", "┤"),
             Self::RuleHStrong => ("═", "=", "═"),
             Self::SelectionGutter => ("▌", "*", "▌"),
             Self::Bullet => ("•", "-", "•"),

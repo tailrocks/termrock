@@ -44,7 +44,7 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
@@ -1399,11 +1399,15 @@ fn paint_branch_list(
         } else {
             " "
         };
+        // Ahead / behind is stated with catalog arrows, so an ASCII terminal
+        // gets ASCII instead of a box (plans/013 Step 2).
+        let up = system.glyphs.resolve(Glyph::ArrowUp).text;
+        let down = system.glyphs.resolve(Glyph::ArrowDown).text;
         let track = match (b.ahead, b.behind) {
             (0, 0) => String::new(),
-            (a, 0) => format!(" ↑{a}"),
-            (0, be) => format!(" ↓{be}"),
-            (a, be) => format!(" ↑{a}↓{be}"),
+            (a, 0) => format!(" {up}{a}"),
+            (0, be) => format!(" {down}{be}"),
+            (a, be) => format!(" {up}{a}{down}{be}"),
         };
         let line = format!("{sel}{cur}{}{track}", b.name);
         let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
@@ -1539,7 +1543,7 @@ pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
         DiffLine::added("a2", "    println!(\"ready\");")
             .hunk_id("h1")
             .file_id("src/main.rs"),
-        DiffLine::added("a3", "    // sample 🧪")
+        DiffLine::added("a3", "    // sample")
             .hunk_id("h1")
             .file_id("src/main.rs"),
     ]

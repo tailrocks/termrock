@@ -401,6 +401,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     }
 
     // Gutter rail (quote / CLI warning rail) — 1 cell
+    // The rail is one cell plus the density's own gap (plans/022 Step 6).
     let gutter_w = 1u16;
     slots.gutter = Rect::new(inner.x, inner.y, gutter_w.min(inner.width), inner.height);
     let rail = if args.ascii { "|" } else { "│" };

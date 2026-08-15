@@ -555,6 +555,18 @@ impl Backdrop {
         }
     }
 
+    /// How far the backdrop has arrived (`0.0` invisible, `1.0` full).
+    ///
+    /// A modal whose backdrop appears at full strength in one frame reads as
+    /// the lights being switched off. Blending it toward the canvas over the
+    /// first frames is the whole of the overlay entrance (plans/014 Step 3b).
+    #[must_use]
+    pub fn alpha(mut self, alpha: f32, tokens: &DesignSystem) -> Self {
+        let canvas = tokens.style(Role::Canvas).bg.unwrap_or(Color::Reset);
+        self.style = crate::style::fade_style(self.style, alpha.clamp(0.0, 1.0), canvas);
+        self
+    }
+
     /// Fill symbol.
     #[must_use]
     pub const fn symbol(mut self, symbol: char) -> Self {

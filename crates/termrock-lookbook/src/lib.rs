@@ -8,7 +8,9 @@
 //! not depend on crossterm or the DOM.
 
 pub mod demo;
+pub mod design;
 pub mod frame;
 pub mod interactors;
 pub mod knobs;
+pub mod palette256;
 pub mod stories;

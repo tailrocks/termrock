@@ -183,11 +183,32 @@ pub struct DemoUpdate {
     pub next_deadline_ms: Option<u64>,
 }
 
+/// Which shipped preset a palette is, for frame metadata.
+///
+/// The demo used to report `"phosphor"` whatever the host had picked, so every
+/// docs preview claimed the same theme (plans/011 Step 4).
+fn theme_id_for(palette: &RolePalette) -> &'static str {
+    for (id, preset) in [
+        ("phosphor", RolePalette::tailrocks_phosphor()),
+        ("slate", RolePalette::slate()),
+        ("paper", RolePalette::paper()),
+        ("ansi", RolePalette::ansi()),
+        ("high-contrast", RolePalette::high_contrast()),
+    ] {
+        if palette == &preset {
+            return id;
+        }
+    }
+    "custom"
+}
+
 /// One long-lived Rust demo instance.
 pub struct DemoSession {
     story: Story,
     interactor: Box<dyn StoryInteraction>,
     theme: RolePalette,
+    /// Stable id of the palette the host picked, for honest frame metadata.
+    theme_id: String,
     cols: u16,
     rows: u16,
     focused: bool,
@@ -202,10 +223,12 @@ impl DemoSession {
         let theme = RolePalette::default();
         let mut interactor = story.make_interactor();
         interactor.set_theme(theme.clone());
+        let theme_id = theme_id_for(&theme).to_string();
         Ok(Self {
             story,
             interactor,
             theme,
+            theme_id,
             cols: cols.unwrap_or(story.width).max(8),
             rows: rows.unwrap_or(story.height).max(4),
             focused: false,
@@ -237,6 +260,7 @@ impl DemoSession {
     /// Replace the semantic palette used by both preview hosts.
     pub fn set_theme(&mut self, theme: RolePalette) {
         self.theme = theme.clone();
+        self.theme_id = theme_id_for(&theme).to_string();
         self.interactor.set_theme(theme);
     }
 
@@ -339,6 +363,12 @@ impl DemoSession {
                 );
                 let inner = self.preview_area();
                 frame.render_widget(Clear, inner);
+                // The story's ground is the palette's canvas (plans/011).
+                frame.buffer_mut().set_style(
+                    inner,
+                    crate::design::lookbook_system(self.theme.clone())
+                        .style(termrock::style::Role::Canvas),
+                );
                 self.render_into(frame, inner);
             })
             .expect("in-memory draw");
@@ -353,7 +383,7 @@ impl DemoSession {
             story_rows: self.rows,
             cells,
             interactive: self.story.interactive,
-            theme: "phosphor".into(),
+            theme: self.theme_id.clone(),
         }
     }
 

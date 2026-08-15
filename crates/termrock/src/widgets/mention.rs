@@ -158,8 +158,8 @@ impl MentionType {
             }
         } else {
             match self {
-                Self::File => "📄",
-                Self::Directory => "📁",
+                Self::File => "▫",
+                Self::Directory => "▪",
                 Self::Symbol => "◇",
                 Self::Agent => "◆",
                 Self::Tool => "⚙",

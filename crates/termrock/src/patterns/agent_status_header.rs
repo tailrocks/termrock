@@ -129,7 +129,8 @@ impl AgentWorkStatus {
             Self::Working => "●",
             Self::Streaming => "◎",
             Self::WaitingUser | Self::ActionRequired => "⚠",
-            Self::WaitingPermission => "🔒",
+            // One column, not two (plans/013 Step 2).
+            Self::WaitingPermission => "⚿",
             Self::Error => "✗",
         }
     }

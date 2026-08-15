@@ -30,7 +30,7 @@ use termrock::{
         example_terminal_run_lines, example_terminal_runs, example_working_state,
         render_error_recovery, result_column_model,
     },
-    style::{DesignSystem, RolePalette},
+    style::RolePalette,
     widgets::DataColumnWidth,
 };
 
@@ -276,7 +276,7 @@ impl CompositePatternDemo {
 
 impl StoryInteraction for CompositePatternDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let tick = self.elapsed_ms / 400;
         match &mut self.kind {
             CompositeKind::Process(state) => ProcessTable::new(&process_rows(), &system)

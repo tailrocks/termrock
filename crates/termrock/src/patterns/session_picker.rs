@@ -41,7 +41,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::{ConfirmFocus, ConfirmPrompt, Panel},
+    widgets::{ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel},
 };
 
 /// Overlay id for session picker (dialog / fullscreen).
@@ -1494,12 +1494,9 @@ impl<'a> SessionPicker<'a> {
         let mut y = area.y;
         let max_y = area.bottom();
         let Some(s) = state.current() else {
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-                "(no selection)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No session selected", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         };
         // Default frame: five quiet lines. Everything else is one keypress

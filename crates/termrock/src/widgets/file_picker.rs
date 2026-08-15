@@ -32,7 +32,7 @@ use crate::{
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1489,7 +1489,9 @@ impl<'a> FilePicker<'a> {
                 }
             } else {
                 match entry.kind {
-                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => "📁",
+                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => {
+                        self.system.glyphs.resolve(Glyph::Folder).text
+                    }
                     _ => " ",
                 }
             };

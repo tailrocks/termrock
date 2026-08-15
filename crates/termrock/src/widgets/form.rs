@@ -748,7 +748,13 @@ impl<'a, Id> Form<'a, Id> {
     }
 }
 
-const COLUMN_GAP: u16 = 2;
+/// Gap between a form's columns.
+///
+/// Density owns rhythm: a dashboard form should not carry a comfortable
+/// form's gutters (plans/022 Step 6).
+fn column_gap(system: &DesignSystem) -> u16 {
+    system.spacing.gap.max(1)
+}
 
 /// Validation errors listed before the summary defers to `+N more`.
 const ERROR_SUMMARY_ROWS: usize = 3;
@@ -861,8 +867,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
             }
         }
 
+        let gap = column_gap(self.system);
         let column_width = if columns == 2 {
-            content_area.width.saturating_sub(COLUMN_GAP) / 2
+            content_area.width.saturating_sub(gap) / 2
         } else {
             content_area.width
         };
@@ -912,7 +919,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                 let x = content_area.x.saturating_add(
                     u16::try_from(column)
                         .unwrap_or(u16::MAX)
-                        .saturating_mul(column_width.saturating_add(COLUMN_GAP)),
+                        .saturating_mul(column_width.saturating_add(gap)),
                 );
                 let field_area = Rect::new(x, content_area.y, column_width, 3);
                 let is_focused =

@@ -331,6 +331,10 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0315 | `v0.14.0` | [Examples stop hand-rolling chrome](migrations/0315-v0.14.0-examples-stop-hand-rolling.md) |
 | 0316 | `v0.14.0` | [One token family, one focus vocabulary](migrations/0316-v0.14.0-one-token-family.md) |
 | 0317 | `v0.14.0` | [Every state paints, and Space works](migrations/0317-v0.14.0-every-state-paints.md) |
+| 0318 | `v0.14.0` | [Tables say where they are cut](migrations/0318-v0.14.0-tables-say-where-they-are-cut.md) |
+| 0319 | `v0.14.0` | [Empty states, one-column glyphs, honest card chrome](migrations/0319-v0.14.0-empty-states-and-one-column-glyphs.md) |
+| 0320 | `v0.14.0` | [Transitions reach the widgets](migrations/0320-v0.14.0-transitions-reach-the-widgets.md) |
+| 0321 | `v0.14.0` | [The catalog tells the truth](migrations/0321-v0.14.0-the-catalog-tells-the-truth.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

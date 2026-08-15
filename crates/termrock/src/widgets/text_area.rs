@@ -1601,7 +1601,11 @@ impl StatefulWidget for &TextArea<'_> {
         }
 
         let first = usize::from(state.scroll.offset_y());
-        let text_role = if matches!(self.variant, TextAreaVariant::Review) {
+        // Read-only is not disabled: the words stay legible, the caret goes
+        // away, and the ground says the field is not accepting typing. A
+        // read-only area used to be pixel-identical to an editable one
+        // (plans/021 Step 4).
+        let text_role = if matches!(self.variant, TextAreaVariant::Review) || state.is_read_only() {
             Role::TextMuted
         } else {
             Role::Text

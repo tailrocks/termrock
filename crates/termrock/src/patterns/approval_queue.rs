@@ -53,6 +53,7 @@ use crate::{
     widgets::SemanticStatus,
     widgets::ToastKind,
     widgets::ToastPriority,
+    widgets::{EmptyKind, EmptyState},
 };
 
 /// Overlay / drawer id.
@@ -119,7 +120,9 @@ impl ApprovalKind {
             };
         }
         match self {
-            Self::Permission => "🔒",
+            // One column, not two: an emoji here jittered every column to
+            // its right (plans/013 Step 2).
+            Self::Permission => "⚿",
             Self::Question => "?",
             Self::Plan => "☰",
             Self::Diff => "±",
@@ -1025,12 +1028,9 @@ impl<'a> ApprovalQueue<'a> {
         }
 
         if state.view.is_empty() {
-            self.system.paint_row(
-                buffer,
-                Rect::new(inner.x, y, inner.width, 1),
-                "(no pending decisions)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("Nothing to decide", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             return;
         }
 

@@ -1782,3 +1782,74 @@ fn state_matrix_distinct() {
         }
     }
 }
+
+/// Examples do not leave "(no rows)" where an empty state belongs.
+///
+/// A parenthetical string is a placeholder, not an empty state: it names
+/// nothing, offers nothing, and reads as debug output. Every one of them is an
+/// `EmptyState` now (plans/013 Step 4).
+#[test]
+fn patterns_have_real_empty_states() {
+    let mut offenders = Vec::new();
+    for dir in ["patterns", "widgets"] {
+        for path in rust_files(&crate_src().join(dir)) {
+            let body = fs::read_to_string(&path).expect("read source");
+            for (i, line) in body
+                .lines()
+                .take_while(|l| !l.trim_start().starts_with("#[cfg(test)]"))
+                .enumerate()
+            {
+                let trimmed = line.trim_start();
+                if trimmed.starts_with("//") {
+                    continue;
+                }
+                for literal in string_literals(line) {
+                    if literal.starts_with("(no ") || literal.starts_with("(select ") {
+                        offenders.push(format!("{}:{}: {literal}", path.display(), i + 1));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "placeholder copy where an EmptyState belongs:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// Wide emoji never sit in a one-column slot.
+///
+/// A two-column glyph in a one-column gutter shifts every column to its right
+/// by one cell, on every row that has it (plans/013 Step 2).
+#[test]
+fn no_wide_emoji_in_chrome() {
+    // Emoji-presentation characters — the block that terminals render two
+    // columns wide by default. `⚙` and friends below U+1F000 default to text
+    // presentation and stay one column, so they are not the problem here.
+    fn is_emoji_presentation(c: char) -> bool {
+        matches!(c as u32, 0x1F000..=0x1FAFF)
+    }
+
+    let mut offenders = Vec::new();
+    for source in painted_sources() {
+        if source.path.ends_with("tests.rs") {
+            continue;
+        }
+        for (i, (line_no, line)) in source.lines.iter().enumerate() {
+            if source.payload[i] {
+                continue;
+            }
+            for literal in string_literals(line) {
+                if literal.chars().any(is_emoji_presentation) {
+                    offenders.push(format!("{}:{line_no}: {literal}", source.path.display()));
+                }
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "wide emoji in painted chrome — use a one-column catalog glyph:\n{}",
+        offenders.join("\n")
+    );
+}

@@ -52,11 +52,11 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
-        EventSeverity, EventStream, EventStreamOutcome, EventStreamState, InspectorField, LogLevel,
-        LogLine, LogStream, LogStreamOutcome, LogStreamState, MetricTile, MetricTileHealth,
-        ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel, SearchInput,
-        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
-        StreamEvent, StreamRowKind, filter_log_lines, filter_stream_events,
+        EmptyKind, EmptyState, EventSeverity, EventStream, EventStreamOutcome, EventStreamState,
+        InspectorField, LogLevel, LogLine, LogStream, LogStreamOutcome, LogStreamState, MetricTile,
+        MetricTileHealth, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
+        SearchInput, SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, StreamEvent, StreamRowKind, filter_log_lines, filter_stream_events,
     },
 };
 
@@ -1065,12 +1065,9 @@ pub fn render_observability_dashboard(
         Widget::render(&panel, r, buffer);
         if inspect_fields.is_empty() {
             if !inner.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(select a log, event, or metric)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("Pick a row", system)
+                    .kind(EmptyKind::NoData)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             }
         } else {
             ObjectInspector::new(inspect_fields, system)
@@ -1127,7 +1124,7 @@ pub fn example_observability_logs() -> Vec<LogLine<'static>> {
             .timestamp("12:00:04")
             .source("ingest")
             .batch_count(128),
-        LogLine::new("l7", LogLevel::Debug, "sample log 🧪")
+        LogLine::new("l7", LogLevel::Debug, "sample log")
             .timestamp("12:00:05")
             .source("i18n"),
         LogLine::new("l8", LogLevel::Error, "panic recovered in worker")

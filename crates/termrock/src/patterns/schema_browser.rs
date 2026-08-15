@@ -34,8 +34,8 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
-        BreadcrumbItem, QuickOpenItem, QuickOpenPreview, Tree, TreeNode, TreeNodeStatus,
-        TreeOutcome, TreeState,
+        BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, Tree, TreeNode,
+        TreeNodeStatus, TreeOutcome, TreeState,
     },
 };
 
@@ -1140,12 +1140,9 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 
         let visible = state.visible_entries(self.entries);
         if visible.is_empty() {
-            self.system.paint_row(
-                buffer,
-                Rect::new(body.x, body.y, body.width, 1),
-                "(no objects)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No objects", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(body.x, body.y, body.width, 1), buffer);
             return;
         }
 

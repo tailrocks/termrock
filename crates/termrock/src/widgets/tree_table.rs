@@ -44,7 +44,12 @@ use crate::{
 };
 
 const GUTTER_W: u16 = 2;
-const SEP: &str = "│";
+
+/// Column separator, from the glyph catalog rather than a file-local literal.
+fn system_rule_v(system: &DesignSystem) -> &'static str {
+    system.glyphs.rule_v()
+}
+
 /// Cells of indent per depth (compact default).
 const INDENT_STEP: u16 = 2;
 const INDENT_STEP_COMPACT: u16 = 1;
@@ -1240,7 +1245,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1461,7 +1466,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );

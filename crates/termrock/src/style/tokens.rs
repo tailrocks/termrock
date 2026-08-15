@@ -262,6 +262,18 @@ impl SurfaceFamily {
     }
 }
 
+impl SelectionChrome {
+    /// Stable id, for inspectors and story metadata.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Fill => "fill",
+            Self::Gutter => "gutter",
+            Self::Tint => "tint",
+        }
+    }
+}
+
 /// Corner-glyph family for single-line borders. Focus stays color-only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -1034,13 +1046,39 @@ impl DesignSystem {
     /// content behind it instead of repainting the same ordinary surface.
     #[must_use]
     pub fn panel_recipe(&self, emphasis: PanelChrome, elevation: Elevation) -> PanelRecipe {
+        self.panel_recipe_at(emphasis, elevation, 1.0)
+    }
+
+    /// Panel recipe part-way through a focus change.
+    ///
+    /// `settled` is how far the transition has run: `0.0` is the previous
+    /// border, `1.0` the new one. Focus that snaps on a bright accent border
+    /// reads as a flash; blending the two roles is the whole of the
+    /// cross-fade, and it lives here so all sixteen panel consumers inherit
+    /// it (plans/014 Step 3b).
+    #[must_use]
+    pub fn panel_recipe_at(
+        &self,
+        emphasis: PanelChrome,
+        elevation: Elevation,
+        settled: f32,
+    ) -> PanelRecipe {
         let (border_role, title_role) = match emphasis {
             PanelChrome::Normal => (Role::Border, Role::TextStrong),
             PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
             PanelChrome::Danger => (Role::Danger, Role::TextStrong),
         };
+        let border = if self.motion.allows_transitions() && settled < 1.0 {
+            let from = match emphasis {
+                PanelChrome::Focused => Role::Border,
+                PanelChrome::Normal | PanelChrome::Danger => Role::BorderFocused,
+            };
+            self.blend_role(from, border_role, settled)
+        } else {
+            self.style(border_role)
+        };
         PanelRecipe {
-            border: self.style(border_role),
+            border,
             title: self.style(title_role),
             pad_x: self.spacing.pad_x,
             pad_y: self.spacing.pad_y,
@@ -1050,6 +1088,23 @@ impl DesignSystem {
                 PanelChrome::Normal | PanelChrome::Focused => None,
             },
         }
+    }
+
+    /// Blends one role's foreground toward another's.
+    ///
+    /// The transition vocabulary: a settled surface asks for a role, a
+    /// transitioning one asks for the point between two.
+    #[must_use]
+    pub fn blend_role(&self, from: Role, to: Role, t: f32) -> Style {
+        let target = self.style(to);
+        let (Some(from_fg), Some(to_fg)) = (self.style(from).fg, target.fg) else {
+            return target;
+        };
+        target.fg(super::motion::blend_toward(
+            from_fg,
+            to_fg,
+            t.clamp(0.0, 1.0),
+        ))
     }
 
     /// Button part×state recipe (no hard-coded RGB).
@@ -1165,6 +1220,15 @@ impl DesignSystem {
     /// Text input part×state recipe.
     #[must_use]
     pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
+        self.input_recipe_at(state, invalid, 1.0)
+    }
+
+    /// Input recipe part-way through a focus change.
+    ///
+    /// Same contract as [`Self::panel_recipe_at`]: `0.0` is the border the
+    /// field is leaving, `1.0` the one it is arriving at.
+    #[must_use]
+    pub fn input_recipe_at(&self, state: ControlState, invalid: bool, settled: f32) -> InputRecipe {
         let mut border = self.style(Role::Border);
         // The value is text; the well is the fill. Reading both from
         // `Role::Input` made the value inherit the well's background and
@@ -1178,7 +1242,13 @@ impl DesignSystem {
             value = value.patch(self.style(Role::InputInvalid));
         }
         match state {
-            ControlState::Focused => border = self.style(Role::BorderFocused),
+            ControlState::Focused => {
+                border = if self.motion.allows_transitions() && settled < 1.0 {
+                    self.blend_role(Role::Border, Role::BorderFocused, settled)
+                } else {
+                    self.style(Role::BorderFocused)
+                };
+            }
             ControlState::Disabled => {
                 value = self.style(Role::TextDisabled);
                 border = self.style(Role::Border);
@@ -1578,6 +1648,45 @@ mod tests {
                 .band()
                 .rows,
             0
+        );
+    }
+
+    #[test]
+    fn focus_borders_cross_fade_and_settle() {
+        let system = DesignSystem::default();
+        let settled = system.panel_recipe(PanelChrome::Focused, Elevation::Surface);
+        let mid = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5);
+        let start = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.0);
+        assert_ne!(mid.border.fg, settled.border.fg, "mid-transition differs");
+        assert_eq!(
+            start.border.fg,
+            system.style(Role::Border).fg,
+            "a fade starts from the border it is leaving"
+        );
+        assert_eq!(
+            system
+                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 1.0)
+                .border
+                .fg,
+            settled.border.fg
+        );
+
+        // `Basic` still crosses over — capped, not cancelled (motion law §5).
+        let basic = DesignSystem::default().motion(MotionPolicy::Basic);
+        assert_ne!(
+            basic
+                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
+                .border
+                .fg,
+            basic.style(Role::BorderFocused).fg
+        );
+        // `Off` never blends: it paints the settled frame.
+        let off = DesignSystem::default().motion(MotionPolicy::Off);
+        assert_eq!(
+            off.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
+                .border
+                .fg,
+            off.style(Role::BorderFocused).fg
         );
     }
 

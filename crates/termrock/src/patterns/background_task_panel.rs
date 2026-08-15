@@ -44,9 +44,9 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        List, ListRow, ListState, NotificationItem, Panel, RowRole, SemanticStatus, TerminalLine,
-        TerminalOutput, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TerminalStream,
-        ToastKind, ToastPriority, format_duration_ms,
+        EmptyKind, EmptyState, List, ListRow, ListState, NotificationItem, Panel, RowRole,
+        SemanticStatus, TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
+        TerminalRunStatus, TerminalStream, ToastKind, ToastPriority, format_duration_ms,
     },
 };
 
@@ -1192,17 +1192,9 @@ impl<'a> BackgroundTaskPanel<'a> {
             {
                 self.paint_detail(detail_area, buffer, state, task, ascii);
             } else {
-                let msg = if ascii {
-                    "(select a task)"
-                } else {
-                    "∅ select a task"
-                };
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(detail_area.x, detail_area.y, detail_area.width, 1),
-                    msg,
-                    self.system.style(Role::TextMuted),
-                );
+                EmptyState::new("Pick a task", self.system)
+                    .kind(EmptyKind::NoData)
+                    .paint(detail_area, buffer);
             }
         }
 

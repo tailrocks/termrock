@@ -34,7 +34,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1219,11 +1219,16 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             state.panel_hits.push((depth, i, hit));
 
             if matches!(item.kind, MenuRowKind::Separator) {
-                let line = if self.ascii {
-                    "-".repeat(usize::from(inner.width))
+                // A separator that stops one cell short of the panel border
+                // leaves a visible notch; it meets the border with a tee
+                // instead (plans/022 Step 2).
+                let glyphs = self.system.glyphs;
+                let rule = if self.ascii {
+                    "-"
                 } else {
-                    "─".repeat(usize::from(inner.width))
+                    glyphs.resolve(Glyph::RuleH).text
                 };
+                let line: String = std::iter::repeat_n(rule, usize::from(inner.width)).collect();
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1231,6 +1236,25 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     usize::from(inner.width),
                     self.system.style(Role::Border),
                 );
+                if !self.ascii && inner.x > area.x {
+                    buffer.set_stringn(
+                        inner.x.saturating_sub(1),
+                        y,
+                        glyphs.resolve(Glyph::RuleTeeLeft).text,
+                        1,
+                        self.system.style(Role::Border),
+                    );
+                    let right = inner.x.saturating_add(inner.width);
+                    if right < area.right() {
+                        buffer.set_stringn(
+                            right,
+                            y,
+                            glyphs.resolve(Glyph::RuleTeeRight).text,
+                            1,
+                            self.system.style(Role::Border),
+                        );
+                    }
+                }
                 y = y.saturating_add(1);
                 continue;
             }

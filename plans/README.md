@@ -26,18 +26,18 @@ run its drift check, and update your row when done.
 | 008 | Input & form chrome (sunken wells, one focus cue, honest states) | P1 | L | 004, 005 | DONE (Steps 1-3 by the design lane; Steps 4-7 by agent C — migrations/0312, `inputs_share_field_chrome` green. Form two-line rows deferred to 015, see notes) |
 | 009 | Overlay chrome & affordances (+ flips the neon-fill gate ON) | P2 | L | 007 | DONE (agent C: all seven steps — migrations/0302, 0307, 0308, 0309, 0310, 0311; neon-fill gate ACTIVE and green) |
 | 010 | Pattern composition polish (setup wizard, settings, metrics, auth) | P2 | L | 007, 008, 009 | DONE (agent C: selection slabs, Callout banner, auth pending + error chrome, KeyValueList wizard rows, sidebar focus, `patterns_compose_chrome` gate, migrations/0315) |
-| 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | TODO |
+| 011 | Lookbook/catalog truth: host parity, faithful SVG, golden baselines | P2 | L | 002–010 | DONE (agent C: one preset-true `lookbook_system` across 167 sites, canvas grounds, 3 story opt-outs deleted, faithful SVG (weight/underline/xterm-256), honest inspector, 15 golden baselines wired into `mise run gate`; migrations/0321) |
 | 012 | Row anatomy ladder: part×tone painting for the ten flat data widgets, column kinds | P2 | L | 006, 007 | DONE (agent C: all five steps — `TieredRow` substrate, `ColumnKind` in 3 tables, `paint_with`, migrations/0313, `data_rows_have_ladder` green) |
-| 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | TODO |
-| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | IN PROGRESS (Steps 5, 1, 2, 3 DONE; 3b: tick seam + Presence; 4: Skeleton, Spinner, StatusIndicator, Toast entrance — see notes) |
+| 013 | Remaining surfaces: workbench patterns, cards, five orphan widgets | P2 | L | 016, 010 | DONE (agent C: 21 empty states, one-column glyph sweep + `no_wide_emoji_in_chrome`, terminal_run_card border/colorless fixes, catalog arrows; Panelish/confirms/rainbow/ops-Tab landed earlier in 016/010/021; migrations/0319) |
+| 014 | Motion system: pipeline discipline, MotionChannel, shimmer | P1 | L | 002, 007 | DONE (Steps 1-3, 5 + Step 4 widgets earlier; Step 3b seams landed in migrations/0320 — focus cross-fade in both recipes, tab fill blend, mode chip fade, determinate spring, section reveal, backdrop alpha, drawer doc. Toast exit tween + scroll display_offset split recorded as follow-ups, see notes) |
 | 015 | Design-law v2 residuals: one chip recipe, tabs cue, FocusEmphasis, breathing rows | P1 | L | 005, 006, 008 | DONE (agent C: FocusEmphasis + SurfaceFamily, one token paint body + BracketStyle, one keycap composer, TabsActiveCue (AccentPill default + §5.2 errata), breathing rows, ◎ preview pip, `one_chip_recipe` + `bold_budget_per_row` gates, migrations/0316) |
 | 016 | Patterns become true examples: promotions + zero-raw-paint charter + gates | P1 | L | 004–009 | DONE (agent C: 6 promotions, 174 raw-paint sites swept, charter + `Teaches:` headers, 4 reference paints, 3 gates, migrations/0314) |
 | 017 | Designer pass: information budgets + contrast floor | P1 | L | 002, 007 | DONE (Part A: floor holds on 4 presets, 9 ladder pairs reported as a design call in migrations/0287; Part B: law §4.2 + 3 gates + 6 surface diets in migrations/0290; 4 rows deferred with reasons in Execution notes) |
 | 018 | In-context preview system: components shown living in real applications | P1 | L | 011, 016 | TODO |
 | 019 | Bootstrap termrock-showcase: the real-work application (executes the showcase SoT) | P2 | XL | 002–017 | TODO |
 | 020 | Microcopy voice: one case/key/ellipsis/error-copy system + gates | P2 | M | — (before 010/013 ideal) | DONE (4 sanctioned hint-verb exceptions, see notes) |
-| 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | IN PROGRESS (agent C: Steps 1-3 + 5 gate DONE — hover in 9 collections, Space fix + KeyReleaseReporting, pressed token, P6 reveal, sortable marker, `|| true` deleted, `state_matrix_distinct`, migrations/0317. Remaining: Step 4 state completeness sweep, Step 6 toast TTL) |
-| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | IN PROGRESS (agent C: Steps 1, 4, 5 DONE; Step 2 overlay insets + Select/CompletionMenu gutters DONE; Step 3 tier-1 chrome/paths/clips DONE; Step 6 gates DONE. Remaining: Step 2 table gutters + chevrons + tee glyphs, Step 3 composed_row/list/data_table sites, Step 6 spacing-literal migration — all wait on 005/006, which rewrite the same row chrome) |
+| 021 | Interaction states & feedback: hover everywhere, pressed frames, P6 reveal, state-matrix gate | P1 | XL | 004,005,007,008 | DONE (agent C: hover in 9 collections, Space fix + KeyReleaseReporting, pressed token, P6 reveal, sortable marker, `|| true` deleted, read-only/disabled/focus states painted, toast esc + focus pause, `state_matrix_distinct`, migrations/0317. Copy-flash across the 9 outcome sites deferred to 014 — see notes) |
+| 022 | Craft pass: insets, rhythm, alignment, honest truncation, one scrollbar | P1 | XL | 002,003,015,017 | DONE (agent C: all six steps — Step 2 table gutters + clip chevrons + tee glyphs and Step 6 spacing literals finished after 005/006/012 landed; migrations/0318) |
 
 Micro-detail review lens: [DESIGNER-CHECKLIST.md](DESIGNER-CHECKLIST.md) —
 49 designer checks, each mapped to its owning plan (compiled from the
@@ -102,7 +102,6 @@ Write the claim here **before** writing code. Release it by deleting the row.
 | Claim | Owner | Scope |
 |-------|-------|-------|
 | the remaining suite | agent C — sole remaining lane | 008, 010-016, 018, 019, 021, 022. The design and motion lanes' sessions ended; their claims are released here rather than left to look live. |
-| 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
 
 ## Execution notes
 
@@ -192,46 +191,33 @@ Two deliberate deviations:
 - Step 4 Toast: entrance fade, errors never animate, success dips once and
   returns to full. (migration 0306)
 
-**Remaining (Step 3b and Step 4):**
+**Landed in migrations/0320 (agent C, 2026-08-15):**
 
-- **Toast exit fade + 100 ms stack reflow tween.** Both need the queue to hold
-  an entry past its TTL and to carry a per-id `Animator`, which is queue
-  semantics rather than paint — a bigger change than the entrance was, and
-  worth doing as its own commit.
-- Timeline / LogStream running-rail wave and 1-tick arrival pulse.
-- `Backdrop::alpha` + `BackdropPolicy::Dim` — belongs with 009's overlay
-  recipe, which another lane holds.
-- `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam
-  exists, unused).
-- Collections filter fade (`revision` + `revision_changed_at`); gutter keeps
-  snapping, which is correct per §6.
-- Tabs active-fill blend; diff/review tint settle; focus border cross-fade in
-  `panel_recipe`/`input_recipe`.
-- Determinate progress `displayed` spring.
-- Scroll `target_offset`/`display_offset` split, `WheelAccumulator`, `edge_fade`
-  adoption — needs `scroll/`, held by another lane.
-- Collapsible/Accordion `reveal_rows`; `drawer.rs:19` doc drift.
-- `Backdrop::alpha` + `BackdropPolicy::Dim` target alpha + `OverlayStack`
-  opened-at (needs 009's overlay recipe).
-- `StatusBar` mode cross-fade from a new `mode_changed_at` (the `alpha` seam is
-  already there, unused).
-- Collections filter fade: `revision` + `revision_changed_at` on
-  `CollectionState`; the gutter keeps snapping, which is correct per §6.
-- Tabs active-fill blend + `Changed { previous }`.
-- Diff/review tint settle over 120 ms at the three tint call sites.
-- Focus border cross-fade inside `panel_recipe`/`input_recipe` (needs 004's
-  recipes, now landed — this is the first one to pick up next).
-- Determinate progress `displayed` spring; `is_active()` while it differs.
-- Scroll `target_offset`/`display_offset` split, `WheelAccumulator`, and
-  adopting the unused `edge_fade` (needs `scroll/`, agent C's lane this wave).
-- Collapsible/Accordion `reveal_rows` from `toggled_at`; Tree stays snap.
-- `drawer.rs:19` doc drift ("terminals do not slide-animate" → "no slide
-  geometry; fade required").
-- All of Step 4's per-widget contracts (Skeleton sweep, Spinner phases, Status
-  Indicator channels, LoadingMode, Toast reflow, Timeline/LogStream).
+- Focus border cross-fade in `panel_recipe_at` / `input_recipe_at` — one place,
+  every panel and input consumer.
+- Tabs active-fill blend (`TabsState::{mark_changed_at, blend_fraction}`).
+- StatusBar mode cross-fade (`StatusBarState::set_mode`).
+- Determinate progress spring (`displayed_fraction`); `is_active()` now true
+  while the painted fraction is catching up, which is what made determinate
+  bars unanimatable before.
+- Collapsible/Accordion `reveal_rows` from `mark_toggled_at`.
+- `Backdrop::alpha`; drawer module doc corrected ("no slide geometry; fade").
 
-The primitives those seams need all exist now, so each is a wiring job rather
-than a design one.
+**Still open, with reasons:**
+
+- **Toast exit fade + 100 ms stack reflow.** Needs the queue to hold an entry
+  past its TTL and to carry a per-id `Animator` — queue semantics, not paint.
+  Its own commit; the entrance fade and `esc` dismissal (plans/021) shipped.
+- **Scroll `target_offset`/`display_offset` split + `WheelAccumulator` +
+  `edge_fade`.** Requires the 16 ms scroll clock from Step 1's runner work to
+  be threaded into every scroll surface; splitting the offset without it makes
+  paint lag input on a 60 ms poll.
+- **Collections filter fade** (`revision` + `revision_changed_at`) and
+  **diff/review tint settle** — both want a per-view `painted_at`, which is the
+  same shape as the two above and belongs with them.
+- **Timeline / LogStream running-rail wave.** Ambient, not a transition; it
+  needs the wave to respect the accent budget, which is a design call.
+
 
 ### Step 6 memo — layer 2: depend on tachyonfx, or port it?
 

@@ -19,6 +19,16 @@ pub enum Density {
 }
 
 impl Density {
+    /// Stable id, for inspectors and story metadata.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Comfortable => "comfortable",
+            Self::Dashboard => "dashboard",
+        }
+    }
+
     /// Horizontal padding cells around content regions.
     #[must_use]
     pub const fn padding_x(self) -> u16 {

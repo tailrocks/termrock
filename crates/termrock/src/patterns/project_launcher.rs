@@ -1398,16 +1398,16 @@ pub fn render_project_launcher(
         if !inner.is_empty() {
             let rows = project_list_rows(&filtered);
             if rows.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    if projects.is_empty() {
-                        "(no projects — n new · i import)"
-                    } else {
-                        "(no matches)"
-                    },
-                    system.style(Role::TextMuted),
-                );
+                // An empty pane says what is missing and what to do next
+                // (plans/013 Step 4).
+                let empty = if projects.is_empty() {
+                    EmptyState::new("No projects", system)
+                        .kind(EmptyKind::NoData)
+                        .explanation("n new, i import")
+                } else {
+                    EmptyState::new("No matches", system).kind(EmptyKind::FilteredOut)
+                };
+                empty.paint(inner, buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.projects);

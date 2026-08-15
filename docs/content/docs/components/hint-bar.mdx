@@ -58,19 +58,10 @@ use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
 
 // Exact paint setup used by the shared catalog story.
 fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        DesignSystem::from_palette(
-            system
-                .palette()
-                .clone()
-                .with_role(Role::HintKey, Style::new().bold())
-                .with_role(Role::HintText, Style::new())
-                .with_role(Role::HintDim, Style::new())
-                .with_role(Role::HintSeparator, Style::new()),
-        )
-    } else {
-        system.clone()
-    };
+    // The story paints the palette it is documenting: blanking the four Hint
+    // roles under phosphor meant the hint ladder never appeared in its own
+    // preview (plans/011 Step 2).
+    let system = system.clone();
     let hints = [
         Hint {
             chord: "↑↓",
@@ -166,3 +157,7 @@ a static multi-image gallery.
 - Rust source: [`crates/termrock/src/widgets/hint_bar.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/hint_bar.rs)
 - Native preview: `cargo run -p termrock-lookbook -- terminal`
 - Demo id: `hint-bar/wrapped`
+
+## Seen in applications
+
+<SeenInApplications component="HintBar" />

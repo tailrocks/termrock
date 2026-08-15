@@ -75,6 +75,7 @@ const requiredSections = [
   '## Test recipe',
   '## Stories',
   '## Source and related material',
+  '## Seen in applications',
 ]
 for (const route of routeManifest) {
   const path = join(docs, 'components', `${route.slug}.mdx`)

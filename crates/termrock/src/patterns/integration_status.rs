@@ -41,9 +41,10 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Glyph, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::Panel,
+    widgets::{EmptyKind, EmptyState},
 };
 
 /// Overlay id for full integration panel.
@@ -1103,12 +1104,9 @@ impl<'a> IntegrationStatus<'a> {
         let max_y = inner.bottom().saturating_sub(1);
 
         if state.entries.is_empty() {
-            self.system.paint_row(
-                buffer,
-                Rect::new(inner.x, y, inner.width, 1),
-                "(no integrations)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No integrations", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             return;
         }
 
@@ -1134,7 +1132,13 @@ impl<'a> IntegrationStatus<'a> {
             let kg = e.kind.glyph(self.ascii);
             let hg = e.health.glyph(self.ascii);
             let party = if e.provenance.third_party { "3p" } else { "1p" };
-            let egress = if e.may_egress() { " ↗" } else { "" };
+            // Egress is a fact worth a glyph, and the glyph has to survive an
+            // ASCII terminal (plans/013 Step 2).
+            let egress = if e.may_egress() {
+                format!(" {}", self.system.glyphs.resolve(Glyph::ArrowUp).text)
+            } else {
+                String::new()
+            };
             let text = format!(
                 "{mark}{kg}{hg} {} · {} · {party}{egress}",
                 e.name,
@@ -1303,12 +1307,9 @@ impl<'a> IntegrationStatus<'a> {
                     y = y.saturating_add(1);
                 }
                 if e.capabilities.is_empty() && y < content_bottom {
-                    self.system.paint_row(
-                        buffer,
-                        Rect::new(inner.x, y, inner.width, 1),
-                        "(no capabilities declared)",
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No capabilities declared", self.system)
+                        .kind(EmptyKind::NoData)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
             IntegrationDetailTab::Permissions => {
@@ -1335,12 +1336,9 @@ impl<'a> IntegrationStatus<'a> {
                     y = y.saturating_add(1);
                 }
                 if e.permissions.is_empty() && y < content_bottom {
-                    self.system.paint_row(
-                        buffer,
-                        Rect::new(inner.x, y, inner.width, 1),
-                        "(no permissions declared)",
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No permissions declared", self.system)
+                        .kind(EmptyKind::NoData)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
             IntegrationDetailTab::Logs => {
@@ -1358,12 +1356,10 @@ impl<'a> IntegrationStatus<'a> {
                     y = y.saturating_add(1);
                 }
                 if e.logs.is_empty() && y < content_bottom {
-                    self.system.paint_row(
-                        buffer,
-                        Rect::new(inner.x, y, inner.width, 1),
-                        "(no logs — g requests host stream)",
-                        self.system.style(Role::TextMuted),
-                    );
+                    EmptyState::new("No logs", self.system)
+                        .kind(EmptyKind::NoData)
+                        .explanation("g requests the host stream")
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
         }

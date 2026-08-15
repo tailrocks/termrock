@@ -57,7 +57,7 @@ impl HostFrame {
     /// Sole paint authority for this frame.
     #[must_use]
     pub(crate) fn system(&self) -> DesignSystem {
-        DesignSystem::from_palette(self.theme.clone())
+        termrock_lookbook::design::lookbook_system(self.theme.clone())
     }
 
     /// Begin a frame: clear elements and ensure the root shell layer.

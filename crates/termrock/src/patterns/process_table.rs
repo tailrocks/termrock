@@ -41,6 +41,7 @@ use crate::{
     widgets::LoadState,
     widgets::SortSpec,
     widgets::VirtualWindow,
+    widgets::{EmptyKind, EmptyState},
 };
 
 // ── Identity ────────────────────────────────────────────────────────────────
@@ -1300,12 +1301,9 @@ impl<'a> ProcessTable<'a> {
         let bottom = y.saturating_add(rows_h);
 
         if visible.is_empty() {
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, py, area.width, 1),
-                "(no processes)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No processes", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, py, area.width, 1), buffer);
         } else {
             for p in visible.iter().skip(start).take(end.saturating_sub(start)) {
                 if py >= bottom {

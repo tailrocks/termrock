@@ -192,6 +192,11 @@ impl ProgressUnit {
 
 // ── State ───────────────────────────────────────────────────────────────────
 
+/// Below this the painted fraction has arrived.
+const SETTLE_EPSILON: f64 = 0.001;
+/// Fraction of the remaining distance covered each frame.
+const SPRING_RATE: f64 = 0.28;
+
 /// Host-driven progress model (task / transfer projection).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProgressBarState {
@@ -221,6 +226,12 @@ pub struct ProgressBarState {
     /// Active for indeterminate redraw demand.
     active: bool,
     visible: bool,
+    /// The fraction actually painted, which trails `value`.
+    ///
+    /// A determinate bar that jumps 0 → 60% in one frame reads as a glitch,
+    /// and a host that reports every byte makes the bar strobe. The painted
+    /// fraction is sprung toward the reported one (plans/014 Step 3b).
+    displayed: f64,
 }
 
 impl Default for ProgressBarState {
@@ -235,6 +246,7 @@ impl ProgressBarState {
     pub fn new() -> Self {
         Self {
             value: 0.0,
+            displayed: 0.0,
             total: 0.0,
             unit: ProgressUnit::None,
             unit_label: String::new(),
@@ -297,12 +309,14 @@ impl ProgressBarState {
         total > 0.0 && total.is_finite()
     }
 
-    /// Kind projection for legacy paint path.
-    #[must_use]
-    pub fn kind(&self, tick: FrameTick, motion: MotionPolicy) -> ProgressKind {
+    /// Kind projection for the paint path.
+    ///
+    /// Determinate bars report the *painted* fraction, which springs toward
+    /// the reported one; `Off` and `Basic` motion settle it immediately.
+    pub fn kind(&mut self, tick: FrameTick, motion: MotionPolicy) -> ProgressKind {
         if self.is_determinate() {
             ProgressKind::Determinate {
-                fraction: self.fraction(),
+                fraction: self.displayed_fraction(motion),
             }
         } else {
             ProgressKind::indeterminate_from(tick, motion)
@@ -338,13 +352,41 @@ impl ProgressBarState {
         self.last_painted_generation = self.generation;
     }
 
-    /// Active for indeterminate animation demand.
+    /// Active for animation demand.
+    ///
+    /// Determinate bars count too while the painted fraction is still
+    /// catching up: excluding them is why a determinate bar could only ever
+    /// snap (plans/014 Step 3b).
     #[must_use]
     pub fn is_active(&self) -> bool {
-        self.active
-            && self.visible
-            && self.status.animates()
-            && !Self::is_determinate_raw(self.total)
+        if !self.active || !self.visible || !self.status.animates() {
+            return false;
+        }
+        if Self::is_determinate_raw(self.total) {
+            return (self.fraction() - self.displayed).abs() > SETTLE_EPSILON;
+        }
+        true
+    }
+
+    /// The fraction to paint this frame, advancing the spring toward `value`.
+    ///
+    /// `motion` decides whether the bar springs at all: `Off` and `Basic`
+    /// paint the settled fraction, which is the honest reduced-motion answer.
+    pub fn displayed_fraction(&mut self, motion: MotionPolicy) -> f64 {
+        let target = self.fraction();
+        if !motion.allows_transitions() {
+            self.displayed = target;
+            return target;
+        }
+        let delta = target - self.displayed;
+        if delta.abs() <= SETTLE_EPSILON {
+            self.displayed = target;
+        } else {
+            // Critically damped: approach without overshoot, which is the one
+            // easing a progress bar may use (motion law §5).
+            self.displayed += delta * SPRING_RATE;
+        }
+        self.displayed
     }
 
     /// Animation demand (indeterminate only).
@@ -657,7 +699,7 @@ impl<'a> ProgressBar<'a> {
     /// From state + tick (preferred for task/transfer).
     #[must_use]
     pub fn from_state(
-        state: &ProgressBarState,
+        state: &mut ProgressBarState,
         system: &'a DesignSystem,
         tick: FrameTick,
         motion: MotionPolicy,
@@ -1381,9 +1423,23 @@ mod tests {
 
     #[test]
     fn idle_redraw_when_determinate() {
-        let s = ProgressBarState::task(1, 2);
+        // A determinate bar asks for frames only while its painted fraction
+        // is still catching up to the reported one (plans/014 Step 3b).
+        let mut s = ProgressBarState::task(1, 2);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(100), Duration::ZERO);
+        assert!(s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
+        for _ in 0..64 {
+            let _ = s.displayed_fraction(MotionPolicy::Full);
+        }
         assert!(!s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
+        // Reduced motion settles at once.
+        let mut basic = ProgressBarState::task(1, 2);
+        let _ = basic.displayed_fraction(MotionPolicy::Basic);
+        assert!(
+            !basic
+                .animation_demand(tick, MotionPolicy::Basic)
+                .needs_redraw
+        );
         let mut ind = ProgressBarState::new(); // total 0
         ind.set_active(true);
         assert!(ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);

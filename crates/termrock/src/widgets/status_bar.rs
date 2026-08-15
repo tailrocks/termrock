@@ -361,6 +361,38 @@ pub struct StatusBarState<Id> {
     pub regions: Vec<HitRegion<Id>>,
     /// Optional transient message (not a slot id — painted via center band).
     pub transient: Option<String>,
+    /// The mode label the bar is leaving, and when the change started.
+    ///
+    /// A mode chip that swaps instantly is the one place a status bar can
+    /// startle: `NORMAL` becoming `INSERT` in one frame reads as a flash. The
+    /// bar cross-fades instead (plans/014 Step 3b).
+    previous_mode: Option<String>,
+    mode_changed_at_ms: u64,
+}
+
+impl<Id> StatusBarState<Id> {
+    /// Records a mode change so the next frames can cross-fade it.
+    pub fn set_mode(&mut self, mode: impl Into<String>, elapsed_ms: u64) {
+        let mode = mode.into();
+        if self.previous_mode.as_deref() == Some(mode.as_str()) {
+            return;
+        }
+        self.previous_mode = Some(mode);
+        self.mode_changed_at_ms = elapsed_ms;
+    }
+
+    /// How far the mode cross-fade has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn mode_fade(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if self.previous_mode.is_none() || duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.mode_changed_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
+    }
 }
 
 impl<Id> Default for StatusBarState<Id> {
@@ -369,6 +401,8 @@ impl<Id> Default for StatusBarState<Id> {
             hovered: None,
             regions: Vec::new(),
             transient: None,
+            previous_mode: None,
+            mode_changed_at_ms: 0,
         }
     }
 }
@@ -406,6 +440,9 @@ impl<Id: Clone> StatusBarState<Id> {
             })
     }
 }
+
+/// How long a mode change takes to settle.
+const MODE_FADE_MS: u64 = 120;
 
 /// A one-row collection of prioritized status slots.
 #[derive(Debug, Clone, Copy)]
@@ -842,11 +879,26 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             );
             // Slot words read as one band; the slot's own glyph carries its
             // state (plans/007).
-            let body = if slot.style_explicit {
+            let mut body = if slot.style_explicit {
                 style
             } else {
                 self.system.style(Role::StatusBar)
             };
+            // A mode chip that swaps in one frame reads as a flash; it fades
+            // in from the canvas instead (plans/014 Step 3b).
+            if matches!(slot.kind, StatusKind::Mode) && self.system.motion.allows_transitions() {
+                let settled = state.mode_fade(self.system.elapsed_ms(), MODE_FADE_MS);
+                if settled < 1.0 {
+                    body = crate::style::fade_style(
+                        body,
+                        settled,
+                        self.system
+                            .style(Role::Canvas)
+                            .bg
+                            .unwrap_or(ratatui_core::style::Color::Reset),
+                    );
+                }
+            }
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,

@@ -105,12 +105,13 @@ impl CitationSourceType {
             }
         } else {
             match self {
-                Self::File => "📄",
-                Self::Url => "🔗",
+                // One column each (plans/013).
+                Self::File => "▤",
+                Self::Url => "↗",
                 Self::Docs => "▤",
                 Self::Issue => "◉",
                 Self::Paper => "§",
-                Self::Message => "💬",
+                Self::Message => "❝",
                 Self::Other => "·",
             }
         }

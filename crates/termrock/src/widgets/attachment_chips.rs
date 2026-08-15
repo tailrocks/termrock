@@ -106,9 +106,11 @@ impl AttachmentType {
             }
         } else {
             match self {
-                Self::File => "📎",
-                Self::Image => "🖼",
-                Self::Url => "🔗",
+                // One column each: a two-column emoji in a chip's glyph slot
+                // shifts the label and the remove affordance (plans/013).
+                Self::File => "▤",
+                Self::Image => "▣",
+                Self::Url => "↗",
                 Self::Code => "⟨⟩",
                 Self::Document => "▤",
                 Self::Other => "·",
@@ -534,7 +536,7 @@ impl PastePayload {
     /// Compact chip label.
     #[must_use]
     pub fn display_label(&self, ascii: bool, expanded: bool) -> String {
-        let badge = if ascii { "P" } else { "📋" };
+        let badge = if ascii { "P" } else { "⧉" };
         let mark = self.status.mark(ascii);
         let size = format_bytes(self.bytes as u64);
         if self.binary {

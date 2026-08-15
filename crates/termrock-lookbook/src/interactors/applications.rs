@@ -112,7 +112,7 @@ impl AuthEntryDemo {
 
 impl StoryInteraction for AuthEntryDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let mut surfaces = AuthEntrySurfaces::english(&system, &mut self.state);
         surfaces.aside_lines = example_auth_aside_lines();
         render_auth_entry(frame.buffer_mut(), area, surfaces);
@@ -197,7 +197,7 @@ impl ConnectionManagerDemo {
 
 impl StoryInteraction for ConnectionManagerDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         frame.render_stateful_widget(&ConnectionManager::new(&system), area, &mut self.state);
     }
 
@@ -284,7 +284,7 @@ impl AppShellDemo {
 
 impl StoryInteraction for AppShellDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let mut config = AppShellConfig::workbench();
         if !self.sidebar {
             config.sidebar_width = 0;
@@ -395,7 +395,7 @@ impl SetupWizardDemo {
 
 impl StoryInteraction for SetupWizardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let capabilities = example_capability_lines();
         let summary = example_setup_summary_lines();
         render_setup_wizard(
@@ -487,7 +487,7 @@ impl FileManagerDemo {
 
 impl StoryInteraction for FileManagerDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = example_file_entries();
         let ops = example_file_ops();
         let (preview, _, _) = example_file_preview();
@@ -577,7 +577,7 @@ impl ProjectLauncherDemo {
 
 impl StoryInteraction for ProjectLauncherDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let projects = example_projects();
         let sessions = example_sessions();
         let (preview, _, _) = example_project_preview();
@@ -682,7 +682,7 @@ impl HelpCenterDemo {
 
 impl StoryInteraction for HelpCenterDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let (topics, help, commands) = Self::fixtures(&system);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -702,7 +702,7 @@ impl StoryInteraction for HelpCenterDemo {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let (topics, help, commands) = Self::fixtures(&system);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -796,7 +796,7 @@ impl MetricsDashboardDemo {
 
 impl StoryInteraction for MetricsDashboardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let (tiles, alerts) = Self::fixtures();
         MetricsDashboard::new(&tiles, &alerts, &system)
             .title("ops")
@@ -905,7 +905,7 @@ impl SchemaBrowserDemo {
 
 impl StoryInteraction for SchemaBrowserDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let entries = Self::entries();
         SchemaBrowser::new(&entries, &system)
             .title("catalog")
@@ -1000,7 +1000,7 @@ impl SettingsScreenDemo {
 
 impl StoryInteraction for SettingsScreenDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let nav = example_settings_categories();
         let fields = example_settings_appearance_fields();
         let fieldsets = [Fieldset::new("Appearance", &fields)];
@@ -1106,7 +1106,7 @@ impl ObservabilityDashboardDemo {
 
 impl StoryInteraction for ObservabilityDashboardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let logs = example_observability_logs();
         let events = example_observability_events();
         let tiles = example_observability_tiles();
@@ -1208,7 +1208,7 @@ impl DatabaseWorkbenchDemo {
 
 impl StoryInteraction for DatabaseWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let schema = example_schema_entries();
         let columns = example_result_columns();
         let data = example_result_rows();
@@ -1325,7 +1325,7 @@ impl GitWorkbenchDemo {
 
 impl StoryInteraction for GitWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let files = example_git_files();
         let lines = example_git_diff_lines();
         let hunks = example_git_hunks();
@@ -1355,7 +1355,7 @@ impl StoryInteraction for GitWorkbenchDemo {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let files = example_git_files();
         let lines = example_git_diff_lines();
         let hunks = example_git_hunks();
@@ -1475,7 +1475,7 @@ impl AgentWorkbenchDemo {
 
 impl StoryInteraction for AgentWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = DesignSystem::from_palette(self.theme.clone());
+        let system = crate::design::lookbook_system(self.theme.clone());
         let blocks = Self::blocks();
         let transcript = Transcript::new(&blocks, &system);
         let prompt = PromptComposer::new(&system);

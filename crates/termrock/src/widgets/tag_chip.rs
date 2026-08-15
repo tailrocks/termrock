@@ -644,15 +644,19 @@ fn token_style(
     if disabled {
         return system.style(Role::TextDisabled);
     }
+    // Status and membership are different facts and compose: an errored chip
+    // that is also selected used to lose its selection entirely, because the
+    // status arm matched first and returned (plans/021 Step 4).
     let mut style = match status {
         TokenStatus::Error => system.style(Role::Danger),
         TokenStatus::Loading => system.style(Role::TextMuted),
-        TokenStatus::Default if selected => system
-            .style(Role::TextStrong)
-            .patch(system.style(Role::SelectionTint)),
+        TokenStatus::Default if selected => system.style(Role::TextStrong),
         TokenStatus::Default if focused => system.style(Role::Focus),
         TokenStatus::Default => system.style(Role::TextMuted),
     };
+    if selected {
+        style = style.patch(system.style(Role::SelectionTint));
+    }
     if !selected {
         if let Some(bg) = system.style(Role::Raised).bg {
             style = style.bg(bg);

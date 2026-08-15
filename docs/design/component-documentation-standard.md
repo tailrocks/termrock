@@ -64,7 +64,17 @@ variant changes are not runtime interaction.
 7. Common mistakes.
 8. Deterministic test recipe.
 9. Source and related material.
-10. Migrated deep guidance when the old Handbook held useful material.
+10. **Seen in applications** — where the component is actually composed.
+11. Migrated deep guidance when the old Handbook held useful material.
+
+### Seen in applications
+
+The section is one line: `<SeenInApplications component="Name" />`. It reads
+`buildingBlocks` in `docs/api/pattern-catalog.json`, which is the **single**
+source for the reverse index — never a hand-written list, which would drift the
+day a pattern changed what it composes. A component no pattern composes renders
+"not yet composed in a shipped example", and that is a coverage signal about
+the examples rather than about the component (plans/018 Step 1).
 
 ## Preview law
 

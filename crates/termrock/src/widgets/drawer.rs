@@ -16,8 +16,11 @@
 //! process policy. Opening a drawer must not clear host list/table selection
 //! or scroll offsets — TermRock only owns drawer-local chrome and stack geometry.
 //!
-//! **MotionPolicy.** Terminals do not slide-animate; [`MotionPolicy::Off`] / [`MotionPolicy::Basic`]
-//! selects static chrome (ASCII handles, no spinner) as the no-motion fallback.
+//! **MotionPolicy.** A drawer does not slide *geometrically* — a terminal has
+//! no sub-cell motion, and a cell-by-cell slide reads as a stutter — but it
+//! does fade: the panel arrives by opacity, not by travel. [`MotionPolicy::Off`]
+//! / [`MotionPolicy::Basic`] selects static chrome (ASCII handles, no spinner)
+//! as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
 

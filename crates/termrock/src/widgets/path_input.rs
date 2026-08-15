@@ -23,7 +23,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1066,14 +1066,14 @@ impl<'a> PathInput<'a> {
                     if self.ascii {
                         "d"
                     } else {
-                        "📁"
+                        self.system.glyphs.resolve(Glyph::Folder).text
                     }
                 }
                 PathFsStatus::File => {
                     if self.ascii {
                         "f"
                     } else {
-                        "📄"
+                        self.system.glyphs.resolve(Glyph::File).text
                     }
                 }
                 PathFsStatus::Missing => {

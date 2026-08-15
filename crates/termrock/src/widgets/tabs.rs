@@ -376,6 +376,12 @@ pub struct TabsState<Id> {
     overflow_open: bool,
     enabled: bool,
     root: Rect,
+    /// The tab the strip is moving away from, and when the move started.
+    ///
+    /// An active fill that snaps reads as a jump between two unrelated
+    /// strips; carrying the previous tab lets the fill blend (plans/014).
+    previous: Option<Id>,
+    changed_at_ms: u64,
 }
 
 impl<Id> Default for TabsState<Id> {
@@ -406,6 +412,8 @@ impl<Id> TabsState<Id> {
             overflow_open: false,
             enabled: true,
             root: Rect::default(),
+            previous: None,
+            changed_at_ms: 0,
         }
     }
 
@@ -496,10 +504,34 @@ impl<Id> TabsState<Id> {
     where
         Id: Clone + PartialEq,
     {
+        if self.selected != id {
+            self.previous = self.selected.clone();
+        }
         self.selected = id.clone();
         if let Some(id) = id {
             self.collection.set_active(Some(id));
         }
+    }
+
+    /// Records when the active tab changed, in runner milliseconds.
+    ///
+    /// Hosts that animate call this from their tick; hosts that do not leave
+    /// it alone and the fill snaps, which is the settled frame.
+    pub const fn mark_changed_at(&mut self, elapsed_ms: u64) {
+        self.changed_at_ms = elapsed_ms;
+    }
+
+    /// How far the active-fill blend has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn blend_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if self.previous.is_none() || duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.changed_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
     }
 
     /// Presentation for bounds.
@@ -541,6 +573,7 @@ impl<Id> TabsState<Id> {
         if self.selected.as_ref() == Some(&id) {
             return TabsOutcome::Changed;
         }
+        self.previous = self.selected.clone();
         self.selected = Some(id.clone());
         self.collection.set_active(Some(id.clone()));
         TabsOutcome::SelectionChanged { id }
@@ -821,6 +854,9 @@ impl TabsActiveCue {
         }
     }
 }
+
+/// How long the active fill takes to arrive.
+const TAB_FILL_BLEND_MS: u64 = 100;
 
 /// Keyboard- and pointer-navigable tab strip.
 #[derive(Debug, Clone, Copy)]
@@ -1228,6 +1264,20 @@ impl<'a, Id> Tabs<'a, Id> {
                     if style.bg.is_none()
                         && let Some(bg) = self.system.style(Role::SelectionTint).bg
                     {
+                        // The fill arrives rather than snapping: a strip that
+                        // jumps reads as two unrelated strips (plans/014).
+                        let settled =
+                            state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
+                        let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
+                            let canvas = self
+                                .system
+                                .style(Role::Canvas)
+                                .bg
+                                .unwrap_or(ratatui_core::style::Color::Reset);
+                            crate::style::blend_toward(canvas, bg, settled)
+                        } else {
+                            bg
+                        };
                         style = style.bg(bg);
                     }
                 }
@@ -1252,8 +1302,15 @@ impl<'a, Id> Tabs<'a, Id> {
             }
         }
         if focused_tab && !selected {
-            // Keyboard focus that has not committed yet: reverse the label.
-            style = style.add_modifier(Modifier::REVERSED);
+            // Roving focus that has not committed yet: brighten the tab's
+            // leading edge rather than reversing the whole label, so the cue
+            // does not depend on the strip having a second row (plans/021
+            // Step 4, design law §5.2).
+            style = style
+                .patch(self.system.style(Role::BorderFocused))
+                .add_modifier(Modifier::BOLD);
+        } else if focused_tab && selected {
+            style = style.add_modifier(Modifier::BOLD);
         } else if hovered && let Some(bg) = self.system.style(Role::HoverTint).bg {
             style = style.bg(bg);
         }

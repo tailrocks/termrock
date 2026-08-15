@@ -38,12 +38,12 @@ use crate::{
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, PanelChrome},
     widgets::{
         AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertScope, BreadcrumbItem,
-        Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, FileTree, FileTreeEntry,
-        FileTreeOutcome, FileTreeState, List, ListRow, ListState, Panel, PreviewCard,
-        PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
+        Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, EmptyKind, EmptyState, FileTree,
+        FileTreeEntry, FileTreeOutcome, FileTreeState, List, ListRow, ListState, Panel,
+        PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
         PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
         QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
         StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
@@ -1613,12 +1613,9 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
         if !inner.is_empty() {
             let rows = FileManagerState::queue_rows(ops);
             if rows.is_empty() {
-                system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, inner.y, inner.width, 1),
-                    "(no pending ops)",
-                    system.style(Role::TextMuted),
-                );
+                EmptyState::new("No pending operations", system)
+                    .kind(EmptyKind::NoData)
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.queue);

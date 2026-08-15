@@ -30,7 +30,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, ListRowVisualState, Role},
+    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::data_view::{
         CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
@@ -38,8 +38,17 @@ use crate::{
     },
 };
 
+/// Selection gutter width: one marker cell plus its breathing space.
+///
+/// Stated once so the gutter cannot drift between the row, the header and the
+/// hit regions (plans/022 Step 6).
 const GUTTER_W: u16 = 2;
-const SEP: &str = "│";
+
+/// Column separator, from the glyph catalog rather than a file-local literal.
+fn system_rule_v(system: &DesignSystem) -> &'static str {
+    system.glyphs.rule_v()
+}
+
 const RESIZE_HIT: u16 = 1;
 
 /// Keyboard navigation mode (VisiData-like layers).
@@ -1430,7 +1439,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1438,6 +1447,39 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if skip_scroll {
             x = paint_end.saturating_add(1);
         }
+    }
+
+    paint_clip_chevrons(table, area, y, buffer, state);
+}
+
+/// Marks a horizontally clipped header with the direction of what is cut.
+///
+/// A table scrolled sideways gave no sign that columns existed off-screen —
+/// the row simply stopped. The edge cells state it (plans/022 Step 2).
+fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+    table: &DataTable<'_, RowId, ColId>,
+    area: Rect,
+    y: u16,
+    buffer: &mut Buffer,
+    state: &DataTableState<RowId, ColId>,
+) {
+    let style = table.system.style(Role::TextFaint);
+    let glyphs = table.system.glyphs;
+    if state.h_offset > 0 {
+        let x = area.x.saturating_add(GUTTER_W);
+        if x < area.right() {
+            buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronLeft).text, 1, style);
+        }
+    }
+    let total: u16 = state
+        .paint_widths
+        .iter()
+        .map(|(_, w)| w.saturating_add(1))
+        .sum();
+    let visible = area.width.saturating_sub(GUTTER_W);
+    if total.saturating_sub(state.h_offset) > visible {
+        let x = area.right().saturating_sub(1);
+        buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronRight).text, 1, style);
     }
 }
 
@@ -1568,7 +1610,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                SEP,
+                system_rule_v(table.system),
                 1,
                 table.system.style(Role::Border),
             );

@@ -269,6 +269,118 @@ pub(crate) const PATTERN_DEMO_IDS: &[&str] = &[
     "working-state-card/basic",
 ];
 
+/// Components shown inside a real application, and the scene that shows them.
+///
+/// A component page could only ever show the component alone, which is the one
+/// context nobody ships it in. These variants mount an EXISTING application
+/// story — no new state machines, no new interactors — and label it with the
+/// component, so the page's variant picker offers "In application"
+/// (plans/018 Step 2).
+const IN_APP_SCENES: &[(&str, &str, &str)] = &[
+    // Collections, inputs and chrome live in the workbench shells.
+    ("List", "list/in-app", "app-shell/workbench"),
+    ("Panel", "panel/in-app", "app-shell/workbench"),
+    ("Sidebar", "sidebar/in-app", "app-shell/workbench"),
+    ("StatusBar", "status-bar/in-app", "app-shell/workbench"),
+    ("Tabs", "tabs/in-app", "app-shell/workbench"),
+    ("Toolbar", "toolbar/in-app", "app-shell/workbench"),
+    ("Transcript", "transcript/in-app", "agent-workbench/basic"),
+    ("PromptComposer", "prompt-composer/in-app", "agent-workbench/basic"),
+    ("TaskRail", "task-rail/in-app", "agent-workbench/basic"),
+    ("ModeRibbon", "mode-ribbon/in-app", "agent-workbench/basic"),
+    ("PermissionPrompt", "permission-prompt/in-app", "approval-queue/basic"),
+    ("ApprovalQueue", "approval-queue/in-app", "approval-queue/basic"),
+    ("AgentStatusHeader", "agent-status-header/in-app", "agent-status-header/basic"),
+    ("WorkingStateCard", "working-state-card/in-app", "working-state-card/basic"),
+    ("ThinkingBlock", "thinking-block/in-app", "working-state-card/basic"),
+    ("ToolCard", "tool-card/in-app", "subagent-card/running"),
+    ("Timeline", "timeline/in-app", "checkpoint-timeline/basic"),
+    // Data surfaces.
+    ("DataTable", "data-table/in-app", "result-grid/basic"),
+    ("Table", "table/in-app", "process-table/basic"),
+    ("TreeTable", "tree-table/in-app", "process-table/basic"),
+    ("Tree", "tree/in-app", "schema-browser/basic"),
+    ("TreeNavigation", "tree-navigation/in-app", "file-manager/basic"),
+    ("VirtualList", "virtual-list/in-app", "session-picker/basic"),
+    ("ObjectInspector", "object-inspector/in-app", "observability-dashboard/basic"),
+    ("LogStream", "log-stream/in-app", "observability-dashboard/basic"),
+    ("EventStream", "event-stream/in-app", "observability-dashboard/basic"),
+    ("DetailTable", "detail-table/in-app", "integration-status/list"),
+    ("KeyValueList", "key-value-list/in-app", "integration-status/list"),
+    ("DiffReview", "diff-review/in-app", "git-workbench/basic"),
+    ("DiffView", "diff-view/in-app", "git-workbench/basic"),
+    ("CheckpointTimeline", "checkpoint-timeline/in-app", "git-workbench/basic"),
+    ("TerminalOutput", "terminal-output/in-app", "terminal-run-card/running"),
+    ("CodeBlock", "code-block/in-app", "query-editor/basic"),
+    ("DiagnosticView", "diagnostic-view/in-app", "error-recovery/basic"),
+    // Feedback.
+    ("Toast", "toast/in-app", "background-tasks/mixed-statuses"),
+    ("Progress", "progress/in-app", "background-tasks/mixed-statuses"),
+    ("ProgressBar", "progress-bar/in-app", "background-tasks/mixed-statuses"),
+    ("Spinner", "spinner/in-app", "background-tasks/mixed-statuses"),
+    ("StatusIndicator", "status-indicator/in-app", "process-table/basic"),
+    ("ActivityIndicator", "activity-indicator/in-app", "activity-shelf/statuses"),
+    ("NotificationCenter", "notification-center/in-app", "activity-shelf/statuses"),
+    ("Sparkline", "sparkline/in-app", "metrics-dashboard/basic"),
+    ("Gauge", "gauge/in-app", "metrics-dashboard/basic"),
+    ("Chart", "chart/in-app", "metrics-dashboard/basic"),
+    // Forms.
+    ("Form", "form/in-app", "settings-screen/basic"),
+    ("Fieldset", "fieldset/in-app", "settings-screen/basic"),
+    ("FieldRow", "field-row/in-app", "settings-screen/basic"),
+    ("Checkbox", "checkbox/in-app", "settings-screen/basic"),
+    ("Switch", "switch/in-app", "settings-screen/basic"),
+    ("RadioGroup", "radio-group/in-app", "settings-screen/basic"),
+    ("ThemePicker", "theme-picker/in-app", "settings-screen/basic"),
+    ("KeybindingRecorder", "keybinding-recorder/in-app", "settings-screen/basic"),
+    ("TextInput", "text-input/in-app", "auth-entry/basic"),
+    ("PasswordInput", "password-input/in-app", "auth-entry/basic"),
+    ("Button", "button/in-app", "auth-entry/basic"),
+    ("FormWizard", "form-wizard/in-app", "setup-wizard/welcome"),
+    ("ProgressSteps", "progress-steps/in-app", "setup-wizard/welcome"),
+    // Overlays and navigation.
+    ("CommandPalette", "command-palette/in-app", "app-shell/workbench"),
+    ("QuickOpen", "quick-open/in-app", "project-launcher/basic"),
+    ("Dialog", "dialog/in-app", "session-picker/basic"),
+    ("SearchInput", "search-input/in-app", "help-center/basic"),
+    ("MarkdownView", "markdown-view/in-app", "help-center/basic"),
+    ("KeyboardHelp", "keyboard-help/in-app", "help-center/basic"),
+    ("Breadcrumbs", "breadcrumbs/in-app", "file-manager/basic"),
+    ("PreviewCard", "preview-card/in-app", "file-manager/basic"),
+    ("Select", "select/in-app", "connection-manager/full"),
+    ("EmptyState", "empty-state/in-app", "connection-manager/full"),
+];
+
+/// The application scene an "in application" variant mounts, if `id` is one.
+///
+/// The variant borrows the host's interactor wholesale, so the delegate lookup
+/// has to resolve through the host's id rather than the variant's.
+#[must_use]
+pub fn in_app_host(id: &str) -> Option<&'static str> {
+    IN_APP_SCENES
+        .iter()
+        .find(|(_, variant, _)| *variant == id)
+        .map(|(_, _, host)| *host)
+}
+
+/// Builds the "in application" variant of every component in [`IN_APP_SCENES`].
+fn in_app_stories(catalog: &[Story]) -> Vec<Story> {
+    let mut out = Vec::new();
+    for (component, id, host_id) in IN_APP_SCENES {
+        let Some(host) = catalog.iter().find(|story| story.id == *host_id) else {
+            continue;
+        };
+        out.push(Story {
+            id,
+            title: "In application",
+            component,
+            description: "The component inside a real application scene.",
+            ..*host
+        });
+    }
+    out
+}
+
 fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
     Box::new(PanelInteractor::new(render))
 }
@@ -10221,6 +10333,7 @@ pub fn stories() -> Vec<Story> {
             story.interactive = true;
         }
     }
+    catalog.extend(in_app_stories(&catalog));
     catalog
 }
 
@@ -13185,19 +13298,10 @@ fn tabs_closable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = if system.palette() == &RolePalette::tailrocks_phosphor() {
-        DesignSystem::from_palette(
-            system
-                .palette()
-                .clone()
-                .with_role(Role::HintKey, Style::new().bold())
-                .with_role(Role::HintText, Style::new())
-                .with_role(Role::HintDim, Style::new())
-                .with_role(Role::HintSeparator, Style::new()),
-        )
-    } else {
-        system.clone()
-    };
+    // The story paints the palette it is documenting: blanking the four Hint
+    // roles under phosphor meant the hint ladder never appeared in its own
+    // preview (plans/011 Step 2).
+    let system = system.clone();
     let hints = [
         Hint {
             chord: "↑↓",
@@ -17895,13 +17999,9 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         Line::from("epsilon: fifth row"),
         Line::from("zeta: sixth row"),
     ];
-    let border_style = system.style(Role::BorderFocused);
-    let system = DesignSystem::from_palette(
-        system
-            .palette()
-            .clone()
-            .with_role(Role::Border, border_style),
-    );
+    // The viewport is not the focused surface in this story; painting its
+    // border as if it were made the focus language unreadable (plans/011).
+    let system = system.clone();
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
         &Viewport::new(&lines, &system)
@@ -18727,7 +18827,8 @@ fn chart_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn chart_nocolor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = DesignSystem::from_palette(system.palette().clone())
+    let system = system
+        .clone()
         .glyphs(termrock::style::GlyphSet::Ascii)
         .no_color();
     let a = [1.0, 3.0, 2.0, 5.0, 4.0, 6.0, 3.0];

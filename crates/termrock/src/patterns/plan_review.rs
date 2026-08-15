@@ -45,8 +45,8 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        AccentRail, Action, ActionBar, ActionBarState, FieldRow, FieldRowValue, Panel,
-        PermissionRisk,
+        AccentRail, Action, ActionBar, ActionBarState, EmptyKind, EmptyState, FieldRow,
+        FieldRowValue, Panel, PermissionRisk,
     },
 };
 
@@ -1871,12 +1871,9 @@ impl<'a> PlanReview<'a> {
             y = y.saturating_add(1);
         }
         if plan.tasks.is_empty() && y < max_y {
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-                "(no tasks)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No tasks", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
@@ -2009,12 +2006,9 @@ impl<'a> PlanReview<'a> {
             y = y.saturating_add(1);
         }
         if plan.affected_files.is_empty() && y < max_y {
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-                "(no files)",
-                self.system.style(Role::TextMuted),
-            );
+            EmptyState::new("No files", self.system)
+                .kind(EmptyKind::NoData)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
