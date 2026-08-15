@@ -754,7 +754,12 @@ fn centered_modal(area: Rect, w_num: u16, w_den: u16, h_min: u16, w_min: u16) ->
     let height = (area.height / 3)
         .max(h_min)
         .min(area.height.saturating_sub(2));
-    let width = width.clamp(w_min, area.width.saturating_sub(2).max(1));
+    // A terminal narrower than the modal's minimum is a real size, not a
+    // programming error: `clamp` panics when the minimum exceeds the maximum,
+    // so a 20-column terminal used to take the whole application down the
+    // moment any overlay opened (found by the showcase, plans/019).
+    let max_width = area.width.saturating_sub(2).max(1);
+    let width = width.clamp(w_min.min(max_width), max_width);
     let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
     let y = area
         .y
@@ -1752,6 +1757,26 @@ mod tests {
         assert!(workbench.permission_open());
         assert!(!pstate.accepts_input());
         assert_eq!(pstate.text(), "draft");
+    }
+
+    #[test]
+    fn modals_survive_a_terminal_narrower_than_their_minimum() {
+        // 20x5 is the tiny tier the design law names; every modal helper has
+        // to produce a rect there rather than panicking.
+        for area in [
+            Rect::new(0, 0, 20, 5),
+            Rect::new(0, 0, 8, 3),
+            Rect::new(0, 0, 1, 1),
+        ] {
+            for rect in [
+                permission_modal_rect(area),
+                dialog_modal_rect(area),
+                diff_modal_rect(area),
+            ] {
+                assert!(rect.width <= area.width, "{rect:?} escapes {area:?}");
+                assert!(rect.height <= area.height, "{rect:?} escapes {area:?}");
+            }
+        }
     }
 
     #[test]
