@@ -608,6 +608,8 @@ pub struct SourceCitationState {
     pub hovered: bool,
     /// Visited.
     pub visited: bool,
+    /// Acknowledgement owed after a copy fired.
+    pub copied: crate::style::ActionFlash,
     /// Last paint rect.
     pub area: Rect,
 }
@@ -620,6 +622,7 @@ impl SourceCitationState {
             focused: false,
             hovered: false,
             visited: false,
+            copied: crate::style::ActionFlash::new(),
             area: Rect {
                 x: 0,
                 y: 0,
@@ -759,6 +762,36 @@ impl<'a> SourceCitation<'a> {
             usize::from(area.width),
             style,
         );
+        // Same acknowledgement as every other copy site: one mark, one
+        // duration, one tier rule (`style::ActionFlash`).
+        let elapsed = self.system.elapsed_ms();
+        if state.copied.is_lit(elapsed) {
+            let mark = self
+                .system
+                .glyphs
+                .resolve(crate::style::Glyph::Success)
+                .text;
+            let width = u16::try_from(display_cols(mark)).unwrap_or(1);
+            if area.width > width {
+                let mut mark_style = self.system.style(Role::Success);
+                let alpha = state.copied.alpha(self.system.motion, elapsed);
+                if alpha < 1.0 {
+                    let canvas = self
+                        .system
+                        .style(Role::Canvas)
+                        .bg
+                        .unwrap_or(ratatui_core::style::Color::Reset);
+                    mark_style = crate::style::fade_style(mark_style, alpha, canvas);
+                }
+                buffer.set_stringn(
+                    area.right().saturating_sub(width),
+                    area.y,
+                    mark,
+                    usize::from(width),
+                    mark_style,
+                );
+            }
+        }
     }
 
     /// Keys: Enter open, `p` preview, `c` copy, `g` jump anchor.
@@ -778,6 +811,9 @@ impl<'a> SourceCitation<'a> {
             KeyCode::Char('c')
                 if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.is_empty() =>
             {
+                // A citation that copies silently looks like a citation that
+                // ignored the key.
+                state.copied.fire(self.system.elapsed_ms());
                 SourceCitationOutcome::CopyRequested {
                     id: self.source.id.clone(),
                     text: self.source.copy_text(),

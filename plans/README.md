@@ -203,7 +203,29 @@ Two deliberate deviations:
 - Collapsible/Accordion `reveal_rows` from `mark_toggled_at`.
 - `Backdrop::alpha`; drawer module doc corrected ("no slide geometry; fade").
 
-**Still open, with reasons:**
+**Closed 2026-08-15 (migrations/0325).** All four are resolved — two built,
+two decided against with the measurement that settles them. The toast exit was
+unreachable because `ToastState::advance` passed `MotionPolicy::Off` into
+`Presence::advance`, so no tier could ever open `Exiting`; the tier now travels
+with the frame and a leaving toast holds its row while it fades. Scrolled
+regions state that they continue through one `scroll::paint_scroll_edges`
+authority (seven surfaces, gated); five use the combined
+`paint_scrolled_region` call, while List and ScrollArea pair custom scrollbar
+specs with the same edge painter. The timeline running rail needed no new wave: a running
+step is the same fact as a running `StatusIndicator`, so it breathes on the same
+`MotionChannel::Live`. Plan 021's copy-flash landed as `style::ActionFlash` with
+`code_block` and `citation` as the pilots the plan named.
+
+Not built, with the reason: the scroll `display_offset` tween and
+`WheelAccumulator` cannot work in a terminal — scroll position is cell-quantised,
+so a lagging offset renders as delay-then-jump rather than smoothing, and
+crossterm's wheel events are already row-quantised with per-frame redraw
+coalescing. `scroll_ease_duration`/`SCROLL_EASE_*` were removed as public API
+with zero consumers that existed only to time it. The collections filter fade
+dims the list during the keystrokes the operator is reading it; the count and
+query in `PanelTitleSpec` state the change without hiding the content.
+
+**Historical (superseded by the note above):**
 
 - **Toast exit fade + 100 ms stack reflow.** Needs the queue to hold an entry
   past its TTL and to carry a per-id `Animator` — queue semantics, not paint.

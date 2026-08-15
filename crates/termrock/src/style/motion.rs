@@ -321,22 +321,73 @@ impl Easing {
     }
 }
 
-/// Shortest scroll ease (§5: short hops read instant).
-pub const SCROLL_EASE_MIN: Duration = Duration::from_millis(80);
-/// Longest scroll ease (§5: long jumps stay capped).
-pub const SCROLL_EASE_MAX: Duration = Duration::from_millis(200);
+/// How long a fired action shows its acknowledgement.
+pub const ACTION_FLASH_MS: u64 = 1_000;
 
-/// Distance-scaled scroll duration (§5 scroll row).
+/// The acknowledgement a fired action owes the operator.
 ///
-/// A one-row hop must feel instant and a page jump must not feel sluggish, so
-/// the duration scales with distance and saturates — never "one duration for
-/// every scroll", which makes short hops laggy and long ones frantic.
-#[must_use]
-pub fn scroll_ease_duration(rows: u16) -> Duration {
-    const SATURATION_ROWS: f32 = 40.0;
-    let t = (f32::from(rows) / SATURATION_ROWS).clamp(0.0, 1.0);
-    let span = SCROLL_EASE_MAX.as_millis() as f32 - SCROLL_EASE_MIN.as_millis() as f32;
-    Duration::from_millis(SCROLL_EASE_MIN.as_millis() as u64 + (span * t) as u64)
+/// Copy is the case that needs it most: nothing on screen changes when text
+/// reaches the clipboard, so without a mark the operator cannot tell a
+/// successful copy from a swallowed keystroke and presses again. One shared
+/// stamp means every site agrees on how long the mark stays and which tier
+/// suppresses it, instead of nine widgets each picking a duration
+/// (plans/021 Step 2, plans/014).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ActionFlash {
+    fired_at_ms: Option<u64>,
+}
+
+impl ActionFlash {
+    /// Never fired.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { fired_at_ms: None }
+    }
+
+    /// Stamps the moment the action fired.
+    pub const fn fire(&mut self, elapsed_ms: u64) {
+        self.fired_at_ms = Some(elapsed_ms);
+    }
+
+    /// Clears the mark early (the surface closed, the selection moved on).
+    pub const fn clear(&mut self) {
+        self.fired_at_ms = None;
+    }
+
+    /// Whether the acknowledgement is still owed at `elapsed_ms`.
+    ///
+    /// Reduced motion keeps the mark: it is a statement of fact, not an
+    /// animation, and an operator who suppressed motion still needs to know
+    /// the copy happened. Only the *fade* is a transition.
+    #[must_use]
+    pub fn is_lit(self, elapsed_ms: u64) -> bool {
+        self.fired_at_ms
+            .is_some_and(|at| elapsed_ms.saturating_sub(at) < ACTION_FLASH_MS)
+    }
+
+    /// Brightness of the mark, `1.0` fresh and easing to `0.0` as it expires.
+    #[must_use]
+    pub fn alpha(self, policy: MotionPolicy, elapsed_ms: u64) -> f32 {
+        let Some(at) = self.fired_at_ms else {
+            return 0.0;
+        };
+        let age = elapsed_ms.saturating_sub(at);
+        if age >= ACTION_FLASH_MS {
+            return 0.0;
+        }
+        if !policy.allows_transitions() {
+            return 1.0;
+        }
+        1.0 - (age as f32 / ACTION_FLASH_MS as f32)
+    }
+
+    /// When the mark next needs a repaint, for the host's frame scheduler.
+    #[must_use]
+    pub fn next_deadline_ms(self, elapsed_ms: u64) -> Option<u64> {
+        self.fired_at_ms
+            .map(|at| at.saturating_add(ACTION_FLASH_MS))
+            .filter(|end| *end > elapsed_ms)
+    }
 }
 
 /// Peak amplitude of any ambient loop (§1 peak restraint).
@@ -541,6 +592,38 @@ mod tests {
     }
 
     #[test]
+    fn a_fired_action_is_acknowledged_for_a_second_and_then_forgotten() {
+        let mut flash = ActionFlash::new();
+        assert!(!flash.is_lit(0), "an action that never fired owes nothing");
+
+        flash.fire(1_000);
+        assert!(flash.is_lit(1_000));
+        assert!(flash.is_lit(1_000 + ACTION_FLASH_MS - 1));
+        assert!(!flash.is_lit(1_000 + ACTION_FLASH_MS));
+
+        // The mark fades, and reduced motion keeps it at full strength: it is
+        // a statement of fact, not an animation.
+        let fresh = flash.alpha(MotionPolicy::Full, 1_000);
+        let older = flash.alpha(MotionPolicy::Full, 1_000 + ACTION_FLASH_MS / 2);
+        assert!(fresh > older && older > 0.0, "{fresh} {older}");
+        assert_eq!(
+            flash.alpha(MotionPolicy::Off, 1_000 + ACTION_FLASH_MS / 2),
+            1.0
+        );
+        assert_eq!(
+            flash.alpha(MotionPolicy::Full, 1_000 + ACTION_FLASH_MS),
+            0.0
+        );
+
+        // The host learns when to repaint, and stops being told once it lapses.
+        assert_eq!(flash.next_deadline_ms(1_000), Some(1_000 + ACTION_FLASH_MS));
+        assert_eq!(flash.next_deadline_ms(1_000 + ACTION_FLASH_MS), None);
+
+        flash.clear();
+        assert!(!flash.is_lit(1_000));
+    }
+
+    #[test]
     fn every_easing_is_anchored_and_contained() {
         for easing in Easing::ALL {
             assert!(
@@ -563,19 +646,6 @@ mod tests {
             assert_eq!(easing.apply(-1.0), easing.apply(0.0));
             assert_eq!(easing.apply(2.0), easing.apply(1.0));
         }
-    }
-
-    #[test]
-    fn scroll_duration_scales_with_distance_and_saturates() {
-        assert_eq!(scroll_ease_duration(0), SCROLL_EASE_MIN);
-        assert!(scroll_ease_duration(5) > SCROLL_EASE_MIN);
-        assert!(scroll_ease_duration(5) < scroll_ease_duration(30));
-        assert_eq!(scroll_ease_duration(40), SCROLL_EASE_MAX);
-        assert_eq!(
-            scroll_ease_duration(u16::MAX),
-            SCROLL_EASE_MAX,
-            "a page jump must not become sluggish"
-        );
     }
 
     #[test]

@@ -525,6 +525,8 @@ pub struct CodeBlockState {
     pub hovered_line: Option<usize>,
     /// Last painted geometry.
     pub parts: Option<CodeBlockParts>,
+    /// Acknowledgement owed after a copy fired.
+    pub copied: crate::style::ActionFlash,
     /// Viewport body height in rows (set by paint).
     viewport_rows: u16,
     /// Body text width in columns (set by paint).
@@ -549,6 +551,7 @@ impl CodeBlockState {
             focused: false,
             hovered_line: None,
             parts: None,
+            copied: crate::style::ActionFlash::new(),
             viewport_rows: 0,
             body_width: 0,
         }
@@ -892,6 +895,43 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         out
     }
 
+    /// Paints the copy acknowledgement at the trailing edge of the header.
+    ///
+    /// The mark is a fact, so a tier that forbids motion still shows it; only
+    /// the fade is a transition.
+    fn paint_copy_flash(&self, header: Rect, buffer: &mut Buffer, state: &CodeBlockState) {
+        let elapsed = self.system.elapsed_ms();
+        if header.height == 0 || !state.copied.is_lit(elapsed) {
+            return;
+        }
+        let mark = self
+            .system
+            .glyphs
+            .resolve(crate::style::Glyph::Success)
+            .text;
+        let width = u16::try_from(crate::text::display_cols(mark)).unwrap_or(1);
+        if header.width <= width {
+            return;
+        }
+        let mut style = self.system.style(Role::Success);
+        let alpha = state.copied.alpha(self.system.motion, elapsed);
+        if alpha < 1.0 {
+            let canvas = self
+                .system
+                .style(Role::Canvas)
+                .bg
+                .unwrap_or(ratatui_core::style::Color::Reset);
+            style = crate::style::fade_style(style, alpha, canvas);
+        }
+        buffer.set_stringn(
+            header.right().saturating_sub(width),
+            header.y,
+            mark,
+            usize::from(width),
+            style,
+        );
+    }
+
     /// Copy selection or full window.
     #[must_use]
     pub fn copy_text(&self, state: &CodeBlockState) -> String {
@@ -1096,6 +1136,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 self.system.style(Role::TextMuted),
             );
         }
+        self.paint_copy_flash(parts.header, buffer, state);
 
         let mono = self.is_monochrome();
         let tab = usize::from(self.tab_width);
@@ -1305,6 +1346,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         let doc = self.document_len();
         // Copy
         if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {
+            // Nothing on screen changes when text reaches the clipboard, so
+            // the header owes an acknowledgement or the operator presses again.
+            state.copied.fire(self.system.elapsed_ms());
             return CodeBlockOutcome::Copy {
                 text: self.copy_text(state),
             };

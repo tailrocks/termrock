@@ -1469,6 +1469,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         }
         let _ = painted_rows;
         if scrollable {
+            // The cut edges say there is more; the scrollbar says where.
+            let offset = state.collection.offset();
+            crate::scroll::paint_scroll_edges(
+                buffer,
+                body,
+                self.tokens,
+                offset > 0,
+                offset.saturating_add(usize::from(body.height)) < total,
+            );
             crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),

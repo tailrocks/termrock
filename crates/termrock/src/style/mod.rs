@@ -27,10 +27,10 @@ pub use glyph::{
     MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
 };
 pub use motion::{
-    AMBIENT_PEAK, BASIC_TRANSITION_CAP, Easing, HEARTBEAT_PERIOD_MS, MotionChannel, MotionPolicy,
-    SCROLL_EASE_MAX, SCROLL_EASE_MIN, blend_toward, breathe_over, channel_brightness,
-    coalesce_cells, edge_fade, effective_alpha, fade_style, pulse_brightness, scroll_ease_duration,
-    shimmer_at, shimmer_cells, smoothstep, wave_brightness,
+    ACTION_FLASH_MS, AMBIENT_PEAK, ActionFlash, BASIC_TRANSITION_CAP, Easing, HEARTBEAT_PERIOD_MS,
+    MotionChannel, MotionPolicy, blend_toward, breathe_over, channel_brightness, coalesce_cells,
+    edge_fade, effective_alpha, fade_style, pulse_brightness, shimmer_at, shimmer_cells,
+    smoothstep, wave_brightness,
 };
 use palette::{
     ACTION_CONSTRUCTIVE as ACTION_CONSTRUCTIVE_RGB, ACTOR_ASSISTANT as ACTOR_ASSISTANT_RGB,

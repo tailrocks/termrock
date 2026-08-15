@@ -1,5 +1,6 @@
 use ratatui_core::{
     backend::TestBackend,
+    buffer::Buffer,
     layout::Rect,
     style::{Color, Style},
     terminal::Terminal,
@@ -133,4 +134,53 @@ fn list_gutter_paints_the_canonical_language_only_when_scrollable() {
     let bottom = paint(16, 12);
     assert_eq!(bottom[0], SCROLLBAR_TRACK);
     assert_eq!(bottom[3], ScrollbarStyle::Line.vertical_thumb());
+}
+
+#[test]
+fn a_cut_edge_dims_and_a_finished_one_does_not() {
+    use crate::style::DesignSystem;
+
+    let system = DesignSystem::default();
+    let text = system.style(Role::Text).fg.expect("text carries a colour");
+    let area = Rect::new(0, 0, 6, 6);
+
+    let paint = |offset: usize, total: usize| {
+        let mut buffer = Buffer::empty(area);
+        for y in 0..area.height {
+            buffer.set_stringn(0, y, "row", 6, system.style(Role::Text));
+        }
+        paint_scrolled_region(
+            &mut buffer,
+            area,
+            Rect::new(5, 0, 1, 6),
+            total,
+            usize::from(area.height),
+            u16::try_from(offset).unwrap_or(u16::MAX),
+            &system,
+        );
+        buffer
+    };
+
+    // Content continues below only: the bottom edge dims, the top stays true.
+    let top_of_list = paint(0, 40);
+    assert_eq!(
+        top_of_list[(0, 0)].fg,
+        text,
+        "nothing is above the first row"
+    );
+    assert_ne!(
+        top_of_list[(0, 5)].fg,
+        text,
+        "the list continues past the last row"
+    );
+
+    // Scrolled into the middle: both edges are cuts.
+    let middle = paint(10, 40);
+    assert_ne!(middle[(0, 0)].fg, text);
+    assert_ne!(middle[(0, 5)].fg, text);
+
+    // A list that fits has no cuts at all.
+    let whole = paint(0, 6);
+    assert_eq!(whole[(0, 0)].fg, text);
+    assert_eq!(whole[(0, 5)].fg, text);
 }

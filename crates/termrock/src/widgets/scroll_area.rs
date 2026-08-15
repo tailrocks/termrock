@@ -717,6 +717,20 @@ impl<'a> ScrollArea<'a> {
         let need_v = self.need_bar_v(state);
         let need_h = self.need_bar_h(state);
 
+        // Continuation belongs to the painted content, not the gutter. Keep
+        // this beside scrollbar painting so a new bar cannot silently omit the
+        // other half of the scroll contract.
+        if state.axis_y && state.overflows_y() {
+            crate::scroll::paint_scroll_edges(
+                buffer,
+                self.body_area(area, state),
+                self.tokens,
+                state.offset_y > 0,
+                usize::from(state.offset_y).saturating_add(usize::from(state.viewport_h))
+                    < usize::from(state.content_h),
+            );
+        }
+
         // One scrollbar language for every scroll surface: the canonical `·`
         // track with a `┃` / `━` thumb, and one owner for the thumb math
         // (plans/022 Step 5).

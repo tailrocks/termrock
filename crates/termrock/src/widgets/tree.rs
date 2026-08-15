@@ -1442,8 +1442,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             } else {
                 self.nodes.len()
             };
-            crate::scroll::paint_list_scrollbar(
+            crate::scroll::paint_scrolled_region(
                 buffer,
+                body,
                 scrollbar,
                 thumb_total,
                 usize::from(body.height),

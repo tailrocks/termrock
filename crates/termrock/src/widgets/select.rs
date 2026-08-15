@@ -1157,8 +1157,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             }
         }
 
-        crate::scroll::paint_list_scrollbar(
+        crate::scroll::paint_scrolled_region(
             buffer,
+            list_area,
             gutter,
             coll_items.len(),
             vp,

@@ -1507,11 +1507,14 @@ mod tests {
             ToastSpec::message("x", "bye")
                 .lifetime(ToastLifetime::ExpiresAfter(Duration::from_secs(1))),
         );
-        let _ = q.advance(FrameTick::manual(
-            start + Duration::from_secs(2),
-            Duration::from_secs(2),
-            Duration::ZERO,
-        ));
+        let _ = q.advance(
+            FrameTick::manual(
+                start + Duration::from_secs(2),
+                Duration::from_secs(2),
+                Duration::ZERO,
+            ),
+            crate::style::MotionPolicy::Off,
+        );
         assert_eq!(q.missed_len(), 1);
         let mut center = NotificationCenterState::new();
         let out = center.ingest_from_toast_queue(&mut q, 50);

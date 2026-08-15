@@ -1098,6 +1098,38 @@ fn one_scrollbar_language() {
 }
 
 #[test]
+fn a_scrolled_region_says_it_continues() {
+    // A scrollbar answers *where* you are, not whether the row under your eye
+    // is the end of the content or the end of the pane. Every source that
+    // paints a scrollbar must also use the shared edge authority. Most use
+    // `paint_scrolled_region`; List and ScrollArea need the lower-level pair
+    // because they supply a custom ScrollbarSpec (plans/014).
+    let mut bare: Vec<String> = Vec::new();
+    for source in painted_sources() {
+        let name = source
+            .path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let paints_bar = source.lines.iter().any(|(_, line)| {
+            line.contains("paint_list_scrollbar(") || line.contains("render_scrollbar(")
+        });
+        let paints_edges = source.lines.iter().any(|(_, line)| {
+            line.contains("paint_scrolled_region(") || line.contains("paint_scroll_edges(")
+        });
+        if paints_bar && !paints_edges {
+            bare.push(name);
+        }
+    }
+    assert!(
+        bare.is_empty(),
+        "scrollbar painters must also call scroll::paint_scrolled_region or \
+         scroll::paint_scroll_edges so the cut edges say there is more: {bare:?}"
+    );
+}
+
+#[test]
 fn truncation_has_ellipsis() {
     use ratatui_core::widgets::Widget;
     use termrock::widgets::{Panel, PanelVariant};

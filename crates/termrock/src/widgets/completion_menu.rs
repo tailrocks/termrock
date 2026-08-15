@@ -1363,8 +1363,9 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
         // The right margin the rows already reserve doubles as the scroll
         // gutter: a menu that scrolls says so (plans/022 Step 2).
-        crate::scroll::paint_list_scrollbar(
+        crate::scroll::paint_scrolled_region(
             buffer,
+            list_body,
             Rect::new(
                 list_body.right().saturating_sub(1),
                 list_body.y,
