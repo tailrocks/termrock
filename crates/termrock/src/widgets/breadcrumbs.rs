@@ -37,10 +37,6 @@ use crate::{
 
 /// Width under which middle segments collapse (when len > 3).
 pub const BREADCRUMBS_COLLAPSE_MAX_WIDTH: u16 = 40;
-/// Ellipsis token in collapsed trail.
-pub const BREADCRUMBS_ELLIPSIS: &str = "…";
-/// ASCII ellipsis.
-pub const BREADCRUMBS_ELLIPSIS_ASCII: &str = "...";
 
 // ── Model ───────────────────────────────────────────────────────────────────
 
@@ -774,11 +770,14 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
         };
 
         let sep = self.separator.glyph(self.ascii);
-        let ellipsis = if self.ascii {
-            BREADCRUMBS_ELLIPSIS_ASCII
+        // One ellipsis in the library, resolved from the glyph catalog under
+        // the profile this trail is painting in (plans/020).
+        let glyphs = if self.ascii {
+            crate::style::GlyphSet::Ascii
         } else {
-            BREADCRUMBS_ELLIPSIS
+            self.system.glyphs
         };
+        let ellipsis = glyphs.ellipsis();
 
         // Build slots
         let slots: Vec<PaintSlot<Id>> = if collapse {

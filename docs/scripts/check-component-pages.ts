@@ -50,7 +50,7 @@ const publicWidgets = new Set(
   [...api.matchAll(/^impl.*ratatui_core::widgets::(?:widget::Widget|stateful_widget::StatefulWidget) for &?termrock::widgets::([A-Z][A-Za-z0-9_]*)/gm)]
     .map((match) => match[1]!),
 )
-if (publicWidgets.size !== 135) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
+if (publicWidgets.size !== 136) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
 const routedComponents = new Set(routeManifest.map((entry) => entry.component))
 const missingPublic = [...publicWidgets].filter((component) => !routedComponents.has(component))
 if (missingPublic.length) throw new Error(`public widgets without canonical page: ${missingPublic.join(', ')}`)

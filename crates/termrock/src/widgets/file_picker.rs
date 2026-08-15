@@ -37,8 +37,8 @@ use crate::{
 };
 
 use super::{
-    Panel, PanelChrome, PathExpect, PathFsStatus, PathInput, PathInputOutcome, PathInputState,
-    PathStyle, Selection, Validation, join_path, normalize_separators,
+    Panel, PanelChrome, PanelTitleSpec, PathExpect, PathFsStatus, PathInput, PathInputOutcome,
+    PathInputState, PathStyle, Selection, Validation, join_path, normalize_separators,
 };
 
 /// Overlay id for modal file pickers.
@@ -697,6 +697,12 @@ impl FilePickerState {
         self.reprocess_visible();
     }
 
+    /// Active name filter, for the pane title.
+    #[must_use]
+    pub fn filter_text(&self) -> &str {
+        &self.name_filter
+    }
+
     /// Name filter (client-side) and rebuild visible projection.
     pub fn set_name_filter(&mut self, filter: impl Into<String>) {
         self.name_filter = filter.into();
@@ -1290,15 +1296,23 @@ impl<'a> FilePicker<'a> {
             state.presentation = FilePickerPresentation::Fullscreen;
         }
 
+        // The title carries the listing size and the active filter, like every
+        // other pane title (plans/009, 017 §B2).
+        let filter = state.filter_text();
+        let mut spec = PanelTitleSpec::new(self.title).count(state.entries().len());
+        if !filter.is_empty() {
+            spec = spec.filter(filter);
+        }
         let panel = Panel::new(self.system)
             .overlay(true)
+            .title_spec(spec)
             .emphasis(if state.focused {
                 PanelChrome::Focused
             } else {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        Widget::render(&panel.title(self.title), area, buffer);
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }

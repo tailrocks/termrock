@@ -38,7 +38,8 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, Hint, HintBar, MatchRanges, MatchTruncate, Panel,
-        PanelChrome, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
+        PanelChrome, PanelTitleSpec, TextInput, TextInputOutcome, TextInputState,
+        fuzzy_match_label,
     },
 };
 
@@ -1096,9 +1097,16 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         } else {
             PanelChrome::Normal
         };
+        // The title states how much the picker holds and what is filtering it,
+        // through the one title grammar every panel uses (plans/009, 017 §B2).
+        let query = state.query_text();
+        let mut spec = PanelTitleSpec::new(self.title).count(self.entries.len());
+        if !query.is_empty() {
+            spec = spec.filter(query);
+        }
         let panel = Panel::new(self.system)
             .overlay(true)
-            .title(self.title)
+            .title_spec(spec)
             .emphasis(emphasis);
         let inner = panel.inner(area);
         ratatui_core::widgets::Widget::render(&panel, area, buffer);

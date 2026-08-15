@@ -855,6 +855,16 @@ impl DiffReviewState {
         if !units.is_empty() {
             return units;
         }
+        // With nothing multi-selected the target is whatever the focused
+        // region is pointing at. Preferring the hunk cursor unconditionally
+        // meant `a` in the file tree approved a hunk somewhere else in the
+        // diff — the operator accepted a row they were not looking at
+        // (GAP-DF-1).
+        if self.region == DiffReviewRegion::FileTree {
+            if let Some(f) = files.get(self.file_cursor) {
+                return vec![DiffReviewUnit::file(f.id.to_string())];
+            }
+        }
         // Fallback: current hunk
         if let Some(h) = hunks.get(self.view.hunk_cursor) {
             return vec![DiffReviewUnit::hunk(h.id.clone())];
@@ -1837,6 +1847,58 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::widgets::diff::DiffKind;
+
+    /// GAP-DF-1: accepting in the file tree accepts the file you are on.
+    #[test]
+    fn the_file_tree_accepts_and_rejects_whole_files() {
+        let hunks = sample_hunks();
+        let lines = sample_lines();
+        let files = sample_files();
+        let mut state = DiffReviewState::new();
+        state.set_accepts_input(true);
+        state.region = DiffReviewRegion::FileTree;
+
+        // Move to the second file, then accept it.
+        let out = state.handle_key_lines(
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+            &lines,
+            &hunks,
+            &files,
+        );
+        assert!(
+            matches!(out, DiffReviewOutcome::FileCursorMoved { ref id } if id == "b.rs"),
+            "{out:?}"
+        );
+
+        let out = state.handle_key_lines(
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+            &lines,
+            &hunks,
+            &files,
+        );
+        let DiffReviewOutcome::ApproveRequested { units } = out else {
+            panic!("expected an approve request, got {out:?}");
+        };
+        assert_eq!(units.len(), 1);
+        assert_eq!(units[0].kind, DiffReviewUnitKind::File);
+        assert_eq!(
+            units[0].id, "b.rs",
+            "the focused file, not a hunk elsewhere"
+        );
+
+        // Rejecting from the tree is the same shape.
+        let out = state.handle_key_lines(
+            KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
+            &lines,
+            &hunks,
+            &files,
+        );
+        let DiffReviewOutcome::RejectRequested { units } = out else {
+            panic!("expected a reject request, got {out:?}");
+        };
+        assert_eq!(units[0].kind, DiffReviewUnitKind::File);
+        assert_eq!(units[0].id, "b.rs");
+    }
 
     fn sample_hunks() -> [DiffHunk; 3] {
         [

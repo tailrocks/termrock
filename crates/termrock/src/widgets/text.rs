@@ -886,12 +886,6 @@ impl Widget for Text<'_> {
     }
 }
 
-/// ASCII-friendly ellipsis helper for low-capability profiles.
-#[must_use]
-pub fn ascii_ellipsis() -> &'static str {
-    "..."
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1035,10 +1029,12 @@ mod tests {
 
     #[test]
     fn ascii_ellipsis_truncate() {
-        let system = DesignSystem::default();
+        // The ASCII ellipsis comes from the glyph catalog under the ASCII
+        // profile, not from a second helper beside it (plans/020).
+        let system = DesignSystem::default().ascii();
         let t = Text::new("abcdefghij", &system)
             .truncate()
-            .ellipsis(ascii_ellipsis());
+            .ellipsis(system.glyphs.ellipsis());
         let layout = t.layout(6, 1);
         assert!(layout.lines[0].plain().contains('.'));
     }

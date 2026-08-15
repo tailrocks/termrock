@@ -5,7 +5,7 @@
 
 use ratatui_core::style::{Color, Modifier, Style};
 
-use super::{DesignSystem, GlyphSet, RolePalette, SelectionChrome};
+use super::{DesignSystem, GlyphSet, Role, RolePalette, SelectionChrome};
 
 /// Detected or configured terminal color depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -76,7 +76,61 @@ pub fn quantize_palette(palette: &RolePalette, capability: ColorCapability) -> R
     if matches!(capability, ColorCapability::Truecolor) {
         return palette.clone();
     }
-    RolePalette::from_fn(|role| quantize_style(palette.style(role), capability))
+    let quantized = RolePalette::from_fn(|role| quantize_style(palette.style(role), capability));
+    if matches!(capability, ColorCapability::Indexed256) {
+        return separate_elevation(quantized);
+    }
+    quantized
+}
+
+/// Elevation tiers, deepest first: the order the ladder has to preserve.
+const ELEVATION_LADDER: [Role; 5] = [
+    Role::Canvas,
+    Role::Sunken,
+    Role::Surface,
+    Role::Raised,
+    Role::Elevated,
+];
+
+/// Pushes colliding elevation tiers apart on the 256-colour gray ramp.
+///
+/// Elevation is a *hierarchy*, not five unrelated colours, and quantizing each
+/// role on its own loses that: the ramp steps by 10 while the phosphor ladder
+/// steps by about 5, so `Sunken` (13,16,13) and `Surface` (18,22,18) both round
+/// to index 233 and a sunken well becomes invisible — including every text
+/// input, which paints its trough with `Role::Sunken`.
+///
+/// Nearest-colour is the right answer for one colour and the wrong answer for a
+/// ladder. Resolving the tiers in order and stepping a tie up by one keeps the
+/// rungs the roles exist to express, which is the same reasoning that already
+/// cuts the ANSI-16 neutral bands where the hierarchy breaks rather than where
+/// the colours are nearest (plans/003, plans/020).
+fn separate_elevation(palette: RolePalette) -> RolePalette {
+    /// Highest index on the xterm gray ramp.
+    const RAMP_TOP: u8 = 255;
+    let mut out = palette;
+    let mut floor: Option<u8> = None;
+    for role in ELEVATION_LADDER {
+        let style = out.style(role);
+        let Some(Color::Indexed(index)) = style.bg else {
+            continue;
+        };
+        // Only the gray ramp collides this way; a tier that landed in the
+        // colour cube is already distinct from its neighbours.
+        if index < 232 {
+            floor = None;
+            continue;
+        }
+        let lifted = match floor {
+            Some(previous) if index <= previous => previous.saturating_add(1).min(RAMP_TOP),
+            _ => index,
+        };
+        floor = Some(lifted);
+        if lifted != index {
+            out = out.with_role(role, style.bg(Color::Indexed(lifted)));
+        }
+    }
+    out
 }
 
 /// Quantizes one style, preserving structure the color ladder can no longer carry.
@@ -350,7 +404,9 @@ mod tests {
     }
 
     /// The 232-255 ramp steps by 10 while the phosphor ladder steps by ~5, so
-    /// `Sunken`/`Surface` share a step; the *elevation* direction still survives.
+    /// nearest-colour rounding used to put `Sunken` and `Surface` on one step
+    /// and make every input trough invisible. The ladder is quantized as an
+    /// ordered family, so all five tiers keep their own rung (plans/003).
     #[test]
     fn surface_ladder_survives_256_quantization() {
         let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Indexed256);
@@ -359,18 +415,28 @@ mod tests {
             other => panic!("{role:?} did not quantize to an index: {other:?}"),
         };
         let canvas = index(Role::Canvas);
+        let sunken = index(Role::Sunken);
         let surface = index(Role::Surface);
         let raised = index(Role::Raised);
         let elevated = index(Role::Elevated);
-        let sunken = index(Role::Sunken);
         assert!(
-            canvas < surface && surface < raised && raised < elevated,
-            "elevation flattened: {canvas} {surface} {raised} {elevated}"
+            canvas < sunken && sunken < surface && surface < raised && raised < elevated,
+            "elevation flattened: {canvas} {sunken} {surface} {raised} {elevated}"
         );
-        assert!(sunken <= surface, "sunken rose above surface");
         for index in [canvas, surface, raised, elevated, sunken] {
             assert!(index >= 232, "surface fell back to the cube: {index}");
         }
+    }
+
+    /// A well the operator types into must be visible on a 256-colour terminal.
+    #[test]
+    fn an_input_trough_is_visible_at_256_colours() {
+        let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Indexed256);
+        assert_ne!(
+            bg_of(&palette, Role::Input),
+            bg_of(&palette, Role::Surface),
+            "a field well that matches the surface behind it is not a well"
+        );
     }
 
     #[test]

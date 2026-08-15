@@ -491,7 +491,7 @@ pub use surface::{
 };
 pub use text::{
     SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow,
-    TextSegment, TextSpan, ascii_ellipsis,
+    TextSegment, TextSpan,
 };
 /// Context menu paint widget (same cascade engine as [`DropdownMenu`]).
 pub type ContextMenu<'a, Id> = DropdownMenu<'a, Id>;
@@ -505,10 +505,9 @@ pub use attachment_chips::{
     paste_semantic_summary,
 };
 pub use breadcrumbs::{
-    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BREADCRUMBS_ELLIPSIS, BREADCRUMBS_ELLIPSIS_ASCII,
-    BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs,
-    BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation, BreadcrumbsState,
-    crumbs_from_labels,
+    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
+    BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
+    BreadcrumbsState, crumbs_from_labels,
 };
 pub use card::{Card, CardParts};
 pub use carousel::{
