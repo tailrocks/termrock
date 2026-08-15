@@ -19,12 +19,7 @@
 //! Research: crash reporters, terminal panic hooks, session restoration,
 //! resilient CLI design.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     capability::DoctorReport,
@@ -37,8 +32,8 @@ use crate::{
     text::take_display_cols,
     widgets::{
         ErrorKind, ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, List, ListRow,
-        ListState, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState, StatusSlot,
-        history_redaction_secret, redact_history_text,
+        ListState, Panel, Recovery, RecoveryAction, RetrySafety, StatusBar, StatusBarState,
+        StatusSlot, history_redaction_secret, redact_history_text,
     },
 };
 
@@ -1169,12 +1164,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
 
     // Preserved work strip
     if let Some(r) = pane_area(&panes, "preserved") {
-        let panel = Panelish {
-            system,
-            title: "Preserved work",
-            focused: state.focus == "preserved",
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Preserved work")
+            .emphasis(PanelChrome::for_focus(state.focus == "preserved"))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let msg = if snapshot.work_preserved {
                 if snapshot.preserved_note.is_empty() {
@@ -1202,12 +1195,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
     // Actions list
     if let Some(r) = pane_area(&panes, "actions") {
         let focused = state.focus == "actions";
-        let panel = Panelish {
-            system,
-            title: "Recovery options",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Recovery options")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = recovery_action_rows(state.action_set());
             let list = List::new(&rows, system).focused(focused);
@@ -1218,12 +1209,10 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
     // Diagnostics — redacted report text
     if let Some(r) = pane_area(&panes, "diagnostics") {
         let focused = state.focus == "diagnostics";
-        let panel = Panelish {
-            system,
-            title: "Diagnostics (redacted)",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Diagnostics (redacted)")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let report = state.redacted_report(snapshot);
             let mut y = inner.y;
@@ -1274,28 +1263,6 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
             buffer,
             &mut state.status,
         );
-    }
-}
-
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 

@@ -31,7 +31,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
+    widgets::{ConfirmFocus, ConfirmPrompt, Panel},
 };
 
 /// Overlay id for expanded queue manager.
@@ -903,57 +903,20 @@ impl<'a> PromptQueue<'a> {
     }
 
     fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptQueueState) {
-        let y = area.bottom().saturating_sub(2);
-        if y < area.y {
-            return;
+        let hits = ConfirmPrompt::new("Delete queue entry", "Delete", self.system)
+            .detail("the host may drop its persistence")
+            .focus(if state.confirm_proceed_focused {
+                ConfirmFocus::Confirm
+            } else {
+                ConfirmFocus::Cancel
+            })
+            .paint(area, buffer);
+        if let Some(cancel) = hits.cancel {
+            state.confirm_hits.push((false, cancel));
         }
-        let w = usize::from(area.width);
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols("! delete queue entry (host may drop persistence)", w),
-            w,
-            self.system.style(Role::Danger),
-        );
-        let bar_y = area.bottom().saturating_sub(1);
-        let cancel = if !state.confirm_proceed_focused {
-            "[Cancel]"
-        } else {
-            " Cancel "
-        };
-        let proceed = if state.confirm_proceed_focused {
-            "[Delete]"
-        } else {
-            " Delete "
-        };
-        let line = format!("{cancel}  {proceed}");
-        buffer.set_stringn(
-            area.x,
-            bar_y,
-            take_display_cols(&line, w),
-            w,
-            self.system.style(Role::Accent),
-        );
-        let cw = display_cols(cancel) as u16;
-        state.confirm_hits.push((
-            false,
-            Rect {
-                x: area.x,
-                y: bar_y,
-                width: cw,
-                height: 1,
-            },
-        ));
-        let px = area.x.saturating_add(cw.saturating_add(2));
-        state.confirm_hits.push((
-            true,
-            Rect {
-                x: px,
-                y: bar_y,
-                width: display_cols(proceed) as u16,
-                height: 1,
-            },
-        ));
+        if let Some(confirm) = hits.confirm {
+            state.confirm_hits.push((true, confirm));
+        }
     }
 }
 

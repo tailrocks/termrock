@@ -31,7 +31,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::Panel,
+    widgets::{ConfirmFocus, ConfirmPrompt, Panel},
 };
 
 /// Overlay id for session picker (dialog / fullscreen).
@@ -1569,75 +1569,29 @@ impl<'a> SessionPicker<'a> {
     }
 
     fn paint_confirm(&self, area: Rect, buffer: &mut Buffer, state: &mut SessionPickerState) {
-        let y = area.bottom().saturating_sub(2);
-        if y < area.y {
-            return;
-        }
-        let w = usize::from(area.width);
         let action = state.confirm_action.unwrap_or(SessionConfirmAction::Delete);
         let title = state
             .current()
-            .map(|s| s.title.as_str())
-            .unwrap_or("session");
-        buffer.set_stringn(
-            area.x,
-            y,
-            take_display_cols(
-                &format!(
-                    "! {} “{}” — {}",
-                    action.label(),
-                    title,
-                    action.consequence()
-                ),
-                w,
-            ),
-            w,
-            if action.is_destructive() {
-                self.system.style(Role::Danger)
+            .map(|s| s.title.clone())
+            .unwrap_or_else(|| "session".to_string());
+        let message = format!("{} “{title}”", action.label());
+        let consequence = action.consequence();
+        let hits = ConfirmPrompt::new(&message, action.label(), self.system)
+            .detail(&consequence)
+            .destructive(action.is_destructive())
+            .colorless(self.colorless)
+            .focus(if state.confirm_proceed_focused {
+                ConfirmFocus::Confirm
             } else {
-                self.system.style(Role::Warning)
-            },
-        );
-        let bar_y = area.bottom().saturating_sub(1);
-        let cancel = if !state.confirm_proceed_focused {
-            "[Cancel]"
-        } else {
-            " Cancel "
-        };
-        let proceed = if state.confirm_proceed_focused {
-            format!("[{}]", action.label())
-        } else {
-            format!(" {} ", action.label())
-        };
-        let line = format!("{cancel}  {proceed}");
-        buffer.set_stringn(
-            area.x,
-            bar_y,
-            take_display_cols(&line, w),
-            w,
-            self.system.style(Role::Accent),
-        );
-        let cw = display_cols(cancel) as u16;
-        state.confirm_hits.push((
-            false,
-            Rect {
-                x: area.x,
-                y: bar_y,
-                width: cw,
-                height: 1,
-            },
-        ));
-        let px = area.x.saturating_add(cw.saturating_add(2));
-        let pw = display_cols(&proceed) as u16;
-        state.confirm_hits.push((
-            true,
-            Rect {
-                x: px,
-                y: bar_y,
-                width: pw,
-                height: 1,
-            },
-        ));
+                ConfirmFocus::Cancel
+            })
+            .paint(area, buffer);
+        if let Some(cancel) = hits.cancel {
+            state.confirm_hits.push((false, cancel));
+        }
+        if let Some(confirm) = hits.confirm {
+            state.confirm_hits.push((true, confirm));
+        }
     }
 }
 

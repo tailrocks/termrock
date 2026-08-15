@@ -34,17 +34,17 @@ use crate::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     patterns::{
-        MetricAlert, MetricAlertSeverity, MetricTile, MetricTileHealth, MetricsDashboard,
-        MetricsDashboardOutcome, MetricsDashboardState, MetricsTimeRange,
+        MetricAlert, MetricAlertSeverity, MetricsDashboard, MetricsDashboardOutcome,
+        MetricsDashboardState, MetricsTimeRange,
     },
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         EventSeverity, EventStream, EventStreamOutcome, EventStreamState, InspectorField, LogLevel,
-        LogLine, LogStream, LogStreamOutcome, LogStreamState, ObjectInspector,
-        ObjectInspectorOutcome, ObjectInspectorState, Panel, SearchInput, SearchInputOutcome,
-        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot, StreamEvent,
-        StreamRowKind, filter_log_lines, filter_stream_events,
+        LogLine, LogStream, LogStreamOutcome, LogStreamState, MetricTile, MetricTileHealth,
+        ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel, SearchInput,
+        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        StreamEvent, StreamRowKind, filter_log_lines, filter_stream_events,
     },
 };
 

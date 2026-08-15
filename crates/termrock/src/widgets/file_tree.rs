@@ -1097,14 +1097,8 @@ impl<'a, Id> FileTree<'a, Id> {
 
         if self.show_filter_chrome && body_h > 0 {
             if let Some(q) = &state.filter {
-                let line = format!("/{q}_");
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&line, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Accent),
-                );
+                crate::widgets::ChromeRow::query(q, self.system)
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
                 y = y.saturating_add(1);
                 body_h = body_h.saturating_sub(1);
             }
@@ -1112,14 +1106,10 @@ impl<'a, Id> FileTree<'a, Id> {
 
         if let Some(draft) = &state.draft {
             if body_h > 0 {
-                let line = format!("rename> {}_", draft.name);
-                buffer.set_stringn(
-                    area.x,
-                    y,
-                    take_display_cols(&line, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Warning),
-                );
+                // A rename is a mode, not a warning.
+                crate::widgets::ChromeRow::mode("rename>", &draft.name, self.system)
+                    .caret(true)
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
                 y = y.saturating_add(1);
                 body_h = body_h.saturating_sub(1);
             }

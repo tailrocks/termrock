@@ -33,6 +33,7 @@ mod card;
 mod carousel;
 mod charts;
 mod checkpoint_timeline;
+mod chrome_row;
 mod citation;
 mod code_block;
 mod collapsible;
@@ -40,6 +41,7 @@ mod combobox;
 mod command_palette;
 mod completion_menu;
 mod composed_row;
+mod confirm_prompt;
 mod connectivity;
 mod content;
 mod context_meter;
@@ -92,6 +94,7 @@ mod mention;
 mod menu_bar;
 mod menu_nav;
 mod message_thread;
+mod metric_tile;
 mod model_mode_selectors;
 mod multi_select;
 mod notification_center;
@@ -132,6 +135,7 @@ mod spinner;
 mod split_pane;
 mod status_bar;
 mod status_indicator;
+mod status_strip;
 mod stepper;
 mod streaming_markdown;
 mod surface;
@@ -509,6 +513,7 @@ pub use card::{Card, CardParts};
 pub use carousel::{
     Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
 };
+pub use chrome_row::{ChromeRow, ChromeRowKind};
 pub use citation::bench as citation_bench;
 pub use citation::{
     CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
@@ -520,6 +525,7 @@ pub use combobox::{
     Autocomplete, AutocompleteState, ComboMode, Combobox, ComboboxOutcome, ComboboxState,
     DEFAULT_COMBO_RECENT_LIMIT, SuggestionStatus,
 };
+pub use confirm_prompt::{CONFIRM_PROMPT_ROWS, ConfirmFocus, ConfirmPrompt, ConfirmPromptHits};
 pub use connectivity::{
     ConnectivityFocus, ConnectivityOutcome, ConnectivityPhase, ConnectivityPresentation,
     OfflineBanner, OfflineCapability, OfflineChrome, OfflineSurface, QueuedConnectivityAction,
@@ -604,6 +610,9 @@ pub use message_thread::{
     MessageZoom, ProjectedEntryMeta, ThreadProjection, build_transcript_blocks, compact_entries,
     example_message_session, filter_entries, project_message_thread,
 };
+pub use metric_tile::{
+    MetricTile, MetricTileHealth, MetricTilePresentation, MetricTileView, MetricViz,
+};
 pub use model_mode_selectors::bench as model_mode_selectors_bench;
 pub use model_mode_selectors::{
     AgentModeKind, AgentModeOption, AgentModePresentation, AgentModeSelector,
@@ -637,7 +646,8 @@ pub use pagination::{
     guidance as pagination_guidance,
 };
 pub use panel::{
-    Panel, PanelAction, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState, PanelVariant,
+    Panel, PanelAction, PanelBody, PanelOutcome, PanelParts, PanelSlots, PanelState,
+    PanelTitleSpec, PanelVariant,
 };
 pub use password_input::{
     ClipboardPolicy, PasswordConfirmState, PasswordInput, PasswordInputOutcome, PasswordInputParts,
@@ -775,6 +785,7 @@ pub use status_bar::{
 pub use status_indicator::{
     StatusIndicator, StatusIndicatorState, StatusIndicatorVariant, example_status_catalog,
 };
+pub use status_strip::{StatusSegment, StatusStrip};
 pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{

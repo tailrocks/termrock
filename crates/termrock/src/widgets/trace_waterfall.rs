@@ -1060,23 +1060,8 @@ impl<'a> TraceWaterfall<'a> {
 
         if state.filter.is_some() && h > 0 {
             let q = state.filter.as_deref().unwrap_or("");
-            // A filter row is a well, not a headline: the query reads as text
-            // on a recessed ground and only the caret is live (plans/007).
-            let line = format!("/{q}_");
-            let cols = usize::from(area.width);
-            let mut body = self.system.style(Role::Text);
-            if let Some(bg) = self.system.style(Role::Sunken).bg {
-                body = body.bg(bg);
-            }
-            buffer.set_stringn(area.x, y, take_display_cols(&line, cols), cols, body);
-            let caret = crate::text::display_cols(&line).min(cols).saturating_sub(1);
-            crate::widgets::row_chrome::paint_status_glyph(
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-                u16::try_from(caret).unwrap_or(0),
-                "_",
-                self.system.style(Role::Accent),
-            );
+            crate::widgets::ChromeRow::query(q, self.system)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }

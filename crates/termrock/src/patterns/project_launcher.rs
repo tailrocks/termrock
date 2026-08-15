@@ -41,7 +41,7 @@ use crate::{
     text::take_display_cols,
     widgets::{
         EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
-        ListState, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
+        ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
         PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
         QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
         StatusBar, StatusBarState, StatusRegion, StatusSlot,
@@ -1358,15 +1358,13 @@ pub fn render_project_launcher(
         let focused = state.focus == "search" && !state.quick_open_open;
         state.search.set_focused(focused);
         if r.height >= 3 {
-            let panel = Panelish {
-                system,
-                title: match state.mode {
+            let inner = Panel::new(system)
+                .title(match state.mode {
                     ProjectLauncherMode::Home => "Projects · home",
                     ProjectLauncherMode::Inline => "Quick open · inline",
-                },
-                focused,
-            };
-            let inner = panel.paint(r, buffer);
+                })
+                .emphasis(PanelChrome::for_focus(focused))
+                .paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("filter projects…")
@@ -1382,12 +1380,10 @@ pub fn render_project_launcher(
     // Projects list
     if let Some(r) = pane_area(&panes, "projects") {
         let focused = state.focus == "projects" && !state.quick_open_open;
-        let panel = Panelish {
-            system,
-            title: "Projects",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Projects")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = project_list_rows(&filtered);
             if rows.is_empty() {
@@ -1433,12 +1429,10 @@ pub fn render_project_launcher(
                 .load(PreviewLoadState::Idle)
                 .essential_elsewhere(true)
         });
-        let panel = Panelish {
-            system,
-            title: "Preview",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Preview")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             PreviewCard::new(content, system).paint(inner, buffer, &mut state.preview);
         }
@@ -1493,29 +1487,6 @@ pub fn render_project_launcher(
                 &mut state.quick_open,
             );
         }
-    }
-}
-
-/// Minimal panel chrome helper.
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 

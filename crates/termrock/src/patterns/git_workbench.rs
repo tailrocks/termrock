@@ -35,13 +35,13 @@ use crate::{
     text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
-        Diagnostic, DiagnosticSeverity, DiagnosticState, DiagnosticView, DiffHunk, DiffLine,
-        DiffReview, DiffReviewFileRow, DiffReviewOutcome, DiffReviewState, DiffReviewUnit,
-        DiffReviewUnitKind, FileGitStatus, FileTree, FileTreeEntry, FileTreeOutcome, FileTreeState,
-        HelpEntry, KeyboardHelp, KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot, TerminalCommandMeta, TerminalLine,
-        TerminalOutput, TerminalOutputState, TerminalRunStatus, example_checkpoints,
-        example_help_entries,
+        ConfirmFocus, ConfirmPrompt, Diagnostic, DiagnosticSeverity, DiagnosticState,
+        DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow, DiffReviewOutcome,
+        DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus, FileTree,
+        FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
+        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
+        TerminalRunStatus, example_checkpoints, example_help_entries,
     },
 };
 
@@ -1409,32 +1409,15 @@ fn paint_confirm_banner(
     kind: &GitDestructiveKind,
     proceed: bool,
 ) {
-    let y = area.bottom().saturating_sub(2);
-    if y < area.y {
-        return;
-    }
-    let w = usize::from(area.width);
-    buffer.set_stringn(
-        area.x,
-        y,
-        take_display_cols(&format!("! {} — {}", kind.label(), kind.consequence()), w),
-        w,
-        system.style(Role::Danger),
-    );
-    let bar_y = area.bottom().saturating_sub(1);
-    let cancel = if !proceed { "[Cancel]" } else { " Cancel " };
-    let go = if proceed {
-        format!("[{}]", kind.label())
-    } else {
-        format!(" {} ", kind.label())
-    };
-    buffer.set_stringn(
-        area.x,
-        bar_y,
-        take_display_cols(&format!("{cancel}  {go}"), w),
-        w,
-        system.style(Role::Accent),
-    );
+    let consequence = kind.consequence();
+    ConfirmPrompt::new(kind.label(), kind.label(), system)
+        .detail(&consequence)
+        .focus(if proceed {
+            ConfirmFocus::Confirm
+        } else {
+            ConfirmFocus::Cancel
+        })
+        .paint(area, buffer);
 }
 
 // ── Fixtures ────────────────────────────────────────────────────────────────

@@ -12,7 +12,13 @@
 //! focus / activation.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Span, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Style,
+    text::{Line, Span},
+    widgets::Widget,
+};
 use ratatui_widgets::block::Block;
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
@@ -391,6 +397,92 @@ pub enum PanelOutcome {
     },
 }
 
+/// A k9s-style panel title: what this pane is, and what it is showing.
+///
+/// Panel titles are the most-read line in a workbench, and hand-built title
+/// strings never agree on order or tone. The spec fixes both:
+/// `Name(scope)[count] /filter`, with the name loud, the scope quiet, the
+/// count faint, and the filter in the accent only while it is filtering
+/// something (`docs/design/tui-app-deep-analysis.md` §4).
+///
+/// It composes the panel's existing title slots — there is no second title
+/// pipeline — so a panel may state a spec or the individual slots, not both.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct PanelTitleSpec<'a> {
+    /// What the pane is: `Pods`, `Files`, `Diagnostics`.
+    pub name: &'a str,
+    /// What it is scoped to: a namespace, a directory, a branch.
+    pub scope: Option<&'a str>,
+    /// How many rows the pane holds.
+    pub count: Option<usize>,
+    /// The active filter query, without its leading slash.
+    pub filter: Option<&'a str>,
+    /// Whether the pane is following a live source.
+    pub live: bool,
+}
+
+impl<'a> PanelTitleSpec<'a> {
+    /// A title stating only the pane's name.
+    #[must_use]
+    pub const fn new(name: &'a str) -> Self {
+        Self {
+            name,
+            scope: None,
+            count: None,
+            filter: None,
+            live: false,
+        }
+    }
+
+    /// Scopes the pane (namespace, directory, branch).
+    #[must_use]
+    pub const fn scope(mut self, scope: &'a str) -> Self {
+        self.scope = Some(scope);
+        self
+    }
+
+    /// States how many rows the pane holds.
+    #[must_use]
+    pub const fn count(mut self, count: usize) -> Self {
+        self.count = Some(count);
+        self
+    }
+
+    /// States the active filter query (without its leading slash).
+    #[must_use]
+    pub const fn filter(mut self, filter: &'a str) -> Self {
+        self.filter = Some(filter);
+        self
+    }
+
+    /// Marks the pane as following a live source.
+    #[must_use]
+    pub const fn live(mut self, live: bool) -> Self {
+        self.live = live;
+        self
+    }
+
+    /// The plain title text, for semantics and for tests.
+    #[must_use]
+    pub fn text(&self, live_glyph: &str) -> String {
+        let mut out = self.name.trim().to_string();
+        if let Some(scope) = self.scope {
+            out.push_str(&format!("({})", scope.trim()));
+        }
+        if let Some(count) = self.count {
+            out.push_str(&format!("[{count}]"));
+        }
+        if let Some(filter) = self.filter {
+            out.push_str(&format!(" /{}", filter.trim()));
+        }
+        if self.live {
+            out.push(' ');
+            out.push_str(live_glyph);
+        }
+        out
+    }
+}
+
 /// A composable container painted through [`DesignSystem`] recipes.
 #[derive(Debug, Clone)]
 pub struct Panel<'a> {
@@ -404,6 +496,7 @@ pub struct Panel<'a> {
     overlay: bool,
     /// Header actions (dropped under narrow width before badge).
     header_actions: &'a [PanelAction<'a>],
+    title_spec: Option<PanelTitleSpec<'a>>,
     style: Option<Style>,
     tokens: &'a DesignSystem,
 }
@@ -430,6 +523,7 @@ impl<'a> Panel<'a> {
             raised: false,
             overlay: false,
             header_actions: &[],
+            title_spec: None,
             style: None,
             tokens,
         }
@@ -479,6 +573,16 @@ impl<'a> Panel<'a> {
     #[must_use]
     pub const fn badge(mut self, badge: &'a str) -> Self {
         self.slots.badge = Some(badge);
+        self
+    }
+
+    /// States the title as a composed spec instead of loose slots.
+    ///
+    /// `Name(scope)[count] /filter` with one tone per segment. Overrides the
+    /// `title` slot; the other slots still apply.
+    #[must_use]
+    pub const fn title_spec(mut self, spec: PanelTitleSpec<'a>) -> Self {
+        self.title_spec = Some(spec);
         self
     }
 
@@ -712,7 +816,9 @@ impl<'a> Panel<'a> {
             Block::default()
         };
         let slots = self.slots_for_width(width);
-        if let Some(title) = self.title_line(slots, None) {
+        if let Some(spec) = self.title_spec {
+            block = block.title(self.title_spec_line(spec, width.saturating_sub(4), recipe.title));
+        } else if let Some(title) = self.title_line(slots, None) {
             let clipped = self.chrome_label(&title, width.saturating_sub(4));
             block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
         }
@@ -738,7 +844,79 @@ impl<'a> Panel<'a> {
         .into_owned()
     }
 
+    /// Paints a title spec as one line with a tone per segment.
+    fn title_spec_line(
+        &self,
+        spec: PanelTitleSpec<'a>,
+        budget: u16,
+        title_style: Style,
+    ) -> Line<'static> {
+        let live_glyph = self
+            .tokens
+            .glyphs
+            .resolve(crate::style::Glyph::Success)
+            .text;
+        let plain = spec.text(live_glyph);
+        // Contraction is one rule for every panel title, spec or not: when the
+        // segments cannot fit, the whole line contracts as text rather than
+        // dropping a segment silently.
+        if crate::text::display_cols(&plain) > usize::from(budget.max(1)) {
+            return Line::from(Span::styled(
+                format!(" {} ", self.chrome_label(&plain, budget)),
+                title_style,
+            ));
+        }
+        let mut spans = vec![
+            Span::raw(" "),
+            Span::styled(spec.name.trim().to_string(), title_style),
+        ];
+        if let Some(scope) = spec.scope {
+            spans.push(Span::styled(
+                format!("({})", scope.trim()),
+                self.tokens.style(Role::TextMuted),
+            ));
+        }
+        if let Some(count) = spec.count {
+            spans.push(Span::styled(
+                format!("[{count}]"),
+                self.tokens.style(Role::TextFaint),
+            ));
+        }
+        if let Some(filter) = spec.filter {
+            spans.push(Span::styled(
+                format!(" /{}", filter.trim()),
+                self.tokens.style(Role::Accent),
+            ));
+        }
+        if spec.live {
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(
+                live_glyph.to_string(),
+                self.tokens.style(Role::Success),
+            ));
+        }
+        spans.push(Span::raw(" "));
+        Line::from(spans)
+    }
+
     fn title_line(&self, slots: PanelSlots<'a>, collapsed: Option<bool>) -> Option<String> {
+        if let Some(spec) = self.title_spec {
+            let mut base = spec.text(
+                self.tokens
+                    .glyphs
+                    .resolve(crate::style::Glyph::Success)
+                    .text,
+            );
+            if self.collapsible {
+                let glyph = if collapsed.unwrap_or(false) {
+                    self.tokens.glyphs.disclosure_closed()
+                } else {
+                    self.tokens.glyphs.disclosure_open()
+                };
+                base = format!("{glyph} {base}");
+            }
+            return Some(base);
+        }
         let mut base = slots.title_text()?;
         // Danger chrome marks itself in the title so the warning survives a
         // colorless terminal, where the red border is just a border.
@@ -942,13 +1120,15 @@ impl<'a> Panel<'a> {
                 .border_style(border)
                 .border_set(self.tokens.border_set());
             let slots = self.slots_for_width(area.width);
-            if let Some(title) = self.title_line(slots, Some(collapsed)) {
-                // Reserve right band for header actions so title does not collide.
-                let action_reserve = parts
-                    .actions
-                    .map(|a| a.width.saturating_add(1))
-                    .unwrap_or(0);
-                let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
+            // Reserve right band for header actions so title does not collide.
+            let action_reserve = parts
+                .actions
+                .map(|a| a.width.saturating_add(1))
+                .unwrap_or(0);
+            let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
+            if let Some(spec) = self.title_spec {
+                block = block.title(self.title_spec_line(spec, budget, recipe.title));
+            } else if let Some(title) = self.title_line(slots, Some(collapsed)) {
                 let clipped = self.chrome_label(&title, budget);
                 block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
             }
@@ -1136,14 +1316,33 @@ impl Widget for Panel<'_> {
 
 fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, collapsed: bool) {
     let slots = panel.slots_for_width(header.width.saturating_add(4));
+    let style = if panel.emphasis == PanelChrome::Focused {
+        panel.tokens.style(Role::TextStrong)
+    } else {
+        panel.tokens.style(Role::Text)
+    };
+    if let Some(spec) = panel.title_spec {
+        // A frameless header states the same segments in the same tones as a
+        // bordered one; only the box differs.
+        let line = panel.title_spec_line(spec, header.width, style);
+        let mut scratch = String::new();
+        crate::text::paint_line_overflow(
+            buffer,
+            header,
+            &line,
+            style,
+            crate::text::LinePlacement {
+                alignment: crate::text::CellAlignment::Left,
+                overflow: crate::text::CellOverflow::Ellipsis,
+                ellipsis: panel.tokens.glyphs.ellipsis(),
+            },
+            &mut scratch,
+        );
+        return;
+    }
     if let Some(title) = panel.title_line(slots, Some(collapsed)) {
         // Same rule as the bordered variants: a clipped header says so.
         let t = panel.chrome_label(&title, header.width);
-        let style = if panel.emphasis == PanelChrome::Focused {
-            panel.tokens.style(Role::TextStrong)
-        } else {
-            panel.tokens.style(Role::Text)
-        };
         buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
     }
 }
@@ -1559,6 +1758,55 @@ mod tests {
                 .is_focusable()
         );
         assert!(Panel::new(&tokens).collapsible(true).is_focusable());
+    }
+
+    #[test]
+    fn a_title_spec_states_each_segment_in_its_own_tone() {
+        let system = DesignSystem::default();
+        let spec = PanelTitleSpec::new("Pods")
+            .scope("kube-system")
+            .count(42)
+            .filter("api");
+        let panel = Panel::new(&system).title_spec(spec);
+        let area = Rect::new(0, 0, 48, 4);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(&panel, area, &mut buffer);
+
+        let top: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(top.contains("Pods(kube-system)[42] /api"), "{top:?}");
+
+        let at = |needle: char| {
+            let x = (0..area.width)
+                .find(|x| buffer[(*x, 0)].symbol().starts_with(needle))
+                .unwrap_or_else(|| panic!("{needle:?} must be painted in {top:?}"));
+            buffer[(x, 0)].style().fg
+        };
+        assert_eq!(at('k'), system.style(Role::TextMuted).fg, "scope is quiet");
+        assert_eq!(at('4'), system.style(Role::TextFaint).fg, "count is faint");
+        assert_eq!(
+            at('/'),
+            system.style(Role::Accent).fg,
+            "an active filter is loud"
+        );
+        assert_ne!(at('P'), at('k'), "the name must outrank its scope");
+    }
+
+    #[test]
+    fn an_over_wide_title_spec_contracts_as_one_line() {
+        let system = DesignSystem::default();
+        let spec = PanelTitleSpec::new("Diagnostics")
+            .scope("crates/termrock/src/widgets")
+            .count(1234)
+            .filter("unresolved import");
+        let panel = Panel::new(&system).title_spec(spec);
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(&panel, area, &mut buffer);
+        let top: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(
+            top.contains(system.glyphs.ellipsis()),
+            "a contracted title says so: {top:?}"
+        );
     }
 
     #[test]

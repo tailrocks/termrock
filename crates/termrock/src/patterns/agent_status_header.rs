@@ -37,7 +37,9 @@ use crate::{
     widgets::StatusBarState,
     widgets::StatusKind,
     widgets::StatusRegion,
+    widgets::StatusSegment,
     widgets::StatusSlot,
+    widgets::StatusStrip,
 };
 
 /// Overlay / focus id for header chrome.
@@ -969,104 +971,88 @@ impl<'a> AgentStatusHeader<'a> {
 
         // Row 1: actionable first
         if y < max_y {
-            let mut segs: Vec<(String, Role)> = Vec::new();
-            // Action / work
             let work = snap.work_text();
-            let work_role = if self.colorless {
-                Role::Text
-            } else {
-                snap.work.role()
-            };
-            let g = snap.work.glyph(self.ascii);
-            let mut work_s = format!("{g} {work}");
+            let mut work_s = format!("{} {work}", snap.work.glyph(self.ascii));
             if let Some(d) = snap.action_detail.as_ref() {
                 work_s = format!("{work_s}: {d}");
             }
-            segs.push((work_s, work_role));
+            let connection = format!(
+                "{} {}",
+                snap.connection.glyph(self.ascii),
+                snap.connection.label()
+            );
+            let queue = snap
+                .queue_depth
+                .filter(|q| *q > 0)
+                .map(|q| format!("q:{q}"));
+            let branch = snap.branch.as_ref().map(|b| format!("⌥ {b}"));
 
-            // A permanent row of eight segments in five hues is not a
-            // status line, it is a dashboard. The default frame keeps what is
+            // A permanent row of eight segments in five hues is not a status
+            // line, it is a dashboard. The default frame keeps what is
             // actionable — work, a connection that is not ready, the model,
             // and a non-empty queue — and `i` opens the rest in place
-            // (information budget, plans/017 Part B).
+            // (information budget, plans/017 Part B). StatusStrip owns the
+            // colour budget and the drop order (plans/016 Step 1).
             let expanded = state.segments_expanded;
-            let mut hidden = 0usize;
-
-            if expanded || !matches!(snap.connection, AgentConnectionStatus::Ready) {
-                let cg = snap.connection.glyph(self.ascii);
-                segs.push((
-                    format!("{cg} {}", snap.connection.label()),
-                    if self.colorless {
-                        Role::Text
-                    } else {
-                        snap.connection.role()
-                    },
-                ));
-            } else {
-                hidden += 1;
+            let ready = matches!(snap.connection, AgentConnectionStatus::Ready);
+            let mut segments = vec![
+                StatusSegment::new(&work_s)
+                    .role(snap.work.role())
+                    .priority(100),
+            ];
+            if expanded || !ready {
+                segments.push(
+                    StatusSegment::new(&connection)
+                        .role(snap.connection.role())
+                        .priority(90),
+                );
+            }
+            if let Some(model) = snap.model.as_ref() {
+                segments.push(StatusSegment::new(model).priority(70));
+            }
+            if let Some(queue) = queue.as_ref() {
+                segments.push(StatusSegment::new(queue).role(Role::Warning).priority(80));
+            }
+            let context = snap.context_text();
+            if expanded {
+                for (text, priority) in [
+                    (branch.as_deref(), 40u8),
+                    (snap.mode.as_deref(), 35),
+                    (context.as_deref(), 30),
+                    (snap.cost.as_deref(), 20),
+                    (snap.elapsed.as_deref(), 10),
+                ] {
+                    if let Some(text) = text {
+                        segments.push(StatusSegment::new(text).priority(priority));
+                    }
+                }
             }
 
-            if let Some(m) = snap.model.as_ref() {
-                segs.push((m.clone(), Role::TextMuted));
-            }
-            if let Some(q) = snap.queue_depth
-                && q > 0
-            {
-                segs.push((format!("q:{q}"), Role::Warning));
-            }
-
-            for extra in [
-                snap.branch
-                    .as_ref()
-                    .map(|b| (format!("⌥ {b}"), Role::TextMuted)),
-                snap.mode.as_ref().map(|m| (m.clone(), Role::TextMuted)),
-                snap.context_text().map(|ctx| (ctx, Role::TextMuted)),
-                snap.cost.as_ref().map(|c| (c.clone(), Role::TextMuted)),
-                snap.elapsed.as_ref().map(|e| (e.clone(), Role::TextMuted)),
+            let hidden = [
+                (!expanded && ready).then_some(()),
+                (!expanded).then_some(()).filter(|()| branch.is_some()),
+                (!expanded).then_some(()).filter(|()| snap.mode.is_some()),
+                (!expanded).then_some(()).filter(|()| context.is_some()),
+                (!expanded).then_some(()).filter(|()| snap.cost.is_some()),
+                (!expanded)
+                    .then_some(())
+                    .filter(|()| snap.elapsed.is_some()),
             ]
             .into_iter()
             .flatten()
-            {
-                if expanded {
-                    segs.push(extra);
-                } else {
-                    hidden += 1;
-                }
+            .count();
+            let hint = if expanded {
+                "i less".to_string()
+            } else {
+                format!("i +{hidden}")
+            };
+            if expanded || hidden > 0 {
+                segments.push(StatusSegment::new(&hint).role(Role::TextFaint).priority(5));
             }
 
-            if expanded {
-                segs.push(("i less".into(), Role::TextFaint));
-            } else if hidden > 0 {
-                segs.push((format!("i +{hidden}"), Role::TextFaint));
-            }
-
-            // Paint left-to-right, drop from end when overflow (but keep first actionable)
-            let mut x = inner.x;
-            let end = inner.x.saturating_add(inner.width);
-            for (i, (text, role)) in segs.iter().enumerate() {
-                let piece = if i == 0 {
-                    text.clone()
-                } else {
-                    format!(" · {text}")
-                };
-                let tw = display_cols(&piece) as u16;
-                if x.saturating_add(tw) > end {
-                    // Keep actionable first segment always (may clip)
-                    if i == 0 {
-                        let clipped = take_display_cols(&piece, usize::from(end.saturating_sub(x)));
-                        buffer.set_stringn(
-                            x,
-                            y,
-                            clipped,
-                            usize::from(end.saturating_sub(x)),
-                            self.system.style(*role),
-                        );
-                    }
-                    break;
-                }
-                buffer.set_stringn(x, y, &piece, usize::from(tw), self.system.style(*role));
-                x = x.saturating_add(tw);
-            }
+            StatusStrip::new(&segments, self.system)
+                .colorless(self.colorless)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
 

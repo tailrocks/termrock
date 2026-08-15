@@ -18,12 +18,7 @@
 //!
 //! Research: Yazi, ranger, lf, broot, desktop file managers.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -35,11 +30,12 @@ use crate::{
     widgets::{
         AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind, AlertScope, BreadcrumbItem,
         Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, FileTree, FileTreeEntry,
-        FileTreeOutcome, FileTreeState, List, ListRow, ListState, PreviewCard, PreviewCardContent,
-        PreviewCardState, PreviewLoadState, PreviewMetadata, PreviewResourceKind, QuickOpen,
-        QuickOpenItem, QuickOpenOutcome, QuickOpenProvider, QuickOpenState, SearchInput,
-        SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
-        breadcrumbs_from_path, file_tree_to_quick_open_items, normalize_path_display,
+        FileTreeOutcome, FileTreeState, List, ListRow, ListState, Panel, PreviewCard,
+        PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
+        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
+        QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
+        file_tree_to_quick_open_items, normalize_path_display,
     },
 };
 
@@ -1547,12 +1543,10 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
         let focused = state.focus == "search";
         state.search.set_focused(focused);
         if r.height >= 3 {
-            let panel = Panelish {
-                system,
-                title: "Filter",
-                focused,
-            };
-            let inner = panel.paint(r, buffer);
+            let inner = Panel::new(system)
+                .title("Filter")
+                .emphasis(PanelChrome::for_focus(focused))
+                .paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system).placeholder("filter files…").paint(
                     inner,
@@ -1588,12 +1582,10 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
                 .load(PreviewLoadState::Idle)
                 .essential_elsewhere(true)
         });
-        let panel = Panelish {
-            system,
-            title: "Preview",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Preview")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             PreviewCard::new(content, system).paint(inner, buffer, &mut state.preview);
         }
@@ -1602,12 +1594,10 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
     // Queue
     if let Some(r) = pane_area(&panes, "queue") {
         let focused = state.focus == "queue";
-        let panel = Panelish {
-            system,
-            title: "Operations",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Operations")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = FileManagerState::queue_rows(ops);
             if rows.is_empty() {
@@ -1697,29 +1687,6 @@ pub fn quick_open_rect(area: Rect) -> Rect {
     let x = area.x.saturating_add(area.width.saturating_sub(w) / 2);
     let y = area.y.saturating_add(area.height.saturating_sub(h) / 2);
     Rect::new(x, y, w, h)
-}
-
-/// Minimal panel chrome helper (uses public Panel).
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
-    }
 }
 
 // ── Fixtures ────────────────────────────────────────────────────────────────

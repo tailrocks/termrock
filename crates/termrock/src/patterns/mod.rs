@@ -1,18 +1,50 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **Example compositions** — product recipes built from generic
-//! [`crate::widgets`] building blocks.
+//! **Examples** — copyable recipes built from generic [`crate::widgets`].
 //!
-//! This module is **not** the default widgets catalog. It holds connection
-//! managers, auth/login entry, workbenches, dashboards, session pickers, and
-//! similar multi-widget demos so consumers can copy the assembly pattern.
-//! Import building blocks from `termrock::widgets`; import these recipes from
-//! `termrock::patterns` only when you want a ready-made example composite.
+//! This module is **not** the widgets catalog. It holds connection managers,
+//! auth entry, workbenches, dashboards, session pickers and similar
+//! multi-widget assemblies so a consumer can read one, copy it, and adapt it
+//! to their own domain. Import building blocks from `termrock::widgets`;
+//! import these recipes from `termrock::patterns` only when a ready-made
+//! example is what you want.
 //!
-//! Classification law (agents): see repository `Agents.md` and
+//! # The example charter
+//!
+//! An example teaches by being honest about how the library is meant to be
+//! used. Concretely, every file in this module:
+//!
+//! 1. **Composes public widgets only.** No raw buffer paint — no
+//!    `set_stringn`, no `cell_mut`. If a surface cannot be expressed through
+//!    widgets, the missing widget is the finding, not a license to hand-roll
+//!    chrome here. (An example that paints its own chrome teaches the wrong
+//!    thing, and the design language loses its enforcement point.)
+//! 2. **Owns domain state and wording.** Product nouns, copy, status
+//!    vocabulary and projections live here; tone, glyphs, focus chrome and
+//!    contraction live in the widgets.
+//! 3. **Maps state to widget inputs, and nothing more.** `Role::` appears only
+//!    inside small `role()`-style mapping functions, never as ad-hoc styling.
+//! 4. **Teaches one assembly**, named in its header: every rendering example
+//!    opens with `//! Teaches:` and lists the widgets it composes.
+//!
+//! The composition floor — what a shippable example must use rather than
+//! approximate: forms via [`crate::widgets::Form`], every shippable action as
+//! a real [`crate::widgets::Button`], footers via
+//! [`crate::widgets::StatusBar`] and [`crate::widgets::HintBar`], empties via
+//! [`crate::widgets::EmptyState`], confirms via
+//! [`crate::widgets::ConfirmPrompt`], titles via
+//! [`crate::widgets::PanelTitleSpec`], metric cards via
+//! [`crate::widgets::MetricTile`], header strips via
+//! [`crate::widgets::StatusStrip`], inline mode rows via
+//! [`crate::widgets::ChromeRow`].
+//!
+//! `design_gate.rs::patterns_only_compose` and
+//! `design_gate.rs::patterns_have_charter_docs` keep this honest.
+//!
+//! Classification law (agents): see repository `AGENTS.md` and
 //! `docs/design/building-block-vs-example-composite.md`. New product-noun
-//! recipes belong here—not under `widgets`.
+//! recipes belong here — not under `widgets`.
 //!
 //! **Canonical shell:** [`layout_app_shell`] / [`AppShellConfig`]. Specialized
 //! helpers (`layout_agent_shell`, `layout_studio_shell`, …) are thin recipe
@@ -226,10 +258,10 @@ pub use integration_status::{
 pub use metrics_dashboard::bench as metrics_dashboard_bench;
 pub use metrics_dashboard::{
     METRICS_DASHBOARD_DEFAULT_REFRESH_MS, METRICS_DASHBOARD_NARROW_MAX_WIDTH, MetricAlert,
-    MetricAlertSeverity, MetricTile, MetricTileHealth, MetricViz, MetricsComparison,
-    MetricsDashboard, MetricsDashboardLayoutMode, MetricsDashboardOutcome, MetricsDashboardSlots,
-    MetricsDashboardState, MetricsFocus, MetricsTimeRange, apply_metrics_command, commands,
-    layout_metrics_dashboard, metrics_dashboard_commands,
+    MetricAlertSeverity, MetricsComparison, MetricsDashboard, MetricsDashboardLayoutMode,
+    MetricsDashboardOutcome, MetricsDashboardSlots, MetricsDashboardState, MetricsFocus,
+    MetricsTimeRange, apply_metrics_command, commands, layout_metrics_dashboard,
+    metrics_dashboard_commands,
 };
 pub use plan_review::bench as plan_review_bench;
 pub use plan_review::{

@@ -1244,14 +1244,8 @@ impl<'a> HexViewer<'a> {
 
         if state.search.is_some() && y < area.bottom() {
             let q = state.search.as_deref().unwrap_or("");
-            let line = format!("/{q}_");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::Accent),
-            );
+            crate::widgets::ChromeRow::query(q, self.system)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
         }
 

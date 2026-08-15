@@ -323,6 +323,18 @@ pub enum PanelChrome {
     Danger,
 }
 
+impl PanelChrome {
+    /// The chrome a container wears for a focus flag.
+    ///
+    /// Every surface that owns focus reaches for the same two-armed
+    /// conditional; stating it once keeps the focus-visible hierarchy from
+    /// drifting one container at a time.
+    #[must_use]
+    pub const fn for_focus(focused: bool) -> Self {
+        if focused { Self::Focused } else { Self::Normal }
+    }
+}
+
 /// Resolved paint plan for a panel chrome surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PanelRecipe {

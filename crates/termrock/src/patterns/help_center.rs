@@ -40,7 +40,7 @@ use crate::{
     widgets::{
         CommandEntry, HelpEntry, KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome,
         KeyboardHelpState, List, ListRow, ListState, MarkdownBlock, MarkdownOutcome, MarkdownView,
-        MarkdownViewState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
+        MarkdownViewState, Panel, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
         StatusBarState, StatusRegion, StatusSlot, example_help_entries, filter_help_entries,
         project_markdown,
     },
@@ -1413,15 +1413,13 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         let focused = state.focus == "search";
         state.search.set_focused(focused);
         if r.height >= 3 {
-            let panel = Panelish {
-                system,
-                title: match state.mode {
+            let inner = Panel::new(system)
+                .title(match state.mode {
                     HelpCenterMode::Full => "Help · docs",
                     HelpCenterMode::Compact => "Help · overlay",
-                },
-                focused,
-            };
-            let inner = panel.paint(r, buffer);
+                })
+                .emphasis(PanelChrome::for_focus(focused))
+                .paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("search topics, keys, commands…")
@@ -1437,12 +1435,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Nav
     if let Some(r) = pane_area(&panes, "nav") {
         let focused = state.focus == "nav";
-        let panel = Panelish {
-            system,
-            title: "Topics",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Topics")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = help_topic_rows(&filtered_topics);
             if rows.is_empty() {
@@ -1476,12 +1472,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Commands — from command_entries_from_help / host catalog
     if let Some(r) = pane_area(&panes, "commands") {
         let focused = state.focus == "commands";
-        let panel = Panelish {
-            system,
-            title: "Commands",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Commands")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let filtered: Vec<CommandEntry<String>> = commands
                 .iter()
@@ -1527,12 +1521,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             .or_else(|| filtered_topics.first().copied())
             .or_else(|| topics.first());
         let title = topic.map(|t| t.title.as_str()).unwrap_or("Help");
-        let panel = Panelish {
-            system,
-            title,
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title(title)
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             if let Some(t) = topic {
                 let blocks = project_markdown(&t.markdown);
@@ -1552,12 +1544,10 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
     // Diagnostics
     if let Some(r) = pane_area(&panes, "diagnostics") {
         let focused = state.focus == "diagnostics";
-        let panel = Panelish {
-            system,
-            title: "Diagnostics · doctor",
-            focused,
-        };
-        let inner = panel.paint(r, buffer);
+        let inner = Panel::new(system)
+            .title("Diagnostics · doctor")
+            .emphasis(PanelChrome::for_focus(focused))
+            .paint(r, buffer, None);
         if !inner.is_empty() {
             let rows = diagnostics_rows(doctor, component_ids);
             if rows.is_empty() {
@@ -1589,28 +1579,6 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             buffer,
             &mut state.status,
         );
-    }
-}
-
-struct Panelish<'a> {
-    system: &'a DesignSystem,
-    title: &'a str,
-    focused: bool,
-}
-
-impl Panelish<'_> {
-    fn paint(&self, area: Rect, buffer: &mut Buffer) -> Rect {
-        use crate::widgets::Panel;
-        let panel = Panel::new(self.system)
-            .title(self.title)
-            .emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
-        inner
     }
 }
 

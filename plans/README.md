@@ -101,6 +101,7 @@ Write the claim here **before** writing code. Release it by deleting the row.
 
 | Claim | Owner | Scope |
 |-------|-------|-------|
+| 016 patterns become examples | agent C | `patterns/**`, `widgets/{metric_tile,status_strip,confirm_prompt,chrome_row,panel}.rs`, `design_gate.rs` pattern gates |
 | the remaining suite | agent C — sole remaining lane | 008, 010-016, 018, 019, 021, 022. The design and motion lanes' sessions ended; their claims are released here rather than left to look live. |
 | 022 craft pass, remaining steps | agent C (017/022/007/009) | `text/mod.rs`, `scroll/render.rs`, `style/glyph.rs` tee glyphs, table column gutters, `design_gate.rs` craft gates |
 
