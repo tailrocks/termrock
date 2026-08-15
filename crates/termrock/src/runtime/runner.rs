@@ -413,8 +413,15 @@ mod tests {
         use ratatui_core::widgets::Widget;
 
         let tap = TappedWriter::default();
-        let mut terminal = Terminal::new(QuietBackend::new(CrosstermBackend::new(tap.clone())))
-            .expect("in-memory terminal");
+        let mut terminal = Terminal::with_options(
+            QuietBackend::new(CrosstermBackend::new(tap.clone())),
+            ratatui_core::terminal::TerminalOptions {
+                viewport: ratatui_core::terminal::Viewport::Fixed(ratatui_core::layout::Rect::new(
+                    0, 0, 80, 24,
+                )),
+            },
+        )
+        .expect("in-memory terminal");
         let paint = |frame: &mut Frame<'_>| {
             ratatui_core::text::Line::from("static").render(frame.area(), frame.buffer_mut());
         };
