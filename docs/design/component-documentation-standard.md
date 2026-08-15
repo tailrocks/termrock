@@ -76,6 +76,15 @@ day a pattern changed what it composes. A component no pattern composes renders
 "not yet composed in a shipped example", and that is a coverage signal about
 the examples rather than about the component (plans/018 Step 1).
 
+### In-application variants
+
+A component that a shipped example composes also gets a story id
+`<component-kebab>/in-app`, built by mounting that example's existing
+interactor and labelling it with the component. The page's variant picker then
+offers "In application" beside the isolated stories. The scenes reuse
+interactors — a variant never forks an application's state machine, because two
+copies of a state machine drift and the fork is always the one that rots.
+
 ## Preview law
 
 The website and native Lookbook mount the same `DemoSession` factory. Browser

@@ -5,4 +5,24 @@ description: Complete application recipes composed from public TermRock building
 
 Patterns are inspectable recipes under `termrock::patterns`. Every detail page mounts the same long-lived Rust demo as native Lookbook. Product data, effects, credentials, and policy remain owned by the consuming application.
 
+**Start here**, in the order a new application usually needs them:
+
+1. **[App shell](./app-shell)** — the frame everything else sits in:
+   header, sidebar, main, status bar, and where overlays are allowed to open.
+2. **[Agent workbench](./agent-workbench)** — the fullest assembly in
+   the catalog: transcript, composer, task rail, approvals and diagnostics
+   sharing one focus model.
+3. **[Observability dashboard](./observability-dashboard)** — metrics,
+   logs and events side by side, which is where the data widgets earn their
+   tone ladder.
+4. **[Auth entry](./auth-entry)** and
+   **[Setup wizard](./setup-wizard)** — the first two screens a user
+   ever sees, and the two most sensitive to field chrome.
+5. **[Settings screen](./settings-screen)** — the long tail: search,
+   sections, validation, and an explicit apply.
+
+An **application** is a complete multi-surface sample; a **composite** is a
+product-shaped recipe you would copy into one pane; a **layout helper** is
+geometry shown inside its canonical parent.
+
 <PatternGallery />
