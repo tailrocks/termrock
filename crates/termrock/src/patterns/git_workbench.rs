@@ -42,7 +42,8 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::{
-        PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+        ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
+        WorkspaceState, modal_rect,
     },
     style::{DesignSystem, Glyph, ListRowVisualState, PanelChrome, Role},
     text::take_display_cols,
@@ -1221,18 +1222,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 }
 
 fn centered_modal(area: Rect) -> Rect {
-    let width = (area.width * 3 / 5).clamp(28, area.width.saturating_sub(2).max(1));
-    let height = (area.height / 2).clamp(8, area.height.saturating_sub(2).max(1));
-    let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area
-        .y
-        .saturating_add(area.height.saturating_sub(height) / 4);
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
+    modal_rect(area, ModalSpec::new(3, 5, 28).height(1, 2, 8))
 }
 
 // ── Render ──────────────────────────────────────────────────────────────────

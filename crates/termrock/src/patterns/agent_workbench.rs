@@ -44,7 +44,8 @@ use crate::{
         LayerDismissPolicy, LayerKind, Outcome, SemanticRole,
     },
     layout::{
-        PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+        ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
+        WorkspaceState, modal_rect,
     },
     patterns::{
         ActivityItem, ActivityModel, ActivityShelf, ActivityShelfOutcome, ActivityShelfState,
@@ -734,42 +735,19 @@ pub struct WorkbenchModals {
 /// Centered modal geometry.
 #[must_use]
 pub fn permission_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 3, 4, 6, 16)
+    modal_rect(area, ModalSpec::new(3, 4, 16).height(1, 3, 6))
 }
 
 /// Question / plan / session modal.
 #[must_use]
 pub fn dialog_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 4, 5, 8, 20)
+    modal_rect(area, ModalSpec::new(4, 5, 20).height(1, 3, 8))
 }
 
 /// Diff modal (taller).
 #[must_use]
 pub fn diff_modal_rect(area: Rect) -> Rect {
-    centered_modal(area, 5, 6, 10, 24)
-}
-
-fn centered_modal(area: Rect, w_num: u16, w_den: u16, h_min: u16, w_min: u16) -> Rect {
-    let width = area.width.saturating_mul(w_num) / w_den;
-    let height = (area.height / 3)
-        .max(h_min)
-        .min(area.height.saturating_sub(2));
-    // A terminal narrower than the modal's minimum is a real size, not a
-    // programming error: `clamp` panics when the minimum exceeds the maximum,
-    // so a 20-column terminal used to take the whole application down the
-    // moment any overlay opened (found by the showcase, plans/019).
-    let max_width = area.width.saturating_sub(2).max(1);
-    let width = width.clamp(w_min.min(max_width), max_width);
-    let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
-    let y = area
-        .y
-        .saturating_add(area.height.saturating_sub(height) / 4);
-    Rect {
-        x,
-        y,
-        width,
-        height,
-    }
+    modal_rect(area, ModalSpec::new(5, 6, 24).height(1, 3, 10))
 }
 
 fn ensure_layer(

@@ -336,6 +336,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0320 | `v0.14.0` | [Transitions reach the widgets](migrations/0320-v0.14.0-transitions-reach-the-widgets.md) |
 | 0321 | `v0.14.0` | [The catalog tells the truth](migrations/0321-v0.14.0-the-catalog-tells-the-truth.md) |
 | 0322 | `v0.14.0` | [Overlays survive any terminal](migrations/0322-v0.14.0-overlays-survive-any-terminal.md) |
+| 0323 | `v0.14.0` | [One modal geometry](migrations/0323-v0.14.0-one-modal-geometry.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

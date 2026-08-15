@@ -479,6 +479,115 @@ pub fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
     Center::dialog(width, height).layout(area).child
 }
 
+/// A modal sized as a share of the terminal it opens in.
+///
+/// The minimums are *preferences*, not floors. A terminal narrower than the
+/// modal's minimum is a real size — an operator with a split pane, a tmux
+/// column, a phone SSH client — and the modal contracts into it. Three
+/// patterns used to hand-roll this arithmetic with `clamp(min, max)`, which
+/// panics the moment the minimum exceeds the maximum, so opening any overlay
+/// in a narrow pane took the whole application down (plans/019).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ModalSpec {
+    /// Numerator of the terminal width the modal asks for.
+    pub width_num: u16,
+    /// Denominator of the terminal width the modal asks for.
+    pub width_den: u16,
+    /// Width the modal prefers not to go below, when the terminal allows.
+    pub min_width: u16,
+    /// Numerator of the terminal height the modal asks for.
+    pub height_num: u16,
+    /// Denominator of the terminal height the modal asks for.
+    pub height_den: u16,
+    /// Height the modal prefers not to go below, when the terminal allows.
+    pub min_height: u16,
+    /// Cells left to the terminal on each axis, so the modal never fills it.
+    pub margin: u16,
+}
+
+impl ModalSpec {
+    /// A modal claiming `width_num/width_den` of the width, a third of the
+    /// height, and never less than `min_width` unless the terminal is smaller.
+    #[must_use]
+    pub const fn new(width_num: u16, width_den: u16, min_width: u16) -> Self {
+        Self {
+            width_num,
+            width_den,
+            min_width,
+            height_num: 1,
+            height_den: 3,
+            min_height: 6,
+            margin: 2,
+        }
+    }
+
+    /// Sets the height share and the height the modal prefers not to lose.
+    #[must_use]
+    pub const fn height(mut self, num: u16, den: u16, min_height: u16) -> Self {
+        self.height_num = num;
+        self.height_den = den;
+        self.min_height = min_height;
+        self
+    }
+
+    /// Sets the cells left to the terminal on each axis.
+    #[must_use]
+    pub const fn margin(mut self, margin: u16) -> Self {
+        self.margin = margin;
+        self
+    }
+}
+
+/// Places a modal proportionally inside `area`, biased into the upper third.
+///
+/// The bias is deliberate: a dialog pinned to the exact middle covers the row
+/// the operator was reading, while one held a little high leaves the content
+/// that prompted it visible underneath.
+///
+/// Total: never panics, never escapes `area`, and never overflows — the share
+/// is computed in `u32` because a 3/5 share of a wide terminal overflows `u16`
+/// before the division brings it back.
+#[must_use]
+pub fn modal_rect(area: Rect, spec: ModalSpec) -> Rect {
+    if area.is_empty() {
+        return Rect::new(area.x, area.y, 0, 0);
+    }
+    let width = modal_extent(
+        area.width,
+        spec.width_num,
+        spec.width_den,
+        spec.min_width,
+        spec.margin,
+    );
+    let height = modal_extent(
+        area.height,
+        spec.height_num,
+        spec.height_den,
+        spec.min_height,
+        spec.margin,
+    );
+    Rect {
+        x: area.x.saturating_add(area.width.saturating_sub(width) / 2),
+        y: area
+            .y
+            .saturating_add(area.height.saturating_sub(height) / 4),
+        width,
+        height,
+    }
+}
+
+/// One axis of [`modal_rect`]: a share, raised to the minimum, capped by room.
+///
+/// The order matters. Raising to the minimum *before* capping is what lets the
+/// cap win on a terminal too small for the minimum, instead of asserting an
+/// impossible range.
+fn modal_extent(available: u16, num: u16, den: u16, min: u16, margin: u16) -> u16 {
+    let room = available.saturating_sub(margin).max(1);
+    let share = u32::from(available) * u32::from(num) / u32::from(den.max(1));
+    let share = u16::try_from(share).unwrap_or(u16::MAX);
+    share.max(min).min(room)
+}
+
 /// Horizontally center a line of `display_cols` width on row `y` inside `area`.
 /// Returns the starting x (never outside area).
 #[must_use]

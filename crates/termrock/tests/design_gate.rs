@@ -1097,6 +1097,123 @@ fn flagship_widgets_survive_tiny_and_random_geometry() {
     }
 }
 
+/// Modal placement yields to the terminal instead of asserting a minimum.
+///
+/// The widget fuzz above never opens an overlay, which is how three patterns
+/// shipped a `clamp(min, max)` that panics whenever the terminal is narrower
+/// than the modal's own minimum: a 20-column pane took the whole host
+/// application down the moment an agent asked for permission. The geometry now
+/// has one authority ([`termrock::layout::modal_rect`]) and this gate walks it
+/// across every degenerate size the law names (plans/019, migrations/0323).
+#[test]
+fn modal_geometry_never_escapes_its_terminal() {
+    use termrock::layout::{ModalSpec, modal_rect};
+    use termrock::patterns::{dialog_modal_rect, diff_modal_rect, permission_modal_rect};
+
+    let specs = [
+        ModalSpec::new(3, 4, 16).height(1, 3, 6),
+        ModalSpec::new(3, 5, 28).height(1, 2, 8),
+        ModalSpec::new(5, 6, 24).height(1, 3, 10),
+        // A modal that wants more than the terminal has on both axes.
+        ModalSpec::new(9, 1, 400).height(9, 1, 400),
+    ];
+    for width in 0..=64u16 {
+        for height in 0..=24u16 {
+            let area = Rect::new(3, 2, width, height);
+            let mut rects = vec![
+                permission_modal_rect(area),
+                dialog_modal_rect(area),
+                diff_modal_rect(area),
+            ];
+            rects.extend(specs.iter().map(|spec| modal_rect(area, *spec)));
+            for rect in rects {
+                assert!(
+                    rect.x >= area.x
+                        && rect.y >= area.y
+                        && rect.right() <= area.right()
+                        && rect.bottom() <= area.bottom(),
+                    "modal {rect:?} escaped {area:?}"
+                );
+            }
+        }
+    }
+}
+
+/// Composed patterns keep painting with an overlay open at any size.
+///
+/// Frames, not helpers: the geometry gate above proves the rectangles are
+/// sane, this one proves the surfaces that place children inside them survive
+/// the same sizes.
+#[test]
+fn workbench_overlays_survive_tiny_and_random_geometry() {
+    use termrock::patterns::{
+        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+    };
+    use termrock::widgets::{
+        ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
+        PromptComposerState, StatusBarState, StatusSlot, Transcript, TranscriptState,
+    };
+
+    let system = DesignSystem::default();
+    let mut seed = 0xfeed_9876_u64;
+    for round in 0..80 {
+        let (width, height) = if round < 5 {
+            [(20u16, 5u16), (1, 1), (0, 4), (3, 2), (44, 9)][round]
+        } else {
+            (
+                u16::try_from(lcg(&mut seed) % 90).unwrap_or(0),
+                u16::try_from(lcg(&mut seed) % 30).unwrap_or(0),
+            )
+        };
+        let area = Rect::new(0, 0, width, height);
+
+        let mut workbench = AgentWorkbenchState::new();
+        let mut permission_state = PermissionPromptState::new();
+        let _ = permission_state.enqueue(
+            PermissionRequest::new("req-1", "shell", "repository")
+                .command("rm -rf build")
+                .expected("nothing runs until you decide"),
+        );
+        let permission = PermissionPrompt::new(&system);
+        let mut prompt_state = PromptComposerState::new();
+        let prompt = PromptComposer::new(&system);
+        let mut transcript_state = TranscriptState::<&str>::new();
+        let blocks = [];
+        let transcript = Transcript::new(&blocks, &system);
+        let mut status_state = StatusBarState::<&str>::new();
+        let slots = [StatusSlot::mode("mode", "busy")];
+        let modes = default_modes("build");
+        let tasks: [ListRow<'_, &'static str>; 0] = [];
+
+        let _ = painted(area, |buffer| {
+            render_agent_workbench(
+                buffer,
+                area,
+                WorkbenchSurfaces {
+                    system: &system,
+                    state: &mut workbench,
+                    task_models: None,
+                    tasks: &tasks,
+                    modes: &modes,
+                    transcript: &transcript,
+                    transcript_state: &mut transcript_state,
+                    activities: None,
+                    prompt: &prompt,
+                    prompt_state: &mut prompt_state,
+                    status_slots: &slots,
+                    status_state: &mut status_state,
+                    permission: Some((&permission, &mut permission_state)),
+                    question: None,
+                    plan: None,
+                    diff: None,
+                    session: None,
+                    working: None,
+                },
+            );
+        });
+    }
+}
+
 // ── Accent budget (plans/007 Step 7) ────────────────────────────────────────
 
 /// Cells one flagship frame may paint in the reserved accent before the
