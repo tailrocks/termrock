@@ -1,8 +1,8 @@
 # Jackin → TermRock parity and design verification
 
-- **Status**: PLANNED
+- **Status**: IN EXECUTION
 - **Slug**: jackin-termrock-parity
-- **Created**: 2026-08-16 · **Updated**: 2026-08-16
+- **Created**: 2026-08-16 · **Updated**: 2026-08-17
 - **Plan**: [plans/jackin-termrock-parity/](../../plans/jackin-termrock-parity/README.md)
 
 ## Intent
@@ -324,3 +324,4 @@ Remaining:
 - 2026-08-16 — tailrocks-finalize — closing interview: must-not reworded to verdict authority (decision), destination sentence added, headless Screens declaration, flow failure points, subset + side-harness vocabulary; readiness checklist passed in full; READY.
 - 2026-08-16 — tailrocks-finalize — user refinement during close: verdicts merge current improvements (hover etc.) onto the jackin-era base rather than binary pick; verdict flow, quality bar, capabilities updated; gate re-checked, READY stands.
 - 2026-08-16 — tailrocks-plan — package written: coverage ledger, 5-capability spec, 10 plans (all cold-reviewed, findings fixed), research chapters 05–06 added (Q1 closed empirically, Q2 closed), GOAL.md; PLANNED.
+- 2026-08-17 — executor — plan 001 started; IN EXECUTION.
