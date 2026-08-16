@@ -211,6 +211,9 @@ Reference totals use `rg -c 'termrock::' --type rust` matching lines. Per-item c
 
 | Entry point | Jackin evidence |
 |---|---|
+| `CommandPalette` | `crates/jackin-capsule/src/tui/components/palette.rs:30` |
+| `ProgressRail` | `crates/jackin-launch/src/tui/components/progress_rail.rs:26` |
+| `DigitalRain` | `crates/jackin-launch/src/tui/components/rain.rs:182` |
 | `github_context_view_from_state` | `crates/jackin-capsule/src/tui/components/dialog/github_context.rs:20` |
 | `modal_rect_for_mode` | `crates/jackin-capsule/src/tui/components/modal_rects.rs:135` |
 | `status_bar_plan` | `crates/jackin-capsule/src/tui/components/status_bar.rs:213` |
@@ -250,4 +253,3 @@ Reference totals use `rg -c 'termrock::' --type rust` matching lines. Per-item c
 | `render_launch_frame` | `crates/jackin-launch/src/tui/view.rs:25` |
 | `ready_blocking_subscription` | `crates/jackin-oppicker/src/adapters.rs:60` |
 | `clamp_dialog_scroll` | `crates/jackin-tui/src/operator_info.rs:357` |
-
