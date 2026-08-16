@@ -143,6 +143,7 @@ mod table;
 mod table_chrome;
 mod tabs;
 mod tag_chip;
+mod terminal_cell_grid;
 mod terminal_output;
 mod text;
 mod text_area;
@@ -253,6 +254,7 @@ pub use segmented_control::{
     SegmentedControl, SegmentedControlOutcome, SegmentedControlParts, SegmentedControlState,
     SegmentedItem, SegmentedItemParts, SegmentedPresentation,
 };
+pub use terminal_cell_grid::{TerminalCell, TerminalCellGrid, TerminalCellSource};
 pub use terminal_output::bench as terminal_output_bench;
 pub use terminal_output::{
     TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput, TerminalOutputOutcome,

@@ -86310,6 +86310,88 @@ pub unsafe fn termrock::widgets::TagState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::TagState
 pub fn termrock::widgets::TagState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TagState
+pub struct termrock::widgets::TerminalCell<'a>
+pub termrock::widgets::TerminalCell::diff: ratatui_core::buffer::cell::CellDiffOption
+pub termrock::widgets::TerminalCell::style: ratatui_core::style::Style
+pub termrock::widgets::TerminalCell::symbol: &'a str
+impl<'a> termrock::widgets::TerminalCell<'a>
+pub const fn termrock::widgets::TerminalCell<'a>::diff(self, ratatui_core::buffer::cell::CellDiffOption) -> Self
+pub const fn termrock::widgets::TerminalCell<'a>::new(&'a str, ratatui_core::style::Style) -> Self
+impl<'a> core::clone::Clone for termrock::widgets::TerminalCell<'a>
+pub fn termrock::widgets::TerminalCell<'a>::clone(&self) -> termrock::widgets::TerminalCell<'a>
+impl<'a> core::fmt::Debug for termrock::widgets::TerminalCell<'a>
+pub fn termrock::widgets::TerminalCell<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::marker::Copy for termrock::widgets::TerminalCell<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TerminalCell<'a>
+impl<'a> core::marker::Send for termrock::widgets::TerminalCell<'a>
+impl<'a> core::marker::Sync for termrock::widgets::TerminalCell<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TerminalCell<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TerminalCell<'a>
+impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalCell<'a>
+impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalCell<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalCell<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalCell<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalCell<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalCell<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalCell<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalCell<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalCell<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalCell<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalCell<'a> where T: core::clone::Clone
+pub type termrock::widgets::TerminalCell<'a>::Owned = T
+pub fn termrock::widgets::TerminalCell<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalCell<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalCell<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalCell<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCell<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalCell<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCell<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalCell<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalCell<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalCell<'a>
+pub fn termrock::widgets::TerminalCell<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalCell<'a>
+pub struct termrock::widgets::TerminalCellGrid<'a>
+impl<'a> termrock::widgets::TerminalCellGrid<'a>
+pub const fn termrock::widgets::TerminalCellGrid<'a>::new(&'a dyn termrock::widgets::TerminalCellSource) -> Self
+impl core::fmt::Debug for termrock::widgets::TerminalCellGrid<'_>
+pub fn termrock::widgets::TerminalCellGrid<'_>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl ratatui_core::widgets::widget::Widget for termrock::widgets::TerminalCellGrid<'_>
+pub fn termrock::widgets::TerminalCellGrid<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
+impl<'a> core::clone::Clone for termrock::widgets::TerminalCellGrid<'a>
+pub fn termrock::widgets::TerminalCellGrid<'a>::clone(&self) -> termrock::widgets::TerminalCellGrid<'a>
+impl<'a> core::marker::Copy for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> core::marker::Freeze for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> !core::marker::Send for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> !core::marker::Sync for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> core::marker::Unpin for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> core::marker::UnsafeUnpin for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TerminalCellGrid<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for termrock::widgets::TerminalCellGrid<'a>
+impl<T, U> core::convert::Into<U> for termrock::widgets::TerminalCellGrid<'a> where U: core::convert::From<T>
+pub fn termrock::widgets::TerminalCellGrid<'a>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::TerminalCellGrid<'a> where U: core::convert::Into<T>
+pub type termrock::widgets::TerminalCellGrid<'a>::Error = core::convert::Infallible
+pub fn termrock::widgets::TerminalCellGrid<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::TerminalCellGrid<'a> where U: core::convert::TryFrom<T>
+pub type termrock::widgets::TerminalCellGrid<'a>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::TerminalCellGrid<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::TerminalCellGrid<'a> where T: core::clone::Clone
+pub type termrock::widgets::TerminalCellGrid<'a>::Owned = T
+pub fn termrock::widgets::TerminalCellGrid<'a>::clone_into(&self, &mut T)
+pub fn termrock::widgets::TerminalCellGrid<'a>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::TerminalCellGrid<'a> where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::TerminalCellGrid<'a>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::TerminalCellGrid<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCellGrid<'a>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::TerminalCellGrid<'a> where T: ?core::marker::Sized
+pub fn termrock::widgets::TerminalCellGrid<'a>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::TerminalCellGrid<'a> where T: core::clone::Clone
+pub unsafe fn termrock::widgets::TerminalCellGrid<'a>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::TerminalCellGrid<'a>
+pub fn termrock::widgets::TerminalCellGrid<'a>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::TerminalCellGrid<'a>
 pub struct termrock::widgets::TerminalCommandMeta<'a>
 pub termrock::widgets::TerminalCommandMeta::command: &'a str
 pub termrock::widgets::TerminalCommandMeta::cwd: core::option::Option<&'a str>
@@ -91615,6 +91697,9 @@ impl termrock::widgets::SyntaxHighlighter for termrock::widgets::RoleTokenSyntax
 pub fn termrock::widgets::RoleTokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
 impl termrock::widgets::SyntaxHighlighter for termrock::widgets::TokenSyntax<'_>
 pub fn termrock::widgets::TokenSyntax<'_>::highlight_line<'line>(&self, &'line str, usize) -> alloc::vec::Vec<(&'line str, ratatui_core::style::Style)>
+pub trait termrock::widgets::TerminalCellSource
+pub fn termrock::widgets::TerminalCellSource::cell(&self, u16, u16) -> core::option::Option<termrock::widgets::TerminalCell<'_>>
+pub fn termrock::widgets::TerminalCellSource::size(&self) -> (u16, u16)
 pub fn termrock::widgets::allocate_segment_widths(&[f64], u16) -> alloc::vec::Vec<u16>
 pub fn termrock::widgets::any_dirty<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::any_touched<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool

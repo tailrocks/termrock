@@ -35,8 +35,8 @@ if (passiveExceptionKeys.size !== passiveExceptions.length) {
   throw new Error('duplicate passive interaction exception')
 }
 
-if (routeManifest.length !== 166) {
-  throw new Error(`canonical route manifest drift: expected 166, got ${routeManifest.length}`)
+if (routeManifest.length !== 167) {
+  throw new Error(`canonical route manifest drift: expected 167, got ${routeManifest.length}`)
 }
 if (new Set(routeManifest.map((entry) => entry.component)).size !== routeManifest.length) {
   throw new Error('duplicate component in canonical route manifest')
@@ -50,7 +50,7 @@ const publicWidgets = new Set(
   [...api.matchAll(/^impl.*ratatui_core::widgets::(?:widget::Widget|stateful_widget::StatefulWidget) for &?termrock::widgets::([A-Z][A-Za-z0-9_]*)/gm)]
     .map((match) => match[1]!),
 )
-if (publicWidgets.size !== 136) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
+if (publicWidgets.size !== 137) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
 const routedComponents = new Set(routeManifest.map((entry) => entry.component))
 const missingPublic = [...publicWidgets].filter((component) => !routedComponents.has(component))
 if (missingPublic.length) throw new Error(`public widgets without canonical page: ${missingPublic.join(', ')}`)
@@ -199,4 +199,4 @@ for (const migration of migrations) {
   }
 }
 
-console.log(`component docs: ${publicWidgets.size}/136 public widget inventory; ${routeManifest.length}/166 canonical routes; 84/84 Handbook migrations`)
+console.log(`component docs: ${publicWidgets.size}/137 public widget inventory; ${routeManifest.length}/167 canonical routes; 84/84 Handbook migrations`)

@@ -66,8 +66,8 @@ Apply in order: (1) product noun in public model → `example composite`; (2) mu
 
 | # | Proposed widget | Home | Jackin evidence | Existing-widget overlap | Source |
 |---:|---|---|---|---|---|
-| 1 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/benches/pane_body.rs:52` | — | component: CustomPaneBlit |
-| 2 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/src/tui/components/pane.rs:48` | `TerminalOutput` handles line models, not borrowed terminal cells | component: PaneBodyWidget |
+| 1 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/benches/pane_body.rs:52` | promoted → `termrock::widgets::TerminalCellGrid` (plan 010) | component: CustomPaneBlit |
+| 2 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/src/tui/components/pane.rs:48` | promoted → `termrock::widgets::TerminalCellGrid` (plan 010); `TerminalOutput` remains the line-model surface | component: PaneBodyWidget |
 | 3 | `ReadySubscription` | `crates/termrock/src/runtime/subscription.rs` | `crates/jackin-oppicker/src/adapters.rs:60` | — | component: ready_blocking_subscription |
 
 The API map records no actual GAP rows. `TAB_GAP` is a constant name, not a GAP disposition.
@@ -75,4 +75,3 @@ The API map records no actual GAP rows. `TAB_GAP` is a constant name, not a GAP 
 ## Partition check
 
 49 components = 22 generic building block + 23 example composite + 4 product-specific (22 + 23 + 4 = 49).
-

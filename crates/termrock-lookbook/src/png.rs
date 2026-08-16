@@ -15,8 +15,8 @@ use crate::{
     stories::{Story, stories},
 };
 
-/// The 16 Jackin-used widget families, by exact [`Story::component`] string.
-pub const JACKIN_SUBSET_COMPONENTS: [&str; 16] = [
+/// The 17 Jackin-used widget families, by exact [`Story::component`] string.
+pub const JACKIN_SUBSET_COMPONENTS: [&str; 17] = [
     "ActionBar",
     "Backdrop",
     "ChoiceDialog",
@@ -30,6 +30,7 @@ pub const JACKIN_SUBSET_COMPONENTS: [&str; 16] = [
     "Progress",
     "StatusBar",
     "Tabs",
+    "TerminalCellGrid",
     "TextInput",
     "Toast",
     "Viewport",

@@ -9,7 +9,7 @@ use std::num::NonZeroU16;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::Style,
+    style::{Color, Style},
     text::{Line, Span},
     widgets::{Paragraph, Widget},
 };
@@ -94,15 +94,16 @@ use termrock::{
         StepperNavPolicy, StepperOrientation, StepperPresentation, StepperState, StickyRegion,
         StreamEvent, SuggestedFix, SuggestionStatus, Surface, SurfaceFill, SurfaceRecipe, Switch,
         SwitchState, Tab, TabStatus, Table, TableRow, TableState, Tabs, TabsActivation,
-        TabsOrientation, TabsPresentation, TabsState, TerminalCommandMeta, TerminalEnvEntry,
-        TerminalLine, TerminalOutput, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, TextArea, TextAreaState, TextCursor, TextInput, TextInputState,
-        TextWrap, ThemePicker, ThemePickerState, ThinkingBlock, TimeDisplayFormat, Timeline,
-        TimelineEvent, TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle, ToggleGroup,
-        ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue, TokenField, TokenFieldState,
-        TokenMeter, TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent, TooltipState,
-        TooltipVariant, TraceSpan, TraceSpanStatus, TraceWaterfall, TraceWaterfallState,
-        Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNavigation,
+        TabsOrientation, TabsPresentation, TabsState, TerminalCell, TerminalCellGrid,
+        TerminalCellSource, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
+        TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TextArea,
+        TextAreaState, TextCursor, TextInput, TextInputState, TextWrap, ThemePicker,
+        ThemePickerState, ThinkingBlock, TimeDisplayFormat, Timeline, TimelineEvent,
+        TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle, ToggleGroup, ToggleGroupItem,
+        ToggleGroupState, ToggleState, ToggleValue, TokenField, TokenFieldState, TokenMeter,
+        TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent, TooltipState, TooltipVariant,
+        TraceSpan, TraceSpanStatus, TraceWaterfall, TraceWaterfallState, Transcript,
+        TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNavigation,
         TreeNavigationState, TreeNode, TreeNodeStatus, TreeState, TreeTable, TreeTableRow,
         TreeTableState, Validation, ViewerContentKind, Viewport, VirtualGrid, VirtualGridState,
         VirtualList, VirtualListFollow, VirtualListItem, VirtualListState, VirtualPageStatus,
@@ -2583,6 +2584,24 @@ pub fn stories() -> Vec<Story> {
             64,
             12,
             diagnostic_ascii,
+        ),
+        Story::new(
+            "terminal-cell-grid/basic",
+            "TerminalCellGrid basic",
+            "TerminalCellGrid",
+            "Borrowed terminal cells with exact colors and modifiers.",
+            42,
+            5,
+            terminal_cell_grid_story,
+        ),
+        Story::new(
+            "terminal-cell-grid/narrow",
+            "TerminalCellGrid narrow",
+            "TerminalCellGrid",
+            "Terminal-cell projection clipped safely at narrow width.",
+            18,
+            5,
+            terminal_cell_grid_story,
         ),
         Story::new(
             "terminal-output/running",
@@ -14656,6 +14675,50 @@ pub(crate) fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
         TerminalLine::stdout("o3", "test widgets::tree ... ok"),
         TerminalLine::stdout("o4", "done region 🧪"),
     ]
+}
+
+fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, _system: &DesignSystem) {
+    struct StoryTerminalCells<'a> {
+        cells: &'a [TerminalCell<'a>],
+        columns: u16,
+    }
+    impl TerminalCellSource for StoryTerminalCells<'_> {
+        fn size(&self) -> (u16, u16) {
+            let rows = (self.cells.len() as u16).div_ceil(self.columns.max(1));
+            (rows, self.columns)
+        }
+        fn cell(&self, row: u16, column: u16) -> Option<TerminalCell<'_>> {
+            self.cells
+                .get(usize::from(row) * usize::from(self.columns) + usize::from(column))
+                .copied()
+        }
+    }
+    let green = Style::new().fg(Color::Green);
+    let cells = [
+        TerminalCell::new("$", green.bold()),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("c", Style::new().fg(Color::White)),
+        TerminalCell::new("a", Style::new().fg(Color::White)),
+        TerminalCell::new("r", Style::new().fg(Color::White)),
+        TerminalCell::new("g", Style::new().fg(Color::White)),
+        TerminalCell::new("o", Style::new().fg(Color::White)),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("✓", green),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("界", Style::new().fg(Color::Yellow)).diff(
+            ratatui::buffer::CellDiffOption::ForcedWidth(NonZeroU16::new(2).unwrap()),
+        ),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("r", Style::new().fg(Color::Green)),
+        TerminalCell::new("e", Style::new().fg(Color::Green)),
+        TerminalCell::new("a", Style::new().fg(Color::Green)),
+        TerminalCell::new("d", Style::new().fg(Color::Green)),
+    ];
+    let source = StoryTerminalCells {
+        cells: &cells,
+        columns: 8,
+    };
+    frame.render_widget(TerminalCellGrid::new(&source), area);
 }
 
 fn terminal_output_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

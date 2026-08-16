@@ -911,6 +911,14 @@
     "nonColor": "covered",
     "unicode": "covered"
   },
+  "TerminalCellGrid": {
+    "focus": "not-applicable",
+    "keyboard": "caller-owned",
+    "mouse": "caller-owned",
+    "narrowTerminal": "covered",
+    "nonColor": "covered",
+    "unicode": "covered"
+  },
   "TerminalOutput": {
     "focus": "covered",
     "keyboard": "covered",
