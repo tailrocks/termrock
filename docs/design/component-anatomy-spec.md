@@ -719,7 +719,7 @@ Every component below uses sections **1–24**:
 
 1. **Purpose:** Horizontal or vertical group of primary actions.  
 2. **Anatomy:** `root` · `action[]` · cursor chrome  
-3. **Public properties:** actions projection, `system`, `ascii`, `colorless`, `vertical`  
+3. **Public properties:** actions projection, `system`, `ascii`, `colorless`, `vertical`, `centered`  
 4. **State:** `cursor: Option<Id>` (not scene focus); hit regions.  
 5. **Variants:** horizontal · vertical stack  
 6. **Sizes/density:** 1 row or N rows when stacked.  
@@ -730,7 +730,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** paint cursor only; scene focus is host.  
 12. **Disabled:** skip disabled in regions.  
 13–14. Loading/error: host.  
-15. **Narrow:** ChoiceDialog stacks only when measured action width exceeds its content slot.  
+15. **Narrow:** ChoiceDialog stacks only when measured action width exceeds its content slot; actions remain centered.  
 16. **Tiny:** clip width.  
 17. **Unicode/ASCII:** `[label]` cursor when ascii.  
 18. **Colorless:** TextStrong cursor; `›label‹`.  

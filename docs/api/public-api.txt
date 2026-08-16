@@ -57795,6 +57795,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::Action<'a, Id>
 pub struct termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id> termrock::widgets::ActionBar<'a, Id>
 pub const fn termrock::widgets::ActionBar<'a, Id>::ascii(self, bool) -> Self
+pub const fn termrock::widgets::ActionBar<'a, Id>::centered(self, bool) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::gap(self, &'a str) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::new(&'a [termrock::widgets::Action<'a, Id>], &'a termrock::style::DesignSystem) -> Self

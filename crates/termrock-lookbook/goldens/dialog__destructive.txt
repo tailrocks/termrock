@@ -6,7 +6,7 @@ dialog/destructive 50x12 (story 48x10)
  │  This cannot be undone.                      │ 
  │                                              │ 
  │                                              │ 
- │   Delete   Cancel                            │ 
+ │               Delete   Cancel                │ 
  │  esc cancel · enter confirms focused         │ 
  │                                              │ 
  └──────────────────────────────────────────────┘ 

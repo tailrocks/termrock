@@ -1770,7 +1770,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
         let action_bar = ActionBar::new(self.actions, self.dialog.tokens())
             .gap(self.gap)
             .ascii(self.ascii)
-            .colorless(self.colorless);
+            .colorless(self.colorless)
+            .centered(true);
         let stack_actions =
             action_bar.required_horizontal_width() > self.dialog.content_rect(area).width;
         let action_rows = if stack_actions {
@@ -2153,6 +2154,13 @@ mod backdrop_tests {
             stacked_state.regions[0].area.y,
             stacked_state.regions[1].area.y
         );
+        let stacked_slot = stacked_state.dialog().slots().actions;
+        for region in &stacked_state.regions {
+            assert_eq!(
+                region.area.x.saturating_sub(stacked_slot.x),
+                stacked_slot.right().saturating_sub(region.area.right())
+            );
+        }
 
         // One more content cell admits both labels plus their one-cell gap.
         let horizontal_area = Rect::new(0, 0, 23, 8);
@@ -2167,6 +2175,16 @@ mod backdrop_tests {
         assert_eq!(
             horizontal_state.regions[0].area.y,
             horizontal_state.regions[1].area.y
+        );
+        let horizontal_slot = horizontal_state.dialog().slots().actions;
+        assert_eq!(
+            horizontal_state.regions[0]
+                .area
+                .x
+                .saturating_sub(horizontal_slot.x),
+            horizontal_slot
+                .right()
+                .saturating_sub(horizontal_state.regions[1].area.right())
         );
     }
 
