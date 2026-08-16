@@ -7,7 +7,7 @@ roadmap/jackin-termrock-parity/README.md. Goal handoff: [GOAL.md](GOAL.md).
 Spec: [spec/README.md](spec/README.md) · Ledger: [coverage.md](coverage.md) ·
 Research: `research/tui-png-baselines/` (chapters 01–06, vetted 2026-08-16).
 
-Frozen package fingerprint: `02e1bf60bed8ae7286c51af71811914bfa85e9a9`
+Frozen package fingerprint: `1c5e6cd4f587c5efdf3cd4430e94343f5921f401`
 
 ## Execution order & status
 
