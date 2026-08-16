@@ -20,7 +20,7 @@ Frozen package fingerprint: `02e1bf60bed8ae7286c51af71811914bfa85e9a9`
 | 005 | Jackin usage inventory + old→new API parity map | F1, F2 | P1 | L | — | DONE |
 | 006 | Custom-component classification + promotion backlog | F7, D7 | P2 | M | 005 | DONE |
 | 007 | Old-rev side harness (5ff94ee renders) | D3, D10, W2(a) | P2 | M | 001 | DONE |
-| 008 | Per-widget comparison reports | F3, F8, D8, W2 | P2 | L | 004, 007 | TODO |
+| 008 | Per-widget comparison reports | F3, F8, D8, W2 | P2 | L | 004, 007 | DONE |
 | 009 | Verdict recording + application batches | F4, B1, N1, D1, D11, D12 | P3 | L | 008 | TODO |
 | 010 | Promotion batches from the backlog | F7, D7, N1 | P3 | L | 003, 006 | TODO |
 
