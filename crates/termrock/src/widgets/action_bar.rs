@@ -113,6 +113,17 @@ impl<'a, Id> ActionBar<'a, Id> {
         self.vertical = vertical;
         self
     }
+
+    /// Cells required to paint every action on one row without clipping.
+    pub(crate) fn required_horizontal_width(&self) -> u16 {
+        let labels = self.actions.iter().fold(0u16, |width, action| {
+            let label = UnicodeWidthStr::width(action.label).min(u16::MAX as usize) as u16;
+            width.saturating_add(label.saturating_add(2))
+        });
+        let gaps = self.actions.len().saturating_sub(1);
+        let gap_width = UnicodeWidthStr::width(self.gap).min(u16::MAX as usize) as u16;
+        labels.saturating_add(gap_width.saturating_mul(gaps.min(u16::MAX as usize) as u16))
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
@@ -214,5 +225,40 @@ impl<Id: Clone + PartialEq> StatefulWidget for ActionBar<'_, Id> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn horizontal_measurement_counts_unicode_chrome_and_gaps() {
+        let actions = [
+            Action {
+                id: "wide",
+                label: "界",
+                enabled: true,
+                style: None,
+            },
+            Action {
+                id: "ok",
+                label: "OK",
+                enabled: true,
+                style: None,
+            },
+        ];
+        let system = DesignSystem::default();
+
+        assert_eq!(
+            ActionBar::new(&actions, &system).required_horizontal_width(),
+            9
+        );
+        assert_eq!(
+            ActionBar::new(&actions, &system)
+                .gap(" · ")
+                .required_horizontal_width(),
+            11
+        );
     }
 }

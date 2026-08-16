@@ -730,7 +730,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** paint cursor only; scene focus is host.  
 12. **Disabled:** skip disabled in regions.  
 13–14. Loading/error: host.  
-15. **Narrow:** vertical stack from ChoiceDialog.  
+15. **Narrow:** ChoiceDialog stacks only when measured action width exceeds its content slot.  
 16. **Tiny:** clip width.  
 17. **Unicode/ASCII:** `[label]` cursor when ascii.  
 18. **Colorless:** TextStrong cursor; `›label‹`.  

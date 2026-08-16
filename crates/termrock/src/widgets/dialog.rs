@@ -1276,6 +1276,28 @@ impl<'a> Dialog<'a> {
         title
     }
 
+    fn content_rect(&self, area: Rect) -> Rect {
+        let inner = Panel::new(self.tokens).block().inner(area);
+        let pad_x = if inner.width
+            >= self
+                .tokens
+                .spacing
+                .pad_x
+                .saturating_mul(2)
+                .saturating_add(4)
+        {
+            self.tokens.spacing.pad_x
+        } else {
+            0
+        };
+        Rect::new(
+            inner.x.saturating_add(pad_x),
+            inner.y,
+            inner.width.saturating_sub(pad_x.saturating_mul(2)),
+            inner.height,
+        )
+    }
+
     /// Paint chrome and compute slots into `state` (optional actions height reserved).
     pub fn paint<Id>(
         &self,
@@ -1332,24 +1354,7 @@ impl<'a> Dialog<'a> {
         let inner = block.inner(area);
         block.render(area, buffer);
 
-        let pad_x = if inner.width
-            >= self
-                .tokens
-                .spacing
-                .pad_x
-                .saturating_mul(2)
-                .saturating_add(4)
-        {
-            self.tokens.spacing.pad_x
-        } else {
-            0
-        };
-        let content = Rect::new(
-            inner.x.saturating_add(pad_x),
-            inner.y,
-            inner.width.saturating_sub(pad_x.saturating_mul(2)),
-            inner.height,
-        );
+        let content = self.content_rect(area);
         let rhythm = inner.height
             >= 3_u16
                 .saturating_add(action_h)
@@ -1762,8 +1767,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             state.dialog.paint_clear_slots();
             return;
         }
-        let narrow = crate::layout::dialog_stack_actions(area.width, area.height);
-        let action_rows = if narrow {
+        let action_bar = ActionBar::new(self.actions, self.dialog.tokens())
+            .gap(self.gap)
+            .ascii(self.ascii)
+            .colorless(self.colorless);
+        let stack_actions =
+            action_bar.required_horizontal_width() > self.dialog.content_rect(area).width;
+        let action_rows = if stack_actions {
             (self.actions.len() as u16)
                 .min(area.height.saturating_sub(3))
                 .max(1)
@@ -1794,12 +1804,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             cursor: state.cursor.clone(),
             regions: Vec::new(),
         };
-        (&ActionBar::new(self.actions, self.dialog.tokens())
-            .gap(self.gap)
-            .ascii(self.ascii)
-            .colorless(self.colorless)
-            .vertical(narrow && action_rows > 1))
-            .render(action_area, buffer, &mut action_state);
+        (&action_bar.vertical(stack_actions && action_rows > 1)).render(
+            action_area,
+            buffer,
+            &mut action_state,
+        );
         if state.cursor.is_none() {
             state.cursor = action_state.cursor;
         }
@@ -2114,7 +2123,7 @@ mod backdrop_tests {
     }
 
     #[test]
-    fn choice_dialog_narrow_stacks_actions() {
+    fn choice_dialog_stacks_only_when_actions_do_not_fit() {
         let actions = [
             Action {
                 id: "a",
@@ -2135,15 +2144,29 @@ mod backdrop_tests {
             &actions,
         )
         .ascii(true);
-        let area = Rect::new(0, 0, 22, 8);
-        let mut buffer = Buffer::empty(area);
-        let mut state = ChoiceDialogState::new(Some("a"));
-        (&dialog).render(area, &mut buffer, &mut state);
-        assert!(state.regions.len() >= 1);
-        let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
-        assert!(
-            text.contains("Accept") || text.contains("[Accept]"),
-            "{text:?}"
+        let stacked_area = Rect::new(0, 0, 22, 8);
+        let mut stacked_buffer = Buffer::empty(stacked_area);
+        let mut stacked_state = ChoiceDialogState::new(Some("a"));
+        (&dialog).render(stacked_area, &mut stacked_buffer, &mut stacked_state);
+        assert_eq!(stacked_state.regions.len(), 2);
+        assert_ne!(
+            stacked_state.regions[0].area.y,
+            stacked_state.regions[1].area.y
+        );
+
+        // One more content cell admits both labels plus their one-cell gap.
+        let horizontal_area = Rect::new(0, 0, 23, 8);
+        let mut horizontal_buffer = Buffer::empty(horizontal_area);
+        let mut horizontal_state = ChoiceDialogState::new(Some("a"));
+        (&dialog).render(
+            horizontal_area,
+            &mut horizontal_buffer,
+            &mut horizontal_state,
+        );
+        assert_eq!(horizontal_state.regions.len(), 2);
+        assert_eq!(
+            horizontal_state.regions[0].area.y,
+            horizontal_state.regions[1].area.y
         );
     }
 

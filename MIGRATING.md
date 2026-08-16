@@ -341,6 +341,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0325 | `v0.14.0` | [Departures, edges, and acknowledgements](migrations/0325-v0.14.0-departures-edges-and-acknowledgements.md) |
 | 0326 | `v0.14.0` | [One ellipsis and five visible elevation rungs](migrations/0326-v0.14.0-one-ellipsis-five-elevation-rungs.md) |
 | 0327 | `v0.14.0` | [Tabs restore the focus-aware selection rule](migrations/0327-v0.14.0-tabs-restore-focus-aware-rule.md) |
+| 0328 | `v0.14.0` | [ChoiceDialog measures actions before stacking](migrations/0328-v0.14.0-choice-dialog-measured-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

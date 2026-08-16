@@ -48,7 +48,7 @@ tabs_show_status_glyphs
 |--------|--------|
 | Form | `form_columns` + multi_pane / line_mode gate |
 | Table | leading/badge via `table_row_shows_optional` |
-| Dialog (Choice) | action stack via `dialog_stack_actions` |
+| Dialog (Choice) | action stack from measured `ActionBar` width vs real content slot |
 | Tabs | status glyphs via `tabs_show_status_glyphs` |
 
 ## Laws
