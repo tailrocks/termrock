@@ -469,8 +469,9 @@ unless noted):
 - `crates/termrock-lookbook/src/stories.rs` (new stories) and, when the
   widget is interactive, `crates/termrock-lookbook/src/interactors.rs` /
   `crates/termrock-lookbook/src/interactors/*.rs` (new interactor).
-- The PNG gate test file in `crates/termrock-lookbook/tests/` (coverage-list
-  extension only) and new files under
+- The PNG coverage authority in `crates/termrock-lookbook/src/png.rs`
+  (component-list extension only), the PNG gate test file in
+  `crates/termrock-lookbook/tests/` when its mechanism requires an edit, and new files under
   `crates/termrock-lookbook/baselines/png/` (blessed baselines).
 - `docs/api/component-contracts.json`, `docs/api/component-routes.json`,
   `docs/api/public-api.txt`,
@@ -518,7 +519,7 @@ a protocol carve-out.
 
 - Branch: none — all work directly on `main` (repo CLAUDE.md law; never
   create a feature branch or PR for TermRock changes).
-- **One commit per widget** (per backlog entry), containing that widget's
+- **One commit per unique widget or kernel capability**, containing that capability's
   entire wiring: code, stories, docs page, contract row, count bumps,
   public-api.txt, blessed PNGs, and (if breaking) the migration file +
   MIGRATING.md row — the repository builds and gates green at every commit
@@ -545,6 +546,12 @@ promotion backlog table into a worklist, preserving the document's order:
 for each entry record (a) proposed termrock widget/type name, (b) proposed
 home (`widgets` file or kernel module), (c) jackin evidence (`file:line`),
 (d) the capability description. Count the entries.
+
+Rows proposing the same exact public type and home are multiple evidence
+sites for one capability: consolidate them into one implementation slice,
+retain every evidence path in the worklist, and annotate every source row
+from that capability's single commit. Never create duplicate APIs or
+artificial follow-up commits for the same type.
 
 - If the count is 0 → the no-op branch of precondition 1 (DONE with note).
 - If the count is > 8 → this session implements only the **first 8** in
@@ -688,11 +695,11 @@ no output, exit 0; breaking/additive classification written in your notes.
 
 ### Step 7: PNG baselines for the promoted widget
 
-1. Open the PNG gate test
-   (`grep -rln "TERMROCK_BLESS_PNGS" crates/termrock-lookbook/tests/`) and
-   add the new widget's component name to its coverage list (Starting state
-   §F — adapt to the test's actual mechanism; the invariant is that every
-   story of the new widget is gate-covered).
+1. Open the PNG coverage authority (`crates/termrock-lookbook/src/png.rs`)
+   and the gate test (`grep -rln "TERMROCK_BLESS_PNGS"
+   crates/termrock-lookbook/tests/`), then add the new widget's component
+   name through the mechanism they use. The invariant is that every story
+   of the new widget is gate-covered.
 2. `mise run bless-pngs` → writes
    `crates/termrock-lookbook/baselines/png/<story-id-with-dashes>.png` for
    each new story.
