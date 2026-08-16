@@ -325,3 +325,4 @@ Remaining:
 - 2026-08-16 — tailrocks-finalize — user refinement during close: verdicts merge current improvements (hover etc.) onto the jackin-era base rather than binary pick; verdict flow, quality bar, capabilities updated; gate re-checked, READY stands.
 - 2026-08-16 — tailrocks-plan — package written: coverage ledger, 5-capability spec, 10 plans (all cold-reviewed, findings fixed), research chapters 05–06 added (Q1 closed empirically, Q2 closed), GOAL.md; PLANNED.
 - 2026-08-17 — executor — plan 001 started; IN EXECUTION.
+- 2026-08-17 — tailrocks-reconcile — full gate and DONE evidence rechecked; plan 002 marked STALE because plan 010's two promoted TerminalCellGrid baselines invalidate its no-non-subset-baseline criterion; plan 009 blocker reproduced (16-family verdicts and shared palette ruling still pending); IN EXECUTION.

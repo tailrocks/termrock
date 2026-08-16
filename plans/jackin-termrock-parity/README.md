@@ -14,7 +14,7 @@ Frozen package fingerprint: `1c5e6cd4f587c5efdf3cd4430e94343f5921f401`
 | Plan | Title | Covers | Priority | Effort | Depends on | Status |
 |------|-------|--------|----------|--------|------------|--------|
 | 001 | termrock-raster crate: Buffer→PNG engine, fonts, licensing, determinism | F5, B2, D9, N3 | P1 | M | — | DONE |
-| 002 | Initial PNG baseline set for the jackin-used subset | F5, D4, D6, N2 | P1 | M | 001 | DONE |
+| 002 | Initial PNG baseline set for the jackin-used subset | F5, D4, D6, N2 | P1 | M | 001 | STALE |
 | 003 | Bless-required PNG gate test + mise wiring | F6, W1, B4, D5, N3 | P1 | M | 002 | DONE |
 | 004 | Story state-gap fill for the subset (+ their baselines) | B3, F5 | P2 | M | 003 | DONE |
 | 005 | Jackin usage inventory + old→new API parity map | F1, F2 | P1 | L | — | DONE |
@@ -27,6 +27,9 @@ Frozen package fingerprint: `1c5e6cd4f587c5efdf3cd4430e94343f5921f401`
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) |
 REJECTED (one-line rationale) | STALE (decision reopened it; re-plan
 pending)
+
+Status note — 002: its no-non-subset-baseline criterion conflicts with Plan
+010's promoted TerminalCellGrid baselines; re-plan pending.
 
 ## Item briefs
 
