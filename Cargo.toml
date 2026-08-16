@@ -5,6 +5,7 @@ members = [
     "crates/termrock-lookbook-web",
     "crates/termrock-cli",
     "crates/termrock-showcase",
+    "crates/termrock-raster",
 ]
 resolver = "3"
 
@@ -34,6 +35,8 @@ unicode-width = "0.2.2"
 web-time = "1.1.0"
 sha2 = "0.11.0"
 hex = "0.4.3"
+swash = "=0.2.10"
+tiny-skia = "=0.12.0"
 
 [workspace.lints.rust]
 missing_docs = "deny"

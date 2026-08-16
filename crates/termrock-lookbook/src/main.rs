@@ -20,7 +20,8 @@ use termrock::{
 use termrock_lookbook::demo::catalog;
 use termrock_lookbook::stories::stories;
 
-const USAGE: &str = "usage: termrock-lookbook <terminal|list|render|check|frame|export-posters>";
+const USAGE: &str =
+    "usage: termrock-lookbook <terminal|list|render|render-png|check|frame|export-posters>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SidebarAction {
@@ -157,6 +158,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err(usage.into());
         };
         return write_svgs(out_dir, &theme.unwrap_or_default());
+    }
+
+    if first == OsStr::new("render-png") {
+        let usage = "usage: termrock-lookbook render-png --out <dir>";
+        let mut out_dir = None;
+        while let Some(flag) = args.next() {
+            if flag == OsStr::new("--out") && out_dir.is_none() {
+                out_dir = args.next().map(PathBuf::from);
+            } else {
+                return Err(usage.into());
+            }
+        }
+        let Some(out_dir) = out_dir else {
+            return Err(usage.into());
+        };
+        for path in termrock_lookbook::png::write_story_pngs(out_dir)? {
+            println!("{}", path.display());
+        }
+        return Ok(());
     }
 
     if first == OsStr::new("check") {

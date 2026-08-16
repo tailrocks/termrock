@@ -9,7 +9,7 @@ use std::num::NonZeroU16;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::Style,
+    style::{Color, Style},
     text::{Line, Span},
     widgets::{Paragraph, Widget},
 };
@@ -94,15 +94,16 @@ use termrock::{
         StepperNavPolicy, StepperOrientation, StepperPresentation, StepperState, StickyRegion,
         StreamEvent, SuggestedFix, SuggestionStatus, Surface, SurfaceFill, SurfaceRecipe, Switch,
         SwitchState, Tab, TabStatus, Table, TableRow, TableState, Tabs, TabsActivation,
-        TabsOrientation, TabsPresentation, TabsState, TerminalCommandMeta, TerminalEnvEntry,
-        TerminalLine, TerminalOutput, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, TextArea, TextAreaState, TextCursor, TextInput, TextInputState,
-        TextWrap, ThemePicker, ThemePickerState, ThinkingBlock, TimeDisplayFormat, Timeline,
-        TimelineEvent, TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle, ToggleGroup,
-        ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue, TokenField, TokenFieldState,
-        TokenMeter, TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent, TooltipState,
-        TooltipVariant, TraceSpan, TraceSpanStatus, TraceWaterfall, TraceWaterfallState,
-        Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNavigation,
+        TabsOrientation, TabsPresentation, TabsState, TerminalCell, TerminalCellGrid,
+        TerminalCellSource, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
+        TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TextArea,
+        TextAreaState, TextCursor, TextInput, TextInputState, TextWrap, ThemePicker,
+        ThemePickerState, ThinkingBlock, TimeDisplayFormat, Timeline, TimelineEvent,
+        TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle, ToggleGroup, ToggleGroupItem,
+        ToggleGroupState, ToggleState, ToggleValue, TokenField, TokenFieldState, TokenMeter,
+        TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent, TooltipState, TooltipVariant,
+        TraceSpan, TraceSpanStatus, TraceWaterfall, TraceWaterfallState, Transcript,
+        TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNavigation,
         TreeNavigationState, TreeNode, TreeNodeStatus, TreeState, TreeTable, TreeTableRow,
         TreeTableState, Validation, ViewerContentKind, Viewport, VirtualGrid, VirtualGridState,
         VirtualList, VirtualListFollow, VirtualListItem, VirtualListState, VirtualPageStatus,
@@ -2583,6 +2584,24 @@ pub fn stories() -> Vec<Story> {
             64,
             12,
             diagnostic_ascii,
+        ),
+        Story::new(
+            "terminal-cell-grid/basic",
+            "TerminalCellGrid basic",
+            "TerminalCellGrid",
+            "Borrowed terminal cells with exact colors and modifiers.",
+            42,
+            5,
+            terminal_cell_grid_story,
+        ),
+        Story::new(
+            "terminal-cell-grid/narrow",
+            "TerminalCellGrid narrow",
+            "TerminalCellGrid",
+            "Terminal-cell projection clipped safely at narrow width.",
+            18,
+            5,
+            terminal_cell_grid_story,
         ),
         Story::new(
             "terminal-output/running",
@@ -10439,6 +10458,78 @@ pub fn stories() -> Vec<Story> {
             2,
             text_input_prefix_story,
         ),
+        Story::new(
+            "text-input/focused",
+            "TextInput focused",
+            "TextInput",
+            "Blurred field above focused field: cursor and focus chrome delta.",
+            40,
+            5,
+            text_input_focused_story,
+        ),
+        Story::new(
+            "text-input/disabled",
+            "TextInput disabled",
+            "TextInput",
+            "Disabled input; edits blocked and cursor suppressed.",
+            40,
+            2,
+            text_input_disabled_story,
+        ),
+        Story::new(
+            "tabs/focused",
+            "Tabs focused",
+            "Tabs",
+            "Blurred strip above focused strip with roving focus cue.",
+            52,
+            5,
+            tabs_focused_story,
+        ),
+        Story::new(
+            "tabs/disabled",
+            "Tabs disabled",
+            "Tabs",
+            "A disabled tab muted among enabled ones.",
+            48,
+            2,
+            tabs_disabled_story,
+        ),
+        Story::new(
+            "tabs/hover",
+            "Tabs hover",
+            "Tabs",
+            "Pointer hover tint on an inactive tab.",
+            52,
+            2,
+            tabs_hover_story,
+        ),
+        Story::new(
+            "status-bar/hover",
+            "Status bar hover",
+            "StatusBar",
+            "Hovered slot painted with its hover style.",
+            64,
+            1,
+            status_bar_hover_story,
+        ),
+        Story::new(
+            "action-bar/focused",
+            "Action bar focused",
+            "ActionBar",
+            "Bar without cursor above bar with action cursor.",
+            48,
+            3,
+            action_bar_focused_story,
+        ),
+        Story::new(
+            "action-bar/disabled",
+            "Action bar disabled",
+            "ActionBar",
+            "Disabled action muted beside an enabled one.",
+            48,
+            2,
+            action_bar_disabled_story,
+        ),
     ];
     for story in &mut catalog {
         if PATTERN_DEMO_IDS.contains(&story.id) && !story.interactive {
@@ -14584,6 +14675,50 @@ pub(crate) fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
         TerminalLine::stdout("o3", "test widgets::tree ... ok"),
         TerminalLine::stdout("o4", "done region 🧪"),
     ]
+}
+
+fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, _system: &DesignSystem) {
+    struct StoryTerminalCells<'a> {
+        cells: &'a [TerminalCell<'a>],
+        columns: u16,
+    }
+    impl TerminalCellSource for StoryTerminalCells<'_> {
+        fn size(&self) -> (u16, u16) {
+            let rows = (self.cells.len() as u16).div_ceil(self.columns.max(1));
+            (rows, self.columns)
+        }
+        fn cell(&self, row: u16, column: u16) -> Option<TerminalCell<'_>> {
+            self.cells
+                .get(usize::from(row) * usize::from(self.columns) + usize::from(column))
+                .copied()
+        }
+    }
+    let green = Style::new().fg(Color::Green);
+    let cells = [
+        TerminalCell::new("$", green.bold()),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("c", Style::new().fg(Color::White)),
+        TerminalCell::new("a", Style::new().fg(Color::White)),
+        TerminalCell::new("r", Style::new().fg(Color::White)),
+        TerminalCell::new("g", Style::new().fg(Color::White)),
+        TerminalCell::new("o", Style::new().fg(Color::White)),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("✓", green),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("界", Style::new().fg(Color::Yellow)).diff(
+            ratatui::buffer::CellDiffOption::ForcedWidth(NonZeroU16::new(2).unwrap()),
+        ),
+        TerminalCell::new(" ", Style::new()),
+        TerminalCell::new("r", Style::new().fg(Color::Green)),
+        TerminalCell::new("e", Style::new().fg(Color::Green)),
+        TerminalCell::new("a", Style::new().fg(Color::Green)),
+        TerminalCell::new("d", Style::new().fg(Color::Green)),
+    ];
+    let source = StoryTerminalCells {
+        cells: &cells,
+        columns: 8,
+    };
+    frame.render_widget(TerminalCellGrid::new(&source), area);
 }
 
 fn terminal_output_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -27411,6 +27546,176 @@ fn transcript_ascii_colorless(frame: &mut Frame<'_>, area: Rect, system: &Design
             .ascii(true)
             .colorless(true)
             .focused(true),
+        area,
+        &mut state,
+    );
+}
+
+// ── State-variant gap fill (spec/baselines.md "All-states story gap fill", B3) ──
+//
+// Story-set note — state coverage per jackin-subset widget:
+// - TextInput: focused/disabled paint via ControlState. No hover API exists,
+//   so hover is not a paintable story.
+// - Tabs: hover is modeled by TabsState::hovered; focused paint is the roving
+//   focus cue on a non-selected tab; per-tab enabled(false) paints disabled.
+// - Toast: never focusable by design and exposes no disabled or hover API.
+// - StatusBar: hover is modeled by StatusSlot::hover_style and
+//   StatusBarState::hovered. It has no focused state; disabled slots are omitted.
+// - ActionBar: cursor and Action.enabled paint focused and disabled. It has no
+//   hover API.
+
+fn text_input_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let [blurred, _, focused] = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(2),
+    ])
+    .areas(area);
+    let mut blurred_state = TextInputState::new("resting value");
+    let _ =
+        TextInput::new("Blurred", system).paint(blurred, frame.buffer_mut(), &mut blurred_state);
+    let mut focused_state = TextInputState::new("editing value");
+    focused_state.set_focused(true);
+    let _ =
+        TextInput::new("Focused", system).paint(focused, frame.buffer_mut(), &mut focused_state);
+}
+
+fn text_input_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("locked value");
+    state.set_enabled(false);
+    let _ = TextInput::new("Disabled", system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("details", "Details"),
+        Tab::new("logs", "Logs"),
+    ];
+    let [blurred, _, focused] = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(2),
+    ])
+    .areas(area);
+    let mut blurred_state = TabsState::new().with_selected("overview");
+    Tabs::new(&items, system).paint(blurred, frame.buffer_mut(), &mut blurred_state);
+    let mut focused_state = TabsState::new()
+        .with_selected("overview")
+        .with_activation(TabsActivation::Manual);
+    focused_state.set_focused(true);
+    let _ = focused_state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    Tabs::new(&items, system).paint(focused, frame.buffer_mut(), &mut focused_state);
+}
+
+fn tabs_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("archive", "Archive").enabled(false),
+        Tab::new("logs", "Logs"),
+    ];
+    let mut state = TabsState::new().with_selected("overview");
+    state.set_focused(true);
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("details", "Details"),
+        Tab::new("logs", "Logs"),
+    ];
+    let mut state = TabsState::new().with_selected("overview");
+    state.hovered = Some("details");
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn status_bar_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StatusRegion, StatusSlot};
+
+    let left = [StatusSlot::mode("mode", "NOR")
+        .style(Style::new().reversed())
+        .hover_style(Style::new().bold().reversed())];
+    let center = [StatusSlot::focus_zone("focus", "main")];
+    let right = [
+        StatusSlot::selection("sel", "3/12")
+            .style(Style::new().dim())
+            .hover_style(Style::new().bold()),
+        StatusSlot::shortcut("hint", "? help").region(StatusRegion::Right),
+    ];
+    let mut state = StatusBarState::default();
+    state.hovered = Some("sel");
+    frame.render_stateful_widget(
+        &StatusBar::with_center(&left, &center, &right, system)
+            .rich()
+            .alpha(1.0),
+        area,
+        &mut state,
+    );
+}
+
+fn action_bar_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "Accept",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let [resting, _, focused] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let mut resting_state = ActionBarState::default();
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        resting,
+        &mut resting_state,
+    );
+    let mut cursor_state = ActionBarState {
+        cursor: Some("accept"),
+        ..ActionBarState::default()
+    };
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        focused,
+        &mut cursor_state,
+    );
+}
+
+fn action_bar_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "Accept",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "delete",
+            label: "Delete",
+            enabled: false,
+            style: None,
+        },
+    ];
+    let mut state = ActionBarState::default();
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
         area,
         &mut state,
     );

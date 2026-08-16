@@ -70,6 +70,8 @@ pub struct ActionBar<'a, Id> {
     colorless: bool,
     /// Stack one action per row (narrow dialogs).
     vertical: bool,
+    /// Center the horizontal group or each stacked action.
+    centered: bool,
 }
 
 impl<'a, Id> ActionBar<'a, Id> {
@@ -83,6 +85,7 @@ impl<'a, Id> ActionBar<'a, Id> {
             ascii: false,
             colorless: false,
             vertical: false,
+            centered: false,
         }
     }
 
@@ -113,6 +116,24 @@ impl<'a, Id> ActionBar<'a, Id> {
         self.vertical = vertical;
         self
     }
+
+    /// Centers the action group within the available width.
+    #[must_use]
+    pub const fn centered(mut self, centered: bool) -> Self {
+        self.centered = centered;
+        self
+    }
+
+    /// Cells required to paint every action on one row without clipping.
+    pub(crate) fn required_horizontal_width(&self) -> u16 {
+        let labels = self.actions.iter().fold(0u16, |width, action| {
+            let label = UnicodeWidthStr::width(action.label).min(u16::MAX as usize) as u16;
+            width.saturating_add(label.saturating_add(2))
+        });
+        let gaps = self.actions.len().saturating_sub(1);
+        let gap_width = UnicodeWidthStr::width(self.gap).min(u16::MAX as usize) as u16;
+        labels.saturating_add(gap_width.saturating_mul(gaps.min(u16::MAX as usize) as u16))
+    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
@@ -128,13 +149,26 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ActionBar<'_, Id> {
                 if y >= area.bottom() {
                     break;
                 }
-                let rect = Rect::new(area.x, y, area.width, 1);
+                let label = self.label_for(action, state);
+                let width = (UnicodeWidthStr::width(label.as_str()).min(u16::MAX as usize) as u16)
+                    .min(area.width);
+                let x = if self.centered {
+                    area.x.saturating_add(area.width.saturating_sub(width) / 2)
+                } else {
+                    area.x
+                };
+                let rect = Rect::new(x, y, width, 1);
                 self.paint_action(action, rect, buffer, state);
                 y = y.saturating_add(1);
             }
             return;
         }
-        let mut x = area.x;
+        let mut x = if self.centered {
+            area.x
+                .saturating_add(area.width.saturating_sub(self.required_horizontal_width()) / 2)
+        } else {
+            area.x
+        };
         for action in self.actions {
             let label = self.label_for(action, state);
             let width = UnicodeWidthStr::width(label.as_str()).min(u16::MAX as usize) as u16;
@@ -214,5 +248,40 @@ impl<Id: Clone + PartialEq> StatefulWidget for ActionBar<'_, Id> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn horizontal_measurement_counts_unicode_chrome_and_gaps() {
+        let actions = [
+            Action {
+                id: "wide",
+                label: "界",
+                enabled: true,
+                style: None,
+            },
+            Action {
+                id: "ok",
+                label: "OK",
+                enabled: true,
+                style: None,
+            },
+        ];
+        let system = DesignSystem::default();
+
+        assert_eq!(
+            ActionBar::new(&actions, &system).required_horizontal_width(),
+            9
+        );
+        assert_eq!(
+            ActionBar::new(&actions, &system)
+                .gap(" · ")
+                .required_horizontal_width(),
+            11
+        );
     }
 }

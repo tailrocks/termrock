@@ -2,7 +2,7 @@
 
 Topic: storing TUI widget designs as PNG baselines in git, rendering them "as
 real as possible" (libghostty was the working hypothesis), and gating PRs on
-image regeneration. Informs: [`roadmap/jackin-termrock-parity`](../../roadmap/jackin-termrock-parity/README.md).
+image regeneration. Informs: [migration 0331](../../migrations/0331-v0.14.0-jackin-parity-handoff.md).
 
 Chapters vetted 2026-08-16. All conclusions below link their evidence.
 

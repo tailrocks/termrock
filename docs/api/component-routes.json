@@ -715,6 +715,11 @@
     "demo": "task-rail/basic"
   },
   {
+    "component": "TerminalCellGrid",
+    "slug": "terminal-cell-grid",
+    "demo": "terminal-cell-grid/basic"
+  },
+  {
     "component": "TerminalOutput",
     "slug": "terminal-output",
     "demo": "terminal-output/running"

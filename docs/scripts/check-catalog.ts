@@ -25,7 +25,7 @@ const publicWidgets = new Set(
   [...api.matchAll(/^impl.*ratatui_core::widgets::(?:widget::Widget|stateful_widget::StatefulWidget) for &?termrock::widgets::([A-Z][A-Za-z0-9_]*)/gm)]
     .map((match) => match[1]!),
 )
-if (publicWidgets.size !== 136) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
+if (publicWidgets.size !== 137) throw new Error(`public widget inventory drift: ${publicWidgets.size}`)
 const storyComponents = new Set(catalog.map((entry) => entry.component))
 const missingStories = [...publicWidgets].filter((component) => !storyComponents.has(component))
 if (missingStories.length) throw new Error(`public widgets without demos: ${missingStories.join(', ')}`)
@@ -82,5 +82,5 @@ const patterns = JSON.parse(
   await Bun.file(join(root, 'docs', 'api', 'pattern-catalog.json')).text(),
 ) as unknown[]
 console.log(
-  `catalog: ${publicWidgets.size}/136 public widgets, ${routes.length}/166 component routes, ${patterns.length}/35 patterns, ${embedded.size} live demos, ${catalog.length} stories`,
+  `catalog: ${publicWidgets.size}/137 public widgets, ${routes.length}/167 component routes, ${patterns.length}/35 patterns, ${embedded.size} live demos, ${catalog.length} stories`,
 )

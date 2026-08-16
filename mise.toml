@@ -49,6 +49,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
 mise run preview-goldens
+mise run png-baselines
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
@@ -73,6 +74,14 @@ run = "TERMROCK_BLESS_PREVIEWS=1 cargo nextest run -p termrock-lookbook --all-fe
 [tasks.preview-goldens]
 description = "Diff the flagship previews against their committed baselines"
 run = "cargo nextest run -p termrock-lookbook --all-features --test goldens --locked"
+
+[tasks.bless-pngs]
+description = "Regenerate the subset PNG baselines after an intended paint change"
+run = "TERMROCK_BLESS_PNGS=1 cargo nextest run -p termrock-lookbook --all-features --test png_baselines --no-capture"
+
+[tasks.png-baselines]
+description = "Diff the subset PNG baselines against their committed files"
+run = "cargo nextest run -p termrock-lookbook --all-features --test png_baselines --locked"
 
 [tasks.docs-quality]
 description = "Placeholder rustdoc ban + component quality contracts (v2)"

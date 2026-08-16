@@ -340,6 +340,11 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0324 | `v0.14.0` | [The default frame goes on a diet](migrations/0324-v0.14.0-the-default-frame-goes-on-a-diet.md) |
 | 0325 | `v0.14.0` | [Departures, edges, and acknowledgements](migrations/0325-v0.14.0-departures-edges-and-acknowledgements.md) |
 | 0326 | `v0.14.0` | [One ellipsis and five visible elevation rungs](migrations/0326-v0.14.0-one-ellipsis-five-elevation-rungs.md) |
+| 0327 | `v0.14.0` | [Tabs restore the focus-aware selection rule](migrations/0327-v0.14.0-tabs-restore-focus-aware-rule.md) |
+| 0328 | `v0.14.0` | [ChoiceDialog measures actions before stacking](migrations/0328-v0.14.0-choice-dialog-measured-actions.md) |
+| 0329 | `v0.14.0` | [Tabs rule keeps the selection wash](migrations/0329-v0.14.0-tabs-rule-keeps-selection-wash.md) |
+| 0330 | `v0.14.0` | [ChoiceDialog centers actions](migrations/0330-v0.14.0-choice-dialog-centers-actions.md) |
+| 0331 | `v0.14.0` | [Jackin parity handoff](migrations/0331-v0.14.0-jackin-parity-handoff.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

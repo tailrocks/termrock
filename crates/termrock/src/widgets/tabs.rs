@@ -826,19 +826,22 @@ impl<Id> TabsState<Id> {
 
 /// How a tab strip marks the active tab.
 ///
-/// The rule row is retired (plans/002); this names what replaced it and lets a
-/// shell pick a different answer without inventing one (audit D2).
+/// The rule row is the canonical default; alternate cues remain available for
+/// shells whose content geometry calls for another treatment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum TabsActiveCue {
-    /// Selection wash behind a bold label (default).
-    #[default]
+    /// Selection wash behind a bold label.
     AccentPill,
     /// The active tab sits on the body's own ground, joined to the pane below.
     Connected,
     /// A leading marker plus weight — the colourless-safe fallback.
     Marker,
-    /// An accent rule under the active tab, for shells that want the rail.
+    /// A semantic rule under the active tab (default).
+    ///
+    /// The rule uses the accent role while the selected tab owns focus and
+    /// the ordinary border role while the strip is unfocused.
+    #[default]
     Rule,
 }
 
@@ -870,7 +873,7 @@ pub struct Tabs<'a, Id> {
 }
 
 impl<'a, Id> Tabs<'a, Id> {
-    /// Chooses how the active tab is marked (default [`TabsActiveCue::AccentPill`]).
+    /// Chooses how the active tab is marked (default [`TabsActiveCue::Rule`]).
     #[must_use]
     pub const fn active_cue(mut self, cue: TabsActiveCue) -> Self {
         self.active_cue = cue;
@@ -882,7 +885,7 @@ impl<'a, Id> Tabs<'a, Id> {
     pub const fn new(tabs: &'a [Tab<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             tabs,
-            active_cue: TabsActiveCue::AccentPill,
+            active_cue: TabsActiveCue::Rule,
             gap: TAB_GAP,
             system,
             // Seeded from the system: a widget that defaults to false is
@@ -1259,28 +1262,30 @@ impl<'a, Id> Tabs<'a, Id> {
             // themed `TabActive` background always wins, so consumers keep
             // full control of the strip's fill.
             style = style.add_modifier(Modifier::BOLD);
+            if matches!(
+                self.active_cue,
+                TabsActiveCue::AccentPill | TabsActiveCue::Rule
+            ) && style.bg.is_none()
+                && let Some(bg) = self.system.style(Role::SelectionTint).bg
+            {
+                // The fill arrives rather than snapping: a strip that jumps
+                // reads as two unrelated strips (plans/014). Rule keeps the
+                // same wash and adds its focus-aware line below.
+                let settled = state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
+                let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
+                    let canvas = self
+                        .system
+                        .style(Role::Canvas)
+                        .bg
+                        .unwrap_or(ratatui_core::style::Color::Reset);
+                    crate::style::blend_toward(canvas, bg, settled)
+                } else {
+                    bg
+                };
+                style = style.bg(bg);
+            }
             match self.active_cue {
-                TabsActiveCue::AccentPill => {
-                    if style.bg.is_none()
-                        && let Some(bg) = self.system.style(Role::SelectionTint).bg
-                    {
-                        // The fill arrives rather than snapping: a strip that
-                        // jumps reads as two unrelated strips (plans/014).
-                        let settled =
-                            state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
-                        let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
-                            let canvas = self
-                                .system
-                                .style(Role::Canvas)
-                                .bg
-                                .unwrap_or(ratatui_core::style::Color::Reset);
-                            crate::style::blend_toward(canvas, bg, settled)
-                        } else {
-                            bg
-                        };
-                        style = style.bg(bg);
-                    }
-                }
+                TabsActiveCue::AccentPill | TabsActiveCue::Rule => {}
                 TabsActiveCue::Connected => {
                     if style.bg.is_none()
                         && let Some(bg) = self.system.style(Role::Surface).bg
@@ -1298,7 +1303,6 @@ impl<'a, Id> Tabs<'a, Id> {
                             .text
                     };
                 }
-                TabsActiveCue::Rule => {}
             }
         }
         if focused_tab && !selected {
@@ -1357,12 +1361,17 @@ impl<'a, Id> Tabs<'a, Id> {
         if selected && matches!(self.active_cue, TabsActiveCue::Rule) && rect.height > 1 {
             let rule = self.system.glyphs.rule();
             let line: String = std::iter::repeat_n(rule, usize::from(rect.width)).collect();
+            let rule_role = if focused_tab {
+                Role::Accent
+            } else {
+                Role::Border
+            };
             buffer.set_stringn(
                 rect.x,
                 rect.y.saturating_add(1),
                 &line,
                 usize::from(rect.width),
-                self.system.style(Role::Accent),
+                self.system.style(rule_role),
             );
         }
 
@@ -1470,7 +1479,7 @@ mod tests {
     }
 
     #[test]
-    fn selection_cue_and_hit_regions_share_two_row_geometry() {
+    fn default_rule_and_hit_regions_share_two_row_geometry() {
         let tabs = [
             Tab {
                 id: "overview",
@@ -1497,7 +1506,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState {
             selected: Some("overview"),
-            hovered: Some("overview"),
+            hovered: None,
             focused: true,
             ..TabsState::default()
         };
@@ -1506,10 +1515,33 @@ mod tests {
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
         assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
-        // The active tab is a bold label on a wash — never a rule row.
-        assert_eq!(buffer[(3, 5)].symbol(), " ");
+        assert_eq!(
+            buffer[(3, 4)].bg,
+            theme.style(Role::SelectionTint).bg.unwrap()
+        );
+        assert_eq!(buffer[(3, 5)].symbol(), system.glyphs.rule());
+        assert_eq!(buffer[(3, 5)].fg, theme.style(Role::Accent).fg.unwrap());
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
+    }
+
+    #[test]
+    fn default_rule_uses_unfocused_border_role() {
+        let tabs = [Tab::new("overview", "Overview").active(true)];
+        let area = Rect::new(0, 0, 16, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TabsState::new().with_selected("overview");
+        let theme = RolePalette::default();
+        let system = DesignSystem::from_palette(theme.clone());
+
+        Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
+        assert_eq!(buffer[(0, 1)].fg, theme.style(Role::Border).fg.unwrap());
+        assert_eq!(
+            buffer[(0, 0)].bg,
+            theme.style(Role::SelectionTint).bg.unwrap()
+        );
     }
 
     #[test]
@@ -1530,7 +1562,10 @@ mod tests {
         let theme = RolePalette::default();
         let system = DesignSystem::from_palette(theme.clone());
 
-        (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
+        (&Tabs::new(&tabs, &system)
+            .active_cue(TabsActiveCue::AccentPill)
+            .gap(1))
+            .render(area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);
@@ -1778,15 +1813,12 @@ mod tests {
                 );
             }
         }
-        // The default is the pill, and it is a wash rather than a rule row.
+        // The default is the focus-aware rule, not an implicit fill.
         let mut state = TabsState::new().with_selected("a");
         let mut buffer = Buffer::empty(area);
         Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
-        let tint = system.style(Role::SelectionTint).bg;
-        assert!(
-            (0..area.width).any(|x| buffer[(x, 0)].style().bg == tint),
-            "the default cue is an accent pill"
-        );
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
+        assert_eq!(buffer[(0, 1)].fg, system.style(Role::Border).fg.unwrap());
     }
 
     #[test]
