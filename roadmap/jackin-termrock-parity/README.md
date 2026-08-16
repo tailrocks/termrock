@@ -1,9 +1,9 @@
 # Jackin → TermRock parity and design verification
 
-- **Status**: IN EXECUTION
+- **Status**: COMPLETE
 - **Slug**: jackin-termrock-parity
 - **Created**: 2026-08-16 · **Updated**: 2026-08-17
-- **Plan**: [plans/jackin-termrock-parity/](../../plans/jackin-termrock-parity/README.md)
+- **Final migration**: [0331 — Jackin parity handoff](../../migrations/0331-v0.14.0-jackin-parity-handoff.md)
 
 ## Intent
 
@@ -326,3 +326,4 @@ Remaining:
 - 2026-08-16 — tailrocks-plan — package written: coverage ledger, 5-capability spec, 10 plans (all cold-reviewed, findings fixed), research chapters 05–06 added (Q1 closed empirically, Q2 closed), GOAL.md; PLANNED.
 - 2026-08-17 — executor — plan 001 started; IN EXECUTION.
 - 2026-08-17 — tailrocks-reconcile — full gate and DONE evidence rechecked; plan 002 marked STALE because plan 010's two promoted TerminalCellGrid baselines invalidate its no-non-subset-baseline criterion; plan 009 blocker reproduced (16-family verdicts and shared palette ruling still pending); IN EXECUTION.
+- 2026-08-17 — executor — durable API, ownership, visual, and PNG workflow guidance extracted to migration 0331; superseded plan package removed; COMPLETE.

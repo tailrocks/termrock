@@ -42,7 +42,7 @@ fn subset_stories_match_their_png_baselines() {
         let second = render_story_png(story);
         assert!(
             compare_png_pixels(&first, &second).is_ok(),
-            "{id}: render-twice mismatch — the raster pipeline produced two different raw RGBA outputs in one process. This is a PIPELINE BUG (W1 failure point b), not design drift: do NOT resolve it by blessing. See ledger assumption A3 (plans/jackin-termrock-parity/coverage.md). Fix the rasterizer, then re-run."
+            "{id}: render-twice mismatch — the raster pipeline produced two different raw RGBA outputs in one process. This is a PIPELINE BUG, not design drift: do NOT resolve it by blessing. See migration 0331's PNG regression workflow. Fix the rasterizer, then re-run."
         );
 
         let path = baselines_dir().join(story_png_filename(story));
