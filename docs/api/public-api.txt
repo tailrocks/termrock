@@ -27595,6 +27595,49 @@ pub unsafe fn termrock::runtime::PresencePhase::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::runtime::PresencePhase
 pub fn termrock::runtime::PresencePhase::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::runtime::PresencePhase
+#[non_exhaustive] pub enum termrock::runtime::ReadySubscriptionPoll<T>
+pub termrock::runtime::ReadySubscriptionPoll::Closed
+pub termrock::runtime::ReadySubscriptionPoll::Ready(T)
+impl<T: core::clone::Clone> core::clone::Clone for termrock::runtime::ReadySubscriptionPoll<T>
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::clone(&self) -> termrock::runtime::ReadySubscriptionPoll<T>
+impl<T: core::cmp::Eq> core::cmp::Eq for termrock::runtime::ReadySubscriptionPoll<T>
+impl<T: core::cmp::PartialEq> core::cmp::PartialEq for termrock::runtime::ReadySubscriptionPoll<T>
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::eq(&self, &termrock::runtime::ReadySubscriptionPoll<T>) -> bool
+impl<T: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::runtime::ReadySubscriptionPoll<T>
+impl<T: core::fmt::Debug> core::fmt::Debug for termrock::runtime::ReadySubscriptionPoll<T>
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T> core::marker::Freeze for termrock::runtime::ReadySubscriptionPoll<T> where T: core::marker::Freeze
+impl<T> core::marker::Send for termrock::runtime::ReadySubscriptionPoll<T> where T: core::marker::Send
+impl<T> core::marker::Sync for termrock::runtime::ReadySubscriptionPoll<T> where T: core::marker::Sync
+impl<T> core::marker::Unpin for termrock::runtime::ReadySubscriptionPoll<T> where T: core::marker::Unpin
+impl<T> core::marker::UnsafeUnpin for termrock::runtime::ReadySubscriptionPoll<T> where T: core::marker::UnsafeUnpin
+impl<T> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::ReadySubscriptionPoll<T> where T: core::panic::unwind_safe::RefUnwindSafe
+impl<T> core::panic::unwind_safe::UnwindSafe for termrock::runtime::ReadySubscriptionPoll<T> where T: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::ReadySubscriptionPoll<T> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::ReadySubscriptionPoll<T> where U: core::convert::From<T>
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::ReadySubscriptionPoll<T> where U: core::convert::Into<T>
+pub type termrock::runtime::ReadySubscriptionPoll<T>::Error = core::convert::Infallible
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::ReadySubscriptionPoll<T> where U: core::convert::TryFrom<T>
+pub type termrock::runtime::ReadySubscriptionPoll<T>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::ReadySubscriptionPoll<T> where T: core::clone::Clone
+pub type termrock::runtime::ReadySubscriptionPoll<T>::Owned = T
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::clone_into(&self, &mut T)
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::ReadySubscriptionPoll<T> where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::ReadySubscriptionPoll<T> where T: ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::ReadySubscriptionPoll<T> where T: ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::ReadySubscriptionPoll<T> where T: core::clone::Clone
+pub unsafe fn termrock::runtime::ReadySubscriptionPoll<T>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::ReadySubscriptionPoll<T>
+pub fn termrock::runtime::ReadySubscriptionPoll<T>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::ReadySubscriptionPoll<T>
 pub struct termrock::runtime::AnimId(pub u64)
 impl core::clone::Clone for termrock::runtime::AnimId
 pub fn termrock::runtime::AnimId::clone(&self) -> termrock::runtime::AnimId
@@ -28025,6 +28068,51 @@ pub unsafe fn termrock::runtime::QuietBackend<B>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::runtime::QuietBackend<B>
 pub fn termrock::runtime::QuietBackend<B>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::runtime::QuietBackend<B>
+pub struct termrock::runtime::ReadySubscription<T>
+impl<T> termrock::runtime::ReadySubscription<T>
+pub const fn termrock::runtime::ReadySubscription<T>::is_closed(&self) -> bool
+pub const fn termrock::runtime::ReadySubscription<T>::new(T) -> Self
+pub fn termrock::runtime::ReadySubscription<T>::poll_next(&mut self) -> termrock::runtime::ReadySubscriptionPoll<T>
+impl<T: core::clone::Clone> core::clone::Clone for termrock::runtime::ReadySubscription<T>
+pub fn termrock::runtime::ReadySubscription<T>::clone(&self) -> termrock::runtime::ReadySubscription<T>
+impl<T: core::cmp::Eq> core::cmp::Eq for termrock::runtime::ReadySubscription<T>
+impl<T: core::cmp::PartialEq> core::cmp::PartialEq for termrock::runtime::ReadySubscription<T>
+pub fn termrock::runtime::ReadySubscription<T>::eq(&self, &termrock::runtime::ReadySubscription<T>) -> bool
+impl<T: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::runtime::ReadySubscription<T>
+impl<T: core::fmt::Debug> core::fmt::Debug for termrock::runtime::ReadySubscription<T>
+pub fn termrock::runtime::ReadySubscription<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T> core::marker::Freeze for termrock::runtime::ReadySubscription<T> where T: core::marker::Freeze
+impl<T> core::marker::Send for termrock::runtime::ReadySubscription<T> where T: core::marker::Send
+impl<T> core::marker::Sync for termrock::runtime::ReadySubscription<T> where T: core::marker::Sync
+impl<T> core::marker::Unpin for termrock::runtime::ReadySubscription<T> where T: core::marker::Unpin
+impl<T> core::marker::UnsafeUnpin for termrock::runtime::ReadySubscription<T> where T: core::marker::UnsafeUnpin
+impl<T> core::panic::unwind_safe::RefUnwindSafe for termrock::runtime::ReadySubscription<T> where T: core::panic::unwind_safe::RefUnwindSafe
+impl<T> core::panic::unwind_safe::UnwindSafe for termrock::runtime::ReadySubscription<T> where T: core::panic::unwind_safe::UnwindSafe
+impl<Q, K> equivalent::Equivalent<K> for termrock::runtime::ReadySubscription<T> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscription<T>::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::runtime::ReadySubscription<T> where U: core::convert::From<T>
+pub fn termrock::runtime::ReadySubscription<T>::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::runtime::ReadySubscription<T> where U: core::convert::Into<T>
+pub type termrock::runtime::ReadySubscription<T>::Error = core::convert::Infallible
+pub fn termrock::runtime::ReadySubscription<T>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::runtime::ReadySubscription<T> where U: core::convert::TryFrom<T>
+pub type termrock::runtime::ReadySubscription<T>::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::runtime::ReadySubscription<T>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::runtime::ReadySubscription<T> where T: core::clone::Clone
+pub type termrock::runtime::ReadySubscription<T>::Owned = T
+pub fn termrock::runtime::ReadySubscription<T>::clone_into(&self, &mut T)
+pub fn termrock::runtime::ReadySubscription<T>::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::runtime::ReadySubscription<T> where T: 'static + ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscription<T>::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::runtime::ReadySubscription<T> where T: ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscription<T>::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::runtime::ReadySubscription<T> where T: ?core::marker::Sized
+pub fn termrock::runtime::ReadySubscription<T>::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::runtime::ReadySubscription<T> where T: core::clone::Clone
+pub unsafe fn termrock::runtime::ReadySubscription<T>::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::runtime::ReadySubscription<T>
+pub fn termrock::runtime::ReadySubscription<T>::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::runtime::ReadySubscription<T>
 pub struct termrock::runtime::RunOptions
 pub termrock::runtime::RunOptions::poll_timeout: core::time::Duration
 pub termrock::runtime::RunOptions::session: termrock::crossterm::SessionOptions
@@ -28273,6 +28361,7 @@ pub const termrock::runtime::SPRING_FREQUENCY: f32
 pub fn termrock::runtime::earliest_deadline(impl core::iter::traits::collect::IntoIterator<Item = core::option::Option<std::time::Instant>>) -> core::option::Option<std::time::Instant>
 pub fn termrock::runtime::min_deadline(core::option::Option<std::time::Instant>, core::option::Option<std::time::Instant>) -> core::option::Option<std::time::Instant>
 pub fn termrock::runtime::pulse_fraction(termrock::runtime::FrameTick, u64, termrock::style::MotionPolicy) -> f64
+pub const fn termrock::runtime::ready_subscription<T>(T) -> termrock::runtime::ReadySubscription<T>
 pub fn termrock::runtime::run<Model>(&mut Model, termrock::runtime::RunOptions, impl core::ops::function::FnMut(&mut Model, &mut ratatui_core::terminal::frame::Frame<'_>, termrock::runtime::FrameTick), impl core::ops::function::FnMut(&mut Model, termrock::input::Event, termrock::runtime::FrameTick) -> core::ops::control_flow::ControlFlow<()>, impl core::ops::function::FnMut(&Model) -> core::option::Option<std::time::Instant>) -> core::io::error::Result<()>
 pub fn termrock::runtime::spinner_demand(termrock::runtime::FrameTick, termrock::style::MotionPolicy, bool) -> termrock::runtime::AnimationDemand
 pub fn termrock::runtime::spinner_step(termrock::runtime::FrameTick, usize, u64, termrock::style::MotionPolicy) -> usize

@@ -10,6 +10,7 @@
 mod animate;
 mod motion;
 mod presenter;
+mod subscription;
 mod time;
 
 #[cfg(feature = "crossterm")]
@@ -26,4 +27,5 @@ pub use presenter::{
 };
 #[cfg(feature = "crossterm")]
 pub use runner::{RunOptions, run};
+pub use subscription::{ReadySubscription, ReadySubscriptionPoll, ready_subscription};
 pub use time::{FrameClock, FrameTick, Instant};

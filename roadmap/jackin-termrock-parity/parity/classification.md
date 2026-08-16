@@ -68,7 +68,7 @@ Apply in order: (1) product noun in public model → `example composite`; (2) mu
 |---:|---|---|---|---|---|
 | 1 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/benches/pane_body.rs:52` | promoted → `termrock::widgets::TerminalCellGrid` (plan 010) | component: CustomPaneBlit |
 | 2 | `TerminalCellGrid` | `crates/termrock/src/widgets/terminal_cell_grid.rs` | `crates/jackin-capsule/src/tui/components/pane.rs:48` | promoted → `termrock::widgets::TerminalCellGrid` (plan 010); `TerminalOutput` remains the line-model surface | component: PaneBodyWidget |
-| 3 | `ReadySubscription` | `crates/termrock/src/runtime/subscription.rs` | `crates/jackin-oppicker/src/adapters.rs:60` | — | component: ready_blocking_subscription |
+| 3 | `ReadySubscription` | `crates/termrock/src/runtime/subscription.rs` | `crates/jackin-oppicker/src/adapters.rs:60` | promoted → `termrock::runtime::ReadySubscription` (plan 010) | component: ready_blocking_subscription |
 
 The API map records no actual GAP rows. `TAB_GAP` is a constant name, not a GAP disposition.
 
