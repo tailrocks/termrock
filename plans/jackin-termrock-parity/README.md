@@ -21,7 +21,7 @@ Frozen package fingerprint: `1c5e6cd4f587c5efdf3cd4430e94343f5921f401`
 | 006 | Custom-component classification + promotion backlog | F7, D7 | P2 | M | 005 | DONE |
 | 007 | Old-rev side harness (5ff94ee renders) | D3, D10, W2(a) | P2 | M | 001 | DONE |
 | 008 | Per-widget comparison reports | F3, F8, D8, W2 | P2 | L | 004, 007 | DONE |
-| 009 | Verdict recording + application batches | F4, B1, N1, D1, D11, D12 | P3 | L | 008 | TODO |
+| 009 | Verdict recording + application batches | F4, B1, N1, D1, D11, D12 | P3 | L | 008 | BLOCKED (user verdicts pending: all 16 families + shared palette ruling) |
 | 010 | Promotion batches from the backlog | F7, D7, N1 | P3 | L | 003, 006 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) |
