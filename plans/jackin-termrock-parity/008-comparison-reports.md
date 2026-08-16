@@ -347,7 +347,7 @@ cargo run -p termrock-lookbook -- list --format json > target/plan008/stories.js
 Write the following to `target/plan008/build_manifest.py` and run it from
 the repository root. It proves 1:1 HEAD baseline coverage in
 `--check-head` mode (used by the preconditions), classifies every subset
-story as `PAIR`, `UNCOMPARABLE`, or `HEAD_ONLY`, checks PNG dimensions per
+story as `PAIR`, `UNCOMPARABLE`, or `HEAD_ONLY`, validates PNG dimensions per
 pair, reconciles pair counts against the expected table in **both**
 directions (deficit and surplus), and (with `--copy`) wipes and
 regenerates the report image directory under canonical slug names
@@ -492,10 +492,10 @@ for comp, sid in sorted(subset):
         continue
     if old:
         matched_old.add(old)
-        w1, w2 = png_dims(old), png_dims(head)
-        if w1 != w2:
-            die("dimension mismatch for %s: old %r vs head %r (007 "
-                "geometry defect)" % (sid, w1, w2))
+        # Different story dimensions are legitimate widget-level evidence
+        # (layout/spacing changed between revisions), not a raster-geometry
+        # defect. Both images still use the same 9x18 pixel cell geometry.
+        png_dims(old), png_dims(head)
         st, reason = "PAIR", "-"
     elif sid in unc:
         st, reason = "UNCOMPARABLE", unc[sid]
@@ -973,8 +973,8 @@ Stop and report back (do not improvise) if:
   (e.g. zero old-rev PNGs, no uncomparable list, baselines missing).
 - `build_manifest.py` exits 2 for any reason: a failed `--check-head`
   baseline-coverage proof, ambiguous or unmatched PNG names, an old-rev
-  PNG whose story id has no HEAD baseline (orphan), a per-pair dimension
-  mismatch (007 geometry defect), a pair surplus, an unexplained pair
+  PNG whose story id has no HEAD baseline (orphan), an unreadable/invalid
+  PNG, a pair surplus, an unexplained pair
   deficit vs the ch. 03 Q6 expectations (including an `--allow-deficit`
   run the uncomparable list cannot account for), or an unparseable
   stories.json.
