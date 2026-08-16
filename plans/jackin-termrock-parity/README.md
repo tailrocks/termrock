@@ -14,7 +14,7 @@ Frozen package fingerprint: `02e1bf60bed8ae7286c51af71811914bfa85e9a9`
 | Plan | Title | Covers | Priority | Effort | Depends on | Status |
 |------|-------|--------|----------|--------|------------|--------|
 | 001 | termrock-raster crate: Buffer→PNG engine, fonts, licensing, determinism | F5, B2, D9, N3 | P1 | M | — | DONE |
-| 002 | Initial PNG baseline set for the jackin-used subset | F5, D4, D6, N2 | P1 | M | 001 | TODO |
+| 002 | Initial PNG baseline set for the jackin-used subset | F5, D4, D6, N2 | P1 | M | 001 | IN PROGRESS |
 | 003 | Bless-required PNG gate test + mise wiring | F6, W1, B4, D5, N3 | P1 | M | 002 | TODO |
 | 004 | Story state-gap fill for the subset (+ their baselines) | B3, F5 | P2 | M | 003 | TODO |
 | 005 | Jackin usage inventory + old→new API parity map | F1, F2 | P1 | L | — | TODO |

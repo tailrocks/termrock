@@ -233,14 +233,18 @@ pub fn story_by_id(id: &str) -> Option<Story> {
     stories().into_iter().find(|s| s.id == id)
 }
 
-/// Paint a story once (static path) into a [`TerminalFrame`].
+/// Paint a story once and return the unresolved [`Buffer`].
+///
+/// This is the full-fidelity seam: every modifier, including italic and
+/// crossed-out, remains present here. [`encode_buffer`] and frame JSON below
+/// this point are lossy.
 #[must_use]
-pub fn paint_story_frame(
+pub fn paint_story_buffer(
     story: Story,
     theme: &RolePalette,
     cols: Option<u16>,
     rows: Option<u16>,
-) -> TerminalFrame {
+) -> Buffer {
     let story_cols = cols.unwrap_or(story.width).max(1);
     let story_rows = rows.unwrap_or(story.height).max(1);
     let width = story_cols.saturating_add(STORY_PAD * 2);
@@ -271,7 +275,20 @@ pub fn paint_story_frame(
             interactor.render(frame, inner);
         })
         .expect("draw");
-    let buffer = terminal.backend().buffer().clone();
+    terminal.backend().buffer().clone()
+}
+
+/// Paint a story once (static path) into a [`TerminalFrame`].
+#[must_use]
+pub fn paint_story_frame(
+    story: Story,
+    theme: &RolePalette,
+    cols: Option<u16>,
+    rows: Option<u16>,
+) -> TerminalFrame {
+    let story_cols = cols.unwrap_or(story.width).max(1);
+    let story_rows = rows.unwrap_or(story.height).max(1);
+    let buffer = paint_story_buffer(story, theme, cols, rows);
     let (c, r, cells) = encode_buffer(&buffer);
     TerminalFrame {
         story_id: story.id.into(),

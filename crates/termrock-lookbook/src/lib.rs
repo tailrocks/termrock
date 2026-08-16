@@ -13,4 +13,6 @@ pub mod frame;
 pub mod interactors;
 pub mod knobs;
 pub mod palette256;
+#[cfg(feature = "native")]
+pub mod png;
 pub mod stories;
