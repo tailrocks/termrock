@@ -10439,6 +10439,78 @@ pub fn stories() -> Vec<Story> {
             2,
             text_input_prefix_story,
         ),
+        Story::new(
+            "text-input/focused",
+            "TextInput focused",
+            "TextInput",
+            "Blurred field above focused field: cursor and focus chrome delta.",
+            40,
+            5,
+            text_input_focused_story,
+        ),
+        Story::new(
+            "text-input/disabled",
+            "TextInput disabled",
+            "TextInput",
+            "Disabled input; edits blocked and cursor suppressed.",
+            40,
+            2,
+            text_input_disabled_story,
+        ),
+        Story::new(
+            "tabs/focused",
+            "Tabs focused",
+            "Tabs",
+            "Blurred strip above focused strip with roving focus cue.",
+            52,
+            5,
+            tabs_focused_story,
+        ),
+        Story::new(
+            "tabs/disabled",
+            "Tabs disabled",
+            "Tabs",
+            "A disabled tab muted among enabled ones.",
+            48,
+            2,
+            tabs_disabled_story,
+        ),
+        Story::new(
+            "tabs/hover",
+            "Tabs hover",
+            "Tabs",
+            "Pointer hover tint on an inactive tab.",
+            52,
+            2,
+            tabs_hover_story,
+        ),
+        Story::new(
+            "status-bar/hover",
+            "Status bar hover",
+            "StatusBar",
+            "Hovered slot painted with its hover style.",
+            64,
+            1,
+            status_bar_hover_story,
+        ),
+        Story::new(
+            "action-bar/focused",
+            "Action bar focused",
+            "ActionBar",
+            "Bar without cursor above bar with action cursor.",
+            48,
+            3,
+            action_bar_focused_story,
+        ),
+        Story::new(
+            "action-bar/disabled",
+            "Action bar disabled",
+            "ActionBar",
+            "Disabled action muted beside an enabled one.",
+            48,
+            2,
+            action_bar_disabled_story,
+        ),
     ];
     for story in &mut catalog {
         if PATTERN_DEMO_IDS.contains(&story.id) && !story.interactive {
@@ -27411,6 +27483,176 @@ fn transcript_ascii_colorless(frame: &mut Frame<'_>, area: Rect, system: &Design
             .ascii(true)
             .colorless(true)
             .focused(true),
+        area,
+        &mut state,
+    );
+}
+
+// ── State-variant gap fill (spec/baselines.md "All-states story gap fill", B3) ──
+//
+// Story-set note — state coverage per jackin-subset widget:
+// - TextInput: focused/disabled paint via ControlState. No hover API exists,
+//   so hover is not a paintable story.
+// - Tabs: hover is modeled by TabsState::hovered; focused paint is the roving
+//   focus cue on a non-selected tab; per-tab enabled(false) paints disabled.
+// - Toast: never focusable by design and exposes no disabled or hover API.
+// - StatusBar: hover is modeled by StatusSlot::hover_style and
+//   StatusBarState::hovered. It has no focused state; disabled slots are omitted.
+// - ActionBar: cursor and Action.enabled paint focused and disabled. It has no
+//   hover API.
+
+fn text_input_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let [blurred, _, focused] = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(2),
+    ])
+    .areas(area);
+    let mut blurred_state = TextInputState::new("resting value");
+    let _ =
+        TextInput::new("Blurred", system).paint(blurred, frame.buffer_mut(), &mut blurred_state);
+    let mut focused_state = TextInputState::new("editing value");
+    focused_state.set_focused(true);
+    let _ =
+        TextInput::new("Focused", system).paint(focused, frame.buffer_mut(), &mut focused_state);
+}
+
+fn text_input_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let mut state = TextInputState::new("locked value");
+    state.set_enabled(false);
+    let _ = TextInput::new("Disabled", system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("details", "Details"),
+        Tab::new("logs", "Logs"),
+    ];
+    let [blurred, _, focused] = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(2),
+    ])
+    .areas(area);
+    let mut blurred_state = TabsState::new().with_selected("overview");
+    Tabs::new(&items, system).paint(blurred, frame.buffer_mut(), &mut blurred_state);
+    let mut focused_state = TabsState::new()
+        .with_selected("overview")
+        .with_activation(TabsActivation::Manual);
+    focused_state.set_focused(true);
+    let _ = focused_state.handle_key(
+        termrock::input::KeyEvent::new(
+            termrock::input::KeyCode::Right,
+            termrock::input::KeyModifiers::NONE,
+        ),
+        &items,
+    );
+    Tabs::new(&items, system).paint(focused, frame.buffer_mut(), &mut focused_state);
+}
+
+fn tabs_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("archive", "Archive").enabled(false),
+        Tab::new("logs", "Logs"),
+    ];
+    let mut state = TabsState::new().with_selected("overview");
+    state.set_focused(true);
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn tabs_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let items = [
+        Tab::new("overview", "Overview"),
+        Tab::new("details", "Details"),
+        Tab::new("logs", "Logs"),
+    ];
+    let mut state = TabsState::new().with_selected("overview");
+    state.hovered = Some("details");
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn status_bar_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{StatusRegion, StatusSlot};
+
+    let left = [StatusSlot::mode("mode", "NOR")
+        .style(Style::new().reversed())
+        .hover_style(Style::new().bold().reversed())];
+    let center = [StatusSlot::focus_zone("focus", "main")];
+    let right = [
+        StatusSlot::selection("sel", "3/12")
+            .style(Style::new().dim())
+            .hover_style(Style::new().bold()),
+        StatusSlot::shortcut("hint", "? help").region(StatusRegion::Right),
+    ];
+    let mut state = StatusBarState::default();
+    state.hovered = Some("sel");
+    frame.render_stateful_widget(
+        &StatusBar::with_center(&left, &center, &right, system)
+            .rich()
+            .alpha(1.0),
+        area,
+        &mut state,
+    );
+}
+
+fn action_bar_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "Accept",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            style: None,
+        },
+    ];
+    let [resting, _, focused] = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let mut resting_state = ActionBarState::default();
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        resting,
+        &mut resting_state,
+    );
+    let mut cursor_state = ActionBarState {
+        cursor: Some("accept"),
+        ..ActionBarState::default()
+    };
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
+        focused,
+        &mut cursor_state,
+    );
+}
+
+fn action_bar_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let actions = [
+        Action {
+            id: "accept",
+            label: "Accept",
+            enabled: true,
+            style: None,
+        },
+        Action {
+            id: "delete",
+            label: "Delete",
+            enabled: false,
+            style: None,
+        },
+    ];
+    let mut state = ActionBarState::default();
+    frame.render_stateful_widget(
+        &ActionBar::new(&actions, system).gap("  "),
         area,
         &mut state,
     );
