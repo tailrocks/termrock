@@ -280,7 +280,7 @@ Active tab default cue:
  ▸ Files    Search    Git        ← bold Accent label + ▸ leading marker; quiet inactive
 ```
 
-- Active = **bold + `FgStrong`/Accent** + a semantic bottom rule by default.
+- Active = **bold + `FgStrong`/Accent** + selection wash + semantic bottom rule.
 - Inactive = `FgMuted`.
 - When the selected tab owns keyboard focus: its rule brightens to `Accent`.
 - Default: a bottom rule — a run of `─` border cells under the active tab. It
@@ -289,7 +289,8 @@ Active tab default cue:
 
 > **Errata (plans/015, 2026-08-15).** The shipped vocabulary is
 > `TabsActiveCue::{AccentPill, Connected, Marker, Rule}`, and the **default is
-> `Rule`** — a focus-aware semantic border row below the selected label.
+> `Rule`** — the selection wash plus a focus-aware semantic border row below
+> the selected label.
 > A marker plus weight survives as `Marker` for colourless terminals, and
 > `Connected` joins the active tab to the pane below for app shells. The
 > `AccentPill` wash remains available for compact app shells.

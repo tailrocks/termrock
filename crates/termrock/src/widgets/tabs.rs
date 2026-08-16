@@ -1262,28 +1262,30 @@ impl<'a, Id> Tabs<'a, Id> {
             // themed `TabActive` background always wins, so consumers keep
             // full control of the strip's fill.
             style = style.add_modifier(Modifier::BOLD);
+            if matches!(
+                self.active_cue,
+                TabsActiveCue::AccentPill | TabsActiveCue::Rule
+            ) && style.bg.is_none()
+                && let Some(bg) = self.system.style(Role::SelectionTint).bg
+            {
+                // The fill arrives rather than snapping: a strip that jumps
+                // reads as two unrelated strips (plans/014). Rule keeps the
+                // same wash and adds its focus-aware line below.
+                let settled = state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
+                let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
+                    let canvas = self
+                        .system
+                        .style(Role::Canvas)
+                        .bg
+                        .unwrap_or(ratatui_core::style::Color::Reset);
+                    crate::style::blend_toward(canvas, bg, settled)
+                } else {
+                    bg
+                };
+                style = style.bg(bg);
+            }
             match self.active_cue {
-                TabsActiveCue::AccentPill => {
-                    if style.bg.is_none()
-                        && let Some(bg) = self.system.style(Role::SelectionTint).bg
-                    {
-                        // The fill arrives rather than snapping: a strip that
-                        // jumps reads as two unrelated strips (plans/014).
-                        let settled =
-                            state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
-                        let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
-                            let canvas = self
-                                .system
-                                .style(Role::Canvas)
-                                .bg
-                                .unwrap_or(ratatui_core::style::Color::Reset);
-                            crate::style::blend_toward(canvas, bg, settled)
-                        } else {
-                            bg
-                        };
-                        style = style.bg(bg);
-                    }
-                }
+                TabsActiveCue::AccentPill | TabsActiveCue::Rule => {}
                 TabsActiveCue::Connected => {
                     if style.bg.is_none()
                         && let Some(bg) = self.system.style(Role::Surface).bg
@@ -1301,7 +1303,6 @@ impl<'a, Id> Tabs<'a, Id> {
                             .text
                     };
                 }
-                TabsActiveCue::Rule => {}
             }
         }
         if focused_tab && !selected {
@@ -1505,7 +1506,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState {
             selected: Some("overview"),
-            hovered: Some("overview"),
+            hovered: None,
             focused: true,
             ..TabsState::default()
         };
@@ -1514,6 +1515,10 @@ mod tests {
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
         assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            buffer[(3, 4)].bg,
+            theme.style(Role::SelectionTint).bg.unwrap()
+        );
         assert_eq!(buffer[(3, 5)].symbol(), system.glyphs.rule());
         assert_eq!(buffer[(3, 5)].fg, theme.style(Role::Accent).fg.unwrap());
         assert_eq!(state.regions.len(), 1);
@@ -1533,6 +1538,10 @@ mod tests {
 
         assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
         assert_eq!(buffer[(0, 1)].fg, theme.style(Role::Border).fg.unwrap());
+        assert_eq!(
+            buffer[(0, 0)].bg,
+            theme.style(Role::SelectionTint).bg.unwrap()
+        );
     }
 
     #[test]
