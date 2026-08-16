@@ -306,9 +306,9 @@ fill-to-actions?*
 **16. Tabs** (P0) — `━` underline row (`tabs.rs:1228-1242`); focused/hovered underline
 (`:1176,1178`); `TabUnderlineFocused/Unfocused` roles (`style/mod.rs:180-182`); locked test
 (`:1378`); `paint_select` BOLD|REVERSED; 4-role ladder. → Retire `TabUnderline*`; delete `━` row;
-`TabsActiveCue::{AccentPill(default), Connected, Marker, Rule}` — active = SelectionTint+
+`TabsActiveCue::{AccentPill, Connected, Marker, Rule(default)}` — active = focus-aware rule+
 TextStrong+BOLD; roving brightens leading edge BorderFocused. **P0**.
-*Decision D2: AccentPill default?*
+*Decision D2: Rule is the canonical default; alternate cues remain explicit.*
 
 **48. Breadcrumbs** (P0) — Current crumb `UNDERLINED` (`breadcrumbs.rs:871-875`, comment
 "underline current for no-color"); focus REVERSED+BOLD; clickable TextMuted (too dim); separator
