@@ -200,7 +200,7 @@ Reference totals use `rg -c 'termrock::' --type rust` matching lines. Per-item c
 | `CustomPaneBlit` | `crates/jackin-capsule/benches/pane_body.rs:52` |
 | `PaneBodyWidget` | `crates/jackin-capsule/src/tui/components/pane.rs:48` |
 | `StatusBarWidget` | `crates/jackin-capsule/src/tui/components/chrome.rs:128` |
-| `PaneBorderWidget ` | `crates/jackin-capsule/src/tui/components/chrome.rs:256` |
+| `PaneBorderWidget` | `crates/jackin-capsule/src/tui/components/chrome.rs:256` |
 | `BottomChromeWidget` | `crates/jackin-capsule/src/tui/components/chrome.rs:291` |
 | `DialogBottomChromeWidget` | `crates/jackin-capsule/src/tui/components/chrome.rs:326` |
 | `BrandHeader` | `crates/jackin-console/src/tui/components/brand_header.rs:14` |
@@ -215,7 +215,7 @@ Reference totals use `rg -c 'termrock::' --type rust` matching lines. Per-item c
 | `ProgressRail` | `crates/jackin-launch/src/tui/components/progress_rail.rs:26` |
 | `DigitalRain` | `crates/jackin-launch/src/tui/components/rain.rs:182` |
 | `github_context_view_from_state` | `crates/jackin-capsule/src/tui/components/dialog/github_context.rs:20` |
-| `modal_rect_for_mode` | `crates/jackin-capsule/src/tui/components/modal_rects.rs:135` |
+| `CapsuleModalRect` | `crates/jackin-capsule/src/tui/components/modal_rects.rs:135` |
 | `status_bar_plan` | `crates/jackin-capsule/src/tui/components/status_bar.rs:213` |
 | `agent_picker_label` | `crates/jackin-console/src/tui/components/agent_choice.rs:79` |
 | `auth_source_picker_state` | `crates/jackin-console/src/tui/components/auth_panel.rs:70` |
@@ -235,19 +235,19 @@ Reference totals use `rg -c 'termrock::' --type rust` matching lines. Per-item c
 | `settings_general_row_footer_items` | `crates/jackin-console/src/tui/components/footer_hints/settings.rs:18` |
 | `workspace_screen_footer_items` | `crates/jackin-console/src/tui/components/footer_hints/workspace.rs:220` |
 | `github_open_plan` | `crates/jackin-console/src/tui/components/github_picker.rs:31` |
-| `modal_rect_for_mode` | `crates/jackin-console/src/tui/components/modal_rects.rs:236` |
-| `render` | `crates/jackin-console/src/tui/components/mount_dst_choice.rs:94` |
+| `ConsoleModalRect` | `crates/jackin-console/src/tui/components/modal_rects.rs:236` |
+| `MountDestinationChoice` | `crates/jackin-console/src/tui/components/mount_dst_choice.rs:94` |
 | `render_mount_header` | `crates/jackin-console/src/tui/components/mount_rows.rs:19` |
 | `push_op_breadcrumb_spans` | `crates/jackin-console/src/tui/components/op_breadcrumb.rs:14` |
 | `sentinel_line` | `crates/jackin-console/src/tui/components/op_picker/lines.rs:19` |
 | `render_picker` | `crates/jackin-console/src/tui/components/op_picker/render.rs:21` |
-| `render` | `crates/jackin-console/src/tui/components/role_picker.rs:124` |
+| `RolePicker` | `crates/jackin-console/src/tui/components/role_picker.rs:124` |
 | `editor_exit_save_discard_state` | `crates/jackin-console/src/tui/components/save_discard.rs:6` |
 | `workspace_create_display_name` | `crates/jackin-console/src/tui/components/save_preview.rs:66` |
-| `render` | `crates/jackin-console/src/tui/components/scope_picker.rs:78` |
-| `render` | `crates/jackin-console/src/tui/components/source_picker.rs:85` |
+| `ScopePicker` | `crates/jackin-console/src/tui/components/scope_picker.rs:78` |
+| `SourcePicker` | `crates/jackin-console/src/tui/components/source_picker.rs:85` |
 | `status_popup_state` | `crates/jackin-console/src/tui/components/status_popup.rs:8` |
-| `render` | `crates/jackin-console/src/tui/components/workdir_pick.rs:134` |
+| `WorkdirPicker` | `crates/jackin-console/src/tui/components/workdir_pick.rs:134` |
 | `warp_intro` | `crates/jackin-launch/src/animation.rs:308` |
 | `prelaunch_select_choice` | `crates/jackin-launch/src/progress.rs:311` |
 | `render_launch_frame` | `crates/jackin-launch/src/tui/view.rs:25` |
