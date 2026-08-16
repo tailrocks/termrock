@@ -18,7 +18,7 @@ Frozen package fingerprint: `02e1bf60bed8ae7286c51af71811914bfa85e9a9`
 | 003 | Bless-required PNG gate test + mise wiring | F6, W1, B4, D5, N3 | P1 | M | 002 | DONE |
 | 004 | Story state-gap fill for the subset (+ their baselines) | B3, F5 | P2 | M | 003 | DONE |
 | 005 | Jackin usage inventory + old→new API parity map | F1, F2 | P1 | L | — | DONE |
-| 006 | Custom-component classification + promotion backlog | F7, D7 | P2 | M | 005 | TODO |
+| 006 | Custom-component classification + promotion backlog | F7, D7 | P2 | M | 005 | BLOCKED (plan 005 inventory omits digital rain, command palette, and progress-rail component rows) |
 | 007 | Old-rev side harness (5ff94ee renders) | D3, D10, W2(a) | P2 | M | 001 | TODO |
 | 008 | Per-widget comparison reports | F3, F8, D8, W2 | P2 | L | 004, 007 | TODO |
 | 009 | Verdict recording + application batches | F4, B1, N1, D1, D11, D12 | P3 | L | 008 | TODO |
