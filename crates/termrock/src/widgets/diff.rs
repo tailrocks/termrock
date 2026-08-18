@@ -613,6 +613,12 @@ impl DiffViewState {
         &self.scroll
     }
 
+    /// Mutable scroll (hosts owning a product scroll model inject their
+    /// offset here; the render pass clamps it to the viewport).
+    pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
+        &mut self.scroll
+    }
+
     /// Split preferred (may still paint unified when narrow).
     #[must_use]
     pub const fn prefers_split(&self) -> bool {
@@ -1864,6 +1870,30 @@ mod tests {
         }
         (&view).render(area, &mut buffer, &mut state);
         assert!(state.offset() < 100);
+    }
+
+    #[test]
+    fn host_injected_offset_survives_within_range_and_clamps_beyond() {
+        let lines: Vec<DiffLine<'static>> =
+            (0..50).map(|_| DiffLine::context("l", "body")).collect();
+        let system = DesignSystem::default();
+        let view = DiffView::new(&lines, &system);
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DiffViewState::new();
+        // Hosts injecting into a fresh state publish the content metrics
+        // first; the render pass re-syncs the same values.
+        state.scroll_mut().set_content_size(1, 50);
+        state.scroll_mut().set_viewport(1, 9);
+        // In-range host offset is honored as-is.
+        state.scroll_mut().set_offset_y(5);
+        (&view).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 5);
+        // Beyond-range host offset is clamped by the render pass.
+        state.scroll_mut().set_offset_y(49);
+        (&view).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 41);
+        assert_eq!(state.offset(), state.scroll().offset_y());
     }
 
     #[test]

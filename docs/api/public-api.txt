@@ -66382,6 +66382,7 @@ pub const fn termrock::widgets::DiffViewState::offset(&self) -> u16
 pub const fn termrock::widgets::DiffViewState::prefers_split(&self) -> bool
 pub fn termrock::widgets::DiffViewState::restore_anchor(&mut self, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk])
 pub const fn termrock::widgets::DiffViewState::scroll(&self) -> &termrock::widgets::ScrollAreaState
+pub fn termrock::widgets::DiffViewState::scroll_mut(&mut self) -> &mut termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::DiffViewState::set_accepts_input(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::DiffViewState
 pub fn termrock::widgets::DiffViewState::clone(&self) -> termrock::widgets::DiffViewState
