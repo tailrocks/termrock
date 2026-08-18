@@ -66364,6 +66364,7 @@ pub termrock::widgets::DiffViewState::hunk_cursor: usize
 pub termrock::widgets::DiffViewState::mode: termrock::widgets::DiffMode
 pub termrock::widgets::DiffViewState::regions: alloc::vec::Vec<termrock::widgets::DiffRegion>
 pub termrock::widgets::DiffViewState::search: core::option::Option<alloc::string::String>
+pub termrock::widgets::DiffViewState::show_cursor: bool
 pub termrock::widgets::DiffViewState::show_line_numbers: bool
 pub termrock::widgets::DiffViewState::show_whitespace: bool
 pub termrock::widgets::DiffViewState::word_diff: bool
