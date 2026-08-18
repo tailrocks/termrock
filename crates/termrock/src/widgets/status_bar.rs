@@ -557,6 +557,7 @@ struct Allocation<Id> {
     full_width: u16,
     priority: u8,
     essential: bool,
+    separator: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -566,6 +567,7 @@ struct Placement<Id> {
     index: usize,
     area: Rect,
     is_transient: bool,
+    separator: bool,
 }
 
 impl<Id: Clone> StatusBar<'_, Id> {
@@ -683,6 +685,31 @@ impl<Id: Clone> StatusBar<'_, Id> {
             remaining = remaining.saturating_sub(growth);
         }
 
+        // Reserve the ` · ` divider's columns for every same-side slot past
+        // the first (in paint order) while budget remains, so the separator
+        // never eats a slot's content. Paint carves exactly what was
+        // reserved here; under scarcity no separator paints.
+        for side in [Side::Left, Side::Center, Side::Right] {
+            let mut order = included
+                .iter()
+                .enumerate()
+                .filter(|(_, a)| a.side == side)
+                .map(|(position, _)| position)
+                .collect::<Vec<_>>();
+            match side {
+                Side::Right => order.sort_by_key(|&p| std::cmp::Reverse(included[p].index)),
+                Side::Left | Side::Center => order.sort_by_key(|&p| included[p].index),
+            }
+            for &p in order.iter().skip(1) {
+                if remaining < 3 {
+                    break;
+                }
+                included[p].width = included[p].width.saturating_add(3);
+                included[p].separator = true;
+                remaining -= 3;
+            }
+        }
+
         // Place left LTR, right RTL, center in leftover middle.
         let mut placements = Vec::with_capacity(included.len() + 1);
         let mut left_x = area.x;
@@ -702,6 +729,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
                 index: allocation.index,
                 area: Rect::new(left_x, area.y, width, 1),
                 is_transient: false,
+                separator: allocation.separator,
             });
             left_x = left_x.saturating_add(width);
         }
@@ -723,6 +751,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
                 index: allocation.index,
                 area: Rect::new(start, area.y, right_x.saturating_sub(start), 1),
                 is_transient: false,
+                separator: allocation.separator,
             });
             right_x = start;
         }
@@ -749,6 +778,7 @@ impl<Id: Clone> StatusBar<'_, Id> {
                     index: allocation.index,
                     area: Rect::new(cx, area.y, width, 1),
                     is_transient: false,
+                    separator: allocation.separator,
                 });
                 cx = cx.saturating_add(width);
             }
@@ -841,7 +871,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
         state.regions.clear();
         let placements = self.placements(area, Some(state));
         let mut content = String::new();
-        let mut seen = [false; 3];
         for placement in &placements {
             if placement.is_transient {
                 continue;
@@ -850,15 +879,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             let hovered = state.hovered.as_ref() == Some(&slot.id);
             let style = resolve_style(slot, hovered, self.system);
             let painted = format_slot_content(slot, self.system.glyphs);
-            let side_index = match placement.side {
-                Side::Left => 0,
-                Side::Center => 1,
-                Side::Right => 2,
-            };
             let mut content_area = placement.area;
-            if seen[side_index] && placement.area.width > 3 {
+            if placement.separator && placement.area.width > 3 {
                 // Symmetric ` · `: the separator sits between two facts, so it
-                // gets the same breathing space on both sides.
+                // gets the same breathing space on both sides. Its columns
+                // were reserved during allocation, never taken from content.
                 let separator = self.system.glyphs.meta_separator();
                 buffer.set_stringn(
                     placement.area.x.saturating_add(1),
@@ -870,7 +895,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 content_area.x = content_area.x.saturating_add(3);
                 content_area.width = content_area.width.saturating_sub(3);
             }
-            seen[side_index] = true;
             crate::text::display_cols_slice_into(
                 &painted,
                 0,
@@ -1005,6 +1029,7 @@ fn allocation<Id: Clone>(
         full_width,
         priority: slot.priority,
         essential,
+        separator: false,
     })
 }
 
@@ -1084,6 +1109,29 @@ mod tests {
         assert!(regions.iter().any(|region| region.id == "activity"));
         assert!(!regions.iter().any(|region| region.id == "usage"));
         assert!(regions.iter().all(|region| region.area.width > 0));
+    }
+
+    #[test]
+    fn same_side_separator_never_eats_slot_content() {
+        let system = DesignSystem::default();
+        let right = [
+            StatusSlot::new("container", " 2y0t4aw6 "),
+            StatusSlot::new("run", " jk-run-c46709 "),
+        ];
+        let bar = StatusBar::new(&[] as &[StatusSlot<'_, &str>], &right, &system);
+        let area = Rect::new(0, 0, 90, 1);
+        let mut state = StatusBarState::new();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+        let row = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>();
+        assert!(
+            row.contains("2y0t4aw6"),
+            "container slot truncated: {row:?}"
+        );
+        assert!(row.contains("jk-run-c46709"), "run slot truncated: {row:?}");
+        assert!(row.contains('·'), "separator should paint: {row:?}");
     }
 
     #[test]
