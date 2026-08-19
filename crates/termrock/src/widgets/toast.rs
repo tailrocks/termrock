@@ -1400,7 +1400,10 @@ impl<'a> Toast<'a> {
         // Classic single-line toast geometry (preserved for stories/docs).
         let (width, height) =
             if self.title.is_none() && self.progress.is_none() && self.undo_label.is_none() {
-                let width = u16::try_from(display_cols(self.message).saturating_add(4))
+                // Chrome is 6 columns: border (2), severity rail (1), the
+                // gaps around the glyph (2), and the glyph itself (1) —
+                // same budget `measure_toast_size` uses for the rich layout.
+                let width = u16::try_from(display_cols(self.message).saturating_add(6))
                     .unwrap_or(u16::MAX)
                     .min(area.width);
                 (width, 3.min(area.height))
@@ -1794,8 +1797,30 @@ mod tests {
             .rect(outer)
             .expect("visible toast");
 
-        assert_eq!(top_right, Rect::new(29, 6, 9, 3));
-        assert_eq!(bottom_left, Rect::new(12, 13, 9, 3));
+        assert_eq!(top_right, Rect::new(27, 6, 11, 3));
+        assert_eq!(bottom_left, Rect::new(12, 13, 11, 3));
+    }
+
+    #[test]
+    fn classic_toast_rect_budgets_rail_and_glyph_so_message_never_clips() {
+        let system = crate::style::DesignSystem::default();
+        let message = "Selection copied";
+        let outer = Rect::new(0, 0, 60, 10);
+        let toast = Toast::new(&system, message, Severity::Success);
+        let mut buffer = Buffer::empty(outer);
+        toast.paint(outer, &mut buffer);
+        let mut painted = String::new();
+        for y in 0..outer.height {
+            for x in 0..outer.width {
+                if let Some(cell) = buffer.cell((x, y)) {
+                    painted.push_str(cell.symbol());
+                }
+            }
+        }
+        assert!(
+            painted.contains(message),
+            "classic toast must paint the full message unclipped: {painted:?}"
+        );
     }
 
     #[test]

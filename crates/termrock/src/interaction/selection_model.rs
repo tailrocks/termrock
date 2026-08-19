@@ -85,6 +85,8 @@ pub enum SelectionVisual {
     Fill,
     /// Soft tint (`Role::Focus`).
     Tint,
+    /// Full-row fill plus a leading `▸` marker (classic loud cursor).
+    Marker,
     /// Multi-select check mark (Unicode/ASCII via glyph set).
     Check,
 }
@@ -97,13 +99,14 @@ impl SelectionVisual {
             SelectionChrome::Fill => Self::Fill,
             SelectionChrome::Gutter => Self::Gutter,
             SelectionChrome::Tint => Self::Tint,
+            SelectionChrome::Marker => Self::Marker,
         }
     }
 
     /// Whether this recipe requires a non-color glyph cue.
     #[must_use]
     pub const fn requires_glyph(self) -> bool {
-        matches!(self, Self::Gutter | Self::Check)
+        matches!(self, Self::Gutter | Self::Marker | Self::Check)
     }
 }
 

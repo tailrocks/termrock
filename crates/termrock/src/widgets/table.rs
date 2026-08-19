@@ -1208,13 +1208,19 @@ fn paint_selection_gutter(
                 tokens.palette.style(Role::Accent),
             ),
             SelectionChrome::Fill => (" ", style),
+            SelectionChrome::Marker => (tokens.glyphs.selection_marker(), style),
         }
     } else {
         (" ", style)
     };
     buffer.set_stringn(x, y, glyph, 1, gstyle);
     buffer.set_stringn(x.saturating_add(1), y, " ", 1, style);
-    if selected && matches!(tokens.selection, SelectionChrome::Fill) {
+    if selected
+        && matches!(
+            tokens.selection,
+            SelectionChrome::Fill | SelectionChrome::Marker
+        )
+    {
         // Full-row fill applied by callers via style on cells; gutter stays quiet.
     }
 }
@@ -1399,7 +1405,11 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         }
                     };
                 }
-                if matches!(table.tokens.selection, SelectionChrome::Fill) && selected {
+                if matches!(
+                    table.tokens.selection,
+                    SelectionChrome::Fill | SelectionChrome::Marker
+                ) && selected
+                {
                     buffer.set_style(rect, cell_style);
                 }
                 // Only paint text when column left edge is in view (avoid partial misalignment).

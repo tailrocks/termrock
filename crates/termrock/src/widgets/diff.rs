@@ -535,6 +535,9 @@ pub struct DiffViewState {
     pub show_line_numbers: bool,
     /// Show trailing-whitespace markers.
     pub show_whitespace: bool,
+    /// Paint the cursor row's selection chrome. Hosts whose surface scrolls
+    /// without a cursor set this `false`; the cursor still tracks state.
+    pub show_cursor: bool,
     /// Prefer word-level paint when spans present.
     pub word_diff: bool,
     /// Anchor line id.
@@ -579,6 +582,7 @@ impl DiffViewState {
             folded_files: BTreeSet::new(),
             show_line_numbers: true,
             show_whitespace: true,
+            show_cursor: true,
             word_diff: true,
             anchor_id: None,
             anchor_hunk: None,
@@ -1295,7 +1299,7 @@ impl<'a> DiffView<'a> {
                         h.contains_line(i) || line.text.contains(&h.header)
                     }
                 });
-                let cursor = i == state.cursor;
+                let cursor = state.show_cursor && i == state.cursor;
 
                 match effective {
                     DiffEffectiveMode::Unified => {
@@ -1894,6 +1898,25 @@ mod tests {
         (&view).render(area, &mut buffer, &mut state);
         assert_eq!(state.offset(), 41);
         assert_eq!(state.offset(), state.scroll().offset_y());
+    }
+
+    #[test]
+    fn show_cursor_false_paints_no_selection_bar() {
+        let lines: Vec<DiffLine<'static>> =
+            (0..5).map(|_| DiffLine::context("l", "body")).collect();
+        let system = DesignSystem::default();
+        let view = DiffView::new(&lines, &system);
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DiffViewState::new();
+        state.show_cursor = false;
+        (&view).render(area, &mut buffer, &mut state);
+        // Cursor state still tracks (clamped into range) — only the chrome
+        // is suppressed.
+        assert_eq!(state.cursor, 0);
+        for y in 0..area.height {
+            assert_ne!(buffer[(area.x, y)].symbol(), "▌");
+        }
     }
 
     #[test]
