@@ -1166,6 +1166,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     crate::style::SelectionChrome::Gutter
                         | crate::style::SelectionChrome::Tint
                         | crate::style::SelectionChrome::Fill
+                        | crate::style::SelectionChrome::Marker
                 )
             {
                 // Reserve gutter column only when selection chrome uses a slot.
