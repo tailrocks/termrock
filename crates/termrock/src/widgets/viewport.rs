@@ -24,6 +24,7 @@ pub struct Viewport<'a> {
     system: &'a DesignSystem,
     content_style: Option<Style>,
     content_revision: u64,
+    padded_content: bool,
 }
 
 impl<'a> Viewport<'a> {
@@ -37,6 +38,7 @@ impl<'a> Viewport<'a> {
             system,
             content_style: None,
             content_revision: UNCACHED_REVISION,
+            padded_content: false,
         }
     }
 
@@ -61,6 +63,19 @@ impl<'a> Viewport<'a> {
         self
     }
 
+    /// Insets content horizontally by the density's `pad_x`.
+    ///
+    /// A viewport owns no rhythm rows, so the inset is horizontal only:
+    /// content stays flush with the border on Y while its X column matches
+    /// the body column a [`super::Panel`] would give the same frame. Hosts
+    /// migrating framed bodies from `Panel` to `Viewport` opt in here to
+    /// keep their content column stable.
+    #[must_use]
+    pub const fn padded_content(mut self) -> Self {
+        self.padded_content = true;
+        self
+    }
+
     /// Enables measurement reuse for unchanged content.
     ///
     /// Bump `revision` whenever line contents change. Length changes invalidate
@@ -76,8 +91,21 @@ impl StatefulWidget for &Viewport<'_> {
     type State = DialogScroll;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let viewport_width = usize::from(area.width.saturating_sub(2));
-        let viewport_height = usize::from(area.height.saturating_sub(2));
+        let pad_x = if self.padded_content {
+            self.system.spacing.pad_x
+        } else {
+            0
+        };
+        // Border ring first; content rect sits inside it, inset by pad_x
+        // when the host asked for Panel-aligned padding.
+        let content = Rect::new(
+            area.x.saturating_add(1).saturating_add(pad_x),
+            area.y.saturating_add(1),
+            area.width.saturating_sub(2).saturating_sub(pad_x),
+            area.height.saturating_sub(2),
+        );
+        let viewport_width = usize::from(content.width);
+        let viewport_height = usize::from(content.height);
         let (content_width, _) =
             state
                 .measurement
@@ -104,6 +132,7 @@ impl StatefulWidget for &Viewport<'_> {
                 self.system.style(Role::TextStrong),
             ));
         }
+        block.render(area, buffer);
         // Vertical slicing keeps frame cost proportional to the painted
         // window. Paragraph owns horizontal scrolling only after the slice.
         let start = usize::from(state.scroll_y).min(self.lines.len());
@@ -113,21 +142,14 @@ impl StatefulWidget for &Viewport<'_> {
             .cloned()
             .collect::<Vec<_>>();
         Paragraph::new(visible)
-            .block(block)
             .style(
                 self.content_style
                     .unwrap_or_else(|| self.system.style(Role::Text)),
             )
             .scroll((0, state.scroll_x))
-            .render(area, buffer);
+            .render(content, buffer);
         // The fade belongs to the content, never to the chrome: a dimmed
         // border reads as a disabled pane, not as "there is more below".
-        let content = Rect::new(
-            area.x.saturating_add(1),
-            area.y.saturating_add(1),
-            area.width.saturating_sub(2),
-            area.height.saturating_sub(2),
-        );
         crate::scroll::paint_scrolled_region(
             buffer,
             content,
@@ -150,5 +172,52 @@ impl StatefulWidget for Viewport<'_> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scroll::DialogScroll;
+
+    fn lines() -> [Line<'static>; 3] {
+        [Line::from("alpha"), Line::from("beta"), Line::from("gamma")]
+    }
+
+    #[test]
+    fn content_is_flush_with_the_border_by_default() {
+        let lines = lines();
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buffer = Buffer::empty(area);
+        let mut scroll = DialogScroll::default();
+        (&Viewport::new(&lines, &system)).render(area, &mut buffer, &mut scroll);
+        assert_eq!(
+            buffer[(1, 1)].symbol(),
+            "a",
+            "content starts at the inner column"
+        );
+    }
+
+    #[test]
+    fn padded_content_insets_x_but_stays_flush_on_y() {
+        let lines = lines();
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buffer = Buffer::empty(area);
+        let mut scroll = DialogScroll::default();
+        (&Viewport::new(&lines, &system).padded_content()).render(area, &mut buffer, &mut scroll);
+        let pad_x = system.spacing.pad_x;
+        assert_eq!(buffer[(1, 1)].symbol(), " ", "the pad column stays empty");
+        assert_eq!(
+            buffer[(1 + pad_x, 1)].symbol(),
+            "a",
+            "content aligns with the Panel body column"
+        );
+        assert_eq!(
+            buffer[(1 + pad_x, 2)].symbol(),
+            "b",
+            "rows stay flush on Y — no rhythm row is inserted"
+        );
     }
 }
