@@ -3915,6 +3915,7 @@ impl<T> either::into_either::IntoEither for termrock::interaction::SelectionKind
 pub termrock::interaction::SelectionVisual::Check
 pub termrock::interaction::SelectionVisual::Fill
 pub termrock::interaction::SelectionVisual::Gutter
+pub termrock::interaction::SelectionVisual::Marker
 pub termrock::interaction::SelectionVisual::Tint
 impl termrock::interaction::SelectionVisual
 pub const fn termrock::interaction::SelectionVisual::from_chrome(termrock::style::SelectionChrome) -> Self
@@ -29460,6 +29461,7 @@ pub termrock::style::Glyph::RuleV
 pub termrock::style::Glyph::Search
 pub termrock::style::Glyph::SelectionGutter
 pub termrock::style::Glyph::SelectionMark
+pub termrock::style::Glyph::SelectionMarker
 pub termrock::style::Glyph::Settings
 pub termrock::style::Glyph::SliderFill
 pub termrock::style::Glyph::SliderRail
@@ -29598,6 +29600,7 @@ pub const fn termrock::style::GlyphSet::rule(self) -> &'static str
 pub const fn termrock::style::GlyphSet::rule_strong(self) -> &'static str
 pub const fn termrock::style::GlyphSet::rule_v(self) -> &'static str
 pub const fn termrock::style::GlyphSet::selection_gutter(self) -> &'static str
+pub const fn termrock::style::GlyphSet::selection_marker(self) -> &'static str
 impl core::clone::Clone for termrock::style::GlyphSet
 pub fn termrock::style::GlyphSet::clone(&self) -> termrock::style::GlyphSet
 impl core::cmp::Eq for termrock::style::GlyphSet
@@ -30114,6 +30117,7 @@ impl<T> either::into_either::IntoEither for termrock::style::Role
 #[non_exhaustive] pub enum termrock::style::SelectionChrome
 pub termrock::style::SelectionChrome::Fill
 pub termrock::style::SelectionChrome::Gutter
+pub termrock::style::SelectionChrome::Marker
 pub termrock::style::SelectionChrome::Tint
 impl termrock::style::SelectionChrome
 pub const fn termrock::style::SelectionChrome::id(self) -> &'static str
@@ -66364,6 +66368,7 @@ pub termrock::widgets::DiffViewState::hunk_cursor: usize
 pub termrock::widgets::DiffViewState::mode: termrock::widgets::DiffMode
 pub termrock::widgets::DiffViewState::regions: alloc::vec::Vec<termrock::widgets::DiffRegion>
 pub termrock::widgets::DiffViewState::search: core::option::Option<alloc::string::String>
+pub termrock::widgets::DiffViewState::show_cursor: bool
 pub termrock::widgets::DiffViewState::show_line_numbers: bool
 pub termrock::widgets::DiffViewState::show_whitespace: bool
 pub termrock::widgets::DiffViewState::word_diff: bool
@@ -66382,6 +66387,7 @@ pub const fn termrock::widgets::DiffViewState::offset(&self) -> u16
 pub const fn termrock::widgets::DiffViewState::prefers_split(&self) -> bool
 pub fn termrock::widgets::DiffViewState::restore_anchor(&mut self, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk])
 pub const fn termrock::widgets::DiffViewState::scroll(&self) -> &termrock::widgets::ScrollAreaState
+pub fn termrock::widgets::DiffViewState::scroll_mut(&mut self) -> &mut termrock::widgets::ScrollAreaState
 pub fn termrock::widgets::DiffViewState::set_accepts_input(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::DiffViewState
 pub fn termrock::widgets::DiffViewState::clone(&self) -> termrock::widgets::DiffViewState
@@ -90772,6 +90778,7 @@ pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Sel
 pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Viewport<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Viewport<'a>::padded_content(self) -> Self
 pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
 pub type &termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll

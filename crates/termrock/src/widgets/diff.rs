@@ -535,6 +535,9 @@ pub struct DiffViewState {
     pub show_line_numbers: bool,
     /// Show trailing-whitespace markers.
     pub show_whitespace: bool,
+    /// Paint the cursor row's selection chrome. Hosts whose surface scrolls
+    /// without a cursor set this `false`; the cursor still tracks state.
+    pub show_cursor: bool,
     /// Prefer word-level paint when spans present.
     pub word_diff: bool,
     /// Anchor line id.
@@ -579,6 +582,7 @@ impl DiffViewState {
             folded_files: BTreeSet::new(),
             show_line_numbers: true,
             show_whitespace: true,
+            show_cursor: true,
             word_diff: true,
             anchor_id: None,
             anchor_hunk: None,
@@ -611,6 +615,12 @@ impl DiffViewState {
     #[must_use]
     pub const fn scroll(&self) -> &ScrollAreaState {
         &self.scroll
+    }
+
+    /// Mutable scroll (hosts owning a product scroll model inject their
+    /// offset here; the render pass clamps it to the viewport).
+    pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
+        &mut self.scroll
     }
 
     /// Split preferred (may still paint unified when narrow).
@@ -1289,7 +1299,7 @@ impl<'a> DiffView<'a> {
                         h.contains_line(i) || line.text.contains(&h.header)
                     }
                 });
-                let cursor = i == state.cursor;
+                let cursor = state.show_cursor && i == state.cursor;
 
                 match effective {
                     DiffEffectiveMode::Unified => {
@@ -1864,6 +1874,49 @@ mod tests {
         }
         (&view).render(area, &mut buffer, &mut state);
         assert!(state.offset() < 100);
+    }
+
+    #[test]
+    fn host_injected_offset_survives_within_range_and_clamps_beyond() {
+        let lines: Vec<DiffLine<'static>> =
+            (0..50).map(|_| DiffLine::context("l", "body")).collect();
+        let system = DesignSystem::default();
+        let view = DiffView::new(&lines, &system);
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DiffViewState::new();
+        // Hosts injecting into a fresh state publish the content metrics
+        // first; the render pass re-syncs the same values.
+        state.scroll_mut().set_content_size(1, 50);
+        state.scroll_mut().set_viewport(1, 9);
+        // In-range host offset is honored as-is.
+        state.scroll_mut().set_offset_y(5);
+        (&view).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 5);
+        // Beyond-range host offset is clamped by the render pass.
+        state.scroll_mut().set_offset_y(49);
+        (&view).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 41);
+        assert_eq!(state.offset(), state.scroll().offset_y());
+    }
+
+    #[test]
+    fn show_cursor_false_paints_no_selection_bar() {
+        let lines: Vec<DiffLine<'static>> =
+            (0..5).map(|_| DiffLine::context("l", "body")).collect();
+        let system = DesignSystem::default();
+        let view = DiffView::new(&lines, &system);
+        let area = Rect::new(0, 0, 40, 10);
+        let mut buffer = Buffer::empty(area);
+        let mut state = DiffViewState::new();
+        state.show_cursor = false;
+        (&view).render(area, &mut buffer, &mut state);
+        // Cursor state still tracks (clamped into range) — only the chrome
+        // is suppressed.
+        assert_eq!(state.cursor, 0);
+        for y in 0..area.height {
+            assert_ne!(buffer[(area.x, y)].symbol(), "▌");
+        }
     }
 
     #[test]
