@@ -90778,6 +90778,7 @@ pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Sel
 pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
 pub const fn termrock::widgets::Viewport<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Viewport<'a>::padded_content(self) -> Self
 pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
 pub type &termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
