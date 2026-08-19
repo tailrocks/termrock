@@ -1747,6 +1747,35 @@ mod tests {
     }
 
     #[test]
+    fn marker_selection_paints_triangle_into_full_fill() {
+        let rows = rows();
+        let system = DesignSystem::default().selection(crate::style::SelectionChrome::Marker);
+        let mut state = ListState::new(Some("second"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let row = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        let fill_bg = system.style(Role::Selection).bg.unwrap();
+        let marker = &buffer[(row.x, row.y)];
+        assert_eq!(
+            marker.symbol(),
+            system.glyphs.selection_marker(),
+            "the selected row leads with the marker triangle"
+        );
+        assert_eq!(
+            marker.bg, fill_bg,
+            "the marker speaks the fill's own foreground/background"
+        );
+        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        assert_eq!(label.bg, fill_bg, "marker chrome fills the whole row");
+    }
+
+    #[test]
     fn trailing_cells_align_right_and_wide_labels_truncate_first() {
         let rows = [
             ListRow {
