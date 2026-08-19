@@ -66,6 +66,12 @@ impl GlyphSet {
         self.resolve(super::glyph::Glyph::SelectionGutter).text
     }
 
+    /// Selected-row marker triangle (classic `▸` cursor; `SelectionChrome::Marker`).
+    #[must_use]
+    pub const fn selection_marker(self) -> &'static str {
+        self.resolve(super::glyph::Glyph::SelectionMarker).text
+    }
+
     /// Horizontal rule unit.
     #[must_use]
     pub const fn rule(self) -> &'static str {
@@ -162,6 +168,14 @@ pub enum SelectionChrome {
     Gutter,
     /// Tint via `Role::SelectionTint` without full fill.
     Tint,
+    /// Full-row fill plus a leading `▸` marker (classic loud cursor).
+    ///
+    /// Opt-in only; never a default. Hosts whose selection vocabulary is the
+    /// traditional "triangle cursor on a filled row" (pre-gutter jackin❯,
+    /// prompt-toolkit-style menus) state it here instead of re-painting the
+    /// gutter cell by hand. Widgets without a marker slot paint it as
+    /// [`Self::Fill`].
+    Marker,
 }
 
 /// How a family of surfaces says "the keyboard is here".
@@ -270,6 +284,7 @@ impl SelectionChrome {
             Self::Fill => "fill",
             Self::Gutter => "gutter",
             Self::Tint => "tint",
+            Self::Marker => "marker",
         }
     }
 }
@@ -1296,7 +1311,12 @@ impl DesignSystem {
         let disabled = !state.enabled;
         let label = if disabled {
             self.style(Role::TextDisabled)
-        } else if state.selected && matches!(self.selection, SelectionChrome::Fill) {
+        } else if state.selected
+            && matches!(
+                self.selection,
+                SelectionChrome::Fill | SelectionChrome::Marker
+            )
+        {
             self.style(Role::Selection)
         } else if state.selected && matches!(self.selection, SelectionChrome::Tint) {
             self.style(Role::TextStrong)
@@ -1316,17 +1336,27 @@ impl DesignSystem {
         let shortcut = secondary;
         // The gutter says "selected"; its color says whether this collection
         // owns the keyboard. Accent while focused, muted while parked.
+        // Marker chrome paints `▸` into a full-row fill, so the marker must
+        // speak the fill's own foreground (label style) or it disappears.
         let gutter = if state.selected {
-            let tone = if state.focused {
-                Role::Accent
+            if matches!(self.selection, SelectionChrome::Marker) {
+                Some((self.glyphs.selection_marker(), label))
             } else {
-                Role::TextMuted
-            };
-            Some((self.glyphs.selection_gutter(), self.style(tone)))
+                let tone = if state.focused {
+                    Role::Accent
+                } else {
+                    Role::TextMuted
+                };
+                Some((self.glyphs.selection_gutter(), self.style(tone)))
+            }
         } else {
             None
         };
-        let use_fill = state.selected && matches!(self.selection, SelectionChrome::Fill);
+        let use_fill = state.selected
+            && matches!(
+                self.selection,
+                SelectionChrome::Fill | SelectionChrome::Marker
+            );
         let use_tint = state.selected && matches!(self.selection, SelectionChrome::Tint);
         let hover_fill = state.hovered && !state.selected && !disabled;
         ListRowRecipe {
@@ -1348,7 +1378,10 @@ impl DesignSystem {
             loading_glyph: self.glyphs.loading(),
             show_gutter_slot: matches!(
                 self.selection,
-                SelectionChrome::Gutter | SelectionChrome::Tint | SelectionChrome::Fill
+                SelectionChrome::Gutter
+                    | SelectionChrome::Tint
+                    | SelectionChrome::Fill
+                    | SelectionChrome::Marker
             ),
             checked: state.checked,
             loading: state.loading,
@@ -1433,6 +1466,22 @@ mod tests {
         assert!(!gutter.use_fill);
         assert!(gutter.gutter.is_some());
         assert_ne!(fill.label, gutter.label);
+    }
+
+    #[test]
+    fn marker_recipe_fills_and_leads_with_triangle() {
+        let system = DesignSystem::new(RolePalette::default(), Density::Compact)
+            .selection(SelectionChrome::Marker);
+        let recipe = system.list_row_recipe(true, true, true);
+        assert!(recipe.use_fill);
+        assert!(recipe.show_gutter_slot);
+        assert_eq!(recipe.label, system.style(Role::Selection));
+        let (glyph, glyph_style) = recipe.gutter.expect("marker chrome carries a glyph");
+        assert_eq!(glyph, system.glyphs.selection_marker());
+        assert_eq!(
+            glyph_style, recipe.label,
+            "the marker speaks the fill's own foreground"
+        );
     }
 
     #[test]

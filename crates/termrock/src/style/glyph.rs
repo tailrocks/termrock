@@ -162,6 +162,8 @@ pub enum Glyph {
     RuleTeeRight,
     /// Selection gutter bar.
     SelectionGutter,
+    /// Selection marker triangle (classic `▸` cursor).
+    SelectionMarker,
     /// List bullet.
     Bullet,
     /// Inline meta separator between adjacent facts on one row.
@@ -268,6 +270,7 @@ impl Glyph {
             Self::RuleTeeLeft => "rule-tee-left",
             Self::RuleTeeRight => "rule-tee-right",
             Self::SelectionGutter => "selection-gutter",
+            Self::SelectionMarker => "selection-marker",
             Self::Bullet => "bullet",
             Self::MetaSeparator => "meta-separator",
             Self::Ellipsis => "ellipsis",
@@ -344,6 +347,7 @@ impl Glyph {
             Self::RuleTeeLeft => "rule meeting the left border",
             Self::RuleTeeRight => "rule meeting the right border",
             Self::SelectionGutter => "selected",
+            Self::SelectionMarker => "selected",
             Self::Bullet => "list item",
             Self::MetaSeparator => "separator",
             Self::Ellipsis => "more",
@@ -418,6 +422,7 @@ impl Glyph {
             | Self::RuleTeeLeft
             | Self::RuleTeeRight
             | Self::SelectionGutter
+            | Self::SelectionMarker
             | Self::Bullet
             | Self::MetaSeparator
             | Self::Ellipsis
@@ -491,6 +496,7 @@ impl Glyph {
         Self::RuleTeeRight,
         Self::RuleHStrong,
         Self::SelectionGutter,
+        Self::SelectionMarker,
         Self::Bullet,
         Self::MetaSeparator,
         Self::Ellipsis,
@@ -605,6 +611,7 @@ impl Glyph {
             Self::RuleTeeRight => ("┤", "+", "┤"),
             Self::RuleHStrong => ("═", "=", "═"),
             Self::SelectionGutter => ("▌", "*", "▌"),
+            Self::SelectionMarker => ("▸", ">", "▸"),
             Self::Bullet => ("•", "-", "•"),
             Self::MetaSeparator => ("·", "|", "·"),
             Self::Ellipsis => ("…", "...", "…"),
@@ -731,6 +738,11 @@ pub fn glyph_by_id(id: &str) -> Option<Glyph> {
 ///   apart. They are separate contexts below for that reason — the alternative
 ///   was breaking a disclosure encoding migrated in 0282 and trading this
 ///   collision for `-` vs [`Glyph::Bullet`] in the same file.
+/// - **Alternative selection chromes.** [`Glyph::SelectionMarker`] shares `▸`
+///   with [`Glyph::DisclosureClosed`]. Both paint a collection row's leading
+///   cell, but a host picks `SelectionChrome::Marker` precisely when its rows
+///   speak the classic triangle-cursor vocabulary instead of disclosure; the
+///   chrome and the disclosure never share one row vocabulary.
 pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
     (
         "collection row",
