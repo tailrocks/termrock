@@ -7196,6 +7196,52 @@ pub unsafe fn termrock::layout::ResponsiveSurface::clone_to_uninit(&self, *mut u
 impl<T> core::convert::From<T> for termrock::layout::ResponsiveSurface
 pub fn termrock::layout::ResponsiveSurface::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::ResponsiveSurface
+pub enum termrock::layout::ShrinkPolicy
+pub termrock::layout::ShrinkPolicy::Equal
+pub termrock::layout::ShrinkPolicy::Tail
+impl core::clone::Clone for termrock::layout::ShrinkPolicy
+pub fn termrock::layout::ShrinkPolicy::clone(&self) -> termrock::layout::ShrinkPolicy
+impl core::cmp::Eq for termrock::layout::ShrinkPolicy
+impl core::cmp::PartialEq for termrock::layout::ShrinkPolicy
+pub fn termrock::layout::ShrinkPolicy::eq(&self, &termrock::layout::ShrinkPolicy) -> bool
+impl core::default::Default for termrock::layout::ShrinkPolicy
+pub fn termrock::layout::ShrinkPolicy::default() -> termrock::layout::ShrinkPolicy
+impl core::fmt::Debug for termrock::layout::ShrinkPolicy
+pub fn termrock::layout::ShrinkPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::layout::ShrinkPolicy
+impl core::marker::StructuralPartialEq for termrock::layout::ShrinkPolicy
+impl core::marker::Freeze for termrock::layout::ShrinkPolicy
+impl core::marker::Send for termrock::layout::ShrinkPolicy
+impl core::marker::Sync for termrock::layout::ShrinkPolicy
+impl core::marker::Unpin for termrock::layout::ShrinkPolicy
+impl core::marker::UnsafeUnpin for termrock::layout::ShrinkPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::layout::ShrinkPolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::layout::ShrinkPolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::layout::ShrinkPolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::layout::ShrinkPolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::layout::ShrinkPolicy where U: core::convert::From<T>
+pub fn termrock::layout::ShrinkPolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::layout::ShrinkPolicy where U: core::convert::Into<T>
+pub type termrock::layout::ShrinkPolicy::Error = core::convert::Infallible
+pub fn termrock::layout::ShrinkPolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::layout::ShrinkPolicy where U: core::convert::TryFrom<T>
+pub type termrock::layout::ShrinkPolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::layout::ShrinkPolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::layout::ShrinkPolicy where T: core::clone::Clone
+pub type termrock::layout::ShrinkPolicy::Owned = T
+pub fn termrock::layout::ShrinkPolicy::clone_into(&self, &mut T)
+pub fn termrock::layout::ShrinkPolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::layout::ShrinkPolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::layout::ShrinkPolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::layout::ShrinkPolicy where T: ?core::marker::Sized
+pub fn termrock::layout::ShrinkPolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::layout::ShrinkPolicy where T: ?core::marker::Sized
+pub fn termrock::layout::ShrinkPolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::layout::ShrinkPolicy where T: core::clone::Clone
+pub unsafe fn termrock::layout::ShrinkPolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::layout::ShrinkPolicy
+pub fn termrock::layout::ShrinkPolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::layout::ShrinkPolicy
 #[non_exhaustive] pub enum termrock::layout::StackDirection
 pub termrock::layout::StackDirection::Horizontal
 pub termrock::layout::StackDirection::Vertical
@@ -9153,6 +9199,7 @@ pub fn termrock::layout::layout_stack_into_cross(ratatui_core::layout::rect::Rec
 pub fn termrock::layout::layout_stack_with_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>) -> termrock::layout::StackLayout
 pub fn termrock::layout::modal_rect(ratatui_core::layout::rect::Rect, termrock::layout::ModalSpec) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::panel_stack(ratatui_core::layout::rect::Rect, &[termrock::layout::PanelStackBlock], u16) -> alloc::vec::Vec<core::option::Option<ratatui_core::layout::rect::Rect>>
+pub fn termrock::layout::panel_stack_with_policy(ratatui_core::layout::rect::Rect, &[termrock::layout::PanelStackBlock], u16, termrock::layout::ShrinkPolicy) -> alloc::vec::Vec<core::option::Option<ratatui_core::layout::rect::Rect>>
 pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect

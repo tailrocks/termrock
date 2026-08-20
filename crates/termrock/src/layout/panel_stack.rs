@@ -28,6 +28,22 @@ impl PanelStackBlock {
     }
 }
 
+/// How a shortfall is distributed when the preferred block heights exceed
+/// the stack area.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ShrinkPolicy {
+    /// Shrink visible blocks from the end of the stack first (the
+    /// historical `panel_stack` behavior).
+    #[default]
+    Tail,
+    /// Distribute the shortfall with ratatui `Length`-solver semantics
+    /// (equal-strength relaxation) — byte-identical to a hand-rolled
+    /// ratatui `Layout` stack of `Constraint::Length` blocks, so consumers
+    /// migrating such a layout onto `panel_stack` keep their rendered
+    /// geometry under overflow.
+    Equal,
+}
+
 /// Allocates measured vertical blocks, shrinking overflow from the end.
 ///
 /// The returned vector preserves source indices. Invisible blocks are `None`;
@@ -35,6 +51,44 @@ impl PanelStackBlock {
 /// extreme contraction.
 #[must_use]
 pub fn panel_stack(area: Rect, blocks: &[PanelStackBlock], gap: u16) -> Vec<Option<Rect>> {
+    panel_stack_with_policy(area, blocks, gap, ShrinkPolicy::Tail)
+}
+
+/// `panel_stack` with an explicit shortfall distribution [`ShrinkPolicy`].
+#[must_use]
+pub fn panel_stack_with_policy(
+    area: Rect,
+    blocks: &[PanelStackBlock],
+    gap: u16,
+    policy: ShrinkPolicy,
+) -> Vec<Option<Rect>> {
+    match policy {
+        ShrinkPolicy::Tail => panel_stack_tail(area, blocks, gap),
+        ShrinkPolicy::Equal => panel_stack_equal(area, blocks, gap),
+    }
+}
+
+fn panel_stack_equal(area: Rect, blocks: &[PanelStackBlock], gap: u16) -> Vec<Option<Rect>> {
+    use ratatui_core::layout::{Constraint, Direction, Layout};
+
+    let constraints: Vec<Constraint> = blocks
+        .iter()
+        .filter(|block| block.visible)
+        .map(|block| Constraint::Length(block.preferred()))
+        .collect();
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .spacing(gap)
+        .constraints(constraints)
+        .split(area);
+    let mut rows = rows.iter().copied();
+    blocks
+        .iter()
+        .map(|block| block.visible.then(|| rows.next().unwrap_or_default()))
+        .collect()
+}
+
+fn panel_stack_tail(area: Rect, blocks: &[PanelStackBlock], gap: u16) -> Vec<Option<Rect>> {
     let visible = blocks.iter().filter(|block| block.visible).count();
     let gaps = u16::try_from(visible.saturating_sub(1))
         .unwrap_or(u16::MAX)
@@ -105,6 +159,42 @@ mod tests {
         let result = panel_stack(Rect::new(0, 0, 20, 20), &[block(0), block(20)], 1);
         assert_eq!(result[0].unwrap().height, 3);
         assert_eq!(result[1].unwrap().height, 8);
+    }
+
+    #[test]
+    fn equal_policy_matches_solver_when_nothing_overflows() {
+        let blocks = [block(2), block(4), block(1)];
+        assert_eq!(
+            panel_stack_with_policy(Rect::new(0, 0, 20, 30), &blocks, 1, ShrinkPolicy::Tail),
+            panel_stack_with_policy(Rect::new(0, 0, 20, 30), &blocks, 1, ShrinkPolicy::Equal),
+        );
+    }
+
+    #[test]
+    fn equal_policy_distributes_shortfall_like_length_layout() {
+        // Equal-strength `Length` relaxation equalizes block heights under
+        // overflow instead of zeroing the tail.
+        let blocks = [block(10), block(10), block(10)]; // preferred 12 each, area 20
+        let result =
+            panel_stack_with_policy(Rect::new(0, 0, 20, 20), &blocks, 0, ShrinkPolicy::Equal);
+        let heights: Vec<u16> = result.iter().flatten().map(|rect| rect.height).collect();
+        assert_eq!(heights, vec![7, 6, 7]);
+        assert!(result.iter().flatten().all(|rect| rect.bottom() <= 20));
+    }
+
+    #[test]
+    fn equal_policy_skips_invisible_blocks() {
+        let mut hidden = block(4);
+        hidden.visible = false;
+        let result = panel_stack_with_policy(
+            Rect::new(0, 0, 20, 20),
+            &[block(2), hidden, block(2)],
+            1,
+            ShrinkPolicy::Equal,
+        );
+        assert_eq!(result[1], None);
+        assert_eq!(result[0].unwrap(), Rect::new(0, 0, 20, 4));
+        assert_eq!(result[2].unwrap(), Rect::new(0, 5, 20, 4));
     }
 
     #[test]
