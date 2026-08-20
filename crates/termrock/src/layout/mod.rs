@@ -26,7 +26,7 @@ pub use grid::{
     grid_reading_neighbor, layout_grid, layout_grid_into, responsive_columns,
     settings_grid_template,
 };
-pub use panel_stack::{PanelStackBlock, panel_stack};
+pub use panel_stack::{PanelStackBlock, ShrinkPolicy, panel_stack, panel_stack_with_policy};
 pub use responsive::{
     AdaptiveAnatomy, AnatomyPart, Breakpoint, ContentPriority, ContractionStage, HEIGHT_LADDER,
     OverflowAction, OverflowBehavior, ResponsiveRecipe, ResponsiveSnapshot, ResponsiveSurface,
