@@ -4991,10 +4991,10 @@ impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::HoverState<Id>
 impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::interaction::HoverState<Id>
 pub fn termrock::interaction::HoverState<Id>::eq(&self, &termrock::interaction::HoverState<Id>) -> bool
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::interaction::HoverState<Id>
-impl<Id: core::default::Default> core::default::Default for termrock::interaction::HoverState<Id>
-pub fn termrock::interaction::HoverState<Id>::default() -> termrock::interaction::HoverState<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::HoverState<Id>
 pub fn termrock::interaction::HoverState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Id> core::default::Default for termrock::interaction::HoverState<Id>
+pub fn termrock::interaction::HoverState<Id>::default() -> Self
 impl<Id> core::marker::Freeze for termrock::interaction::HoverState<Id> where Id: core::marker::Freeze
 impl<Id> core::marker::Send for termrock::interaction::HoverState<Id> where Id: core::marker::Send
 impl<Id> core::marker::Sync for termrock::interaction::HoverState<Id> where Id: core::marker::Sync

@@ -72,13 +72,22 @@ pub struct HitRegion<Id> {
     pub area: Rect,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Cached stable-ID hover state driven from painted [`HitRegion`]s.
 ///
 /// Widgets may expose their painted regions for a consumer-owned hover state,
 /// or own equivalent stateful `hover` methods when input belongs to the widget.
 pub struct HoverState<Id> {
     hovered: Option<Id>,
+}
+
+// Manual impl: `#[derive(Default)]` adds a spurious `Id: Default` bound, which
+// makes `HoverState` unconstructible for consumers whose hit-region IDs are
+// not `Default` (the cache starts empty regardless of `Id`).
+impl<Id> Default for HoverState<Id> {
+    fn default() -> Self {
+        Self { hovered: None }
+    }
 }
 
 #[cfg(test)]
