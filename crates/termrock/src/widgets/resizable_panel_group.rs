@@ -415,6 +415,24 @@ impl ResizablePanelGroupState {
         self.presets.iter().map(|p| p.name.as_str()).collect()
     }
 
+    /// Seed exact main-axis sizes in cells (parallel to panel specs).
+    ///
+    /// A host computing its own split math (e.g. a percentage seam) drives
+    /// the layout by writing cells here before [`ResizablePanelGroup::layout`];
+    /// when the visible sizes already sum to the available axis, layout keeps
+    /// them (subject to each spec's min/max clamp) instead of re-deriving
+    /// shares from weights. May be called before the first layout: a full
+    /// length-matching seed replaces the weight placeholders.
+    pub fn set_sizes_cells(&mut self, sizes: &[u16]) {
+        if self.sizes.len() != sizes.len() {
+            self.sizes = sizes.to_vec();
+            self.collapsed = vec![false; sizes.len()];
+            self.remembered = self.sizes.clone();
+            return;
+        }
+        self.sizes.copy_from_slice(sizes);
+    }
+
     /// Ensure vectors match panel count.
     fn ensure_len(&mut self, n: usize, specs: &[ResizablePanelSpec]) {
         if self.sizes.len() != n {
@@ -439,6 +457,8 @@ pub struct ResizablePanelGroup<'a> {
     recipe: PanelGroupRecipe,
     /// Outer width/height threshold for side-drawer recipe (cells).
     drawer_outer_threshold: u16,
+    /// Main-axis cells reserved per handle between panels (0 = seamless).
+    handle_cells: u16,
 }
 
 impl<'a> ResizablePanelGroup<'a> {
@@ -451,7 +471,17 @@ impl<'a> ResizablePanelGroup<'a> {
             system,
             recipe: PanelGroupRecipe::Fixed,
             drawer_outer_threshold: 72,
+            handle_cells: 1,
         }
+    }
+
+    /// Cells reserved per handle between panels. `0` lays panels out
+    /// seamlessly (no handle column/row, no handle rects) — for hosts that
+    /// render an adjacent-pane split with their own seam affordance.
+    #[must_use]
+    pub const fn handle_cells(mut self, cells: u16) -> Self {
+        self.handle_cells = cells;
+        self
     }
 
     /// Direction (horizontal = columns, vertical = rows).
@@ -577,8 +607,8 @@ impl<'a> ResizablePanelGroup<'a> {
         }
 
         let handle_count = visible_idx.len().saturating_sub(1);
-        let handle_cells = handle_count as u16;
-        let available = outer_main.saturating_sub(handle_cells);
+        let reserved = (handle_count as u16).saturating_mul(self.handle_cells);
+        let available = outer_main.saturating_sub(reserved);
 
         // Redistribute sizes among visible panels
         redistribute(
@@ -610,17 +640,23 @@ impl<'a> ResizablePanelGroup<'a> {
                 drawer: false,
             });
             cursor = cursor.saturating_add(size);
-            if vi + 1 < visible_idx.len() {
+            if vi + 1 < visible_idx.len() && self.handle_cells > 0 {
                 let handle = match self.direction {
-                    SplitDirection::Horizontal => {
-                        Rect::new(cursor, area.y, 1.min(area.width), area.height)
-                    }
-                    SplitDirection::Vertical => {
-                        Rect::new(area.x, cursor, area.width, 1.min(area.height))
-                    }
+                    SplitDirection::Horizontal => Rect::new(
+                        cursor,
+                        area.y,
+                        self.handle_cells.min(area.width),
+                        area.height,
+                    ),
+                    SplitDirection::Vertical => Rect::new(
+                        area.x,
+                        cursor,
+                        area.width,
+                        self.handle_cells.min(area.height),
+                    ),
                 };
                 handles.push(handle);
-                cursor = cursor.saturating_add(1);
+                cursor = cursor.saturating_add(self.handle_cells);
             }
         }
 
@@ -1145,6 +1181,41 @@ mod tests {
                 assert!(p.area.right() <= 100);
             }
         }
+    }
+
+    #[test]
+    fn seamless_layout_reserves_no_handle_cells() {
+        let system = DesignSystem::default();
+        let panels = [
+            ResizablePanelSpec::main(PanelId::from_static("list"), 30).min(0),
+            ResizablePanelSpec::main(PanelId::from_static("preview"), 70).min(0),
+        ];
+        let group = ResizablePanelGroup::new(&panels, &system).handle_cells(0);
+        let mut state = ResizablePanelGroupState::new();
+        state.set_sizes_cells(&[47, 111]);
+        let layout = group.layout(Rect::new(0, 0, 158, 40), &mut state);
+        assert!(layout.handles.is_empty());
+        assert_eq!(layout.panels[0].area, Rect::new(0, 0, 47, 40));
+        assert_eq!(layout.panels[1].area, Rect::new(47, 0, 111, 40));
+    }
+
+    #[test]
+    fn set_sizes_cells_before_first_layout_is_honored() {
+        let system = DesignSystem::default();
+        let panels = [
+            ResizablePanelSpec::main(PanelId::from_static("a"), 1).min(0),
+            ResizablePanelSpec::main(PanelId::from_static("b"), 1).min(0),
+        ];
+        let group = ResizablePanelGroup::new(&panels, &system);
+        let mut state = ResizablePanelGroupState::new();
+        state.set_sizes_cells(&[9, 90]);
+        let layout = group.layout(Rect::new(0, 0, 100, 10), &mut state);
+        assert_eq!(layout.panels[0].area.width, 9);
+        assert_eq!(layout.panels[1].area.width, 90);
+        // Sizes summing to the available axis survive re-layout unchanged.
+        let layout = group.layout(Rect::new(0, 0, 100, 10), &mut state);
+        assert_eq!(layout.panels[0].area.width, 9);
+        assert_eq!(layout.panels[1].area.width, 90);
     }
 
     #[test]
