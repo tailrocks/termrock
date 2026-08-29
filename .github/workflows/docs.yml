@@ -156,7 +156,7 @@ jobs:
         github.event_name == 'push' &&
         needs.deploy-pages.result == 'success'))
     needs: deploy-pages
-    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'pull_request' || github.event_name == 'push') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
+    runs-on: ${{ ((github.event_name == 'workflow_dispatch' && inputs.lanes == 'github') || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'schedule') && 'ubuntu-26.04' || fromJSON('["self-hosted","velnor-target-mvp"]') }}
     timeout-minutes: 10
     steps:
       - name: Verify custom-domain site
