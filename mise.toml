@@ -21,16 +21,15 @@ cargo-binstall = "1.21.0"
 "github:gitleaks/gitleaks" = "8.30.1"
 
 [tasks.check]
-description = "Fast pre-commit check: fmt, clippy, all-feature nextest"
-run = """
-mise run docs-quality
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-cargo nextest run --workspace --all-features --locked
-"""
+description = "Fast pre-commit check: docs-quality, fmt, clippy, all-feature nextest"
+depends = ["docs-quality", "fmt", "lint", "test"]
 
 [tasks.ci]
 depends = ["check"]
+
+[tasks.build]
+description = "Compile every workspace target with all features"
+run = "cargo build --workspace --all-targets --all-features --locked"
 
 [tasks.test]
 run = "cargo nextest run --workspace --all-features --locked"
