@@ -1288,6 +1288,10 @@ pub struct FilePicker<'a> {
     title: &'a str,
     ascii: bool,
     show_preview: bool,
+    show_breadcrumbs: bool,
+    show_path: bool,
+    show_status: bool,
+    show_footer: bool,
 }
 
 impl<'a> FilePicker<'a> {
@@ -1299,6 +1303,10 @@ impl<'a> FilePicker<'a> {
             title: "Open",
             ascii: false,
             show_preview: true,
+            show_breadcrumbs: true,
+            show_path: true,
+            show_status: true,
+            show_footer: true,
         }
     }
 
@@ -1323,10 +1331,39 @@ impl<'a> FilePicker<'a> {
         self
     }
 
+    /// Show the breadcrumb row.
+    #[must_use]
+    pub const fn show_breadcrumbs(mut self, on: bool) -> Self {
+        self.show_breadcrumbs = on;
+        self
+    }
+
+    /// Show the editable path row.
+    #[must_use]
+    pub const fn show_path(mut self, on: bool) -> Self {
+        self.show_path = on;
+        self
+    }
+
+    /// Show loading and error status text.
+    #[must_use]
+    pub const fn show_status(mut self, on: bool) -> Self {
+        self.show_status = on;
+        self
+    }
+
+    /// Show the picker footer hints.
+    #[must_use]
+    pub const fn show_footer(mut self, on: bool) -> Self {
+        self.show_footer = on;
+        self
+    }
+
     /// Paint full picker into `area`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FilePickerState) {
         state.breadcrumb_hits.clear();
         state.entry_hits.clear();
+        state.path_area = Rect::default();
         state.root = area;
         if area.is_empty() {
             return;
@@ -1360,7 +1397,7 @@ impl<'a> FilePicker<'a> {
 
         let mut y = inner.y;
         // Breadcrumbs
-        if inner.height >= 1 {
+        if self.show_breadcrumbs && inner.height >= 1 {
             let mut x = inner.x;
             for (i, crumb) in state.breadcrumbs.iter().enumerate() {
                 if x >= inner.right() {
@@ -1392,7 +1429,7 @@ impl<'a> FilePicker<'a> {
         }
 
         // Path input row
-        if y < inner.bottom() {
+        if self.show_path && y < inner.bottom() {
             let path_row = Rect::new(inner.x, y, inner.width, 1);
             state.path_area = path_row;
             let _ = PathInput::new(self.system)
@@ -1404,7 +1441,8 @@ impl<'a> FilePicker<'a> {
         }
 
         // Status / error
-        if y < inner.bottom()
+        if self.show_status
+            && y < inner.bottom()
             && (matches!(
                 state.status,
                 FileListingStatus::Loading | FileListingStatus::Error
@@ -1438,7 +1476,7 @@ impl<'a> FilePicker<'a> {
         // Reserve the footer row before the body claims the space, so the
         // hints have somewhere to go instead of being computed and dropped
         // (plans/009 Step 3).
-        let footer_h = u16::from(inner.bottom().saturating_sub(y) > 2);
+        let footer_h = u16::from(self.show_footer && inner.bottom().saturating_sub(y) > 2);
         let body = Rect::new(
             inner.x,
             y,
@@ -1479,7 +1517,7 @@ impl<'a> FilePicker<'a> {
         }
 
         // Footer: selection count / hints
-        if footer_h > 0 {
+        if self.show_footer && footer_h > 0 {
             let n = state.selection.checked().len();
             let join = self.system.glyphs.meta_join();
             let hint = format!("{n} selected{join}enter open{join}space multi{join}esc close");
@@ -2186,6 +2224,54 @@ mod tests {
             .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(state.preview_area.is_empty() || state.preview_area.width == 0);
+    }
+
+    #[test]
+    fn chrome_options_default_to_visible_and_can_be_hidden() {
+        let system = DesignSystem::default();
+        let defaults = FilePicker::new(&system);
+        assert!(defaults.show_breadcrumbs);
+        assert!(defaults.show_path);
+        assert!(defaults.show_status);
+        assert!(defaults.show_footer);
+
+        let embedded = defaults
+            .show_breadcrumbs(false)
+            .show_path(false)
+            .show_status(false)
+            .show_footer(false);
+        assert!(!embedded.show_breadcrumbs);
+        assert!(!embedded.show_path);
+        assert!(!embedded.show_status);
+        assert!(!embedded.show_footer);
+    }
+
+    #[test]
+    fn paint_embedded_chrome_keeps_list_preview_body() {
+        let system = DesignSystem::default();
+        let mut state = FilePickerState::new("/home/u");
+        state.listing_generation = 1;
+        assert!(state.apply_listing(1, "/home/u", sample_entries("/home/u"), None));
+        let area = Rect::new(0, 0, 80, 20);
+        let mut buffer = Buffer::empty(area);
+
+        FilePicker::new(&system).paint(area, &mut buffer, &mut state);
+        let default_body_y = state.list_area.y;
+        let default_body_height = state.list_area.height;
+        assert!(!state.breadcrumb_hits.is_empty());
+        assert!(!state.path_area.is_empty());
+
+        FilePicker::new(&system)
+            .show_breadcrumbs(false)
+            .show_path(false)
+            .show_status(false)
+            .show_footer(false)
+            .paint(area, &mut buffer, &mut state);
+        assert!(state.breadcrumb_hits.is_empty());
+        assert!(state.path_area.is_empty());
+        assert_eq!(state.list_area.y, default_body_y.saturating_sub(2));
+        assert!(state.list_area.height > default_body_height);
+        assert!(!state.preview_area.is_empty());
     }
 
     #[test]

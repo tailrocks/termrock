@@ -164,6 +164,23 @@ directory cannot replace the current preview.
 `presentation_for_bounds` / auto paint: narrow terminals prefer Fullscreen and
 drop the preview column. Overlay id: `FILE_PICKER_OVERLAY_ID`.
 
+## Composing picker chrome
+
+All picker chrome is enabled by default. Hosts embedding the FilePicker inside
+an existing header, search row, body, and footer can hide only the rows they
+already render:
+
+```rust
+let picker = FilePicker::new(system)
+    .show_breadcrumbs(false)
+    .show_path(false)
+    .show_status(false)
+    .show_footer(false);
+```
+
+These options keep the FilePicker's list/preview layout and input behavior;
+they only remove the matching breadcrumb, path, status, or footer row.
+
 ## Related
 
 PathInput · Picker · CollectionState · Selection · OverlayStack · migration `0148`
