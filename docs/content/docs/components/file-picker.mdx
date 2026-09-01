@@ -125,6 +125,14 @@ match state.handle_key(key) {
     FilePickerOutcome::PreviewRequested { path, generation } => {
         host.preview(path, generation);
     }
+    FilePickerOutcome::SelectionChangedAndPreviewRequested { path, generation } => {
+        host.selection_changed();
+        host.preview(path, generation);
+    }
+    FilePickerOutcome::SelectionChangedAndHighlightChanged { id } => {
+        host.selection_changed();
+        host.highlight_changed(id);
+    }
     FilePickerOutcome::Confirmed { paths } => host.accept(paths),
     FilePickerOutcome::Cancelled => host.close_picker(),
     FilePickerOutcome::FilterChanged => {

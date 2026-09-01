@@ -410,6 +410,18 @@ pub enum FilePickerOutcome {
     },
     /// Selection membership changed.
     SelectionChanged,
+    /// Selection membership and active preview changed together.
+    SelectionChangedAndPreviewRequested {
+        /// Path.
+        path: String,
+        /// Preview race generation.
+        generation: u64,
+    },
+    /// Selection membership and active highlight changed together.
+    SelectionChangedAndHighlightChanged {
+        /// Entry id.
+        id: Option<String>,
+    },
     /// Confirmed selection (Enter / Open).
     Confirmed {
         /// Selected paths.
@@ -1260,7 +1272,19 @@ impl FilePickerState {
                 if let Some(e) = self.entries.iter().find(|e| e.id == id) {
                     if e.selectable {
                         let _ = self.selection.toggle(&id);
-                        return active_outcome.unwrap_or(FilePickerOutcome::SelectionChanged);
+                        return match active_outcome {
+                            Some(FilePickerOutcome::PreviewRequested { path, generation }) => {
+                                FilePickerOutcome::SelectionChangedAndPreviewRequested {
+                                    path,
+                                    generation,
+                                }
+                            }
+                            Some(FilePickerOutcome::HighlightChanged { id }) => {
+                                FilePickerOutcome::SelectionChangedAndHighlightChanged { id }
+                            }
+                            Some(outcome) => outcome,
+                            None => FilePickerOutcome::SelectionChanged,
+                        };
                     }
                 }
             }
@@ -1971,6 +1995,42 @@ mod tests {
             file_generation,
             FilePreview::text("notes.txt", ["stale".into()])
         ));
+    }
+
+    #[test]
+    fn mouse_multi_select_reports_selection_and_preview() {
+        let system = DesignSystem::default();
+        let mut state = FilePickerState::new("/p")
+            .with_mode(FilePickerMode::OpenAny)
+            .with_multi(true)
+            .with_preview(true);
+        state.set_focused(true);
+        state.listing_generation = 1;
+        assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
+        let area = Rect::new(0, 0, 70, 18);
+        let mut buffer = Buffer::empty(area);
+        FilePicker::new(&system)
+            .ascii(true)
+            .paint(area, &mut buffer, &mut state);
+        let file_position = state
+            .entry_hits
+            .iter()
+            .find(|(id, _)| id == "f1")
+            .map(|(_, rect)| Position::new(rect.x, rect.y))
+            .expect("file hit");
+
+        let FilePickerOutcome::SelectionChangedAndPreviewRequested { path, generation } = state
+            .handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: file_position,
+                modifiers: KeyModifiers::NONE,
+            })
+        else {
+            panic!("expected selection and preview request");
+        };
+        assert_eq!(path, "/p/README.md");
+        assert_eq!(generation, state.preview_generation());
+        assert_eq!(state.selected_paths(), ["/p/README.md"]);
     }
 
     #[test]
