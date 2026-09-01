@@ -762,7 +762,7 @@ impl FilePickerState {
                 self.entries
                     .iter()
                     .find(|entry| entry.id == *id)
-                    .filter(|entry| !entry.kind.is_dir() && entry.error.is_none())
+                    .filter(|entry| entry.error.is_none())
                     .map(|entry| entry.path.clone())
             })
         } else {
@@ -1813,15 +1813,17 @@ mod tests {
         else {
             panic!("expected file preview request");
         };
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
-            FilePickerOutcome::HighlightChanged { id: Some(id) } if id == "dir"
-        ));
+        let FilePickerOutcome::PreviewRequested {
+            path: directory_path,
+            generation: directory_generation,
+        } = state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE))
+        else {
+            panic!("expected directory preview request");
+        };
+        assert_eq!(directory_path, "/p/src");
+        assert_eq!(directory_generation, file_generation.saturating_add(1));
 
-        assert_eq!(
-            state.preview_generation(),
-            file_generation.saturating_add(1)
-        );
+        assert_eq!(state.preview_generation(), directory_generation);
         assert!(!state.apply_preview(
             file_generation,
             FilePreview::text("notes.txt", ["stale".into()])
@@ -1872,19 +1874,21 @@ mod tests {
         else {
             panic!("expected file preview request");
         };
-        assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: directory_position,
-                modifiers: KeyModifiers::NONE,
-            }),
-            FilePickerOutcome::HighlightChanged { id: Some(id) } if id == "dir"
-        ));
+        let FilePickerOutcome::PreviewRequested {
+            path: directory_path,
+            generation: directory_generation,
+        } = state.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: directory_position,
+            modifiers: KeyModifiers::NONE,
+        })
+        else {
+            panic!("expected directory preview request");
+        };
+        assert_eq!(directory_path, "/p/src");
+        assert_eq!(directory_generation, file_generation.saturating_add(1));
 
-        assert_eq!(
-            state.preview_generation(),
-            file_generation.saturating_add(1)
-        );
+        assert_eq!(state.preview_generation(), directory_generation);
         assert!(!state.apply_preview(
             file_generation,
             FilePreview::text("notes.txt", ["stale".into()])
@@ -1892,7 +1896,7 @@ mod tests {
     }
 
     #[test]
-    fn intent_highlight_changes_request_fresh_preview_once() {
+    fn intent_highlight_changes_request_fresh_preview() {
         let mut state = FilePickerState::new("/p");
         state.set_focused(true);
         state.listing_generation = 1;
@@ -1925,6 +1929,16 @@ mod tests {
         assert_eq!(path_a, "/p/a.txt");
         assert_eq!(path_b, "/p/b.txt");
         assert_eq!(generation_b, generation_a.saturating_add(1));
+
+        let FilePickerOutcome::PreviewRequested {
+            path: path_dir,
+            generation: generation_dir,
+        } = state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Next))
+        else {
+            panic!("expected directory preview request");
+        };
+        assert_eq!(path_dir, "/p/src");
+        assert_eq!(generation_dir, generation_b.saturating_add(1));
         assert!(!state.apply_preview(generation_a, FilePreview::text("a.txt", ["stale".into()])));
     }
 

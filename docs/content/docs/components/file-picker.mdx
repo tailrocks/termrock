@@ -147,10 +147,11 @@ if state.apply_preview(generation, preview) {
 // stale preview generation → false, ignored
 ```
 
-Listing and preview requests use independent generation sequences. Every
-`PreviewRequested` carries a fresh preview generation. Starting any directory
-listing invalidates outstanding preview work, so a late result from the prior
-selection or directory cannot replace the current preview.
+Listing and preview requests use independent generation sequences. With preview
+enabled, highlighting any entry—including directories—emits `PreviewRequested`
+with a fresh preview generation. Starting any directory listing invalidates
+outstanding preview work, so a late result from the prior selection or
+directory cannot replace the current preview.
 
 ## Modes
 
