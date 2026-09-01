@@ -178,14 +178,16 @@ already render:
 
 ```rust
 let picker = FilePicker::new(system)
+    .show_count(false)
     .show_breadcrumbs(false)
     .show_path(false)
     .show_status(false)
     .show_footer(false);
 ```
 
-These options keep the FilePicker's list/preview layout and input behavior;
-they only remove the matching breadcrumb, path, status, or footer row.
+These options keep the FilePicker's list/preview layout and input behavior.
+They only remove the matching title count, breadcrumb, path, status, or footer
+row. The picker title remains visible when `show_count(false)` is used.
 
 Hosts that render a custom preview shell can use
 `FilePickerState::preview()` to borrow the latest accepted `FilePreview`

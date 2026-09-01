@@ -1299,6 +1299,7 @@ pub struct FilePicker<'a> {
     title: &'a str,
     ascii: bool,
     show_preview: bool,
+    show_count: bool,
     show_breadcrumbs: bool,
     show_path: bool,
     show_status: bool,
@@ -1314,6 +1315,7 @@ impl<'a> FilePicker<'a> {
             title: "Open",
             ascii: false,
             show_preview: true,
+            show_count: true,
             show_breadcrumbs: true,
             show_path: true,
             show_status: true,
@@ -1339,6 +1341,13 @@ impl<'a> FilePicker<'a> {
     #[must_use]
     pub const fn show_preview(mut self, on: bool) -> Self {
         self.show_preview = on;
+        self
+    }
+
+    /// Show the visible-entry count in the panel title.
+    #[must_use]
+    pub const fn show_count(mut self, on: bool) -> Self {
+        self.show_count = on;
         self
     }
 
@@ -1388,7 +1397,10 @@ impl<'a> FilePicker<'a> {
         // The title carries the listing size and the active filter, like every
         // other pane title (plans/009, 017 §B2).
         let filter = state.filter_text();
-        let mut spec = PanelTitleSpec::new(self.title).count(state.entries().len());
+        let mut spec = PanelTitleSpec::new(self.title);
+        if self.show_count {
+            spec = spec.count(state.entries().len());
+        }
         if !filter.is_empty() {
             spec = spec.filter(filter);
         }
@@ -2259,16 +2271,19 @@ mod tests {
         let system = DesignSystem::default();
         let defaults = FilePicker::new(&system);
         assert!(defaults.show_breadcrumbs);
+        assert!(defaults.show_count);
         assert!(defaults.show_path);
         assert!(defaults.show_status);
         assert!(defaults.show_footer);
 
         let embedded = defaults
+            .show_count(false)
             .show_breadcrumbs(false)
             .show_path(false)
             .show_status(false)
             .show_footer(false);
         assert!(!embedded.show_breadcrumbs);
+        assert!(!embedded.show_count);
         assert!(!embedded.show_path);
         assert!(!embedded.show_status);
         assert!(!embedded.show_footer);
@@ -2300,6 +2315,35 @@ mod tests {
         assert_eq!(state.list_area.y, default_body_y.saturating_sub(2));
         assert!(state.list_area.height > default_body_height);
         assert!(!state.preview_area.is_empty());
+    }
+
+    #[test]
+    fn count_option_controls_panel_title_without_hiding_title() {
+        let system = DesignSystem::default();
+        let mut state = FilePickerState::new("/home/u");
+        state.listing_generation = 1;
+        assert!(state.apply_listing(1, "/home/u", sample_entries("/home/u"), None));
+        let area = Rect::new(0, 0, 80, 20);
+
+        let mut default_buffer = Buffer::empty(area);
+        FilePicker::new(&system)
+            .title("Files")
+            .paint(area, &mut default_buffer, &mut state);
+        let default_title: String = (0..area.width)
+            .map(|x| default_buffer[(x, area.y)].symbol())
+            .collect();
+        assert!(default_title.contains("Files[3]"), "{default_title:?}");
+
+        let mut embedded_buffer = Buffer::empty(area);
+        FilePicker::new(&system)
+            .title("Files")
+            .show_count(false)
+            .paint(area, &mut embedded_buffer, &mut state);
+        let embedded_title: String = (0..area.width)
+            .map(|x| embedded_buffer[(x, area.y)].symbol())
+            .collect();
+        assert!(embedded_title.contains("Files"), "{embedded_title:?}");
+        assert!(!embedded_title.contains("[3]"), "{embedded_title:?}");
     }
 
     #[test]
