@@ -651,6 +651,17 @@ impl FilePickerState {
         self.preview_generation
     }
 
+    /// Current host-provided preview, if one has been applied.
+    ///
+    /// The returned value is read-only and remains owned by the picker state.
+    /// Hosts should use [`FilePickerState::apply_preview`] to replace it; the
+    /// generation check there prevents stale asynchronous results from being
+    /// exposed.
+    #[must_use]
+    pub fn preview(&self) -> Option<&FilePreview> {
+        self.preview.as_ref()
+    }
+
     /// Mode.
     #[must_use]
     pub const fn mode(&self) -> FilePickerMode {
@@ -1827,6 +1838,23 @@ mod tests {
         assert!(!state.apply_preview(generation_a, FilePreview::text("A", ["stale".into()])));
         assert!(state.apply_preview(generation_b, FilePreview::text("B", ["current".into()])));
         assert_eq!(state.preview.as_ref().map(|p| p.title.as_str()), Some("B"));
+    }
+
+    #[test]
+    fn preview_getter_exposes_applied_preview() {
+        let mut state = FilePickerState::new("/p");
+
+        assert!(state.preview().is_none());
+
+        assert!(state.apply_preview(
+            state.preview_generation(),
+            FilePreview::text("README.md", ["# project".into()]),
+        ));
+
+        let preview = state.preview().expect("applied preview");
+        assert_eq!(preview.title, "README.md");
+        assert_eq!(preview.lines, ["# project"]);
+        assert!(preview.error.is_none());
     }
 
     #[test]

@@ -145,6 +145,12 @@ if state.apply_preview(generation, preview) {
     // applied
 }
 // stale preview generation → false, ignored
+
+// Hosts composing their own outer shell can inspect the accepted payload
+// without copying it. It remains read-only and is `None` before first apply.
+if let Some(preview) = state.preview() {
+    render_preview(preview);
+}
 ```
 
 Listing and preview requests use independent generation sequences. With preview
@@ -180,6 +186,12 @@ let picker = FilePicker::new(system)
 
 These options keep the FilePicker's list/preview layout and input behavior;
 they only remove the matching breadcrumb, path, status, or footer row.
+
+Hosts that render a custom preview shell can use
+`FilePickerState::preview()` to borrow the latest accepted `FilePreview`
+without duplicating picker state. The getter is read-only; asynchronous hosts
+still apply results through `apply_preview(generation, preview)` so stale
+results remain rejected.
 
 ## Related
 
