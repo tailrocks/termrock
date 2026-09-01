@@ -25932,14 +25932,17 @@ fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         .with_path_style(PathStyle::Unix);
     state.set_focused(true);
     file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
-    state.apply_preview(FilePreview::text(
-        "README.md",
-        [
-            "# proj".into(),
-            "".into(),
-            "Hello from Unix FS host.".into(),
-        ],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text(
+            "README.md",
+            [
+                "# proj".into(),
+                "".into(),
+                "Hello from Unix FS host.".into(),
+            ],
+        ),
+    );
     FilePicker::new(system)
         .title("Open file")
         .ascii(true)
@@ -25959,10 +25962,10 @@ fn file_picker_windows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         FileEntry::file("f2", "photo.jpg", r"C:\Users\me\photo.jpg").size(4096),
     ];
     file_picker_seed(&mut state, r"C:\Users\me", entries);
-    state.apply_preview(FilePreview::text(
-        "notes.txt",
-        ["todo: ship FilePicker".into()],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text("notes.txt", ["todo: ship FilePicker".into()]),
+    );
     FilePicker::new(system)
         .title("Browse")
         .ascii(true)
@@ -25987,14 +25990,17 @@ fn file_picker_ssh_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             .kind(FileEntryKind::Directory),
     ];
     file_picker_seed(&mut state, "ssh://host/home/u", entries);
-    state.apply_preview(FilePreview::text(
-        "remote://host",
-        [
-            "provider: ssh".into(),
-            "latency: 42ms".into(),
-            "listing via host cancel token".into(),
-        ],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text(
+            "remote://host",
+            [
+                "provider: ssh".into(),
+                "latency: 42ms".into(),
+                "listing via host cancel token".into(),
+            ],
+        ),
+    );
     FilePicker::new(system)
         .title("Remote path")
         .ascii(true)

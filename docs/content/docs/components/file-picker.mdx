@@ -77,14 +77,17 @@ fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         .with_path_style(PathStyle::Unix);
     state.set_focused(true);
     file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
-    state.apply_preview(FilePreview::text(
-        "README.md",
-        [
-            "# proj".into(),
-            "".into(),
-            "Hello from Unix FS host.".into(),
-        ],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text(
+            "README.md",
+            [
+                "# proj".into(),
+                "".into(),
+                "Hello from Unix FS host.".into(),
+            ],
+        ),
+    );
     FilePicker::new(system)
         .title("Open file")
         .ascii(true)
@@ -122,6 +125,14 @@ match state.handle_key(key) {
     FilePickerOutcome::PreviewRequested { path, generation } => {
         host.preview(path, generation);
     }
+    FilePickerOutcome::SelectionChangedAndPreviewRequested { path, generation } => {
+        host.selection_changed();
+        host.preview(path, generation);
+    }
+    FilePickerOutcome::SelectionChangedAndHighlightChanged { id } => {
+        host.selection_changed();
+        host.highlight_changed(id);
+    }
     FilePickerOutcome::Confirmed { paths } => host.accept(paths),
     FilePickerOutcome::Cancelled => host.close_picker(),
     FilePickerOutcome::FilterChanged => {
@@ -136,7 +147,25 @@ if state.apply_listing(generation, cwd, entries, None) {
     // applied
 }
 // stale generation → false, ignored
+
+// when preview returns:
+if state.apply_preview(generation, preview) {
+    // applied
+}
+// stale preview generation → false, ignored
+
+// Hosts composing their own outer shell can inspect the accepted payload
+// without copying it. It remains read-only and is `None` before first apply.
+if let Some(preview) = state.preview() {
+    render_preview(preview);
+}
 ```
+
+Listing and preview requests use independent generation sequences. With preview
+enabled, highlighting any entry—including directories—emits `PreviewRequested`
+with a fresh preview generation. Starting any directory listing invalidates
+outstanding preview work, so a late result from the prior selection or
+directory cannot replace the current preview.
 
 ## Modes
 
@@ -148,6 +177,31 @@ if state.apply_listing(generation, cwd, entries, None) {
 
 `presentation_for_bounds` / auto paint: narrow terminals prefer Fullscreen and
 drop the preview column. Overlay id: `FILE_PICKER_OVERLAY_ID`.
+
+## Composing picker chrome
+
+All picker chrome is enabled by default. Hosts embedding the FilePicker inside
+an existing header, search row, body, and footer can hide only the rows they
+already render:
+
+```rust
+let picker = FilePicker::new(system)
+    .show_count(false)
+    .show_breadcrumbs(false)
+    .show_path(false)
+    .show_status(false)
+    .show_footer(false);
+```
+
+These options keep the FilePicker's list/preview layout and input behavior.
+They only remove the matching title count, breadcrumb, path, status, or footer
+row. The picker title remains visible when `show_count(false)` is used.
+
+Hosts that render a custom preview shell can use
+`FilePickerState::preview()` to borrow the latest accepted `FilePreview`
+without duplicating picker state. The getter is read-only; asynchronous hosts
+still apply results through `apply_preview(generation, preview)` so stale
+results remain rejected.
 
 ## Related
 
@@ -161,6 +215,8 @@ PathInput · Picker · CollectionState · Selection · OverlayStack · migration
 
 - Do not treat separate Lookbook stories as runtime states or a slide sequence.
 - Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not apply preview data without returning the exact generation from the
+  matching `PreviewRequested` outcome.
 - Do not infer an action from visual styling; handle the widget's typed outcome.
 
 ## Test recipe
