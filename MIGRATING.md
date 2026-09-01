@@ -345,6 +345,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0329 | `v0.14.0` | [Tabs rule keeps the selection wash](migrations/0329-v0.14.0-tabs-rule-keeps-selection-wash.md) |
 | 0330 | `v0.14.0` | [ChoiceDialog centers actions](migrations/0330-v0.14.0-choice-dialog-centers-actions.md) |
 | 0331 | `v0.14.0` | [Jackin parity handoff](migrations/0331-v0.14.0-jackin-parity-handoff.md) |
+| 0332 | `v0.14.0` | [FilePicker preview generations](migrations/0332-v0.14.0-file-picker-preview-generations.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

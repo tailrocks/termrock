@@ -68005,7 +68005,7 @@ impl termrock::widgets::FilePickerState
 pub const fn termrock::widgets::FilePickerState::applied_generation(&self) -> u64
 pub fn termrock::widgets::FilePickerState::apply_listing(&mut self, u64, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::FileEntry>, core::option::Option<alloc::vec::Vec<termrock::widgets::FileBreadcrumb>>) -> bool
 pub fn termrock::widgets::FilePickerState::apply_listing_error(&mut self, u64, impl core::convert::Into<alloc::string::String>) -> bool
-pub fn termrock::widgets::FilePickerState::apply_preview(&mut self, termrock::widgets::FilePreview)
+pub fn termrock::widgets::FilePickerState::apply_preview(&mut self, u64, termrock::widgets::FilePreview) -> bool
 pub fn termrock::widgets::FilePickerState::confirm(&mut self) -> termrock::widgets::FilePickerOutcome
 pub fn termrock::widgets::FilePickerState::cwd(&self) -> &str
 pub fn termrock::widgets::FilePickerState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
@@ -68026,6 +68026,7 @@ pub const fn termrock::widgets::FilePickerState::pane(&self) -> termrock::widget
 pub const fn termrock::widgets::FilePickerState::path_state(&self) -> &termrock::widgets::PathInputState
 pub const fn termrock::widgets::FilePickerState::presentation(&self) -> termrock::widgets::FilePickerPresentation
 pub fn termrock::widgets::FilePickerState::presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::FilePickerPresentation
+pub const fn termrock::widgets::FilePickerState::preview_generation(&self) -> u64
 pub fn termrock::widgets::FilePickerState::request_list(&mut self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FilePickerOutcome
 pub fn termrock::widgets::FilePickerState::selected_paths(&self) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::widgets::FilePickerState::set_enabled(&mut self, bool)

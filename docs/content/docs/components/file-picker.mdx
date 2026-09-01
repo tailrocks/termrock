@@ -77,14 +77,17 @@ fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
         .with_path_style(PathStyle::Unix);
     state.set_focused(true);
     file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
-    state.apply_preview(FilePreview::text(
-        "README.md",
-        [
-            "# proj".into(),
-            "".into(),
-            "Hello from Unix FS host.".into(),
-        ],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text(
+            "README.md",
+            [
+                "# proj".into(),
+                "".into(),
+                "Hello from Unix FS host.".into(),
+            ],
+        ),
+    );
     FilePicker::new(system)
         .title("Open file")
         .ascii(true)
@@ -136,7 +139,18 @@ if state.apply_listing(generation, cwd, entries, None) {
     // applied
 }
 // stale generation → false, ignored
+
+// when preview returns:
+if state.apply_preview(generation, preview) {
+    // applied
+}
+// stale preview generation → false, ignored
 ```
+
+Listing and preview requests use independent generation sequences. Every
+`PreviewRequested` carries a fresh preview generation. Starting any directory
+listing invalidates outstanding preview work, so a late result from the prior
+selection or directory cannot replace the current preview.
 
 ## Modes
 
@@ -161,6 +175,8 @@ PathInput · Picker · CollectionState · Selection · OverlayStack · migration
 
 - Do not treat separate Lookbook stories as runtime states or a slide sequence.
 - Do not duplicate hit testing, focus, or keyboard rules in the host.
+- Do not apply preview data without returning the exact generation from the
+  matching `PreviewRequested` outcome.
 - Do not infer an action from visual styling; handle the widget's typed outcome.
 
 ## Test recipe

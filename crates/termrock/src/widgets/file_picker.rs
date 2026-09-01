@@ -385,18 +385,22 @@ pub enum FilePickerOutcome {
     Changed,
     /// The pointer moved onto (or off) a row.
     HoverChanged,
-    /// Host should list `path` for `generation` (cancellable).
+    /// Host should list `path` for its listing `generation` (cancellable).
     ListRequested {
         /// Directory to list.
         path: String,
-        /// Race generation.
+        /// Listing race generation; return it to [`FilePickerState::apply_listing`]
+        /// or [`FilePickerState::apply_listing_error`].
         generation: u64,
     },
-    /// Host should load preview for path.
+    /// Host should load a preview for `path`.
+    ///
+    /// Each request has a fresh preview generation, independent of listing
+    /// generations. Return it to [`FilePickerState::apply_preview`].
     PreviewRequested {
         /// Path.
         path: String,
-        /// Generation.
+        /// Preview race generation.
         generation: u64,
     },
     /// Highlight moved.
@@ -451,8 +455,9 @@ pub struct FilePickerState {
     sort_dirs_first: bool,
     status: FileListingStatus,
     error_message: Option<String>,
-    generation: u64,
+    listing_generation: u64,
     applied_generation: u64,
+    preview_generation: u64,
     preview: Option<FilePreview>,
     preview_enabled: bool,
     presentation: FilePickerPresentation,
@@ -506,8 +511,9 @@ impl FilePickerState {
             sort_dirs_first: true,
             status: FileListingStatus::Idle,
             error_message: None,
-            generation: 0,
+            listing_generation: 0,
             applied_generation: 0,
+            preview_generation: 0,
             preview: None,
             preview_enabled: true,
             presentation: FilePickerPresentation::Embedded,
@@ -630,13 +636,19 @@ impl FilePickerState {
     /// Generation for list requests.
     #[must_use]
     pub const fn listing_generation(&self) -> u64 {
-        self.generation
+        self.listing_generation
     }
 
     /// Applied generation.
     #[must_use]
     pub const fn applied_generation(&self) -> u64 {
         self.applied_generation
+    }
+
+    /// Current preview generation.
+    #[must_use]
+    pub const fn preview_generation(&self) -> u64 {
+        self.preview_generation
     }
 
     /// Mode.
@@ -732,11 +744,36 @@ impl FilePickerState {
         }
     }
 
-    fn bump_generation(&mut self) -> u64 {
-        self.generation = self.generation.saturating_add(1);
+    fn bump_listing_generation(&mut self) -> u64 {
+        self.listing_generation = self.listing_generation.saturating_add(1);
         self.status = FileListingStatus::Loading;
         self.error_message = None;
-        self.generation
+        self.listing_generation
+    }
+
+    fn bump_preview_generation(&mut self) -> u64 {
+        self.preview_generation = self.preview_generation.saturating_add(1);
+        self.preview_generation
+    }
+
+    fn active_entry_changed(&mut self, id: Option<String>) -> FilePickerOutcome {
+        let preview_path = if self.preview_enabled {
+            id.as_ref().and_then(|id| {
+                self.entries
+                    .iter()
+                    .find(|entry| entry.id == *id)
+                    .filter(|entry| !entry.kind.is_dir() && entry.error.is_none())
+                    .map(|entry| entry.path.clone())
+            })
+        } else {
+            None
+        };
+        let generation = self.bump_preview_generation();
+        if let Some(path) = preview_path {
+            FilePickerOutcome::PreviewRequested { path, generation }
+        } else {
+            FilePickerOutcome::HighlightChanged { id }
+        }
     }
 
     /// Request listing for `cwd` (or set path and request).
@@ -746,9 +783,18 @@ impl FilePickerState {
         self.path.set_path(&path);
         self.path.set_fs_status(PathFsStatus::Directory);
         self.rebuild_breadcrumbs();
+        self.raw_entries.clear();
+        self.entries.clear();
+        self.collection.set_active(None);
         self.selection.clear();
         self.preview = None;
-        let generation = self.bump_generation();
+        self.entry_hits.clear();
+        self.hovered = None;
+        self.last_click = None;
+        // A listing request changes the preview's directory context. Any
+        // outstanding preview response must no longer be applicable.
+        self.bump_preview_generation();
+        let generation = self.bump_listing_generation();
         FilePickerOutcome::ListRequested { path, generation }
     }
 
@@ -798,7 +844,7 @@ impl FilePickerState {
         entries: Vec<FileEntry>,
         breadcrumbs: Option<Vec<FileBreadcrumb>>,
     ) -> bool {
-        if generation != self.generation {
+        if generation != self.listing_generation {
             return false;
         }
         self.applied_generation = generation;
@@ -818,7 +864,7 @@ impl FilePickerState {
 
     /// Apply listing error.
     pub fn apply_listing_error(&mut self, generation: u64, message: impl Into<String>) -> bool {
-        if generation != self.generation {
+        if generation != self.listing_generation {
             return false;
         }
         self.applied_generation = generation;
@@ -826,12 +872,23 @@ impl FilePickerState {
         self.error_message = Some(message.into());
         self.raw_entries.clear();
         self.entries.clear();
+        if self.collection.active().is_some() {
+            self.collection.set_active(None);
+            self.bump_preview_generation();
+        }
         true
     }
 
-    /// Apply preview (generation-gated optionally by list gen).
-    pub fn apply_preview(&mut self, preview: FilePreview) {
+    /// Apply a preview only when `generation` is the current preview request.
+    ///
+    /// Stale results, including results invalidated by a directory listing
+    /// request, are ignored and return `false`.
+    pub fn apply_preview(&mut self, generation: u64, preview: FilePreview) -> bool {
+        if generation != self.preview_generation {
+            return false;
+        }
         self.preview = Some(preview);
+        true
     }
 
     fn process_entries(&self, mut entries: Vec<FileEntry>) -> Vec<FileEntry> {
@@ -889,7 +946,9 @@ impl FilePickerState {
                     .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
             })
             .collect();
-        let _ = self.collection.reconcile(&items);
+        if self.collection.reconcile(&items).active_changed() {
+            self.bump_preview_generation();
+        }
         let valid: Vec<String> = self.entries.iter().map(|e| e.id.clone()).collect();
         self.selection.reconcile(&valid);
     }
@@ -1078,20 +1137,7 @@ impl FilePickerState {
         }
 
         match self.collection.handle_key(key, &items) {
-            CollectionOutcome::ActiveChanged { to, .. } => {
-                let mut out = FilePickerOutcome::HighlightChanged { id: to.clone() };
-                if let Some(id) = to {
-                    if let Some(e) = self.entries.iter().find(|e| e.id == id) {
-                        if !e.kind.is_dir() && self.preview_enabled {
-                            out = FilePickerOutcome::PreviewRequested {
-                                path: e.path.clone(),
-                                generation: self.generation,
-                            };
-                        }
-                    }
-                }
-                out
-            }
+            CollectionOutcome::ActiveChanged { to, .. } => self.active_entry_changed(to),
             CollectionOutcome::Scrolled => FilePickerOutcome::Changed,
             CollectionOutcome::Ignored => FilePickerOutcome::Ignored,
         }
@@ -1121,9 +1167,7 @@ impl FilePickerState {
                     })
                     .collect();
                 match self.collection.handle_intent(other, &items) {
-                    CollectionOutcome::ActiveChanged { to, .. } => {
-                        FilePickerOutcome::HighlightChanged { id: to }
-                    }
+                    CollectionOutcome::ActiveChanged { to, .. } => self.active_entry_changed(to),
                     CollectionOutcome::Scrolled => FilePickerOutcome::Changed,
                     CollectionOutcome::Ignored => FilePickerOutcome::Ignored,
                 }
@@ -1180,39 +1224,36 @@ impl FilePickerState {
         }
 
         // entries
-        for (id, rect) in &self.entry_hits {
-            if rect.contains(event.position) {
-                self.pane = FilePickerPane::List;
-                self.path.set_focused(false);
-                self.collection.set_active(Some(id.clone()));
-                // double-click detection (same id within 2 clicks sequential)
-                let is_double = self.last_click.as_ref().is_some_and(|(prev, seq)| {
-                    prev == id && self.click_seq.saturating_sub(*seq) <= 2
-                });
-                self.last_click = Some((id.clone(), self.click_seq));
-                if is_double {
-                    return self.open_highlight();
-                }
-                if self.multi {
-                    if let Some(e) = self.entries.iter().find(|e| &e.id == id) {
-                        if e.selectable {
-                            let _ = self.selection.toggle(id);
-                            return FilePickerOutcome::SelectionChanged;
-                        }
-                    }
-                }
-                if let Some(e) = self.entries.iter().find(|e| &e.id == id) {
-                    if !e.kind.is_dir() && self.preview_enabled {
-                        return FilePickerOutcome::PreviewRequested {
-                            path: e.path.clone(),
-                            generation: self.generation,
-                        };
-                    }
-                }
-                return FilePickerOutcome::HighlightChanged {
-                    id: Some(id.clone()),
-                };
+        if let Some(id) = self
+            .entry_hits
+            .iter()
+            .find(|(_, rect)| rect.contains(event.position))
+            .map(|(id, _)| id.clone())
+        {
+            self.pane = FilePickerPane::List;
+            self.path.set_focused(false);
+            let active_changed = self.collection.active() != Some(&id);
+            self.collection.set_active(Some(id.clone()));
+            // double-click detection (same id within 2 clicks sequential)
+            let is_double = self
+                .last_click
+                .as_ref()
+                .is_some_and(|(prev, seq)| prev == &id && self.click_seq.saturating_sub(*seq) <= 2);
+            self.last_click = Some((id.clone(), self.click_seq));
+            let active_outcome =
+                active_changed.then(|| self.active_entry_changed(Some(id.clone())));
+            if is_double {
+                return self.open_highlight();
             }
+            if self.multi {
+                if let Some(e) = self.entries.iter().find(|e| e.id == id) {
+                    if e.selectable {
+                        let _ = self.selection.toggle(&id);
+                        return active_outcome.unwrap_or(FilePickerOutcome::SelectionChanged);
+                    }
+                }
+            }
+            return active_outcome.unwrap_or(FilePickerOutcome::Ignored);
         }
         FilePickerOutcome::Ignored
     }
@@ -1707,11 +1748,278 @@ mod tests {
     }
 
     #[test]
+    fn same_directory_preview_change_rejects_stale_result() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        let FilePickerOutcome::ListRequested {
+            generation: listing_generation,
+            ..
+        } = state.request_list("/p")
+        else {
+            panic!("expected list request");
+        };
+        assert!(state.apply_listing(
+            listing_generation,
+            "/p",
+            vec![
+                FileEntry::directory("dir", "src", "/p/src"),
+                FileEntry::file("a", "a.txt", "/p/a.txt"),
+                FileEntry::file("b", "b.txt", "/p/b.txt"),
+            ],
+            None
+        ));
+
+        let FilePickerOutcome::PreviewRequested {
+            path: path_a,
+            generation: generation_a,
+        } = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+        else {
+            panic!("expected preview A request");
+        };
+        let FilePickerOutcome::PreviewRequested {
+            path: path_b,
+            generation: generation_b,
+        } = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+        else {
+            panic!("expected preview B request");
+        };
+
+        assert_ne!(path_a, path_b);
+        assert!(generation_b > generation_a);
+        assert!(!state.apply_preview(generation_a, FilePreview::text("A", ["stale".into()])));
+        assert!(state.apply_preview(generation_b, FilePreview::text("B", ["current".into()])));
+        assert_eq!(state.preview.as_ref().map(|p| p.title.as_str()), Some("B"));
+    }
+
+    #[test]
+    fn file_to_directory_highlight_rejects_stale_preview() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        state.listing_generation = 1;
+        assert!(state.apply_listing(
+            1,
+            "/p",
+            vec![
+                FileEntry::directory("dir", "src", "/p/src"),
+                FileEntry::file("file", "notes.txt", "/p/notes.txt"),
+            ],
+            None
+        ));
+
+        let FilePickerOutcome::PreviewRequested {
+            generation: file_generation,
+            ..
+        } = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+        else {
+            panic!("expected file preview request");
+        };
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            FilePickerOutcome::HighlightChanged { id: Some(id) } if id == "dir"
+        ));
+
+        assert_eq!(
+            state.preview_generation(),
+            file_generation.saturating_add(1)
+        );
+        assert!(!state.apply_preview(
+            file_generation,
+            FilePreview::text("notes.txt", ["stale".into()])
+        ));
+    }
+
+    #[test]
+    fn mouse_file_to_directory_highlight_rejects_stale_preview() {
+        let system = DesignSystem::default();
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        state.listing_generation = 1;
+        assert!(state.apply_listing(
+            1,
+            "/p",
+            vec![
+                FileEntry::directory("dir", "src", "/p/src"),
+                FileEntry::file("file", "notes.txt", "/p/notes.txt"),
+            ],
+            None
+        ));
+        let area = Rect::new(0, 0, 70, 18);
+        let mut buffer = Buffer::empty(area);
+        FilePicker::new(&system)
+            .ascii(true)
+            .paint(area, &mut buffer, &mut state);
+        let file_position = state
+            .entry_hits
+            .iter()
+            .find(|(id, _)| id == "file")
+            .map(|(_, rect)| Position::new(rect.x, rect.y))
+            .expect("file hit");
+        let directory_position = state
+            .entry_hits
+            .iter()
+            .find(|(id, _)| id == "dir")
+            .map(|(_, rect)| Position::new(rect.x, rect.y))
+            .expect("directory hit");
+
+        let FilePickerOutcome::PreviewRequested {
+            generation: file_generation,
+            ..
+        } = state.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: file_position,
+            modifiers: KeyModifiers::NONE,
+        })
+        else {
+            panic!("expected file preview request");
+        };
+        assert!(matches!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: directory_position,
+                modifiers: KeyModifiers::NONE,
+            }),
+            FilePickerOutcome::HighlightChanged { id: Some(id) } if id == "dir"
+        ));
+
+        assert_eq!(
+            state.preview_generation(),
+            file_generation.saturating_add(1)
+        );
+        assert!(!state.apply_preview(
+            file_generation,
+            FilePreview::text("notes.txt", ["stale".into()])
+        ));
+    }
+
+    #[test]
+    fn intent_highlight_changes_request_fresh_preview_once() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        state.listing_generation = 1;
+        assert!(state.apply_listing(
+            1,
+            "/p",
+            vec![
+                FileEntry::directory("dir", "src", "/p/src"),
+                FileEntry::file("a", "a.txt", "/p/a.txt"),
+                FileEntry::file("b", "b.txt", "/p/b.txt"),
+            ],
+            None
+        ));
+
+        let FilePickerOutcome::PreviewRequested {
+            path: path_a,
+            generation: generation_a,
+        } = state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Next))
+        else {
+            panic!("expected preview A request");
+        };
+        let FilePickerOutcome::PreviewRequested {
+            path: path_b,
+            generation: generation_b,
+        } = state.handle_intent(UiIntent::Move(crate::interaction::NavigationMove::Next))
+        else {
+            panic!("expected preview B request");
+        };
+
+        assert_eq!(path_a, "/p/a.txt");
+        assert_eq!(path_b, "/p/b.txt");
+        assert_eq!(generation_b, generation_a.saturating_add(1));
+        assert!(!state.apply_preview(generation_a, FilePreview::text("a.txt", ["stale".into()])));
+    }
+
+    #[test]
+    fn listing_request_invalidates_outstanding_preview() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        let FilePickerOutcome::ListRequested {
+            generation: listing_generation,
+            ..
+        } = state.request_list("/p")
+        else {
+            panic!("expected list request");
+        };
+        assert!(state.apply_listing(listing_generation, "/p", sample_entries("/p"), None));
+        let FilePickerOutcome::PreviewRequested {
+            generation: preview_generation,
+            ..
+        } = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+        else {
+            panic!("expected preview request");
+        };
+
+        assert!(matches!(
+            state.request_list("/p/src"),
+            FilePickerOutcome::ListRequested { .. }
+        ));
+        assert!(!state.apply_preview(
+            preview_generation,
+            FilePreview::text("README.md", ["stale".into()])
+        ));
+        assert!(state.preview.is_none());
+    }
+
+    #[test]
+    fn listing_loading_cannot_activate_stale_rows() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+        let FilePickerOutcome::ListRequested { generation, .. } = state.request_list("/p") else {
+            panic!("expected list request");
+        };
+        assert!(state.apply_listing(generation, "/p", sample_entries("/p"), None));
+        assert_eq!(
+            state.highlight().map(|entry| entry.name.as_str()),
+            Some("src")
+        );
+        state.entry_hits = vec![("d1".into(), Rect::new(0, 0, 10, 1))];
+
+        assert!(matches!(
+            state.request_list("/other"),
+            FilePickerOutcome::ListRequested { .. }
+        ));
+        assert_eq!(state.listing_status(), FileListingStatus::Loading);
+        assert!(state.entries().is_empty());
+        assert!(state.highlight().is_none());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(UiIntent::Activate),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(1, 0),
+                modifiers: KeyModifiers::NONE,
+            }),
+            FilePickerOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn generations_saturate_without_panicking() {
+        let mut state = FilePickerState::new("/p");
+        state.listing_generation = u64::MAX;
+        state.preview_generation = u64::MAX;
+
+        assert_eq!(
+            state.request_list("/other"),
+            FilePickerOutcome::ListRequested {
+                path: "/other".into(),
+                generation: u64::MAX,
+            }
+        );
+        assert_eq!(state.preview_generation(), u64::MAX);
+    }
+
+    #[test]
     fn open_directory_and_confirm_file() {
         let mut state = FilePickerState::new("/proj").with_mode(FilePickerMode::OpenFile);
         state.set_focused(true);
         let g = 1;
-        state.generation = 1;
+        state.listing_generation = 1;
         assert!(state.apply_listing(g, "/proj", sample_entries("/proj"), None));
         // highlight first (src dir)
         assert_eq!(state.highlight().map(|e| e.name.as_str()), Some("src"));
@@ -1721,7 +2029,7 @@ mod tests {
             FilePickerOutcome::ListRequested { .. }
         ));
         // re-apply as file list (Name sort → lib.rs first)
-        state.generation = 2;
+        state.listing_generation = 2;
         let files = vec![
             FileEntry::file("a", "main.rs", "/proj/src/main.rs"),
             FileEntry::file("b", "lib.rs", "/proj/src/lib.rs"),
@@ -1740,7 +2048,7 @@ mod tests {
             .with_mode(FilePickerMode::OpenAny)
             .with_multi(true);
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         // move to README
         let items: Vec<_> = state
@@ -1760,7 +2068,7 @@ mod tests {
     fn show_hidden_filter_change() {
         let mut state = FilePickerState::new("/p");
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         assert!(!state.entries().iter().any(|e| e.name == ".hidden"));
         assert!(matches!(
@@ -1812,7 +2120,7 @@ mod tests {
     #[test]
     fn listing_error() {
         let mut state = FilePickerState::new("/root");
-        state.generation = 3;
+        state.listing_generation = 3;
         assert!(state.apply_listing_error(3, "permission denied"));
         assert_eq!(state.listing_status(), FileListingStatus::Error);
         assert!(!state.apply_listing_error(1, "stale"));
@@ -1834,9 +2142,12 @@ mod tests {
             .with_mode(FilePickerMode::OpenFile)
             .with_preview(true);
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         assert!(state.apply_listing(1, "/home/u", sample_entries("/home/u"), None));
-        state.apply_preview(FilePreview::text("README.md", ["# hi".into()]));
+        assert!(state.apply_preview(
+            state.preview_generation(),
+            FilePreview::text("README.md", ["# hi".into()])
+        ));
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
         FilePicker::new(&system)
@@ -1852,7 +2163,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut state = FilePickerState::new("/tmp").with_preview(false);
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         let _ = state.apply_listing(1, "/tmp", sample_entries("/tmp"), None);
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
@@ -1868,7 +2179,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut state = FilePickerState::new("/a/b");
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         let _ = state.apply_listing(1, "/a/b", sample_entries("/a/b"), None);
         let area = Rect::new(0, 0, 70, 18);
         let mut buf = Buffer::empty(area);
@@ -1891,7 +2202,7 @@ mod tests {
     fn fuzz_keys() {
         let mut state = FilePickerState::new("/p").with_multi(true);
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         let _ = state.apply_listing(1, "/p", sample_entries("/p"), None);
         let keys = [
             KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
@@ -1911,7 +2222,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut state = FilePickerState::new("/hot");
         state.set_focused(true);
-        state.generation = 1;
+        state.listing_generation = 1;
         let mut entries = Vec::new();
         for i in 0..40 {
             entries.push(FileEntry::file(

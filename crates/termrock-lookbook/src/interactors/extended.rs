@@ -503,10 +503,13 @@ fn seed_file_picker(state: &mut FilePickerState) {
     {
         let _ = state.apply_listing(generation, "/home/u/proj", entries, None);
     }
-    state.apply_preview(FilePreview::text(
-        "README.md",
-        ["# TermRock".into(), "Interactive picker".into()],
-    ));
+    let _ = state.apply_preview(
+        state.preview_generation(),
+        FilePreview::text(
+            "README.md",
+            ["# TermRock".into(), "Interactive picker".into()],
+        ),
+    );
 }
 
 pub(crate) struct FilePickerInteractor {
