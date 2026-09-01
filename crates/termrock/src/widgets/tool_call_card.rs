@@ -25,7 +25,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Glyph, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, agent::ToolStatus, card::Card},
 };
@@ -770,12 +770,11 @@ impl<'a> ToolCallCard<'a> {
         }
 
         if !state.is_expanded() {
-            let diamond = Glyph::DiamondFilled.resolve(self.system.glyphs).text;
             let disclosure = self.system.glyphs.disclosure_closed();
             let pulse = if running {
                 if matches!(self.system.motion, MotionPolicy::Full) {
                     SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
-                } else if self.ascii || self.colorless {
+                } else if self.ascii {
                     "o"
                 } else {
                     "●"
@@ -783,13 +782,30 @@ impl<'a> ToolCallCard<'a> {
             } else {
                 ""
             };
-            let prefix = format!("{disclosure} {diamond} ");
+            let status = call.status.semantic();
+            let status_glyph = if self.ascii {
+                status.glyph_ascii()
+            } else {
+                status.glyph_for_set(self.system.glyphs)
+            };
+            let prefix = format!("{disclosure} {status_glyph} {} · ", status.default_label());
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,
                 &prefix,
                 usize::from(content_area.width),
-                self.system.style(Role::ActorTool),
+                self.system.style(Role::Text),
+            );
+            crate::widgets::row_chrome::paint_status_glyph(
+                buffer,
+                content_area,
+                u16::try_from(display_cols(disclosure).saturating_add(1)).unwrap_or(u16::MAX),
+                status_glyph,
+                self.system.style(if self.colorless {
+                    Role::TextStrong
+                } else {
+                    status.role()
+                }),
             );
             let verb_x = content_area.x.saturating_add(display_cols(&prefix) as u16);
             let verb = take_display_cols(
@@ -830,7 +846,7 @@ impl<'a> ToolCallCard<'a> {
             }
             return;
         }
-        let status_label = if self.ascii || self.colorless {
+        let status_label = if self.ascii {
             // letter badge
             let mut s = String::new();
             s.push(call.status.letter());
@@ -838,14 +854,14 @@ impl<'a> ToolCallCard<'a> {
         } else {
             call.status.badge().to_string()
         };
-        let leading = if self.ascii || self.colorless {
+        let leading = if self.ascii {
             // use letter as leading via empty and put in title
             ""
         } else {
             call.status.semantic().glyph_for_set(self.system.glyphs)
         };
         let mut title = call.name.clone();
-        if self.ascii || self.colorless {
+        if self.ascii {
             title = format!("{} {}", call.status.letter(), call.name);
         }
         let mut subtitle = call.verb.clone();
@@ -911,11 +927,7 @@ impl<'a> ToolCallCard<'a> {
                 usize::from(body.width),
             )
         };
-        let style = if self.colorless {
-            self.system.style(Role::Text)
-        } else {
-            self.system.style(call.status.role())
-        };
+        let style = self.system.style(Role::Text);
         buffer.set_stringn(body.x, y, &line1, usize::from(body.width), style);
         y = y.saturating_add(1);
 
@@ -1172,7 +1184,7 @@ mod tests {
     }
 
     #[test]
-    fn collapsed_row_shape_uses_diamond_verb_and_dim_details() {
+    fn collapsed_row_shape_uses_status_glyph_verb_and_dim_details() {
         let system = DesignSystem::default();
         let call = ToolCall::new("t", "bash", "Run tests")
             .status(ToolStatus::Success)
@@ -1186,7 +1198,8 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains(Glyph::DiamondFilled.resolve(system.glyphs).text));
+        assert!(text.contains(ToolStatus::Success.semantic().glyph_for_set(system.glyphs)));
+        assert!(text.contains("ok"));
         assert!(text.contains("Run tests"));
         assert!(text.contains("(cargo test)"));
         let detail_x = text.find('(').unwrap() as u16;

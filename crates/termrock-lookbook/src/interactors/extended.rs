@@ -8,7 +8,7 @@ use std::fmt::Debug;
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{Event, KeyEvent, MouseEvent},
-    style::{Density, RolePalette},
+    style::{Density, DesignSystem, RolePalette},
     widgets::{
         CivilDate, ColumnModel, Combobox, ComboboxOutcome, ComboboxState, CompletionCandidate,
         CompletionMenu, CompletionMenuOutcome, CompletionMenuSize, CompletionMenuState, DataColumn,
@@ -52,7 +52,7 @@ fn candidates() -> Vec<CompletionCandidate<'static, &'static str>> {
 
 pub(crate) struct SearchInputInteractor {
     state: SearchInputState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -62,7 +62,7 @@ impl SearchInputInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -74,7 +74,7 @@ impl SearchInputInteractor {
 
 impl StoryInteraction for SearchInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = SearchInput::new(&system)
             .placeholder("Search…")
             .status(SearchStatus::Results { count: 12 })
@@ -104,8 +104,8 @@ impl StoryInteraction for SearchInputInteractor {
         }
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -125,7 +125,7 @@ impl StoryInteraction for SearchInputInteractor {
 
 pub(crate) struct PathInputInteractor {
     state: PathInputState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -138,7 +138,7 @@ impl PathInputInteractor {
         state.set_fs_status(PathFsStatus::Directory);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -150,7 +150,7 @@ impl PathInputInteractor {
 
 impl StoryInteraction for PathInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = PathInput::new(&system)
             .label("Install dir")
             .ascii(true)
@@ -176,8 +176,8 @@ impl StoryInteraction for PathInputInteractor {
             _ => false,
         }
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -197,7 +197,7 @@ impl StoryInteraction for PathInputInteractor {
 
 pub(crate) struct ComboboxInteractor {
     state: ComboboxState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -211,7 +211,7 @@ impl ComboboxInteractor {
         state.set_draft("Rust");
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -231,7 +231,7 @@ impl ComboboxInteractor {
 
 impl StoryInteraction for ComboboxInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let values = candidates();
         Combobox::new(&system)
             .label("Language")
@@ -263,8 +263,8 @@ impl StoryInteraction for ComboboxInteractor {
             _ => false,
         }
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -285,7 +285,7 @@ impl StoryInteraction for ComboboxInteractor {
 
 pub(crate) struct CompletionMenuInteractor {
     state: CompletionMenuState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -293,7 +293,7 @@ impl CompletionMenuInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: CompletionMenuState::new(Some("rs")),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -311,7 +311,7 @@ impl CompletionMenuInteractor {
 
 impl StoryInteraction for CompletionMenuInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let values = candidates();
         let anchor = Rect::new(area.x.saturating_add(4), area.y.saturating_add(2), 1, 1);
         CompletionMenu::new(&values, &system, area, anchor)
@@ -332,8 +332,8 @@ impl StoryInteraction for CompletionMenuInteractor {
         let outcome = self.state.handle_mouse(mouse, &values);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_open() {
@@ -355,7 +355,7 @@ impl StoryInteraction for CompletionMenuInteractor {
 pub(crate) struct DataTableInteractor {
     state: DataTableState<u64, &'static str>,
     columns: ColumnModel<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -370,7 +370,7 @@ impl DataTableInteractor {
                 DataColumn::new("name", "Name", DataColumnWidth::Min(8)),
                 DataColumn::new("status", "Status", DataColumnWidth::Min(8)),
             ]),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -382,7 +382,7 @@ impl DataTableInteractor {
 
 impl StoryInteraction for DataTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone()).density(Density::default());
+        let system = self.system.clone().density(Density::default());
         let cells = [
             ["1", "alpha", "ready"],
             ["2", "beta", "running"],
@@ -412,8 +412,8 @@ impl StoryInteraction for DataTableInteractor {
         self.columns = columns;
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -431,7 +431,7 @@ impl StoryInteraction for DataTableInteractor {
 
 pub(crate) struct DateTimePickerInteractor {
     state: DateTimePickerState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -446,7 +446,7 @@ impl DateTimePickerInteractor {
         state.set_today(CivilDate::new(2026, 8, 10).expect("valid fixture date"));
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -458,7 +458,7 @@ impl DateTimePickerInteractor {
 
 impl StoryInteraction for DateTimePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         DateTimePicker::new(&system)
             .label("Due date")
             .ascii(true)
@@ -472,8 +472,8 @@ impl StoryInteraction for DateTimePickerInteractor {
         let outcome = self.state.handle_mouse(mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -514,7 +514,7 @@ fn seed_file_picker(state: &mut FilePickerState) {
 
 pub(crate) struct FilePickerInteractor {
     state: FilePickerState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -528,7 +528,7 @@ impl FilePickerInteractor {
         seed_file_picker(&mut state);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -540,7 +540,7 @@ impl FilePickerInteractor {
 
 impl StoryInteraction for FilePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         FilePicker::new(&system)
             .title("Open file")
             .ascii(true)
@@ -554,8 +554,8 @@ impl StoryInteraction for FilePickerInteractor {
         let outcome = self.state.handle_mouse(mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -579,7 +579,7 @@ pub(crate) struct QuickOpenInteractor {
     providers: Vec<QuickOpenProvider>,
     catalog: Vec<QuickOpenItem<&'static str>>,
     visible: Vec<QuickOpenItem<&'static str>>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -596,7 +596,7 @@ impl QuickOpenInteractor {
             providers,
             catalog,
             visible,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -623,7 +623,7 @@ impl QuickOpenInteractor {
 
 impl StoryInteraction for QuickOpenInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         QuickOpen::new(&self.providers, &self.visible, &system).paint(
             area,
             frame.buffer_mut(),
@@ -640,8 +640,8 @@ impl StoryInteraction for QuickOpenInteractor {
             .handle_mouse(mouse, &self.providers, &self.visible);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -663,7 +663,7 @@ impl StoryInteraction for QuickOpenInteractor {
 pub(crate) struct MenuBarInteractor {
     state: MenuBarState,
     menus: Vec<MenuBarMenu<&'static str>>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -674,7 +674,7 @@ impl MenuBarInteractor {
         Self {
             state,
             menus: example_app_menus(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -685,7 +685,7 @@ impl MenuBarInteractor {
 
 impl StoryInteraction for MenuBarInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
         MenuBar::new(&self.menus, &system).paint_all(
             bar,
@@ -702,8 +702,8 @@ impl StoryInteraction for MenuBarInteractor {
         let outcome = self.state.handle_mouse(mouse, &self.menus);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -722,7 +722,7 @@ impl StoryInteraction for MenuBarInteractor {
 pub(crate) struct TreeNavigationInteractor {
     state: TreeNavigationState<&'static str>,
     nodes: Vec<TreeNavNode<&'static str>>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -736,7 +736,7 @@ impl TreeNavigationInteractor {
         Self {
             state,
             nodes,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -747,7 +747,7 @@ impl TreeNavigationInteractor {
 
 impl StoryInteraction for TreeNavigationInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         TreeNavigation::new(&self.nodes, &system).ascii(true).paint(
             area,
             frame.buffer_mut(),
@@ -762,8 +762,8 @@ impl StoryInteraction for TreeNavigationInteractor {
         let outcome = self.state.handle_mouse(mouse, &self.nodes);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -784,7 +784,7 @@ impl StoryInteraction for TreeNavigationInteractor {
 
 pub(crate) struct NotificationCenterInteractor {
     state: NotificationCenterState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -797,7 +797,7 @@ impl NotificationCenterInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -808,7 +808,7 @@ impl NotificationCenterInteractor {
 
 impl StoryInteraction for NotificationCenterInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         NotificationCenter::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -819,8 +819,8 @@ impl StoryInteraction for NotificationCenterInteractor {
         let outcome = self.state.handle_mouse(mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![

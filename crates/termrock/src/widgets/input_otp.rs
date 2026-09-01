@@ -16,7 +16,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem},
     text::take_display_cols,
 };
 
@@ -366,8 +366,8 @@ impl<'a> InputOtp<'a> {
     /// Preferred width for `n` slots.
     #[must_use]
     pub fn preferred_width(n: usize) -> u16 {
-        // each slot: [X] + gap = 4, last no gap
-        (n as u16).saturating_mul(4).saturating_sub(1).max(3)
+        // Reserved prompt + each slot: [X] + gap = 4, last no gap.
+        (n as u16).saturating_mul(4).max(4)
     }
 
     /// Paint.
@@ -375,6 +375,14 @@ impl<'a> InputOtp<'a> {
         if area.is_empty() {
             return;
         }
+        let control_state = if !state.is_enabled() {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.input_recipe(control_state, false);
         let mut y = area.y;
         if let Some(label) = self.label {
             if area.height >= 2 {
@@ -383,19 +391,25 @@ impl<'a> InputOtp<'a> {
                     y,
                     take_display_cols(label, usize::from(area.width)),
                     usize::from(area.width),
-                    self.system.style(Role::TextMuted),
+                    recipe.value,
                 );
                 y = y.saturating_add(1);
             }
         }
-        let mut x = area.x;
+        let row = Rect::new(area.x, y, area.width, 1.min(area.height));
+        buffer.set_style(row, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt {
+            buffer.set_stringn(area.x, y, glyph, 1, style);
+        }
+        let mut x = area.x.saturating_add(1);
         let end_x = area.x.saturating_add(area.width);
         for (i, slot) in state.slots.iter().enumerate() {
             if x.saturating_add(3) > end_x {
                 break;
             }
             let ch = match slot {
-                Some(c) if state.masked => '•',
+                Some(_) if state.masked && self.ascii => '*',
+                Some(_) if state.masked => '•',
                 Some(c) => *c,
                 None => {
                     if self.ascii {
@@ -410,24 +424,15 @@ impl<'a> InputOtp<'a> {
             // Step 4).
             let disabled = !state.is_enabled();
             let focused_slot = state.focused && i == state.cursor && !disabled;
-            // Slots are fields: they sit in the same sunken well the rest of
-            // the input family uses, so an OTP row reads as somewhere to type
-            // rather than as three loose brackets (plans/008 Step 5).
-            let well = self.system.style(Role::Sunken).bg;
             let mut style = if focused_slot {
-                // The slot under the cursor is one cell: reverse it.
-                self.system
-                    .style(Role::Accent)
-                    .add_modifier(Modifier::REVERSED)
-            } else if disabled {
-                self.system.style(Role::TextDisabled)
+                recipe.cursor.add_modifier(Modifier::REVERSED)
             } else if slot.is_some() {
-                self.system.style(Role::TextStrong)
+                recipe.value.add_modifier(Modifier::BOLD)
             } else {
-                self.system.style(Role::TextMuted)
+                recipe.placeholder
             };
-            if !focused_slot && let Some(bg) = well {
-                style = style.bg(bg);
+            if disabled {
+                style = recipe.value;
             }
             let cell = format!("[{ch}]");
             buffer.set_stringn(x, y, &cell, 3, style);
@@ -539,5 +544,71 @@ mod tests {
         InputOtp::new(&system)
             .label("Code")
             .paint(area, &mut buf, &st);
+    }
+
+    #[test]
+    fn ascii_mask_and_prompt_have_stable_geometry() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let mut state = InputOtpState::new(2);
+        let _ = state.set_value("12");
+        state.set_masked(true);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, InputOtp::preferred_width(2), 1);
+        let mut buffer = Buffer::empty(area);
+
+        InputOtp::new(&system)
+            .ascii(true)
+            .paint(area, &mut buffer, &state);
+
+        assert_eq!(area.width, 8);
+        assert_ne!(buffer[(area.x, area.y)].symbol(), " ");
+        assert_eq!(buffer[(area.x + 2, area.y)].symbol(), "*");
+    }
+
+    #[test]
+    fn focus_enabled_and_accepts_input_are_independent_key_gates() {
+        let mut state = InputOtpState::new(4);
+        state.set_focused(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+
+        state.set_focused(true);
+        state.set_enabled(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+
+        state.set_enabled(true);
+        state.set_accepts_input(false);
+        assert_eq!(state.handle_key(press('1')), InputOtpOutcome::Ignored);
+        assert_eq!(state.filled(), 0);
+    }
+
+    #[test]
+    fn escape_cancels_only_while_the_otp_owns_input() {
+        let mut state = InputOtpState::new(4);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            InputOtpOutcome::Cancelled
+        );
+        state.set_accepts_input(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            InputOtpOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn empty_otp_paints_every_slot_without_collapsing_geometry() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let state = InputOtpState::new(4);
+        let area = Rect::new(0, 0, InputOtp::preferred_width(4), 1);
+        let mut buffer = Buffer::empty(area);
+
+        InputOtp::new(&system)
+            .ascii(true)
+            .paint(area, &mut buffer, &state);
+
+        let row = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>();
+        assert_eq!(row.matches('_').count(), 4, "{row:?}");
     }
 }

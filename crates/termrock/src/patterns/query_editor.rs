@@ -34,7 +34,11 @@
 //! replace the domain types, the wording, and the effects with your own.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -42,8 +46,8 @@ use crate::{
     text::take_display_cols,
     widgets::{
         CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
-        HistoryEntry, HistoryKind, SourceLabel, SourceRange, SpanStyle, TextArea, TextAreaOutcome,
-        TextAreaState, TextCursor, TextWrap,
+        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, SourceRange, SpanStyle,
+        StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -188,6 +192,30 @@ impl QueryRunStatus {
             Self::Success { .. } => "success",
             Self::Failed { .. } => "failed",
             Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Operator-facing lifecycle verb.
+    #[must_use]
+    pub fn verb(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Running { .. } => "running",
+            Self::Success { .. } => "completed",
+            Self::Failed { .. } => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Shared lifecycle projection for recipe-owned status chrome.
+    #[must_use]
+    pub fn semantic(&self) -> SemanticStatus {
+        match self {
+            Self::Idle => SemanticStatus::Idle,
+            Self::Running { .. } => SemanticStatus::Running,
+            Self::Success { .. } => SemanticStatus::Success,
+            Self::Failed { .. } => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
         }
     }
 
@@ -1219,50 +1247,30 @@ impl<'a> QueryEditor<'a> {
                 height: 1,
             };
             let title = self.title.or(state.title.as_deref()).unwrap_or("Query");
-            let run = match &state.run {
-                QueryRunStatus::Idle => "idle",
-                QueryRunStatus::Running { .. } => "running…",
-                QueryRunStatus::Success { rows, duration_ms } => {
-                    // short static
-                    let _ = (rows, duration_ms);
-                    "ok"
-                }
-                QueryRunStatus::Failed { .. } => "error",
-                QueryRunStatus::Cancelled => "cancelled",
-            };
+            let status = StatusIndicator::new(state.run.semantic(), self.system)
+                .label(state.run.verb())
+                .ascii(ascii);
+            let status_width = status.measure_width(None).min(area.width);
+            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
+            let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
+            let metadata_width = area.right().saturating_sub(metadata_x);
             let line = format!(
-                "{title} · {} · {} · {} · {}",
+                "· {title} · {} · {} · {}",
                 state.language.label,
                 state.mode.id(),
                 state.focus.id(),
-                run
             );
             let style = if self.focused {
                 self.system.style(Role::TextStrong)
             } else {
                 self.system.style(Role::TextMuted)
             };
-            self.system
-                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
-            // run status color cue
-            if matches!(state.run, QueryRunStatus::Failed { .. }) {
+            if metadata_width > 0 {
                 self.system.paint_row(
                     buffer,
-                    Rect::new(area.x.saturating_add(area.width.saturating_sub(8)), y, 5, 1),
-                    "error",
-                    self.system.style(Role::Danger),
-                );
-            } else if state.run.is_running() {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(
-                        area.x.saturating_add(area.width.saturating_sub(10)),
-                        y,
-                        6,
-                        1,
-                    ),
-                    if ascii { "run..." } else { "run…" },
-                    self.system.style(Role::Warning),
+                    Rect::new(metadata_x, y, metadata_width, 1),
+                    &line,
+                    style,
                 );
             }
             y = y.saturating_add(1);

@@ -878,9 +878,6 @@ impl<Id, Action> SemanticNode<Id, Action> {
     }
 }
 
-/// Alias kept for earlier sketches; prefer [`SemanticNode`].
-pub type SemanticElement<Id, Action = ()> = SemanticNode<Id, Action>;
-
 /// One node in a portable semantic snapshot (string identities).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemanticSnapshotNode {
@@ -1152,12 +1149,6 @@ impl<Id, Action> SemanticScene<Id, Action> {
     /// Registered nodes in order.
     #[must_use]
     pub fn nodes(&self) -> &[SemanticNode<Id, Action>] {
-        &self.nodes
-    }
-
-    /// Alias of [`Self::nodes`] for older call sites.
-    #[must_use]
-    pub fn elements(&self) -> &[SemanticNode<Id, Action>] {
         &self.nodes
     }
 

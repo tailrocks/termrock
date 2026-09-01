@@ -27,7 +27,11 @@
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -37,7 +41,7 @@ use crate::{
     widgets::{
         ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth, DataTable,
         DataTableNavMode, DataTableOutcome, DataTableState, DataTableToolbar, FilterSpec,
-        InspectKind, InspectorField, LoadState, SortSpec,
+        InspectKind, InspectorField, LoadState, SemanticStatus, SortSpec, StatusIndicator,
     },
 };
 
@@ -109,12 +113,14 @@ impl ResultCellKind {
     pub const fn role(self) -> Role {
         match self {
             Self::Null => Role::TextDisabled,
-            Self::Bool => Role::Accent,
+            Self::Bool => Role::InfoDim,
             Self::Integer | Self::Float => Role::Text,
             Self::Text | Self::Timestamp | Self::Uuid | Self::Other => Role::Text,
             Self::Binary => Role::TextMuted,
             Self::Json => Role::Info,
-            Self::Secret => Role::Warning,
+            // Redaction is a value kind, not a warning state. Its literal
+            // label carries the distinction without spending warning color.
+            Self::Secret => Role::TextMuted,
         }
     }
 }
@@ -408,6 +414,30 @@ impl ResultQueryStatus {
             Self::Ready { .. } => "ready",
             Self::Failed { .. } => "failed",
             Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Operator-facing lifecycle verb.
+    #[must_use]
+    pub fn verb(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Streaming { .. } => "streaming",
+            Self::Ready { .. } => "ready",
+            Self::Failed { .. } => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
+    /// Shared lifecycle projection for recipe-owned status chrome.
+    #[must_use]
+    pub fn semantic(&self) -> SemanticStatus {
+        match self {
+            Self::Idle => SemanticStatus::Idle,
+            Self::Streaming { .. } => SemanticStatus::Running,
+            Self::Ready { .. } => SemanticStatus::Success,
+            Self::Failed { .. } => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
         }
     }
 
@@ -1294,20 +1324,31 @@ impl<'a> ResultGrid<'a> {
         if h > 0 {
             let title = self.title.or(state.title.as_deref()).unwrap_or("results");
             let line = format!(
-                "{title} · {}",
+                "· {title} · {}",
                 state
                     .status
                     .summary_line(self.columns.len(), self.rows.len())
             );
             state.last_status_line = line.clone();
-            let style = match &state.status {
-                ResultQueryStatus::Failed { .. } => self.system.style(Role::Danger),
-                ResultQueryStatus::Streaming { .. } => self.system.style(Role::Warning),
-                _ if self.focused => self.system.style(Role::TextStrong),
-                _ => self.system.style(Role::TextMuted),
-            };
-            self.system
-                .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
+            let status = StatusIndicator::new(state.status.semantic(), self.system)
+                .label(state.status.verb())
+                .ascii(ascii);
+            let status_width = status.measure_width(None).min(area.width);
+            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
+            let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
+            let metadata_width = area.right().saturating_sub(metadata_x);
+            if metadata_width > 0 {
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(metadata_x, y, metadata_width, 1),
+                    &line,
+                    self.system.style(if self.focused {
+                        Role::TextStrong
+                    } else {
+                        Role::TextMuted
+                    }),
+                );
+            }
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
         }

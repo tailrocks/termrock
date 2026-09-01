@@ -41,7 +41,9 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::{ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel},
+    widgets::{
+        ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel, SemanticStatus, StatusIndicator,
+    },
 };
 
 /// Overlay id for session picker (dialog / fullscreen).
@@ -124,14 +126,16 @@ impl SessionStatus {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Active => Role::Info,
-            Self::Idle => Role::TextMuted,
-            Self::ActionRequired => Role::Warning,
-            Self::Completed => Role::Success,
-            Self::Failed => Role::Danger,
-            Self::Archived => Role::TextMuted,
+            Self::Active => SemanticStatus::Running,
+            Self::Idle => SemanticStatus::Idle,
+            Self::ActionRequired => SemanticStatus::Waiting,
+            Self::Completed => SemanticStatus::Success,
+            Self::Failed => SemanticStatus::Failed,
+            Self::Archived => SemanticStatus::Paused,
         }
     }
 }
@@ -1273,12 +1277,11 @@ impl<'a> SessionPicker<'a> {
             } else {
                 "loading…"
             };
-            self.system.paint_row(
-                buffer,
-                Rect::new(inner.x, y, inner.width, 1),
-                m,
-                self.system.style(Role::Info),
-            );
+            StatusIndicator::new(SemanticStatus::Running, self.system)
+                .label(m)
+                .ascii(self.ascii)
+                .colorless(self.colorless)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if matches!(state.load_state, SessionLoadState::Error) && y < max_y {
@@ -1286,12 +1289,11 @@ impl<'a> SessionPicker<'a> {
                 .load_error
                 .as_deref()
                 .unwrap_or("load failed · r retry");
-            self.system.paint_row(
-                buffer,
-                Rect::new(inner.x, y, inner.width, 1),
-                msg,
-                self.system.style(Role::Danger),
-            );
+            StatusIndicator::new(SemanticStatus::Failed, self.system)
+                .label(msg)
+                .ascii(self.ascii)
+                .colorless(self.colorless)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -1406,7 +1408,21 @@ impl<'a> SessionPicker<'a> {
             } else {
                 " "
             };
-            let st = s.status.glyph(self.ascii);
+            let semantic = if s.action_required {
+                SemanticStatus::Waiting
+            } else {
+                s.status.semantic()
+            };
+            let status_label = if s.action_required {
+                "action required"
+            } else {
+                s.status.id()
+            };
+            let indicator = StatusIndicator::new(semantic, self.system)
+                .label(status_label)
+                .ascii(self.ascii)
+                .colorless(self.colorless);
+            let status_text = indicator.text(None);
             let unread = if s.unread > 0 {
                 format!(" ({})", s.unread)
             } else if s.action_required {
@@ -1421,29 +1437,28 @@ impl<'a> SessionPicker<'a> {
                 " "
             };
             let loc = s.location.glyph(self.ascii);
-            let text = format!("{mark}{pin}{st}{loc} {}{unread}{dirty}", s.title);
+            let text = format!("{mark}{pin}{status_text} {loc} {}{unread}{dirty}", s.title);
             // Status lives in its glyph cell, not across the whole row: a
             // list of five sessions used to paint five hues over its titles
             // (information budget, plans/017 Part B).
             let style = if !s.enabled {
                 self.system.style(Role::TextMuted)
-            } else if selected {
+            } else if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
+            } else if selected {
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
             } else {
                 self.system.style(Role::Text)
             };
             self.system
                 .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &text, style);
-            if !self.colorless && s.enabled && !selected {
-                let status_role = if s.action_required {
-                    Role::Warning
-                } else {
-                    s.status.role()
-                };
-                let glyph_x = area.x.saturating_add(2);
-                if glyph_x < area.x.saturating_add(area.width) {
-                    buffer[(glyph_x, y)].set_style(self.system.style(status_role));
-                }
+            if area.width > 2 {
+                indicator.paint(
+                    Rect::new(area.x.saturating_add(2), y, area.width.saturating_sub(2), 1),
+                    buffer,
+                );
             }
             state.row_hits.push((
                 s.id.clone(),
@@ -1501,62 +1516,68 @@ impl<'a> SessionPicker<'a> {
         };
         // Default frame: five quiet lines. Everything else is one keypress
         // away behind `i` (information budget, plans/017 Part B).
-        let lines: Vec<(String, Role)> = if state.preview_details {
-            let mut v = vec![(s.title.clone(), Role::TextStrong)];
+        let lines: Vec<(String, Role, Option<SemanticStatus>)> = if state.preview_details {
+            let mut v = vec![(s.title.clone(), Role::TextStrong, None)];
             if let Some(p) = s.project.as_ref() {
-                v.push((format!("project {p}"), Role::TextMuted));
+                v.push((format!("project {p}"), Role::TextMuted, None));
             }
             if let Some(b) = s.branch.as_ref() {
-                v.push((format!("branch {b}"), Role::TextMuted));
+                v.push((format!("branch {b}"), Role::TextMuted, None));
             }
+            let status = StatusIndicator::new(s.status.semantic(), self.system)
+                .label(s.status.id())
+                .ascii(self.ascii)
+                .colorless(self.colorless);
             v.push((
-                format!("status {} · {}", s.status.id(), s.location.label()),
-                s.status.role(),
+                format!("{} · {}", status.text(None), s.location.label()),
+                Role::Text,
+                Some(s.status.semantic()),
             ));
             if let Some(m) = s.model.as_ref() {
-                v.push((format!("model {m}"), Role::TextMuted));
+                v.push((format!("model {m}"), Role::TextMuted, None));
             }
             if let Some(m) = s.mode.as_ref() {
-                v.push((format!("mode {m}"), Role::TextMuted));
+                v.push((format!("mode {m}"), Role::TextMuted, None));
             }
             if let Some(d) = s.device.as_ref() {
-                v.push((format!("device {d}"), Role::TextMuted));
+                v.push((format!("device {d}"), Role::TextMuted, None));
             }
             if let Some(sum) = s.summary.as_ref() {
-                v.push((sum.clone(), Role::Text));
+                v.push((sum.clone(), Role::Text, None));
             }
             if s.pinned {
-                v.push(("pinned".into(), Role::TextMuted));
+                v.push(("pinned".into(), Role::TextMuted, None));
             }
             if s.dirty {
-                v.push(("dirty / local draft elsewhere".into(), Role::Warning));
+                v.push(("dirty / local draft elsewhere".into(), Role::Warning, None));
             }
             if s.unread > 0 {
-                v.push((format!("{} unread", s.unread), Role::TextMuted));
+                v.push((format!("{} unread", s.unread), Role::TextMuted, None));
             }
             if s.action_required {
-                v.push(("action required".into(), Role::Warning));
+                v.push(("action required".into(), Role::Warning, None));
             }
             v
         } else {
-            let mut v = vec![(s.title.clone(), Role::TextStrong)];
+            let mut v = vec![(s.title.clone(), Role::TextStrong, None)];
             if let Some(r) = s.recency.as_ref() {
-                v.push((r.clone(), Role::TextFaint));
+                v.push((r.clone(), Role::TextFaint, None));
             }
             if let Some(m) = s.model.as_ref() {
-                v.push((format!("model {m}"), Role::TextMuted));
+                v.push((format!("model {m}"), Role::TextMuted, None));
             }
-            v.push((
-                format!("{} {}", s.status.glyph(self.ascii), s.status.id()),
-                s.status.role(),
-            ));
+            let status = StatusIndicator::new(s.status.semantic(), self.system)
+                .label(s.status.id())
+                .ascii(self.ascii)
+                .colorless(self.colorless);
+            v.push((status.text(None), Role::Text, Some(s.status.semantic())));
             if let Some(sum) = s.summary.as_ref() {
-                v.push((sum.clone(), Role::Text));
+                v.push((sum.clone(), Role::Text, None));
             }
-            v.push(("i details".into(), Role::TextFaint));
+            v.push(("i details".into(), Role::TextFaint, None));
             v
         };
-        for (line, role) in lines {
+        for (line, role, semantic) in lines {
             if y >= max_y {
                 break;
             }
@@ -1567,6 +1588,13 @@ impl<'a> SessionPicker<'a> {
             };
             self.system
                 .paint_row(buffer, Rect::new(area.x, y, area.width, 1), &line, style);
+            if let Some(semantic) = semantic {
+                StatusIndicator::new(semantic, self.system)
+                    .label(s.status.id())
+                    .ascii(self.ascii)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
+            }
             y = y.saturating_add(1);
         }
     }

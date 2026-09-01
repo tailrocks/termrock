@@ -416,6 +416,17 @@ pub fn project_message_thread(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
+    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed, false)
+}
+
+fn project_message_thread_profile(
+    entries: &[MessageEntry],
+    zoom: MessageZoom,
+    search: Option<&str>,
+    expanded_ids: &BTreeSet<String>,
+    force_collapsed: &BTreeSet<String>,
+    ascii: bool,
+) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
     let q = search
         .map(|s| s.trim().to_ascii_lowercase())
         .filter(|s| !s.is_empty());
@@ -432,7 +443,11 @@ pub fn project_message_thread(
         // group header as synthetic status line when group changes
         if let Some(g) = e.group.as_deref() {
             if last_group != Some(g) {
-                let header = format!("── {g} ──");
+                let header = if ascii {
+                    format!("-- {g} --")
+                } else {
+                    format!("── {g} ──")
+                };
                 bufs.push(vec![header]);
                 meta.push(ProjectedEntryMeta {
                     id: format!("grp:{}:{}", e.id, g),
@@ -467,7 +482,7 @@ pub fn project_message_thread(
             }
         };
 
-        let lines = project_entry_lines(e, zoom, folded);
+        let lines = project_entry_lines(e, zoom, folded, ascii);
         bufs.push(lines);
         meta.push(ProjectedEntryMeta {
             id: e.id.clone(),
@@ -482,7 +497,12 @@ pub fn project_message_thread(
     (meta, bufs)
 }
 
-fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec<String> {
+fn project_entry_lines(
+    e: &MessageEntry,
+    zoom: MessageZoom,
+    folded: bool,
+    ascii: bool,
+) -> Vec<String> {
     if folded {
         let mut s = String::new();
         if let Some(t) = &e.timestamp {
@@ -495,7 +515,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         }
         if let Some(c) = e.status_letter {
             s.push('[');
-            s.push(c);
+            s.push(if ascii && !c.is_ascii() { '*' } else { c });
             s.push(']');
             s.push(' ');
         }
@@ -503,10 +523,10 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
             .summary
             .as_deref()
             .or_else(|| e.lines.first().map(String::as_str))
-            .unwrap_or("…");
+            .unwrap_or(if ascii { "..." } else { "…" });
         s.push_str(body);
         if e.checkpoint {
-            s.push_str(" ◆");
+            s.push_str(if ascii { " *" } else { " ◆" });
         }
         return vec![s];
     }
@@ -519,7 +539,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
     }
     if let Some(t) = &e.timestamp {
         if !head.is_empty() {
-            head.push_str(" · ");
+            head.push_str(if ascii { " - " } else { " · " });
         }
         head.push_str(t);
     }
@@ -528,14 +548,14 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
             head.push(' ');
         }
         head.push('[');
-        head.push(c);
+        head.push(if ascii && !c.is_ascii() { '*' } else { c });
         head.push(']');
     }
     if e.checkpoint {
         if !head.is_empty() {
             head.push(' ');
         }
-        head.push('◆');
+        head.push(if ascii { '*' } else { '◆' });
     }
     let had_head = !head.is_empty();
     if had_head {
@@ -552,13 +572,19 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         out.push(line.clone());
     }
     if e.lines.len() > body_take {
+        let ellipsis = if ascii { "..." } else { "…" };
+        let separator = if ascii { " - " } else { " · " };
         out.push(format!(
-            "… +{} lines · open detail",
+            "{ellipsis} +{} lines{separator}open detail",
             e.lines.len() - body_take
         ));
     }
     if out.is_empty() {
-        out.push(e.summary.clone().unwrap_or_else(|| "…".into()));
+        out.push(
+            e.summary
+                .clone()
+                .unwrap_or_else(|| if ascii { "..." } else { "…" }.into()),
+        );
     }
     out
 }
@@ -626,6 +652,25 @@ impl ThreadProjection {
     ) -> Self {
         let (meta, bufs) =
             project_message_thread(entries, zoom, search, expanded_ids, force_collapsed);
+        Self { meta, bufs }
+    }
+
+    fn project_profile(
+        entries: &[MessageEntry],
+        zoom: MessageZoom,
+        search: Option<&str>,
+        expanded_ids: &BTreeSet<String>,
+        force_collapsed: &BTreeSet<String>,
+        ascii: bool,
+    ) -> Self {
+        let (meta, bufs) = project_message_thread_profile(
+            entries,
+            zoom,
+            search,
+            expanded_ids,
+            force_collapsed,
+            ascii,
+        );
         Self { meta, bufs }
     }
 
@@ -865,6 +910,17 @@ impl MessageThreadState {
         )
     }
 
+    fn projection_profile(&self, entries: &[MessageEntry], ascii: bool) -> ThreadProjection {
+        ThreadProjection::project_profile(
+            entries,
+            self.zoom,
+            self.search.as_deref(),
+            &self.expanded,
+            &self.force_collapsed,
+            ascii,
+        )
+    }
+
     /// Map transcript outcome + local chords.
     pub fn handle_key(
         &mut self,
@@ -1062,14 +1118,16 @@ impl<'a> MessageThread<'a> {
             body.height = area.height.saturating_sub(footer_h);
         }
 
-        let proj = state.projection(self.entries);
+        let ascii = self.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || self.system.mono();
+        let proj = state.projection_profile(self.entries, ascii);
         let mut line_ptrs: Vec<Vec<&str>> = Vec::new();
         let blocks = proj.blocks(&mut line_ptrs);
 
         let transcript = Transcript::new(&blocks, self.system)
             .focused(self.focused)
-            .ascii(self.ascii)
-            .colorless(self.colorless)
+            .ascii(ascii)
+            .colorless(colorless)
             .empty_label("No messages yet");
         StatefulWidget::render(&transcript, body, buffer, &mut state.transcript);
 
@@ -1085,11 +1143,19 @@ impl<'a> MessageThread<'a> {
                     String::new()
                 }
             } else if state.show_new_content() {
-                format!(
-                    "↓ {} new  C-n jump · zoom:{}",
-                    state.unread_below,
-                    state.zoom.id()
-                )
+                if ascii {
+                    format!(
+                        "v {} new  C-n jump - zoom:{}",
+                        state.unread_below,
+                        state.zoom.id()
+                    )
+                } else {
+                    format!(
+                        "↓ {} new  C-n jump · zoom:{}",
+                        state.unread_below,
+                        state.zoom.id()
+                    )
+                }
             } else {
                 String::new()
             };
@@ -1104,11 +1170,6 @@ impl<'a> MessageThread<'a> {
             }
         }
         let _ = display_cols;
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MessageThreadState) {
-        self.paint(area, buffer, state);
     }
 }
 
@@ -1182,6 +1243,29 @@ mod tests {
         assert!(tool.folded);
         let user = meta.iter().find(|m| m.id == "u1").unwrap();
         assert!(!user.folded || user.kind == MessageKind::User);
+    }
+
+    #[test]
+    fn ascii_projection_builds_ascii_chrome_without_rewriting_host_copy() {
+        let entries = example_message_session();
+        let state = MessageThreadState::new();
+        let projection = state.projection_profile(&entries, true);
+        let lines_for = |id: &str| {
+            let meta = projection
+                .meta
+                .iter()
+                .find(|meta| meta.id == id)
+                .unwrap_or_else(|| panic!("missing projected entry {id}"));
+            &projection.bufs[meta.line_buf_index]
+        };
+
+        assert_eq!(lines_for("grp:u1:today")[0], "-- today --");
+        assert!(lines_for("u1")[0].ends_with('*'));
+        assert!(lines_for("t1")[0].starts_with("12:02 bash [*]"));
+        assert!(
+            lines_for("err1").iter().any(|line| line.contains('—')),
+            "host Unicode copy is data, not component chrome"
+        );
     }
 
     #[test]

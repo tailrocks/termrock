@@ -25,7 +25,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -932,7 +932,7 @@ impl<'a> TokenField<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Add…",
+            placeholder: "Add",
             system,
             validation: Validation::Valid,
             ascii: false,
@@ -992,14 +992,21 @@ impl<'a> TokenField<'a> {
                 overflow: None,
             };
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_));
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1019,6 +1026,7 @@ impl<'a> TokenField<'a> {
             area.width,
             1,
         );
+        buffer.set_style(row, recipe.fill);
         let mut x = row.x;
         let mut token_rects = Vec::new();
         let mut overflow = None;
@@ -1086,7 +1094,7 @@ impl<'a> TokenField<'a> {
                 rect.y,
                 &format!("[{label}]"),
                 usize::from(rect.width),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
             overflow = Some(rect);
         }
@@ -1347,6 +1355,20 @@ mod tests {
     }
 
     #[test]
+    fn escape_cancels_without_discarding_tokens_or_draft() {
+        let mut state = TokenFieldState::new();
+        state.set_focused(true);
+        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
+        let _ = state.draft.insert_str("bob");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TokenFieldOutcome::Cancelled
+        );
+        assert_eq!(state.labels(), vec!["alice"]);
+        assert_eq!(state.draft(), "bob");
+    }
+
+    #[test]
     fn apply_suggestion() {
         let mut state = TokenFieldState::new();
         assert!(matches!(
@@ -1371,6 +1393,38 @@ mod tests {
             .paint(area, &mut buf, &mut state);
         assert!(!parts.token_rects.is_empty());
         assert!(!parts.draft.is_empty());
+    }
+
+    #[test]
+    fn mouse_focuses_only_painted_token_or_draft_regions() {
+        let system = DesignSystem::default();
+        let mut state = TokenFieldState::new().with_multi_select(true);
+        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
+        let area = Rect::new(0, 0, 48, 2);
+        let mut buffer = Buffer::empty(area);
+        let parts = TokenField::new(&system).paint(area, &mut buffer, &mut state);
+        let token = parts.token_rects[0];
+
+        assert!(matches!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(token.x, token.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            TokenFieldOutcome::SelectionChanged {
+                id,
+                selected: true
+            } if id == "1"
+        ));
+        assert!(matches!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(parts.draft.x, parts.draft.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            TokenFieldOutcome::FocusMoved | TokenFieldOutcome::DraftChanged
+        ));
+        assert!(matches!(state.zone(), TokenFieldZone::Draft));
     }
 
     #[test]

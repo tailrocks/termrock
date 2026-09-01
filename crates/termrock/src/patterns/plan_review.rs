@@ -45,8 +45,8 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        AccentRail, Action, ActionBar, ActionBarState, EmptyKind, EmptyState, FieldRow,
-        FieldRowValue, Panel, PanelTitleSpec, PermissionRisk, tiered_row::TieredRow,
+        AccentRail, Action, ActionBar, ActionBarState, ActionVariant, EmptyKind, EmptyState,
+        FieldRow, FieldRowValue, Panel, PanelTitleSpec, PermissionRisk, tiered_row::TieredRow,
     },
 };
 
@@ -2188,7 +2188,7 @@ impl<'a> PlanReview<'a> {
                 break;
             }
             let style = if row.starts_with('+') {
-                self.system.style(Role::Success)
+                self.system.style(Role::TextStrong)
             } else if row.starts_with('-') {
                 self.system.style(Role::Danger)
             } else {
@@ -2222,7 +2222,11 @@ impl<'a> PlanReview<'a> {
                 id: *action,
                 label: action.label(),
                 enabled: true,
-                style: action.grants().then(|| self.system.style(Role::Warning)),
+                variant: if action.grants() {
+                    ActionVariant::Primary
+                } else {
+                    ActionVariant::Secondary
+                },
             })
             .collect();
         let mut bar_state = ActionBarState {

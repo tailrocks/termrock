@@ -147,19 +147,18 @@ mod tests {
 
     #[test]
     fn light_appearance_is_actually_light() {
-        fn luminance(style: ratatui_core::style::Style) -> f64 {
-            let Some(ratatui_core::style::Color::Rgb(r, g, b)) = style.bg else {
-                panic!("canvas must carry an RGB background");
-            };
-            0.2126 * f64::from(r) + 0.7152 * f64::from(g) + 0.0722 * f64::from(b)
-        }
-
         let dark = palette_for_appearance(Appearance::Dark);
         let light = palette_for_appearance(Appearance::Light);
+        assert_eq!(
+            dark.style(crate::style::Role::Canvas).bg,
+            Some(ratatui_core::style::Color::Reset)
+        );
         assert!(
-            luminance(light.style(crate::style::Role::Canvas))
-                > luminance(dark.style(crate::style::Role::Canvas)),
-            "light appearance must resolve a lighter canvas than dark"
+            matches!(
+                light.style(crate::style::Role::Canvas).bg,
+                Some(ratatui_core::style::Color::Rgb(r, g, b)) if r > 200 && g > 200 && b > 200
+            ),
+            "light appearance must resolve a light canvas"
         );
     }
 

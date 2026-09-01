@@ -38,7 +38,7 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        ChordFormat, Panel, PanelChrome, TextInput, TextInputOutcome, TextInputState,
+        ChordFormat, Panel, PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState,
         format_binding,
     },
 };
@@ -1060,6 +1060,8 @@ impl<'a> KeyboardHelp<'a> {
     fn paint_modal(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyboardHelpState) {
         let surface = state.focused && state.accepts_input;
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
+            .overlay(true)
             .title(self.title)
             .emphasis(if surface {
                 PanelChrome::Focused
@@ -1663,6 +1665,24 @@ mod tests {
             .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
+    }
+
+    #[test]
+    fn mouse_hit_moves_the_modal_help_cursor() {
+        let entries = example_help_entries(&system());
+        let mut state = KeyboardHelpState::modal();
+        state.hits = vec![(1, Rect::new(2, 3, 18, 1))];
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(2, 3),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &entries,
+            ),
+            KeyboardHelpOutcome::CursorMoved { index: 1 }
+        );
     }
 
     #[test]

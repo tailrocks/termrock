@@ -747,6 +747,8 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
     type State = TranscriptState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        let ascii = self.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || self.system.mono();
         state.painted_area = area;
         state.block_regions.clear();
         // Keep state chrome flag aligned with paint-time ownership when host sets both.
@@ -762,7 +764,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
         if self.blocks.is_empty() {
             state.total_display_rows = 0;
             state.first_display_row = 0;
-            let style = if self.colorless {
+            let style = if colorless {
                 self.system.style(Role::TextMuted)
             } else {
                 self.system.style(Role::TextDisabled)
@@ -787,8 +789,8 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
         let view_start = state.first_display_row;
         let view_end = view_start.saturating_add(u64::from(area.height));
         let accepts = self.focused || state.focused;
-        let fold_open = if self.ascii { "v " } else { "▾ " };
-        let fold_closed = if self.ascii { "> " } else { "▸ " };
+        let fold_open = if ascii { "v " } else { "▾ " };
+        let fold_closed = if ascii { "> " } else { "▸ " };
         let sel_gutter = self.system.glyphs.selection_gutter();
 
         for (block_index, block) in self.blocks.iter().enumerate() {
@@ -801,16 +803,16 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
             }
             let selected = state.selected.as_ref() == Some(&block.id);
             let style = if selected && accepts {
-                if self.colorless {
+                if colorless {
                     self.system.style(Role::TextStrong)
                 } else {
                     self.system.style(Role::Accent)
                 }
             } else {
-                kind_style(self.system, block.kind, self.colorless)
+                kind_style(self.system, block.kind, colorless)
             };
 
-            let prefix = kind_prefix(block.kind, self.ascii);
+            let prefix = kind_prefix(block.kind, ascii);
             let mut region_y0: Option<u16> = None;
             let mut region_y1: u16 = area.y;
 

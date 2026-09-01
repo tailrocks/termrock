@@ -21,9 +21,7 @@ use ratatui_core::{
 use super::data_view::ColumnKind;
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{
-        DesignSystem, FocusEmphasis, ListRowVisualState, Role, SelectionChrome, SurfaceFamily,
-    },
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{LinePlacement, paint_line_overflow},
 };
 
@@ -814,16 +812,6 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
         }
     }
 
-    /// Alias for hosts that name the system explicitly.
-    #[must_use]
-    pub const fn from_system(
-        columns: &'a [Column<'a, ColumnId>],
-        rows: &'a [TableRow<'a, RowId>],
-        system: &'a crate::style::DesignSystem,
-    ) -> Self {
-        Self::new(columns, rows, system)
-    }
-
     /// Whether this surface owns keyboard focus this frame (host / scene).
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
@@ -1045,9 +1033,23 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .pointer
                     .is_some_and(|position| row_area.contains(position));
             let striped = matches!(self.recipe, TableRecipe::Striped) && painted % 2 == 1;
-            let style = row_style(self.tokens, row, selected, hovered, self.focused, striped);
-            let quiet = row_quiet_style(self.tokens, row, selected, hovered, self.focused, style);
-            paint_selection_gutter(self.tokens, buffer, area.x, y, selected, style);
+            let chrome = super::row_chrome::RowChrome::resolve(
+                self.tokens,
+                ListRowVisualState {
+                    selected,
+                    focused: selected && self.focused,
+                    hovered,
+                    enabled: row.enabled,
+                    loading: false,
+                    checked: false,
+                },
+            );
+            let style = row_style(self.tokens, row, &chrome, striped);
+            let quiet = if !row.enabled || row.style.is_some() {
+                style
+            } else {
+                chrome.secondary_style(style)
+            };
 
             // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
             let (show_leading_tier, show_badge_tier) =
@@ -1102,6 +1104,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     buffer.set_line(bx, y, badge, bw);
                 }
             }
+            chrome.paint(buffer, row_area);
+            super::surface::normalize_content_band(self.tokens, buffer, row_area);
             if owns_id && row.enabled {
                 state.row_regions.push(TableRowRegion {
                     id: row.id.clone(),
@@ -1130,29 +1134,13 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
 fn row_style(
     tokens: &DesignSystem,
     row: &TableRow<'_, impl Clone>,
-    selected: bool,
-    hovered: bool,
-    table_focused: bool,
+    chrome: &super::row_chrome::RowChrome,
     striped: bool,
 ) -> Style {
-    if let Some(style) = row.style {
-        return style;
-    }
-    if !row.enabled {
-        return tokens.palette.style(Role::TextDisabled);
-    }
-    let recipe = tokens.resolve_list_row(ListRowVisualState {
-        selected,
-        focused: selected && table_focused,
-        hovered,
-        enabled: row.enabled,
-        loading: false,
-        checked: false,
-    });
-    let mut style = if selected {
-        recipe.label.patch(recipe.tint)
-    } else if hovered {
-        recipe.label.patch(recipe.hover_wash)
+    let base = if let Some(style) = row.style {
+        style
+    } else if !row.enabled {
+        tokens.palette.style(Role::TextDisabled)
     } else if row.emphasis {
         tokens.palette.style(Role::Accent)
     } else if striped {
@@ -1160,69 +1148,7 @@ fn row_style(
     } else {
         tokens.palette.style(Role::Text)
     };
-    if selected && table_focused {
-        style = style.add_modifier(Modifier::BOLD);
-    }
-    style
-}
-
-/// The quiet tier for a row already painted in `base`.
-///
-/// Keeps the row's ground and its weight and lowers only the voice, so a
-/// numeric column inside a selected row stays inside the selection instead of
-/// falling out of it.
-fn row_quiet_style(
-    tokens: &DesignSystem,
-    row: &TableRow<'_, impl Clone>,
-    selected: bool,
-    hovered: bool,
-    table_focused: bool,
-    base: Style,
-) -> Style {
-    if !row.enabled || row.style.is_some() {
-        return base;
-    }
-    let recipe = tokens.resolve_list_row(ListRowVisualState {
-        selected,
-        focused: selected && table_focused,
-        hovered,
-        enabled: true,
-        loading: false,
-        checked: false,
-    });
-    recipe.secondary.fg.map_or(base, |fg| base.fg(fg))
-}
-
-fn paint_selection_gutter(
-    tokens: &DesignSystem,
-    buffer: &mut Buffer,
-    x: u16,
-    y: u16,
-    selected: bool,
-    style: Style,
-) {
-    let (glyph, gstyle) = if selected {
-        match tokens.selection {
-            SelectionChrome::Gutter | SelectionChrome::Tint => (
-                tokens.glyphs.selection_gutter(),
-                tokens.palette.style(Role::Accent),
-            ),
-            SelectionChrome::Fill => (" ", style),
-            SelectionChrome::Marker => (tokens.glyphs.selection_marker(), style),
-        }
-    } else {
-        (" ", style)
-    };
-    buffer.set_stringn(x, y, glyph, 1, gstyle);
-    buffer.set_stringn(x.saturating_add(1), y, " ", 1, style);
-    if selected
-        && matches!(
-            tokens.selection,
-            SelectionChrome::Fill | SelectionChrome::Marker
-        )
-    {
-        // Full-row fill applied by callers via style on cells; gutter stays quiet.
-    }
+    chrome.label_style(base)
 }
 
 fn content_width(visible: &[usize], widths: &[u16], gap: u16) -> u16 {
@@ -1392,25 +1318,9 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 let kind = table.columns[column_index].kind;
                 let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
-                    // A cell cursor is a cell: the Cell family's focus cue
-                    // says how it marks itself (plans/015 Step 1).
-                    cell_style = match table.tokens.focus_emphasis(SurfaceFamily::Cell) {
-                        FocusEmphasis::Reversed => cell_style.add_modifier(Modifier::REVERSED),
-                        FocusEmphasis::BoldKey => cell_style.add_modifier(Modifier::BOLD),
-                        FocusEmphasis::SelectionFill | FocusEmphasis::FocusTint => {
-                            cell_style.patch(table.tokens.style(Role::SelectionTint))
-                        }
-                        FocusEmphasis::BrightBorder | FocusEmphasis::PillGlyph => {
-                            cell_style.patch(table.tokens.style(Role::Focus))
-                        }
-                    };
-                }
-                if matches!(
-                    table.tokens.selection,
-                    SelectionChrome::Fill | SelectionChrome::Marker
-                ) && selected
-                {
-                    buffer.set_style(rect, cell_style);
+                    // Cell cursor is intentionally the only collection state
+                    // that reverses. Rows use gutter + tint.
+                    cell_style = cell_style.add_modifier(Modifier::REVERSED);
                 }
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
@@ -2345,24 +2255,27 @@ mod tests {
     }
 
     #[test]
-    fn selection_chrome_gutter_vs_fill() {
+    fn row_selection_is_stable_gutter_and_tint() {
         let columns = columns();
         let cells = cells();
         let rows = rows(&cells);
         let area = Rect::new(0, 0, 30, 4);
 
-        let gutter = DesignSystem::default().selection(SelectionChrome::Gutter);
+        let gutter = DesignSystem::default().selection(crate::style::SelectionChrome::Gutter);
         let mut state = TableState::new(Some(1));
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &gutter)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(0, 1)].symbol(), gutter.glyphs.selection_gutter());
 
-        let fill_sys = DesignSystem::default().selection(SelectionChrome::Fill);
+        let fill_sys = DesignSystem::default().selection(crate::style::SelectionChrome::Fill);
         let mut state = TableState::new(Some(1));
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &fill_sys)).render(area, &mut buffer, &mut state);
-        // Fill chrome keeps a quiet gutter slot.
-        assert_eq!(buffer[(0, 1)].symbol(), " ");
+        assert_eq!(buffer[(0, 1)].symbol(), fill_sys.glyphs.selection_gutter());
+        assert_eq!(
+            buffer[(5, 1)].bg,
+            fill_sys.style(Role::SelectionTint).bg.unwrap()
+        );
     }
 
     #[test]

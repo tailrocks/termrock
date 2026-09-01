@@ -1,12 +1,14 @@
 # TUI design research 2026 — reference languages, design law v2, component improvement plan
 
-**Status:** design SoT (research synthesis + binding rules + per-component plan)
+**Status:** binding shared design laws; historical component matrix
 **Audience:** design, implementers
 **Builds on:** `phosphor-obsidian-visual-direction.md`, `terminal-design-system.md`,
 `component-visual-richness-plan.md`, `product-audit.md`
 **Supersedes:** every rule in earlier docs that prescribes **underline as a focus,
 selection, or tab cue** (see §5.3 — underline is retired from the state vocabulary)
-**Scope:** the 48 components listed in §6 plus the shared styling system they inherit from.
+**Scope:** every public surface inherits the shared laws. The §6 matrix is a
+historical 48-surface implementation sample, not component inventory; the Rust
+inventory and generated docs catalog own membership and counts.
 **Companion SoTs:** [`tui-app-deep-analysis.md`](./tui-app-deep-analysis.md)
 (per-app cell-level extraction from 15 reference apps),
 [`tui-motion-system.md`](./tui-motion-system.md) (transitions/effects/pipeline),
@@ -337,7 +339,7 @@ border = the same single-line border (already non-color).
 
 ---
 
-## 6. Component improvement matrix (the 48)
+## 6. Historical component improvement sample
 
 Legend: **P0** = blocks premium feel, **P1** = cohesion, **P2** = polish.
 "Chrome" = border/padding/surface; "state" = focus/selection/hover paint.

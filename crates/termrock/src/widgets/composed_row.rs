@@ -55,11 +55,10 @@ impl<'a, Id> ComposedRow<'a, Id> {
     #[must_use]
     pub fn parts_for_width(&self, width: u16) -> ComposedRowParts<'a> {
         let mut parts = ComposedRowParts {
-            leading: if self.loading {
-                Some(Line::from("…"))
-            } else {
-                self.leading.clone()
-            },
+            // Busy chrome is resolved by the collection recipe, where the
+            // active GlyphSet is available. This projection never invents a
+            // Unicode/ASCII loading glyph on its own.
+            leading: self.leading.clone(),
             primary: self.primary.clone(),
             secondary: self.secondary.clone(),
             badge: self.badge.clone(),
@@ -328,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn loading_forces_ellipsis_leading() {
+    fn loading_leaves_glyph_ownership_to_collection_recipe() {
         let row = ComposedRow {
             id: 1,
             leading: Some(Line::from("!")),
@@ -340,7 +339,7 @@ mod tests {
             loading: true,
         };
         let parts = row.parts_for_width(40);
-        assert_eq!(parts.leading, Some(Line::from("…")));
+        assert_eq!(parts.leading, Some(Line::from("!")));
     }
 
     #[test]

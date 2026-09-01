@@ -37,7 +37,7 @@
 | 17 | Collapsible | covered | `Collapsible`, `Section` | Disclosure |
 | 18 | Combobox | covered | `Combobox` | Searchable select |
 | 19 | Command | covered | `CommandPalette`, `QuickOpen` | Command menu |
-| 20 | Context Menu | covered | `ContextMenu` (=`DropdownMenu`) | Keyboard/context menus |
+| 20 | Context Menu | covered | `DropdownMenu` | Keyboard/context menus |
 | 21 | Data Table | covered | `DataTable`, `DataView`, `ResultGrid` | Virtualized tables |
 | 22 | Date Picker | covered | `DateTimePicker` | Date/time/range |
 | 23 | Dialog | covered | `Dialog`, overlay stack | Modal chrome |
@@ -58,17 +58,17 @@
 | 38 | Message | covered | `MessageThread`, agent cards | Chat messages |
 | 39 | Message Scroller | covered | `Transcript`, `ScrollArea`, virtual lists | Message virtualization |
 | 40 | Native Select | N/A | `Select` | Browser `<select>`; use TermRock Select |
-| 41 | Navigation Menu | covered | `MenuNav`, `Sidebar` | Site nav peer |
+| 41 | Navigation Menu | covered | `NavigationList`, `Sidebar` | Site nav peer |
 | 42 | Pagination | covered | `Pagination` | Page chrome |
 | 43 | Popover | covered | `Popover` | Anchored overlay |
-| 44 | Progress | covered | `Progress`, `ProgressBar` | Determinate/indeterminate |
+| 44 | Progress | covered | `ProgressBar` | Determinate/indeterminate |
 | 45 | Questionnaire | covered | `QuestionFlow` | Multi-question HITL |
 | 46 | Radio Group | covered | `RadioGroup` | Exclusive options |
 | 47 | Resizable | covered | `ResizablePanelGroup`, `SplitPane` | Split resize |
 | 48 | Scroll Area | covered | `ScrollArea` | Scroll viewport |
 | 49 | Select | covered | `Select` | Option list |
 | 50 | Separator | covered | `Separator` | Dividers |
-| 51 | Sheet | covered | `Sheet` (= bottom `Drawer`) | Edge sheet |
+| 51 | Sheet | covered | `Drawer` with bottom placement | Edge sheet |
 | 52 | Sidebar | covered | `Sidebar` | App rail |
 | 53 | Skeleton | covered | `Skeleton` | Loading placeholders |
 | 54 | Slider | covered | `Slider` | Range control |

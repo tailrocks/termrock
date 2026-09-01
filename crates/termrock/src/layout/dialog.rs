@@ -7,7 +7,7 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 use crate::{
     scroll::{DialogScroll, effective_offset},
     style::{Density, DesignSystem, Role, RolePalette},
-    widgets::{Panel, PanelChrome},
+    widgets::{Panel, PanelChrome, PanelVariant},
 };
 
 /// Minimal dialog shell: clear area, paint bordered block, return inner area.
@@ -21,14 +21,14 @@ pub fn render_dialog_shell(
 ) -> Rect {
     Clear.render(area, frame.buffer_mut());
 
-    let mut panel = Panel::new(system).emphasis(emphasis);
+    let mut panel = Panel::new(system)
+        .variant(PanelVariant::Bordered)
+        .emphasis(emphasis);
     if let Some(title) = title {
         panel = panel.title(title);
     }
-    let block = panel.block();
-
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
+    let inner = panel.inner(area);
+    panel.paint(area, frame.buffer_mut(), None);
     inner
 }
 

@@ -1194,8 +1194,23 @@ impl DatabaseWorkbenchState {
             DatabaseConnGate::AuthRequired => "auth",
             DatabaseConnGate::Error => "error",
         };
+        let conn_status = match self.conn_gate {
+            DatabaseConnGate::Connected => crate::widgets::SemanticStatus::Online,
+            DatabaseConnGate::Disconnected | DatabaseConnGate::Offline => {
+                crate::widgets::SemanticStatus::Offline
+            }
+            DatabaseConnGate::Reconnecting => crate::widgets::SemanticStatus::Running,
+            DatabaseConnGate::AuthRequired => crate::widgets::SemanticStatus::Warning,
+            DatabaseConnGate::Error => crate::widgets::SemanticStatus::Failed,
+        };
         let run = self.query.run.id();
         let tx = self.tx_status.label();
+        let tx_status = match self.tx_status {
+            DatabaseTxStatus::None => crate::widgets::SemanticStatus::Idle,
+            DatabaseTxStatus::Open => crate::widgets::SemanticStatus::Waiting,
+            DatabaseTxStatus::Active => crate::widgets::SemanticStatus::Running,
+            DatabaseTxStatus::Failed => crate::widgets::SemanticStatus::Failed,
+        };
         let tab = self
             .active_tab()
             .map(|t| t.title.as_str())
@@ -1203,19 +1218,24 @@ impl DatabaseWorkbenchState {
         // StatusSlot wants 'static content — use stable static labels for gate/run/tx;
         // tab title may not be static so use focus zone for dynamic-ish info.
         let mut slots = vec![
-            StatusSlot::connection("conn", conn).priority(10),
-            StatusSlot::mode("tx", tx).priority(20),
-            StatusSlot::context("run", run).priority(30),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
-            StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(90),
+            StatusSlot::connection("conn", conn)
+                .semantic(conn_status)
+                .priority(90),
+            StatusSlot::mode("tx", tx).semantic(tx_status).priority(60),
+            StatusSlot::context("run", run)
+                .semantic(self.query.run.semantic())
+                .priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
+            StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(10),
         ];
         let _ = tab;
         if self.last_error.is_some() {
             slots.insert(
                 0,
                 StatusSlot::new("err", "error")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         slots

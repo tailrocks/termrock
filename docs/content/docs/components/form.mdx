@@ -1,93 +1,15 @@
 ---
-title: Form
-description: 'A responsive form layout with stable focus, validation, and hit geometry.'
-component: Form
-demo: form/responsive
-interaction: editor-form
-actions:
-  - "click to focus"
-  - "type to edit"
-  - "paste"
-  - "arrow keys"
-expectedOutcomes:
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "Navigation moves visible focus or selection and preserves it for the next event."
+title: "Form"
+description: "A responsive form layout with stable focus, validation, and hit geometry."
+catalogId: Form
 source: crates/termrock/src/widgets/form.rs
+tags:
+  - "input"
+  - "widget"
+aliases: []
 ---
 
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="form/responsive" interactive caption="Form · Responsive form — live shared Rust state" />
-
-## Try it
-
-- `click to focus`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `type to edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `paste`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | covered |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `form/compact` | Form compact | paint-only |
-| `form/in-app` | In application | interactive |
-| `form/narrow` | Narrow form | paint-only |
-| `form/responsive` | Responsive form | interactive |
-| `form/unicode` | Unicode Form | paint-only |
-| `form/validation` | Form validation | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `form/responsive`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn form(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let fields = form_fields();
-    let sections = [Fieldset::new("General", &fields).description("Profile settings")];
-    let mut state = FormState::new();
-    frame.render_stateful_widget(
-        &Form::new(&sections, system).focused_field(Some(&"name")),
-        area,
-        &mut state,
-    );
-}
-```
-
-## Migrated handbook guidance
-
-# Form
-
 Responsive form of sections and fields. **Field focus is host-owned** (`InteractionScene`).
-
 
 ## When to use
 
@@ -127,40 +49,21 @@ Responsive form of sections and fields. **Field focus is host-owned** (`Interact
 
 Two columns when width allows (`ResponsiveSurface::Form`); else single column. Stories: `form/responsive`, `form/narrow`, `form/unicode`.
 
-## Related
+## Related public API
 
-InteractionScene · HostFrame · FormWizard · migration `0067`
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
 
-## Common mistakes
+## Status
 
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
+| Variant | Meaning |
+|---------|---------|
+| `Help` | Neutral help |
+| `Warning` | Non-blocking |
+| `Error` | Blocking validation |
+| `Pending` | Async validation |
 
-## Test recipe
+Compose `Fieldset` through [`Form`](/docs/components/form). Caption-only chrome without a value row: [`FieldCaption`](/docs/components/field-caption) (Label + Description).
 
-Mount `form/responsive`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
+## Related public API
 
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `form/responsive` | Responsive form | **Primary (live preview)** |
-| `form/compact` | Form compact | Compact density |
-| `form/narrow` | Narrow form | Narrow terminal |
-| `form/unicode` | Unicode Form | Unicode / wide glyphs |
-| `form/validation` | Form validation | validation |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/form.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/form.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `form/responsive`
-
-## Seen in applications
-
-<SeenInApplications component="Form" />
+This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.

@@ -722,12 +722,6 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
         self
     }
 
-    /// Legacy render (immutable state).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &BreadcrumbsState) {
-        let mut s = state.clone();
-        let _ = self.paint(area, buffer, &mut s);
-    }
-
     /// Paint; returns hit list for mouse routing.
     pub fn paint(
         &self,

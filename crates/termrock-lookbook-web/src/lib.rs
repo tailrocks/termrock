@@ -118,4 +118,20 @@ mod tests {
         store.sessions.remove(&first);
         assert!(store.get_mut(first).is_err());
     }
+
+    #[test]
+    fn update_json_exposes_deadline_kind_and_semantic_revision() {
+        let mut store = SessionStore::default();
+        let handle = store.mount("button/activation", 28, 3).unwrap();
+        let event: DemoEvent =
+            serde_json::from_str(r#"{"type":"key","key":"Enter","kind":"press"}"#).unwrap();
+        let update = store.get_mut(handle).unwrap().dispatch(event).unwrap();
+        let json = serde_json::to_value(update).unwrap();
+        assert_eq!(json["deadlineKind"], "functional");
+        assert!(
+            json["semanticRevision"]
+                .as_u64()
+                .is_some_and(|value| value > 0)
+        );
+    }
 }

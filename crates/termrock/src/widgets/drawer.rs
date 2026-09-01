@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **Drawer** and **Sheet** — edge-mounted secondary surfaces.
+//! **Drawer** — edge-mounted secondary surfaces.
 //!
 //! **Mission.** Responsive inspectors, task rails, filters, and details that
 //! replace docked sidebars/inspector panes under width pressure. Placement on
@@ -9,8 +9,8 @@
 //! focus trap (when modal), opener restoration, and nested child overlays via
 //! [`OverlayStack`].
 //!
-//! **Sheet.** [`Sheet`] is the same surface with a bottom-edge default (mobile
-//! sheet metaphor / shadcn Sheet). Shared state and paint.
+//! The bottom-edge drawer recipe provides the mobile sheet presentation while
+//! sharing the same state and paint implementation.
 //!
 //! **Host owns.** Domain selection, scroll of the **underlying** main view,
 //! process policy. Opening a drawer must not clear host list/table selection
@@ -29,7 +29,7 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::Modifier,
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 use ratatui_widgets::borders::Borders;
 
@@ -74,7 +74,7 @@ pub enum DrawerEdge {
     Right,
     /// Top edge.
     Top,
-    /// Bottom edge (default for [`Sheet`]).
+    /// Bottom edge (default for the mobile sheet presentation).
     Bottom,
 }
 
@@ -212,17 +212,6 @@ pub fn drawer_presentation_for(
 }
 
 // ── Placement / open ────────────────────────────────────────────────────────
-
-/// Places a drawer for edge + size (uses Drawer policy placement).
-#[must_use]
-pub fn place_drawer(bounds: Rect, size: OverlaySize) -> Rect {
-    place_drawer_on_edge(
-        bounds,
-        DrawerEdge::Right,
-        size,
-        DrawerPresentation::Expanded,
-    )
-}
 
 /// Place on a specific edge with presentation.
 #[must_use]
@@ -502,6 +491,20 @@ impl DrawerState {
     #[must_use]
     pub const fn is_open(&self) -> bool {
         self.open
+    }
+
+    /// Synchronizes host-owned visibility for embedded/story rendering.
+    ///
+    /// Stack-backed drawers should use [`Self::open_on_stack`] so geometry,
+    /// modality, and opener restoration remain coupled.
+    pub fn set_open(&mut self, on: bool) {
+        self.open = on && self.enabled;
+        self.focused = self.open;
+        if !self.open {
+            self.accepts_input = false;
+            self.resizing = false;
+            self.resize_anchor = None;
+        }
     }
 
     /// Edge.
@@ -832,16 +835,7 @@ impl DrawerState {
         self.focused = true;
         DrawerOutcome::FocusEntered
     }
-
-    /// Legacy open flag helper (menu_nav API).
-    pub const fn open(&mut self) {
-        self.open = true;
-        self.focused = true;
-    }
 }
-
-/// Sheet state alias (bottom-edge drawer).
-pub type SheetState = DrawerState;
 
 // ── Widget ──────────────────────────────────────────────────────────────────
 
@@ -855,25 +849,10 @@ pub struct Drawer<'a> {
     colorless: bool,
 }
 
-/// Sheet paint alias.
-pub type Sheet<'a> = Drawer<'a>;
-
 impl<'a> Drawer<'a> {
-    /// Title convenience (legacy `Drawer::new(title, system)`).
+    /// Creates an untitled drawer; add visible chrome through slot builders.
     #[must_use]
-    pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            title: Some(title),
-            footer: None,
-            ascii: false,
-            colorless: false,
-        }
-    }
-
-    /// Slot-oriented without default title.
-    #[must_use]
-    pub const fn slots(system: &'a DesignSystem) -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
             title: None,
@@ -919,12 +898,25 @@ impl<'a> Drawer<'a> {
         }
         state.slots.root = area;
 
-        let border = if state.focused && !self.colorless {
-            Role::BorderFocused
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
         } else {
-            Role::Border
+            self.system
         };
-        let border_style = self.system.style(border);
+        let recipe = if state.focused {
+            super::SurfaceRecipe::OverlayFocused
+        } else {
+            super::SurfaceRecipe::Overlay
+        };
+        let handle_style = surface_system
+            .surface_recipe(recipe)
+            .border
+            .unwrap_or_else(|| self.system.style(Role::Border));
         // The tier rides the design system into every widget; a private copy
         // on the state could disagree with it, and did.
         let no_motion = !self.system.motion.allows_ambient() || self.ascii;
@@ -938,11 +930,10 @@ impl<'a> Drawer<'a> {
             DrawerEdge::Bottom => Borders::ALL & !Borders::TOP,
             DrawerEdge::Top => Borders::ALL & !Borders::BOTTOM,
         };
-        super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
             .borders(borders)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
 
@@ -973,7 +964,7 @@ impl<'a> Drawer<'a> {
         };
         for y in handle.y..handle.bottom() {
             for x in handle.x..handle.right() {
-                buffer.set_stringn(x, y, handle_glyph, 1, border_style);
+                buffer.set_stringn(x, y, handle_glyph, 1, handle_style);
             }
         }
 
@@ -1135,6 +1126,7 @@ impl<'a> Drawer<'a> {
                 .label("drawer")
                 .description(desc)
                 .focusable(state.enabled && state.accepts_input)
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
                     expanded: state.open,
@@ -1157,23 +1149,6 @@ impl StatefulWidget for Drawer<'_> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
-    }
-}
-
-// Legacy Widget without state (lookbook snapshots).
-impl Widget for &Drawer<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = DrawerState::new();
-        state.open = true;
-        state.focused = true;
-        state.set_header_rows(1);
-        self.paint(area, buffer, &mut state);
-    }
-}
-
-impl Widget for Drawer<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -1362,6 +1337,42 @@ mod tests {
     }
 
     #[test]
+    fn mouse_resize_uses_the_painted_handle_and_input_gate() {
+        let system = DesignSystem::default();
+        let mut state = DrawerState::new();
+        state.open = true;
+        state.accepts_input = true;
+        state.set_depth(20);
+        let area = Rect::new(0, 0, 24, 12);
+        let mut buffer = Buffer::empty(area);
+        Drawer::new(&system).paint(area, &mut buffer, &mut state);
+        let handle = state.slots.handle;
+        assert!(!handle.is_empty());
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(handle.x, handle.y),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(down), DrawerOutcome::Ignored);
+        assert!(state.resizing);
+
+        state.set_enabled(false);
+        let drag = MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            position: Position::new(handle.x.saturating_sub(2), handle.y),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert_eq!(state.handle_mouse(drag), DrawerOutcome::Ignored);
+        assert_eq!(state.depth(), 20);
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Drawer::new(&system).register_semantic(&mut scene, "drawer", area, &state);
+        let node = scene.nodes().first().expect("drawer semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
+    }
+
+    #[test]
     fn slots_header_body_footer() {
         let system = DesignSystem::default();
         let mut state = DrawerState::new();
@@ -1370,7 +1381,8 @@ mod tests {
         state.set_footer_rows(1);
         let area = Rect::new(0, 0, 30, 16);
         let mut buf = Buffer::empty(area);
-        Drawer::new("Inspector", &system)
+        Drawer::new(&system)
+            .title(Some("Inspector"))
             .footer(Some("esc cancel"))
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.header.height, 1);
@@ -1408,7 +1420,8 @@ mod tests {
         state.open = true;
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
-        Drawer::new("Rail", &system)
+        Drawer::new(&system)
+            .title(Some("Rail"))
             .ascii(true)
             .paint(area, &mut buf, &mut state);
         let text: String = buf
@@ -1425,7 +1438,7 @@ mod tests {
         let mut state = DrawerState::new();
         state.open = true;
         let mut scene = SemanticScene::<&str, ()>::default();
-        Drawer::new("D", &system).register_semantic(
+        Drawer::new(&system).title(Some("D")).register_semantic(
             &mut scene,
             "d",
             Rect::new(0, 0, 20, 10),
@@ -1486,11 +1499,10 @@ mod tests {
         for _ in 0..200 {
             terminal
                 .draw(|f| {
-                    Drawer::new("Filters", &system).footer(Some("esc")).paint(
-                        f.area(),
-                        f.buffer_mut(),
-                        &mut state,
-                    );
+                    Drawer::new(&system)
+                        .title(Some("Filters"))
+                        .footer(Some("esc"))
+                        .paint(f.area(), f.buffer_mut(), &mut state);
                 })
                 .unwrap();
         }
@@ -1507,7 +1519,9 @@ mod tests {
         s1.focused = true;
         let mut t1 = Terminal::new(TestBackend::new(28, 12)).unwrap();
         t1.draw(|f| {
-            Drawer::new("Details", &system).paint(f.area(), f.buffer_mut(), &mut s1);
+            Drawer::new(&system)
+                .title(Some("Details"))
+                .paint(f.area(), f.buffer_mut(), &mut s1);
         })
         .unwrap();
         let a: String = t1
@@ -1522,7 +1536,9 @@ mod tests {
         s2.focused = true;
         let mut t2 = Terminal::new(TestBackend::new(28, 12)).unwrap();
         t2.draw(|f| {
-            Drawer::new("Details", &system).paint(f.area(), f.buffer_mut(), &mut s2);
+            Drawer::new(&system)
+                .title(Some("Details"))
+                .paint(f.area(), f.buffer_mut(), &mut s2);
         })
         .unwrap();
         let b: String = t2
@@ -1534,42 +1550,5 @@ mod tests {
             .collect();
         assert_eq!(a, b);
         assert!(a.contains("Details"));
-    }
-
-    #[test]
-    fn legacy_widget_title_paint() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 20, 8);
-        let mut buf = Buffer::empty(area);
-        Widget::render(&Drawer::new("Settings", &system), area, &mut buf);
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(text.contains("Settings"), "{text}");
-    }
-
-    #[test]
-    fn place_drawer_compat() {
-        let bounds = Rect::new(0, 0, 80, 24);
-        let size = OverlaySize {
-            width: 28,
-            height: 24,
-            min_width: 12,
-            min_height: 3,
-            max_width: 40,
-            max_height: 0,
-        };
-        let r = place_drawer(bounds, size);
-        assert_eq!(
-            r,
-            place_drawer_on_edge(
-                bounds,
-                DrawerEdge::Right,
-                size,
-                DrawerPresentation::Expanded
-            )
-        );
     }
 }

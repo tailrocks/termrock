@@ -1,7 +1,7 @@
 {
   "title": "Application patterns",
   "pagesIndex": "../patterns",
-  "defaultOpen": true,
+  "defaultOpen": false,
   "pages": [
     "activity-shelf",
     "agent-shell",

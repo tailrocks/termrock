@@ -590,22 +590,6 @@ impl Widget for Kbd<'_> {
     }
 }
 
-/// Legacy helper: format chord into caller buffer (compat with old `Kbd::from_chord`).
-#[must_use]
-pub fn kbd_from_chord<'a>(
-    chord: KeyChord,
-    buf: &'a mut String,
-    tokens: &'a DesignSystem,
-) -> Kbd<'a> {
-    let fmt = ChordFormat::from_glyphs(tokens.glyphs);
-    *buf = format_chord(chord, fmt);
-    Kbd {
-        label: Cow::Borrowed(buf.as_str()),
-        system: tokens,
-        variant: KbdVariant::Keycap,
-    }
-}
-
 // ── ShortcutHint ────────────────────────────────────────────────────────────
 
 /// Chord + semantic command label.

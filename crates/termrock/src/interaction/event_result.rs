@@ -129,14 +129,14 @@ pub enum OverlayRequest {
 /// #[derive(Debug, PartialEq)]
 /// enum Msg { Saved }
 ///
-/// let r = EventResult::emit(Msg::Saved);
-/// assert!(r.is_consumed());
+/// let r: EventResult<Msg> = EventResult::emit(Msg::Saved);
+/// assert!(r.consumed());
 /// assert_eq!(r.message(), Some(&Msg::Saved));
 /// assert_eq!(r.redraw(), Redraw::Now);
 /// assert_eq!(r.propagation(), Propagation::Stop);
 ///
 /// let ignored = EventResult::<Msg>::ignored();
-/// assert!(!ignored.is_consumed());
+/// assert!(!ignored.consumed());
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EventResult<M, FocusId = ()> {
@@ -218,12 +218,6 @@ impl<M, FocusId> EventResult<M, FocusId> {
     #[must_use]
     pub const fn consumed(&self) -> bool {
         self.propagation.is_consumed()
-    }
-
-    /// Alias of [`Self::consumed`].
-    #[must_use]
-    pub const fn is_consumed(&self) -> bool {
-        self.consumed()
     }
 
     /// Propagation policy.
@@ -386,28 +380,6 @@ pub fn compose_capture<M, FocusId>(
     } else {
         parent.merge(child())
     }
-}
-
-/// Converts a legacy ignored/handled pair into [`EventResult`].
-#[must_use]
-pub fn from_consumed_flag<M, FocusId>(
-    consumed: bool,
-    message: Option<M>,
-) -> EventResult<M, FocusId> {
-    if !consumed && message.is_none() {
-        return EventResult::ignored();
-    }
-    let mut r = if let Some(m) = message {
-        EventResult::emit(m)
-    } else if consumed {
-        EventResult::changed()
-    } else {
-        EventResult::ignored()
-    };
-    if !consumed {
-        r = r.with_propagation(Propagation::Bubble);
-    }
-    r
 }
 
 impl<M, FocusId> EventResult<M, FocusId> {

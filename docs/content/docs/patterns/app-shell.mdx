@@ -1,38 +1,13 @@
 ---
-title: App Shell
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: AppShell
-demo: app-shell/workbench
-interaction: activation
+title: "App Shell"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: AppShell
 source: crates/termrock/src/patterns/app_shell.rs
 classification: application
+tags:
+  - "application"
+aliases: []
+uses: []
+supportingTypes:
+  - "Layout"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="app-shell/workbench" interactive caption="App Shell · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 100×28
-
-Composed public building blocks: `Layout`.
-
-## Workflow
-
-- `Tab/arrow traverse zones`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `S toggle sidebar`: forward this normalized action to the mounted public pattern state.
-- `resize host`: change the same mounted layout/value; no alternate screenshot is mounted.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/app_shell.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/app_shell.rs)
-- Demo: `app-shell/workbench`

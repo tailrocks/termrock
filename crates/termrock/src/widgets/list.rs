@@ -31,7 +31,7 @@ use crate::{
     style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
-use super::{ComposedRow, Selection};
+use super::Selection;
 
 /// How a pointer press on a row is interpreted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -79,14 +79,13 @@ const fn list_row_height(density: Density, has_secondary_below: bool) -> u16 {
 
 /// Narrow-terminal drop order (lowest survival first).
 ///
-/// shortcut → actions → badge → status → secondary → trailing → leading → primary
+/// shortcut → actions → badge → status → secondary → leading → primary
 pub const LIST_NARROW_DROP_ORDER: &[&str] = &[
     "shortcut",
     "actions",
     "badge",
     "status",
     "secondary",
-    "trailing",
     "leading",
     "primary",
 ];
@@ -115,7 +114,7 @@ impl RowRole {
 /// A stable row in a selectable list with composed-part anatomy.
 ///
 /// Parts: leading · primary(label) · secondary · status · badge · actions ·
-/// shortcut · trailing. Narrow drop order: [`LIST_NARROW_DROP_ORDER`].
+/// shortcut. Narrow drop order: [`LIST_NARROW_DROP_ORDER`].
 pub struct ListRow<'a, Id> {
     /// Stable identity used for selection and activation.
     pub id: Id,
@@ -133,8 +132,6 @@ pub struct ListRow<'a, Id> {
     pub shortcut: Option<&'a str>,
     /// Optional trailing action labels (display; host handles activation).
     pub actions: Option<Line<'a>>,
-    /// Optional metadata aligned at the trailing edge (legacy + composed).
-    pub trailing: Option<Line<'a>>,
     /// When set, replaces standard composed paint for the content band.
     pub custom: Option<Line<'a>>,
     /// Interaction role controlling selection and hit testing.
@@ -158,7 +155,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -178,7 +174,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Separator,
             enabled: true,
@@ -198,7 +193,6 @@ impl<'a, Id> ListRow<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::GroupHeader,
             enabled: true,
@@ -248,13 +242,6 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
-    /// Sets legacy trailing metadata (also used as badge when badge is unset).
-    #[must_use]
-    pub fn trailing(mut self, trailing: Line<'a>) -> Self {
-        self.trailing = Some(trailing);
-        self
-    }
-
     /// Full custom content band (replaces composed primary cluster).
     #[must_use]
     pub fn custom(mut self, line: Line<'a>) -> Self {
@@ -280,28 +267,6 @@ impl<'a, Id> ListRow<'a, Id> {
     #[must_use]
     pub fn plain_label(&self) -> String {
         line_plain(&self.label)
-    }
-
-    /// Projects this row into composed anatomy for contraction/paint.
-    #[must_use]
-    pub fn composed(&self) -> ComposedRow<'a, ()>
-    where
-        Id: Clone,
-    {
-        ComposedRow {
-            id: (),
-            leading: self.leading.clone(),
-            primary: self.custom.clone().unwrap_or_else(|| self.label.clone()),
-            secondary: self.secondary.clone(),
-            badge: self
-                .badge
-                .clone()
-                .or_else(|| self.status.clone())
-                .or_else(|| self.trailing.clone()),
-            shortcut: self.shortcut,
-            enabled: self.enabled,
-            loading: self.loading,
-        }
     }
 }
 
@@ -1037,12 +1002,6 @@ impl<'a, Id> List<'a, Id> {
         }
     }
 
-    /// Creates a list from a [`DesignSystem`] (preferred public paint root).
-    #[must_use]
-    pub const fn from_system(rows: &'a [ListRow<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self::new(rows, system)
-    }
-
     /// Whether this surface owns keyboard focus this frame (host / scene).
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
@@ -1180,38 +1139,36 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
-            let recipe = self.tokens.resolve_list_row(ListRowVisualState {
+            let visual_state = ListRowVisualState {
                 selected,
                 focused: self.focused && selected,
                 hovered,
                 enabled: row.enabled,
                 loading: row.loading,
                 checked,
-            });
-            let style = if hovered && row.enabled && !selected {
+            };
+            let recipe = self.tokens.resolve_list_row(visual_state);
+            let chrome = super::row_chrome::RowChrome::resolve(self.tokens, visual_state);
+            let base_style = if hovered && row.enabled && !selected {
                 recipe.hover
             } else if checked && !selected {
                 self.tokens.style(Role::Accent)
             } else {
                 recipe.label
             };
-            if recipe.use_fill {
-                buffer.set_style(rect, style);
-            } else if recipe.use_tint {
-                buffer.set_style(rect, recipe.tint);
-            } else if recipe.hover_fill {
-                buffer.set_style(rect, recipe.hover_wash);
-            }
+            let style = chrome.label_style(base_style);
+            let secondary_style = chrome.secondary_style(recipe.secondary);
+            let shortcut_style = chrome.secondary_style(recipe.shortcut);
+            let trailing_style = chrome.secondary_style(recipe.trailing);
             if matches!(row.role, RowRole::Separator) {
                 let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
                 if rect.width > 2 {
                     let label_x = rect.x.saturating_add(2);
-                    let parts = row.composed().parts_for_width(rect.width.saturating_sub(2));
                     buffer.set_line(
                         label_x,
                         rect.y,
-                        &parts.primary,
+                        &row.label,
                         rect.right().saturating_sub(label_x),
                     );
                 }
@@ -1224,10 +1181,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 buffer.set_style(rect, style);
             } else {
                 // Stable 2-cell gutter slot for quiet selection chrome.
-                if let Some((glyph, gstyle)) = recipe.gutter {
-                    buffer.set_stringn(rect.x, rect.y, glyph, 1, gstyle);
-                    buffer.set_stringn(rect.x.saturating_add(1), rect.y, " ", 1, style);
-                } else if recipe.show_gutter_slot {
+                if recipe.show_gutter_slot {
                     buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
                 }
                 let check_x = rect.x.saturating_add(2);
@@ -1240,11 +1194,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         buffer.set_line(content_x, rect.y, custom, content_w);
                         buffer.set_style(Rect::new(content_x, rect.y, content_w, 1), style);
                     } else {
-                        let badge = row
-                            .badge
-                            .as_ref()
-                            .or(row.status.as_ref())
-                            .or(row.trailing.as_ref());
+                        let status = row.status.as_ref();
+                        let badge = row.badge.as_ref();
                         let mut budget = content_w.saturating_sub(1);
                         let shortcut_need = row
                             .shortcut
@@ -1263,7 +1214,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     .saturating_add(1)
                             })
                             .unwrap_or(0);
-                        // Drop order: shortcut → actions → badge/status → secondary → leading → primary.
+                        // Optional chrome is resolved independently. Status has
+                        // higher survival than badge under pressure.
                         let show_shortcut = row.shortcut.is_some()
                             && content_w >= 12
                             && budget >= shortcut_need + 2;
@@ -1282,6 +1234,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             budget = budget.saturating_sub(actions_need);
                         } else if show_action_marker {
                             budget = budget.saturating_sub(2);
+                        }
+                        let status_need = status
+                            .map(|s| {
+                                u16::try_from(s.width())
+                                    .unwrap_or(u16::MAX)
+                                    .saturating_add(1)
+                            })
+                            .unwrap_or(0);
+                        let show_status =
+                            status.is_some() && content_w >= 8 && budget > status_need;
+                        if show_status {
+                            budget = budget.saturating_sub(status_need);
                         }
                         let badge_need = badge
                             .map(|b| {
@@ -1340,7 +1304,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                         rect.y,
                                         recipe.loading_glyph,
                                         usize::from(lw),
-                                        recipe.secondary,
+                                        secondary_style,
                                     );
                                     x = x.saturating_add(lw).saturating_add(1);
                                 }
@@ -1355,7 +1319,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 }
                             }
                         }
-                        let reserve = if show_badge { badge_need } else { 0 }
+                        let reserve = if show_status { status_need } else { 0 }
+                            .saturating_add(if show_badge { badge_need } else { 0 })
                             .saturating_add(if show_shortcut { shortcut_need } else { 0 });
                         let mid_end = right.saturating_sub(reserve);
                         let primary_budget = mid_end.saturating_sub(x);
@@ -1379,7 +1344,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     .min(mid_end.saturating_sub(x));
                                 if sw > 0 {
                                     buffer.set_line(x, rect.y, sec, sw);
-                                    buffer.set_style(Rect::new(x, rect.y, sw, 1), recipe.secondary);
+                                    buffer.set_style(Rect::new(x, rect.y, sw, 1), secondary_style);
                                 }
                             }
                         }
@@ -1395,7 +1360,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     rect.y,
                                     sc,
                                     usize::from(w),
-                                    recipe.shortcut,
+                                    shortcut_style,
                                 );
                             }
                         }
@@ -1422,7 +1387,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             if w > 0 {
                                 cursor = cursor.saturating_sub(w);
                                 buffer.set_line(cursor, rect.y, act, w);
-                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.shortcut);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), shortcut_style);
                             }
                         }
                         if show_badge && let Some(b) = badge {
@@ -1435,7 +1400,21 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 }
                                 cursor = cursor.saturating_sub(w);
                                 buffer.set_line(cursor, rect.y, b, w);
-                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), recipe.trailing);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), trailing_style);
+                            }
+                        }
+                        if show_status && let Some(status) = status {
+                            let w = u16::try_from(status.width())
+                                .unwrap_or(u16::MAX)
+                                .min(cursor.saturating_sub(content_x));
+                            if w > 0 {
+                                if show_badge || show_shortcut || show_actions || show_action_marker
+                                {
+                                    cursor = cursor.saturating_sub(1);
+                                }
+                                cursor = cursor.saturating_sub(w);
+                                buffer.set_line(cursor, rect.y, status, w);
+                                buffer.set_style(Rect::new(cursor, rect.y, w, 1), secondary_style);
                             }
                         }
                     } // end non-custom
@@ -1452,10 +1431,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         );
                         if !sub.is_empty() {
                             buffer.set_line(sub.x, sub.y, sec, sub.width);
-                            buffer.set_style(sub, recipe.secondary);
+                            buffer.set_style(sub, secondary_style);
                         }
                     }
                 }
+                chrome.paint(buffer, Rect::new(rect.x, rect.y, rect.width, rh));
             }
             let hit_h = rh;
             if row.enabled && row.role.is_navigable() && !rect.is_empty() {
@@ -1624,7 +1604,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Separator,
                 enabled: true,
@@ -1639,7 +1618,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: false,
@@ -1654,7 +1632,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1669,7 +1646,6 @@ mod tests {
                 badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: None,
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1747,7 +1723,7 @@ mod tests {
     }
 
     #[test]
-    fn marker_selection_paints_triangle_into_full_fill() {
+    fn historical_marker_setting_cannot_bypass_canonical_collection_chrome() {
         let rows = rows();
         let system = DesignSystem::default().selection(crate::style::SelectionChrome::Marker);
         let mut state = ListState::new(Some("second"));
@@ -1760,23 +1736,28 @@ mod tests {
             .find(|r| r.id == "second")
             .unwrap()
             .area;
-        let fill_bg = system.style(Role::Selection).bg.unwrap();
+        let tint_bg = system.style(Role::SelectionTint).bg.unwrap();
         let marker = &buffer[(row.x, row.y)];
         assert_eq!(
             marker.symbol(),
-            system.glyphs.selection_marker(),
-            "the selected row leads with the marker triangle"
+            system.glyphs.selection_gutter(),
+            "all collections use the same selected-row gutter"
         );
         assert_eq!(
-            marker.bg, fill_bg,
-            "the marker speaks the fill's own foreground/background"
+            marker.bg, tint_bg,
+            "historical marker configuration resolves to the quiet tint"
         );
         let label = &buffer[(row.x.saturating_add(2), row.y)];
-        assert_eq!(label.bg, fill_bg, "marker chrome fills the whole row");
+        assert_eq!(label.bg, tint_bg, "the quiet tint owns the row ground");
+        assert_eq!(
+            label.fg,
+            system.style(Role::TextStrong).fg.unwrap(),
+            "selected copy owns a contrast-safe foreground"
+        );
     }
 
     #[test]
-    fn trailing_cells_align_right_and_wide_labels_truncate_first() {
+    fn badge_cells_align_right_and_wide_labels_truncate_first() {
         let rows = [
             ListRow {
                 id: "wide",
@@ -1784,10 +1765,9 @@ mod tests {
                 leading: None,
                 secondary: None,
                 status: None,
-                badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: Some(Line::from("9 KiB")),
+                badge: Some(Line::from("9 KiB")),
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1799,10 +1779,9 @@ mod tests {
                 leading: None,
                 secondary: None,
                 status: None,
-                badge: None,
                 shortcut: None,
                 actions: None,
-                trailing: Some(Line::from("1 B")),
+                badge: Some(Line::from("1 B")),
                 custom: None,
                 role: RowRole::Item,
                 enabled: true,
@@ -1817,7 +1796,7 @@ mod tests {
 
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
 
-        // Right edge of full row holds trailing badge.
+        // Right edge of full row holds the badge.
         assert_eq!(buffer[(9, 0)].symbol(), "9");
         assert_eq!(buffer[(13, 0)].symbol(), "B");
         assert_eq!(buffer[(11, 1)].symbol(), "1");
@@ -1827,9 +1806,9 @@ mod tests {
     }
 
     #[test]
-    fn narrow_trailing_cell_clips_only_at_grapheme_boundaries() {
-        let mut row = ListRow::item("wide-trailing", Line::from("x"));
-        row.trailing = Some(Line::from("🧪Z"));
+    fn narrow_badge_cell_clips_only_at_grapheme_boundaries() {
+        let mut row = ListRow::item("wide-badge", Line::from("x"));
+        row.badge = Some(Line::from("🧪Z"));
         let rows = [row];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
@@ -2035,7 +2014,7 @@ mod tests {
     }
 
     #[test]
-    fn fluent_row_builder_and_from_system() {
+    fn fluent_row_builder_and_canonical_constructor() {
         let row = ListRow::item("x", Line::from("X"))
             .leading(Line::from("*"))
             .secondary(Line::from("s"))
@@ -2046,7 +2025,7 @@ mod tests {
         let mut state = ListState::new(Some("x"));
         let area = Rect::new(0, 0, 40, 1);
         let mut buffer = Buffer::empty(area);
-        (&List::from_system(&rows, &system)).render(area, &mut buffer, &mut state);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
         let text: String = (0..40)
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
@@ -2195,6 +2174,34 @@ mod tests {
             painted.contains("CUSTOM") || painted.contains("Job"),
             "{painted}"
         );
+    }
+
+    #[test]
+    fn status_and_badge_are_independent_and_status_survives_badge_contraction() {
+        let rows = [ListRow::item("job", Line::from("Job"))
+            .status(Line::from("! run"))
+            .badge(Line::from("1234ms"))];
+        let tokens = DesignSystem::default();
+
+        let mut full_state = ListState::new(Some("job"));
+        let full_area = Rect::new(0, 0, 32, 1);
+        let mut full = Buffer::empty(full_area);
+        (&List::new(&rows, &tokens)).render(full_area, &mut full, &mut full_state);
+        let full_text: String = (0..full_area.width)
+            .map(|x| full[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(full_text.contains("! run"), "{full_text:?}");
+        assert!(full_text.contains("1234ms"), "{full_text:?}");
+
+        let mut narrow_state = ListState::new(Some("job"));
+        let narrow_area = Rect::new(0, 0, 16, 1);
+        let mut narrow = Buffer::empty(narrow_area);
+        (&List::new(&rows, &tokens)).render(narrow_area, &mut narrow, &mut narrow_state);
+        let narrow_text: String = (0..narrow_area.width)
+            .map(|x| narrow[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(narrow_text.contains("! run"), "{narrow_text:?}");
+        assert!(!narrow_text.contains("1234ms"), "{narrow_text:?}");
     }
 
     #[test]

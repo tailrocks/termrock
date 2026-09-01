@@ -1210,8 +1210,8 @@ impl<'a> HexViewer<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
         let surface = self.focused && state.accepts_input;
@@ -1480,8 +1480,8 @@ fn paint_hex_row(
         usize::from(area.width),
         style,
     );
-    chrome.paint(buffer, area);
     tiers.paint_tiers(buffer, area, 0);
+    chrome.paint(buffer, area);
 }
 
 impl StatefulWidget for &HexViewer<'_> {

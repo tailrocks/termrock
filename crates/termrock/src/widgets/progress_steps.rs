@@ -141,20 +141,11 @@ impl ProgressStepStatus {
         }
     }
 
-    /// Paint role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Queued | Self::Skipped | Self::Cancelled => Role::TextMuted,
-            // Running is live information, not the brand (plans/007).
-            Self::Running | Self::Retrying => Role::InfoDim,
-            Self::Waiting => Role::Warning,
-            Self::Complete => Role::Success,
-            Self::Warning => Role::Warning,
-            Self::Failed => Role::Danger,
-        }
+    pub const fn semantic(self) -> super::SemanticStatus {
+        super::SemanticStatus::from_progress_step_status(self)
     }
-
     /// Active work (not terminal).
     #[must_use]
     pub const fn is_active(self) -> bool {
@@ -789,11 +780,11 @@ impl<'a> ProgressSteps<'a> {
             // A selected step keeps its status tone; selection is a wash.
             let style = if selected {
                 self.system
-                    .style(step.status.role())
+                    .style(step.status.semantic().role())
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else {
-                self.system.style(step.status.role())
+                self.system.style(step.status.semantic().role())
             };
             buffer.set_stringn(
                 area.x,
@@ -948,13 +939,20 @@ pub fn progress_steps_as_list_rows(steps: &[ProgressStep]) -> Vec<ListRow<'stati
     steps
         .iter()
         .map(|s| {
-            let label = format!("{} {}", s.status.mark(false), s.title);
-            let mut row = ListRow::item(s.id.clone(), ratatui_core::text::Line::from(label));
+            let mut row = ListRow::item(
+                s.id.clone(),
+                ratatui_core::text::Line::from(s.title.clone()),
+            );
+            row.status = Some(ratatui_core::text::Line::from(format!(
+                "| {} {}",
+                s.status.semantic().glyph_unicode(),
+                s.status.default_verb()
+            )));
             if let Some(d) = &s.detail {
                 row.secondary = Some(ratatui_core::text::Line::from(d.clone()));
             }
             if let Some(ms) = s.duration_ms {
-                row.trailing = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
+                row.badge = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
             }
             row.enabled = !matches!(s.status, ProgressStepStatus::Cancelled);
             row
@@ -1113,6 +1111,31 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains('/'), "{text}");
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let system = DesignSystem::default();
+        let label = "検証 Cafe\u{301}";
+        let steps = [ProgressStep::new("unicode", label).status(ProgressStepStatus::Running)];
+        for ascii in [false, true] {
+            for (width, height) in [(48, 6), (20, 1), (1, 1), (0, 0)] {
+                let area = Rect::new(0, 0, width, height);
+                let mut buffer = Buffer::empty(area);
+                let mut state = ProgressStepsState::new();
+                state.set_ascii(ascii);
+                ProgressSteps::new(&steps, &system).ascii(ascii).paint(
+                    area,
+                    &mut buffer,
+                    &mut state,
+                );
+                if width == 48 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('検'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

@@ -1622,6 +1622,32 @@ mod tests {
     }
 
     #[test]
+    fn mouse_hit_uses_painted_row_identity_and_input_gate() {
+        let (groups, items) = sample();
+        let flat = flatten_search_results(&groups, &items, &BTreeSet::new());
+        let mut state = SearchResultsState::new();
+        state.row_regions = vec![(
+            SearchHitKind::Item,
+            items[0].id.to_string(),
+            Rect::new(3, 4, 24, 1),
+        )];
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(3, 4),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(&flat, event),
+            SearchResultsOutcome::SelectionChanged { ref id, .. } if id == items[0].id
+        ));
+        state.set_accepts_input(false);
+        assert_eq!(
+            state.handle_mouse(&flat, event),
+            SearchResultsOutcome::Ignored
+        );
+    }
+
+    #[test]
     fn large_page_paint() {
         let system = DesignSystem::default();
         let groups = vec![SearchResultGroup::new("g", "all", bench::HIT_COUNT as u64)];

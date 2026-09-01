@@ -36,7 +36,7 @@ use crate::{
     text::take_display_cols,
     widgets::{
         NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
-        example_sectioned_sidebar_nav, filter_nav_collapsed,
+        filter_nav_collapsed,
     },
 };
 
@@ -238,7 +238,7 @@ impl<Id> AppDashboardState<Id> {
 
 fn map_sidebar<Id>(out: SidebarOutcome<Id>) -> AppDashboardOutcome<Id> {
     match out {
-        SidebarOutcome::Selected(id) => AppDashboardOutcome::RouteSelected { id },
+        SidebarOutcome::RouteChanged { id } => AppDashboardOutcome::RouteSelected { id },
         other => AppDashboardOutcome::Sidebar(other),
     }
 }
@@ -367,7 +367,26 @@ pub struct AppDashboardSurfaces<'a, Id> {
 /// Example nav for dashboard demos (sectioned).
 #[must_use]
 pub fn example_dashboard_nav() -> Vec<NavItem<&'static str>> {
-    example_sectioned_sidebar_nav()
+    vec![
+        NavItem::section("workspace", "Workspace")
+            .has_children(true)
+            .expanded(true),
+        NavItem::new("overview", "Overview").depth(1).icon("◇"),
+        NavItem::new("deployments", "Deployments")
+            .depth(1)
+            .icon("↑")
+            .badge("2"),
+        NavItem::new("services", "Services").depth(1).icon("▦"),
+        NavItem::section("operations", "Operations")
+            .has_children(true)
+            .expanded(true),
+        NavItem::new("jobs", "Jobs").depth(1).icon("▷").badge("4"),
+        NavItem::new("alerts", "Alerts")
+            .depth(1)
+            .icon("!")
+            .badge("1"),
+        NavItem::new("settings", "Settings").icon("⚙"),
+    ]
 }
 
 /// Paint shell chrome + sidebar; main shows placeholder (host overlays data).
@@ -473,7 +492,7 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
 
     // Footer hint
     if !slots.footer.is_empty() {
-        let hint = "Tab panes · [ rail · sidebar keys · host main";
+        let hint = "Tab panes · [ rail · ↑↓ select · Enter open · C-k commands";
         system.paint_row(
             buffer,
             Rect::new(slots.footer.x, slots.footer.y, slots.footer.width, 1),
@@ -605,7 +624,9 @@ mod tests {
         assert!(
             matches!(
                 out,
-                AppDashboardOutcome::Sidebar(SidebarOutcome::ToggleRail { expanded: false })
+                AppDashboardOutcome::Sidebar(SidebarOutcome::PresentationChanged {
+                    presentation: SidebarPresentation::Rail
+                })
             ),
             "{out:?}"
         );
@@ -631,7 +652,7 @@ mod tests {
     #[test]
     fn paint_smoke() {
         let system = DesignSystem::default();
-        let mut st = AppDashboardState::new(Some("intro"));
+        let mut st = AppDashboardState::new(Some("overview"));
         let nav = example_dashboard_nav();
         // collapse filter still works on fixture
         assert!(filter_nav_collapsed(&nav).len() < nav.len() || !nav.is_empty());
@@ -663,5 +684,15 @@ mod tests {
                 || sample.contains('N'),
             "{sample:?}"
         );
+    }
+
+    #[test]
+    fn reference_nav_is_an_application_fixture_not_documentation_placeholder() {
+        let nav = example_dashboard_nav();
+        let labels: Vec<_> = nav.iter().map(|item| item.label.as_str()).collect();
+        assert!(labels.contains(&"Overview"), "{labels:?}");
+        assert!(labels.contains(&"Deployments"), "{labels:?}");
+        assert!(labels.contains(&"Alerts"), "{labels:?}");
+        assert!(!labels.contains(&"Introduction"), "{labels:?}");
     }
 }

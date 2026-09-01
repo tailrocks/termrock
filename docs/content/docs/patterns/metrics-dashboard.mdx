@@ -1,53 +1,27 @@
 ---
-title: Metrics Dashboard
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: MetricsDashboard
-demo: metrics-dashboard/basic
-interaction: activation
+title: "Metrics Dashboard"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: MetricsDashboard
 source: crates/termrock/src/patterns/metrics_dashboard.rs
 classification: application
+tags:
+  - "application"
+  - "Gauge"
+  - "Sparkline"
+aliases: []
+uses:
+  - "Gauge"
+  - "Sparkline"
+supportingTypes:
+  - "CommandEntry"
+  - "VizGlyphSet"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="metrics-dashboard/basic" interactive caption="Metrics Dashboard · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 88×20
-
-Composed public building blocks: `CommandEntry`, `Gauge`, `Sparkline`, `VizGlyphSet`, `Widget`.
-
-## Workflow
-
-- `arrows select metric`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter inspect`: invoke the focused public state-machine action and inspect its typed request.
-- `Tab focus region`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Ctrl+T range`: forward this normalized action to the mounted public pattern state.
-- `Ctrl+R refresh`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/metrics_dashboard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/metrics_dashboard.rs)
-- Demo: `metrics-dashboard/basic`
-
-## Migrated handbook guidance
-
-# MetricsDashboard
 
 Reusable observability dashboard block. Host projects metric tiles and alerts;
 TermRock lays out a responsive grid (or narrow summary), paints via public
 `Sparkline` / `Gauge` APIs, and emits refresh / drill-down / time-range
 **requests**.
-
 
 ## When to use / when not
 
@@ -55,7 +29,7 @@ TermRock lays out a responsive grid (or narrow summary), paints via public
 |----------------------|--------|
 | Ops / SRE metric overview | — |
 | Table + log ops shell | `OpsDashboardState` / `layout_ops_dashboard` |
-| Single chart | [Charts](/docs/interaction-notes) |
+| Single chart | [Chart](/docs/components/chart) |
 | Process list | [ProcessTable](/docs/patterns/process-table) |
 
 ## Ownership
@@ -76,13 +50,6 @@ Each `MetricTile` has `MetricTileHealth` (`Ok` / `Warning` / `Danger` /
 Width ≤ 48 → `MetricsDashboardLayoutMode::Summary`: one line per metric
 (`letter title value delta`).
 
-## Command palette
-
-```rust
-metrics_dashboard_commands() // CommandEntry list
-apply_metrics_command(&mut state, "metrics.refresh", &tiles)
-```
-
 ## Keys
 
 | Key | Action |
@@ -91,7 +58,3 @@ apply_metrics_command(&mut state, "metrics.refresh", &tiles)
 | Enter | Drill-down |
 | Ctrl+R · Ctrl+T · Ctrl+D | Refresh · time · compare |
 | Ctrl+K | Palette request |
-
-## Related
-
-Sparkline · Gauge · OpsDashboard · CommandPalette · migration `0208`

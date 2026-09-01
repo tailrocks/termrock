@@ -19,14 +19,14 @@ use termrock::{
     osc::{PointerShape, Request, encode},
     style::{Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, ActivationOutcome, Anchor, Button, ButtonState,
-        CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth, CommandEntry,
-        CommandPalette, CommandPaletteOutcome, CommandPaletteSize, CommandPaletteState, Dialog,
-        DialogSize, InitiatorKind, List, ListRow, ListState, ModeIndicator, ModelIndicator,
-        PermissionAction, PermissionOutcome, PermissionPromptState, PermissionProvenance,
-        PermissionRequest, PermissionRisk, PromptComposer, PromptComposerOutcome,
-        PromptComposerState, ProvenanceHop, Severity, Table, TableRow, TableState, Toast,
-        VirtualWindow, data_view_bench, place_command_palette, place_dialog,
+        Action, ActionBar, ActionBarState, ActionVariant, ActivationOutcome, Anchor, Button,
+        ButtonState, CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth,
+        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
+        CommandPaletteState, Dialog, DialogSize, InitiatorKind, List, ListRow, ListState,
+        ModeIndicator, ModelIndicator, PermissionAction, PermissionOutcome, PermissionPromptState,
+        PermissionProvenance, PermissionRequest, PermissionRisk, PromptComposer,
+        PromptComposerOutcome, PromptComposerState, ProvenanceHop, Severity, Table, TableRow,
+        TableState, Toast, VirtualWindow, data_view_bench, place_command_palette, place_dialog,
     },
 };
 
@@ -60,7 +60,7 @@ fn handbook_button_action_bar_example() {
     let system = DesignSystem::from_palette(theme.clone());
     let tokens = DesignSystem::default();
     // Flagship Button (handbook basic + interactive)
-    let button = Button::new("Save", &tokens).primary(true);
+    let button = Button::new("Save", &tokens).variant(termrock::widgets::ButtonVariant::Primary);
     let mut button_state = ButtonState::new();
     button_state.activation.set_accepts_input(true);
     let out = button_state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
@@ -79,13 +79,13 @@ fn handbook_button_action_bar_example() {
             id: "save",
             label: "Save",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let bar = ActionBar::new(&actions, &system);
@@ -136,13 +136,13 @@ fn handbook_dialog_examples() {
             id: "ok",
             label: "OK",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let choice = ChoiceDialog::new(

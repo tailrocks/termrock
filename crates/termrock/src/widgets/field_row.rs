@@ -6,7 +6,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, truncate_cols},
 };
 
@@ -183,6 +183,16 @@ impl<'a> FieldRow<'a> {
             loading: false,
             checked: false,
         });
+        let input_recipe = self.system.input_recipe(
+            if !self.enabled {
+                ControlState::Disabled
+            } else if self.selected {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            self.invalid,
+        );
         let row = Rect::new(area.x, area.y, area.width, 1);
         if recipe.use_fill {
             buffer.set_style(row, recipe.label);
@@ -226,11 +236,7 @@ impl<'a> FieldRow<'a> {
         });
         let value_width =
             usize::from(area.right().saturating_sub(x)).saturating_sub(annotation_width);
-        let value_style = if self.invalid {
-            self.system.style(Role::InputInvalid)
-        } else {
-            recipe.label
-        };
+        let value_style = input_recipe.value;
         match &self.value {
             FieldRowValue::Plain(value) => {
                 let text = truncate_cols(value, value_width, "…");
@@ -254,13 +260,15 @@ impl<'a> FieldRow<'a> {
                 );
             }
             FieldRowValue::Unset { hint } => {
-                let role = if self.required {
-                    Role::Danger
+                let style = if self.required {
+                    input_recipe
+                        .placeholder
+                        .patch(self.system.style(Role::Danger))
                 } else {
-                    Role::TextMuted
+                    input_recipe.placeholder
                 };
                 let text = truncate_cols(hint, value_width, "…");
-                buffer.set_stringn(x, area.y, &text, value_width, self.system.style(role));
+                buffer.set_stringn(x, area.y, &text, value_width, style);
             }
         }
 
@@ -276,7 +284,7 @@ impl<'a> FieldRow<'a> {
                 .saturating_add(u16::try_from(used).unwrap_or(u16::MAX))
                 .saturating_add(self.system.spacing.gap);
             if annotation_x < area.right() {
-                let mut style = self.system.style(Role::TextMuted);
+                let mut style = input_recipe.placeholder;
                 if self.annotation_italic {
                     style = style.add_modifier(Modifier::ITALIC);
                 }

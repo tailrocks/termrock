@@ -186,7 +186,7 @@ impl<Id> JumpTarget<Id> {
         }
     }
 
-    /// First character of the key sequence (legacy single-badge consumers).
+    /// Badge character derived from the first key in the sequence.
     #[must_use]
     pub fn badge(&self) -> char {
         self.keys.chars().next().unwrap_or('?')
@@ -234,9 +234,6 @@ pub enum JumpOutcome<Id> {
     /// Filter changed; host should rebuild targets.
     FilterChanged,
 }
-
-/// Alias: JumpMode is the product name for jump navigation state.
-pub type JumpModeState = JumpOverlayState;
 
 // ── Label generation (deterministic, collision-free) ────────────────────────
 
@@ -465,7 +462,7 @@ where
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-/// Jump-mode state (also known as [`JumpModeState`]).
+/// Jump-mode state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct JumpOverlayState {
     open: bool,
@@ -778,9 +775,6 @@ impl<'a, Id> JumpOverlay<'a, Id> {
         }
     }
 }
-
-/// Product alias for the paint widget.
-pub type JumpMode<'a, Id> = JumpOverlay<'a, Id>;
 
 impl<Id> Widget for &JumpOverlay<'_, Id> {
     fn render(self, _area: Rect, buffer: &mut Buffer) {

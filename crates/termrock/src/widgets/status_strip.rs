@@ -9,19 +9,29 @@
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, GlyphSet, Role};
 use crate::text::display_cols;
 use crate::widgets::tiered_row::TieredRow;
+
+use super::SemanticStatus;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StatusSegmentTone {
+    Metadata,
+    Quiet,
+    Strong,
+    Focus,
+    Semantic(SemanticStatus),
+}
 
 /// One fact in a status strip.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusSegment<'a> {
     /// Segment text, already worded by the host.
     pub text: &'a str,
-    /// Semantic role the segment asks for.
-    pub role: Role,
     /// Survival priority: higher survives longer under width pressure.
     pub priority: u8,
+    tone: StatusSegmentTone,
 }
 
 impl<'a> StatusSegment<'a> {
@@ -30,15 +40,36 @@ impl<'a> StatusSegment<'a> {
     pub const fn new(text: &'a str) -> Self {
         Self {
             text,
-            role: Role::TextMuted,
             priority: 50,
+            tone: StatusSegmentTone::Metadata,
         }
     }
 
-    /// States the role the segment asks for.
+    /// Typed lifecycle state. The strip supplies the canonical glyph and tone.
     #[must_use]
-    pub const fn role(mut self, role: Role) -> Self {
-        self.role = role;
+    pub const fn semantic(mut self, semantic: SemanticStatus) -> Self {
+        self.tone = StatusSegmentTone::Semantic(semantic);
+        self
+    }
+
+    /// Quiet metadata (lower contrast than the default metadata tier).
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.tone = StatusSegmentTone::Quiet;
+        self
+    }
+
+    /// Strong metadata without spending a semantic hue.
+    #[must_use]
+    pub const fn strong(mut self) -> Self {
+        self.tone = StatusSegmentTone::Strong;
+        self
+    }
+
+    /// The one focused/actionable segment.
+    #[must_use]
+    pub const fn focus(mut self) -> Self {
+        self.tone = StatusSegmentTone::Focus;
         self
     }
 
@@ -47,6 +78,25 @@ impl<'a> StatusSegment<'a> {
     pub const fn priority(mut self, priority: u8) -> Self {
         self.priority = priority;
         self
+    }
+
+    fn role(&self) -> Role {
+        match self.tone {
+            StatusSegmentTone::Metadata => Role::TextMuted,
+            StatusSegmentTone::Quiet => Role::TextFaint,
+            StatusSegmentTone::Strong => Role::TextStrong,
+            StatusSegmentTone::Focus => Role::Accent,
+            StatusSegmentTone::Semantic(status) => status.role(),
+        }
+    }
+
+    fn display_text(&self, glyphs: GlyphSet) -> String {
+        match self.tone {
+            StatusSegmentTone::Semantic(status) => {
+                format!("{} {}", status.glyph_for_set(glyphs), self.text)
+            }
+            _ => self.text.to_string(),
+        }
     }
 }
 
@@ -131,7 +181,7 @@ impl<'a> StatusStrip<'a> {
         let mut kept: Vec<usize> = Vec::new();
         let mut used = 0usize;
         for i in order {
-            let cols = display_cols(self.segments[i].text);
+            let cols = display_cols(&self.segments[i].display_text(self.system.glyphs));
             let with_separator = if kept.is_empty() {
                 cols
             } else {
@@ -162,7 +212,7 @@ impl<'a> StatusStrip<'a> {
         let mut spent_accent = false;
         for (position, &index) in kept.iter().enumerate() {
             let segment = &self.segments[index];
-            let mut role = segment.role;
+            let mut role = segment.role();
             // One status hue, one accent. A strip that spends more is a
             // dashboard pretending to be a status line.
             if self.colorless {
@@ -184,7 +234,10 @@ impl<'a> StatusStrip<'a> {
                     spent_accent = true;
                 }
             }
-            tiers.push(segment.text, self.system.style(role));
+            tiers.push(
+                &segment.display_text(self.system.glyphs),
+                self.system.style(role),
+            );
         }
         if let Some(hint) = self.overflow_hint
             && dropped > 0
@@ -220,13 +273,15 @@ mod tests {
     fn segments() -> Vec<StatusSegment<'static>> {
         vec![
             StatusSegment::new("running")
-                .role(Role::Success)
+                .semantic(SemanticStatus::Running)
                 .priority(100),
             StatusSegment::new("offline")
-                .role(Role::Danger)
+                .semantic(SemanticStatus::Offline)
                 .priority(90),
             StatusSegment::new("opus-5").priority(60),
-            StatusSegment::new("q:3").role(Role::Warning).priority(80),
+            StatusSegment::new("queue 3")
+                .semantic(SemanticStatus::Warning)
+                .priority(80),
             StatusSegment::new("$0.42").priority(10),
         ]
     }
@@ -312,6 +367,61 @@ mod tests {
                     !cell.symbol().trim().is_empty() && Some(cell.fg) == fg
                 }),
                 "colorless strips must not paint {role:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn semantic_segments_supply_a_non_color_glyph() {
+        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let segments = [StatusSegment::new("failed")
+            .semantic(SemanticStatus::Failed)
+            .priority(100)];
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        StatusStrip::new(&segments, &system)
+            .colorless(true)
+            .paint(area, &mut buffer);
+        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(text.starts_with("x failed"), "{text:?}");
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let segments = [
+            StatusSegment::new("本番 🛰 Cafe\u{301}")
+                .strong()
+                .priority(100),
+            StatusSegment::new("failed")
+                .semantic(SemanticStatus::Failed)
+                .priority(90),
+        ];
+        for glyphs in [GlyphSet::Unicode, GlyphSet::Ascii] {
+            let system = DesignSystem::default().glyphs(glyphs);
+            for width in [32, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut buffer = Buffer::empty(area);
+                StatusStrip::new(&segments, &system).paint(area, &mut buffer);
+                if width == 32 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('本'), "{text:?}");
+                    assert!(text.contains('🛰'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn status_segment_public_api_has_no_raw_role_escape_hatch() {
+        let public = include_str!("status_strip.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("public source");
+        for forbidden in ["pub role:", "pub fn role(", "pub const fn role("] {
+            assert!(
+                !public.contains(forbidden),
+                "raw role API leaked: {forbidden}"
             );
         }
     }

@@ -2,13 +2,13 @@
 
 use termrock::input::KeyEvent;
 use termrock::patterns::{ResourceBrowserOutcome, ResourceBrowserState};
-use termrock::widgets::SidebarItem;
+use termrock::widgets::NavItem;
 
 /// Route keys through sidebar; selection becomes LoadRequested.
 pub fn handle_key<Id: Clone + PartialEq>(
     state: &mut ResourceBrowserState<Id>,
     key: KeyEvent,
-    items: &[SidebarItem<Id>],
+    items: &[NavItem<Id>],
 ) -> ResourceBrowserOutcome<Id> {
     state.handle_key(key, items)
 }

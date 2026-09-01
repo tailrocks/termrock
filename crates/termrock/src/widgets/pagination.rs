@@ -1317,6 +1317,58 @@ mod tests {
     }
 
     #[test]
+    fn escape_closes_only_the_jump_entry_layer() {
+        let mut state = PaginationState::new(4, 10, PageTotal::Known(100));
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+            PaginationOutcome::JumpStarted
+        );
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Char('8'), KeyModifiers::NONE));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PaginationOutcome::JumpCancelled
+        );
+        assert_eq!(state.page(), 4);
+    }
+
+    #[test]
+    fn disabled_state_rejects_keyboard_mouse_and_registers_semantics() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 72, 1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = PaginationState::new(3, 10, PageTotal::Known(100));
+        state.set_focused(true);
+        Pagination::new(&system).paint(area, &mut buffer, &mut state);
+        let next = state
+            .hits
+            .iter()
+            .find(|(part, _)| matches!(part, PaginationPart::Next))
+            .map(|(_, region)| *region)
+            .expect("painted next region");
+
+        state.set_enabled(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            PaginationOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(next.x, next.y),
+                modifiers: KeyModifiers::NONE,
+            }),
+            PaginationOutcome::Ignored
+        );
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Pagination::new(&system).register_semantic(&mut scene, "pagination", area, &state);
+        let node = scene.nodes().first().expect("pagination semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
+    }
+
+    #[test]
     fn keys_bracket_nav() {
         let mut s = PaginationState::new(2, 10, PageTotal::Known(50));
         s.set_focused(true);

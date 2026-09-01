@@ -29,7 +29,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::UiIntent,
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::diff::{
         DiffFile, DiffHunk, DiffLine, DiffMode, DiffView, DiffViewOutcome, DiffViewState,
@@ -1520,8 +1520,8 @@ impl<'a> DiffReview<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         let surface = self.focused && state.accepts_input;
 
@@ -1630,10 +1630,11 @@ impl<'a> DiffReview<'a> {
 
         // Summary
         if summary_h > 0 {
+            let separator = if ascii { " - " } else { " · " };
             let sum = state.summary(self.files.len(), self.hunks.len());
             let focus = state.region == DiffReviewRegion::Summary;
             let msg = format!(
-                "{} files {} hunks · A{} R{} S{} · cmt {}/{} · sel {} · a/r/t/x · u undo{}",
+                "{} files {} hunks{separator}A{} R{} S{}{separator}cmt {}/{}{separator}sel {}{separator}a/r/t/x{separator}u undo{}",
                 sum.files,
                 sum.hunks,
                 sum.approved,
@@ -1642,7 +1643,11 @@ impl<'a> DiffReview<'a> {
                 sum.unresolved_comments,
                 sum.comments,
                 sum.selected,
-                if focus { " · SUMMARY" } else { "" }
+                if focus {
+                    if ascii { " - SUMMARY" } else { " · SUMMARY" }
+                } else {
+                    ""
+                }
             );
             let style = if focus && surface {
                 self.system.style(Role::Accent)
@@ -1705,30 +1710,24 @@ fn paint_file_tree(
         } else {
             " "
         };
-        let gutter = if cur && focus {
-            system.glyphs.selection_gutter()
-        } else {
-            " "
-        };
+        let gutter = " ";
         let stats = if area.width >= 20 {
             format!(" +{} -{}", f.added, f.removed)
         } else {
             String::new()
         };
         let line = format!("{gutter}{mark}{sel_m}{}{stats}", f.path);
-        let style = if colorless {
-            if cur {
-                system.style(Role::TextStrong)
-            } else {
-                system.style(Role::Text)
-            }
-        } else if cur && focus {
-            system.style(Role::Focus)
-        } else if sel {
-            system.style(Role::Accent)
-        } else {
-            system.style(Role::Text)
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected: sel || (cur && focus),
+                focused: cur && focus,
+                enabled: true,
+                ..Default::default()
+            },
+        )
+        .colorless(colorless);
+        let style = chrome.label_style(system.style(Role::Text));
         buffer.set_stringn(
             area.x,
             y,
@@ -1736,6 +1735,7 @@ fn paint_file_tree(
             usize::from(area.width),
             style,
         );
+        chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
         state
             .file_regions
             .push((f.id.to_string(), Rect::new(area.x, y, area.width, 1)));

@@ -1,14 +1,14 @@
 setup-wizard/capability 82x24 (story 80x22)
                                                                                   
- ┌ First run ───────────────────────────────────────────────────────────────────┐ 
+ ┌ ◊ First run ─────────────────────────────────────────────────────────────────┐ 
  │                                                                              │ 
  │  [✓]Welcome → [›]Terminal → [ ]Account → [ ]◦Connection → [ ]◦Choices → [ ]  │ 
  │  Capability check                                                            │ 
  │  Terminal capabilities                                                       │ 
- │  truecolor       ok                                                          │ 
- │  unicode         ok                                                          │ 
- │  kitty keyboard  partial                                                     │ 
- │  sixel           missing                                                     │ 
+ │    truecolor       ok                                                        │ 
+ │    unicode         ok                                                        │ 
+ │    kitty keyboard  partial                                                   │ 
+ │    sixel           missing                                                   │ 
  │                                                                              │ 
  │                                                                              │ 
  │                                                                              │ 
@@ -19,7 +19,7 @@ setup-wizard/capability 82x24 (story 80x22)
  │                                                                              │ 
  │                                                                              │ 
  │                                                                  Continue    │ 
- │  ← Back  Esc                                                        Next →   │ 
+ │  ← Back        Esc                                              Next →       │ 
  │                                                                              │ 
  └──────────────────────────────────────────────────────────────────────────────┘ 
                                                                                   

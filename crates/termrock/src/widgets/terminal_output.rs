@@ -1113,8 +1113,8 @@ impl<'a> TerminalOutput<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
         let surface = self.focused && state.accepts_input;
@@ -1179,7 +1179,7 @@ impl<'a> TerminalOutput<'a> {
         if view.is_empty() {
             let mark = if ascii { "[ ] " } else { "∅ " };
             let msg = if matches!(self.meta.status, TerminalRunStatus::Pending) {
-                format!("{mark}waiting…")
+                format!("{mark}{}", if ascii { "waiting..." } else { "waiting…" })
             } else if matches!(self.meta.status, TerminalRunStatus::Running) {
                 format!("{mark}(no output yet)")
             } else {
@@ -1224,6 +1224,7 @@ impl<'a> TerminalOutput<'a> {
 
         // Follow chip
         if chip_h > 0 {
+            let separator = if ascii { " - " } else { " · " };
             let chip_y = area.bottom().saturating_sub(1);
             let following = state.is_following();
             let indicator = state.scroll.new_content();
@@ -1245,12 +1246,15 @@ impl<'a> TerminalOutput<'a> {
                 "↑ pinned · f follow".to_string()
             };
             if state.hide_stdout {
-                chip.push_str(" · -out");
+                chip.push_str(separator);
+                chip.push_str("-out");
             }
             if state.hide_stderr {
-                chip.push_str(" · -err");
+                chip.push_str(separator);
+                chip.push_str("-err");
             }
-            chip.push_str(&format!(" · {}", state.paint_mode.id()));
+            chip.push_str(separator);
+            chip.push_str(state.paint_mode.id());
             let st = if following && surface {
                 self.system.style(Role::Accent)
             } else if indicator.visible {
@@ -1305,7 +1309,8 @@ fn paint_header(
         format!("{g} {badge}{exit}")
     } else {
         let t = title.unwrap_or("terminal");
-        format!("{g} {badge}{exit}{sig}{dur}{pid} · {t}")
+        let separator = if ascii { " - " } else { " · " };
+        format!("{g} {badge}{exit}{sig}{dur}{pid}{separator}{t}")
     };
     let st = if colorless {
         system.style(Role::TextStrong)
@@ -1489,6 +1494,7 @@ fn paint_line(
             paint_stream_line(buffer, area, gutter, prefix, line.text, style, stream_tone);
         }
     }
+    chrome.paint(buffer, area);
 }
 
 /// Paints `gutter + prefix + body`, with the stream tone on the prefix only.

@@ -7,7 +7,8 @@
 //! View…) with nested submenus, checked/radio rows, separators, shortcuts, recent
 //! items, and dynamic host-owned commands — without the widget owning side effects.
 //!
-//! **vs [`super::Menu`].** `Menu` is a flat popup list (context menus, one panel).
+//! **vs [`super::DropdownMenu`].** Dropdown menus are anchored popup lists;
+//! the menu bar owns application-wide top-level groups.
 //! `MenuBar` owns horizontal top-level menus, cascade depth, mnemonic arming, and
 //! narrow replacement with [`super::CommandPalette`].
 //!
@@ -106,8 +107,7 @@ impl MenuRowKind {
 
 /// One hierarchical menu row (commands, submenus, separators).
 ///
-/// Shared model for [`super::MenuBar`], [`super::DropdownMenu`], and
-/// [`super::ContextMenu`].
+/// Shared model for [`super::MenuBar`] and [`super::DropdownMenu`] context or dropdown surfaces.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuNode<Id> {
     /// Stable identity for outcomes and host command maps.
@@ -179,12 +179,6 @@ impl<Id> MenuNode<Id> {
         let mut n = Self::base(id, label.into(), MenuRowKind::Section);
         n.enabled = false;
         n
-    }
-
-    /// Alias for [`Self::section`] (Radix / a11y "label" row).
-    #[must_use]
-    pub fn label_row(id: Id, label: impl Into<String>) -> Self {
-        Self::section(id, label)
     }
 
     /// Checkbox row.
@@ -1512,17 +1506,24 @@ impl<'a, Id> MenuBar<'a, Id> {
         if area.is_empty() {
             return;
         }
-        // Panel chrome.
-        let border = if state.focused {
-            Role::BorderFocused
+        let recipe = if state.focused {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            super::SurfaceRecipe::Overlay
         };
-        let border_style = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -2226,6 +2227,24 @@ mod tests {
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &menus),
             MenuBarOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_bar_hit_opens_the_same_menu_model_as_keyboard() {
+        let menus = example_app_menus();
+        let mut state = MenuBarState::new();
+        state.bar_hits = vec![(0, Rect::new(1, 1, 6, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(1, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &menus,
+            ),
+            MenuBarOutcome::Opened { menu_id: "file" }
         ));
     }
 

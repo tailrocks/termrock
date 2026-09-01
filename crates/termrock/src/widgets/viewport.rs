@@ -3,17 +3,17 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    text::{Line, Span},
+    text::Line,
     widgets::{StatefulWidget, Widget},
 };
-use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
+use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     scroll::{DialogScroll, UNCACHED_REVISION, max_line_width},
     style::{DesignSystem, Role, RolePalette},
 };
 
-use super::PanelChrome;
+use super::{PanelChrome, Surface, SurfaceFill, SurfaceRecipe};
 
 #[derive(Debug, Clone, Copy)]
 /// A scrollable view over borrowed terminal lines.
@@ -96,13 +96,24 @@ impl StatefulWidget for &Viewport<'_> {
         } else {
             0
         };
-        // Border ring first; content rect sits inside it, inset by pad_x
-        // when the host asked for Panel-aligned padding.
+        // Surface owns the structural ring; the viewport owns its asymmetric
+        // content inset so the scrollbar keeps the trailing border column.
+        let surface_recipe = match self.emphasis {
+            PanelChrome::Focused => SurfaceRecipe::Focused,
+            PanelChrome::Danger => SurfaceRecipe::Destructive,
+            PanelChrome::Normal => SurfaceRecipe::Interactive,
+        };
+        let surface_content = Surface::new(self.system)
+            .recipe(surface_recipe)
+            .bordered(true)
+            .fill(SurfaceFill::Transparent)
+            .padding(0, 0)
+            .paint(area, buffer);
         let content = Rect::new(
-            area.x.saturating_add(1).saturating_add(pad_x),
-            area.y.saturating_add(1),
-            area.width.saturating_sub(2).saturating_sub(pad_x),
-            area.height.saturating_sub(2),
+            surface_content.x.saturating_add(pad_x),
+            surface_content.y,
+            surface_content.width.saturating_sub(pad_x),
+            surface_content.height,
         );
         let viewport_width = usize::from(content.width);
         let viewport_height = usize::from(content.height);
@@ -118,21 +129,22 @@ impl StatefulWidget for &Viewport<'_> {
             content_width,
             viewport_width,
         );
-        let border_role = if self.emphasis == PanelChrome::Focused {
-            Role::BorderFocused
-        } else {
-            Role::Border
-        };
-        let mut block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(self.system.style(border_role));
         if let Some(title) = self.title {
-            block = block.title(Span::styled(
-                format!(" {} ", title.trim()),
+            let budget = usize::from(area.width.saturating_sub(2));
+            let clipped = crate::text::truncate_cols(
+                title.trim(),
+                budget.saturating_sub(2),
+                self.system.glyphs.ellipsis(),
+            );
+            let label = format!(" {clipped} ");
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                area.y,
+                label,
+                budget,
                 self.system.style(Role::TextStrong),
-            ));
+            );
         }
-        block.render(area, buffer);
         // Vertical slicing keeps frame cost proportional to the painted
         // window. Paragraph owns horizontal scrolling only after the slice.
         let start = usize::from(state.scroll_y).min(self.lines.len());
@@ -148,6 +160,7 @@ impl StatefulWidget for &Viewport<'_> {
             )
             .scroll((0, state.scroll_x))
             .render(content, buffer);
+        super::surface::normalize_content_band(self.system, buffer, content);
         // The fade belongs to the content, never to the chrome: a dimmed
         // border reads as a disabled pane, not as "there is more below".
         crate::scroll::paint_scrolled_region(
@@ -219,5 +232,27 @@ mod tests {
             "b",
             "rows stay flush on Y — no rhythm row is inserted"
         );
+    }
+
+    #[test]
+    fn ascii_profile_uses_ascii_title_ellipsis() {
+        let lines = lines();
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let area = Rect::new(0, 0, 12, 4);
+        let mut buffer = Buffer::empty(area);
+        let mut scroll = DialogScroll::default();
+
+        (&Viewport::new(&lines, &system).title("A very long viewport title")).render(
+            area,
+            &mut buffer,
+            &mut scroll,
+        );
+        let text = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("..."), "{text}");
+        assert!(!text.contains('…'));
     }
 }

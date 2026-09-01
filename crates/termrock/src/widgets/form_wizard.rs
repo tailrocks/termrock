@@ -28,13 +28,13 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation,
-    StepperPresentation, StepperState,
+    Panel, PanelChrome, PanelVariant, StepItem, StepStatus, Stepper, StepperNavPolicy,
+    StepperOrientation, StepperPresentation, StepperState,
 };
 
 /// Width under which stepper collapses to title-only / single-step layout.
@@ -968,6 +968,7 @@ impl<'a> FormWizard<'a> {
         }
 
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(if state.focused {
                 PanelChrome::Focused
@@ -1035,7 +1036,14 @@ impl<'a> FormWizard<'a> {
                             .unwrap_or("Fix errors to continue"),
                         Role::Danger,
                     )),
-                    WizardGate::Pending => Some(("Checking…", Role::TextMuted)),
+                    WizardGate::Pending => Some((
+                        if self.ascii {
+                            "Checking..."
+                        } else {
+                            "Checking…"
+                        },
+                        Role::TextMuted,
+                    )),
                     WizardGate::Valid => state
                         .current_step()
                         .and_then(|s| s.description.as_deref())
@@ -1043,15 +1051,27 @@ impl<'a> FormWizard<'a> {
                 },
             };
             if let Some((text, role)) = banner {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(text, usize::from(inner.width)),
-                    usize::from(inner.width),
-                    self.system.style(role),
-                );
-                y = y.saturating_add(1);
+                if matches!(role, Role::Danger) {
+                    super::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        self.system,
+                        super::DescriptionKind::Error,
+                        text,
+                    );
+                } else {
+                    buffer.set_stringn(
+                        inner.x,
+                        y,
+                        take_display_cols(text, usize::from(inner.width)),
+                        usize::from(inner.width),
+                        self.system.style(role),
+                    );
+                }
             }
+            // Gate feedback owns a permanent inline row. Pending/invalid
+            // transitions therefore cannot move host fields or navigation.
+            y = y.saturating_add(1);
         }
 
         // Nav row at bottom
@@ -1068,7 +1088,11 @@ impl<'a> FormWizard<'a> {
                 body.x,
                 body.y,
                 take_display_cols(
-                    "Press Enter or r to retry · Esc cancel",
+                    if self.ascii {
+                        "Press Enter or r to retry | Esc cancel"
+                    } else {
+                        "Press Enter or r to retry · Esc cancel"
+                    },
                     usize::from(body.width),
                 ),
                 usize::from(body.width),
@@ -1129,7 +1153,13 @@ impl<'a> FormWizard<'a> {
                 break;
             }
             let st = state.statuses.get(i).copied().unwrap_or_default();
-            let line = format!("{} {} — {}", st.mark(self.ascii), step.title, st.id());
+            let line = format!(
+                "{} {} {} {}",
+                st.mark(self.ascii),
+                step.title,
+                if self.ascii { "-" } else { "—" },
+                st.id()
+            );
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1166,17 +1196,16 @@ impl<'a> FormWizard<'a> {
             WizardPhase::Review | WizardPhase::Failed => true,
         };
         let br = Rect::new(x, area.y, bw.min(area.right().saturating_sub(x)), 1);
-        buffer.set_stringn(
-            br.x,
-            br.y,
-            back,
-            usize::from(br.width),
-            self.system.style(if back_enabled {
-                Role::Text
+        let back_recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            if back_enabled {
+                ControlState::Default
             } else {
-                Role::TextMuted
-            }),
+                ControlState::Disabled
+            },
         );
+        buffer.set_style(br, back_recipe.fill);
+        buffer.set_stringn(br.x, br.y, back, usize::from(br.width), back_recipe.label);
         if back_enabled {
             state.nav_back = br;
         }
@@ -1186,18 +1215,20 @@ impl<'a> FormWizard<'a> {
         let can_skip = state.allow_skip
             && matches!(state.phase, WizardPhase::Step)
             && state.current_step().is_some_and(|s| s.optional);
-        if can_skip && x < area.right() {
+        if x < area.right() {
             let skip = "Skip";
             let sw = display_cols(skip) as u16 + 1;
             let sr = Rect::new(x, area.y, sw.min(area.right().saturating_sub(x)), 1);
-            buffer.set_stringn(
-                sr.x,
-                sr.y,
-                skip,
-                usize::from(sr.width),
-                self.system.style(Role::TextMuted),
-            );
-            state.nav_skip = sr;
+            if can_skip {
+                let recipe = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                buffer.set_style(sr, recipe.fill);
+                buffer.set_stringn(sr.x, sr.y, skip, usize::from(sr.width), recipe.label);
+                state.nav_skip = sr;
+            }
+            // Keep this slot even on required steps; Cancel never jumps when
+            // optionality changes.
             x = x.saturating_add(sw).saturating_add(1);
         }
 
@@ -1239,34 +1270,48 @@ impl<'a> FormWizard<'a> {
                     }
                 }
             };
-        let nw = display_cols(next_label) as u16;
+        let nw = (display_cols(next_label) as u16).max(10);
         let nx = area.right().saturating_sub(nw).saturating_sub(1);
-        let nr = Rect::new(nx.max(x), area.y, nw, 1);
-        let next_style = match state.phase {
-            WizardPhase::Step if !state.current_gate().allows_advance() => Role::TextMuted,
-            _ => Role::Focus,
+        let nr = Rect::new(
+            nx.max(x),
+            area.y,
+            nw.min(area.right().saturating_sub(nx.max(x))),
+            1,
+        );
+        let next_enabled = match state.phase {
+            WizardPhase::Step => state.current_gate().allows_advance(),
+            _ => true,
         };
+        let next_recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Primary,
+            if next_enabled {
+                ControlState::Default
+            } else {
+                ControlState::Disabled
+            },
+        );
+        buffer.set_style(nr, next_recipe.fill);
         buffer.set_stringn(
             nr.x,
             nr.y,
             next_label,
             usize::from(nr.width),
-            self.system.style(next_style).add_modifier(Modifier::BOLD),
+            next_recipe.label.add_modifier(Modifier::BOLD),
         );
-        state.nav_next = nr;
+        if next_enabled {
+            state.nav_next = nr;
+        }
 
         // Cancel at end of left cluster
         if x < nr.x.saturating_sub(8) {
             let cancel = "Esc";
             let cw = 3u16;
             let cr = Rect::new(x, area.y, cw, 1);
-            buffer.set_stringn(
-                cr.x,
-                cr.y,
-                cancel,
-                usize::from(cr.width),
-                self.system.style(Role::TextMuted),
-            );
+            let recipe = self
+                .system
+                .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+            buffer.set_style(cr, recipe.fill);
+            buffer.set_stringn(cr.x, cr.y, cancel, usize::from(cr.width), recipe.label);
             state.nav_cancel = cr;
         }
     }

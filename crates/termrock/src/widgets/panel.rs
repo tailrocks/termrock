@@ -19,14 +19,13 @@ use ratatui_core::{
     text::{Line, Span},
     widgets::Widget,
 };
-use ratatui_widgets::block::Block;
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Elevation, GlyphSet, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
-use crate::widgets::error_state::ErrorView;
+use crate::widgets::error_state::ErrorState;
 use crate::widgets::skeleton::Skeleton;
 use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
 use crate::widgets::view_state::LoadingView;
@@ -37,10 +36,10 @@ use crate::widgets::view_state::LoadingView;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum PanelVariant {
-    /// Single-line border + surface fill (default).
-    #[default]
+    /// Single-line border + surface fill.
     Bordered,
-    /// No border; density padding only (quiet region).
+    /// No border; density padding only (quiet region, default).
+    #[default]
     Quiet,
     /// Top/bottom divider rules only (no side borders).
     DividerOnly,
@@ -497,7 +496,6 @@ pub struct Panel<'a> {
     /// Header actions (dropped under narrow width before badge).
     header_actions: &'a [PanelAction<'a>],
     title_spec: Option<PanelTitleSpec<'a>>,
-    style: Option<Style>,
     tokens: &'a DesignSystem,
 }
 
@@ -517,22 +515,15 @@ impl<'a> Panel<'a> {
                 body_detail: None,
             },
             emphasis: PanelChrome::Normal,
-            variant: PanelVariant::Bordered,
+            variant: PanelVariant::Quiet,
             body: PanelBody::Host,
             collapsible: false,
             raised: false,
             overlay: false,
             header_actions: &[],
             title_spec: None,
-            style: None,
             tokens,
         }
-    }
-
-    /// Alias for [`Self::new`].
-    #[must_use]
-    pub const fn from_tokens(tokens: &'a DesignSystem) -> Self {
-        Self::new(tokens)
     }
 
     /// Quiet bordered-off panel (no chrome line).
@@ -634,13 +625,6 @@ impl<'a> Panel<'a> {
         self
     }
 
-    /// Canonical chrome setter (alias of [`Self::emphasis`]).
-    #[must_use]
-    pub const fn chrome(mut self, chrome: PanelChrome) -> Self {
-        self.emphasis = chrome;
-        self
-    }
-
     /// Border / interaction variant.
     #[must_use]
     pub const fn variant(mut self, variant: PanelVariant) -> Self {
@@ -676,13 +660,6 @@ impl<'a> Panel<'a> {
     #[must_use]
     pub const fn overlay(mut self, overlay: bool) -> Self {
         self.overlay = overlay;
-        self
-    }
-
-    #[must_use]
-    /// Overrides the recipe border style.
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
         self
     }
 
@@ -797,38 +774,6 @@ impl<'a> Panel<'a> {
         }
     }
 
-    #[must_use]
-    /// Builds the surrounding block from the recipe (single-line border only).
-    pub fn block(&self) -> Block<'a> {
-        self.block_for_width(u16::MAX)
-    }
-
-    /// Builds chrome contracted to the available outer width.
-    #[must_use]
-    pub fn block_for_width(&self, width: u16) -> Block<'a> {
-        let recipe = self.recipe();
-        let border = self.style.unwrap_or(recipe.border);
-        let mut block = if self.has_box_border() {
-            Block::bordered()
-                .border_style(border)
-                .border_set(self.tokens.border_set())
-        } else {
-            Block::default()
-        };
-        let slots = self.slots_for_width(width);
-        if let Some(spec) = self.title_spec {
-            block = block.title(self.title_spec_line(spec, width.saturating_sub(4), recipe.title));
-        } else if let Some(title) = self.title_line(slots, None) {
-            let clipped = self.chrome_label(&title, width.saturating_sub(4));
-            block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
-        }
-        if let Some(footer) = slots.footer {
-            let clipped = self.chrome_label(footer, width.saturating_sub(4));
-            block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
-        }
-        block
-    }
-
     /// Contracts a title or footer to the cells the chrome can spare.
     ///
     /// One rule for all four panel variants: grapheme-safe, ellipsis-marked,
@@ -848,6 +793,7 @@ impl<'a> Panel<'a> {
     fn title_spec_line(
         &self,
         spec: PanelTitleSpec<'a>,
+        collapsed: Option<bool>,
         budget: u16,
         title_style: Style,
     ) -> Line<'static> {
@@ -856,7 +802,25 @@ impl<'a> Panel<'a> {
             .glyphs
             .resolve(crate::style::Glyph::Success)
             .text;
-        let plain = spec.text(live_glyph);
+        let mut prefix = Vec::new();
+        if self.collapsible {
+            prefix.push(
+                if collapsed.unwrap_or(false) {
+                    self.tokens.glyphs.disclosure_closed()
+                } else {
+                    self.tokens.glyphs.disclosure_open()
+                }
+                .to_string(),
+            );
+        }
+        if let Some(warning) = self.recipe().title_prefix {
+            prefix.push(warning.to_string());
+        }
+        let prefix = prefix.join(" ");
+        let mut plain = spec.text(live_glyph);
+        if !prefix.is_empty() {
+            plain = format!("{prefix} {plain}");
+        }
         // Contraction is one rule for every panel title, spec or not: when the
         // segments cannot fit, the whole line contracts as text rather than
         // dropping a segment silently.
@@ -866,10 +830,11 @@ impl<'a> Panel<'a> {
                 title_style,
             ));
         }
-        let mut spans = vec![
-            Span::raw(" "),
-            Span::styled(spec.name.trim().to_string(), title_style),
-        ];
+        let mut spans = vec![Span::raw(" ")];
+        if !prefix.is_empty() {
+            spans.push(Span::styled(format!("{prefix} "), title_style));
+        }
+        spans.push(Span::styled(spec.name.trim().to_string(), title_style));
         if let Some(scope) = spec.scope {
             spans.push(Span::styled(
                 format!("({})", scope.trim()),
@@ -955,7 +920,8 @@ impl<'a> Panel<'a> {
         let inner = shrink(inner, pad_x, pad_y, pad_x, pad_y);
 
         let slots = self.slots_for_width(area.width);
-        let has_title = slots.title_text().is_some() || self.collapsible;
+        let has_title =
+            self.title_spec.is_some() || slots.title_text().is_some() || self.collapsible;
         let has_footer_band = slots.footer.is_some() && !has_border;
         // With box border, footer sits on bottom border (Block title_bottom).
         let footer_rows: u16 = if has_footer_band { 1 } else { 0 };
@@ -1037,11 +1003,14 @@ impl<'a> Panel<'a> {
                 .sum::<u16>()
                 .min(area.width / 2)
                 .max(4);
+            let right_inset = if has_border { 1 } else { 0 };
             Some(Rect {
-                x: area
-                    .x
-                    .saturating_add(area.width.saturating_sub(band_w).saturating_sub(1)),
-                y: area.y,
+                x: area.x.saturating_add(
+                    area.width
+                        .saturating_sub(band_w)
+                        .saturating_sub(right_inset),
+                ),
+                y: header.map_or(area.y, |header| header.y),
                 width: band_w.min(area.width),
                 height: 1.min(area.height),
             })
@@ -1090,35 +1059,25 @@ impl<'a> Panel<'a> {
         } else {
             self.surface_recipe()
         };
-        let fill_policy = if matches!(self.variant, PanelVariant::Quiet) {
+        let fill_policy = if matches!(self.variant, PanelVariant::Quiet) && !self.raised {
             SurfaceFill::Transparent
         } else {
             SurfaceFill::Auto
         };
-        let surface_style = if focused && self.is_focusable() {
-            PanelChrome::Focused
-        } else {
-            self.emphasis
-        };
-        let surface_recipe_tokens = self.tokens.panel_recipe(surface_style, self.elevation());
         let _ = Surface::new(self.tokens)
             .recipe(surface_recipe)
-            .bordered(false)
+            .bordered(self.has_box_border())
             .fill(fill_policy)
-            .padding(surface_recipe_tokens.pad_x, surface_recipe_tokens.pad_y)
+            .padding(0, 0)
             .paint(area, buffer);
 
-        // Box border + title/footer on border.
+        // Surface owns the box. Panel only places semantic chrome onto it.
         if self.has_box_border() {
             let mut emphasis = self.emphasis;
             if focused && self.is_focusable() {
                 emphasis = PanelChrome::Focused;
             }
             let recipe = self.tokens.panel_recipe(emphasis, self.elevation());
-            let border = self.style.unwrap_or(recipe.border);
-            let mut block = Block::bordered()
-                .border_style(border)
-                .border_set(self.tokens.border_set());
             let slots = self.slots_for_width(area.width);
             // Reserve right band for header actions so title does not collide.
             let action_reserve = parts
@@ -1126,17 +1085,25 @@ impl<'a> Panel<'a> {
                 .map(|a| a.width.saturating_add(1))
                 .unwrap_or(0);
             let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
-            if let Some(spec) = self.title_spec {
-                block = block.title(self.title_spec_line(spec, budget, recipe.title));
+            let title = if let Some(spec) = self.title_spec {
+                Some(self.title_spec_line(spec, Some(collapsed), budget, recipe.title))
             } else if let Some(title) = self.title_line(slots, Some(collapsed)) {
                 let clipped = self.chrome_label(&title, budget);
-                block = block.title(Span::styled(format!(" {clipped} "), recipe.title));
+                Some(Line::from(Span::styled(
+                    format!(" {clipped} "),
+                    recipe.title,
+                )))
+            } else {
+                None
+            };
+            if let Some(title) = title {
+                paint_border_label(area, true, &title, recipe.title, buffer, self.tokens);
             }
             if let Some(footer) = slots.footer {
                 let clipped = self.chrome_label(footer, area.width.saturating_sub(4));
-                block = block.title_bottom(Span::styled(format!(" {clipped} "), recipe.title));
+                let line = Line::from(Span::styled(format!(" {clipped} "), recipe.title));
+                paint_border_label(area, false, &line, recipe.title, buffer, self.tokens);
             }
-            block.render(area, buffer);
         } else if matches!(self.variant, PanelVariant::DividerOnly) {
             paint_divider_only(area, buffer, self.tokens);
             if let Some(header) = parts.header {
@@ -1189,7 +1156,7 @@ impl<'a> Panel<'a> {
                     let title = self.slots.body_title.unwrap_or("No items");
                     let mut empty = EmptyState::new(title, self.tokens);
                     if let Some(d) = self.slots.body_detail {
-                        empty = empty.detail(d);
+                        empty = empty.explanation(d);
                     }
                     let glyph = self
                         .tokens
@@ -1201,9 +1168,9 @@ impl<'a> Panel<'a> {
                 }
                 PanelBody::Error => {
                     let title = self.slots.body_title.unwrap_or("Error");
-                    let mut err = ErrorView::new(title, self.tokens);
+                    let mut err = ErrorState::new(title, self.tokens);
                     if let Some(d) = self.slots.body_detail {
-                        err = err.detail(d);
+                        err = err.explanation(d);
                     }
                     Widget::render(&err, parts.body, buffer);
                 }
@@ -1324,7 +1291,7 @@ fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, colla
     if let Some(spec) = panel.title_spec {
         // A frameless header states the same segments in the same tones as a
         // bordered one; only the box differs.
-        let line = panel.title_spec_line(spec, header.width, style);
+        let line = panel.title_spec_line(spec, Some(collapsed), header.width, style);
         let mut scratch = String::new();
         crate::text::paint_line_overflow(
             buffer,
@@ -1345,6 +1312,51 @@ fn paint_header_line(panel: &Panel<'_>, header: Rect, buffer: &mut Buffer, colla
         let t = panel.chrome_label(&title, header.width);
         buffer.set_stringn(header.x, header.y, &t, usize::from(header.width), style);
     }
+}
+
+fn paint_border_label(
+    area: Rect,
+    top: bool,
+    line: &Line<'_>,
+    style: Style,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+) {
+    if area.width <= 2 || area.height == 0 {
+        return;
+    }
+    let width = line
+        .spans
+        .iter()
+        .map(|span| display_cols(span.content.as_ref()))
+        .sum::<usize>()
+        .min(usize::from(area.width.saturating_sub(2)));
+    if width == 0 {
+        return;
+    }
+    let rect = Rect::new(
+        area.x.saturating_add(1),
+        if top {
+            area.y
+        } else {
+            area.bottom().saturating_sub(1)
+        },
+        u16::try_from(width).unwrap_or(u16::MAX),
+        1,
+    );
+    let mut scratch = String::new();
+    crate::text::paint_line_overflow(
+        buffer,
+        rect,
+        line,
+        style,
+        crate::text::LinePlacement {
+            alignment: crate::text::CellAlignment::Left,
+            overflow: crate::text::CellOverflow::Clip,
+            ellipsis: system.glyphs.ellipsis(),
+        },
+        &mut scratch,
+    );
 }
 
 fn paint_divider_only(area: Rect, buffer: &mut Buffer, system: &DesignSystem) {
@@ -1401,12 +1413,14 @@ mod tests {
 
         let mut overlay = Buffer::empty(area);
         Panel::new(&system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(PanelChrome::Focused)
             .paint(area, &mut overlay, None);
 
         let mut in_flow = Buffer::empty(area);
         Panel::new(&system)
+            .variant(PanelVariant::Bordered)
             .emphasis(PanelChrome::Focused)
             .paint(area, &mut in_flow, None);
 
@@ -1431,6 +1445,7 @@ mod tests {
         let area = Rect::new(0, 0, 34, 4);
         let mut buffer = Buffer::empty(area);
         Panel::new(&tokens)
+            .variant(PanelVariant::Bordered)
             .title("日本語のタイトルです、とても長い見出し")
             .footer("a footer far too long for this panel")
             .render(area, &mut buffer);
@@ -1461,7 +1476,9 @@ mod tests {
     fn render_border(system: &DesignSystem) -> Buffer {
         let area = Rect::new(0, 0, 8, 4);
         let mut buffer = Buffer::empty(area);
-        Panel::new(system).paint(area, &mut buffer, None);
+        Panel::new(system)
+            .variant(PanelVariant::Bordered)
+            .paint(area, &mut buffer, None);
         buffer
     }
 
@@ -1504,17 +1521,30 @@ mod tests {
     }
 
     #[test]
-    fn panel_inner_uses_density_padding_and_contracts_when_narrow() {
+    fn default_panel_is_quiet_and_explicit_border_reserves_chrome() {
         let area = Rect::new(0, 0, 20, 10);
+        let system = DesignSystem::default();
+        let mut quiet_buffer = Buffer::empty(area);
+        Panel::new(&system).paint(area, &mut quiet_buffer, None);
+        let mut bordered_buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .paint(area, &mut bordered_buffer, None);
         let comfortable = Panel::new(&DesignSystem::default()).inner(area);
-        let dashboard =
-            Panel::new(&DesignSystem::default().density(crate::style::Density::Dashboard))
-                .inner(area);
-        assert_eq!(comfortable, Rect::new(3, 2, 14, 6));
-        assert_eq!(dashboard, Rect::new(1, 1, 18, 8));
+        let bordered = Panel::new(&DesignSystem::default())
+            .variant(PanelVariant::Bordered)
+            .inner(area);
+        assert!(!Panel::new(&DesignSystem::default()).has_box_border());
+        assert_eq!(quiet_buffer[(0, 0)].symbol(), " ");
+        assert_eq!(
+            bordered_buffer[(0, 0)].symbol(),
+            system.border_set().top_left
+        );
+        assert_eq!(comfortable, Rect::new(2, 1, 16, 8));
+        assert_eq!(bordered, Rect::new(3, 2, 14, 6));
         assert_eq!(
             Panel::new(&DesignSystem::default()).inner(Rect::new(0, 0, 5, 2)),
-            Rect::new(1, 1, 0, 0)
+            Rect::new(0, 0, 5, 2)
         );
     }
 
@@ -1767,7 +1797,9 @@ mod tests {
             .scope("kube-system")
             .count(42)
             .filter("api");
-        let panel = Panel::new(&system).title_spec(spec);
+        let panel = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title_spec(spec);
         let area = Rect::new(0, 0, 48, 4);
         let mut buffer = Buffer::empty(area);
         Widget::render(&panel, area, &mut buffer);
@@ -1798,7 +1830,9 @@ mod tests {
             .scope("crates/termrock/src/widgets")
             .count(1234)
             .filter("unresolved import");
-        let panel = Panel::new(&system).title_spec(spec);
+        let panel = Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title_spec(spec);
         let area = Rect::new(0, 0, 24, 3);
         let mut buffer = Buffer::empty(area);
         Widget::render(&panel, area, &mut buffer);

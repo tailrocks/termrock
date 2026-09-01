@@ -36,11 +36,11 @@ use crate::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{Density, DesignSystem, Glyph, Role},
+    style::{ControlState, Density, DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        HelpEntry, Panel, PanelChrome, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
-        TokenMeter,
+        HelpEntry, Panel, PanelChrome, PanelVariant, TextArea, TextAreaOutcome, TextAreaState,
+        TextCursor, TokenMeter,
         history_picker::{HistoryEntry, HistoryKind},
     },
 };
@@ -544,7 +544,7 @@ impl PromptComposerState {
             density: Density::Comfortable,
             ascii_fallback: false,
             colorless: false,
-            placeholder: "Message…".into(),
+            placeholder: "Message".into(),
             policy: SubmitPolicy::default(),
             connection: ComposerConnection::Ready,
             busy: false,
@@ -1801,23 +1801,13 @@ fn layout_composer(area: Rect, state: &PromptComposerState) -> PromptComposerLay
     }
 
     let status_h = if remaining > 1 { 1u16 } else { 0 };
-    let valid_h = if state.validation_error.is_some() && remaining > status_h + 1 {
-        1u16
-    } else {
-        0
-    };
+    let valid_h = if remaining > status_h + 1 { 1u16 } else { 0 };
     let editor_h = remaining
         .saturating_sub(status_h)
         .saturating_sub(valid_h)
         .max(1);
 
-    let prompt_gutter = area.width.min(2);
-    layout.editor = Rect::new(
-        area.x.saturating_add(prompt_gutter),
-        y,
-        area.width.saturating_sub(prompt_gutter),
-        editor_h,
-    );
+    layout.editor = Rect::new(area.x, y, area.width, editor_h);
     y = y.saturating_add(editor_h);
     if status_h > 0 {
         layout.status = Rect::new(area.x, y, area.width, 1);
@@ -1936,7 +1926,9 @@ impl StatefulWidget for &PromptComposer<'_> {
             } else {
                 PanelChrome::Normal
             };
-            let panel = Panel::new(self.system).emphasis(emphasis);
+            let panel = Panel::new(self.system)
+                .variant(PanelVariant::Bordered)
+                .emphasis(emphasis);
             Widget::render(&panel, area, buffer);
         }
 
@@ -1976,24 +1968,6 @@ impl StatefulWidget for &PromptComposer<'_> {
 
         // Editor
         if !layout.editor.is_empty() {
-            let editor_surface =
-                Rect::new(area.x, layout.editor.y, area.width, layout.editor.height);
-            buffer.set_style(editor_surface, self.system.style(Role::Sunken));
-            let prompt = Glyph::Prompt.resolve(self.system.glyphs).text;
-            // The caret is the accent only while the composer can be typed
-            // into; a blocked composer is not the current intent (plans/007).
-            let prompt_role = if state.accepts_input() {
-                Role::Accent
-            } else {
-                Role::TextMuted
-            };
-            buffer.set_stringn(
-                area.x,
-                layout.editor.y,
-                prompt,
-                usize::from(area.width.min(1)),
-                self.system.style(prompt_role),
-            );
             let placeholder = state.placeholder.as_str();
             StatefulWidget::render(
                 &TextArea::new(self.system).placeholder(placeholder),
@@ -2003,14 +1977,12 @@ impl StatefulWidget for &PromptComposer<'_> {
             );
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
-                // Selected text keeps its own foreground; the range washes.
-                let sel = if state.colorless {
-                    ratatui_core::style::Style::new()
-                        .add_modifier(ratatui_core::style::Modifier::REVERSED)
-                } else {
-                    self.system.style(Role::SelectionTint)
-                };
-                paint_editor_selection(buffer, layout.editor, state, sel);
+                let sel = self
+                    .system
+                    .input_recipe(ControlState::Focused, false)
+                    .cursor
+                    .add_modifier(ratatui_core::style::Modifier::REVERSED);
+                paint_editor_selection(buffer, state.editor.body_area(), state, sel);
             }
         }
 
@@ -2046,7 +2018,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                 ComposerConnection::Disabled => parts.push("disabled".into()),
                 ComposerConnection::Ready => {}
             }
-            let left = parts.join(" · ");
+            let left = parts.join(if ascii { " | " } else { " · " });
             let style = if state.mode.as_ref().is_some_and(|m| m.warning) {
                 self.system.style(Role::Warning)
             } else {
@@ -2077,13 +2049,12 @@ impl StatefulWidget for &PromptComposer<'_> {
             state.validation_error.as_ref(),
             !layout.validation.is_empty(),
         ) {
-            let clipped = take_display_cols(err, usize::from(layout.validation.width));
-            buffer.set_stringn(
-                layout.validation.x,
-                layout.validation.y,
-                &clipped,
-                usize::from(layout.validation.width),
-                self.system.style(Role::Danger),
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                layout.validation,
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                err,
             );
         }
     }
@@ -2102,7 +2073,7 @@ impl StatefulWidget for PromptComposer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::{input::KeyModifiers, style::Glyph};
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -2505,7 +2476,7 @@ mod tests {
     }
 
     #[test]
-    fn selection_paint_does_not_panic() {
+    fn selection_paints_inside_editor_body_with_input_recipe() {
         let system = crate::style::DesignSystem::default();
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
@@ -2514,6 +2485,12 @@ mod tests {
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
         PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+        let body = state.editor.body_area();
+        assert!(
+            buf[(body.x, body.y)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::REVERSED)
+        );
     }
 
     #[test]
@@ -2524,11 +2501,38 @@ mod tests {
         let area = Rect::new(0, 0, 40, 6);
         let mut buffer = Buffer::empty(area);
         PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+        let body = state.editor.body_area();
+        let prompt_x = body.x.saturating_sub(1);
         assert_eq!(
-            buffer[(0, 0)].symbol(),
+            buffer[(prompt_x, body.y)].symbol(),
             Glyph::Prompt.resolve(system.glyphs).text
         );
-        assert_eq!(buffer[(1, 0)].bg, system.style(Role::Sunken).bg.unwrap());
+        assert_eq!(
+            buffer[(body.x, body.y)].bg,
+            system.style(Role::Sunken).bg.unwrap()
+        );
+    }
+
+    #[test]
+    fn narrow_composer_keeps_existing_draft_visible() {
+        let system = DesignSystem::default();
+        let mut state = PromptComposerState::new();
+        state.set_text("Explain this module");
+        state.add_chip(ComposerChip::file("a", "lib.rs"));
+        let area = Rect::new(0, 0, 22, 8);
+        let mut buffer = Buffer::empty(area);
+
+        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+
+        let body = state.editor.body_area();
+        let painted: String = (body.x..body.right())
+            .map(|x| buffer[(x, body.y)].symbol())
+            .collect();
+        assert!(
+            painted.chars().any(|ch| !ch.is_whitespace()),
+            "draft vanished: body={body:?} scroll_x={} text={painted:?}",
+            state.editor.scroll().offset_x()
+        );
     }
 
     #[test]

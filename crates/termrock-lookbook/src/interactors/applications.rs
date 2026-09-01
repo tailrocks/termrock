@@ -3,11 +3,12 @@
 
 //! Persistent application-pattern demos built only from public pattern APIs.
 
-use ratatui::{Frame, layout::Rect};
+use ratatui::{Frame, layout::Rect, text::Line};
 use termrock::{
     input::{KeyCode, KeyEvent, MouseEvent},
     patterns::{
-        AgentWorkbenchState, AppShellConfig, AppShellZone, AuthEntryField, AuthEntryOutcome,
+        AgentWorkbenchState, AppDashboardLayout, AppDashboardOutcome, AppDashboardState,
+        AppDashboardSurfaces, AppShellConfig, AppShellZone, AuthEntryField, AuthEntryOutcome,
         AuthEntryState, AuthEntrySurfaces, ConnectionManager, ConnectionManagerOutcome,
         ConnectionManagerPhase, ConnectionManagerPresentation, ConnectionManagerState,
         DatabaseConnGate, DatabaseWorkbenchOutcome, DatabaseWorkbenchState,
@@ -23,27 +24,29 @@ use termrock::{
         SetupStepKind, SetupWizardOutcome, SetupWizardState, SetupWizardSurfaces,
         WorkbenchKeyOutcome, WorkbenchSurfaces, command_entries_from_help, default_modes,
         example_auth_aside_lines, example_capability_lines, example_connections,
-        example_db_commands, example_db_history, example_file_entries, example_file_ops,
-        example_file_preview, example_git_branches, example_git_commits, example_git_diff_files,
-        example_git_diff_lines, example_git_files, example_git_help_entries, example_git_hunks,
-        example_git_terminal_lines, example_git_terminal_meta, example_help_center_entries,
-        example_help_doctor_report, example_help_topics, example_inspect_fields,
-        example_log_inspect_fields, example_observability_alerts, example_observability_events,
-        example_observability_logs, example_observability_tiles, example_project_preview,
-        example_project_quick_open, example_projects, example_quick_open_from_entries,
-        example_result_columns, example_result_row_refs, example_result_rows,
-        example_schema_entries, example_sessions, example_settings_appearance_fields,
-        example_settings_categories, example_setup_steps, example_setup_summary_lines,
-        example_workbench_activities, example_workbench_tasks, layout_app_shell,
-        render_agent_workbench, render_auth_entry, render_database_workbench, render_file_manager,
-        render_git_workbench, render_help_center, render_observability_dashboard,
-        render_project_launcher, render_settings_screen, render_setup_wizard,
+        example_dashboard_nav, example_db_commands, example_db_history, example_file_entries,
+        example_file_ops, example_file_preview, example_git_branches, example_git_commits,
+        example_git_diff_files, example_git_diff_lines, example_git_files,
+        example_git_help_entries, example_git_hunks, example_git_terminal_lines,
+        example_git_terminal_meta, example_help_center_entries, example_help_doctor_report,
+        example_help_topics, example_inspect_fields, example_log_inspect_fields,
+        example_observability_alerts, example_observability_events, example_observability_logs,
+        example_observability_tiles, example_project_preview, example_project_quick_open,
+        example_projects, example_quick_open_from_entries, example_result_columns,
+        example_result_row_refs, example_result_rows, example_schema_entries, example_sessions,
+        example_settings_appearance_fields, example_settings_categories, example_setup_steps,
+        example_setup_summary_lines, example_workbench_activities, example_workbench_tasks,
+        layout_app_dashboard, layout_app_shell, render_agent_workbench, render_app_dashboard,
+        render_auth_entry, render_database_workbench, render_file_manager, render_git_workbench,
+        render_help_center, render_observability_dashboard, render_project_launcher,
+        render_settings_screen, render_setup_wizard,
     },
     style::{DesignSystem, PanelChrome, RolePalette},
     widgets::{
-        BUILTIN_THEME_PRESETS, Fieldset, ListRow, MetricTile, MetricTileHealth, Panel,
-        PromptComposer, PromptComposerState, StatusBarState, StatusSlot, Transcript,
-        TranscriptBlock, TranscriptKind, TranscriptState,
+        BUILTIN_THEME_PRESETS, Fieldset, List, ListRow, ListState, MetricTile, MetricTileHealth,
+        Panel, PanelVariant, PromptComposer, PromptComposerState, SemanticStatus, StatusBarState,
+        StatusSegment, StatusSlot, StatusStrip, Transcript, TranscriptBlock, TranscriptKind,
+        TranscriptState,
     },
 };
 
@@ -53,15 +56,21 @@ pub(crate) fn application_interactor(id: &str) -> Option<Box<dyn StoryInteractio
     match id {
         "auth-entry/basic" => Some(Box::new(AuthEntryDemo::new())),
         "connection-manager/full" => Some(Box::new(ConnectionManagerDemo::new())),
+        "agent-shell/basic" | "studio-shell/basic" => Some(Box::new(AppShellDemo::new())),
         "app-shell/workbench" => Some(Box::new(AppShellDemo::new())),
         "setup-wizard/welcome" => Some(Box::new(SetupWizardDemo::new())),
         "file-manager/basic" => Some(Box::new(FileManagerDemo::new())),
         "project-launcher/basic" => Some(Box::new(ProjectLauncherDemo::new())),
         "help-center/basic" => Some(Box::new(HelpCenterDemo::new())),
         "metrics-dashboard/basic" => Some(Box::new(MetricsDashboardDemo::new())),
-        "schema-browser/basic" => Some(Box::new(SchemaBrowserDemo::new())),
+        "app-dashboard/basic" => Some(Box::new(AppDashboardDemo::new())),
+        "schema-browser/basic" | "resource-browser/basic" => {
+            Some(Box::new(SchemaBrowserDemo::new()))
+        }
         "settings-screen/basic" => Some(Box::new(SettingsScreenDemo::new())),
-        "observability-dashboard/basic" => Some(Box::new(ObservabilityDashboardDemo::new())),
+        "observability-dashboard/basic" | "ops-dashboard/basic" => {
+            Some(Box::new(ObservabilityDashboardDemo::new()))
+        }
         "database-workbench/basic" => Some(Box::new(DatabaseWorkbenchDemo::new())),
         "git-workbench/basic" => Some(Box::new(GitWorkbenchDemo::new())),
         "agent-workbench/basic" => Some(Box::new(AgentWorkbenchDemo::new())),
@@ -71,7 +80,7 @@ pub(crate) fn application_interactor(id: &str) -> Option<Box<dyn StoryInteractio
 
 struct AuthEntryDemo {
     state: AuthEntryState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -79,7 +88,7 @@ impl AuthEntryDemo {
     fn new() -> Self {
         Self {
             state: AuthEntryState::sign_up(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -112,7 +121,7 @@ impl AuthEntryDemo {
 
 impl StoryInteraction for AuthEntryDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let mut surfaces = AuthEntrySurfaces::english(&system, &mut self.state);
         surfaces.aside_lines = example_auth_aside_lines();
         render_auth_entry(frame.buffer_mut(), area, surfaces);
@@ -127,8 +136,8 @@ impl StoryInteraction for AuthEntryDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -152,7 +161,7 @@ impl StoryInteraction for AuthEntryDemo {
 
 struct ConnectionManagerDemo {
     state: ConnectionManagerState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -164,7 +173,7 @@ impl ConnectionManagerDemo {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -197,7 +206,7 @@ impl ConnectionManagerDemo {
 
 impl StoryInteraction for ConnectionManagerDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         frame.render_stateful_widget(&ConnectionManager::new(&system), area, &mut self.state);
     }
 
@@ -211,8 +220,8 @@ impl StoryInteraction for ConnectionManagerDemo {
         self.apply(value)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -267,7 +276,7 @@ impl StoryInteraction for ConnectionManagerDemo {
 struct AppShellDemo {
     sidebar: bool,
     focus: usize,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -276,7 +285,7 @@ impl AppShellDemo {
         Self {
             sidebar: true,
             focus: 0,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -284,7 +293,7 @@ impl AppShellDemo {
 
 impl StoryInteraction for AppShellDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let mut config = AppShellConfig::workbench();
         if !self.sidebar {
             config.sidebar_width = 0;
@@ -346,8 +355,8 @@ impl StoryInteraction for AppShellDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -365,7 +374,7 @@ impl StoryInteraction for AppShellDemo {
 
 struct SetupWizardDemo {
     state: SetupWizardState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -373,7 +382,7 @@ impl SetupWizardDemo {
     fn new() -> Self {
         Self {
             state: SetupWizardState::from_steps(example_setup_steps()).with_title("First run"),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -395,7 +404,7 @@ impl SetupWizardDemo {
 
 impl StoryInteraction for SetupWizardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let capabilities = example_capability_lines();
         let summary = example_setup_summary_lines();
         render_setup_wizard(
@@ -425,8 +434,8 @@ impl StoryInteraction for SetupWizardDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -450,7 +459,7 @@ impl StoryInteraction for SetupWizardDemo {
 
 struct FileManagerDemo {
     state: FileManagerState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -460,7 +469,7 @@ impl FileManagerDemo {
         state.cwd = "/project".into();
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -487,7 +496,7 @@ impl FileManagerDemo {
 
 impl StoryInteraction for FileManagerDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = example_file_entries();
         let ops = example_file_ops();
         let (preview, _, _) = example_file_preview();
@@ -518,8 +527,8 @@ impl StoryInteraction for FileManagerDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -544,7 +553,7 @@ impl StoryInteraction for FileManagerDemo {
 
 struct ProjectLauncherDemo {
     state: ProjectLauncherState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -552,7 +561,7 @@ impl ProjectLauncherDemo {
     fn new() -> Self {
         Self {
             state: ProjectLauncherState::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -577,7 +586,7 @@ impl ProjectLauncherDemo {
 
 impl StoryInteraction for ProjectLauncherDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let projects = example_projects();
         let sessions = example_sessions();
         let (preview, _, _) = example_project_preview();
@@ -610,8 +619,8 @@ impl StoryInteraction for ProjectLauncherDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -635,7 +644,7 @@ impl StoryInteraction for ProjectLauncherDemo {
 
 struct HelpCenterDemo {
     state: HelpCenterState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -645,7 +654,7 @@ impl HelpCenterDemo {
         state.selected_topic = Some("getting-started".into());
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -682,7 +691,7 @@ impl HelpCenterDemo {
 
 impl StoryInteraction for HelpCenterDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let (topics, help, commands) = Self::fixtures(&system);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -702,7 +711,7 @@ impl StoryInteraction for HelpCenterDemo {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let (topics, help, commands) = Self::fixtures(&system);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -716,8 +725,8 @@ impl StoryInteraction for HelpCenterDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -739,9 +748,157 @@ impl StoryInteraction for HelpCenterDemo {
     }
 }
 
+struct AppDashboardDemo {
+    state: AppDashboardState<&'static str>,
+    workloads: ListState<&'static str>,
+    system: DesignSystem,
+    outcome: Option<String>,
+}
+
+impl AppDashboardDemo {
+    fn new() -> Self {
+        Self {
+            state: AppDashboardState::new(Some("overview")),
+            workloads: ListState::new(Some("api")),
+            system: crate::design::lookbook_system(RolePalette::default()),
+            outcome: None,
+        }
+    }
+
+    fn workloads() -> Vec<ListRow<'static, &'static str>> {
+        vec![
+            ListRow::item("api", Line::from("api-gateway"))
+                .secondary(Line::from("v2.14.0 · iad · 3/3 replicas"))
+                .status(Line::from("| ◉ deploying"))
+                .badge(Line::from("2m")),
+            ListRow::item("worker", Line::from("event-worker"))
+                .secondary(Line::from("v2.13.8 · fra · queue 18"))
+                .status(Line::from("| ✓ healthy"))
+                .badge(Line::from("14m")),
+            ListRow::item("billing", Line::from("billing-api"))
+                .secondary(Line::from("v5.9.1 · iad · p95 82ms"))
+                .status(Line::from("| ! warning"))
+                .badge(Line::from("31m")),
+            ListRow::item("web", Line::from("customer-web"))
+                .secondary(Line::from("v8.2.0 · syd · 6/6 replicas"))
+                .status(Line::from("| ✓ healthy"))
+                .badge(Line::from("1h")),
+            ListRow::item("search", Line::from("search-indexer"))
+                .secondary(Line::from("rebuilding products-v7 · 68%"))
+                .status(Line::from("| ◉ running"))
+                .badge(Line::from("4m")),
+            ListRow::item("cron", Line::from("nightly-reports"))
+                .secondary(Line::from("next 02:00 UTC · last run 8m12s"))
+                .status(Line::from("| … queued"))
+                .badge(Line::from("6h")),
+            ListRow::item("auth", Line::from("identity"))
+                .secondary(Line::from("v3.7.4 · iad/fra · error 0.02%"))
+                .status(Line::from("| ✓ healthy"))
+                .badge(Line::from("1d")),
+            ListRow::item("warehouse", Line::from("warehouse-sync"))
+                .secondary(Line::from("waiting for upstream checkpoint"))
+                .status(Line::from("| ◐ waiting"))
+                .badge(Line::from("9m")),
+        ]
+    }
+
+    fn apply(&mut self, value: AppDashboardOutcome<&'static str>) -> bool {
+        if matches!(value, AppDashboardOutcome::Ignored) {
+            return false;
+        }
+        self.outcome = Some(match &value {
+            AppDashboardOutcome::RouteSelected { id } => format!("Opened {id}"),
+            AppDashboardOutcome::PaneFocused { pane } => {
+                format!("Focused {} pane", pane.id())
+            }
+            other => format!("Application dashboard: {other:?}"),
+        });
+        true
+    }
+}
+
+impl StoryInteraction for AppDashboardDemo {
+    fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+        let system = self.system.clone();
+        let nav = example_dashboard_nav();
+        render_app_dashboard(
+            frame.buffer_mut(),
+            area,
+            AppDashboardSurfaces {
+                system: &system,
+                state: &mut self.state,
+                nav: &nav,
+                title: "Production workspace",
+                main_placeholder: "",
+            },
+        );
+
+        let slots = layout_app_dashboard(area, AppDashboardLayout::default());
+        let metric_body = Panel::new(&system)
+            .title("Metrics")
+            .variant(PanelVariant::Bordered)
+            .inner(slots.metrics);
+        let segments = [
+            StatusSegment::new("healthy 12")
+                .semantic(SemanticStatus::Success)
+                .priority(3),
+            StatusSegment::new("deploying 2")
+                .semantic(SemanticStatus::Running)
+                .priority(2),
+            StatusSegment::new("warning 1")
+                .semantic(SemanticStatus::Warning)
+                .priority(4),
+            StatusSegment::new("p95 82ms").quiet().priority(1),
+        ];
+        StatusStrip::new(&segments, &system).paint(metric_body, frame.buffer_mut());
+
+        let main_body = Panel::new(&system)
+            .title("Main")
+            .variant(PanelVariant::Bordered)
+            .inner(slots.main);
+        let rows = Self::workloads();
+        frame.render_stateful_widget(
+            &List::new(&rows, &system)
+                .comfortable()
+                .focused(self.state.pane() == termrock::patterns::AppDashboardPane::Main),
+            main_body,
+            &mut self.workloads,
+        );
+    }
+
+    fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let nav = example_dashboard_nav();
+        let value = self.state.handle_key(key, &nav);
+        if let AppDashboardOutcome::MainKey { key } = value {
+            let rows = Self::workloads();
+            let changed = self.workloads.handle_key(&rows, key);
+            self.outcome = Some(format!("Workloads: {changed:?}"));
+            true
+        } else {
+            self.apply(value)
+        }
+    }
+
+    fn handle_mouse(&mut self, _mouse: MouseEvent, _preview_area: Rect) -> bool {
+        false
+    }
+
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
+    }
+
+    fn hints(&self) -> Vec<&'static str> {
+        vec!["Tab pane", "↑↓ route", "Enter open", "Ctrl+B rail"]
+    }
+
+    fn take_outcome(&mut self) -> Option<String> {
+        self.outcome.take()
+    }
+}
+
 struct MetricsDashboardDemo {
     state: MetricsDashboardState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -749,7 +906,7 @@ impl MetricsDashboardDemo {
     fn new() -> Self {
         Self {
             state: MetricsDashboardState::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -796,7 +953,7 @@ impl MetricsDashboardDemo {
 
 impl StoryInteraction for MetricsDashboardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let (tiles, alerts) = Self::fixtures();
         MetricsDashboard::new(&tiles, &alerts, &system)
             .title("ops")
@@ -815,8 +972,8 @@ impl StoryInteraction for MetricsDashboardDemo {
         self.apply(value)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -836,7 +993,7 @@ impl StoryInteraction for MetricsDashboardDemo {
 
 struct SchemaBrowserDemo {
     state: SchemaBrowserState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -846,7 +1003,7 @@ impl SchemaBrowserDemo {
         state.sync_expanded_from_entries(&Self::entries());
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -905,7 +1062,7 @@ impl SchemaBrowserDemo {
 
 impl StoryInteraction for SchemaBrowserDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = Self::entries();
         SchemaBrowser::new(&entries, &system)
             .title("catalog")
@@ -922,8 +1079,8 @@ impl StoryInteraction for SchemaBrowserDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -956,7 +1113,7 @@ impl StoryInteraction for SchemaBrowserDemo {
 struct SettingsScreenDemo {
     state: SettingsScreenState<&'static str>,
     status: StatusBarState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -969,7 +1126,7 @@ impl SettingsScreenDemo {
         Self {
             state,
             status: StatusBarState::default(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -1000,7 +1157,7 @@ impl SettingsScreenDemo {
 
 impl StoryInteraction for SettingsScreenDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let nav = example_settings_categories();
         let fields = example_settings_appearance_fields();
         let fieldsets = [Fieldset::new("Appearance", &fields)];
@@ -1035,8 +1192,8 @@ impl StoryInteraction for SettingsScreenDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -1069,7 +1226,7 @@ impl StoryInteraction for SettingsScreenDemo {
 
 struct ObservabilityDashboardDemo {
     state: ObservabilityDashboardState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -1079,7 +1236,7 @@ impl ObservabilityDashboardDemo {
         state.live = ObservabilityLiveState::Live;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -1106,7 +1263,7 @@ impl ObservabilityDashboardDemo {
 
 impl StoryInteraction for ObservabilityDashboardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let logs = example_observability_logs();
         let events = example_observability_events();
         let tiles = example_observability_tiles();
@@ -1143,8 +1300,8 @@ impl StoryInteraction for ObservabilityDashboardDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -1168,7 +1325,7 @@ impl StoryInteraction for ObservabilityDashboardDemo {
 
 struct DatabaseWorkbenchDemo {
     state: DatabaseWorkbenchState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -1179,7 +1336,7 @@ impl DatabaseWorkbenchDemo {
         state.finish_run_success(3, 12);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -1208,7 +1365,7 @@ impl DatabaseWorkbenchDemo {
 
 impl StoryInteraction for DatabaseWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let schema = example_schema_entries();
         let columns = example_result_columns();
         let data = example_result_rows();
@@ -1253,8 +1410,8 @@ impl StoryInteraction for DatabaseWorkbenchDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -1283,7 +1440,7 @@ impl StoryInteraction for DatabaseWorkbenchDemo {
 
 struct GitWorkbenchDemo {
     state: GitWorkbenchState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -1294,7 +1451,7 @@ impl GitWorkbenchDemo {
         state.branches = example_git_branches();
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -1325,7 +1482,7 @@ impl GitWorkbenchDemo {
 
 impl StoryInteraction for GitWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let files = example_git_files();
         let lines = example_git_diff_lines();
         let hunks = example_git_hunks();
@@ -1355,7 +1512,7 @@ impl StoryInteraction for GitWorkbenchDemo {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let files = example_git_files();
         let lines = example_git_diff_lines();
         let hunks = example_git_hunks();
@@ -1382,8 +1539,8 @@ impl StoryInteraction for GitWorkbenchDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -1420,7 +1577,7 @@ struct AgentWorkbenchDemo {
     prompt: PromptComposerState,
     transcript: TranscriptState<&'static str>,
     status: StatusBarState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -1435,7 +1592,7 @@ impl AgentWorkbenchDemo {
             prompt,
             transcript: TranscriptState::new(),
             status: StatusBarState::default(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -1475,7 +1632,7 @@ impl AgentWorkbenchDemo {
 
 impl StoryInteraction for AgentWorkbenchDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let blocks = Self::blocks();
         let transcript = Transcript::new(&blocks, &system);
         let prompt = PromptComposer::new(&system);
@@ -1543,8 +1700,8 @@ impl StoryInteraction for AgentWorkbenchDemo {
         false
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -1570,5 +1727,34 @@ impl StoryInteraction for AgentWorkbenchDemo {
 
     fn captures_text_input(&self) -> bool {
         self.state.focused_pane() == Some("prompt")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::{Terminal, backend::TestBackend};
+
+    use super::*;
+
+    #[test]
+    fn app_dashboard_story_uses_the_real_pattern_and_fills_the_flagship_frame() {
+        let mut demo = AppDashboardDemo::new();
+        let mut terminal = Terminal::new(TestBackend::new(100, 28)).expect("test terminal");
+        terminal
+            .draw(|frame| demo.render(frame, frame.area()))
+            .expect("dashboard frame");
+        let buffer = terminal.backend().buffer();
+        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(text.contains("Production workspace"), "{text}");
+        assert!(text.contains("api-gateway"), "{text}");
+        assert!(text.contains("warehouse-sync"), "{text}");
+
+        let painted_rows = (0..buffer.area.height)
+            .filter(|&y| (0..buffer.area.width).any(|x| !buffer[(x, y)].symbol().trim().is_empty()))
+            .count();
+        assert!(
+            painted_rows >= 20,
+            "flagship dashboard uses only {painted_rows}/28 rows"
+        );
     }
 }

@@ -260,6 +260,17 @@ where
         self.overlays.handle_pointer_down(position)
     }
 
+    /// Outside / pointer release against the overlay stack.
+    ///
+    /// Dismissal commits only when press and release occur outside the same
+    /// top layer, so hosts must route both halves of the gesture.
+    pub fn handle_overlay_pointer_up(
+        &mut self,
+        position: ratatui_core::layout::Position,
+    ) -> OverlayOutcome<Id> {
+        self.overlays.handle_pointer_up(position)
+    }
+
     /// Request focus via FocusGraph (programmatic).
     pub fn request_focus(&mut self, id: Id) -> FocusOutcome<Id>
     where
@@ -624,6 +635,43 @@ mod tests {
         assert_eq!(ctx.focus().focused(), Some(&Fid::A));
         let _ = ctx.request_focus(Fid::B);
         assert_eq!(ctx.focus().focused(), Some(&Fid::B));
+    }
+
+    #[test]
+    fn context_routes_overlay_pointer_gesture_and_one_escape_layer() {
+        use crate::interaction::{OverlayOutcome, OverlaySize, OverlaySpec};
+        use ratatui_core::layout::Position;
+
+        let bounds = Rect::new(0, 0, 80, 24);
+        let anchor = Rect::new(20, 10, 1, 1);
+        let mut host = UiHost::<Fid, Lid>::test();
+        let mut ctx = host.begin_frame();
+        let _ = ctx.overlays_mut().open(
+            bounds,
+            OverlaySpec::menu("menu", anchor, OverlaySize::menu(16, 5), Some(Fid::A)),
+        );
+        assert_eq!(
+            ctx.handle_overlay_pointer_down(Position::new(0, 0)),
+            OverlayOutcome::Ignored
+        );
+        assert!(matches!(
+            ctx.handle_overlay_pointer_up(Position::new(0, 0)),
+            OverlayOutcome::Dismissed {
+                focus: Some(Fid::A),
+                ..
+            }
+        ));
+
+        let _ = ctx.overlays_mut().open(
+            bounds,
+            OverlaySpec::menu("first", anchor, OverlaySize::menu(16, 5), None),
+        );
+        let _ = ctx.overlays_mut().open(
+            bounds,
+            OverlaySpec::menu("second", anchor, OverlaySize::menu(16, 5), None),
+        );
+        assert!(ctx.handle_overlay_escape().is_dismissed());
+        assert_eq!(ctx.overlays().len(), 1, "Esc peels exactly one layer");
     }
 
     #[test]

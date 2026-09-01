@@ -34,8 +34,9 @@ pub const BRAILLE_RAMP: &[char; 5] = &[' ', '⣀', '⣤', '⣶', '⣿'];
 pub const MASK_CELLS: usize = 8;
 /// Canonical deterministic braille spinner.
 pub const SPINNER_BRAILLE_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-/// Quiet four-step presence pulse; every frame is one display cell.
-pub const SPINNER_DOT_PULSE_FRAMES: &[&str] = &["⋅", ":", "⸬", "⁙"];
+/// Quiet four-step presence pulse; every frame is one display cell from the
+/// shipped raster font's core status repertoire.
+pub const SPINNER_DOT_PULSE_FRAMES: &[&str] = &["·", "•", "●", "•"];
 
 /// Semantic family for browsing and docs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

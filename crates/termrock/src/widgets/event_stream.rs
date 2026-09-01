@@ -979,8 +979,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let separator = if ascii { " - " } else { " · " };
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
 
@@ -1098,7 +1099,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 
                 let sev = event.severity.glyph(ascii);
                 let batch = if event.batch_count > 1 {
-                    format!("×{}", event.batch_count)
+                    format!("{}{}", if ascii { "x" } else { "×" }, event.batch_count)
                 } else {
                     String::new()
                 };
@@ -1164,6 +1165,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     ),
                     0,
                 );
+                chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
                 if event.focusable() {
                     state.regions.push(EventStreamRegion {
                         id: event.id.clone(),
@@ -1182,7 +1184,8 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 if let Some(ev) = view.iter().find(|e| &e.id == sel) {
                     let detail = ev.detail.unwrap_or(ev.summary);
                     let line = format!(
-                        "  └ {}",
+                        "{}{}",
+                        if ascii { "  `- " } else { "  └ " },
                         take_display_cols(detail, usize::from(area.width.saturating_sub(4)))
                     );
                     buffer.set_stringn(
@@ -1206,21 +1209,29 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     "↓ live".into()
                 }
             } else if unread > 0 {
-                format!("↓ {unread} new")
+                if ascii {
+                    format!("v {unread} new")
+                } else {
+                    format!("↓ {unread} new")
+                }
             } else {
                 "paused".into()
             };
             if state.dropped > 0 {
-                chip.push_str(&format!(" · drop {}", state.dropped));
+                chip.push_str(&format!("{separator}drop {}", state.dropped));
             }
             if state.batched > 1 {
-                chip.push_str(&format!(" · batch {}", state.batched));
+                chip.push_str(&format!("{separator}batch {}", state.batched));
             }
             if let Some(q) = &state.filter {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if state.severity_floor > EventSeverity::Trace {
-                chip.push_str(&format!(" · ≥{}", state.severity_floor.letter()));
+                let comparison = if ascii { ">=" } else { "≥" };
+                chip.push_str(&format!(
+                    "{separator}{comparison}{}",
+                    state.severity_floor.letter()
+                ));
             }
             buffer.set_stringn(
                 area.x,

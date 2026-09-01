@@ -7,9 +7,9 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Glyph, Role, RolePalette},
     text::{display_cols, take_display_cols},
-    widgets::Severity,
+    widgets::{SemanticStatus, Severity},
 };
 
 // EmptyState lives in `widgets/empty_state.rs`.
@@ -40,16 +40,33 @@ impl Widget for &LoadingView<'_> {
             return;
         }
         use crate::layout::{Center, CenterAxis};
-        let text = if self.frame.is_empty() {
-            self.label.to_owned()
+        let rail = self.system.glyphs.resolve(Glyph::RailHeavy).text;
+        let frame = if self.system.motion.animate_spinners() && !self.frame.is_empty() {
+            self.frame
         } else {
-            format!("{} {}", self.frame, self.label)
+            SemanticStatus::Running.glyph_for_set(self.system.glyphs)
         };
+        let text = format!("{rail} {frame} {}", self.label);
         let row = Center::new(area.width, 1)
             .axis(CenterAxis::Vertical)
             .layout(area)
             .child;
-        paint_centered_line(area, buffer, row.y, &text, self.system.style(Role::Info));
+        let x = paint_centered_line(area, buffer, row.y, &text, self.system.style(Role::Text));
+        let status_style = self.system.style(Role::InfoDim);
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            Rect::new(x, row.y, area.right().saturating_sub(x), 1),
+            0,
+            rail,
+            status_style,
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            Rect::new(x, row.y, area.right().saturating_sub(x), 1),
+            2,
+            frame,
+            status_style,
+        );
     }
 }
 
@@ -63,7 +80,7 @@ impl Widget for LoadingView<'_> {
     }
 }
 
-// ErrorView / ErrorState live in `widgets/error_state.rs`.
+// ErrorState lives in `widgets/error_state.rs`.
 
 /// Single-line status banner (success/warning/error/info).
 #[derive(Debug, Clone, Copy)]
@@ -90,19 +107,35 @@ impl Widget for &Banner<'_> {
         if area.is_empty() {
             return;
         }
+        let rail = self.system.glyphs.resolve(Glyph::RailHeavy).text;
+        let ascii = matches!(self.system.glyphs, crate::style::GlyphSet::Ascii);
         let (glyph, role) = match self.severity {
-            Severity::Info => ("ℹ", Role::Info),
-            Severity::Success => ("✓", Role::Success),
+            Severity::Info => (if ascii { "i" } else { "ℹ" }, Role::Info),
+            Severity::Success => (if ascii { "+" } else { "✓" }, Role::TextStrong),
             Severity::Warning => ("!", Role::Warning),
-            Severity::Error => ("✗", Role::Danger),
+            Severity::Error => (if ascii { "x" } else { "✗" }, Role::Danger),
         };
-        let line = format!("{glyph} {}", self.message);
+        let line = format!("{rail} {glyph} {}", self.message);
         let clipped = take_display_cols(&line, usize::from(area.width));
         buffer.set_stringn(
             area.x,
             area.y,
             &clipped,
             usize::from(area.width),
+            self.system.style(Role::Text),
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            0,
+            rail,
+            self.system.style(role),
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            2,
+            glyph,
             self.system.style(role),
         );
     }
@@ -126,12 +159,13 @@ fn paint_centered_line(
     y: u16,
     text: &str,
     style: ratatui_core::style::Style,
-) {
+) -> u16 {
     use crate::layout::center_line_x;
     let width = display_cols(text).min(usize::from(area.width));
     let clipped = take_display_cols(text, width);
     let x = center_line_x(area, width as u16);
     buffer.set_stringn(x, y, &clipped, width, style);
+    x
 }
 
 #[cfg(test)]
@@ -146,6 +180,7 @@ mod tests {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
         Banner::new("Saved", Severity::Success, &system)
             .render(Rect::new(0, 0, 20, 1), &mut buffer);
-        assert_eq!(buffer[(0, 0)].symbol(), "✓");
+        assert_eq!(buffer[(0, 0)].symbol(), "┃");
+        assert_eq!(buffer[(2, 0)].symbol(), "✓");
     }
 }

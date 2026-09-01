@@ -27,7 +27,7 @@ pub const JACKIN_SUBSET_COMPONENTS: [&str; 17] = [
     "List",
     "MessageDialog",
     "Panel",
-    "Progress",
+    "ProgressBar",
     "StatusBar",
     "Tabs",
     "TerminalCellGrid",
@@ -41,7 +41,7 @@ pub const JACKIN_SUBSET_COMPONENTS: [&str; 17] = [
 pub fn subset_stories() -> Vec<Story> {
     let mut subset: Vec<_> = stories()
         .into_iter()
-        .filter(|story| JACKIN_SUBSET_COMPONENTS.contains(&story.component))
+        .filter(|story| JACKIN_SUBSET_COMPONENTS.contains(&story.component()))
         .collect();
     subset.sort_unstable_by_key(|story| story.id);
     subset
@@ -57,7 +57,8 @@ pub fn story_png_filename(story: Story) -> String {
 #[must_use]
 pub fn render_story_png(story: Story) -> Vec<u8> {
     let palette = RolePalette::default();
-    let buffer = paint_story_buffer(story, &palette, None, None);
+    let system = crate::design::lookbook_system(palette.clone());
+    let buffer = paint_story_buffer(story, &system, None, None);
     termrock_raster::render_png(&buffer, &palette).expect("registered story must rasterize")
 }
 
@@ -85,7 +86,7 @@ mod tests {
     #[test]
     fn subset_filter_matches_component_field_not_id_prefix() {
         let subset = subset_stories();
-        let components: BTreeSet<_> = subset.iter().map(|story| story.component).collect();
+        let components: BTreeSet<_> = subset.iter().map(|story| story.component()).collect();
         assert_eq!(components, JACKIN_SUBSET_COMPONENTS.into_iter().collect());
 
         let ids: BTreeSet<_> = subset.iter().map(|story| story.id).collect();
@@ -99,20 +100,20 @@ mod tests {
             "detail-table/in-app",
             "diff-view/in-app",
             "toast/in-app",
-            "progress/in-app",
+            "progress-bar/in-app",
             "text-input/in-app",
             "dialog/in-app",
         ] {
             assert!(ids.contains(id), "missing subset story {id}");
         }
         for excluded in [
-            "ProgressBar",
+            "Progress",
             "VirtualList",
             "AlertDialog",
             "NavigationList",
             "KeyValueList",
         ] {
-            assert!(!subset.iter().any(|story| story.component == excluded));
+            assert!(!subset.iter().any(|story| story.component() == excluded));
         }
     }
 

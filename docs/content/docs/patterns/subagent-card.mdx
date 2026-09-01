@@ -1,59 +1,33 @@
 ---
-title: Subagent Card
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: SubagentCard
-demo: subagent-card/running
-interaction: activation
+title: "Subagent Card"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: SubagentCard
 source: crates/termrock/src/patterns/subagent_card.rs
 classification: composite
+tags:
+  - "composite"
+  - "AccentRail"
+  - "Card"
+aliases: []
+uses:
+  - "AccentRail"
+  - "Card"
+supportingTypes:
+  - "SemanticStatus"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="subagent-card/running" interactive caption="Subagent Card · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 56×12
-
-Composed public building blocks: `AccentRail`, `Card`, `SemanticStatus`.
-
-## Workflow
-
-- `Enter expand/collapse`: invoke the focused public state-machine action and inspect its typed request.
-- `S stop request`: invoke the focused public state-machine action and inspect its typed request.
-- `F full view`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/subagent_card.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/subagent_card.rs)
-- Demo: `subagent-card/running`
-
-## Migrated handbook guidance
-
-# SubagentCard
 
 Card/row for nested agent runs. Shows role, task, provenance, status, model/mode,
 context, progress, summary, and preview. Active cards use a host-ticked quiet
 pulse and expanded actor rail; completed cards use semantic outcome marks.
 Outcomes request steer/message/cancel/… — TermRock never runs agents.
 
-
 ## When to use / when not
 
 | Use SubagentCard | Prefer |
 |------------------|--------|
 | Detail for one subagent run | — |
-| Inventory of all tasks | [TaskRail](/docs/components/task-rail) |
-| Tool invocation | [ToolCallCard](/docs/interaction-notes) |
+| Inventory of all tasks | [TaskRail](/docs/patterns/task-rail) |
+| Tool invocation | [ToolCallCard](/docs/components/tool-call-card) |
 | Glanceable actives | [ActivityShelf](/docs/patterns/activity-shelf) |
 
 ## Phases
@@ -66,7 +40,3 @@ Outcomes request steer/message/cancel/… — TermRock never runs agents.
 ## Keys
 
 Enter expand · s steer · m message · i inspect · c cancel · r retry · d detach · p promote · f fullscreen · u parent
-
-## Related
-
-TaskRail · ActivityModel · ToolCallCard · migrations `0223`, `0271`

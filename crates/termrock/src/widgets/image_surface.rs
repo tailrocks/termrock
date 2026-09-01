@@ -147,6 +147,7 @@ impl Widget for &ImageSurface<'_> {
             ImageProtocol::ITerm2 => "iterm2",
         };
         let dims = match (self.meta.pixel_width, self.meta.pixel_height) {
+            (Some(w), Some(h)) if self.system.glyphs.is_ascii() => format!("{w}x{h}"),
             (Some(w), Some(h)) => format!("{w}×{h}"),
             _ => "size unknown".to_owned(),
         };
@@ -157,8 +158,21 @@ impl Widget for &ImageSurface<'_> {
         } else {
             "ready"
         };
-        let line1 = format!("▣ {}", self.meta.label);
-        let line2 = format!("{proto} · {dims} · {status}");
+        let line1 = format!(
+            "{} {}",
+            if self.system.glyphs.is_ascii() {
+                "[#]"
+            } else {
+                "▣"
+            },
+            self.meta.label
+        );
+        let separator = if self.system.glyphs.is_ascii() {
+            " - "
+        } else {
+            " · "
+        };
+        let line2 = format!("{proto}{separator}{dims}{separator}{status}");
         let style = if self.meta.stale || self.meta.pending {
             self.system.style(Role::TextMuted)
         } else {

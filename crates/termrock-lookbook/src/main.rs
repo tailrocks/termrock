@@ -20,8 +20,7 @@ use termrock::{
 use termrock_lookbook::demo::catalog;
 use termrock_lookbook::stories::stories;
 
-const USAGE: &str =
-    "usage: termrock-lookbook <terminal|list|render|render-png|check|frame|export-posters>";
+const USAGE: &str = "usage: termrock-lookbook <terminal|list|inventory|render|render-png|check|frame|export-posters>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SidebarAction {
@@ -137,6 +136,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("usage: termrock-lookbook list [--format json]".into());
     }
 
+    if first == OsStr::new("inventory") {
+        if args.next().as_deref() == Some(OsStr::new("--format"))
+            && args.next().as_deref() == Some(OsStr::new("json"))
+            && args.next().is_none()
+        {
+            println!(
+                "{}",
+                serde_json::to_string(&termrock_lookbook::demo::inventory_catalog()?)?
+            );
+            return Ok(());
+        }
+        return Err("usage: termrock-lookbook inventory --format json".into());
+    }
+
     if first == OsStr::new("render") {
         let usage = "usage: termrock-lookbook render [--theme <phosphor|slate>] --out <dir>";
         let mut out_dir = None;
@@ -238,6 +251,7 @@ fn cmd_frame(
     };
     let story = story_by_id(&story_id).ok_or_else(|| format!("unknown story: {story_id}"))?;
     let theme = RolePalette::default();
+    let system = termrock_lookbook::design::lookbook_system(theme);
     let keys: Vec<PreviewKey> = keys_raw
         .as_deref()
         .unwrap_or("")
@@ -252,9 +266,9 @@ fn cmd_frame(
         })
         .collect();
     let frame = if keys.is_empty() {
-        paint_story_frame(story, &theme, cols, rows)
+        paint_story_frame(story, &system, cols, rows)
     } else {
-        paint_story_after_keys(story, &theme, cols, rows, &keys)
+        paint_story_after_keys(story, &system, cols, rows, &keys)
     };
     println!("{}", serde_json::to_string(&frame)?);
     Ok(())
@@ -288,13 +302,14 @@ fn cmd_export_posters(
     }
     fs::create_dir_all(&out_dir)?;
     let theme = RolePalette::default();
+    let system = termrock_lookbook::design::lookbook_system(theme);
     only.sort();
     only.dedup();
     let total = only.len();
     for (index, id) in only.into_iter().enumerate() {
         let story = story_by_id(&id).ok_or_else(|| format!("unknown story: {id}"))?;
         let slug = id.replace('/', "-");
-        let poster = paint_story_frame(story, &theme, Some(story.width), Some(story.height));
+        let poster = paint_story_frame(story, &system, Some(story.width), Some(story.height));
         let path = out_dir.join(format!("{slug}.json"));
         fs::write(&path, serde_json::to_string(&poster)?)?;
         eprintln!("[{}/{}] {}", index + 1, total, path.display());

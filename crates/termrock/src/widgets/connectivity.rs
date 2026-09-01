@@ -32,7 +32,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         ActivityPhase, Button, ButtonState, ButtonVariant, NotificationItem, SemanticStatus,
-        StatusKind, StatusRegion, StatusSlot, ToastKind, ToastPriority, tiered_row::TieredRow,
+        StatusIndicator, StatusKind, StatusRegion, StatusSlot, ToastKind, ToastPriority,
     },
 };
 
@@ -114,18 +114,6 @@ impl ConnectivityPhase {
             self.glyph_ascii()
         } else {
             self.glyph_unicode()
-        }
-    }
-
-    /// Paint role.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Online => Role::Success,
-            Self::Disconnected => Role::TextMuted,
-            Self::Reconnecting => Role::Info,
-            Self::AuthRequired => Role::Warning,
-            Self::ServerUnavailable => Role::Danger,
         }
     }
 
@@ -564,12 +552,6 @@ impl ReconnectingState {
         }
     }
 
-    /// Role for connection slot override.
-    #[must_use]
-    pub const fn status_bar_role(&self) -> Role {
-        self.phase.role()
-    }
-
     /// Build a right-region connection [`StatusSlot`] (host keeps `content` alive).
     ///
     /// Prefer storing `status_bar_content()` in host state, then:
@@ -583,6 +565,7 @@ impl ReconnectingState {
         StatusSlot::connection(id, content)
             .region(StatusRegion::Right)
             .kind(StatusKind::Connection)
+            .semantic(self.phase.semantic_status())
     }
 
     /// Banner one-liner.
@@ -831,24 +814,21 @@ impl<'a> OfflineBanner<'a> {
             return;
         }
         let ascii = self.state.use_ascii(self.system);
-        let (glyph, head, meta) = self.state.banner_parts(ascii);
-        let mut tiers = TieredRow::with_separator("");
-        tiers.push_joined(
-            glyph,
-            Some(
-                self.system
-                    .style(self.state.phase.role())
-                    .add_modifier(Modifier::BOLD),
-            ),
-        );
-        tiers.push_joined(" ", None);
-        tiers.push_joined(&head, None);
-        tiers.push_joined(&meta, Some(self.system.style(Role::TextMuted)));
-        let line = tiers.text().to_string();
-        let style = self.system.style(Role::Text);
+        let (_, head, meta) = self.state.banner_parts(ascii);
+        let status = StatusIndicator::new(self.state.phase.semantic_status(), self.system)
+            .label(&head)
+            .ascii(ascii)
+            .strong(true);
+        let line = format!("{}{meta}", status.text(None));
         let clipped = take_display_cols(&line, usize::from(area.width));
-        buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
-        tiers.paint_tiers(buffer, Rect::new(area.x, area.y, area.width, 1), 0);
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            &clipped,
+            usize::from(area.width),
+            self.system.style(Role::Text),
+        );
+        status.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     /// Semantic.
@@ -924,14 +904,13 @@ impl<'a> OfflineSurface<'a> {
         }
         // Allow painting full even if presentation is Banner when host forces Full paint
         let ascii = state.use_ascii(self.system);
-        let g = state.phase.glyph(ascii);
+        let status_label = format!("{} · {}", state.phase.verb(), state.target);
+        let status = StatusIndicator::new(state.phase.semantic_status(), self.system)
+            .label(&status_label)
+            .ascii(ascii)
+            .strong(true);
         let mut rows: Vec<(String, Role, bool)> = Vec::new();
-        rows.push((g.to_string(), Role::TextMuted, false));
-        rows.push((
-            format!("{} · {}", state.phase.verb(), state.target),
-            state.phase.role(),
-            true,
-        ));
+        rows.push((status.text(None), Role::Text, false));
         if let Some(last) = state.last_success_label() {
             rows.push((last, Role::TextMuted, false));
         }
@@ -968,7 +947,7 @@ impl<'a> OfflineSurface<'a> {
                 rows.push((
                     format!("  {mark} {}", c.label),
                     if c.available {
-                        Role::Success
+                        Role::TextStrong
                     } else {
                         Role::TextDisabled
                     },
@@ -992,7 +971,7 @@ impl<'a> OfflineSurface<'a> {
             }
             rows.push((
                 format!("✓ {} preserved", parts.join(" + ")),
-                Role::Success,
+                Role::TextStrong,
                 false,
             ));
         }
@@ -1010,17 +989,20 @@ impl<'a> OfflineSurface<'a> {
         let mut idx = 0usize;
         for (text, role, bold) in &rows {
             if let Some(r) = stack.get(idx) {
-                let mut style = self.system.style(*role);
-                if *bold {
-                    style = style.add_modifier(Modifier::BOLD);
+                let row_area = Rect::new(area.x, r.y, area.width, 1);
+                if idx == 0 {
+                    let x = center_line_x(row_area, display_cols(text) as u16);
+                    status.paint(
+                        Rect::new(x, r.y, row_area.right().saturating_sub(x), 1),
+                        buffer,
+                    );
+                } else {
+                    let mut style = self.system.style(*role);
+                    if *bold {
+                        style = style.add_modifier(Modifier::BOLD);
+                    }
+                    paint_centered(row_area, buffer, r.y, text, style);
                 }
-                paint_centered(
-                    Rect::new(area.x, r.y, area.width, 1),
-                    buffer,
-                    r.y,
-                    text,
-                    style,
-                );
             }
             idx += 1;
         }
@@ -1438,6 +1420,36 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         OfflineBanner::new(&s, &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
         OfflineSurface::new(&system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut s);
+    }
+
+    #[test]
+    fn offline_surfaces_resize_cjk_combining_and_ascii_safe() {
+        let system = system();
+        let target = "東京 🛰 Cafe\u{301}";
+        for ascii in [false, true] {
+            let mut state = ReconnectingState::new(target);
+            state.mark_server_unavailable();
+            state.set_ascii(ascii);
+            for (width, height) in [(48, 12), (12, 2), (1, 1), (0, 0)] {
+                let area = Rect::new(0, 0, width, height);
+
+                let mut banner = Buffer::empty(area);
+                OfflineBanner::new(&state, &system).paint(area, &mut banner);
+
+                let mut surface = Buffer::empty(area);
+                OfflineSurface::new(&system).paint(area, &mut surface, &mut state);
+
+                let mut chrome = Buffer::empty(area);
+                OfflineChrome::paint(area, &mut chrome, &mut state, &system);
+
+                if width == 48 {
+                    let text: String = banner.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('東'), "{text:?}");
+                    assert!(text.contains('🛰'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

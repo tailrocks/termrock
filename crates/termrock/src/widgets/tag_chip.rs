@@ -24,9 +24,11 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widge
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
-use crate::style::{DesignSystem, FocusEmphasis, Glyph, Role, SurfaceFamily};
+use crate::style::{
+    ButtonRecipeVariant, ControlState, DesignSystem, FocusEmphasis, Glyph, Role, SurfaceFamily,
+};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Shared token chrome ─────────────────────────────────────────────────────
@@ -320,6 +322,21 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
             return TagOutcome::Ignored;
         }
+        if let Some(intent) = default_button_intent(key) {
+            if matches!(intent, UiIntent::Activate) {
+                return if self.is_removable() && matches!(state.part, TokenPart::Remove) {
+                    TagOutcome::Remove(self.id.clone())
+                } else {
+                    TagOutcome::Activated(self.id.clone())
+                };
+            }
+            if matches!(intent, UiIntent::Activate | UiIntent::Toggle)
+                && self.is_removable()
+                && matches!(state.part, TokenPart::Remove)
+            {
+                return TagOutcome::Remove(self.id.clone());
+            }
+        }
         match key.code {
             KeyCode::Left | KeyCode::Char('h') if self.is_removable() => {
                 if matches!(state.part, TokenPart::Remove) {
@@ -336,18 +353,6 @@ impl<'a, Id: Clone> Tag<'a, Id> {
                 TagOutcome::Ignored
             }
             KeyCode::Delete | KeyCode::Backspace if self.is_removable() => {
-                TagOutcome::Remove(self.id.clone())
-            }
-            KeyCode::Enter => {
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) {
-                    TagOutcome::Remove(self.id.clone())
-                } else {
-                    TagOutcome::Activated(self.id.clone())
-                }
-            }
-            KeyCode::Char(' ')
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) =>
-            {
                 TagOutcome::Remove(self.id.clone())
             }
             _ => TagOutcome::Ignored,
@@ -604,10 +609,14 @@ impl TokenPaint<'_> {
         if self.focused && matches!(self.part, TokenPart::Remove) && remove_rect.width > 0 {
             // The remove affordance is one or two cells: reverse them so the
             // focus lands on the `×` itself.
+            let recipe = self
+                .system
+                .button_recipe(ButtonRecipeVariant::Destructive, ControlState::Focused);
             buffer.set_style(
                 remove_rect,
-                self.system
-                    .style(Role::Danger)
+                recipe
+                    .fill
+                    .patch(recipe.label)
                     .add_modifier(Modifier::BOLD | Modifier::REVERSED),
             );
         }
@@ -641,21 +650,27 @@ fn token_style(
     selected: bool,
     disabled: bool,
 ) -> ratatui_core::style::Style {
-    if disabled {
-        return system.style(Role::TextDisabled);
-    }
+    let recipe = system.button_recipe(
+        ButtonRecipeVariant::Quiet,
+        if disabled {
+            ControlState::Disabled
+        } else if matches!(status, TokenStatus::Loading) {
+            ControlState::Loading
+        } else if focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        },
+    );
     // Status and membership are different facts and compose: an errored chip
     // that is also selected used to lose its selection entirely, because the
     // status arm matched first and returned (plans/021 Step 4).
-    let mut style = match status {
-        TokenStatus::Error => system.style(Role::Danger),
-        TokenStatus::Loading => system.style(Role::TextMuted),
-        TokenStatus::Default if selected => system.style(Role::TextStrong),
-        TokenStatus::Default if focused => system.style(Role::Focus),
-        TokenStatus::Default => system.style(Role::TextMuted),
-    };
+    let mut style = recipe.fill.patch(recipe.label);
+    if matches!(status, TokenStatus::Error) {
+        style = style.patch(system.style(Role::Danger));
+    }
     if selected {
-        style = style.patch(system.style(Role::SelectionTint));
+        style = style.patch(system.list_row_recipe(true, focused, !disabled).label);
     }
     if !selected {
         if let Some(bg) = system.style(Role::Raised).bg {
@@ -929,6 +944,23 @@ impl<'a, Id: Clone> Chip<'a, Id> {
         if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
             return ChipOutcome::Ignored;
         }
+        if let Some(intent) = default_button_intent(key) {
+            if matches!(intent, UiIntent::Activate) {
+                return if self.is_removable() && matches!(state.part, TokenPart::Remove) {
+                    ChipOutcome::Remove(self.id.clone())
+                } else if self.interactive {
+                    self.toggle(state)
+                } else {
+                    ChipOutcome::Activated(self.id.clone())
+                };
+            }
+            if matches!(intent, UiIntent::Activate | UiIntent::Toggle)
+                && self.interactive
+                && matches!(state.part, TokenPart::Body)
+            {
+                return self.toggle(state);
+            }
+        }
         match key.code {
             KeyCode::Left | KeyCode::Char('h') if self.is_removable() => {
                 if matches!(state.part, TokenPart::Remove) {
@@ -946,18 +978,6 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             }
             KeyCode::Delete | KeyCode::Backspace if self.is_removable() => {
                 ChipOutcome::Remove(self.id.clone())
-            }
-            KeyCode::Enter => {
-                if self.is_removable() && matches!(state.part, TokenPart::Remove) {
-                    ChipOutcome::Remove(self.id.clone())
-                } else if self.interactive {
-                    self.toggle(state)
-                } else {
-                    ChipOutcome::Activated(self.id.clone())
-                }
-            }
-            KeyCode::Char(' ') if self.interactive && matches!(state.part, TokenPart::Body) => {
-                self.toggle(state)
             }
             _ => ChipOutcome::Ignored,
         }
@@ -1647,6 +1667,60 @@ mod tests {
             ChipOutcome::Selected("f1")
         ));
         assert!(state.is_selected());
+    }
+
+    #[test]
+    fn tag_chip_and_strip_mouse_use_painted_regions() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let tag = Tag::removable_tag("tag", "alpha", &system);
+        let mut tag_state = TagState::new();
+        let parts = tag.paint(area, &mut buffer, &mut tag_state);
+        assert!(matches!(
+            tag.handle_mouse(
+                &mut tag_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            TagOutcome::Activated("tag")
+        ));
+
+        let chip = Chip::new("chip", "beta", &system);
+        let mut chip_state = ChipState::new(false);
+        let parts = chip.paint(area, &mut buffer, &mut chip_state);
+        assert!(matches!(
+            chip.handle_mouse(
+                &mut chip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            ChipOutcome::Selected("chip")
+        ));
+
+        let items = [TokenItem::chip("strip", "gamma")];
+        let strip = TokenStrip::new(&items, &system);
+        let mut strip_state = TokenStripState::new();
+        strip.paint(area, &mut buffer, &mut strip_state);
+        let hit = strip_state.regions[0].1;
+        assert!(matches!(
+            strip.handle_mouse(
+                &mut strip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            TokenStripOutcome::Selected("strip")
+        ));
     }
 
     #[test]

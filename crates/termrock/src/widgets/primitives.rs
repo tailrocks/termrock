@@ -103,12 +103,6 @@ impl ActivationState {
         }
     }
 
-    /// Deprecated name for [`Self::set_accepts_input`].
-    #[deprecated(note = "use set_accepts_input")]
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.set_accepts_input(focused);
-    }
-
     /// Enabled flag.
     pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
@@ -152,13 +146,6 @@ impl ActivationState {
     /// Whether host granted input.
     #[must_use]
     pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
-    /// Deprecated name for [`Self::accepts_input`].
-    #[deprecated(note = "use accepts_input")]
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
         self.accepts_input
     }
 
@@ -344,7 +331,9 @@ impl ButtonVariant {
 
     const fn recipe(self) -> ButtonRecipeVariant {
         match self {
-            Self::Primary | Self::Success | Self::Command => ButtonRecipeVariant::Primary,
+            Self::Primary => ButtonRecipeVariant::Primary,
+            Self::Success => ButtonRecipeVariant::Secondary,
+            Self::Command => ButtonRecipeVariant::Outline,
             Self::Destructive => ButtonRecipeVariant::Destructive,
             Self::Link => ButtonRecipeVariant::Link,
             Self::Outline => ButtonRecipeVariant::Outline,
@@ -440,15 +429,6 @@ impl<'a> Button<'a> {
     #[must_use]
     pub const fn variant(mut self, variant: ButtonVariant) -> Self {
         self.variant = variant;
-        self
-    }
-
-    /// Primary (compat: `primary(true)`).
-    #[must_use]
-    pub const fn primary(mut self, primary: bool) -> Self {
-        if primary {
-            self.variant = ButtonVariant::Primary;
-        }
         self
     }
 
@@ -719,6 +699,17 @@ impl Button<'_> {
         match self.variant {
             ButtonVariant::Primary | ButtonVariant::Success | ButtonVariant::Command => {
                 style = style.add_modifier(Modifier::BOLD);
+                if surface
+                    && matches!(
+                        self.variant,
+                        ButtonVariant::Success | ButtonVariant::Command
+                    )
+                {
+                    // Success and Command borrow recipes whose focus delta is
+                    // bold, while their semantic face is already bold. Reverse
+                    // the focused face so focus cannot collapse into idle.
+                    style = style.add_modifier(Modifier::REVERSED);
+                }
             }
             ButtonVariant::Link => {
                 style = style.add_modifier(Modifier::UNDERLINED);
@@ -823,19 +814,13 @@ impl Button<'_> {
             area.width.min(self.preferred_width().max(3))
         };
         let text = take_display_cols(&label, usize::from(paint_w));
-        // Full-width: left-align body (forms); remaining cells keep style for hit.
-        buffer.set_stringn(area.x, area.y, &text, usize::from(paint_w), style);
-        if self.full_width && paint_w < area.width {
-            // Extend hit fill with dim surface
-            let fill_style = if surface {
-                theme.style(Role::ActionFocused)
-            } else {
-                style
-            };
-            for x in area.x.saturating_add(paint_w)..area.x.saturating_add(area.width) {
-                buffer[(x, area.y)].set_style(fill_style);
-            }
+        // Full-width: paint the resolved recipe across the complete hit band
+        // before writing the shorter label. This avoids an unstyled tail and
+        // keeps the recipe—not a local role shortcut—as the sole owner.
+        if self.full_width {
+            buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
         }
+        buffer.set_stringn(area.x, area.y, &text, usize::from(paint_w), style);
         let root = Rect {
             x: area.x,
             y: area.y,
@@ -844,11 +829,6 @@ impl Button<'_> {
         };
         state.region = Some(root);
         ButtonParts { root, label: root }
-    }
-
-    /// Paint (compat name).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ButtonState) {
-        let _ = self.paint(area, buffer, state);
     }
 
     /// Semantic registration.
@@ -886,7 +866,7 @@ impl StatefulWidget for Button<'_> {
     type State = ButtonState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Button::render(&self, area, buffer, state);
+        let _ = self.paint(area, buffer, state);
     }
 }
 
@@ -894,7 +874,7 @@ impl StatefulWidget for &Button<'_> {
     type State = ButtonState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Button::render(self, area, buffer, state);
+        let _ = self.paint(area, buffer, state);
     }
 }
 
@@ -1028,7 +1008,7 @@ impl<'a> IconButton<'a> {
         self
     }
 
-    /// Force ASCII path (compat).
+    /// Force ASCII path.
     #[must_use]
     pub const fn ascii(mut self, ascii: bool) -> Self {
         self.ascii = ascii;
@@ -1361,7 +1341,7 @@ impl<'a> IconButton<'a> {
         }
     }
 
-    /// Compat paint name.
+    /// Paint and update hit geometry.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut IconButtonState) {
         let _ = self.paint(area, buffer, state);
     }
@@ -1645,6 +1625,30 @@ mod tests {
     }
 
     #[test]
+    fn semantic_bold_focus_survives_no_color_paint() {
+        let system = DesignSystem::default().no_color();
+        let area = Rect::new(0, 0, 12, 1);
+        for variant in [ButtonVariant::Success, ButtonVariant::Command] {
+            let mut idle = Buffer::empty(area);
+            let mut idle_state = ButtonState::new();
+            Button::new("Run", &system)
+                .variant(variant)
+                .paint(area, &mut idle, &mut idle_state);
+
+            let mut focused = Buffer::empty(area);
+            let mut focused_state = ButtonState::new();
+            focused_state.activation.set_accepts_input(true);
+            Button::new("Run", &system).variant(variant).paint(
+                area,
+                &mut focused,
+                &mut focused_state,
+            );
+
+            assert_ne!(idle.content(), focused.content(), "{variant:?}");
+        }
+    }
+
+    #[test]
     fn link_variant_not_bracket_only() {
         let system = DesignSystem::default().no_color();
         let mut state = ButtonState::new();
@@ -1825,7 +1829,7 @@ mod tests {
             &mut buf,
         );
         Widget::render(
-            &crate::widgets::Separator::horizontal(&tokens),
+            &crate::widgets::Separator::new(&tokens),
             Rect::new(0, 1, 20, 1),
             &mut buf,
         );

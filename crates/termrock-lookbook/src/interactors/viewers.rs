@@ -31,7 +31,7 @@ use crate::stories::{
 
 pub(crate) struct CodeBlockInteractor {
     state: CodeBlockState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -42,7 +42,7 @@ impl CodeBlockInteractor {
         state.set_cursor_line(Some(1));
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -69,7 +69,7 @@ impl CodeBlockInteractor {
 
 impl StoryInteraction for CodeBlockInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let lines = Self::lines();
         let _ = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -78,7 +78,7 @@ impl StoryInteraction for CodeBlockInteractor {
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let lines = Self::lines();
         let outcome = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -87,7 +87,7 @@ impl StoryInteraction for CodeBlockInteractor {
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let lines = Self::lines();
         let outcome = CodeBlock::new(&lines, &system)
             .language("rust")
@@ -95,8 +95,8 @@ impl StoryInteraction for CodeBlockInteractor {
             .handle_mouse(&mut self.state, mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -114,7 +114,7 @@ impl StoryInteraction for CodeBlockInteractor {
 
 pub(crate) struct DetailTableInteractor {
     state: DetailTableState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -124,7 +124,7 @@ impl DetailTableInteractor {
         state.selected = Some("reference");
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -175,7 +175,7 @@ impl DetailTableInteractor {
 
 impl StoryInteraction for DetailTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let rows = Self::rows();
         frame.render_stateful_widget(
             &DetailTable::new(&rows, &system).label_width(14).wrap(true),
@@ -190,8 +190,8 @@ impl StoryInteraction for DetailTableInteractor {
     fn handle_mouse(&mut self, _mouse: MouseEvent, _area: Rect) -> bool {
         false
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["↑↓ select row", "Enter copy/open"]
@@ -203,7 +203,7 @@ impl StoryInteraction for DetailTableInteractor {
 
 pub(crate) struct DiagnosticViewInteractor {
     state: DiagnosticState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -213,7 +213,7 @@ impl DiagnosticViewInteractor {
         state.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -241,7 +241,7 @@ impl DiagnosticViewInteractor {
 
 impl StoryInteraction for DiagnosticViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         DiagnosticView::new(&items, &system)
             .recipe(DiagnosticRecipe::List)
@@ -256,8 +256,8 @@ impl StoryInteraction for DiagnosticViewInteractor {
         let outcome = self.state.handle_mouse(mouse, &Self::items());
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -275,7 +275,7 @@ impl StoryInteraction for DiagnosticViewInteractor {
 
 pub(crate) struct DiffViewInteractor {
     state: DiffViewState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl DiffViewInteractor {
@@ -285,7 +285,7 @@ impl DiffViewInteractor {
         state.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -295,7 +295,7 @@ impl DiffViewInteractor {
 }
 impl StoryInteraction for DiffViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let (lines, hunks) = diff_sample_lines();
         DiffView::new(&lines, &system)
             .hunks(&hunks)
@@ -312,8 +312,8 @@ impl StoryInteraction for DiffViewInteractor {
         let outcome = self.state.handle_mouse(mouse, &lines, &hunks);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -334,7 +334,7 @@ impl StoryInteraction for DiffViewInteractor {
 
 pub(crate) struct EventStreamInteractor {
     state: EventStreamState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl EventStreamInteractor {
@@ -345,7 +345,7 @@ impl EventStreamInteractor {
         state.cursor = 1;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -355,7 +355,7 @@ impl EventStreamInteractor {
 }
 impl StoryInteraction for EventStreamInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let events = event_stream_sample();
         self.state
             .on_append(events.len() as u16, area.height.saturating_sub(1));
@@ -371,8 +371,8 @@ impl StoryInteraction for EventStreamInteractor {
         let outcome = self.state.handle_mouse(mouse, &event_stream_sample());
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -394,7 +394,7 @@ impl StoryInteraction for EventStreamInteractor {
 
 pub(crate) struct HexViewerInteractor {
     state: HexViewerState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl HexViewerInteractor {
@@ -404,7 +404,7 @@ impl HexViewerInteractor {
         state.cursor = 0x10;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -414,7 +414,7 @@ impl HexViewerInteractor {
 }
 impl StoryInteraction for HexViewerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let data = hex_viewer_sample();
         let window = HexWindow::new(0, &data, data.len() as u64);
         HexViewer::new(window, &system).title("blob.bin").render(
@@ -435,8 +435,8 @@ impl StoryInteraction for HexViewerInteractor {
         let outcome = self.state.handle_mouse(mouse, &window);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -455,7 +455,7 @@ impl StoryInteraction for HexViewerInteractor {
 
 pub(crate) struct HistoryPickerInteractor {
     state: HistoryPickerState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl HistoryPickerInteractor {
@@ -468,7 +468,7 @@ impl HistoryPickerInteractor {
         state.reconcile(&entries);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -482,7 +482,7 @@ impl HistoryPickerInteractor {
 }
 impl StoryInteraction for HistoryPickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = self.entries();
         self.state.reconcile(&entries);
         HistoryPicker::new(&entries, &system).paint(area, frame.buffer_mut(), &mut self.state);
@@ -502,8 +502,8 @@ impl StoryInteraction for HistoryPickerInteractor {
         let outcome = self.state.handle_mouse(mouse, &entries);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_open() {
@@ -529,7 +529,7 @@ impl StoryInteraction for HistoryPickerInteractor {
 
 pub(crate) struct KeyboardHelpInteractor {
     state: KeyboardHelpState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl KeyboardHelpInteractor {
@@ -539,7 +539,7 @@ impl KeyboardHelpInteractor {
         state.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -553,24 +553,24 @@ impl KeyboardHelpInteractor {
 }
 impl StoryInteraction for KeyboardHelpInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = self.entries(&system);
         KeyboardHelp::new(&entries, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = self.entries(&system);
         let outcome = self.state.handle_key(key, &entries);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = self.entries(&system);
         let outcome = self.state.handle_mouse(mouse, &entries);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -591,7 +591,7 @@ impl StoryInteraction for KeyboardHelpInteractor {
 
 pub(crate) struct LogStreamInteractor {
     state: LogStreamState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl LogStreamInteractor {
@@ -601,7 +601,7 @@ impl LogStreamInteractor {
         state.set_following(false);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -611,7 +611,7 @@ impl LogStreamInteractor {
 }
 impl StoryInteraction for LogStreamInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let lines = log_stream_sample_lines();
         self.state
             .on_append(lines.len() as u16, area.height.saturating_sub(1));
@@ -631,8 +631,8 @@ impl StoryInteraction for LogStreamInteractor {
         let outcome = self.state.handle_mouse(mouse, &lines);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -651,7 +651,7 @@ impl StoryInteraction for LogStreamInteractor {
 
 pub(crate) struct MarkdownViewInteractor {
     state: MarkdownViewState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl MarkdownViewInteractor {
@@ -660,7 +660,7 @@ impl MarkdownViewInteractor {
         state.focused = true;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -673,25 +673,25 @@ impl MarkdownViewInteractor {
 }
 impl StoryInteraction for MarkdownViewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let blocks = project_markdown(Self::source());
         let _ =
             MarkdownView::new(&blocks, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let blocks = project_markdown(Self::source());
         let outcome = MarkdownView::new(&blocks, &system).handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let blocks = project_markdown(Self::source());
         let outcome = MarkdownView::new(&blocks, &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -709,7 +709,7 @@ impl StoryInteraction for MarkdownViewInteractor {
 
 pub(crate) struct ObjectInspectorInteractor {
     state: ObjectInspectorState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl ObjectInspectorInteractor {
@@ -719,7 +719,7 @@ impl ObjectInspectorInteractor {
         state.set_cursor(1);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -749,7 +749,7 @@ impl ObjectInspectorInteractor {
 }
 impl StoryInteraction for ObjectInspectorInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let fields = Self::fields();
         ObjectInspector::new(&fields, &system).render(area, frame.buffer_mut(), &mut self.state);
     }
@@ -761,8 +761,8 @@ impl StoryInteraction for ObjectInspectorInteractor {
         let outcome = self.state.handle_mouse(mouse, &Self::fields());
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -784,7 +784,7 @@ impl StoryInteraction for ObjectInspectorInteractor {
 
 pub(crate) struct TerminalOutputInteractor {
     state: TerminalOutputState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl TerminalOutputInteractor {
@@ -793,7 +793,7 @@ impl TerminalOutputInteractor {
         state.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -810,7 +810,7 @@ impl TerminalOutputInteractor {
 }
 impl StoryInteraction for TerminalOutputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let lines = terminal_output_sample_lines();
         let meta = Self::meta();
         self.state
@@ -830,8 +830,8 @@ impl StoryInteraction for TerminalOutputInteractor {
         let outcome = self.state.handle_mouse(mouse, &lines);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -850,7 +850,7 @@ impl StoryInteraction for TerminalOutputInteractor {
 
 pub(crate) struct TimelineInteractor {
     state: TimelineState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl TimelineInteractor {
@@ -861,7 +861,7 @@ impl TimelineInteractor {
         state.cursor = 1;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -886,7 +886,7 @@ impl TimelineInteractor {
 }
 impl StoryInteraction for TimelineInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let events = Self::events();
         Timeline::with_events(&events, &system)
             .focused(true)
@@ -900,8 +900,8 @@ impl StoryInteraction for TimelineInteractor {
         let outcome = self.state.handle_mouse(mouse, &Self::events());
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![

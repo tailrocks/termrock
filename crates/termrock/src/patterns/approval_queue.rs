@@ -51,6 +51,7 @@ use crate::{
     widgets::Panel,
     widgets::PermissionRisk,
     widgets::SemanticStatus,
+    widgets::StatusIndicator,
     widgets::ToastKind,
     widgets::ToastPriority,
     widgets::{EmptyKind, EmptyState},
@@ -968,24 +969,20 @@ impl<'a> ApprovalQueue<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &ApprovalQueueState) {
-        let _w = usize::from(area.width);
         let label = state.badge_label();
-        let role = if state.high_risk_count() > 0 {
-            Role::Danger
+        let (semantic, verb) = if state.high_risk_count() > 0 {
+            (SemanticStatus::Warning, "warning")
         } else if state.blocking_count() > 0 {
-            Role::Warning
+            (SemanticStatus::Waiting, "waiting")
         } else {
-            Role::TextMuted
+            (SemanticStatus::Idle, "idle")
         };
-        let g = if self.ascii { "!" } else { "⚑" };
-        let text = format!("{g} {label}");
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &text,
-            self.system
-                .style(if self.colorless { Role::Text } else { role }),
-        );
+        let text = format!("{verb}: {label}");
+        StatusIndicator::new(semantic, self.system)
+            .label(&text)
+            .ascii(self.ascii)
+            .colorless(self.colorless)
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ApprovalQueueState) {
@@ -1066,22 +1063,22 @@ impl<'a> ApprovalQueue<'a> {
                 "☐"
             };
             let kg = item.kind.glyph(self.ascii);
-            let risk_g = item.risk.glyph();
+            let risk = format!("{} {}", item.risk.glyph(), item.risk.label());
             let proto = if item.protocol_ordered { " fifo" } else { "" };
             let def = if item.deferred { " def" } else { "" };
             let text = format!(
-                "{mark}{boxm}{kg}[{risk_g}] {} · {}{proto}{def}",
+                "{mark}{boxm}{kg}[{risk}] {} · {}{proto}{def}",
                 item.kind.label(),
                 item.summary
             );
-            let style = if selected {
+            let style = if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if item.risk.is_destructive() && !self.colorless {
-                self.system.style(Role::Danger)
-            } else if self.colorless {
-                self.system.style(Role::Text)
+            } else if selected {
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
             } else {
-                self.system.style(item.risk.role())
+                self.system.style(Role::Text)
             };
             self.system
                 .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
@@ -1175,8 +1172,12 @@ impl<'a> ApprovalQueue<'a> {
             if col.saturating_add(tw) > end {
                 break;
             }
-            let style = if focused {
+            let style = if focused && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
+            } else if focused {
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
             } else if disabled_look {
                 self.system.style(Role::TextMuted)
             } else {

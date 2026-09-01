@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Binding design SoT for interaction styling & focus grammar** (living). Consolidates and extends the paint audit. On conflict about focus/selection/active/underline paint, this file wins; [`terminal-design-system.md`](./terminal-design-system.md) stays SoT for token taxonomy; [`phosphor-obsidian-visual-direction.md`](./phosphor-obsidian-visual-direction.md) stays SoT for the phosphor palette values. |
+| **Status** | **Binding design SoT for interaction styling & focus grammar** (living). The component map is an archived 48-surface sample, never inventory. On conflict about focus/selection/active/underline paint, this file wins; [`terminal-design-system.md`](./terminal-design-system.md) stays SoT for token taxonomy; [`phosphor-obsidian-visual-direction.md`](./phosphor-obsidian-visual-direction.md) stays SoT for the phosphor palette values. |
 | **Date** | 2026-08-14 |
 | **Perspective** | Designer / craft, not architecture. Answers *why it looks cheap* and *what makes it read expensive*. |
 | **References** | Grok Build (same stack, studied from source), Amp (ampcode.com), Jackin (Tailrocks consumer, `=0.11.0`), shadcn/ui, Linear |
@@ -27,9 +27,9 @@ lens — in three parts:
    shadcn/Linear/Grok Build).
 2. **One styling system** (color ladder, spacing rhythm, border language, glyph
    catalog, motion) with an **underline-free focus grammar** as a first-class rule.
-3. **A per-component improvement map** for all 48 listed surfaces.
+3. **A historical per-surface improvement sample** captured before typed inventory.
 
-The diagnosis is not "48 widgets to restyle." It is **6 load-bearing defects**
+The diagnosis is not a widget-by-widget restyle. It is **6 load-bearing defects**
 (propagated everywhere) + **one focus-grammar sweep**. Fix the foundation and the
 shared chrome path first; most widgets inherit the new look without per-widget
 work. The implementation order lives in the richness plan; this file owns the
@@ -391,7 +391,7 @@ focused-chrome, **glyph prefix** (`!`, `x`, `>`, `*`) = severity/selection,
 
 ---
 
-## 6. Component improvement map (all 48)
+## 6. Archived 48-surface improvement sample
 
 Each row: **current cheap signal → target direction.** Grouped by family.
 Foundation fixes (§2) lift most of these automatically; residuals listed here.

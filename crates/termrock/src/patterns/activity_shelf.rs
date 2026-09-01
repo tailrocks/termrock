@@ -29,11 +29,11 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        NotificationItem, SemanticStatus, StatusKind, StatusRegion, StatusSlot, ToastKind,
-        ToastPriority,
+        NotificationItem, SemanticStatus, StatusIndicator, StatusKind, StatusRegion, StatusSlot,
+        ToastKind, ToastPriority,
     },
 };
 
@@ -239,20 +239,13 @@ impl ActivityItem {
     /// Chip label for current density.
     #[must_use]
     pub fn chip_label(&self, ascii: bool, icons_only: bool, max_cols: usize) -> String {
-        let g = if ascii {
-            self.status.glyph_ascii()
-        } else {
-            self.status.glyph_unicode()
-        };
+        let semantic = activity_item_semantic(self);
+        let g = semantic.glyph(ascii);
+        let verb = activity_item_verb(self);
         if icons_only {
-            return format!("{g}{}", self.kind.letter());
+            return format!("| {g} {verb}");
         }
-        let mut s = format!("{g} {}", self.title);
-        if self.action_required {
-            s.push('!');
-        } else if self.blocked {
-            s.push('#');
-        }
+        let mut s = format!("| {g} {verb} · {}", self.title);
         if let Some(p) = self.progress {
             s.push_str(&format!(" {p}%"));
         } else if let Some(e) = &self.elapsed {
@@ -276,6 +269,30 @@ impl ActivityItem {
             s.push_str(w);
         }
         s
+    }
+}
+
+const fn activity_item_semantic(item: &ActivityItem) -> SemanticStatus {
+    if matches!(item.status, SemanticStatus::Failed) {
+        SemanticStatus::Failed
+    } else if item.action_required {
+        SemanticStatus::Warning
+    } else if item.blocked {
+        SemanticStatus::Waiting
+    } else {
+        item.status
+    }
+}
+
+const fn activity_item_verb(item: &ActivityItem) -> &'static str {
+    if matches!(item.status, SemanticStatus::Failed) {
+        "failed"
+    } else if item.action_required {
+        "action required"
+    } else if item.blocked {
+        "blocked"
+    } else {
+        item.status.default_label()
     }
 }
 
@@ -344,6 +361,22 @@ pub fn activity_status_summary(items: &[ActivityItem], ascii: bool) -> String {
             "∅ idle".into()
         };
     }
+    let text = activity_status_text(items);
+    let g = if c.action_required > 0 || c.blocked > 0 {
+        if ascii { "!" } else { "⚠" }
+    } else if ascii {
+        ">"
+    } else {
+        "◉"
+    };
+    format!("{g} {text}")
+}
+
+fn activity_status_text(items: &[ActivityItem]) -> String {
+    let c = activity_counts(items);
+    if c.total == 0 {
+        return "idle".into();
+    }
     let mut parts = Vec::new();
     if c.action_required > 0 {
         parts.push(format!("{} action", c.action_required));
@@ -366,14 +399,23 @@ pub fn activity_status_summary(items: &[ActivityItem], ascii: bool) -> String {
     if parts.is_empty() {
         parts.push(format!("{} active", c.total));
     }
-    let g = if c.action_required > 0 || c.blocked > 0 {
-        if ascii { "!" } else { "⚠" }
-    } else if ascii {
-        ">"
+    parts.join(" · ")
+}
+
+const fn activity_semantic(counts: ActivityCounts) -> SemanticStatus {
+    if counts.action_required > 0 || counts.failed > 0 {
+        SemanticStatus::Failed
+    } else if counts.blocked > 0 {
+        SemanticStatus::Waiting
+    } else if counts.running > 0 {
+        SemanticStatus::Running
+    } else if counts.queued > 0 {
+        SemanticStatus::Queued
+    } else if counts.total == 0 {
+        SemanticStatus::Idle
     } else {
-        "◉"
-    };
-    format!("{g} {}", parts.join(" · "))
+        SemanticStatus::Success
+    }
 }
 
 /// Tiny badge text (`!3` / `●3`).
@@ -531,14 +573,20 @@ pub fn plan_activity_shelf(
 pub struct ActivityStatusProjection {
     /// Compact summary content.
     pub summary: String,
+    /// Summary words without a caller-painted glyph (for typed StatusSlot).
+    pub summary_text: String,
     /// Badge content.
     pub badge: String,
+    /// Badge count without a caller-painted glyph (for typed StatusSlot).
+    pub badge_text: String,
     /// Priority (higher = keep under pressure).
     pub priority: u8,
     /// Suggested region.
     pub region: StatusRegion,
     /// Kind.
     pub kind: StatusKind,
+    /// Aggregate lifecycle state driving the canonical glyph and tone.
+    pub semantic: SemanticStatus,
 }
 
 /// Project activities → StatusBar slot content.
@@ -559,10 +607,13 @@ pub fn project_activities_for_status_bar(
     };
     ActivityStatusProjection {
         summary: activity_status_summary(items, ascii),
+        summary_text: activity_status_text(items),
         badge: activity_badge_label(items, ascii),
+        badge_text: c.total.to_string(),
         priority,
         region: StatusRegion::Right,
         kind: StatusKind::Transient,
+        semantic: activity_semantic(c),
     }
 }
 
@@ -574,12 +625,13 @@ pub fn activity_status_slot<'a, Id>(
     use_badge: bool,
 ) -> StatusSlot<'a, Id> {
     let content = if use_badge {
-        projection.badge.as_str()
+        projection.badge_text.as_str()
     } else {
-        projection.summary.as_str()
+        projection.summary_text.as_str()
     };
     StatusSlot::new(id, content)
         .kind(projection.kind)
+        .semantic(projection.semantic)
         .priority(projection.priority)
         .region(projection.region)
         .min_width(if use_badge { 2 } else { 8 })
@@ -896,24 +948,28 @@ impl<'a> ActivityShelf<'a> {
 
         match plan.presentation {
             ActivityShelfPresentation::Badge => {
-                let label = activity_badge_label(self.items, ascii);
-                let style = urgency_style(self.system, self.items, self.colorless, state.focused);
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(area.x, area.y, area.width, 1),
-                    &label,
-                    style,
-                );
+                let counts = activity_counts(self.items);
+                let label = if counts.total == 0 {
+                    "idle".to_string()
+                } else {
+                    format!("{} activities", counts.total)
+                };
+                StatusIndicator::new(activity_semantic(counts), self.system)
+                    .label(&label)
+                    .ascii(ascii)
+                    .colorless(self.colorless)
+                    .strong(state.focused)
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Summary => {
-                let label = activity_status_summary(self.items, ascii);
-                let style = urgency_style(self.system, self.items, self.colorless, state.focused);
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(area.x, area.y, area.width, 1),
-                    &label,
-                    style,
-                );
+                let counts = activity_counts(self.items);
+                let label = activity_status_text(self.items);
+                StatusIndicator::new(activity_semantic(counts), self.system)
+                    .label(&label)
+                    .ascii(ascii)
+                    .colorless(self.colorless)
+                    .strong(state.focused)
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
                 self.paint_chips(area, buffer, state, &sorted, &plan, ascii);
@@ -955,13 +1011,18 @@ impl<'a> ActivityShelf<'a> {
                     height: 1,
                 };
                 let sel = state.focused && vi == state.selected;
-                let style = chip_style(self.system, item, self.colorless, sel);
+                let style = chip_style(self.system, self.colorless, sel);
                 self.system.paint_row(
                     buffer,
                     Rect::new(rect.x, rect.y, rect.width, 1),
                     &label,
                     style,
                 );
+                StatusIndicator::new(activity_item_semantic(item), self.system)
+                    .label(activity_item_verb(item))
+                    .ascii(ascii)
+                    .colorless(self.colorless)
+                    .paint(rect, buffer);
                 state.hits.push((item.id.clone(), rect));
                 y = y.saturating_add(1);
             } else {
@@ -975,7 +1036,7 @@ impl<'a> ActivityShelf<'a> {
                     height: 1,
                 };
                 let sel = state.focused && vi == state.selected;
-                let style = chip_style(self.system, item, self.colorless, sel);
+                let style = chip_style(self.system, self.colorless, sel);
                 let text = format!(" {label} ");
                 self.system.paint_row(
                     buffer,
@@ -983,6 +1044,21 @@ impl<'a> ActivityShelf<'a> {
                     &text,
                     style,
                 );
+                if rect.width > 1 {
+                    StatusIndicator::new(activity_item_semantic(item), self.system)
+                        .label(activity_item_verb(item))
+                        .ascii(ascii)
+                        .colorless(self.colorless)
+                        .paint(
+                            Rect::new(
+                                rect.x.saturating_add(1),
+                                rect.y,
+                                rect.width.saturating_sub(1),
+                                1,
+                            ),
+                            buffer,
+                        );
+                }
                 state.hits.push((item.id.clone(), rect));
                 x = x.saturating_add(rect.width).saturating_add(1);
             }
@@ -1038,39 +1114,8 @@ impl<'a> ActivityShelf<'a> {
     }
 }
 
-fn urgency_style(
-    system: &DesignSystem,
-    items: &[ActivityItem],
-    colorless: bool,
-    focused: bool,
-) -> ratatui_core::style::Style {
-    if colorless {
-        let mut s = system.style(Role::Text);
-        if focused {
-            s = s.add_modifier(Modifier::REVERSED);
-        }
-        return s;
-    }
-    let c = activity_counts(items);
-    let role = if c.action_required > 0 || c.failed > 0 {
-        Role::Danger
-    } else if c.blocked > 0 {
-        Role::Warning
-    } else if c.running > 0 {
-        Role::Accent
-    } else {
-        Role::TextMuted
-    };
-    let mut s = system.style(role);
-    if focused {
-        s = s.add_modifier(Modifier::BOLD);
-    }
-    s
-}
-
 fn chip_style(
     system: &DesignSystem,
-    item: &ActivityItem,
     colorless: bool,
     selected: bool,
 ) -> ratatui_core::style::Style {
@@ -1081,24 +1126,9 @@ fn chip_style(
         }
         return s;
     }
-    let role = if item.action_required {
-        Role::Danger
-    } else if item.blocked {
-        Role::Warning
-    } else {
-        item.status.role()
-    };
-    let mut s = system.style(role);
+    let mut s = system.style(Role::Text);
     if selected {
-        // Selection is chrome: weight and the row tint mark it, so a chip
-        // keeps its own status instead of turning into a slab (plans/010).
-        let recipe = system.resolve_list_row(ListRowVisualState {
-            selected: true,
-            focused: true,
-            enabled: true,
-            ..Default::default()
-        });
-        s = s.patch(recipe.tint).add_modifier(Modifier::BOLD);
+        s = system.style(Role::Focus).add_modifier(Modifier::BOLD);
     }
     s
 }
@@ -1281,6 +1311,33 @@ mod tests {
             st.last_plan.as_ref().map(|p| p.presentation),
             Some(ActivityShelfPresentation::Badge)
         );
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let system = DesignSystem::default();
+        let label = "e\u{301} 本";
+        let items = [ActivityItem::new("unicode", label).status(SemanticStatus::Running)];
+        for ascii in [false, true] {
+            for width in [72, 30, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut buffer = Buffer::empty(area);
+                let mut state = ActivityShelfState::new();
+                if width == 72 {
+                    state.force_presentation = Some(ActivityShelfPresentation::Chips);
+                }
+                ActivityShelf::new(&items, &system).ascii(ascii).paint(
+                    area,
+                    &mut buffer,
+                    &mut state,
+                );
+                if width == 72 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains("e\u{301}"), "{text:?}");
+                    assert!(text.contains('本'), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

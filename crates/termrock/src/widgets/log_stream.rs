@@ -1001,8 +1001,9 @@ impl<'a> LogStream<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let separator = if ascii { " - " } else { " · " };
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
 
@@ -1164,7 +1165,7 @@ impl<'a> LogStream<'a> {
                     " "
                 };
                 let batch = if line.batch_count > 1 {
-                    format!("×{}", line.batch_count)
+                    format!("{}{}", if ascii { "x" } else { "×" }, line.batch_count)
                 } else {
                     String::new()
                 };
@@ -1267,7 +1268,6 @@ impl<'a> LogStream<'a> {
                         style,
                     );
                     if ri == 0 {
-                        chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
                         // Tiers ride the first row only: a wrapped
                         // continuation is all message, and all one tone.
                         let skip = if matches!(state.wrap, LogWrap::Wrap) {
@@ -1285,6 +1285,11 @@ impl<'a> LogStream<'a> {
                             ),
                             skip,
                         );
+                    }
+                    let continuation = Rect::new(area.x, py, area.width, 1);
+                    chrome.paint_wash(buffer, continuation);
+                    if ri == 0 {
+                        chrome.paint_gutter(buffer, continuation);
                     }
                     py = py.saturating_add(1);
                 }
@@ -1319,22 +1324,27 @@ impl<'a> LogStream<'a> {
                 "↑ pinned · f follow".to_string()
             };
             if state.dropped > 0 {
-                chip.push_str(&format!(" · drop {}", state.dropped));
+                chip.push_str(&format!("{separator}drop {}", state.dropped));
             }
             if state.batched > 1 {
-                chip.push_str(&format!(" · batch {}", state.batched));
+                chip.push_str(&format!("{separator}batch {}", state.batched));
             }
             if let Some(q) = &state.search {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if state.level_floor > LogLevel::Trace {
-                chip.push_str(&format!(" · ≥{}", state.level_floor.letter()));
+                let comparison = if ascii { ">=" } else { "≥" };
+                chip.push_str(&format!(
+                    "{separator}{comparison}{}",
+                    state.level_floor.letter()
+                ));
             }
             if !state.bookmarks.is_empty() {
-                chip.push_str(&format!(" · ★{}", state.bookmarks.len()));
+                let bookmark = if ascii { "*" } else { "★" };
+                chip.push_str(&format!("{separator}{bookmark}{}", state.bookmarks.len()));
             }
             if matches!(state.recipe, LogLineRecipe::Compact) {
-                chip.push_str(" · compact");
+                chip.push_str(&format!("{separator}compact"));
             }
             let chip_style = if following && surface {
                 if colorless {
@@ -1724,6 +1734,7 @@ mod tests {
         let lines = sample();
         let mut state = LogStreamState::new();
         state.set_following(false);
+        state.cursor = 1;
         state.recipe = LogLineRecipe::Detailed;
         let stream = LogStream::new(&lines, &system).focused(true);
         let area = Rect::new(0, 0, 72, 10);

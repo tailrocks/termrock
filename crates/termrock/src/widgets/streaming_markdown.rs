@@ -848,10 +848,11 @@ impl<'a> StreamingMarkdown<'a> {
         }
 
         let mut view = MarkdownView::new(&blocks, self.system);
-        if self.ascii {
+        let ascii = self.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || self.system.mono();
+        if ascii {
             view = view.compact_headings(true);
         }
-        let _ = self.colorless;
 
         // follow stream scroll
         if state.follow_stream && matches!(state.phase, StreamPhase::Streaming) {
@@ -864,14 +865,18 @@ impl<'a> StreamingMarkdown<'a> {
         // caret / failed strip
         if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
             // Not `▌`: that bar means "this row is selected".
-            let cue = if self.ascii { "|" } else { "▍" };
+            let cue = if ascii { "|" } else { "▍" };
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
                 area.x.saturating_add(area.width.saturating_sub(2)),
                 y,
                 cue,
                 1,
-                self.system.style(Role::Accent),
+                self.system.style(if colorless {
+                    Role::TextStrong
+                } else {
+                    Role::Accent
+                }),
             );
         }
         if matches!(state.phase, StreamPhase::Failed) {
@@ -887,11 +892,6 @@ impl<'a> StreamingMarkdown<'a> {
             }
         }
         let _ = wrap_display_cols;
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut StreamingMarkdownState) {
-        self.paint(area, buffer, state);
     }
 }
 

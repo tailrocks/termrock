@@ -7,8 +7,8 @@
 //! visible track and handle. Progress bars are **read-only**; these widgets are
 //! interactive.
 //!
-//! **vs [`Progress`](crate::widgets::Progress).** Progress shows completion;
-//! Slider edits a bounded value.
+//! **vs [`ProgressBar`](crate::widgets::ProgressBar).** ProgressBar shows
+//! completion; Slider edits a bounded value.
 //!
 //! **Precision.** Prefer a paired value field (built-in numeric face / edit, or
 //! host TextInput) when exact precision matters. Tiny widths fall back to
@@ -30,7 +30,7 @@ use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 /// Minimum track cells before falling back to numeric-only face.
@@ -379,27 +379,27 @@ pub(crate) fn slider_chrome(
     enabled: bool,
     active: bool,
 ) -> SliderChrome {
-    if !enabled {
-        let disabled = system.style(Role::TextDisabled);
-        return SliderChrome {
-            track: disabled,
-            fill: disabled,
-            thumb: disabled,
-        };
-    }
-    let mut thumb = system
-        .style(if active {
-            Role::Accent
+    let recipe = system.input_recipe(
+        if !enabled {
+            ControlState::Disabled
+        } else if active {
+            ControlState::Focused
         } else {
-            Role::TextStrong
-        })
-        .add_modifier(Modifier::BOLD);
+            ControlState::Default
+        },
+        false,
+    );
+    let mut thumb = if active { recipe.cursor } else { recipe.value }.add_modifier(Modifier::BOLD);
     if mono(system, colorless) {
         thumb = thumb.add_modifier(Modifier::REVERSED);
     }
     SliderChrome {
-        track: system.style(Role::Border),
-        fill: system.style(Role::ChartSeries1),
+        track: recipe.border,
+        fill: if enabled {
+            system.style(Role::ChartSeries1)
+        } else {
+            recipe.value
+        },
         thumb,
     }
 }
@@ -776,26 +776,38 @@ impl<'a> Slider<'a> {
     }
 
     fn label_style(&self, state: &SliderState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            self.system.style(Role::TextDisabled)
-        } else if state.focused {
-            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            false,
+        );
+        if state.focused {
+            recipe.value.add_modifier(Modifier::BOLD)
         } else {
-            self.system.style(Role::Text)
+            recipe.value
         }
     }
 
     fn value_style(&self, state: &SliderState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            self.system.style(Role::TextDisabled)
-        } else if state.editing {
-            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-        } else if state.focused {
-            self.system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD)
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            false,
+        );
+        if state.editing || state.focused {
+            recipe.value.add_modifier(Modifier::BOLD)
         } else {
-            self.system.style(Role::TextMuted)
+            recipe.placeholder
         }
     }
 
@@ -1317,12 +1329,20 @@ impl<'a> RangeSlider<'a> {
         if area.width < SLIDER_NUMERIC_FALLBACK_WIDTH {
             let face = format!("{}–{}", format_value(state.start), format_value(state.end));
             let text = take_display_cols(&face, usize::from(area.width));
-            let style = if !state.enabled {
-                self.system.style(Role::TextDisabled)
-            } else if state.focused {
-                self.system.style(Role::Focus)
+            let recipe = self.system.input_recipe(
+                if !state.enabled {
+                    ControlState::Disabled
+                } else if state.focused {
+                    ControlState::Focused
+                } else {
+                    ControlState::Default
+                },
+                false,
+            );
+            let style = if state.focused {
+                recipe.value.add_modifier(Modifier::BOLD)
             } else {
-                self.system.style(Role::Text)
+                recipe.value
             };
             buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
             let parts = RangeSliderParts {
@@ -1346,11 +1366,16 @@ impl<'a> RangeSlider<'a> {
                     y,
                     &text,
                     usize::from(area.width),
-                    if state.focused {
-                        self.system.style(Role::Focus)
-                    } else {
-                        self.system.style(Role::Text)
-                    },
+                    self.system
+                        .input_recipe(
+                            if state.focused {
+                                ControlState::Focused
+                            } else {
+                                ControlState::Default
+                            },
+                            false,
+                        )
+                        .value,
                 );
                 y = y.saturating_add(1);
             }
@@ -1423,7 +1448,16 @@ impl<'a> RangeSlider<'a> {
                 track.y,
                 &text,
                 usize::from(vw),
-                self.system.style(Role::TextMuted),
+                self.system
+                    .input_recipe(
+                        if state.focused {
+                            ControlState::Focused
+                        } else {
+                            ControlState::Default
+                        },
+                        false,
+                    )
+                    .placeholder,
             );
             value_area = Some(Rect::new(vx, track.y, display_cols(&text) as u16, 1));
         }
@@ -1727,6 +1761,18 @@ mod tests {
         );
         assert!(matches!(out, SliderOutcome::EditCommitted { value: 75.0 }));
         assert_eq!(state.value, 75.0);
+        assert!(matches!(
+            s.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
+            ),
+            SliderOutcome::EditStarted
+        ));
+        assert!(matches!(
+            s.handle_key(&mut state, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            SliderOutcome::EditCancelled
+        ));
+        assert_eq!(state.value, 75.0);
     }
 
     #[test]
@@ -1832,6 +1878,31 @@ mod tests {
         assert!(parts.start_handle.is_some());
         assert!(parts.end_handle.is_some());
         assert_ne!(parts.start_handle, parts.end_handle);
+    }
+
+    #[test]
+    fn range_slider_mouse_chooses_nearest_painted_thumb() {
+        let system = DesignSystem::default();
+        let slider = RangeSlider::new(SliderBounds::percent(), &system);
+        let mut state = RangeSliderState::new(20.0, 80.0);
+        let area = Rect::new(0, 0, 40, 2);
+        let mut buffer = Buffer::empty(area);
+        let parts = slider.paint(area, &mut buffer, &mut state);
+        let end = parts.end_handle.expect("end handle");
+
+        assert!(matches!(
+            slider.handle_mouse(
+                &mut state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(end.x, end.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            RangeSliderOutcome::ValueChanged { .. }
+        ));
+        assert_eq!(state.active_thumb, RangeThumb::End);
+        assert!(state.dragging);
     }
 
     #[test]

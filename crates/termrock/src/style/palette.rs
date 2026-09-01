@@ -67,44 +67,7 @@ pub fn contrast_ratio(a: Rgb, b: Rgb) -> f32 {
 
 pub(crate) const PHOSPHOR_GREEN: Rgb = Rgb::new(0, 255, 65);
 pub(crate) const PHOSPHOR_DARK: Rgb = Rgb::new(0, 80, 18);
-/// Non-border focus cue — one step off the brand accent so a focused row and a
-/// focused container border never resolve to the same green.
-pub(crate) const FOCUS_GREEN: Rgb = Rgb::new(51, 255, 106);
-pub(crate) const SCROLL_TRACK: Rgb = Rgb::new(22, 27, 22);
-pub(crate) const WHITE: Rgb = Rgb::new(255, 255, 255);
-/// Foreground ladder: body, strong, muted, disabled/faint.
-pub(crate) const TEXT_BODY: Rgb = Rgb::new(214, 224, 214);
-pub(crate) const TEXT_STRONG: Rgb = Rgb::new(240, 245, 240);
-pub(crate) const TEXT_MUTED: Rgb = Rgb::new(122, 138, 122);
-pub(crate) const TEXT_DISABLED: Rgb = Rgb::new(82, 96, 82);
-/// Meta tier between muted and disabled — carries `DIM` in the role.
-pub(crate) const TEXT_FAINT: Rgb = Rgb::new(94, 109, 94);
-pub(crate) const LINK_FG: Rgb = Rgb::new(94, 200, 255);
-pub(crate) const LINK_FG_HOVER: Rgb = Rgb::new(143, 216, 255);
-pub(crate) const BORDER_GRAY: Rgb = Rgb::new(48, 58, 50);
-pub(crate) const DANGER_RED: Rgb = Rgb::new(255, 94, 122);
-pub(crate) const CYAN: Rgb = Rgb::new(0, 180, 180);
-pub(crate) const WARNING_YELLOW: Rgb = Rgb::new(255, 216, 94);
 pub(crate) const PREVIEW_CARD: Rgb = Rgb::new(28, 28, 28);
-pub(crate) const CANVAS: Rgb = Rgb::new(10, 12, 10);
-pub(crate) const SURFACE: Rgb = Rgb::new(18, 22, 18);
-pub(crate) const RAISED: Rgb = Rgb::new(26, 31, 26);
-pub(crate) const ELEVATED: Rgb = Rgb::new(30, 38, 32);
-pub(crate) const SUNKEN: Rgb = Rgb::new(13, 16, 13);
-pub(crate) const BACKDROP_WASH: Rgb = Rgb::new(58, 68, 58);
-pub(crate) const SELECTION_TINT: Rgb = Rgb::new(20, 51, 26);
-pub(crate) const HOVER_TINT: Rgb = Rgb::new(26, 34, 28);
-pub(crate) const SUCCESS_GREEN: Rgb = Rgb::new(93, 255, 160);
-pub(crate) const CHART_GREEN: Rgb = Rgb::new(43, 217, 104);
-pub(crate) const ACTION_CONSTRUCTIVE: Rgb = Rgb::new(180, 255, 180);
-pub(crate) const DISCLOSURE_HEADER: Rgb = Rgb::new(255, 208, 102);
-pub(crate) const INFO_DIM: Rgb = Rgb::new(0, 120, 120);
-pub(crate) const ACTOR_USER: Rgb = Rgb::new(200, 200, 200);
-pub(crate) const ACTOR_ASSISTANT: Rgb = Rgb::new(187, 154, 247);
-pub(crate) const ACTOR_THINKING: Rgb = Rgb::new(154, 127, 209);
-pub(crate) const ACTOR_TOOL: Rgb = Rgb::new(120, 120, 120);
-pub(crate) const ACTOR_PLAN: Rgb = Rgb::new(255, 219, 141);
-pub(crate) const ACTOR_SYSTEM: Rgb = Rgb::new(122, 162, 247);
 
 /// Lifts a colour one step, for the "the pointer is here" answer on a surface
 /// that already owns its ground.

@@ -33,7 +33,7 @@ use crate::{
     interaction::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{ControlState, DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1022,16 +1022,20 @@ impl<'a> TextInput<'a> {
         }
 
         let invalid = !state.is_valid() || matches!(self.validation, Validation::Invalid(_));
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.loading {
+            ControlState::Loading
+        } else if state.focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.input_recipe(control_state, invalid);
         let mut y = area.y;
         // Optional label row when height >= 2
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if invalid {
-                Role::Danger
-            } else if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1070,7 +1074,7 @@ impl<'a> TextInput<'a> {
                     field_row.y,
                     take_display_cols(p, usize::from(pw)),
                     usize::from(pw),
-                    self.system.style(Role::TextMuted),
+                    recipe.placeholder,
                 );
                 prefix_rect = Some(Rect::new(x, field_row.y, pw, 1));
                 x = x.saturating_add(pw).saturating_add(1);
@@ -1083,10 +1087,12 @@ impl<'a> TextInput<'a> {
             && state.can_edit()
             && !state.value.is_empty()
             && right > x.saturating_add(2);
-        if show_clear {
+        if self.show_clear && right > x.saturating_add(2) {
             let cw = 1u16;
             right = right.saturating_sub(cw.saturating_add(1));
-            clear_rect = Some(Rect::new(right.saturating_add(1), field_row.y, cw, 1));
+            if show_clear {
+                clear_rect = Some(Rect::new(right.saturating_add(1), field_row.y, cw, 1));
+            }
         }
         if let Some(s) = self.suffix {
             if !s.is_empty() && right > x.saturating_add(2) {
@@ -1099,16 +1105,6 @@ impl<'a> TextInput<'a> {
         // One field-chrome authority for the whole input family: the well,
         // the value tone, the cursor and the focus cue all come from
         // `input_recipe` (plans/008 Step 2).
-        let control_state = if !state.enabled {
-            ControlState::Disabled
-        } else if state.focused {
-            ControlState::Focused
-        } else if state.loading {
-            ControlState::Loading
-        } else {
-            ControlState::Default
-        };
-        let recipe = self.system.input_recipe(control_state, invalid);
         // The prompt column is reserved in every state, so a value does not
         // shift sideways the moment focus arrives.
         let prompt_rect = Rect::new(x, field_row.y, 1.min(right.saturating_sub(x)), 1);
@@ -1124,11 +1120,7 @@ impl<'a> TextInput<'a> {
         if let Some((glyph, style)) = recipe.prompt {
             buffer.set_stringn(prompt_rect.x, prompt_rect.y, glyph, 1, style);
         }
-        let input_style = if state.loading {
-            self.system.style(Role::TextMuted)
-        } else {
-            recipe.value
-        };
+        let input_style = recipe.value;
 
         let field_w = usize::from(field.width);
         state.reveal_cursor(field_w);
@@ -1167,9 +1159,7 @@ impl<'a> TextInput<'a> {
                 if ex > sx {
                     buffer.set_style(
                         Rect::new(sx, field.y, ex.saturating_sub(sx), 1),
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED),
+                        recipe.cursor.add_modifier(Modifier::REVERSED),
                     );
                 }
             }
@@ -1185,9 +1175,7 @@ impl<'a> TextInput<'a> {
         let cursor_rect = if state.focused && state.enabled {
             buffer.set_style(
                 Rect::new(cursor_x, field.y, 1, 1),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
+                recipe.cursor.add_modifier(Modifier::REVERSED),
             );
             Some(Rect::new(cursor_x, field.y, 1, 1))
         } else {
@@ -1201,12 +1189,27 @@ impl<'a> TextInput<'a> {
                     sr.y,
                     take_display_cols(s, usize::from(sr.width)),
                     usize::from(sr.width),
-                    self.system.style(Role::TextMuted),
+                    recipe.placeholder,
                 );
             }
         }
         if let Some(cr) = clear_rect {
-            buffer.set_stringn(cr.x, cr.y, "×", 1, self.system.style(Role::TextMuted));
+            let clear_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if state.enabled {
+                    ControlState::Focused
+                } else {
+                    ControlState::Disabled
+                },
+            );
+            buffer.set_style(cr, clear_recipe.fill);
+            buffer.set_stringn(
+                cr.x,
+                cr.y,
+                self.system.glyphs.resolve(Glyph::Close).text,
+                1,
+                clear_recipe.label,
+            );
         }
         if state.loading {
             let g = self.system.glyphs.loading();
@@ -1216,18 +1219,18 @@ impl<'a> TextInput<'a> {
                     field.y,
                     g,
                     1,
-                    self.system.style(Role::TextMuted),
+                    recipe.placeholder,
                 );
             }
         }
 
         // Validation message, directly under the field in every input.
-        if area.height >= 3
+        if field_row.y.saturating_add(1) < area.bottom()
             && let Validation::Invalid(msg) = self.validation
         {
             crate::widgets::field_message::paint_field_message(
                 buffer,
-                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                Rect::new(area.x, field_row.y.saturating_add(1), area.width, 1),
                 self.system,
                 crate::widgets::label::DescriptionKind::Error,
                 msg,
@@ -1327,6 +1330,63 @@ impl StatefulWidget for TextInput<'_> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn focus_prompt_keeps_value_column_stable() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut idle = TextInputState::new("abc");
+        let mut idle_buffer = Buffer::empty(area);
+        let idle_parts = TextInput::new("", &system).paint(area, &mut idle_buffer, &mut idle);
+
+        let mut focused = TextInputState::new("abc");
+        focused.set_focused(true);
+        let mut focused_buffer = Buffer::empty(area);
+        let focused_parts =
+            TextInput::new("", &system).paint(area, &mut focused_buffer, &mut focused);
+
+        assert_eq!(idle_parts.field.x, focused_parts.field.x);
+        assert_eq!(idle_parts.field.x, area.x + 1);
+        assert_eq!(idle_buffer[(area.x + 1, area.y)].symbol(), "a");
+        assert_eq!(focused_buffer[(area.x + 1, area.y)].symbol(), "a");
+        assert_ne!(focused_buffer[(area.x, area.y)].symbol(), " ");
+    }
+
+    #[test]
+    fn conditional_clear_action_does_not_resize_the_field() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 16, 1);
+        let input = TextInput::new("", &system).show_clear(true);
+
+        let mut idle = TextInputState::new("abc");
+        let mut idle_buffer = Buffer::empty(area);
+        let idle_parts = input.paint(area, &mut idle_buffer, &mut idle);
+
+        let mut focused = TextInputState::new("abc");
+        focused.set_focused(true);
+        let mut focused_buffer = Buffer::empty(area);
+        let focused_parts = input.paint(area, &mut focused_buffer, &mut focused);
+
+        assert_eq!(idle_parts.field, focused_parts.field);
+        assert!(idle_parts.clear.is_none());
+        assert!(focused_parts.clear.is_some());
+    }
+
+    #[test]
+    fn unlabeled_validation_uses_the_row_directly_below_the_field() {
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("bad");
+        TextInput::new("", &system)
+            .validation(Validation::Invalid("invalid value"))
+            .paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            buffer[(area.x, area.y + 1)].symbol(),
+            system.glyphs.resolve(Glyph::Error).text
+        );
+    }
 
     #[test]
     fn a_required_field_says_so_before_you_submit() {

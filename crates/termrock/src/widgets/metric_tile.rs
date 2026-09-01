@@ -14,6 +14,7 @@ use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::charts::{Gauge, ScaleMode, Sparkline, VizGlyphSet};
 use crate::widgets::tiered_row::TieredRow;
+use crate::widgets::{SemanticStatus, StatusIndicator};
 
 /// How a metric tile paints its body.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -99,13 +100,14 @@ impl MetricTileHealth {
         }
     }
 
-    /// Role.
+    /// Shared health projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Ok => Role::Success,
-            Self::Warning | Self::Stale | Self::Loading => Role::Warning,
-            Self::Danger | Self::Failed => Role::Danger,
+            Self::Ok => SemanticStatus::Success,
+            Self::Warning | Self::Stale => SemanticStatus::Warning,
+            Self::Danger | Self::Failed => SemanticStatus::Failed,
+            Self::Loading => SemanticStatus::Running,
         }
     }
 }
@@ -316,10 +318,10 @@ impl<'a> MetricTileView<'a> {
         };
         let mut row = TieredRow::with_separator(" ");
         row.push_joined(mark, self.focused.then(|| self.system.style(Role::Accent)));
-        row.push_joined(
-            &self.health_letter().to_string(),
-            Some(self.system.style(tile.health.role())),
-        );
+        let status = StatusIndicator::new(tile.health.semantic(), self.system)
+            .label(tile.health.id())
+            .ascii(self.ascii);
+        row.push_plain(&status.text(None));
         row.push_plain(tile.title);
         if let Some(err) = tile.error {
             row.push_joined(":", None);
@@ -333,7 +335,7 @@ impl<'a> MetricTileView<'a> {
                 let tone = self.system.style(if tile.delta_bad {
                     Role::Danger
                 } else {
-                    Role::Success
+                    Role::TextStrong
                 });
                 row.push(self.delta_glyph(), tone);
                 row.push(tile.delta, tone);
@@ -348,6 +350,17 @@ impl<'a> MetricTileView<'a> {
             self.system.style(Role::Text),
         );
         row.paint_tiers(buffer, Rect::new(area.x, area.y, area.width, 1), 0);
+        if area.width > 2 {
+            status.paint(
+                Rect::new(
+                    area.x.saturating_add(2),
+                    area.y,
+                    area.width.saturating_sub(2),
+                    1,
+                ),
+                buffer,
+            );
+        }
     }
 
     fn paint_card(&self, area: Rect, buffer: &mut Buffer) {
@@ -370,10 +383,10 @@ impl<'a> MetricTileView<'a> {
         }
 
         let mut title = TieredRow::with_separator(" ");
-        title.push_joined(
-            &self.health_letter().to_string(),
-            Some(system.style(tile.health.role())),
-        );
+        let status = StatusIndicator::new(tile.health.semantic(), system)
+            .label(tile.health.id())
+            .ascii(ascii);
+        title.push_plain(&status.text(None));
         title.push_plain(tile.title);
         let title_line = title.text().to_string();
         buffer.set_stringn(
@@ -384,6 +397,7 @@ impl<'a> MetricTileView<'a> {
             system.style(Role::TextStrong),
         );
         title.paint_tiers(buffer, Rect::new(inner_x, area.y, inner_w, 1), 0);
+        status.paint(Rect::new(inner_x, area.y, inner_w, 1), buffer);
 
         let mut y = area.y.saturating_add(1);
         if y < area.bottom() {
@@ -423,7 +437,7 @@ impl<'a> MetricTileView<'a> {
                             system.style(if tile.delta_bad {
                                 Role::Danger
                             } else {
-                                Role::Success
+                                Role::TextStrong
                             }),
                         );
                     }
@@ -454,7 +468,7 @@ impl<'a> MetricTileView<'a> {
                 body.y,
                 take_display_cols(msg, usize::from(body.width)),
                 usize::from(body.width),
-                system.style(tile.health.role()),
+                system.style(Role::TextMuted),
             );
             return;
         }
@@ -482,7 +496,7 @@ impl<'a> MetricTileView<'a> {
                 let mut gauge = Gauge::percent(value, system)
                     .label(tile.title)
                     .thresholds(thresholds)
-                    .role(tile.health.role());
+                    .role(tile.health.semantic().role());
                 if ascii {
                     gauge = gauge.glyphs(VizGlyphSet::Ascii);
                 }
@@ -497,7 +511,7 @@ impl<'a> MetricTileView<'a> {
                     gauge = Gauge::new(value, system)
                         .scale(ScaleMode::Fixed { min: 0.0, max })
                         .thresholds(thresholds)
-                        .role(tile.health.role());
+                        .role(tile.health.semantic().role());
                     if ascii {
                         gauge = gauge.glyphs(VizGlyphSet::Ascii);
                     }
@@ -567,13 +581,13 @@ mod tests {
         );
         assert_eq!(
             at(1, '▲'),
-            system.style(Role::Success).fg,
+            system.style(Role::TextStrong).fg,
             "a good delta is a good delta"
         );
     }
 
     #[test]
-    fn health_is_confined_to_its_letter() {
+    fn health_is_confined_to_status_rail_and_glyph() {
         let system = DesignSystem::default();
         let tile = MetricTile::new("cpu", "CPU", "97%")
             .health(MetricTileHealth::Danger)
@@ -589,8 +603,8 @@ mod tests {
             })
             .count();
         assert_eq!(
-            danger_cells, 1,
-            "danger belongs to the health letter, not to the title"
+            danger_cells, 2,
+            "danger belongs to the status rail and glyph, not to the title"
         );
     }
 

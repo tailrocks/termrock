@@ -1197,16 +1197,24 @@ impl<'a> NotificationCenter<'a> {
         }
         state.slots.root = panel;
 
-        let border = if state.focused && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.focused {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            super::SurfaceRecipe::Overlay
         };
-        let bs = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(bs)
             .content_inset()
             .paint(panel, buffer);
         if inner.is_empty() {
@@ -1687,6 +1695,27 @@ mod tests {
                 action
             } if id == "1" && action == "undo"
         ));
+    }
+
+    #[test]
+    fn mouse_row_hit_selects_and_marks_read() {
+        let mut state = NotificationCenterState::new();
+        state.replace_items(vec![
+            NotificationItem::new("n1", "new", ToastKind::Info).unread(true),
+        ]);
+        let _ = state.open();
+        state.slots.list = Rect::new(2, 3, 24, 4);
+        assert_eq!(
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(2, 3),
+                modifiers: KeyModifiers::NONE,
+            }),
+            NotificationCenterOutcome::SelectionChanged {
+                id: Some("n1".into())
+            }
+        );
+        assert!(!state.items()[0].unread);
     }
 
     #[test]

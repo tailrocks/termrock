@@ -35,7 +35,7 @@ use crate::{
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
     style::{Density, DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
-    widgets::{Action, ActionBar, ActionBarState, Panel, PanelChrome},
+    widgets::{Action, ActionBar, ActionBarState, ActionVariant, Panel, PanelChrome, PanelVariant},
 };
 
 /// Overlay id for agent permission / trust surfaces (`OverlayStack`).
@@ -965,13 +965,6 @@ impl PermissionPromptState {
         self.action_cursor
     }
 
-    /// Deprecated name for [`Self::action_cursor`].
-    #[deprecated(note = "use action_cursor")]
-    #[must_use]
-    pub fn selected(&self) -> PermissionAction {
-        self.action_cursor
-    }
-
     /// Selected grant scope.
     #[must_use]
     pub const fn scope(&self) -> PermissionScope {
@@ -1465,6 +1458,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         let surface = self.focused && state.accepts_input();
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
+                .variant(PanelVariant::Bordered)
                 .overlay(true)
                 .title("Permission")
                 .emphasis(if surface {
@@ -1515,6 +1509,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         };
         let content_area = area;
         let panel = Panel::new(&tokens)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
@@ -1775,8 +1770,13 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                     id: *action,
                     label: action.label(),
                     enabled: true,
-                    style: (action.grants() && risk.is_destructive())
-                        .then(|| self.system.style(Role::Danger)),
+                    variant: if action.grants() && risk.is_destructive() {
+                        ActionVariant::Destructive
+                    } else if action.grants() {
+                        ActionVariant::Primary
+                    } else {
+                        ActionVariant::Secondary
+                    },
                 })
                 .collect();
             let mut action_state = ActionBarState {
@@ -2077,7 +2077,7 @@ mod tests {
 
     #[test]
     fn y_is_not_bound_to_allow_on_permission_prompt() {
-        // Trust surface must not grant on 'y' (legacy dual chrome used to).
+        // Trust surface must not grant on 'y'; only the focused action can commit.
         let mut state = PermissionPromptState::new();
         state.enqueue(destructive_shell());
         let out = state.handle_key(press(KeyCode::Char('y')));

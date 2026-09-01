@@ -39,8 +39,8 @@ fn panel_story_png_has_exact_size_and_phosphor_border() {
     let palette = RolePalette::default();
     let backend = TestBackend::new(story.width, story.height);
     let mut terminal = Terminal::new(backend).expect("test terminal");
-    let mut interactor = story.make_interactor();
-    interactor.set_theme(palette.clone());
+    let mut interactor = story.mount();
+    interactor.set_system(termrock_lookbook::design::lookbook_system(palette.clone()));
     terminal
         .draw(|frame| interactor.render(frame, frame.area()))
         .expect("paint story");

@@ -30,11 +30,12 @@ use termrock::{
         example_terminal_run_lines, example_terminal_runs, example_working_state,
         render_error_recovery, result_column_model,
     },
-    style::RolePalette,
+    style::{DesignSystem, RolePalette},
     widgets::DataColumnWidth,
 };
 
 use super::StoryInteraction;
+use crate::demo::DemoDeadline;
 
 pub(crate) fn composite_interactor(id: &str) -> Option<Box<dyn StoryInteraction>> {
     let kind = match id {
@@ -58,7 +59,7 @@ pub(crate) fn composite_interactor(id: &str) -> Option<Box<dyn StoryInteraction>
     };
     Some(Box::new(CompositePatternDemo {
         kind,
-        theme: RolePalette::default(),
+        system: crate::design::lookbook_system(RolePalette::default()),
         outcome: None,
         elapsed_ms: 0,
     }))
@@ -85,7 +86,7 @@ enum CompositeKind {
 
 struct CompositePatternDemo {
     kind: CompositeKind,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
     elapsed_ms: u64,
 }
@@ -276,7 +277,7 @@ impl CompositePatternDemo {
 
 impl StoryInteraction for CompositePatternDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let tick = self.elapsed_ms / 400;
         match &mut self.kind {
             CompositeKind::Process(state) => ProcessTable::new(&process_rows(), &system)
@@ -640,8 +641,8 @@ impl StoryInteraction for CompositePatternDemo {
         }
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
 
     fn hints(&self) -> Vec<&'static str> {
@@ -745,12 +746,12 @@ impl StoryInteraction for CompositePatternDemo {
         changed
     }
 
-    fn next_deadline_ms(&self, elapsed_ms: u64) -> Option<u64> {
+    fn next_deadline(&self, elapsed_ms: u64) -> Option<DemoDeadline> {
         matches!(
             self.kind,
             CompositeKind::Working(_) | CompositeKind::Terminal(_) | CompositeKind::Subagent(_)
         )
-        .then_some((elapsed_ms / 400 + 1) * 400)
+        .then(|| DemoDeadline::visual_motion((elapsed_ms / 400 + 1) * 400))
     }
 
     fn captures_text_input(&self) -> bool {

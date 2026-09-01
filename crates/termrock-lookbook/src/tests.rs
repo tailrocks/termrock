@@ -308,11 +308,11 @@ fn no_dual_agent_chrome_stories() {
             story.id
         );
         assert!(
-            story.component != "ApprovalCard"
-                && story.component != "PromptBox"
-                && story.component != "StreamView",
+            story.component() != "ApprovalCard"
+                && story.component() != "PromptBox"
+                && story.component() != "StreamView",
             "deleted dual component label: {} ({})",
-            story.component,
+            story.component(),
             story.id
         );
     }

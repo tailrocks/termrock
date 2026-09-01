@@ -5,7 +5,7 @@
 | **Status** | Research annex (evidence + implementation-grade findings). Not a law doc. |
 | **Date** | 2026-08-14 |
 | **Method** | 7 parallel research agents, one per component family, each grounded in (a) actual TermRock source (`file:line` verified) and (b) best-in-class TUI/CLI + frontend libraries with cited patterns. |
-| **Companion to** | [`tui-design-research-2026-08.md`](./tui-design-research-2026-08.md) — the design-law v2 + 48-component matrix + token deltas. This file is the **evidence/implementation layer** underneath it; it does **not** restate the law. Where it disagrees, it flags an open decision (§3), never silently overrides. |
+| **Companion to** | [`tui-design-research-2026-08.md`](./tui-design-research-2026-08.md) — design-law v2 plus an archived 48-surface sample and token deltas. This file is historical evidence, not inventory. The Rust inventory and generated docs catalog own current membership. |
 | **Feeds** | `plans/001` (underline SoT), `plans/002` (role palette), and the future code plans (TextInput kernel, glyph catalog, FocusEmphasis). |
 | **Constraint honored** | User dislikes underline for focus/active; accent-restraint aesthetic (Grok Build / Amp / Jackin / shadcn / Linear). |
 

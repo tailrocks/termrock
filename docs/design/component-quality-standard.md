@@ -5,8 +5,7 @@
 | **Status** | Binding design SoT |
 | **Rule** | A component is **not** complete because it compiles and paints |
 | **Schema** | `docs/api/component-contract.schema.json` |
-| **Contracts v1** | `docs/api/component-contracts.json` (six axes; catalog CI) |
-| **Contracts v2** | `docs/api/component-contracts.v2.json` (optional until Q2) + example |
+| **Contracts** | `docs/api/component-contracts.v2.json` (mandatory full catalog) |
 | **Related** | [`component-anatomy-spec.md`](./component-anatomy-spec.md), Studio stories, lookbook SVG gate, migration `0048` |
 
 ---
@@ -19,7 +18,7 @@ A public interactive component is **complete** only when:
 2. Evidence is **machine-linkable** (story id, test filter, snapshot path, bench name, recording path).  
 3. Claiming `covered` without evidence **fails CI**.  
 4. Design lints (§3) for that component are clean (or **waived** with ticket + expiry).  
-5. Public inventory alignment holds: `public-api.txt` ↔ `COMPONENTS.md` ↔ stories ↔ contracts.
+5. Public inventory alignment holds: typed Rust inventories ↔ stories ↔ canonical MDX ↔ contracts.
 
 **Compile + render alone never suffice.**
 
@@ -296,12 +295,10 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 
 | Artifact | Path |
 |----------|------|
-| JSON Schema | `docs/api/component-contract.schema.json` |
-| v1 catalog (live CI) | `docs/api/component-contracts.json` |
-| v2 example | `docs/api/component-contracts.v2.example.json` |
-| v2 catalog (target) | `docs/api/component-contracts.v2.json` |
+| Generated JSON Schema | `docs/api/component-contract.schema.json` |
+| Full v2 catalog | `docs/api/component-contracts.v2.json` |
 | Validator | `docs/scripts/check-contracts.ts` |
-| Catalog inventory | `docs/scripts/check-catalog.ts` |
+| Catalog join | `docs/scripts/generate-catalog.ts` |
 
 ### 4.2 Status vocabulary (v2)
 
@@ -336,23 +333,23 @@ Machine-checkable rules. Severity: **error** (blocks complete) · **warn** (debt
 - no axis is `partial` **without** a waiver `{ ticket, expires }`, and  
 - all design lints are `pass` or `waived`.
 
-### 4.5 Example (excerpt)
+### 4.5 Entry excerpt
 
-See `docs/api/component-contracts.v2.example.json` (ApprovalCard, List). Full schema: `component-contract.schema.json`.
+The full catalog is the example. Partial documents are rejected.
 
 ```json
 {
   "schema": 2,
-  "component": "List",
-  "kind": "interactive",
+  "id": "List",
+  "entryKind": "component",
   "complete": false,
   "axes": {
     "keyboard": {
       "status": "covered",
       "evidence": { "tests": ["list::tests::…"], "stories": ["list/selection"] }
     },
-    "streaming": { "status": "not_applicable", "reason": "static projection per frame" },
-    "ascii_fallback": { "status": "missing", "reason": "no ascii story yet" }
+    "streaming": { "status": "not_applicable", "evidence": { "stories": [], "tests": [], "snapshots": [], "recordings": [], "benches": [] }, "reason": "static projection per frame" },
+    "ascii_fallback": { "status": "missing", "evidence": { "stories": [], "tests": [], "snapshots": [], "recordings": [], "benches": [] }, "reason": "no ascii story yet" }
   },
   "lints": {
     "hardcoded_key_handling": "pass",
@@ -372,7 +369,7 @@ See `docs/api/component-contracts.v2.example.json` (ApprovalCard, List). Full sc
 | unicode | unicode (+ cjk / combining / emoji) |
 | narrowTerminal | responsive + tiny_terminal |
 
-During transition CI accepts **v1 catalog** (inventory) and optionally validates **v2** documents when present.
+CI accepts only the complete v2 document. Missing catalog entries or axes fail.
 
 ---
 
@@ -381,19 +378,15 @@ During transition CI accepts **v1 catalog** (inventory) and optionally validates
 ### 5.1 Pipeline
 
 ```
+typed Rust inventories ─┐
+lookbook stories ───────┼─► generate-catalog.ts ─► generated catalog + nav meta + schema
+canonical MDX ──────────┤
+families.json ──────────┤
+full v2 contracts ──────┘
+
+full v2 contracts + evidence targets ─► check-contracts.ts
 ┌─────────────────┐
-│ public-api.txt  │──┐
-│ COMPONENTS.md   │──┼──► check-catalog.ts (inventory + v1 six-axis)
-│ lookbook stories│──┤
-│ contracts v1    │──┘
-└─────────────────┘
-┌─────────────────┐
-│ schema.json     │──┐
-│ contracts v2*   │──┼──► check-contracts.ts (schema rules + evidence + lints)
-│ example v2      │──┘
-└─────────────────┘
-┌─────────────────┐
-│ lookbook SVG    │──► termrock-lookbook check
+│ lookbook frames │──► exact temporary re-render + full cell comparison
 └─────────────────┘
 ┌─────────────────┐
 │ unit / nextest  │──► axis evidence (tests)
@@ -401,25 +394,23 @@ During transition CI accepts **v1 catalog** (inventory) and optionally validates
 └─────────────────┘
 ```
 
-\* `component-contracts.v2.json` optional until Q2; example always validated.
-
 ### 5.2 Validator algorithm
 
 ```
-public = widgets from public-api.txt
+public_ui, patterns = lookbook inventory --format json
 stories = lookbook list --format json
-validate_schema_struct(v2_docs)
+editorial = canonical component/pattern MDX
+validate_exact_join(public_ui, patterns, stories, editorial, full_v2)
 
-for each v2 component:
+for each v2 catalog entry:
   for each REQUIRED_AXIS:
     cell.status ∈ vocabulary
     if covered: evidence non-empty; stories ⊆ lookbook; snapshots exist if listed
     if not_applicable|caller_owned|missing|partial: reason non-empty
   if complete: no missing/partial without waiver; lints not fail
 
-if component-contracts.v2.json present:
-  every public interactive widget has entry (or policy allowlist)
-  no stale component names
+require exact contract ids for component-doc PublicUiIds + PatternIds
+reject stale ids, routes, slugs, representative stories, and aliases
 
 design_lint_hardcoded_keys(widgets/) → warn/error by phase
 ```
@@ -427,11 +418,12 @@ design_lint_hardcoded_keys(widgets/) → warn/error by phase
 ### 5.3 Commands
 
 ```bash
-# inventory + v1 contracts + story axis names
-bun run docs/scripts/check-catalog.ts
+# deterministic authority join and generated projections
+bun --cwd docs run generate:catalog
+bun --cwd docs run check:catalog
 
-# v2 schema rules + example + optional v2 catalog + static key lint
-bun run docs/scripts/check-contracts.ts
+# mandatory v2 rules, evidence targets, and static key lint
+bun --cwd docs run check:contracts
 
 # deterministic no-JS fallback posters
 bun --cwd docs run build:preview-posters
@@ -446,8 +438,8 @@ mise run check   # includes docs-quality; gate includes lookbook check
 
 `rust-required` / docs lane should run:
 
-1. `bun run docs/scripts/check-catalog.ts`  
-2. `bun run docs/scripts/check-contracts.ts`  
+1. `bun --cwd docs run check:catalog`
+2. `bun --cwd docs run check:contracts`
 3. lookbook `check` (existing gate)  
 4. unit tests that prove axis evidence  
 
@@ -487,7 +479,7 @@ mise run check   # includes docs-quality; gate includes lookbook check
 
 | Phase | Work | Status |
 |-------|------|--------|
-| **Q0** | Standard + JSON Schema + example | **Done** |
+| **Q0** | Standard + parser-generated JSON Schema + full ledger | **Done** |
 | **Q1** | `check-contracts.ts` dual validation + evidence paths | **Done** (this pass) |
 | **Q2** | Expand components to v2 axes (partial/missing OK) | Next |
 | **Q3** | Design lint hardcoded keys → error | Next |
@@ -499,21 +491,20 @@ mise run check   # includes docs-quality; gate includes lookbook check
 ## 9. Decision summary
 
 1. **Compile ≠ complete.**  
-2. **22 quality axes** are mandatory to classify (cover, N/A, or missing).  
+2. **23 quality axes** are mandatory to classify (cover, N/A, or missing).
 3. **Evidence is mandatory** for `covered`.  
 4. **12 testing layers** scale from unit to PTY to fuzz to benches.  
 5. **Design lints** catch systemic UX failures (color-only focus, undismissible overlay, …).  
-6. **CI enforces** inventory (v1) + schema/evidence (v2) + previews.  
-7. **v1 six-axis map remains** until v2 migration finishes — dual-accept.
+6. **CI enforces** the exact Rust/MDX/story/v2 join plus previews.
+7. **One full v2 ledger** is mandatory; partial or legacy maps are rejected.
 
 ---
 
 ## 10. References
 
 - `docs/api/component-contract.schema.json`  
-- `docs/api/component-contracts.json`  
-- `docs/api/component-contracts.v2.example.json`  
-- `docs/scripts/check-catalog.ts`  
+- `docs/api/component-contracts.v2.json`
+- `docs/scripts/generate-catalog.ts`
 - `docs/scripts/check-contracts.ts`  
 - `migrations/0048-v0.12.0-component-quality-standard.md`  
 - `docs/design/component-anatomy-spec.md`  

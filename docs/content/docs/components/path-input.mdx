@@ -1,93 +1,17 @@
 ---
-title: PathInput
-description: 'A filesystem-aware path field with host-projected status, completion/browse hooks, and no FS coupling.'
-component: PathInput
-demo: path-input/basic
-interaction: editor-form
-actions:
-  - "type or paste path"
-  - "Enter validate"
-  - "click Browse"
-  - "click clear"
-expectedOutcomes:
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
+title: "Path Input"
+description: "A filesystem-aware path field with host-projected status, completion/browse hooks, and no FS coupling."
+catalogId: PathInput
 source: crates/termrock/src/widgets/path_input.rs
+tags:
+  - "input"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="path-input/basic" interactive caption="PathInput · Path input — live shared Rust state" />
-
-## Try it
-
-- `type or paste path`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `Enter validate`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `click Browse`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `click clear`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | covered |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `path-input/basic` | Path input | interactive |
-| `path-input/destructive` | Path destructive | paint-only |
-| `path-input/missing` | Path missing | paint-only |
-| `path-input/relative` | Path relative | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `path-input/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn path_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = PathInputState::new()
-        .with_style(PathStyle::Unix)
-        .with_path("/usr/local/bin");
-    state.set_focused(true);
-    state.set_fs_status(PathFsStatus::Directory);
-    let _ = PathInput::new(system)
-        .label("Install dir")
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-```
-
-## Migrated handbook guidance
-
-# PathInput
 
 **Purpose.** Path entry for installers, connection setup, and FilePicker shells.
 TermRock owns typing, history, completion/browse *signals*, and pure path
 helpers. Hosts own all filesystem I/O and sandbox policy.
-
 
 ## Ownership
 
@@ -96,29 +20,6 @@ helpers. Hosts own all filesystem I/O and sandbox policy.
 | Field text, history, browse/complete outcomes | PathInput |
 | `std::fs` / remote / sandbox lookups | Host |
 | Existence, type, destructive risk | Host projection |
-
-## Host loop sketch
-
-```rust
-match state.handle_key(key) {
-    PathInputOutcome::Changed => {
-        state.set_fs_status(PathFsStatus::Pending);
-        host.lookup(state.path()); // async; later set_fs_status
-    }
-    PathInputOutcome::CompletionRequested { prefix, .. } => {
-        let names = host.list_dir(&prefix.directory);
-        // show CompletionMenu; on pick:
-        state.apply_completion(&names[0]);
-    }
-    PathInputOutcome::BrowseRequested => host.open_file_picker(),
-    PathInputOutcome::Submitted { path } => {
-        let resolved = state.resolved_against_base();
-        host.use_path(resolved);
-        let _ = path;
-    }
-    _ => {}
-}
-```
 
 ## Destructive targets
 
@@ -129,40 +30,3 @@ PathInput paints danger chrome and optional “destructive target” caption.
 
 `normalize_separators`, `is_absolute_path`, `join_path`, `expand_tilde`,
 `expand_env_vars`, `completion_prefix` — no process env or disk access.
-
-## Related
-
-TextInput · SearchInput · FilePicker · migration `0143`
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `path-input/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `path-input/basic` | Path input | **Primary (live preview)** |
-| `path-input/destructive` | Path destructive | destructive |
-| `path-input/missing` | Path missing | missing |
-| `path-input/relative` | Path relative | relative |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/path_input.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/path_input.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `path-input/basic`
-
-## Seen in applications
-
-<SeenInApplications component="PathInput" />

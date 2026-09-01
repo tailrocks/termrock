@@ -27,10 +27,16 @@ import {
   type ProbeCell,
 } from '../src/components/preview-metrics'
 import {
+  PreviewKeyAliases,
+  decidePreviewKey,
   shouldCapturePreviewKey,
-  type DemoDescriptor,
-  type TerminalFrame,
-} from '../src/components/TerminalPreview'
+} from '../src/components/preview/input'
+import type {
+  DemoDescriptor,
+  DemoUpdate,
+  TerminalFrame,
+} from '../src/components/preview/model'
+import { previewClockPolicy } from '../src/components/preview/motion'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -88,6 +94,44 @@ const editor = { ...passive, interactive: true, interactionKind: 'editor-form' }
 assert(shouldCapturePreviewKey('ArrowLeft', editor), 'editor captures cursor movement')
 assert(shouldCapturePreviewKey('λ', editor), 'editor captures Unicode text')
 
+const idleUpdate: DemoUpdate = {
+  changed: false,
+  outcome: null,
+  hints: [],
+  interactive: true,
+  capturesTextInput: false,
+  nextDeadlineMs: null,
+  deadlineKind: null,
+  semanticRevision: 0,
+}
+const tabAlias = decidePreviewKey('Enter', true, true, editor, idleUpdate)
+assert(tabAlias.kind === 'dispatch' && tabAlias.key === 'Tab', 'Shift+Enter aliases Tab')
+const aliases = new PreviewKeyAliases()
+aliases.remember('Enter', tabAlias)
+const aliasedRelease = aliases.release('Enter')
+assert(
+  aliasedRelease?.key === 'Tab' && !aliasedRelease.shiftKey,
+  'keyup retains its keydown alias after Shift is released',
+)
+
+const functionalUpdate = {
+  ...idleUpdate,
+  nextDeadlineMs: 900,
+  deadlineKind: 'functional',
+} satisfies DemoUpdate
+assert(
+  previewClockPolicy(functionalUpdate, true) === 'functional-deadline',
+  'reduced motion preserves functional deadlines',
+)
+const visualUpdate = {
+  ...functionalUpdate,
+  deadlineKind: 'visual-motion',
+} satisfies DemoUpdate
+assert(
+  previewClockPolicy(visualUpdate, true) === 'stopped',
+  'reduced motion suppresses decorative clocks',
+)
+
 const wasm = await Bun.file(
   new URL(
     '../src/generated/termrock-preview/termrock_lookbook_web_bg.wasm',
@@ -115,15 +159,32 @@ assert(tabsUpdate.hints.includes('click tab'), 'Tabs publishes exact click hint'
 unmount_demo(tabs)
 
 const spinner = mount_demo('spinner/labeled', 40, 8)
-dispatch_demo(spinner, JSON.stringify({ type: 'tick', elapsedMs: 0 }))
+const spinnerStarted = JSON.parse(
+  dispatch_demo(spinner, JSON.stringify({ type: 'tick', elapsedMs: 0 })),
+) as DemoUpdate
+assert(spinnerStarted.deadlineKind === 'visual-motion', 'Rust owns visual deadline kind')
 const spinnerBefore = frame(spinner)
-dispatch_demo(spinner, JSON.stringify({ type: 'tick', elapsedMs: 880 }))
+const spinnerAdvanced = JSON.parse(
+  dispatch_demo(spinner, JSON.stringify({ type: 'tick', elapsedMs: 880 })),
+) as DemoUpdate
 const spinnerAfter = frame(spinner)
 assert(
   JSON.stringify(spinnerBefore.cells) !== JSON.stringify(spinnerAfter.cells),
   'host-controlled time advances the Rust Spinner',
 )
+assert(
+  spinnerAdvanced.semanticRevision === spinnerStarted.semanticRevision,
+  'decorative Rust ticks preserve semantic revision',
+)
 unmount_demo(spinner)
+
+const button = mount_demo('button/activation', 28, 3)
+const buttonActivated = JSON.parse(
+  dispatch_demo(button, JSON.stringify({ type: 'key', key: 'Enter', kind: 'press' })),
+) as DemoUpdate
+assert(buttonActivated.deadlineKind === 'functional', 'Rust owns functional deadline kind')
+assert(buttonActivated.semanticRevision > 0, 'Rust advances semantic activation revision')
+unmount_demo(button)
 
 const paintedOnly = mount_demo('accent-rail/actors', 40, 8)
 const passiveUpdate = JSON.parse(

@@ -21,7 +21,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: true,
             expanded: true,
@@ -38,7 +37,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
@@ -55,7 +53,6 @@ fn nodes() -> Vec<TreeNode<'static, &'static str>> {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 1,
             branch: false,
             expanded: false,
@@ -177,7 +174,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -194,7 +190,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -211,7 +206,6 @@ fn selected_node_is_scrolled_into_a_bounded_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -250,7 +244,6 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -335,7 +328,6 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -352,7 +344,6 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -369,7 +360,6 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             secondary: None,
             badge: None,
             shortcut: None,
-            trailing: None,
             depth: 0,
             branch: false,
             expanded: false,
@@ -424,7 +414,6 @@ fn narrow_clipping_never_splits_a_wide_grapheme() {
         secondary: None,
         badge: None,
         shortcut: None,
-        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -476,7 +465,6 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
         secondary: None,
         badge: None,
         shortcut: None,
-        trailing: None,
         depth: 0,
         branch: false,
         expanded: false,
@@ -508,7 +496,7 @@ fn status_suffix_reserves_space_before_clipping_wide_labels() {
 }
 
 #[test]
-fn trailing_cells_align_right_and_preserve_wide_metadata() {
+fn badge_cells_align_right_and_preserve_wide_metadata() {
     let tokens = DesignSystem::default();
     let rows = vec![
         TreeNode {
@@ -516,9 +504,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             label: Line::from("🧪🧪label"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("12 KiB")),
             shortcut: None,
-            trailing: Some(Line::from("12 KiB")),
             depth: 0,
             branch: false,
             expanded: false,
@@ -533,9 +520,8 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
             label: Line::from("short"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("1 B")),
             shortcut: None,
-            trailing: Some(Line::from("1 B")),
             depth: 0,
             branch: false,
             expanded: false,
@@ -565,16 +551,15 @@ fn trailing_cells_align_right_and_preserve_wide_metadata() {
 }
 
 #[test]
-fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
+fn narrow_badge_cell_clips_wide_graphemes_and_separates_status() {
     let tokens = DesignSystem::default();
     let narrow_rows = [TreeNode {
         id: 0,
         label: Line::from("hidden"),
         leading: None,
         secondary: None,
-        badge: None,
+        badge: Some(Line::from("🧪Z")),
         shortcut: None,
-        trailing: Some(Line::from("🧪Z")),
         depth: 0,
         branch: false,
         expanded: false,
@@ -603,9 +588,8 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         label: Line::from("job"),
         leading: None,
         secondary: None,
-        badge: None,
+        badge: Some(Line::from("7 B")),
         shortcut: None,
-        trailing: Some(Line::from("7 B")),
         depth: 0,
         branch: false,
         expanded: false,
@@ -625,7 +609,7 @@ fn narrow_trailing_cell_clips_wide_graphemes_and_separates_status() {
         .collect();
     assert!(
         rendered.contains("loading") && rendered.contains("7 B"),
-        "status + trailing badge both visible: {rendered:?}"
+        "status + badge both visible: {rendered:?}"
     );
 }
 

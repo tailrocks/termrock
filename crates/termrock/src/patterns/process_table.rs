@@ -41,7 +41,7 @@ use crate::{
     widgets::LoadState,
     widgets::SortSpec,
     widgets::VirtualWindow,
-    widgets::{EmptyKind, EmptyState},
+    widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
 
 // ── Identity ────────────────────────────────────────────────────────────────
@@ -118,15 +118,16 @@ impl ProcessStatus {
         }
     }
 
-    /// Semantic role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Running => Role::Success,
-            Self::Sleeping | Self::Idle => Role::TextMuted,
-            Self::Stopped => Role::Warning,
-            Self::Zombie | Self::Dead => Role::Danger,
-            Self::Unknown => Role::TextDisabled,
+            Self::Running => SemanticStatus::Running,
+            Self::Sleeping => SemanticStatus::Idle,
+            Self::Idle => SemanticStatus::Waiting,
+            Self::Stopped => SemanticStatus::Paused,
+            Self::Zombie | Self::Dead => SemanticStatus::Failed,
+            Self::Unknown => SemanticStatus::Unknown,
         }
     }
 }
@@ -1278,8 +1279,8 @@ impl<'a> ProcessTable<'a> {
             // The leading space stands in for the row's selection mark, so the
             // header sits over its own data instead of one cell to the right.
             let hdr = format!(
-                " {:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
-                "S", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
+                " {:<12} {:>7} {:>5} {:>7} {:<8} {:>8} {}",
+                "STATUS", "PID", "CPU%", "MEM", "USER", "TIME", "COMMAND"
             );
             self.system.paint_row(
                 buffer,
@@ -1334,9 +1335,12 @@ impl<'a> ProcessTable<'a> {
                 } else {
                     " "
                 };
+                let indicator = StatusIndicator::new(p.status.semantic(), self.system)
+                    .label(p.status.id())
+                    .ascii(ascii);
+                let status_text = indicator.text(None);
                 let line = format!(
-                    "{mark}{:<2} {:>7} {:>5} {:>7} {:<8} {:>8} {}{}{}",
-                    p.status.label(),
+                    "{mark}{status_text:<12} {:>7} {:>5} {:>7} {:<8} {:>8} {}{}{}",
                     p.key.pid,
                     format_cpu_pct(p.cpu_pct),
                     format_mem_bytes(p.mem_bytes),
@@ -1355,12 +1359,15 @@ impl<'a> ProcessTable<'a> {
                 };
                 self.system
                     .paint_row(buffer, Rect::new(area.x, py, area.width, 1), &line, style);
-                if !selected {
-                    self.system.paint_row(
+                if area.width > 1 {
+                    indicator.paint(
+                        Rect::new(
+                            area.x.saturating_add(1),
+                            py,
+                            area.width.saturating_sub(1).min(12),
+                            1,
+                        ),
                         buffer,
-                        Rect::new(area.x.saturating_add(1), py, 1, 1),
-                        p.status.label(),
-                        self.system.style(p.status.role()),
                     );
                 }
                 state.row_regions.push((
@@ -1379,16 +1386,14 @@ impl<'a> ProcessTable<'a> {
         if let Some(conf) = &state.pending_confirm {
             let cy = area.bottom().saturating_sub(1);
             let msg = format!(
-                "! {} {}? Enter=yes Esc=no",
+                "confirm {} {}? Enter=yes Esc=no",
                 conf.signal.safe_verb(),
                 conf.subject
             );
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, cy, area.width, 1),
-                &msg,
-                self.system.style(Role::Danger),
-            );
+            StatusIndicator::new(SemanticStatus::Warning, self.system)
+                .label(&msg)
+                .ascii(ascii)
+                .paint(Rect::new(area.x, cy, area.width, 1), buffer);
         }
     }
 }
@@ -1691,26 +1696,35 @@ mod tests {
                 .map(|x| buf[(x, y)].symbol().to_string())
                 .collect()
         };
-        let header = (0..area.height)
-            .map(row_text)
-            .find(|line| line.contains("PID"))
-            .expect("header row");
         let header_y = (0..area.height)
             .find(|y| row_text(*y).contains("PID"))
             .expect("header row index");
         // `PID` is right-aligned in a 7-cell column; the first data row's pid
         // must end in the same column, not one cell to its left.
-        let pid_end = header.find("PID").expect("PID header") + "PID".len();
-        let data = row_text(header_y + 1);
+        // Inspect terminal cells, not UTF-8 byte offsets: the preceding status
+        // indicator deliberately contains multibyte glyphs.
+        let header_cells: Vec<String> = (0..area.width)
+            .map(|x| buf[(x, header_y)].symbol().to_string())
+            .collect();
+        let pid_start = header_cells
+            .windows(3)
+            .position(|cells| cells == ["P", "I", "D"])
+            .expect("PID header cells");
+        let pid_end = pid_start + 3;
+        let data_cells: Vec<String> = (0..area.width)
+            .map(|x| buf[(x, header_y + 1)].symbol().to_string())
+            .collect();
         assert_eq!(
-            data[..pid_end].trim_end().len(),
-            pid_end,
-            "pid column drifted left of its header: {data:?}"
+            data_cells[pid_end - 1].chars().all(|c| c.is_ascii_digit()),
+            true,
+            "pid column drifted left of its header: {:?}",
+            row_text(header_y + 1)
         );
         assert_eq!(
-            data.as_bytes()[pid_end],
-            b' ',
-            "pid column overruns its header: {data:?}"
+            data_cells[pid_end],
+            " ",
+            "pid column overruns its header: {:?}",
+            row_text(header_y + 1)
         );
     }
 

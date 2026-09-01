@@ -195,14 +195,14 @@ impl GitRepoStatus {
         }
     }
 
-    /// Role.
+    /// Shared lifecycle projection for recipe-owned status chrome.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> crate::widgets::SemanticStatus {
         match self {
-            Self::Clean => Role::Success,
-            Self::Dirty => Role::Warning,
-            Self::Conflict | Self::Merging | Self::Rebasing => Role::Danger,
-            Self::Detached => Role::Info,
+            Self::Clean => crate::widgets::SemanticStatus::Success,
+            Self::Dirty | Self::Detached => crate::widgets::SemanticStatus::Warning,
+            Self::Conflict => crate::widgets::SemanticStatus::Failed,
+            Self::Merging | Self::Rebasing => crate::widgets::SemanticStatus::Running,
         }
     }
 }
@@ -1023,21 +1023,24 @@ impl GitWorkbenchState {
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let status = self.repo_status.label();
         let mut slots = vec![
-            StatusSlot::connection("repo", status).priority(10),
-            StatusSlot::mode("branch", "branch").priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
+            StatusSlot::connection("repo", status)
+                .semantic(self.repo_status.semantic())
+                .priority(90),
+            StatusSlot::mode("branch", "branch").priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "t stage · T unstage · x discard · C-f full · ? help",
             )
-            .priority(90),
+            .priority(10),
         ];
         if matches!(self.repo_status, GitRepoStatus::Conflict) {
             slots.insert(
                 0,
                 StatusSlot::new("conflict", "conflict")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         let _ = self.head_label.as_str();
@@ -1400,7 +1403,11 @@ fn paint_branch_list(
             (a, be) => format!(" {up}{a}{down}{be}"),
         };
         let line = format!("{sel}{cur}{}{track}", b.name);
-        let mut style = system.style(if b.current { Role::Accent } else { Role::Text });
+        let mut style = system.style(if b.current {
+            Role::TextStrong
+        } else {
+            Role::Text
+        });
         if i == state.branch_cursor && focused {
             // Selection is chrome: the gutter marks it and the weight carries
             // it. A reversed slab hides which branch is current (plans/010).

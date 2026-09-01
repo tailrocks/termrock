@@ -10,7 +10,6 @@
 | Surface | Fate |
 |---------|------|
 | `InteractionScene` focus + layer input ownership | **Preserve** — layers + Esc + hit still scene-owned |
-| Crate-private `FocusRing` | **Preserve private** (tests / legacy); not public API |
 | Public focus API | **`FocusGraph` sole public focus graph authority** |
 | `FocusOutcome` | **Public** (via FocusGraph module) |
 | Collection selection (`ListState` cursor) | **Preserve** — not focus |

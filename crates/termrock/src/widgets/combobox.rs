@@ -163,7 +163,7 @@ pub enum ComboboxOutcome<Id> {
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-/// Runtime state for [`Combobox`] / [`Autocomplete`].
+/// Runtime state for [`Combobox`] in select or autocomplete mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComboboxState<Id: Clone + PartialEq> {
     mode: ComboMode,
@@ -872,9 +872,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     }
 }
 
-/// Autocomplete is Combobox with autocomplete defaults.
-pub type AutocompleteState<Id> = ComboboxState<Id>;
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Combobox / Autocomplete field chrome (menu painted via [`CompletionMenu`]).
@@ -893,7 +890,7 @@ impl<'a> Combobox<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Type…",
+            placeholder: "Type",
             system,
             validation: Validation::Valid,
             ascii: false,
@@ -939,13 +936,23 @@ impl<'a> Combobox<'a> {
         if area.is_empty() {
             return area;
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_))
+            || matches!(state.status, SuggestionStatus::Error);
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                crate::style::ControlState::Disabled
+            } else if matches!(state.status, SuggestionStatus::Loading) {
+                crate::style::ControlState::Loading
+            } else if state.focused {
+                crate::style::ControlState::Focused
+            } else {
+                crate::style::ControlState::Default
+            },
+            invalid,
+        );
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -973,20 +980,21 @@ impl<'a> Combobox<'a> {
             SuggestionStatus::Empty if state.menu.is_open() => "0",
             _ => "",
         };
-        if !status.is_empty() && area.width > 4 {
+        if area.width > 4 {
             right = right.saturating_sub(2);
-            buffer.set_stringn(
-                right.saturating_add(1),
-                y.min(area.bottom().saturating_sub(1)),
-                status,
-                1,
-                self.system
-                    .style(if matches!(state.status, SuggestionStatus::Error) {
-                        Role::Danger
+            if !status.is_empty() {
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    y.min(area.bottom().saturating_sub(1)),
+                    status,
+                    1,
+                    if matches!(state.status, SuggestionStatus::Error) {
+                        recipe.placeholder.patch(self.system.style(Role::Danger))
                     } else {
-                        Role::TextMuted
-                    }),
-            );
+                        recipe.placeholder
+                    },
+                );
+            }
         }
 
         let field = Rect::new(
@@ -997,8 +1005,6 @@ impl<'a> Combobox<'a> {
         );
         state.field = field;
         state.draft.set_focused(state.focused);
-        let invalid = matches!(self.validation, Validation::Invalid(_))
-            || matches!(state.status, SuggestionStatus::Error);
         // A suggestion-source error is a validation failure: it reaches the
         // field instead of being computed and dropped. Owning the message
         // locally keeps it alive past the borrow of `state.draft`
@@ -1028,30 +1034,30 @@ impl<'a> Combobox<'a> {
                 crate::style::Glyph::ChevronDown
             });
             buffer.set_stringn(
-                field.right().saturating_sub(1),
+                right.saturating_add(1),
                 field.y,
                 chevron.text,
                 1,
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
         }
 
-        if area.height >= 3 {
+        if field.y.saturating_add(1) < area.bottom() {
             if let Validation::Invalid(msg) = self.validation {
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
                 );
             } else if let Some(msg) = &state.error_message {
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
-                    take_display_cols(msg, usize::from(area.width)),
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
+                    msg,
                 );
             }
         }
@@ -1066,11 +1072,14 @@ impl<'a> Combobox<'a> {
         state: &mut ComboboxState<Id>,
         candidates: &[CompletionCandidate<'_, Id>],
     ) {
-        let field_h = if !self.label.is_empty() && area.height >= 3 {
+        let base_field_h: u16 = if !self.label.is_empty() && area.height >= 3 {
             2
         } else {
             1
         };
+        // Reserve the message row in every state. Validation appearing must
+        // not move the menu or steal a candidate row only after an error.
+        let field_h = base_field_h.saturating_add(1).min(area.height);
         let field_area = Rect::new(area.x, area.y, area.width, field_h.min(area.height));
         let _ = self.paint(field_area, buffer, state);
         if state.menu.is_open() {
@@ -1143,9 +1152,6 @@ impl<'a> Combobox<'a> {
         );
     }
 }
-
-/// Autocomplete chrome is [`Combobox`].
-pub type Autocomplete<'a> = Combobox<'a>;
 
 const _: fn(u16, u16) -> Position = Position::new;
 const _: &str = COMPLETION_OVERLAY_ID;
@@ -1325,6 +1331,33 @@ mod tests {
             .ascii(true)
             .paint_with_menu(area, &mut buf, &mut state, &c);
         assert!(!state.field.is_empty());
+    }
+
+    #[test]
+    fn mouse_focuses_field_and_opens_menu_from_painted_geometry() {
+        let system = DesignSystem::default();
+        let candidates = cands();
+        let mut state: ComboboxState<&'static str> = ComboboxState::new();
+        let area = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(area);
+        Combobox::new(&system).paint_with_menu(area, &mut buffer, &mut state, &candidates);
+
+        let outcome = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(state.field.x, state.field.y),
+                modifiers: KeyModifiers::NONE,
+            },
+            &candidates,
+            Rect::default(),
+        );
+
+        assert!(state.is_focused());
+        assert!(state.is_menu_open());
+        assert!(matches!(
+            outcome,
+            ComboboxOutcome::MenuOpened { .. } | ComboboxOutcome::DraftChanged { .. }
+        ));
     }
 
     #[test]

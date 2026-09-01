@@ -22,6 +22,98 @@ pub enum ColorCapability {
     Monochrome,
 }
 
+/// The named ANSI-16 palette, independent of terminal-specific RGB values.
+///
+/// Recipes targeting [`ColorCapability::Ansi16`] resolve through these names;
+/// they never smuggle truecolor values into a nominal 16-color theme.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Ansi16Color {
+    /// Base black.
+    Black,
+    /// Base red.
+    Red,
+    /// Base green.
+    Green,
+    /// Base yellow.
+    Yellow,
+    /// Base blue.
+    Blue,
+    /// Base magenta.
+    Magenta,
+    /// Base cyan.
+    Cyan,
+    /// Base light neutral (ANSI white slot).
+    Gray,
+    /// Bright black / dark neutral.
+    DarkGray,
+    /// Bright red.
+    LightRed,
+    /// Bright green.
+    LightGreen,
+    /// Bright yellow.
+    LightYellow,
+    /// Bright blue.
+    LightBlue,
+    /// Bright magenta.
+    LightMagenta,
+    /// Bright cyan.
+    LightCyan,
+    /// Bright white.
+    White,
+}
+
+impl Ansi16Color {
+    /// Every named ANSI color in terminal index order.
+    pub const ALL: [Self; 16] = [
+        Self::Black,
+        Self::Red,
+        Self::Green,
+        Self::Yellow,
+        Self::Blue,
+        Self::Magenta,
+        Self::Cyan,
+        Self::Gray,
+        Self::DarkGray,
+        Self::LightRed,
+        Self::LightGreen,
+        Self::LightYellow,
+        Self::LightBlue,
+        Self::LightMagenta,
+        Self::LightCyan,
+        Self::White,
+    ];
+
+    /// Ratatui's native named color for this ANSI slot.
+    #[must_use]
+    pub const fn color(self) -> Color {
+        match self {
+            Self::Black => Color::Black,
+            Self::Red => Color::Red,
+            Self::Green => Color::Green,
+            Self::Yellow => Color::Yellow,
+            Self::Blue => Color::Blue,
+            Self::Magenta => Color::Magenta,
+            Self::Cyan => Color::Cyan,
+            Self::Gray => Color::Gray,
+            Self::DarkGray => Color::DarkGray,
+            Self::LightRed => Color::LightRed,
+            Self::LightGreen => Color::LightGreen,
+            Self::LightYellow => Color::LightYellow,
+            Self::LightBlue => Color::LightBlue,
+            Self::LightMagenta => Color::LightMagenta,
+            Self::LightCyan => Color::LightCyan,
+            Self::White => Color::White,
+        }
+    }
+}
+
+impl From<Ansi16Color> for Color {
+    fn from(value: Ansi16Color) -> Self {
+        value.color()
+    }
+}
+
 impl ColorCapability {
     /// Best-effort detection from environment variables.
     ///
@@ -63,8 +155,8 @@ pub fn quantize_color(color: Color, capability: ColorCapability) -> Color {
             other => other,
         },
         ColorCapability::Ansi16 => match color {
-            Color::Rgb(r, g, b) => rgb_to_ansi16(r, g, b),
-            Color::Indexed(i) => indexed_to_ansi16(i),
+            Color::Rgb(r, g, b) => rgb_to_ansi16(r, g, b).color(),
+            Color::Indexed(i) => indexed_to_ansi16(i).color(),
             other => other,
         },
     }
@@ -266,59 +358,44 @@ const BRIGHT_FLOOR: u8 = 200;
 /// in RGB space, so "nearest" answers `DarkGray` and the warning stops looking
 /// like a warning. Matching the hue sector and then choosing the bright or dim
 /// half keeps meaning intact, which is the whole job of the ladder.
-fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> Color {
+fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> Ansi16Color {
     let hi = r.max(g).max(b);
     let lo = r.min(g).min(b);
     let chroma = hi - lo;
     if chroma <= NEUTRAL_CHROMA || hi < CHROMATIC_FLOOR {
         let level = (u16::from(r) + u16::from(g) + u16::from(b)) / 3;
         return match level {
-            0..NEUTRAL_CHROME => Color::Black,
-            NEUTRAL_CHROME..NEUTRAL_MUTED => Color::DarkGray,
-            NEUTRAL_MUTED..NEUTRAL_BODY => Color::Gray,
-            _ => Color::White,
+            0..NEUTRAL_CHROME => Ansi16Color::Black,
+            NEUTRAL_CHROME..NEUTRAL_MUTED => Ansi16Color::DarkGray,
+            NEUTRAL_MUTED..NEUTRAL_BODY => Ansi16Color::Gray,
+            _ => Ansi16Color::White,
         };
     }
     // A channel is "on" when it carries at least half of the chroma.
     let on = |channel: u8| u16::from(channel - lo) * 2 >= u16::from(chroma);
     let bright = hi >= BRIGHT_FLOOR;
     match (on(r), on(g), on(b)) {
-        (true, false, false) if bright => Color::LightRed,
-        (true, false, false) => Color::Red,
-        (true, true, false) if bright => Color::LightYellow,
-        (true, true, false) => Color::Yellow,
-        (false, true, false) if bright => Color::LightGreen,
-        (false, true, false) => Color::Green,
-        (false, true, true) if bright => Color::LightCyan,
-        (false, true, true) => Color::Cyan,
-        (false, false, true) if bright => Color::LightBlue,
-        (false, false, true) => Color::Blue,
-        (true, false, true) if bright => Color::LightMagenta,
-        (true, false, true) => Color::Magenta,
+        (true, false, false) if bright => Ansi16Color::LightRed,
+        (true, false, false) => Ansi16Color::Red,
+        (true, true, false) if bright => Ansi16Color::LightYellow,
+        (true, true, false) => Ansi16Color::Yellow,
+        (false, true, false) if bright => Ansi16Color::LightGreen,
+        (false, true, false) => Ansi16Color::Green,
+        (false, true, true) if bright => Ansi16Color::LightCyan,
+        (false, true, true) => Ansi16Color::Cyan,
+        (false, false, true) if bright => Ansi16Color::LightBlue,
+        (false, false, true) => Ansi16Color::Blue,
+        (true, false, true) if bright => Ansi16Color::LightMagenta,
+        (true, false, true) => Ansi16Color::Magenta,
         // All-on / all-off cannot happen for `chroma > NEUTRAL_CHROMA`.
-        (_, _, _) if bright => Color::White,
-        (_, _, _) => Color::Gray,
+        (_, _, _) if bright => Ansi16Color::White,
+        (_, _, _) => Ansi16Color::Gray,
     }
 }
 
-fn indexed_to_ansi16(index: u8) -> Color {
+fn indexed_to_ansi16(index: u8) -> Ansi16Color {
     match index {
-        0 => Color::Black,
-        1 => Color::Red,
-        2 => Color::Green,
-        3 => Color::Yellow,
-        4 => Color::Blue,
-        5 => Color::Magenta,
-        6 => Color::Cyan,
-        7 => Color::Gray,
-        8 => Color::DarkGray,
-        9 => Color::LightRed,
-        10 => Color::LightGreen,
-        11 => Color::LightYellow,
-        12 => Color::LightBlue,
-        13 => Color::LightMagenta,
-        14 => Color::LightCyan,
-        15 => Color::White,
+        0..=15 => Ansi16Color::ALL[usize::from(index)],
         // Cube / gray-ramp entries round-trip through RGB so they land on the
         // same hue the truecolor source would have picked.
         other => {
@@ -345,6 +422,16 @@ mod tests {
         palette.style(role).bg.expect("surface role paints a bg")
     }
 
+    fn rgb_elevation_reference() -> RolePalette {
+        RolePalette::from_fn(|_| Style::new())
+            .with_role(Role::Canvas, Style::new().bg(Color::Rgb(10, 12, 10)))
+            .with_role(Role::Sunken, Style::new().bg(Color::Rgb(13, 16, 13)))
+            .with_role(Role::Input, Style::new().bg(Color::Rgb(13, 16, 13)))
+            .with_role(Role::Surface, Style::new().bg(Color::Rgb(18, 22, 18)))
+            .with_role(Role::Raised, Style::new().bg(Color::Rgb(26, 31, 26)))
+            .with_role(Role::Elevated, Style::new().bg(Color::Rgb(30, 38, 32)))
+    }
+
     /// The graphite palette's actual hues, retuned after plan 002 landed.
     ///
     /// These literals are the point: they say what the *shipping* palette does
@@ -364,7 +451,21 @@ mod tests {
             ((10, 12, 10), Color::Black, "canvas"),
         ];
         for ((r, g, b), expected, what) in cases {
-            assert_eq!(rgb_to_ansi16(r, g, b), expected, "{what}");
+            assert_eq!(rgb_to_ansi16(r, g, b).color(), expected, "{what}");
+        }
+    }
+
+    #[test]
+    fn named_ansi16_slots_are_native_colors() {
+        assert_eq!(Ansi16Color::ALL.len(), 16);
+        for color in Ansi16Color::ALL {
+            assert!(
+                !matches!(
+                    color.color(),
+                    Color::Rgb(..) | Color::Indexed(..) | Color::Reset
+                ),
+                "{color:?} escaped the named ANSI palette"
+            );
         }
     }
 
@@ -373,18 +474,20 @@ mod tests {
     #[test]
     fn ansi16_keeps_text_above_the_chrome_it_sits_on() {
         let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Ansi16);
-        let fg = |role| palette.style(role).fg.expect("role paints a fg");
-
-        let body = fg(Role::Text);
-        let muted = fg(Role::TextMuted);
-        let border = fg(Role::Border);
+        let body = palette.style(Role::Text);
+        let muted = palette.style(Role::TextMuted);
+        let border = palette.style(Role::Border);
 
         assert_ne!(body, muted, "body and secondary text collapsed to one tone");
         assert_ne!(
             muted, border,
             "secondary text collapsed into border chrome — metadata becomes chrome"
         );
-        assert_ne!(border, Color::Black, "border vanished into a black canvas");
+        assert_ne!(
+            border.fg,
+            Some(Color::Black),
+            "border vanished into a black canvas"
+        );
     }
 
     #[test]
@@ -409,7 +512,7 @@ mod tests {
     /// ordered family, so all five tiers keep their own rung (plans/003).
     #[test]
     fn surface_ladder_survives_256_quantization() {
-        let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Indexed256);
+        let palette = rgb_elevation_reference().quantized(ColorCapability::Indexed256);
         let index = |role| match bg_of(&palette, role) {
             Color::Indexed(i) => i,
             other => panic!("{role:?} did not quantize to an index: {other:?}"),
@@ -431,7 +534,7 @@ mod tests {
     /// A well the operator types into must be visible on a 256-colour terminal.
     #[test]
     fn an_input_trough_is_visible_at_256_colours() {
-        let palette = RolePalette::tailrocks_phosphor().quantized(ColorCapability::Indexed256);
+        let palette = rgb_elevation_reference().quantized(ColorCapability::Indexed256);
         assert_ne!(
             bg_of(&palette, Role::Input),
             bg_of(&palette, Role::Surface),

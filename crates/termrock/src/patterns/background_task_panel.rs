@@ -45,8 +45,9 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         EmptyKind, EmptyState, List, ListRow, ListState, NotificationItem, Panel, RowRole,
-        SemanticStatus, TerminalLine, TerminalOutput, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, TerminalStream, ToastKind, ToastPriority, format_duration_ms,
+        SemanticStatus, StatusIndicator, TerminalLine, TerminalOutput, TerminalOutputState,
+        TerminalPaintMode, TerminalRunStatus, TerminalStream, ToastKind, ToastPriority,
+        format_duration_ms,
     },
 };
 
@@ -177,20 +178,6 @@ impl BackgroundTaskStatus {
                 Self::Stopped => "■",
                 Self::Detached => "⧉",
             }
-        }
-    }
-
-    /// Role.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Pending | Self::Detached => Role::TextMuted,
-            // Live work reads as information, not as the brand (plans/007).
-            Self::Running => Role::InfoDim,
-            Self::Reconnecting => Role::Warning,
-            Self::Lost | Self::Failed => Role::Danger,
-            Self::Succeeded => Role::Success,
-            Self::Stopped => Role::Warning,
         }
     }
 
@@ -533,7 +520,12 @@ impl BackgroundTask {
     #[must_use]
     pub fn row_label(&self, ascii: bool) -> String {
         let g = self.status.glyph(ascii);
-        let mut s = format!("{g} {} {}", self.kind.letter(), self.title);
+        let mut s = format!(
+            "| {g} {} · {} {}",
+            self.status.id(),
+            self.kind.letter(),
+            self.title
+        );
         if self.restart_count > 0 {
             s.push_str(&format!(" ×{}", self.restart_count));
         }
@@ -819,7 +811,13 @@ impl BackgroundTaskPanelState {
         let vis = self.visible_tasks(tasks);
         vis.into_iter()
             .map(|t| {
-                let mut row = ListRow::item(t.id.clone(), Line::from(t.row_label(ascii)));
+                let label = format!("{} {}", t.kind.letter(), t.title);
+                let mut row = ListRow::item(t.id.clone(), Line::from(label));
+                row.status = Some(Line::from(format!(
+                    "| {} {}",
+                    t.status.semantic().glyph(ascii),
+                    t.status.id()
+                )));
                 let meta = t.meta_line();
                 if !meta.is_empty() {
                     row.secondary = Some(Line::from(meta));
@@ -831,9 +829,9 @@ impl BackgroundTaskPanelState {
                     t.status,
                     BackgroundTaskStatus::Lost | BackgroundTaskStatus::Reconnecting
                 ) {
-                    row.trailing = Some(Line::from(t.status.label()));
+                    row.badge = Some(Line::from(t.status.label()));
                 } else if let Some(ms) = t.duration_ms {
-                    row.trailing = Some(Line::from(format_duration_ms(ms)));
+                    row.badge = Some(Line::from(format_duration_ms(ms)));
                 }
                 row.role = RowRole::Item;
                 row
@@ -1120,7 +1118,9 @@ impl<'a> BackgroundTaskPanel<'a> {
         } else if let Some(p) = state.force_presentation {
             state.presentation = p;
         }
-        let ascii = self.ascii || self.colorless;
+        // Glyph vocabulary and color capability are independent host choices.
+        // A monochrome terminal may still render the Unicode status set.
+        let ascii = self.ascii;
 
         if matches!(state.presentation, BackgroundTaskPresentation::CompactRail) || area.height <= 3
         {
@@ -1245,22 +1245,28 @@ impl<'a> BackgroundTaskPanel<'a> {
         let mut y = area.y;
         let max_y = area.bottom();
         // header meta
-        let head = format!(
-            "{} {} · {}",
-            task.status.glyph(ascii),
-            task.status.label(),
-            take_display_cols(task.command.as_deref().unwrap_or(&task.title), 48)
-        );
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, y, area.width, 1),
-            &head,
-            if self.colorless {
-                self.system.style(Role::Text)
-            } else {
-                self.system.style(task.status.role())
-            },
-        );
+        let status = StatusIndicator::new(task.status.semantic(), self.system)
+            .label(task.status.id())
+            .ascii(ascii)
+            .colorless(self.colorless);
+        let status_width = status.measure_width(None).min(area.width);
+        status.paint(Rect::new(area.x, y, status_width, 1), buffer);
+        let command_x = area
+            .x
+            .saturating_add(status_width)
+            .saturating_add(u16::from(status_width < area.width));
+        let command_width = area.right().saturating_sub(command_x);
+        if command_width > 0 {
+            self.system.paint_row(
+                buffer,
+                Rect::new(command_x, y, command_width, 1),
+                &take_display_cols(
+                    task.command.as_deref().unwrap_or(&task.title),
+                    usize::from(command_width),
+                ),
+                self.system.style(Role::Text),
+            );
+        }
         y = y.saturating_add(1);
 
         let mut meta = String::new();
@@ -1291,12 +1297,11 @@ impl<'a> BackgroundTaskPanel<'a> {
 
         if let Some(banner) = task.output.dropped_banner(ascii) {
             if y < max_y {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(area.x, y, area.width, 1),
-                    &banner,
-                    self.system.style(Role::Warning),
-                );
+                StatusIndicator::new(SemanticStatus::Warning, self.system)
+                    .label(&banner)
+                    .ascii(ascii)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1313,12 +1318,11 @@ impl<'a> BackgroundTaskPanel<'a> {
                     "reconnecting…"
                 },
             );
-            self.system.paint_row(
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-                note,
-                self.system.style(Role::Danger),
-            );
+            StatusIndicator::new(task.status.semantic(), self.system)
+                .label(note)
+                .ascii(ascii)
+                .colorless(self.colorless)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -1356,7 +1360,10 @@ impl<'a> BackgroundTaskPanel<'a> {
                 .on_append(term_lines.len() as u16, out_area.height.max(1));
         }
         TerminalOutput::new(&meta, &term_lines, self.system)
-            .focused(state.focused)
+            // List navigation owns keyboard focus in the split view. Output
+            // remains scrollable by pointer, but must not advertise a second
+            // active focus target beside the selected task.
+            .focused(false)
             .ascii(ascii)
             .colorless(self.colorless)
             .show_chrome(false)
@@ -1565,6 +1572,100 @@ mod tests {
             Rect::new(0, 0, 24, 12),
             &mut buf,
             &mut st,
+        );
+
+        let compact = Rect::new(0, 0, 24, 12);
+        let mut monochrome = Buffer::empty(compact);
+        BackgroundTaskPanel::new(&tasks, &system)
+            .colorless(true)
+            .paint(compact, &mut monochrome, &mut st);
+        let text: String = monochrome
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect();
+        assert!(
+            text.contains("◉ running") && text.contains("✗ failed"),
+            "no-color must preserve semantic Unicode glyphs and verbs: {text}"
+        );
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let system = DesignSystem::default();
+        let label = "監視 Cafe\u{301}";
+        let tasks = [BackgroundTask::new("unicode", label)
+            .status(BackgroundTaskStatus::Failed)
+            .status_note("失敗 Cafe\u{301}")];
+        for ascii in [false, true] {
+            for (width, height) in [(64, 14), (24, 5), (1, 1), (0, 0)] {
+                let area = Rect::new(0, 0, width, height);
+                let mut buffer = Buffer::empty(area);
+                let mut state = BackgroundTaskPanelState::new();
+                state.list.select(Some("unicode".into()));
+                BackgroundTaskPanel::new(&tasks, &system)
+                    .ascii(ascii)
+                    .paint(area, &mut buffer, &mut state);
+                if width == 64 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('監'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                    assert!(text.contains("failed"), "{text:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn selected_output_copy_stays_visible_without_claiming_second_focus() {
+        let system = DesignSystem::phosphor();
+        let tasks = example_background_tasks();
+        let mut state = BackgroundTaskPanelState::new();
+        state.list.select(Some("b1".into()));
+        state.focused = true;
+        let area = Rect::new(0, 0, 88, 20);
+        let mut buffer = Buffer::empty(area);
+
+        BackgroundTaskPanel::new(&tasks, &system).paint(area, &mut buffer, &mut state);
+
+        let selected_output_y = (area.top()..area.bottom())
+            .find(|&y| {
+                (area.left()..area.right())
+                    .map(|x| buffer[(x, y)].symbol())
+                    .collect::<String>()
+                    .contains("changed: main.rs")
+            })
+            .expect("selected output line remains painted");
+        let copy_x = (area.left()..area.right())
+            .find(|&x| {
+                (x..area.right())
+                    .map(|tail_x| buffer[(tail_x, selected_output_y)].symbol())
+                    .collect::<String>()
+                    .starts_with("changed: main.rs")
+            })
+            .expect("selected output copy has a stable start cell");
+        let copy = &buffer[(copy_x, selected_output_y)];
+        assert_eq!(
+            copy.fg,
+            system.style(Role::TextStrong).fg.unwrap(),
+            "selected neutral copy uses the contrast-safe row foreground"
+        );
+        assert_eq!(
+            copy.bg,
+            system.style(Role::SelectionTint).bg.unwrap(),
+            "selected output retains the canonical quiet tint"
+        );
+
+        let title = "Background · 2 run · 1 lost";
+        let inner = Panel::new(&system)
+            .title(title)
+            .emphasis(PanelChrome::Focused)
+            .inner(area);
+        let detail_x = inner.x.saturating_add((inner.width / 3).clamp(12, 28));
+        assert_eq!(
+            buffer[(detail_x, selected_output_y)].fg,
+            system.style(Role::TextMuted).fg.unwrap(),
+            "parked output cursor is muted while the task list owns focus"
         );
     }
 

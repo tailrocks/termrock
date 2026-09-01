@@ -119,7 +119,12 @@ impl WorkSurface {
             SurfaceAxis::Vertical => area.height,
             SurfaceAxis::Horizontal => area.width,
         };
-        let gaps = gap.saturating_mul(self.regions.len().saturating_sub(1) as u16);
+        let visible_regions = self
+            .regions
+            .iter()
+            .filter(|region| !matches!(region.size, RegionSize::Collapsed))
+            .count();
+        let gaps = gap.saturating_mul(visible_regions.saturating_sub(1) as u16);
         let mut fixed = 0u16;
         let mut weight_sum = 0u32;
         for region in &self.regions {
@@ -160,8 +165,13 @@ impl WorkSurface {
             SurfaceAxis::Horizontal => area.x,
         };
         let mut out = Vec::with_capacity(self.regions.len());
+        let mut seen_visible = false;
         for (index, region) in self.regions.iter().enumerate() {
             let size = sizes[index];
+            let visible = !matches!(region.size, RegionSize::Collapsed);
+            if visible && seen_visible {
+                cursor = cursor.saturating_add(gap);
+            }
             let rect = match self.axis {
                 SurfaceAxis::Vertical => Rect::new(area.x, cursor, area.width, size),
                 SurfaceAxis::Horizontal => Rect::new(cursor, area.y, size, area.height),
@@ -170,9 +180,9 @@ impl WorkSurface {
                 id: region.id.clone(),
                 area: rect,
             });
-            cursor = cursor.saturating_add(size);
-            if index + 1 != self.regions.len() {
-                cursor = cursor.saturating_add(gap);
+            if visible {
+                cursor = cursor.saturating_add(size);
+                seen_visible = true;
             }
         }
         out
@@ -213,7 +223,7 @@ mod tests {
 
     #[test]
     fn collapsed_region_is_zero_sized() {
-        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+        let surface = WorkSurface::new().density(Density::Comfortable).regions([
             RegionSpec {
                 id: RegionId::from_static("side"),
                 size: RegionSize::Collapsed,
@@ -225,6 +235,6 @@ mod tests {
         ]);
         let layout = surface.layout(Rect::new(0, 0, 10, 10));
         assert_eq!(layout[0].area.height, 0);
-        assert_eq!(layout[1].area.height, 10);
+        assert_eq!(layout[1].area, Rect::new(0, 0, 10, 10));
     }
 }

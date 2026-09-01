@@ -1,0 +1,36 @@
+---
+title: Installation
+description: Add TermRock from Git, pin a reviewed revision, and opt into the Crossterm adapter only when needed.
+---
+
+TermRock is pre-stable research software and is not published to crates.io.
+Consume it from Git and pin the exact commit your application has reviewed.
+
+## Add the dependency
+
+```sh
+cargo add termrock --git https://github.com/tailrocks/termrock.git --rev 5283c2acf9154d0cfcd37b1ffe821c00faf90ea2
+```
+
+The command records the reviewed revision in `Cargo.toml`:
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "5283c2acf9154d0cfcd37b1ffe821c00faf90ea2" }
+```
+
+Default features are empty. Enable `crossterm` only when TermRock should own the
+event adapter and scoped terminal-session lifecycle:
+
+```toml
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "5283c2acf9154d0cfcd37b1ffe821c00faf90ea2", features = ["crossterm"] }
+```
+
+## Compatibility baseline
+
+- Rust 1.97.1 or newer
+- Linux and macOS
+- UTF-8 terminal with a truecolor Ghostty-class baseline
+- Optional fallbacks for ASCII glyphs, `NO_COLOR`, reduced motion, and lower
+  color capability
+
+Run `cargo check` after pinning. Then continue with [Getting Started](/docs/getting-started).

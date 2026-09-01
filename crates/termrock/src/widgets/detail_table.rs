@@ -11,12 +11,10 @@ use crate::{
     osc::HyperlinkRegion,
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::DesignSystem,
-    style::{Role, RolePalette},
+    style::{ListRowVisualState, Role, RolePalette},
     text::take_display_cols,
 };
 
-const SELECTED_MARKER: &str = "▌ ";
-const NORMAL_MARKER: &str = "  ";
 const COPY_AFFORDANCE: &str = "  ⧉";
 const COPIED_AFFORDANCE: &str = "  ✓";
 
@@ -374,7 +372,7 @@ impl<'a, Id> DetailTable<'a, Id> {
             .rows
             .iter()
             .map(|row| {
-                crate::text::display_cols(SELECTED_MARKER)
+                detail_marker_width(self.system)
                     .saturating_add(label_width)
                     .saturating_add(crate::text::display_cols(self.separator()))
                     .saturating_add(crate::text::display_cols(row.value))
@@ -424,7 +422,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
     }
 
     fn row_width(&self, row: &DetailRow<'_, Id>, label_width: usize) -> usize {
-        crate::text::display_cols(SELECTED_MARKER)
+        detail_marker_width(self.system)
             + label_width
             + crate::text::display_cols(self.separator())
             + crate::text::display_cols(row.value)
@@ -433,7 +431,7 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
 
     fn value_width(&self, area: Rect, label_width: usize) -> usize {
         usize::from(area.width).saturating_sub(
-            crate::text::display_cols(SELECTED_MARKER)
+            detail_marker_width(self.system)
                 + label_width
                 + crate::text::display_cols(self.separator()),
         )
@@ -447,6 +445,19 @@ impl<Id: Clone + PartialEq> DetailTable<'_, Id> {
             crate::text::display_cols(row.value).saturating_add(affordance_width(row, false));
         width.max(1).div_ceil(value_width.max(1))
     }
+}
+
+fn detail_marker_width(system: &DesignSystem) -> usize {
+    let recipe = system.resolve_list_row(ListRowVisualState {
+        selected: true,
+        focused: true,
+        enabled: true,
+        ..Default::default()
+    });
+    recipe
+        .gutter
+        .map_or(1, |(glyph, _)| crate::text::display_cols(glyph))
+        .saturating_add(1)
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
@@ -573,6 +584,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
                     state,
                     &mut scratch,
                 );
+                super::surface::normalize_content_band(
+                    self.system,
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                );
             }
         }
     }
@@ -612,12 +628,7 @@ fn render_row<Id: Clone + PartialEq>(
     let selected = state.selected.as_ref() == Some(&row.id);
     let hovered = state.hovered.as_ref() == Some(&row.id);
     let copied = state.copied.as_ref() == Some(&row.id);
-    let marker = if selected {
-        SELECTED_MARKER
-    } else {
-        NORMAL_MARKER
-    };
-    let marker_width = crate::text::display_cols(marker);
+    let marker_width = detail_marker_width(table.system);
     let separator_width = crate::text::display_cols(table.separator());
     let value_col = marker_width + label_width + separator_width;
     let value_style = row.style.unwrap_or_else(|| {
@@ -636,17 +647,19 @@ fn render_row<Id: Clone + PartialEq>(
     } else {
         value_style
     };
+    let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+        table.system,
+        ListRowVisualState {
+            selected,
+            focused: selected,
+            hovered,
+            enabled: true,
+            ..Default::default()
+        },
+    );
+    let value_style = chrome.label_style(value_style);
 
     if continuation == 0 {
-        paint_segment(
-            buffer,
-            area,
-            marker,
-            0,
-            scroll_x,
-            table.system.style(Role::Focus),
-            &mut scratch.segment,
-        );
         paint_segment(
             buffer,
             area,
@@ -729,6 +742,10 @@ fn render_row<Id: Clone + PartialEq>(
             value_area,
             capability: row.capability,
         });
+    }
+    chrome.paint_wash(buffer, area);
+    if continuation == 0 {
+        chrome.paint_gutter(buffer, area);
     }
 }
 

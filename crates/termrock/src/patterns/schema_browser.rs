@@ -34,8 +34,8 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
-        BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, Tree, TreeNode,
-        TreeNodeStatus, TreeOutcome, TreeState,
+        BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, SemanticStatus,
+        Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState,
     },
 };
 
@@ -147,13 +147,16 @@ impl SchemaNodeKind {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Connection => Role::Accent,
+            Self::Connection => Role::TextStrong,
             Self::Database | Self::Schema => Role::Info,
             Self::Table => Role::TextStrong,
             Self::View => Role::Text,
             Self::Column => Role::TextMuted,
-            Self::Index | Self::Constraint => Role::Warning,
-            Self::Routine | Self::Sequence => Role::Success,
+            // Object kind is taxonomy, not operational health. Keep it
+            // neutral so warning chrome remains reserved for an actual
+            // caution with a glyph and verb.
+            Self::Index | Self::Constraint => Role::TextMuted,
+            Self::Routine | Self::Sequence => Role::TextStrong,
             Self::Group | Self::Other => Role::TextMuted,
         }
     }
@@ -213,15 +216,15 @@ impl SchemaConnStatus {
         }
     }
 
-    /// Role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Connected => Role::Success,
-            Self::Connecting => Role::Warning,
-            Self::Offline => Role::TextMuted,
-            Self::Error => Role::Danger,
-            Self::Stale => Role::Warning,
+            Self::Connected => SemanticStatus::Online,
+            Self::Connecting => SemanticStatus::Running,
+            Self::Offline => SemanticStatus::Offline,
+            Self::Error => SemanticStatus::Failed,
+            Self::Stale => SemanticStatus::Warning,
         }
     }
 }
@@ -539,13 +542,6 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             // Badge: key or connection letter
             if let Some(kb) = e.key_badge {
                 node = node.badge(Line::from(kb));
-            } else if matches!(e.kind, SchemaNodeKind::Connection) {
-                let ch = if ascii {
-                    e.conn.letter_ascii()
-                } else {
-                    e.conn.letter()
-                };
-                node = node.badge(Line::from(ch.to_string()));
             }
             // Secondary: type / nullable / error / secondary
             if let Some(err) = e.error {
@@ -560,7 +556,11 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             } else if let Some(s) = e.secondary {
                 node = node.secondary(Line::from(s));
             } else if matches!(e.kind, SchemaNodeKind::Connection) {
-                node = node.secondary(Line::from(e.conn.id()));
+                node = node.secondary(Line::from(format!(
+                    "| {} {}",
+                    e.conn.semantic().glyph(ascii),
+                    e.conn.id()
+                )));
             }
             node
         })

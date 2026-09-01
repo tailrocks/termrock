@@ -17,7 +17,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widge
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{DesignSystem, GlyphSet},
+    style::{DesignSystem, Glyph, GlyphSet},
     text::{display_cols, take_display_cols},
 };
 
@@ -105,7 +105,8 @@ impl SemanticStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum StatusIndicatorVariant {
-    /// Single-cell (or short) glyph only — still has accessible label in semantics.
+    /// Embedded single-cell glyph only — still has accessible label in semantics.
+    /// Use only where a host row already supplies the status verb.
     Compact,
     /// Glyph + short label (default).
     #[default]
@@ -199,9 +200,9 @@ pub struct StatusIndicator<'a> {
     system: &'a DesignSystem,
     label: Option<&'a str>,
     variant: StatusIndicatorVariant,
-    ascii: bool,
     /// When true, force ASCII glyphs regardless of system glyph set.
     force_ascii: bool,
+    colorless: bool,
     elapsed_secs: Option<u64>,
     strong: bool,
 }
@@ -215,8 +216,8 @@ impl<'a> StatusIndicator<'a> {
             system,
             label: None,
             variant: StatusIndicatorVariant::Labeled,
-            ascii: false,
             force_ascii: false,
+            colorless: false,
             elapsed_secs: None,
             strong: false,
         }
@@ -230,8 +231,8 @@ impl<'a> StatusIndicator<'a> {
             system,
             label: None,
             variant: StatusIndicatorVariant::Compact,
-            ascii: false,
             force_ascii: false,
+            colorless: false,
             elapsed_secs: None,
             strong: false,
         }
@@ -264,8 +265,14 @@ impl<'a> StatusIndicator<'a> {
     /// ASCII glyphs.
     #[must_use]
     pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
         self.force_ascii = on;
+        self
+    }
+
+    /// Remove hue without changing the glyph vocabulary.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -298,6 +305,16 @@ impl<'a> StatusIndicator<'a> {
         }
     }
 
+    /// Status rail for labeled presentations.
+    #[must_use]
+    pub fn rail(&self) -> &'static str {
+        if self.use_ascii() {
+            "|"
+        } else {
+            self.system.glyphs.resolve(Glyph::RailHeavy).text
+        }
+    }
+
     /// Label text used when not compact-only.
     #[must_use]
     pub fn resolved_label(&self) -> &'a str {
@@ -314,10 +331,10 @@ impl<'a> StatusIndicator<'a> {
         match self.variant {
             StatusIndicatorVariant::Compact => g.to_string(),
             StatusIndicatorVariant::Labeled => {
-                format!("{g} {}", self.resolved_label())
+                format!("{} {g} {}", self.rail(), self.resolved_label())
             }
             StatusIndicatorVariant::Elapsed => {
-                let mut s = format!("{g} {}", self.resolved_label());
+                let mut s = format!("{} {g} {}", self.rail(), self.resolved_label());
                 if let Some(secs) = elapsed {
                     s = format!("{s} {}", format_elapsed(secs));
                 }
@@ -349,7 +366,7 @@ impl<'a> StatusIndicator<'a> {
         }
         let text = self.text(state);
         // The label is words, not a signal: it stays in the body tone and the
-        // status color lands on the glyph cell alone (plans/007).
+        // status color lands on the rail + glyph cells (plans/007).
         let mut style = self.system.style(crate::style::Role::Text);
         if self.strong {
             style = style.add_modifier(Modifier::BOLD);
@@ -361,7 +378,11 @@ impl<'a> StatusIndicator<'a> {
             usize::from(area.width),
             style,
         );
-        let mut glyph_style = self.system.style(self.kind.role());
+        let mut glyph_style = self.system.style(if self.colorless {
+            crate::style::Role::TextStrong
+        } else {
+            self.kind.role()
+        });
         if self.strong
             || matches!(
                 self.kind,
@@ -373,11 +394,15 @@ impl<'a> StatusIndicator<'a> {
         // The status *cell* breathes; the label never does. Amplitude is capped
         // at AMBIENT_PEAK, and terminal states resolve to 1.0, so a finished or
         // failed row is perfectly still.
-        let brightness = crate::style::breathe_over(
-            self.system.motion,
-            self.system.elapsed_ms(),
-            self.kind.period_ms(),
-        );
+        let brightness = if self.colorless {
+            1.0
+        } else {
+            crate::style::breathe_over(
+                self.system.motion,
+                self.system.elapsed_ms(),
+                self.kind.period_ms(),
+            )
+        };
         if brightness < 1.0 {
             let canvas = self
                 .system
@@ -386,7 +411,25 @@ impl<'a> StatusIndicator<'a> {
                 .unwrap_or(ratatui_core::style::Color::Reset);
             glyph_style = crate::style::fade_style(glyph_style, brightness, canvas);
         }
-        crate::widgets::row_chrome::paint_status_glyph(buffer, area, 0, self.glyph(), glyph_style);
+        let glyph_column = if matches!(self.variant, StatusIndicatorVariant::Compact) {
+            0
+        } else {
+            crate::widgets::row_chrome::paint_status_glyph(
+                buffer,
+                area,
+                0,
+                self.rail(),
+                glyph_style,
+            );
+            u16::try_from(display_cols(self.rail()).saturating_add(1)).unwrap_or(u16::MAX)
+        };
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            glyph_column,
+            self.glyph(),
+            glyph_style,
+        );
     }
 
     /// Semantic registration — always exposes text name even for compact dots.
@@ -503,7 +546,7 @@ mod tests {
     }
 
     #[test]
-    fn the_glyph_breathes_and_the_label_never_does() {
+    fn the_rail_and_glyph_breathe_and_the_label_never_does() {
         let base = DesignSystem::default();
         let area = Rect::new(0, 0, 20, 1);
         let paint = |ms: u64| -> Buffer {
@@ -523,7 +566,12 @@ mod tests {
             peak[(0, 0)].style(),
             "the status cell must breathe"
         );
-        for x in 2..area.width {
+        assert_ne!(
+            trough[(2, 0)].style(),
+            peak[(2, 0)].style(),
+            "the status glyph must breathe with its rail"
+        );
+        for x in 4..area.width {
             assert_eq!(
                 trough[(x, 0)].style(),
                 peak[(x, 0)].style(),
@@ -718,6 +766,7 @@ mod tests {
         let l = StatusIndicator::new(SemanticStatus::Success, &system).label("saved");
         assert!(l.text(None).contains("saved"));
         assert!(l.text(None).contains(l.glyph()));
+        assert!(l.text(None).starts_with(l.rail()));
 
         let e = StatusIndicator::new(SemanticStatus::Running, &system)
             .label("job")
@@ -744,6 +793,13 @@ mod tests {
             text.contains('✗') || text.contains('x') || text.contains("err"),
             "{text}"
         );
+    }
+
+    #[test]
+    fn labeled_ascii_status_keeps_rail_glyph_and_verb() {
+        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let status = StatusIndicator::new(SemanticStatus::Failed, &system);
+        assert_eq!(status.text(None), "| x failed");
     }
 
     #[test]
@@ -780,6 +836,28 @@ mod tests {
             .paint(Rect::new(0, 0, 1, 1), &mut buf);
         StatusIndicator::new(SemanticStatus::Unknown, &system)
             .paint(Rect::new(0, 0, 0, 0), &mut buf);
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let system = system();
+        let label = "実行 Cafe\u{301}";
+        for ascii in [false, true] {
+            let indicator = StatusIndicator::new(SemanticStatus::Running, &system)
+                .label(label)
+                .variant(StatusIndicatorVariant::Labeled)
+                .ascii(ascii);
+            for width in [32, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut buffer = Buffer::empty(area);
+                indicator.paint(area, &mut buffer);
+                if width == 32 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('実'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

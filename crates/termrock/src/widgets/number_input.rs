@@ -18,7 +18,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
@@ -1029,16 +1029,20 @@ impl<'a> NumberInput<'a> {
             state.validity(),
             NumberValidity::Invalid | NumberValidity::OutOfRange
         ) || matches!(self.validation, Validation::Invalid(_));
+        let field_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if invalid {
-                Role::Danger
-            } else if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = field_recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -1064,35 +1068,24 @@ impl<'a> NumberInput<'a> {
         let mut inc = None;
         let mut unit_rect = None;
 
-        let steppers = self.show_steppers && row.width >= 8 && state.enabled;
+        let steppers = self.show_steppers && row.width >= 8;
         if steppers {
+            let step_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if !state.enabled || state.read_only {
+                    ControlState::Disabled
+                } else {
+                    ControlState::Default
+                },
+            );
+            let step_style = step_recipe.fill.patch(step_recipe.label);
             dec = Some(Rect::new(x, row.y, 1, 1));
             let dec_g = if self.ascii { "-" } else { "−" };
-            buffer.set_stringn(
-                x,
-                row.y,
-                dec_g,
-                1,
-                self.system.style(if state.read_only {
-                    Role::TextDisabled
-                } else {
-                    Role::TextMuted
-                }),
-            );
+            buffer.set_stringn(x, row.y, dec_g, 1, step_style);
             x = x.saturating_add(2);
             right = right.saturating_sub(2);
             inc = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                "+",
-                1,
-                self.system.style(if state.read_only {
-                    Role::TextDisabled
-                } else {
-                    Role::TextMuted
-                }),
-            );
+            buffer.set_stringn(right.saturating_add(1), row.y, "+", 1, step_style);
         }
 
         if let Some(unit) = self.unit {
@@ -1105,7 +1098,7 @@ impl<'a> NumberInput<'a> {
                     row.y,
                     take_display_cols(unit, usize::from(uw)),
                     usize::from(uw),
-                    self.system.style(Role::TextMuted),
+                    field_recipe.placeholder,
                 );
             }
         }
@@ -1139,11 +1132,11 @@ impl<'a> NumberInput<'a> {
         let ti = input.paint(field, buffer, &mut state.draft);
 
         // Validation row
-        if area.height >= 3 {
+        if ti.field.y.saturating_add(1) < area.bottom() {
             if let Validation::Invalid(msg) = self.validation {
                 crate::widgets::field_message::paint_field_message(
                     buffer,
-                    Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
                     self.system,
                     crate::widgets::label::DescriptionKind::Error,
                     msg,
@@ -1157,12 +1150,12 @@ impl<'a> NumberInput<'a> {
                     NumberValidity::OutOfRange => "out of range",
                     _ => "invalid",
                 };
-                buffer.set_stringn(
-                    area.x,
-                    area.y.saturating_add(2),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    crate::widgets::label::DescriptionKind::Error,
                     msg,
-                    usize::from(area.width),
-                    self.system.style(Role::Danger),
                 );
             }
         }

@@ -234,8 +234,6 @@ pub struct Tab<'a, Id> {
     pub badge: Option<&'a str>,
     /// Semantic status (non-color mark when glyphs shown).
     pub status: TabStatus,
-    /// Legacy paint hint when state has no selection yet.
-    pub active: bool,
     /// Whether this item is enabled.
     pub enabled: bool,
     /// Show close affordance and emit [`TabsOutcome::CloseRequested`].
@@ -252,7 +250,6 @@ impl<'a, Id> Tab<'a, Id> {
             glyph: None,
             badge: None,
             status: TabStatus::None,
-            active: false,
             enabled: true,
             closable: false,
         }
@@ -276,13 +273,6 @@ impl<'a, Id> Tab<'a, Id> {
     #[must_use]
     pub const fn status(mut self, status: TabStatus) -> Self {
         self.status = status;
-        self
-    }
-
-    /// Active paint hint (prefer state selection).
-    #[must_use]
-    pub const fn active(mut self, on: bool) -> Self {
-        self.active = on;
         self
     }
 
@@ -566,10 +556,13 @@ impl<Id> TabsState<Id> {
             .collect()
     }
 
-    fn activate(&mut self, id: Id) -> TabsOutcome<Id>
+    fn activate(&mut self, id: Id, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
+        if !tabs.iter().any(|tab| tab.id == id && tab.enabled) {
+            return TabsOutcome::Ignored;
+        }
         if self.selected.as_ref() == Some(&id) {
             return TabsOutcome::Changed;
         }
@@ -652,7 +645,7 @@ impl<Id> TabsState<Id> {
         // Enter activates in manual mode (and always if focus differs)
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if let Some(id) = self.collection.active().cloned() {
-                return self.activate(id);
+                return self.activate(id, tabs);
             }
             return TabsOutcome::Ignored;
         }
@@ -660,11 +653,11 @@ impl<Id> TabsState<Id> {
         // Home/End
         if key.code == KeyCode::Home {
             let out = self.collection.move_first(&items);
-            return self.after_focus_move(out);
+            return self.after_focus_move(out, tabs);
         }
         if key.code == KeyCode::End {
             let out = self.collection.move_last(&items);
-            return self.after_focus_move(out);
+            return self.after_focus_move(out, tabs);
         }
 
         match self.collection.handle_key(key, &items) {
@@ -673,7 +666,7 @@ impl<Id> TabsState<Id> {
                 match self.activation {
                     TabsActivation::Automatic => {
                         if let Some(id) = to.clone() {
-                            let _ = self.activate(id);
+                            let _ = self.activate(id, tabs);
                         }
                         TabsOutcome::FocusChanged { id: to }
                     }
@@ -688,7 +681,11 @@ impl<Id> TabsState<Id> {
         }
     }
 
-    fn after_focus_move(&mut self, out: CollectionOutcome<Id>) -> TabsOutcome<Id>
+    fn after_focus_move(
+        &mut self,
+        out: CollectionOutcome<Id>,
+        tabs: &[Tab<'_, Id>],
+    ) -> TabsOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -696,7 +693,7 @@ impl<Id> TabsState<Id> {
             CollectionOutcome::ActiveChanged { to, .. } => match self.activation {
                 TabsActivation::Automatic => {
                     if let Some(id) = to.clone() {
-                        let _ = self.activate(id);
+                        let _ = self.activate(id, tabs);
                     }
                     TabsOutcome::FocusChanged { id: to }
                 }
@@ -735,7 +732,7 @@ impl<Id> TabsState<Id> {
         match intent {
             UiIntent::Activate | UiIntent::Submit => {
                 if let Some(id) = self.collection.active().cloned() {
-                    return self.activate(id);
+                    return self.activate(id, tabs);
                 }
                 TabsOutcome::Ignored
             }
@@ -753,13 +750,13 @@ impl<Id> TabsState<Id> {
             }
             other => {
                 let out = self.collection.handle_intent(other, &items);
-                self.after_focus_move(out)
+                self.after_focus_move(out, tabs)
             }
         }
     }
 
     /// Mouse.
-    pub fn handle_mouse(&mut self, event: MouseEvent, _tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
+    pub fn handle_mouse(&mut self, event: MouseEvent, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -803,7 +800,7 @@ impl<Id> TabsState<Id> {
                     if r.area.contains(event.position) {
                         let id = r.id.clone();
                         self.collection.set_active(Some(id.clone()));
-                        return self.activate(id);
+                        return self.activate(id, tabs);
                     }
                 }
                 TabsOutcome::Ignored
@@ -817,8 +814,14 @@ impl<Id> TabsState<Id> {
     where
         Id: Clone + PartialEq,
     {
+        if !self.overflow_ids.contains(&id) {
+            return TabsOutcome::Ignored;
+        }
         self.overflow_open = false;
-        self.activate(id)
+        self.previous = self.selected.clone();
+        self.selected = Some(id.clone());
+        self.collection.set_active(Some(id.clone()));
+        TabsOutcome::SelectionChanged { id }
     }
 }
 
@@ -934,9 +937,7 @@ impl<'a, Id> Tabs<'a, Id> {
         let items = TabsState::<Id>::items_from_tabs(self.tabs);
         let _ = state.collection.reconcile(&items);
         if state.selected.is_none() {
-            if let Some(t) = self.tabs.iter().find(|t| t.active && t.enabled) {
-                state.selected = Some(t.id.clone());
-            } else if let Some(t) = self.tabs.iter().find(|t| t.enabled) {
+            if let Some(t) = self.tabs.iter().find(|t| t.enabled) {
                 state.selected = Some(t.id.clone());
             }
         }
@@ -1245,8 +1246,7 @@ impl<'a, Id> Tabs<'a, Id> {
         if rect.is_empty() {
             return rect;
         }
-        let selected =
-            state.selected.as_ref() == Some(&tab.id) || (state.selected.is_none() && tab.active);
+        let selected = state.selected.as_ref() == Some(&tab.id);
         let focused_tab = state.collection.active() == Some(&tab.id) && state.focused;
         let hovered = state.hovered.as_ref() == Some(&tab.id);
         let role = match (selected, hovered) {
@@ -1467,9 +1467,7 @@ mod tests {
 
     fn sample_tabs() -> [Tab<'static, &'static str>; 4] {
         [
-            Tab::new("overview", "Overview")
-                .active(true)
-                .status(TabStatus::Success),
+            Tab::new("overview", "Overview").status(TabStatus::Success),
             Tab::new("details", "Details"),
             Tab::new("logs", "Logs")
                 .closable(true)
@@ -1487,7 +1485,6 @@ mod tests {
                 glyph: None,
                 badge: None,
                 status: TabStatus::None,
-                active: true,
                 enabled: true,
                 closable: false,
             },
@@ -1497,7 +1494,6 @@ mod tests {
                 glyph: None,
                 badge: None,
                 status: TabStatus::None,
-                active: false,
                 enabled: false,
                 closable: false,
             },
@@ -1527,7 +1523,7 @@ mod tests {
 
     #[test]
     fn default_rule_uses_unfocused_border_role() {
-        let tabs = [Tab::new("overview", "Overview").active(true)];
+        let tabs = [Tab::new("overview", "Overview")];
         let area = Rect::new(0, 0, 16, 2);
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState::new().with_selected("overview");
@@ -1552,7 +1548,6 @@ mod tests {
             glyph: Some(Span::styled("●", Style::new().fg(Color::Yellow))),
             badge: None,
             status: TabStatus::None,
-            active: true,
             enabled: true,
             closable: false,
         }];
@@ -1694,6 +1689,29 @@ mod tests {
     }
 
     #[test]
+    fn escape_closes_only_the_overflow_layer() {
+        let tabs = sample_tabs();
+        let system = DesignSystem::default();
+        let mut state = TabsState::new().with_selected("overview");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 14, 2);
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).paint(area, &mut buffer, &mut state);
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE), &tabs,),
+            TabsOutcome::OverflowOpened { .. }
+        ));
+        assert!(state.is_overflow_open());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &tabs),
+            TabsOutcome::OverflowClosed
+        );
+        assert!(!state.is_overflow_open());
+        assert_eq!(state.selected(), Some(&"overview"));
+    }
+
+    #[test]
     fn vertical_orientation() {
         let tabs = sample_tabs();
         let system = DesignSystem::default();
@@ -1737,6 +1755,34 @@ mod tests {
             ),
             TabsOutcome::SelectionChanged { id: "details" }
         ));
+    }
+
+    #[test]
+    fn disabled_tabs_are_not_focusable_or_activatable() {
+        let tabs = sample_tabs();
+        let mut state = TabsState::new().with_selected("disabled");
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+
+        state.set_enabled(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 0),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &tabs,
+            ),
+            TabsOutcome::Ignored
+        );
     }
 
     #[test]
@@ -1788,7 +1834,7 @@ mod tests {
     #[test]
     fn every_active_cue_marks_the_active_tab_differently() {
         let system = DesignSystem::default();
-        let tabs = [Tab::new("a", "Files").active(true), Tab::new("b", "Search")];
+        let tabs = [Tab::new("a", "Files"), Tab::new("b", "Search")];
         let area = Rect::new(0, 0, 30, 2);
         let mut frames = Vec::new();
         for cue in [

@@ -1036,7 +1036,14 @@ impl<'a> MarkdownView<'a> {
         if has_header && body_sub == 0 {
             let lang = block.language.unwrap_or("code");
             let label = if block.incomplete {
-                format!("{lang} …")
+                format!(
+                    "{lang} {}",
+                    if self.system.glyphs.is_ascii() {
+                        "..."
+                    } else {
+                        "…"
+                    }
+                )
             } else {
                 lang.to_string()
             };
@@ -1628,26 +1635,15 @@ fn list_prefix_width(block: &MarkdownBlock<'_>) -> u16 {
 /// Each cell keeps its own foreground and modifiers — a selected heading is
 /// still a heading — so only the ground moves.
 fn select_row(buffer: &mut Buffer, area: Rect, system: &DesignSystem) {
-    if area.width == 0 {
-        return;
-    }
-    let wash = system.style(Role::SelectionTint).bg;
-    for x in area.x..area.x.saturating_add(area.width) {
-        let cell = &mut buffer[(x, area.y)];
-        let mut s = cell.style();
-        if let Some(bg) = wash {
-            s = s.bg(bg);
-        }
-        cell.set_style(s);
-    }
-    let gutter = system.glyphs.selection_gutter();
-    let cell = &mut buffer[(area.x, area.y)];
-    let mut marked = cell.style().patch(system.style(Role::Accent));
-    if let Some(bg) = wash {
-        marked = marked.bg(bg);
-    }
-    cell.set_symbol(gutter);
-    cell.set_style(marked);
+    super::row_chrome::RowChrome::resolve(
+        system,
+        crate::style::ListRowVisualState {
+            selected: true,
+            focused: true,
+            ..Default::default()
+        },
+    )
+    .paint(buffer, area);
 }
 
 fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) -> Vec<TextSpan<'a>> {
@@ -1878,6 +1874,13 @@ fn paint_table_row(
 ) {
     let rows = table_display_rows(raw, area.width);
     if let Some(line) = rows.get(usize::from(body_sub)) {
+        let ascii_line;
+        let line = if system.glyphs.is_ascii() {
+            ascii_line = line.replace('│', "|").replace('─', "-").replace('┼', "+");
+            &ascii_line
+        } else {
+            line
+        };
         let role = if body_sub == 0 {
             Role::TextStrong
         } else if body_sub == 1 {

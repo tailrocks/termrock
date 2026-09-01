@@ -27,6 +27,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
+    interaction::{UiIntent, default_button_intent},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::tag_chip::{
@@ -1049,7 +1050,9 @@ impl<'a> PasteChip<'a> {
                 id: self.paste.id.clone(),
             };
         }
-        if key.code == KeyCode::Enter && state.tag.part == TokenPart::Body {
+        if default_button_intent(key).is_some_and(|intent| matches!(intent, UiIntent::Activate))
+            && state.tag.part == TokenPart::Body
+        {
             if state.expanded {
                 state.expanded = false;
                 return PasteChipOutcome::Collapsed {
@@ -1374,6 +1377,45 @@ mod tests {
                 | AttachmentChipOutcome::Activated { .. }
                 | AttachmentChipOutcome::Ignored
                 | AttachmentChipOutcome::PartChanged(_)
+        ));
+    }
+
+    #[test]
+    fn attachment_and_paste_mouse_use_painted_hit_geometry() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let item = AttachmentItem::file("f1", "main.rs");
+        let chip = AttachmentChip::new(&item, &system);
+        let mut attachment = AttachmentChipState::new();
+        let parts = chip.paint(area, &mut buffer, &mut attachment);
+        assert!(matches!(
+            chip.handle_mouse(
+                &mut attachment,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            AttachmentChipOutcome::Activated { id } if id == "f1"
+        ));
+
+        let paste = PastePayload::from_body("p1", "hello\nworld");
+        let chip = PasteChip::new(&paste, &system);
+        let mut paste_state = PasteChipState::new();
+        let parts = chip.paint(area, &mut buffer, &mut paste_state);
+        assert!(matches!(
+            chip.handle_mouse(
+                &mut paste_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
+            PasteChipOutcome::Expanded { id } if id == "p1"
         ));
     }
 

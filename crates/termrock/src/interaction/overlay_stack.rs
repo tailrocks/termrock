@@ -10,7 +10,11 @@
 //! [`super::InteractionScene`] for per-frame element registration: call
 //! [`OverlayStack::sync_scene_layers`] then register controls on those layers.
 
-use ratatui_core::layout::{Position, Rect};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect, Size},
+    style::Modifier,
+};
 
 use super::{
     DismissDecision, DismissEventId, DismissGuard, DismissableLayer, InteractionLayer,
@@ -174,6 +178,66 @@ impl OverlaySize {
             max_width: 0,
             max_height: 0,
         }
+    }
+
+    /// Classifies available bounds against this overlay's reference and
+    /// minimum sizes.
+    ///
+    /// Placement may still promote or hide according to [`OverlayPolicy`],
+    /// but it must not erase the fact that the terminal is below minimum.
+    #[must_use]
+    pub fn fit_within(self, bounds: Rect) -> OverlayFit {
+        let required = Size::new(self.min_width.max(1), self.min_height.max(1));
+        let actual = Size::new(bounds.width, bounds.height);
+        if actual.width < required.width || actual.height < required.height {
+            return OverlayFit::BelowMinimum { actual, required };
+        }
+
+        let reference_width = if self.max_width > 0 {
+            self.width.max(required.width).min(self.max_width)
+        } else {
+            self.width.max(required.width)
+        };
+        let reference_height = if self.max_height > 0 {
+            self.height.max(required.height).min(self.max_height)
+        } else {
+            self.height.max(required.height)
+        };
+        if actual.width < reference_width || actual.height < reference_height {
+            OverlayFit::Contracted
+        } else {
+            OverlayFit::Reference
+        }
+    }
+}
+
+/// Responsive fit of an overlay allocation.
+///
+/// `BelowMinimum` stays explicit even when policy promotes the surface to
+/// fullscreen. The host can then replace truncated chrome with a dedicated
+/// size diagnostic that names `actual` and `required`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum OverlayFit {
+    /// Preferred reference dimensions fit.
+    #[default]
+    Reference,
+    /// Minimum fits; optional chrome/content must contract.
+    Contracted,
+    /// Required geometry does not fit.
+    BelowMinimum {
+        /// Available terminal dimensions.
+        actual: Size,
+        /// Declared minimum dimensions.
+        required: Size,
+    },
+}
+
+impl OverlayFit {
+    /// Whether normal overlay chrome must be replaced by a size diagnostic.
+    #[must_use]
+    pub const fn is_below_minimum(self) -> bool {
+        matches!(self, Self::BelowMinimum { .. })
     }
 }
 
@@ -603,25 +667,73 @@ impl<FocusId> OverlaySpec<FocusId> {
 
 /// One open overlay after geometry resolution.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OverlayEntry<FocusId = ()> {
+pub(crate) struct OverlayEntry<FocusId = ()> {
     /// Spec identity.
-    pub id: OverlayId,
+    pub(crate) id: OverlayId,
     /// Kind.
-    pub kind: OverlayKind,
+    pub(crate) kind: OverlayKind,
     /// Parent id if nested.
-    pub parent: Option<OverlayId>,
+    pub(crate) parent: Option<OverlayId>,
     /// Effective policy.
-    pub policy: OverlayPolicy,
+    pub(crate) policy: OverlayPolicy,
     /// Preferred size (reflow input).
-    pub size: OverlaySize,
+    pub(crate) size: OverlaySize,
     /// Anchor used for placement (reflow input).
-    pub anchor: Option<Rect>,
+    pub(crate) anchor: Option<Rect>,
     /// Resolved painted rectangle (may be empty if hidden).
-    pub rect: Rect,
+    pub(crate) rect: Rect,
     /// Opener focus to restore.
-    pub opener_focus: Option<FocusId>,
+    pub(crate) opener_focus: Option<FocusId>,
     /// Whether this entry was promoted to fullscreen by narrow fallback.
-    pub fullscreen_promoted: bool,
+    pub(crate) fullscreen_promoted: bool,
+    /// Reference/minimum fit retained after placement policy resolves.
+    pub(crate) fit: OverlayFit,
+}
+
+impl<FocusId> OverlayEntry<FocusId> {
+    /// Replaces normal chrome with the dedicated below-minimum diagnostic.
+    ///
+    /// Returns `true` when a diagnostic was painted. Hidden ephemeral overlays
+    /// have an empty rectangle and intentionally paint nothing.
+    pub(crate) fn paint_size_diagnostic(
+        &self,
+        buffer: &mut Buffer,
+        system: &crate::style::DesignSystem,
+    ) -> bool {
+        let OverlayFit::BelowMinimum { actual, required } = self.fit else {
+            return false;
+        };
+        let area = self.rect.intersection(*buffer.area());
+        if area.is_empty() {
+            return false;
+        }
+
+        let recipe = system.family_recipe(crate::style::RecipeFamily::Status);
+        buffer.set_style(area, system.style(recipe.surface));
+        let detail = format!(
+            "actual {}x{} · need {}x{}",
+            actual.width, actual.height, required.width, required.height
+        );
+        if area.height == 1 {
+            let line = format!("! {detail}");
+            system.paint_row(buffer, area, &line, system.style(recipe.primary));
+            return true;
+        }
+
+        system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y, area.width, 1),
+            "! viewport too small",
+            system.style(recipe.primary).add_modifier(Modifier::BOLD),
+        );
+        system.paint_row(
+            buffer,
+            Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+            &detail,
+            system.style(recipe.secondary),
+        );
+        true
+    }
 }
 
 /// How [`OverlayStack::open_with`] schedules a new overlay.
@@ -652,6 +764,8 @@ pub struct PlacementResult {
     pub fullscreen_promoted: bool,
     /// Hidden by narrow fallback.
     pub hidden: bool,
+    /// Reference/minimum fit before placement promotion or hiding.
+    pub fit: OverlayFit,
 }
 
 /// Pointer hit relative to the open stack (host routing).
@@ -824,14 +938,35 @@ impl<FocusId> OverlayStack<FocusId> {
 
     /// Bottom → top entries.
     #[must_use]
-    pub fn entries(&self) -> &[OverlayEntry<FocusId>] {
+    pub(crate) fn entries(&self) -> &[OverlayEntry<FocusId>] {
         &self.entries
     }
 
     /// Topmost entry.
     #[must_use]
-    pub fn top(&self) -> Option<&OverlayEntry<FocusId>> {
+    pub(crate) fn top(&self) -> Option<&OverlayEntry<FocusId>> {
         self.entries.last()
+    }
+
+    /// Number of open overlay layers.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Resolved rectangle of the top layer.
+    #[must_use]
+    pub fn top_rect(&self) -> Option<Rect> {
+        self.entries.last().map(|entry| entry.rect)
+    }
+
+    /// Bottom-to-top resolved layer geometry for diagnostics and inspectors.
+    pub fn resolved_layers(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&OverlayId, OverlayKind, Rect)> {
+        self.entries
+            .iter()
+            .map(|entry| (&entry.id, entry.kind, entry.rect))
     }
 
     /// Whether any overlay is open.
@@ -844,12 +979,6 @@ impl<FocusId> OverlayStack<FocusId> {
     #[must_use]
     pub const fn bounds(&self) -> Rect {
         self.bounds
-    }
-
-    /// Lookup an open entry by id.
-    #[must_use]
-    pub fn get(&self, id: &OverlayId) -> Option<&OverlayEntry<FocusId>> {
-        self.entries.iter().find(|e| &e.id == id)
     }
 
     /// Whether `id` is currently open.
@@ -941,6 +1070,19 @@ impl<FocusId> OverlayStack<FocusId> {
         }
     }
 
+    /// Paints the top overlay's below-minimum replacement frame.
+    ///
+    /// Hosts call this before the top widget and skip normal widget paint when
+    /// it returns `true`.
+    pub fn paint_top_size_diagnostic(
+        &self,
+        buffer: &mut Buffer,
+        system: &crate::style::DesignSystem,
+    ) -> bool {
+        self.top()
+            .is_some_and(|entry| entry.paint_size_diagnostic(buffer, system))
+    }
+
     /// Clears every overlay and the modal queue.
     pub fn clear(&mut self) {
         self.entries.clear();
@@ -1016,11 +1158,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         }
     }
 
-    /// Enqueue a modal (alias of [`OpenMode::Queue`]).
-    pub fn enqueue(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
-        self.open_with(bounds, spec, OpenMode::Queue)
-    }
-
     fn push_entry(&mut self, bounds: Rect, spec: OverlaySpec<FocusId>) -> OverlayOutcome<FocusId> {
         let policy = spec
             .policy
@@ -1039,6 +1176,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             rect: placement.rect,
             opener_focus: spec.opener_focus,
             fullscreen_promoted: placement.fullscreen_promoted,
+            fit: placement.fit,
         });
         self.sync_top_dismiss();
         OverlayOutcome::Opened {
@@ -1101,6 +1239,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         };
         top.rect = bounds;
         top.fullscreen_promoted = true;
+        top.fit = top.size.fit_within(bounds);
         top.policy.prefer = PlacementPrefer::Fullscreen;
         let id = top.id.clone();
         OverlayOutcome::Opened { id, rect: bounds }
@@ -1118,6 +1257,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         // Explicit Fullscreen kind cannot demote.
         if matches!(top.kind, OverlayKind::Fullscreen) {
             top.rect = bounds;
+            top.fit = top.size.fit_within(bounds);
             let id = top.id.clone();
             return OverlayOutcome::Opened { id, rect: bounds };
         }
@@ -1129,6 +1269,7 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         let placement = resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
         top.rect = placement.rect;
         top.fullscreen_promoted = placement.fullscreen_promoted;
+        top.fit = placement.fit;
         let id = top.id.clone();
         OverlayOutcome::Opened {
             id,
@@ -1144,12 +1285,14 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
                 || matches!(entry.policy.prefer, PlacementPrefer::Fullscreen)
             {
                 entry.rect = bounds;
+                entry.fit = entry.size.fit_within(bounds);
                 continue;
             }
             let placement =
                 resolve_placement(bounds, entry.anchor, entry.size, entry.policy, entry.kind);
             entry.rect = placement.rect;
             entry.fullscreen_promoted = placement.fullscreen_promoted || entry.fullscreen_promoted;
+            entry.fit = placement.fit;
         }
         self.sync_top_dismiss();
     }
@@ -1230,11 +1373,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
             DismissDecision::Consumed => OverlayOutcome::Ignored,
             DismissDecision::Bubble | DismissDecision::None => OverlayOutcome::Ignored,
         }
-    }
-
-    /// Unified pointer entry (legacy: single-shot outside click).
-    pub fn handle_pointer(&mut self, position: Position) -> OverlayOutcome<FocusId> {
-        self.handle_outside_click(position)
     }
 
     /// Access top dismiss controller (tests / advanced hosts).
@@ -1338,16 +1476,29 @@ fn resolve_placement(
     policy: OverlayPolicy,
     kind: OverlayKind,
 ) -> PlacementResult {
+    let fit = size.fit_within(bounds);
     if bounds.is_empty() {
         return PlacementResult {
             rect: Rect::default(),
             hidden: true,
+            fit,
             ..PlacementResult::default()
         };
     }
 
-    let mut result = PlacementResult::default();
+    let mut result = PlacementResult {
+        fit,
+        ..PlacementResult::default()
+    };
     let mut prefer = policy.prefer;
+    if fit.is_below_minimum() && matches!(policy.narrow_fallback, NarrowFallback::Hide) {
+        return PlacementResult {
+            rect: Rect::default(),
+            hidden: true,
+            fit,
+            ..PlacementResult::default()
+        };
+    }
     let narrow = bounds.width <= policy.narrow_cols && policy.narrow_cols > 0;
     if narrow {
         match policy.narrow_fallback {
@@ -1355,6 +1506,7 @@ fn resolve_placement(
                 return PlacementResult {
                     rect: Rect::default(),
                     hidden: true,
+                    fit,
                     ..PlacementResult::default()
                 };
             }
@@ -1691,6 +1843,87 @@ mod tests {
         let rect = place_overlay(bounds, Some(anchor), OverlaySize::menu(12, 6), policy);
         assert!(rect.y + rect.height <= 20);
         assert!(!rect_intersects(rect, anchor) || policy.cover_anchor);
+    }
+
+    #[test]
+    fn overlay_fit_preserves_reference_compact_and_below_minimum_states() {
+        let size = OverlaySize {
+            width: 20,
+            height: 8,
+            min_width: 12,
+            min_height: 4,
+            max_width: 0,
+            max_height: 0,
+        };
+        assert_eq!(
+            size.fit_within(Rect::new(0, 0, 30, 10)),
+            OverlayFit::Reference
+        );
+        assert_eq!(
+            size.fit_within(Rect::new(0, 0, 16, 6)),
+            OverlayFit::Contracted
+        );
+        assert_eq!(
+            size.fit_within(Rect::new(0, 0, 10, 3)),
+            OverlayFit::BelowMinimum {
+                actual: Size::new(10, 3),
+                required: Size::new(12, 4),
+            }
+        );
+    }
+
+    #[test]
+    fn hidden_fallback_honors_minimum_height_not_only_narrow_width() {
+        let bounds = Rect::new(0, 0, 80, 2);
+        let size = OverlaySize {
+            width: 16,
+            height: 3,
+            min_width: 5,
+            min_height: 3,
+            max_width: 40,
+            max_height: 6,
+        };
+        let placed = place_overlay_detailed(
+            bounds,
+            Some(Rect::new(2, 0, 4, 1)),
+            size,
+            OverlayPolicy::for_kind(OverlayKind::Tooltip),
+        );
+        assert!(placed.hidden);
+        assert!(placed.fit.is_below_minimum());
+    }
+
+    #[test]
+    fn below_minimum_modal_paints_actual_and_required_replacement() {
+        let bounds = Rect::new(0, 0, 28, 3);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::dialog(
+                "short",
+                OverlaySize {
+                    width: 32,
+                    height: 6,
+                    min_width: 30,
+                    min_height: 4,
+                    max_width: 0,
+                    max_height: 0,
+                },
+                None,
+            ),
+        );
+        let mut buffer = Buffer::empty(bounds);
+        assert!(
+            stack.paint_top_size_diagnostic(&mut buffer, &crate::style::DesignSystem::default())
+        );
+        let text = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("too small"), "{text}");
+        assert!(text.contains("28x3"), "{text}");
+        assert!(text.contains("30x4"), "{text}");
     }
 
     #[test]
@@ -2345,26 +2578,200 @@ mod tests {
 
     #[test]
     fn story_policy_table_covers_all_kinds() {
-        for kind in [
-            OverlayKind::Tooltip,
-            OverlayKind::Popover,
-            OverlayKind::Menu,
-            OverlayKind::ContextMenu,
-            OverlayKind::Completion,
-            OverlayKind::Select,
-            OverlayKind::Dialog,
-            OverlayKind::AlertDialog,
-            OverlayKind::Drawer,
-            OverlayKind::CommandPalette,
-            OverlayKind::Fullscreen,
-            OverlayKind::Custom,
-        ] {
+        use BackdropPolicy::{Dim, None as NoBackdrop, Occlude};
+        use LayerDismissPolicy::{Dismissible, Ignore, Trap};
+        use NarrowFallback::{Center as CenterFallback, Clamp, Fullscreen as FullFallback, Hide};
+        use PlacementPrefer::{
+            AboveStart, AtOrigin, BelowStart, Center, DrawerEnd, Fullscreen as FullPlacement,
+        };
+
+        let cases = [
+            (
+                OverlayKind::Tooltip,
+                Ignore,
+                Dismissible,
+                false,
+                false,
+                false,
+                NoBackdrop,
+                AboveStart,
+                false,
+                Hide,
+                20,
+            ),
+            (
+                OverlayKind::Popover,
+                Dismissible,
+                Dismissible,
+                true,
+                false,
+                true,
+                NoBackdrop,
+                BelowStart,
+                false,
+                CenterFallback,
+                40,
+            ),
+            (
+                OverlayKind::Menu,
+                Dismissible,
+                Dismissible,
+                true,
+                true,
+                true,
+                NoBackdrop,
+                BelowStart,
+                false,
+                Clamp,
+                40,
+            ),
+            (
+                OverlayKind::ContextMenu,
+                Dismissible,
+                Dismissible,
+                true,
+                true,
+                true,
+                NoBackdrop,
+                AtOrigin,
+                true,
+                Clamp,
+                30,
+            ),
+            (
+                OverlayKind::Completion,
+                Dismissible,
+                Dismissible,
+                true,
+                false,
+                true,
+                NoBackdrop,
+                BelowStart,
+                false,
+                Clamp,
+                24,
+            ),
+            (
+                OverlayKind::Select,
+                Dismissible,
+                Dismissible,
+                true,
+                true,
+                true,
+                NoBackdrop,
+                BelowStart,
+                false,
+                Clamp,
+                40,
+            ),
+            (
+                OverlayKind::Dialog,
+                Dismissible,
+                Trap,
+                true,
+                true,
+                true,
+                Dim,
+                Center,
+                true,
+                FullFallback,
+                40,
+            ),
+            (
+                OverlayKind::AlertDialog,
+                Trap,
+                Trap,
+                true,
+                true,
+                true,
+                Occlude,
+                Center,
+                true,
+                FullFallback,
+                40,
+            ),
+            (
+                OverlayKind::Drawer,
+                Dismissible,
+                Dismissible,
+                true,
+                true,
+                true,
+                Dim,
+                DrawerEnd,
+                true,
+                FullFallback,
+                50,
+            ),
+            (
+                OverlayKind::CommandPalette,
+                Dismissible,
+                Dismissible,
+                true,
+                true,
+                true,
+                Dim,
+                Center,
+                true,
+                FullFallback,
+                48,
+            ),
+            (
+                OverlayKind::Fullscreen,
+                Dismissible,
+                Trap,
+                true,
+                true,
+                true,
+                Occlude,
+                FullPlacement,
+                true,
+                FullFallback,
+                0,
+            ),
+            (
+                OverlayKind::Custom,
+                Dismissible,
+                Dismissible,
+                true,
+                false,
+                true,
+                NoBackdrop,
+                Center,
+                true,
+                Clamp,
+                40,
+            ),
+        ];
+        for (
+            kind,
+            esc,
+            outside,
+            owns_input,
+            focus_trap,
+            wheel_captures,
+            backdrop,
+            prefer,
+            cover_anchor,
+            narrow_fallback,
+            narrow_cols,
+        ) in cases
+        {
             let p = OverlayPolicy::for_kind(kind);
-            // Every kind has a coherent prefer + esc policy
-            let _ = p.esc;
-            let _ = p.prefer;
-            let scene = OverlayPolicy::scene_layer_kind(kind);
-            let _ = scene;
+            assert_eq!(p.esc, esc, "{kind:?} escape policy");
+            assert_eq!(p.outside, outside, "{kind:?} outside policy");
+            assert_eq!(p.owns_input, owns_input, "{kind:?} input ownership");
+            assert_eq!(p.focus_trap, focus_trap, "{kind:?} focus policy");
+            assert_eq!(p.wheel_captures, wheel_captures, "{kind:?} wheel policy");
+            assert_eq!(p.backdrop, backdrop, "{kind:?} backdrop policy");
+            assert_eq!(p.prefer, prefer, "{kind:?} placement policy");
+            assert_eq!(p.cover_anchor, cover_anchor, "{kind:?} anchor policy");
+            assert_eq!(
+                p.narrow_fallback, narrow_fallback,
+                "{kind:?} narrow fallback"
+            );
+            assert_eq!(p.narrow_cols, narrow_cols, "{kind:?} narrow threshold");
+            let _typed_scene_layer = OverlayPolicy::scene_layer_kind(kind);
         }
     }
 

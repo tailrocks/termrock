@@ -1367,10 +1367,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         let surface = self.focused && state.accepts_input();
-        let border = if surface {
-            Role::BorderFocused
+        let recipe = if surface {
+            SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            SurfaceRecipe::Overlay
         };
 
         let title = if state.current_page_title().is_some() {
@@ -1382,10 +1382,19 @@ impl<'a, Id> CommandPalette<'a, Id> {
         };
         let _ = pt_title_marker(state, title);
 
-        let inner = Surface::new(self.system)
-            .recipe(SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(self.system.style(border))
             .padding(1, 0)
             .paint(area, buffer);
         if area.width > 4 {
@@ -2130,6 +2139,38 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             CommandPaletteOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn mouse_hit_activates_same_enabled_command_as_keyboard() {
+        let visible = vec![CommandEntry::new("run", "Run")];
+        let mut state = focused();
+        state.hits = vec![(0, Rect::new(4, 3, 8, 1))];
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(4, 3),
+                modifiers: KeyModifiers::NONE,
+            },
+            &visible,
+        );
+        assert!(matches!(
+            out,
+            CommandPaletteOutcome::Activated { id: "run", .. }
+        ));
+
+        let disabled = vec![CommandEntry::new("run", "Run").enabled(false)];
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 3),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &disabled,
+            ),
+            CommandPaletteOutcome::Ignored
+        );
     }
 
     #[test]

@@ -350,7 +350,7 @@ impl<'a> Sparkline<'a> {
             selected: None,
             pre_normalized: false,
             window: 0,
-            role: Role::Accent,
+            role: Role::ChartSeries1,
         }
     }
 
@@ -1159,7 +1159,7 @@ impl<'a> Gauge<'a> {
             label: None,
             unit: None,
             thresholds: &[],
-            role: Role::Accent,
+            role: Role::ChartSeries1,
         }
     }
 
@@ -1177,7 +1177,7 @@ impl<'a> Gauge<'a> {
             label: None,
             unit: None,
             thresholds: &[],
-            role: Role::Accent,
+            role: Role::ChartSeries1,
         }
     }
 
@@ -1900,7 +1900,7 @@ impl Widget for &BarSeries<'_> {
                 ) {
                     self.system.style(Role::Text)
                 } else {
-                    self.system.style(Role::Accent)
+                    self.system.style(Role::ChartSeries1)
                 };
                 if filled > 0 {
                     buffer.set_stringn(
@@ -1926,7 +1926,7 @@ impl Widget for &BarSeries<'_> {
                 ) {
                     self.system.style(Role::Text)
                 } else {
-                    self.system.style(Role::Success)
+                    self.system.style(Role::ChartSeries1)
                 };
                 let neg_style = if selected {
                     self.system

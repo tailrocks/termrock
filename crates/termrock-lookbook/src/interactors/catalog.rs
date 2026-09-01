@@ -6,13 +6,13 @@
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
-    style::{Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActivationOutcome, Alert, AlertOutcome, AlertState, AlertTone, Badge, BadgeOutcome,
-        BadgeState, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator, Breadcrumbs,
+        Action, ActionVariant, ActivationOutcome, Alert, AlertOutcome, AlertState, Badge,
+        BadgeOutcome, BadgeState, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator, Breadcrumbs,
         BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsState, ButtonGroup, ButtonGroupItem,
-        ButtonGroupOutcome, ButtonGroupState, Chip, ChipOutcome, ChipState, IconButton,
-        IconButtonState, Link, LinkOutcome, LinkState, NavItem, NavigationList,
+        ButtonGroupOutcome, ButtonGroupState, CalloutTone, Chip, ChipOutcome, ChipState,
+        IconButton, IconButtonState, Link, LinkOutcome, LinkState, NavItem, NavigationList,
         NavigationListOutcome, NavigationListState, RadioGroup, RadioOption, RadioOutcome,
         RadioState, Section, SectionOutcome, SectionState, Tag, TagOutcome, TagState, Toolbar,
         ToolbarItem, ToolbarOutcome, ToolbarState,
@@ -23,7 +23,7 @@ use super::{StoryInteraction, extended::record};
 
 pub(crate) struct AlertInteractor {
     state: AlertState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -34,7 +34,7 @@ impl AlertInteractor {
         state.set_action_cursor(Some("retry"));
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -45,13 +45,13 @@ impl AlertInteractor {
                 id: "retry",
                 label: "Retry",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "logs",
                 label: "View logs",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ]
     }
@@ -63,7 +63,7 @@ impl AlertInteractor {
 
 impl StoryInteraction for AlertInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let actions = Self::actions();
         if !self.state.is_visible() {
             frame.buffer_mut().set_stringn(
@@ -76,8 +76,8 @@ impl StoryInteraction for AlertInteractor {
             return;
         }
         Alert::new("Deploy failed", &system)
-            .tone(AlertTone::Danger)
-            .body("Rollout aborted at step 3.")
+            .tone(CalloutTone::Danger)
+            .description("Rollout aborted at step 3.")
             .details("timeout waiting for health check")
             .source("pipeline #42")
             .actions(&actions)
@@ -104,8 +104,8 @@ impl StoryInteraction for AlertInteractor {
         let outcome = self.state.handle_mouse(mouse, &actions, true);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if !self.state.is_visible() {
@@ -125,7 +125,7 @@ impl StoryInteraction for AlertInteractor {
 
 pub(crate) struct BadgeInteractor {
     state: BadgeState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -135,7 +135,7 @@ impl BadgeInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -146,7 +146,7 @@ impl BadgeInteractor {
 
 impl StoryInteraction for BadgeInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = Badge::new("interactive", &system).interactive(true).paint(
             area,
             frame.buffer_mut(),
@@ -154,22 +154,22 @@ impl StoryInteraction for BadgeInteractor {
         );
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Badge::new("interactive", &system)
             .interactive(true)
             .handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let before = self.state;
         let outcome = Badge::new("interactive", &system)
             .interactive(true)
             .handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || self.state != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["hover", "click toggle", "Enter toggle"]
@@ -182,7 +182,7 @@ impl StoryInteraction for BadgeInteractor {
 pub(crate) struct BreadcrumbsInteractor {
     state: BreadcrumbsState,
     hits: Vec<(BreadcrumbHit<&'static str>, Rect)>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -196,7 +196,7 @@ impl BreadcrumbsInteractor {
         Self {
             state,
             hits: Vec::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -216,7 +216,7 @@ impl BreadcrumbsInteractor {
 
 impl StoryInteraction for BreadcrumbsInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         self.hits = Breadcrumbs::new(&items, &system)
             .separator(BreadcrumbSeparator::Slash)
@@ -230,8 +230,8 @@ impl StoryInteraction for BreadcrumbsInteractor {
         let outcome = self.state.handle_mouse(mouse, &Self::items(), &self.hits);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -251,7 +251,7 @@ impl StoryInteraction for BreadcrumbsInteractor {
 
 pub(crate) struct ButtonGroupInteractor {
     state: ButtonGroupState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -262,7 +262,7 @@ impl ButtonGroupInteractor {
         state.cursor = Some("save");
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -280,25 +280,25 @@ impl ButtonGroupInteractor {
 
 impl StoryInteraction for ButtonGroupInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         let _ = ButtonGroup::new(&items, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         let outcome = ButtonGroup::new(&items, &system).handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         let before = self.state.clone();
         let outcome = ButtonGroup::new(&items, &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || self.state != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -316,7 +316,7 @@ impl StoryInteraction for ButtonGroupInteractor {
 pub(crate) struct ChipInteractor {
     state: ChipState,
     visible: bool,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -327,7 +327,7 @@ impl ChipInteractor {
         Self {
             state,
             visible: true,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -338,7 +338,7 @@ impl ChipInteractor {
 
 impl StoryInteraction for ChipInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if !self.visible {
             frame.buffer_mut().set_stringn(
                 area.x,
@@ -369,7 +369,7 @@ impl StoryInteraction for ChipInteractor {
             }
             return false;
         }
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Chip::new("rust", "rust", &system)
             .removable(true)
             .handle_key(&mut self.state, key);
@@ -379,7 +379,7 @@ impl StoryInteraction for ChipInteractor {
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Chip::new("rust", "rust", &system)
             .removable(true)
             .handle_mouse(&mut self.state, mouse);
@@ -388,8 +388,8 @@ impl StoryInteraction for ChipInteractor {
         }
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if !self.visible {
@@ -410,7 +410,7 @@ impl StoryInteraction for ChipInteractor {
 pub(crate) struct TagInteractor {
     state: TagState,
     visible: bool,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -421,7 +421,7 @@ impl TagInteractor {
         Self {
             state,
             visible: true,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -432,7 +432,7 @@ impl TagInteractor {
 
 impl StoryInteraction for TagInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if !self.visible {
             frame.buffer_mut().set_stringn(
                 area.x,
@@ -463,7 +463,7 @@ impl StoryInteraction for TagInteractor {
             }
             return false;
         }
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Tag::removable_tag("attachment", "paste-body.txt", &system)
             .handle_key(&mut self.state, key);
         if matches!(outcome, TagOutcome::Remove(_)) {
@@ -472,7 +472,7 @@ impl StoryInteraction for TagInteractor {
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Tag::removable_tag("attachment", "paste-body.txt", &system)
             .handle_mouse(&mut self.state, mouse);
         if matches!(outcome, TagOutcome::Remove(_)) {
@@ -480,8 +480,8 @@ impl StoryInteraction for TagInteractor {
         }
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if !self.visible {
@@ -501,7 +501,7 @@ impl StoryInteraction for TagInteractor {
 
 pub(crate) struct IconButtonInteractor {
     state: IconButtonState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -511,7 +511,7 @@ impl IconButtonInteractor {
         state.activation.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -519,7 +519,7 @@ impl IconButtonInteractor {
 
 impl StoryInteraction for IconButtonInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = IconButton::new("★", "Favorite", &system)
             .ascii_glyph("*")
             .toggle(true)
@@ -540,8 +540,8 @@ impl StoryInteraction for IconButtonInteractor {
         }
         record(&mut self.outcome, "IconButton", outcome) || self.state != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["hover", "click toggle", "Enter/Space toggle"]
@@ -553,7 +553,7 @@ impl StoryInteraction for IconButtonInteractor {
 
 pub(crate) struct RadioGroupInteractor {
     state: RadioState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -563,7 +563,7 @@ impl RadioGroupInteractor {
         state.set_surface_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -581,27 +581,27 @@ impl RadioGroupInteractor {
 
 impl StoryInteraction for RadioGroupInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let options = Self::options();
         let _ = RadioGroup::new(&options, &system)
             .legend("Agent mode")
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let options = Self::options();
         let outcome = RadioGroup::new(&options, &system).handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let options = Self::options();
         let before = self.state.clone();
         let outcome = RadioGroup::new(&options, &system).handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || self.state != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -618,7 +618,7 @@ impl StoryInteraction for RadioGroupInteractor {
 
 pub(crate) struct SectionInteractor {
     state: SectionState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -628,7 +628,7 @@ impl SectionInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -639,7 +639,7 @@ impl SectionInteractor {
 
 impl StoryInteraction for SectionInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let body = Section::new("Network", &system)
             .description("Proxy and connection policy")
             .status("live")
@@ -664,8 +664,8 @@ impl StoryInteraction for SectionInteractor {
         let outcome = self.state.handle_mouse(mouse, true);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -684,7 +684,7 @@ pub(crate) struct ToolbarInteractor {
     state: ToolbarState<&'static str>,
     wrap_pressed: bool,
     area: Rect,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -697,7 +697,7 @@ impl ToolbarInteractor {
             state,
             wrap_pressed: false,
             area: Rect::default(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -725,7 +725,7 @@ impl ToolbarInteractor {
 impl StoryInteraction for ToolbarInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = self.items();
         Toolbar::new(&items, &system).overflow_id("more").render(
             area,
@@ -734,7 +734,7 @@ impl StoryInteraction for ToolbarInteractor {
         );
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = self.items();
         let outcome = Toolbar::new(&items, &system)
             .overflow_id("more")
@@ -742,15 +742,15 @@ impl StoryInteraction for ToolbarInteractor {
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = self.items();
         let outcome = Toolbar::new(&items, &system)
             .overflow_id("more")
             .handle_mouse(&mut self.state, mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -768,7 +768,7 @@ impl StoryInteraction for ToolbarInteractor {
 pub(crate) struct NavigationListInteractor {
     state: NavigationListState<&'static str>,
     expanded: bool,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -780,7 +780,7 @@ impl NavigationListInteractor {
         Self {
             state,
             expanded: true,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -806,7 +806,7 @@ impl NavigationListInteractor {
 
 impl StoryInteraction for NavigationListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = self.items();
         NavigationList::new(&items, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
@@ -818,8 +818,8 @@ impl StoryInteraction for NavigationListInteractor {
         let outcome = self.state.handle_mouse(mouse, &self.items());
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -840,7 +840,7 @@ impl StoryInteraction for NavigationListInteractor {
 
 pub(crate) struct LinkInteractor {
     state: LinkState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -850,7 +850,7 @@ impl LinkInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -861,7 +861,7 @@ impl LinkInteractor {
 
 impl StoryInteraction for LinkInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = Link::url("TermRock documentation", "https://termrock.dev", &system).paint(
             area,
             frame.buffer_mut(),
@@ -869,20 +869,20 @@ impl StoryInteraction for LinkInteractor {
         );
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = Link::url("TermRock documentation", "https://termrock.dev", &system)
             .handle_key(&mut self.state, key);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let before = self.state.clone();
         let outcome = Link::url("TermRock documentation", "https://termrock.dev", &system)
             .handle_mouse(&mut self.state, mouse);
         self.apply(outcome) || self.state != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["hover", "click open", "Enter open", "C copy destination"]

@@ -26,7 +26,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         link::{DestinationDisplay, Link, LinkStyle},
@@ -395,7 +395,7 @@ impl CitationSource {
         if !matches!(self.availability, CitationAvailability::Available) {
             parts.push(self.availability.id().into());
         }
-        parts.join(" · ")
+        parts.join(if ascii { " - " } else { " · " })
     }
 
     /// Destination for display (never empty for external).
@@ -697,7 +697,10 @@ impl<'a> SourceCitation<'a> {
     /// Decorated string for measure/paint.
     #[must_use]
     pub fn decorated(&self) -> String {
-        let g = self.source.kind.glyph(self.ascii);
+        let g = self
+            .source
+            .kind
+            .glyph(self.ascii || self.system.glyphs.is_ascii());
         let mut s = format!("{}{}", g, self.source.inline_label(false));
         let show_dest = match self.show_destination {
             DestinationDisplay::Always => true,
@@ -708,7 +711,11 @@ impl<'a> SourceCitation<'a> {
         };
         if show_dest && !self.source.destination.is_empty() {
             s.push(' ');
-            s.push_str(&truncate_dest(&self.source.destination, 24));
+            s.push_str(&truncate_dest(
+                &self.source.destination,
+                24,
+                self.system.glyphs.ellipsis(),
+            ));
         }
         let avail = effective_availability(self.source, self.offline);
         if !matches!(avail, CitationAvailability::Available) {
@@ -879,8 +886,8 @@ fn effective_availability(source: &CitationSource, offline: bool) -> CitationAva
     source.availability
 }
 
-fn truncate_dest(dest: &str, max_cols: usize) -> String {
-    crate::text::truncate_cols(dest, max_cols, "…").into_owned()
+fn truncate_dest(dest: &str, max_cols: usize, ellipsis: &str) -> String {
+    crate::text::truncate_cols(dest, max_cols, ellipsis).into_owned()
 }
 
 // ── CitationList ────────────────────────────────────────────────────────────
@@ -1135,9 +1142,10 @@ impl<'a> CitationList<'a> {
     pub fn summary_text(&self, state: &CitationListState) -> String {
         let n = self.sources.len();
         let groups = group_citations(self.sources);
+        let ascii = self.ascii || self.system.glyphs.is_ascii();
         let mark = if state.expanded {
-            if self.ascii { "v" } else { "▾" }
-        } else if self.ascii {
+            if ascii { "v" } else { "▾" }
+        } else if ascii {
             ">"
         } else {
             "▸"
@@ -1156,6 +1164,7 @@ impl<'a> CitationList<'a> {
         if area.is_empty() {
             return;
         }
+        let ascii = self.ascii || self.system.glyphs.is_ascii();
         let mut y = area.y;
         // summary
         let summary = self.summary_text(state);
@@ -1185,12 +1194,8 @@ impl<'a> CitationList<'a> {
                 continue;
             };
             let selected = state.focused && i == state.cursor;
-            let mark = if selected {
-                if self.ascii { "*" } else { "›" }
-            } else {
-                " "
-            };
-            let g = src.kind.glyph(self.ascii);
+            let mark = " ";
+            let g = src.kind.glyph(ascii);
             let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
             // always show dest for external / no_hyperlink / sensitive
             let show_dest = src.external
@@ -1200,21 +1205,33 @@ impl<'a> CitationList<'a> {
             let _ = show_dest;
             if src.external || src.sensitive || state.no_hyperlink {
                 line.push(' ');
-                line.push_str(&truncate_dest(&src.destination, 28));
+                line.push_str(&truncate_dest(
+                    &src.destination,
+                    28,
+                    self.system.glyphs.ellipsis(),
+                ));
             }
-            let meta = src.meta_line(self.ascii);
+            let meta = src.meta_line(ascii);
             if !meta.is_empty() && area.width > 40 {
-                line.push_str(" · ");
+                line.push_str(if ascii { " - " } else { " · " });
                 line.push_str(&meta);
             }
             let avail = effective_availability(src, state.offline);
-            let row_style = if !avail.can_open() {
+            let base_style = if !avail.can_open() {
                 self.system.style(Role::TextMuted)
-            } else if selected {
-                self.system.style(Role::Focus)
             } else {
                 self.system.style(Role::Text)
             };
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected,
+                    focused: selected,
+                    enabled: avail.can_open(),
+                    ..Default::default()
+                },
+            );
+            let row_style = chrome.label_style(base_style);
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1222,6 +1239,7 @@ impl<'a> CitationList<'a> {
                 usize::from(area.width),
                 row_style,
             );
+            chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
             state.row_hits.push((
                 src.id.clone(),
                 Rect {
@@ -1237,11 +1255,6 @@ impl<'a> CitationList<'a> {
 
     fn show_dest_policy(&self) -> DestinationDisplay {
         DestinationDisplay::Auto
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut CitationListState) {
-        self.paint(area, buffer, state);
     }
 }
 

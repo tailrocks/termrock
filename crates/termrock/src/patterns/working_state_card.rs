@@ -26,7 +26,7 @@
 //! Teaches: how to compose transparent but non-invasive summary of what the
 //! agent is doing now.
 //!
-//! Composes: [`crate::widgets::AccentRail`], [`crate::widgets::Panel`],
+//! Composes: [`crate::widgets::AccentRail`],
 //! [`crate::widgets::SemanticStatus`], [`crate::widgets::StatefulWidget`],
 //! [`crate::widgets::Widget`].
 //!
@@ -38,6 +38,7 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::Modifier,
+    text::Line,
     widgets::StatefulWidget,
 };
 
@@ -46,10 +47,10 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     patterns::activity_shelf::{ActivityItem, ActivityKind},
-    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::SemanticStatus,
-    widgets::{AccentRail, Panel},
+    widgets::{AccentRail, List, ListRow, ListState, StatusIndicator},
 };
 
 /// Overlay id when host promotes expanded work card.
@@ -128,15 +129,6 @@ impl WorkingPhase {
         }
     }
 
-    fn role(self) -> Role {
-        match self {
-            Self::Planning | Self::Searching | Self::Reviewing => Role::Info,
-            // Live work reads as information, not as the brand (plans/007).
-            Self::Editing | Self::Running => Role::InfoDim,
-            Self::Waiting => Role::Warning,
-        }
-    }
-
     /// Map to ActivityShelf kind for collapse.
     #[must_use]
     pub const fn to_activity_kind(self) -> ActivityKind {
@@ -189,6 +181,19 @@ impl WorkingResource {
         self.role = Some(r.into());
         self
     }
+}
+
+fn working_resource_rows(work: &WorkingState) -> Vec<ListRow<'static, String>> {
+    work.resources
+        .iter()
+        .map(|resource| {
+            let mut row = ListRow::item(resource.id.clone(), Line::from(resource.label.clone()));
+            if let Some(role) = resource.role.as_ref() {
+                row = row.secondary(Line::from(role.clone()));
+            }
+            row
+        })
+        .collect()
 }
 
 /// Host-projected “what is happening now” (privacy-safe).
@@ -430,8 +435,8 @@ pub struct WorkingStateCardState {
     pub work: Option<WorkingState>,
     /// Presentation.
     pub presentation: WorkingStatePresentation,
-    /// Resource list cursor.
-    pub resource_cursor: usize,
+    /// Stable-id resource collection state.
+    pub resource_list: ListState<String>,
     /// Focused action: 0 = Inspect, 1 = Cancel (safe default Inspect when both).
     pub action_cursor: usize,
     /// Focused.
@@ -439,8 +444,6 @@ pub struct WorkingStateCardState {
     accepts_input: bool,
     /// Action strip hit regions.
     pub action_hits: Vec<(WorkingAction, Rect)>,
-    /// Resource row hit regions.
-    pub resource_hits: Vec<(String, Rect)>,
     /// Header hit (toggle expand/collapse).
     pub header_hit: Option<Rect>,
 }
@@ -482,20 +485,23 @@ impl WorkingStateCardState {
         Self {
             work: None,
             presentation: WorkingStatePresentation::Expanded,
-            resource_cursor: 0,
+            resource_list: ListState::new(None),
             action_cursor: 0, // Inspect default (safer than Cancel)
             focused: true,
             accepts_input: true,
             action_hits: Vec::new(),
-            resource_hits: Vec::new(),
             header_hit: None,
         }
     }
 
     /// Set work snapshot.
     pub fn set_work(&mut self, work: Option<WorkingState>) {
+        let selected = work
+            .as_ref()
+            .and_then(|snapshot| snapshot.resources.first())
+            .map(|resource| resource.id.clone());
         self.work = work;
-        self.resource_cursor = 0;
+        self.resource_list.select(selected);
         self.action_cursor = 0;
     }
 
@@ -610,24 +616,24 @@ impl WorkingStateCardState {
                 WorkingStateOutcome::Collapsed
             }
             KeyCode::Up | KeyCode::Char('k') => {
-                if self.resource_cursor > 0 {
-                    self.resource_cursor -= 1;
-                    if let Some(r) = work.resources.get(self.resource_cursor) {
-                        return WorkingStateOutcome::ResourceSelected {
-                            resource_id: r.id.clone(),
-                        };
-                    }
+                let rows = working_resource_rows(work);
+                if matches!(
+                    self.resource_list.select_previous(&rows),
+                    crate::interaction::Outcome::Changed
+                ) && let Some(resource_id) = self.resource_list.selected().cloned()
+                {
+                    return WorkingStateOutcome::ResourceSelected { resource_id };
                 }
                 WorkingStateOutcome::Ignored
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                if !work.resources.is_empty() && self.resource_cursor + 1 < work.resources.len() {
-                    self.resource_cursor += 1;
-                    if let Some(r) = work.resources.get(self.resource_cursor) {
-                        return WorkingStateOutcome::ResourceSelected {
-                            resource_id: r.id.clone(),
-                        };
-                    }
+                let rows = working_resource_rows(work);
+                if matches!(
+                    self.resource_list.select_next(&rows),
+                    crate::interaction::Outcome::Changed
+                ) && let Some(resource_id) = self.resource_list.selected().cloned()
+                {
+                    return WorkingStateOutcome::ResourceSelected { resource_id };
                 }
                 WorkingStateOutcome::Ignored
             }
@@ -646,10 +652,10 @@ impl WorkingStateCardState {
                 let actions = self.available_actions();
                 let Some(a) = actions.get(self.action_cursor).copied() else {
                     // activate resource
-                    if let Some(r) = work.resources.get(self.resource_cursor) {
+                    if let Some(resource_id) = self.resource_list.selected().cloned() {
                         return WorkingStateOutcome::ResourceActivated {
                             work_id,
-                            resource_id: r.id.clone(),
+                            resource_id,
                         };
                     }
                     return WorkingStateOutcome::Ignored;
@@ -710,14 +716,16 @@ impl WorkingStateCardState {
                 };
             }
         }
-        for (rid, r) in &self.resource_hits {
-            if r.contains(pos) {
-                let work_id = self.work.as_ref().map(|w| w.id.clone()).unwrap_or_default();
-                return WorkingStateOutcome::ResourceActivated {
-                    work_id,
-                    resource_id: rid.clone(),
-                };
-            }
+        if let crate::interaction::Outcome::Activated(resource_id) = self.resource_list.click(pos) {
+            let work_id = self
+                .work
+                .as_ref()
+                .map(|work| work.id.clone())
+                .unwrap_or_default();
+            return WorkingStateOutcome::ResourceActivated {
+                work_id,
+                resource_id,
+            };
         }
         WorkingStateOutcome::Ignored
     }
@@ -773,19 +781,35 @@ impl<'a> WorkingStateCard<'a> {
     /// feed [`WorkingStateCardState::to_activity_item`] into ActivityShelf.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut WorkingStateCardState) {
         state.action_hits.clear();
-        state.resource_hits.clear();
         state.header_hit = None;
         if area.is_empty() {
             return;
         }
         let Some(work) = state.work.clone() else {
-            if !area.is_empty() {
+            let semantic = SemanticStatus::Idle;
+            let rail_role = if self.colorless {
+                Role::TextStrong
+            } else {
+                semantic.role()
+            };
+            let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+            if self.ascii && area.width > 0 {
+                for y in area.y..area.bottom() {
+                    buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+                }
+            }
+            if !inner.is_empty() {
+                let glyph = semantic.glyph(self.ascii);
                 self.system.paint_row(
                     buffer,
-                    Rect::new(area.x, area.y, area.width, 1),
-                    "idle",
-                    self.system.style(Role::TextMuted),
+                    Rect::new(inner.x, inner.y, inner.width, 1),
+                    &format!("{glyph} idle"),
+                    self.system.style(Role::Text),
                 );
+                StatusIndicator::compact(semantic, self.system)
+                    .ascii(self.ascii)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             }
             return;
         };
@@ -804,31 +828,45 @@ impl<'a> WorkingStateCard<'a> {
         state: &mut WorkingStateCardState,
         work: &WorkingState,
     ) {
-        let w = usize::from(area.width);
-        let line = work.compact_line(self.ascii, w.saturating_sub(2));
-        let style = if self.colorless {
-            self.system.style(Role::Text)
+        let semantic = work.phase.to_semantic_status();
+        let rail_role = if self.colorless {
+            Role::TextStrong
         } else {
-            self.system.style(work.phase.role())
+            semantic.role()
         };
-        let mark = if matches!(work.phase, WorkingPhase::Waiting) {
-            if self.ascii { "!" } else { "●" }
-        } else if self.ascii || !matches!(self.system.motion, MotionPolicy::Full) {
-            if self.ascii { "." } else { "●" }
-        } else {
-            SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
-        };
-        let text = format!("{mark} {line}");
+        let inner = AccentRail::new(self.system, rail_role)
+            .active(!matches!(work.phase, WorkingPhase::Waiting))
+            .tick(self.tick)
+            .paint(area, buffer);
+        if self.ascii && area.width > 0 {
+            for y in area.y..area.bottom() {
+                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+            }
+        }
+        if inner.is_empty() {
+            return;
+        }
+        let glyph = semantic.glyph(self.ascii);
+        let elapsed = work
+            .elapsed
+            .as_ref()
+            .map(|value| format!(" · {value}"))
+            .unwrap_or_default();
+        let text = format!("{glyph} {} · {}{elapsed}", work.phase.label(), work.summary);
         self.system.paint_row(
             buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &text,
-            style,
+            Rect::new(inner.x, inner.y, inner.width, 1),
+            &take_display_cols(&text, usize::from(inner.width)),
+            self.system.style(Role::Text),
         );
+        StatusIndicator::compact(semantic, self.system)
+            .ascii(self.ascii)
+            .colorless(self.colorless)
+            .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
         state.header_hit = Some(Rect {
-            x: area.x,
-            y: area.y,
-            width: area.width,
+            x: inner.x,
+            y: inner.y,
+            width: inner.width,
             height: 1,
         });
     }
@@ -840,22 +878,24 @@ impl<'a> WorkingStateCard<'a> {
         state: &mut WorkingStateCardState,
         work: &WorkingState,
     ) {
-        // Title avoids “thinking” — status chrome only
-        let title = format!("Working · {}", work.phase.label());
-        let rail = AccentRail::new(self.system, Role::ActorAssistant)
+        let semantic = work.phase.to_semantic_status();
+        let rail_role = if self.colorless {
+            Role::TextStrong
+        } else if state.focused {
+            Role::Focus
+        } else {
+            semantic.role()
+        };
+        let content_area = AccentRail::new(self.system, rail_role)
             .active(!matches!(work.phase, WorkingPhase::Waiting))
-            .tick(self.tick);
-        let content_area = rail.paint(area, buffer);
-        let panel = Panel::new(self.system)
-            .title(title.as_str())
-            .emphasis(if state.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(content_area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, content_area, buffer);
+            .tick(self.tick)
+            .paint(area, buffer);
+        if self.ascii && area.width > 0 {
+            for y in area.y..area.bottom() {
+                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+            }
+        }
+        let inner = content_area;
         if inner.is_empty() {
             return;
         }
@@ -866,7 +906,7 @@ impl<'a> WorkingStateCard<'a> {
 
         // Phase + elapsed + progress
         if y < max_y {
-            let g = work.phase.glyph(self.ascii);
+            let g = semantic.glyph(self.ascii);
             let el = work
                 .elapsed
                 .as_ref()
@@ -882,13 +922,16 @@ impl<'a> WorkingStateCard<'a> {
                 .map(|a| format!(" · {a}"))
                 .unwrap_or_default();
             let line = format!("{g} {}{el}{prog}{actor}", work.phase.label());
-            let style = if self.colorless {
-                self.system.style(Role::Text)
-            } else {
-                self.system.style(work.phase.role())
-            };
-            self.system
-                .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
+            self.system.paint_row(
+                buffer,
+                Rect::new(inner.x, y, inner.width, 1),
+                &line,
+                self.system.style(Role::Text),
+            );
+            StatusIndicator::compact(semantic, self.system)
+                .ascii(self.ascii)
+                .colorless(self.colorless)
+                .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer);
             state.header_hit = Some(Rect {
                 x: inner.x,
                 y,
@@ -926,14 +969,15 @@ impl<'a> WorkingStateCard<'a> {
                 self.system.paint_row(
                     buffer,
                     Rect::new(inner.x, y, inner.width, 1),
-                    &format!("waiting: {wr}"),
+                    &format!("! waiting: {wr}"),
                     self.system.style(Role::Warning),
                 );
                 y = y.saturating_add(1);
             }
         }
 
-        // Resources
+        // Resources use the shared collection recipe: stable identity, focus
+        // ground, hit regions, and width contraction stay single-owned.
         if !work.resources.is_empty() && y < max_y {
             self.system.paint_row(
                 buffer,
@@ -942,50 +986,23 @@ impl<'a> WorkingStateCard<'a> {
                 self.system.style(Role::TextMuted),
             );
             y = y.saturating_add(1);
-            for (i, r) in work
-                .resources
-                .iter()
-                .enumerate()
-                .take(WORKING_STATE_FILE_WINDOW)
-            {
-                if y >= max_y.saturating_sub(1) {
-                    break;
-                }
-                let sel = i == state.resource_cursor;
-                let mark = if sel {
-                    if self.ascii { ">" } else { "›" }
-                } else {
-                    " "
-                };
-                let role = r
-                    .role
-                    .as_ref()
-                    .map(|x| format!(" ({x})"))
-                    .unwrap_or_default();
-                let line = format!("{mark}{}{role}", r.label);
-                let style = if sel {
-                    self.system.style(Role::Accent)
-                } else {
-                    self.system.style(Role::Text)
-                };
-                self.system
-                    .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &line, style);
-                state.resource_hits.push((
-                    r.id.clone(),
-                    Rect {
-                        x: inner.x,
-                        y,
-                        width: inner.width,
-                        height: 1,
-                    },
-                ));
-                y = y.saturating_add(1);
+            let list_height = max_y.saturating_sub(1).saturating_sub(y);
+            if list_height > 0 {
+                let rows = working_resource_rows(work);
+                StatefulWidget::render(
+                    &List::new(&rows, self.system).focused(state.focused),
+                    Rect::new(inner.x, y, inner.width, list_height),
+                    buffer,
+                    &mut state.resource_list,
+                );
             }
         }
 
         // Actions (Inspect default focus; Cancel never sole default when both exist)
         let fy = max_y.saturating_sub(1);
-        if fy >= inner.y {
+        // The status row is the card's minimum viable anatomy. Never let
+        // footer actions overwrite it when the host contracts to one row.
+        if fy > inner.y {
             let actions = {
                 let mut a = Vec::new();
                 a.push(WorkingAction::ToggleExpand);
@@ -1270,6 +1287,32 @@ mod tests {
     }
 
     #[test]
+    fn reference_minimum_and_below_minimum_keep_status_anatomy() {
+        let system = DesignSystem::default();
+        for (width, height) in [(56, 10), (12, 1), (1, 1)] {
+            let area = Rect::new(0, 0, width, height);
+            let mut buffer = Buffer::empty(area);
+            let mut state = open();
+            WorkingStateCard::new(&system)
+                .ascii(true)
+                .colorless(true)
+                .paint(area, &mut buffer, &mut state);
+            let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+            assert!(text.starts_with('|'), "{width}x{height}: {text:?}");
+            assert!(
+                !text.contains('┌')
+                    && !text.contains('┐')
+                    && !text.contains('└')
+                    && !text.contains('┘'),
+                "status surfaces do not grow a box: {text:?}"
+            );
+            if width >= 12 {
+                assert!(text.contains("> editing"), "{width}x{height}: {text:?}");
+            }
+        }
+    }
+
+    #[test]
     fn reduced_motion_running_presence_is_tick_static() {
         let system = DesignSystem::default().motion(MotionPolicy::Basic);
         let render = |tick| {
@@ -1331,16 +1374,28 @@ mod tests {
     }
 
     #[test]
-    fn unicode_summary() {
+    fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        let mut st = WorkingStateCardState::new();
-        st.set_work(Some(
-            WorkingState::new("u", WorkingPhase::Searching, "ファイルを検索 🔍")
-                .resources(vec![WorkingResource::new("f", "日本語.rs")]),
-        ));
-        let area = Rect::new(0, 0, 40, 8);
-        let mut buf = Buffer::empty(area);
-        WorkingStateCard::new(&system).paint(area, &mut buf, &mut st);
+        let summary = "ファイルを検索 Cafe\u{301}";
+        for ascii in [false, true] {
+            for (width, height) in [(48, 8), (12, 1), (1, 1), (0, 0)] {
+                let mut st = WorkingStateCardState::new();
+                st.set_work(Some(
+                    WorkingState::new("u", WorkingPhase::Searching, summary)
+                        .resources(vec![WorkingResource::new("f", "日本語.rs")]),
+                ));
+                let area = Rect::new(0, 0, width, height);
+                let mut buf = Buffer::empty(area);
+                WorkingStateCard::new(&system)
+                    .ascii(ascii)
+                    .paint(area, &mut buf, &mut st);
+                if width == 48 {
+                    let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('フ'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

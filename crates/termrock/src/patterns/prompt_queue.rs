@@ -43,7 +43,7 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
-    widgets::{ConfirmFocus, ConfirmPrompt, Panel},
+    widgets::{ConfirmFocus, ConfirmPrompt, Panel, SemanticStatus, StatusIndicator},
 };
 
 /// Overlay id for expanded queue manager.
@@ -733,27 +733,20 @@ impl<'a> PromptQueue<'a> {
         if summary.is_empty() {
             return;
         }
-        let _w = usize::from(area.width);
-        let style = if state.agent.is_busy() {
-            self.system.style(Role::Warning)
+        let semantic = if state.agent.is_busy() {
+            state.agent.semantic()
         } else {
-            self.system.style(Role::TextMuted)
+            SemanticStatus::Queued
         };
-        let line = if self.ascii {
-            format!("[{summary}]")
-        } else {
-            format!("▸ {summary}")
-        };
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &line,
-            style,
-        );
+        let indicator = StatusIndicator::new(semantic, self.system)
+            .label(&summary)
+            .ascii(self.ascii)
+            .colorless(self.colorless);
+        indicator.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
         state.compact_hit = Some(Rect {
             x: area.x,
             y: area.y,
-            width: area.width.min(display_cols(&line) as u16).max(1),
+            width: area.width.min(indicator.measure_width(None)).max(1),
             height: 1,
         });
     }
@@ -851,23 +844,46 @@ impl<'a> PromptQueue<'a> {
                 } else {
                     " "
                 };
-                let st = item.status.glyph(self.ascii);
                 let att = if item.attachments.is_empty() && item.mentions.is_empty() {
                     String::new()
                 } else {
                     format!(" [{}+{}]", item.attachments.len(), item.mentions.len())
                 };
                 let preview = item.preview(w.saturating_sub(12));
-                let text = format!("{mark}{st} {preview}{att}");
-                let style = if selected {
-                    self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-                } else if self.colorless {
-                    self.system.style(Role::Text)
+                let indicator = StatusIndicator::new(item.status.semantic(), self.system)
+                    .label(item.status.id())
+                    .ascii(self.ascii)
+                    .colorless(self.colorless);
+                let status_text = indicator.text(None);
+                let text = format!("{mark}{status_text} · {preview}{att}");
+                let style = self.system.style(Role::Text).add_modifier(if selected {
+                    Modifier::BOLD
                 } else {
-                    self.system.style(item.status.role())
-                };
+                    Modifier::empty()
+                });
                 self.system
                     .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(inner.x, y, 1.min(inner.width), 1),
+                    mark,
+                    self.system.style(if selected && !self.colorless {
+                        Role::Focus
+                    } else {
+                        Role::TextStrong
+                    }),
+                );
+                if inner.width > 1 {
+                    indicator.paint(
+                        Rect::new(
+                            inner.x.saturating_add(1),
+                            y,
+                            inner.width.saturating_sub(1),
+                            1,
+                        ),
+                        buffer,
+                    );
+                }
                 state.row_hits.push((
                     item.id.clone(),
                     Rect {

@@ -11,7 +11,8 @@
 //! primary app routing (often AppShell start dock).
 //! **vs [`Tree`](super::Tree).** Tree is data hierarchy; NavigationList is
 //! route-oriented with sections, rail collapse, and semantic commands.
-//! **vs [`Menu`](super::Menu).** Menu is ephemeral overlay; nav is persistent.
+//! **vs [`DropdownMenu`](super::DropdownMenu).** Dropdown menus are ephemeral;
+//! navigation is persistent.
 //!
 //! **Route ≠ focus.** [`NavigationListState::route`] is the active destination;
 //! roving focus is independent until activation (Enter / click).
@@ -39,7 +40,7 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::{Panel, PanelChrome};
+use super::{Panel, PanelChrome, PanelVariant};
 
 /// Width under which expanded sidebar prefers rail.
 pub const SIDEBAR_RAIL_MAX_WIDTH: u16 = 12;
@@ -279,9 +280,6 @@ impl<Id> NavItem<Id> {
     }
 }
 
-/// Compatibility alias used by ResourceBrowser / older call sites.
-pub type SidebarItem<Id> = NavItem<Id>;
-
 /// Drop rows nested under a **collapsed** section/group ancestor (depth stack).
 ///
 /// Host may project a full tree with `expanded` flags; this pure filter is the
@@ -403,17 +401,15 @@ pub enum SidebarOutcome<Id> {
     Ignored,
     /// Chrome changed.
     Changed,
-    /// Route selected (compat name for ResourceBrowser).
-    Selected(Id),
+    /// Active route changed.
+    RouteChanged {
+        /// Route id.
+        id: Id,
+    },
     /// Focus moved.
     FocusChanged {
         /// Focus id.
         id: Option<Id>,
-    },
-    /// Rail/expanded toggled (compat).
-    ToggleRail {
-        /// Expanded (true) vs rail (false).
-        expanded: bool,
     },
     /// Presentation changed.
     PresentationChanged {
@@ -458,7 +454,7 @@ impl<Id> From<NavigationListOutcome<Id>> for SidebarOutcome<Id> {
             NavigationListOutcome::Ignored => Self::Ignored,
             NavigationListOutcome::Changed => Self::Changed,
             NavigationListOutcome::FocusChanged { id } => Self::FocusChanged { id },
-            NavigationListOutcome::RouteChanged { id } => Self::Selected(id),
+            NavigationListOutcome::RouteChanged { id } => Self::RouteChanged { id },
             NavigationListOutcome::ExpandToggled { id, expanded } => {
                 Self::ExpandToggled { id, expanded }
             }
@@ -528,23 +524,10 @@ impl<Id> NavigationListState<Id> {
         self.route.as_ref()
     }
 
-    /// Compat: selected == route.
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.route.as_ref()
-    }
-
     /// Focused row id.
     #[must_use]
     pub fn focus(&self) -> Option<&Id> {
         self.collection.active()
-    }
-
-    /// Cursor index among last projected items (compat).
-    #[must_use]
-    pub fn cursor_index(&self) -> usize {
-        // best-effort: 0 if unknown without projection
-        0
     }
 
     /// Cursor index from projection.
@@ -877,8 +860,8 @@ pub struct SidebarState<Id> {
     /// Inner list (route / focus / filter).
     pub nav: NavigationListState<Id>,
     presentation: SidebarPresentation,
-    /// Host grants input (compat field).
-    pub accepts_input: bool,
+    /// Host input authority; synchronized into the nested navigation state.
+    accepts_input: bool,
 }
 
 impl<Id> Default for SidebarState<Id> {
@@ -890,8 +873,8 @@ impl<Id> Default for SidebarState<Id> {
 impl<Id> SidebarState<Id> {
     /// Expanded sidebar with optional initial route.
     #[must_use]
-    pub fn new(selected: Option<Id>) -> Self {
-        let mut nav = NavigationListState::new(selected);
+    pub fn new(route: Option<Id>) -> Self {
+        let mut nav = NavigationListState::new(route);
         nav.accepts_input = true;
         Self {
             nav,
@@ -905,12 +888,6 @@ impl<Id> SidebarState<Id> {
     pub const fn with_presentation(mut self, p: SidebarPresentation) -> Self {
         self.presentation = p;
         self
-    }
-
-    /// Selected route (compat).
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.nav.route()
     }
 
     /// Route.
@@ -935,12 +912,6 @@ impl<Id> SidebarState<Id> {
     #[must_use]
     pub const fn presentation(&self) -> SidebarPresentation {
         self.presentation
-    }
-
-    /// Cursor index among items (compat; uses projection).
-    #[must_use]
-    pub fn cursor_index(&self) -> usize {
-        self.nav.cursor_index()
     }
 
     /// Cursor in projection.
@@ -976,7 +947,9 @@ impl<Id> SidebarState<Id> {
         } else {
             SidebarPresentation::Rail
         };
-        SidebarOutcome::ToggleRail { expanded }
+        SidebarOutcome::PresentationChanged {
+            presentation: self.presentation,
+        }
     }
 
     /// Auto presentation from width.
@@ -1005,7 +978,7 @@ impl<Id> SidebarState<Id> {
         if !self.accepts_input {
             return SidebarOutcome::Ignored;
         }
-        // ensure focused when host only sets accepts_input (legacy tests)
+        // Input authority and focus ownership enter together.
         if !self.nav.focused && self.accepts_input {
             self.nav.focused = true;
         }
@@ -1387,13 +1360,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         self
     }
 
-    /// Render rail or full labels.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &SidebarState<Id>) {
-        // immutable state path for legacy; paint needs mut for hits — clone regions only via paint_mut
-        let mut state_mut = state.clone();
-        self.paint(area, buffer, &mut state_mut);
-    }
-
     /// Preferred paint (updates hit regions on state.nav).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SidebarState<Id>) {
         if area.is_empty() {
@@ -1407,11 +1373,13 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
 
         let mut inner = area;
         if self.show_panel {
-            let panel = Panel::new(self.system).emphasis(if self.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
+            let panel = Panel::new(self.system)
+                .variant(PanelVariant::Bordered)
+                .emphasis(if self.focused {
+                    PanelChrome::Focused
+                } else {
+                    PanelChrome::Normal
+                });
             let title = if self.title.is_empty() {
                 match state.presentation {
                     SidebarPresentation::Rail => "Nav",
@@ -1566,8 +1534,8 @@ mod tests {
     }
 
     #[test]
-    fn sidebar_select_compat() {
-        let items = [SidebarItem::new("x", "X"), SidebarItem::new("y", "Y")];
+    fn sidebar_route_change_is_explicit() {
+        let items = [NavItem::new("x", "X"), NavItem::new("y", "Y")];
         let mut state = SidebarState::new(None);
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
         // first focus may be x after reconcile; down -> y
@@ -1576,21 +1544,22 @@ mod tests {
         // new() with None: move_first on first key path sets focus
         // Down then Enter — depends on initial active
         assert!(
-            matches!(out, SidebarOutcome::Selected(_))
+            matches!(out, SidebarOutcome::RouteChanged { .. })
                 || matches!(
                     {
                         let _ = state
                             .handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
                         state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items)
                     },
-                    SidebarOutcome::Selected("y") | SidebarOutcome::Selected("x")
+                    SidebarOutcome::RouteChanged { id: "y" }
+                        | SidebarOutcome::RouteChanged { id: "x" }
                 )
         );
     }
 
     #[test]
-    fn sidebar_legacy_select_y() {
-        let items = [SidebarItem::new("x", "X"), SidebarItem::new("y", "Y")];
+    fn sidebar_selects_pointer_row() {
+        let items = [NavItem::new("x", "X"), NavItem::new("y", "Y")];
         let mut state = SidebarState::new(None);
         let _ = state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
         // Ensure focus on y
@@ -1599,7 +1568,7 @@ mod tests {
         }
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
-            SidebarOutcome::Selected("y")
+            SidebarOutcome::RouteChanged { id: "y" }
         ));
     }
 
@@ -1609,12 +1578,16 @@ mod tests {
         assert!(state.is_expanded());
         assert!(matches!(
             state.toggle_rail(),
-            SidebarOutcome::ToggleRail { expanded: false }
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Rail
+            }
         ));
         assert!(!state.is_expanded());
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char('['), KeyModifiers::NONE), &[]),
-            SidebarOutcome::ToggleRail { expanded: true }
+            SidebarOutcome::PresentationChanged {
+                presentation: SidebarPresentation::Expanded
+            }
         ));
     }
 
@@ -1699,7 +1672,10 @@ mod tests {
             "{out:?}"
         );
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
-        assert!(matches!(out, SidebarOutcome::Selected("leaf")), "{out:?}");
+        assert!(
+            matches!(out, SidebarOutcome::RouteChanged { id: "leaf" }),
+            "{out:?}"
+        );
         assert_eq!(state.route(), Some(&"leaf"));
         // Focus was on leaf; route is leaf — distinct still holds when we move without enter
         let out = state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE), &items);
@@ -1857,6 +1833,23 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &items),
             NavigationListOutcome::FilterChanged { query } if query == "a"
         ));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            NavigationListOutcome::Changed
+        );
+        assert!(!state.is_filter_active());
+    }
+
+    #[test]
+    fn sidebar_escape_blurs_without_changing_route() {
+        let items = example_sectioned_sidebar_nav();
+        let mut state = SidebarState::new(Some("chat"));
+        state.set_focused(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            SidebarOutcome::Blurred
+        );
+        assert_eq!(state.route(), Some(&"chat"));
     }
 
     #[test]
@@ -1919,7 +1912,7 @@ mod tests {
                 },
                 &items
             ),
-            SidebarOutcome::Selected("b")
+            SidebarOutcome::RouteChanged { id: "b" }
         ));
     }
 

@@ -14,6 +14,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use termrock::style::RolePalette;
+use termrock_lookbook::design::lookbook_system;
 use termrock_lookbook::frame::{TerminalFrame, paint_story_frame, story_by_id};
 
 /// The stories a change is most likely to break, one per language it exercises.
@@ -68,12 +69,8 @@ fn render_golden(frame: &TerminalFrame) -> String {
 
 fn frame_for(story_id: &str) -> Option<TerminalFrame> {
     let story = story_by_id(story_id)?;
-    Some(paint_story_frame(
-        story,
-        &RolePalette::tailrocks_phosphor(),
-        None,
-        None,
-    ))
+    let system = lookbook_system(RolePalette::tailrocks_phosphor());
+    Some(paint_story_frame(story, &system, None, None))
 }
 
 #[test]

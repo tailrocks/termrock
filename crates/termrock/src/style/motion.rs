@@ -435,17 +435,139 @@ pub fn edge_fade(col: u16, width: u16, fade_cols: u16) -> f32 {
 }
 
 #[must_use]
-/// Blend RGB `from` toward RGB `to`; preserve unsupported color forms.
+/// Blend RGB continuously and named ANSI colors through a symmetric discrete step.
+///
+/// ANSI terminals expose names, not measurable channel values. Their middle
+/// frame is a commutative named tone, so entering and leaving a state follow
+/// the same path in reverse without synthesizing forbidden RGB.
 pub fn blend_toward(from: Color, to: Color, t: f32) -> Color {
+    let t = t.clamp(0.0, 1.0);
+    // A named terminal color fading through the public RGB-black helper must
+    // stay in named terminal space. Otherwise one intermediate frame silently
+    // upgrades an ANSI-16 recipe to truecolor.
+    let to = if is_named_terminal_color(from) && matches!(to, Color::Rgb(0, 0, 0)) {
+        Color::Black
+    } else {
+        to
+    };
     match (from, to) {
         (Color::Rgb(fr, fg, fb), Color::Rgb(tr, tg, tb)) => {
-            let t = t.clamp(0.0, 1.0);
             let lerp =
                 |a: u8, b: u8| (f32::from(a) + (f32::from(b) - f32::from(a)) * t).round() as u8;
             Color::Rgb(lerp(fr, tr), lerp(fg, tg), lerp(fb, tb))
         }
-        (other, _) => other,
+        (from, _) if t <= f32::EPSILON => from,
+        (_, to) if t >= 1.0 => to,
+        (from, to) if is_named_terminal_color(from) && is_named_terminal_color(to) => {
+            // Named slots have no measurable distance. Any in-flight frame
+            // uses one commutative middle tone; exact endpoints remain exact.
+            // This preserves low-amplitude shimmer/breathe motion while the
+            // reverse transition walks the identical discrete path.
+            named_terminal_midpoint(from, to)
+        }
+        (_, to) => to,
     }
+}
+
+fn is_named_terminal_color(color: Color) -> bool {
+    matches!(
+        color,
+        Color::Reset
+            | Color::Black
+            | Color::Red
+            | Color::Green
+            | Color::Yellow
+            | Color::Blue
+            | Color::Magenta
+            | Color::Cyan
+            | Color::Gray
+            | Color::DarkGray
+            | Color::LightRed
+            | Color::LightGreen
+            | Color::LightYellow
+            | Color::LightBlue
+            | Color::LightMagenta
+            | Color::LightCyan
+            | Color::White
+    )
+}
+
+fn named_terminal_base(color: Color) -> Color {
+    match color {
+        Color::Reset => Color::Black,
+        Color::LightRed => Color::Red,
+        Color::LightGreen => Color::Green,
+        Color::LightYellow => Color::Yellow,
+        Color::LightBlue => Color::Blue,
+        Color::LightMagenta => Color::Magenta,
+        Color::LightCyan => Color::Cyan,
+        Color::White => Color::Gray,
+        other => other,
+    }
+}
+
+fn is_bright_terminal_color(color: Color) -> bool {
+    matches!(
+        color,
+        Color::LightRed
+            | Color::LightGreen
+            | Color::LightYellow
+            | Color::LightBlue
+            | Color::LightMagenta
+            | Color::LightCyan
+            | Color::White
+    )
+}
+
+fn named_terminal_midpoint(left: Color, right: Color) -> Color {
+    let left = if matches!(left, Color::Reset) {
+        Color::Black
+    } else {
+        left
+    };
+    let right = if matches!(right, Color::Reset) {
+        Color::Black
+    } else {
+        right
+    };
+    if left == right {
+        return left;
+    }
+    let left_base = named_terminal_base(left);
+    let right_base = named_terminal_base(right);
+    if left_base == right_base {
+        return left_base;
+    }
+    // A bright hue can step through its named base before reaching a neutral
+    // or another hue. Prefer that real interior slot to collapsing the entire
+    // transition onto either endpoint (notably LightGreen <-> DarkGray focus).
+    match (
+        is_bright_terminal_color(left),
+        is_bright_terminal_color(right),
+    ) {
+        (true, false) if left_base != right => return left_base,
+        (false, true) if right_base != left => return right_base,
+        _ => {}
+    }
+    if matches!(left, Color::Black) {
+        return if matches!(right, Color::DarkGray) {
+            Color::Black
+        } else if is_bright_terminal_color(right) {
+            right_base
+        } else {
+            Color::DarkGray
+        };
+    }
+    if matches!(right, Color::Black) {
+        return if matches!(left, Color::DarkGray) {
+            Color::Black
+        } else if is_bright_terminal_color(left) {
+            left_base
+        } else {
+            Color::DarkGray
+        };
+    }
+    Color::DarkGray
 }
 
 #[must_use]
@@ -770,5 +892,68 @@ mod tests {
         let b = Style::new().fg(Color::Blue);
         let cells = (0..1000).map(|i| ('x', if i < 300 || i >= 700 { a } else { b }));
         assert_eq!(coalesce_cells(cells).len(), 3);
+    }
+
+    #[test]
+    fn named_ansi_transitions_are_symmetric_and_stay_named() {
+        let colors = [
+            Color::Reset,
+            Color::Black,
+            Color::Red,
+            Color::Green,
+            Color::Yellow,
+            Color::Blue,
+            Color::Magenta,
+            Color::Cyan,
+            Color::Gray,
+            Color::DarkGray,
+            Color::LightRed,
+            Color::LightGreen,
+            Color::LightYellow,
+            Color::LightBlue,
+            Color::LightMagenta,
+            Color::LightCyan,
+            Color::White,
+        ];
+        for from in colors {
+            for to in colors {
+                for t in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                    let forward = blend_toward(from, to, t);
+                    let backward = blend_toward(to, from, 1.0 - t);
+                    assert_eq!(
+                        forward, backward,
+                        "asymmetric named transition {from:?}->{to:?} at {t}"
+                    );
+                    assert!(
+                        is_named_terminal_color(forward),
+                        "named transition emitted {forward:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn named_focus_transition_uses_available_interior_slot() {
+        for t in [0.25, 0.5, 0.75] {
+            let forward = blend_toward(Color::LightGreen, Color::DarkGray, t);
+            let reverse = blend_toward(Color::DarkGray, Color::LightGreen, 1.0 - t);
+            assert_eq!(forward, Color::Green);
+            assert_eq!(forward, reverse);
+            assert_ne!(forward, Color::LightGreen);
+            assert_ne!(forward, Color::DarkGray);
+        }
+    }
+
+    #[test]
+    fn named_ansi_fade_never_emits_rgb_black() {
+        for color in [Color::Green, Color::LightGreen, Color::Gray, Color::Reset] {
+            for t in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                assert!(
+                    is_named_terminal_color(blend_toward(color, Color::Rgb(0, 0, 0), t)),
+                    "{color:?} escaped named terminal space at {t}"
+                );
+            }
+        }
     }
 }

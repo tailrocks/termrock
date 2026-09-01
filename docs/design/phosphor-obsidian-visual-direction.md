@@ -116,28 +116,30 @@ List recipes and table paint diverge; Theme default vs DesignSystem phosphor div
 7. **Destructive states show scope.** Danger border + body names the target (`Delete 3 files`), not only a red button.
 8. **Color is never the only cue.** Glyphs, bold/dim, reverse (mono), status letters always present. *(Underline removed 2026-08 — reserved for hovered links only.)*
 
-### Palette (truecolor targets — reaffirm)
+### Palette (runtime named ANSI-16)
 
-| Token | Hex / policy | Use |
-|-------|----------------|-----|
-| Canvas | Reset or `#0a0c0a` | App void |
-| Surface | `#121612` | Panel body |
-| Raised | `#1a1f1a` | Nested card |
-| Elevated | `#1e2620` | Dialog / palette |
-| Sunken | `#0d100d` | Input / code |
-| Border | `#2a332c` | Quiet structure |
-| Border focused | `#00ff41` | **Owner only** |
-| Fg | `#d6e0d6` | Body |
-| Fg strong | `#f0f5f0` + bold | Title / selected primary |
-| Fg muted | `#7a8a7a` | Secondary |
-| Fg faint | `#4a574a` | Meta / timestamps |
-| Selection tint | `#14331a` | Optional row wash — **not** neon |
-| Selection gutter | `▌` + accent fg | Default selection |
-| Hover | `#1a221c` | Subtle |
-| Danger | `#ff5e7a` | Error / destructive |
-| Warning | `#f0c040` | Caution |
-| Info | `#5ec8ff` | Informational |
-| Success | `#5dffa0` | Done — **not** brand accent green slab |
+The operator's terminal owns actual RGB values. Runtime recipes use only
+Ratatui's named ANSI colors (plus `Reset`); truecolor phosphor constants are
+web/SVG export swatches, never TUI paint authority.
+
+| Token | Named color / policy | Use |
+|-------|-----------------------|-----|
+| Canvas | `Reset` | App void / operator background |
+| Surface / Raised / Sunken | `Black` | Decks distinguished by frame, inset, and spacing |
+| Elevated | `Reset` + frame/title marker | Dialog / palette ownership |
+| Border | `DarkGray` | Quiet structure |
+| Border focused | `LightGreen` + bold/marker | **Owner only** |
+| Fg | `Gray` | Body |
+| Fg strong | `White` + bold | Title / selected primary |
+| Fg muted | `DarkGray` + dim | Secondary |
+| Fg faint | `DarkGray` + italic | Meta / timestamps |
+| Selection tint | `DarkGray` | Optional row wash — never default |
+| Selection gutter | `▌` + `Green` | Default selection |
+| Hover | `Black` wash + stronger label | Subtle; never focus-colored |
+| Danger | `Red` + glyph/label | Error / destructive |
+| Warning | `Yellow` + glyph/label | Caution |
+| Info | `Cyan` + glyph/label | Informational |
+| Success | `LightGreen` + glyph/label | Done — not a brand slab |
 
 ### Global paint rules
 
@@ -427,7 +429,7 @@ inactive tabs muted on canvas; no underline bar, no solid web pill.
 2. **Max one neon-forward control** (primary action or live badge).
 3. **Selection gutter language shared** by List, Tree, Table, VirtualGrid, Task rail, palette results.
 4. **Meta always muted/faint** — never same white as primary.
-5. **Catalog stories** must re-render under Obsidian tokens so SVGs match recipes (stale neon SVGs are product bugs).
+5. **Catalog stories** must re-render under default phosphor tokens so SVGs match recipes (stale neon SVGs are product bugs).
 6. **Lookbook “hero”** should show AgentWorkbench-class composition, not only isolated widgets—reduces demo feel.
 7. **Slate / Day / HC** keep the same hierarchy rules; only hue polarity changes.
 
@@ -437,7 +439,7 @@ inactive tabs muted on canvas; no underline bar, no solid web pill.
 
 | Priority | Work |
 |----------|------|
-| P0 | Author `Theme::phosphor_obsidian` / `DesignSystem::phosphor_obsidian` with full surface ladder; Selection = tint or strong text, **not** neon bg fill. |
+| P0 | Keep `RolePalette::tailrocks_phosphor` / `DesignSystem::phosphor` as the sole default preset path with a full surface ladder; Selection = tint or strong text, **not** neon bg fill. |
 | P0 | Force default `SelectionChrome::Gutter` on all collection paint paths; kill default Fill. |
 | P0 | Split Success from brand Accent (success softer mint). |
 | P1 | Table/List/Tree/Grid/Tabs/Dialog/Form/Toast/Diff/Palette/Composer/Permission/TaskRail recipes apply Obsidian rules. |

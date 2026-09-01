@@ -18,10 +18,13 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{PREVIEW_CARD, RolePalette},
+    style::{DesignSystem, PREVIEW_CARD},
 };
 
-use crate::stories::{Story, stories};
+use crate::{
+    demo::theme_id_for,
+    stories::{Story, stories},
+};
 
 /// Uniform charcoal padding around story paint (matches SVG export).
 pub const STORY_PAD: u16 = 1;
@@ -241,7 +244,7 @@ pub fn story_by_id(id: &str) -> Option<Story> {
 #[must_use]
 pub fn paint_story_buffer(
     story: Story,
-    theme: &RolePalette,
+    system: &DesignSystem,
     cols: Option<u16>,
     rows: Option<u16>,
 ) -> Buffer {
@@ -251,8 +254,8 @@ pub fn paint_story_buffer(
     let height = story_rows.saturating_add(STORY_PAD * 2);
     let backend = TestBackend::new(width, height);
     let mut terminal = Terminal::new(backend).expect("test terminal");
-    let mut interactor = story.make_interactor();
-    interactor.set_theme(theme.clone());
+    let mut interactor = story.mount();
+    interactor.set_system(system.clone());
     terminal
         .draw(|frame| {
             let area = frame.area();
@@ -268,10 +271,9 @@ pub fn paint_story_buffer(
             };
             frame.render_widget(Clear, inner);
             // The story's ground is the palette's canvas (plans/011).
-            frame.buffer_mut().set_style(
-                inner,
-                crate::design::lookbook_system(theme.clone()).style(termrock::style::Role::Canvas),
-            );
+            frame
+                .buffer_mut()
+                .set_style(inner, system.style(termrock::style::Role::Canvas));
             interactor.render(frame, inner);
         })
         .expect("draw");
@@ -282,25 +284,25 @@ pub fn paint_story_buffer(
 #[must_use]
 pub fn paint_story_frame(
     story: Story,
-    theme: &RolePalette,
+    system: &DesignSystem,
     cols: Option<u16>,
     rows: Option<u16>,
 ) -> TerminalFrame {
     let story_cols = cols.unwrap_or(story.width).max(1);
     let story_rows = rows.unwrap_or(story.height).max(1);
-    let buffer = paint_story_buffer(story, theme, cols, rows);
+    let buffer = paint_story_buffer(story, system, cols, rows);
     let (c, r, cells) = encode_buffer(&buffer);
     TerminalFrame {
         story_id: story.id.into(),
         title: story.title.into(),
-        component: story.component.into(),
+        component: story.component().into(),
         cols: c,
         rows: r,
         story_cols,
         story_rows,
         cells,
-        interactive: story.interactive,
-        theme: "phosphor".into(),
+        interactive: story.is_interactive(),
+        theme: theme_id_for(system.palette()).into(),
     }
 }
 
@@ -308,7 +310,7 @@ pub fn paint_story_frame(
 #[must_use]
 pub fn paint_story_after_keys(
     story: Story,
-    theme: &RolePalette,
+    system: &DesignSystem,
     cols: Option<u16>,
     rows: Option<u16>,
     keys: &[PreviewKey],
@@ -317,8 +319,8 @@ pub fn paint_story_after_keys(
     let story_rows = rows.unwrap_or(story.height).max(1);
     let width = story_cols.saturating_add(STORY_PAD * 2);
     let height = story_rows.saturating_add(STORY_PAD * 2);
-    let mut interactor = story.make_interactor();
-    interactor.set_theme(theme.clone());
+    let mut interactor = story.mount();
+    interactor.set_system(system.clone());
     for k in keys {
         if let Some(ev) = decode_preview_key(k) {
             let _ = interactor.handle_key(ev);
@@ -340,6 +342,9 @@ pub fn paint_story_after_keys(
                 area,
             );
             frame.render_widget(Clear, inner);
+            frame
+                .buffer_mut()
+                .set_style(inner, system.style(termrock::style::Role::Canvas));
             interactor.render(frame, inner);
         })
         .expect("draw");
@@ -348,14 +353,14 @@ pub fn paint_story_after_keys(
     TerminalFrame {
         story_id: story.id.into(),
         title: story.title.into(),
-        component: story.component.into(),
+        component: story.component().into(),
         cols: c,
         rows: r,
         story_cols,
         story_rows,
         cells,
-        interactive: true,
-        theme: "phosphor".into(),
+        interactive: story.is_interactive(),
+        theme: theme_id_for(system.palette()).into(),
     }
 }
 
@@ -409,6 +414,8 @@ pub fn pick_size_key(want_cols: u16, want_rows: u16) -> String {
 
 #[cfg(test)]
 mod tests {
+    use termrock::style::RolePalette;
+
     use super::*;
 
     #[test]
@@ -475,7 +482,8 @@ mod tests {
     #[test]
     fn paint_story_frame_nonempty_for_list_selection() {
         let story = story_by_id("list/selection").expect("list/selection story");
-        let frame = paint_story_frame(story, &RolePalette::default(), None, None);
+        let system = crate::design::lookbook_system(RolePalette::default());
+        let frame = paint_story_frame(story, &system, None, None);
         assert_eq!(frame.story_id, "list/selection");
         assert!(frame.cols >= story.width);
         assert!(!frame.cells.is_empty());
@@ -492,13 +500,47 @@ mod tests {
     }
 
     #[test]
+    fn story_specs_exclude_fixture_mount_divergence() {
+        use crate::stories::StorySpec;
+
+        let passive = story_by_id("center/both").expect("passive story");
+        let mounted = story_by_id("list/selection").expect("mounted story");
+        assert!(matches!(passive.spec(), StorySpec::Fixture(_)));
+        assert!(matches!(mounted.spec(), StorySpec::Mounted(_)));
+    }
+
+    #[test]
+    fn full_non_default_design_system_reaches_shared_frame_path() {
+        use termrock::style::GlyphSet;
+
+        let story = story_by_id("list/selection").expect("mounted list story");
+        let unicode = crate::design::lookbook_system(RolePalette::default());
+        let ascii = unicode.clone().glyphs(GlyphSet::Ascii);
+        let unicode_frame = paint_story_buffer(story, &unicode, None, None);
+        let ascii_frame = paint_story_buffer(story, &ascii, None, None);
+        assert_ne!(unicode_frame, ascii_frame);
+        assert!(
+            unicode_frame
+                .content()
+                .iter()
+                .any(|cell| cell.symbol() == unicode.glyphs.selection_gutter())
+        );
+        assert!(
+            ascii_frame
+                .content()
+                .iter()
+                .any(|cell| cell.symbol() == ascii.glyphs.selection_gutter())
+        );
+    }
+
+    #[test]
     fn paint_after_keys_changes_list_selection_frame() {
         let story = story_by_id("list/selection").expect("list/selection");
-        let theme = RolePalette::default();
-        let base = paint_story_after_keys(story, &theme, None, None, &[]);
+        let system = crate::design::lookbook_system(RolePalette::default());
+        let base = paint_story_after_keys(story, &system, None, None, &[]);
         let after = paint_story_after_keys(
             story,
-            &theme,
+            &system,
             None,
             None,
             &[PreviewKey {
@@ -513,6 +555,35 @@ mod tests {
             base.cells, after.cells,
             "Down on list/selection must change the painted frame"
         );
+    }
+
+    #[test]
+    fn keyed_frames_match_sessions_for_mounted_and_passive_nondefault_systems() {
+        use crate::demo::DemoSession;
+        use termrock::input::Event;
+        use termrock::style::SelectionChrome;
+
+        let system =
+            crate::design::lookbook_system(RolePalette::slate()).selection(SelectionChrome::Marker);
+        let key = PreviewKey {
+            key: "ArrowDown".into(),
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        for (story_id, interactive) in [("list/selection", true), ("center/both", false)] {
+            let story = story_by_id(story_id).expect("registered story");
+            let direct =
+                paint_story_after_keys(story, &system, None, None, std::slice::from_ref(&key));
+            let mut session = DemoSession::mount(story.id, None, None).expect("mounted session");
+            session.set_system(system.clone());
+            let event = decode_preview_key(&key).expect("preview key");
+            let _ = session.dispatch_event(Event::Key(event));
+            assert_eq!(direct, session.frame());
+            assert_eq!(direct.interactive, interactive);
+            assert_eq!(direct.theme, "slate");
+        }
     }
 
     #[test]
@@ -531,15 +602,15 @@ mod tests {
     #[test]
     fn paint_at_two_host_sizes_remaps_grid() {
         let story = story_by_id("list/selection").expect("list/selection");
-        let theme = RolePalette::default();
+        let system = crate::design::lookbook_system(RolePalette::default());
         let (c1, r1) = story_size_for_css_host(280, 120);
         let (c2, r2) = story_size_for_css_host(720, 320);
         assert!(
             c2 > c1 || r2 > r1,
             "wider host must request larger story size"
         );
-        let f1 = paint_story_frame(story, &theme, Some(c1), Some(r1));
-        let f2 = paint_story_frame(story, &theme, Some(c2), Some(r2));
+        let f1 = paint_story_frame(story, &system, Some(c1), Some(r1));
+        let f2 = paint_story_frame(story, &system, Some(c2), Some(r2));
         assert_eq!(f1.story_cols, c1);
         assert_eq!(f1.story_rows, r1);
         assert_eq!(f2.story_cols, c2);
@@ -558,7 +629,8 @@ mod tests {
     #[test]
     fn agent_workbench_frame_paints() {
         let story = story_by_id("agent-workbench/basic").expect("agent-workbench/basic");
-        let frame = paint_story_frame(story, &RolePalette::default(), Some(80), Some(24));
+        let system = crate::design::lookbook_system(RolePalette::default());
+        let frame = paint_story_frame(story, &system, Some(80), Some(24));
         assert_eq!(frame.component, "AgentWorkbench");
         let nonempty = frame
             .cells
@@ -574,8 +646,10 @@ mod tests {
     #[test]
     fn poster_frame_uses_the_same_mounted_demo_as_native_and_web_hosts() {
         let story = story_by_id("connection-manager/full").expect("pattern story");
-        let poster = paint_story_frame(story, &RolePalette::default(), None, None);
+        let system = crate::design::lookbook_system(RolePalette::default());
+        let poster = paint_story_frame(story, &system, None, None);
         let mut session = crate::demo::DemoSession::mount(story.id, None, None).unwrap();
+        session.set_system(system);
         assert_eq!(poster, session.frame());
     }
 }

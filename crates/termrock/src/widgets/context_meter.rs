@@ -26,6 +26,8 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
+use super::{SemanticStatus, StatusIndicator};
+
 /// Max sources painted in expanded breakdown.
 pub const CONTEXT_METER_SOURCE_CAP: usize = 8;
 /// Warning fraction default when threshold unset.
@@ -709,25 +711,79 @@ impl<'a> ContextMeter<'a> {
         let frac = m.fraction();
         let indeterminate = matches!(m.precision, BudgetPrecision::Unknown) || frac.is_none();
         let warn = b.warn_fraction();
-        let role = if self.mono || self.colorless {
+        let bar_role = if self.mono || self.colorless {
             Role::Text
         } else {
             m.pressure_role(warn, CONTEXT_METER_DANGER_FRACTION)
         };
-        let mut style = self.system.style(role);
+        let bar_style = self.system.style(bar_role);
+        let mut text_style = self.system.style(Role::Text);
         if state.focused && !self.colorless {
-            style = style.add_modifier(Modifier::BOLD);
+            text_style = text_style.add_modifier(Modifier::BOLD);
         } else if state.focused && self.colorless {
-            style = style.add_modifier(Modifier::REVERSED);
+            text_style = text_style.add_modifier(Modifier::REVERSED);
         }
 
         match state.presentation {
             ContextMeterPresentation::Compact => {
-                self.paint_compact(area, buffer, style, frac, indeterminate);
+                self.paint_compact(area, buffer, bar_style, text_style, frac, indeterminate);
             }
             ContextMeterPresentation::Expanded | ContextMeterPresentation::Popover => {
-                self.paint_detail(area, buffer, style, frac, indeterminate);
+                self.paint_detail(area, buffer, bar_style, text_style, frac, indeterminate);
             }
+        }
+    }
+
+    fn pressure_status(&self, fraction: Option<f64>) -> Option<(SemanticStatus, &'static str)> {
+        match fraction {
+            Some(value) if value >= CONTEXT_METER_DANGER_FRACTION => {
+                Some((SemanticStatus::Failed, "critical"))
+            }
+            Some(value) if value >= self.budget.warn_fraction() => {
+                Some((SemanticStatus::Warning, "warning"))
+            }
+            None => Some((SemanticStatus::Unknown, "unknown")),
+            Some(_) => None,
+        }
+    }
+
+    fn paint_budget_line(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        line: &str,
+        style: ratatui_core::style::Style,
+        fraction: Option<f64>,
+    ) {
+        let Some((semantic, verb)) = self.pressure_status(fraction) else {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(line, usize::from(area.width)),
+                usize::from(area.width),
+                style,
+            );
+            return;
+        };
+        let indicator = StatusIndicator::new(semantic, self.system)
+            .label(verb)
+            .ascii(self.ascii)
+            .colorless(self.colorless);
+        let indicator_width = indicator.measure_width(None).min(area.width);
+        indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer);
+        let metadata_x = area
+            .x
+            .saturating_add(indicator_width)
+            .saturating_add(u16::from(indicator_width < area.width));
+        let metadata_width = area.right().saturating_sub(metadata_x);
+        if metadata_width > 0 {
+            buffer.set_stringn(
+                metadata_x,
+                area.y,
+                take_display_cols(line, usize::from(metadata_width)),
+                usize::from(metadata_width),
+                style,
+            );
         }
     }
 
@@ -735,28 +791,41 @@ impl<'a> ContextMeter<'a> {
         &self,
         area: Rect,
         buffer: &mut Buffer,
-        style: ratatui_core::style::Style,
+        bar_style: ratatui_core::style::Style,
+        text_style: ratatui_core::style::Style,
         frac: Option<f64>,
         indeterminate: bool,
     ) {
         let line = format_budget_compact(&self.budget.measure);
         let w = usize::from(area.width);
         if area.height == 1 || w < 16 {
-            buffer.set_stringn(area.x, area.y, take_display_cols(&line, w), w, style);
+            self.paint_budget_line(
+                Rect::new(area.x, area.y, area.width, 1),
+                buffer,
+                &line,
+                text_style,
+                frac,
+            );
             return;
         }
         // line 0: bar, line 1: numbers
         let bar_w = w.saturating_sub(2).min(24);
-        let bar = meter_bar(frac, bar_w, self.ascii || self.colorless, indeterminate);
+        let bar = meter_bar(frac, bar_w, self.ascii, indeterminate);
         let bar_line = format!("[{bar}]");
-        buffer.set_stringn(area.x, area.y, take_display_cols(&bar_line, w), w, style);
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            take_display_cols(&bar_line, w),
+            w,
+            bar_style,
+        );
         if area.height > 1 {
-            buffer.set_stringn(
-                area.x,
-                area.y.saturating_add(1),
-                take_display_cols(&line, w),
-                w,
-                style,
+            self.paint_budget_line(
+                Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
+                buffer,
+                &line,
+                text_style,
+                frac,
             );
         }
     }
@@ -765,7 +834,8 @@ impl<'a> ContextMeter<'a> {
         &self,
         area: Rect,
         buffer: &mut Buffer,
-        style: ratatui_core::style::Style,
+        bar_style: ratatui_core::style::Style,
+        text_style: ratatui_core::style::Style,
         frac: Option<f64>,
         indeterminate: bool,
     ) {
@@ -782,23 +852,23 @@ impl<'a> ContextMeter<'a> {
 
         // bar + compact
         let bar_w = w.saturating_sub(2).min(32);
-        let bar = meter_bar(frac, bar_w, self.ascii || self.colorless, indeterminate);
+        let bar = meter_bar(frac, bar_w, self.ascii, indeterminate);
         buffer.set_stringn(
             area.x,
             y,
             take_display_cols(&format!("[{bar}]"), w),
             w,
-            style,
+            bar_style,
         );
         y = y.saturating_add(1);
 
         if y < max_y {
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&format_budget_compact(m), w),
-                w,
-                style,
+            self.paint_budget_line(
+                Rect::new(area.x, y, area.width, 1),
+                buffer,
+                &format_budget_compact(m),
+                text_style,
+                frac,
             );
             y = y.saturating_add(1);
         }
@@ -880,7 +950,7 @@ impl<'a> ContextMeter<'a> {
                 buffer.set_stringn(
                     area.x,
                     y,
-                    take_display_cols(warn, w),
+                    take_display_cols(&format!("! warning · {warn}"), w),
                     w,
                     if self.colorless {
                         self.system.style(Role::Text)
@@ -1097,6 +1167,42 @@ mod tests {
                 .ascii(true)
                 .paint(area, &mut buf, &mut st);
         }
+    }
+
+    #[test]
+    fn pressure_is_rail_glyph_and_word_even_without_color() {
+        let system = DesignSystem::default();
+        let budget = ContextBudget::tokens(80, 100);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        let mut state = ContextMeterState::new();
+        ContextMeter::new(&budget, &system)
+            .ascii(true)
+            .colorless(true)
+            .paint(area, &mut buffer, &mut state);
+        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(text.contains("| ! warning"), "{text:?}");
+        let warning_fg = system.style(Role::Warning).fg;
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .all(|cell| Some(cell.fg) != warning_fg)
+        );
+    }
+
+    #[test]
+    fn colorless_does_not_force_ascii_plot_glyphs() {
+        let system = DesignSystem::default();
+        let budget = ContextBudget::tokens(50, 100);
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = ContextMeterState::new();
+        ContextMeter::new(&budget, &system)
+            .colorless(true)
+            .paint(area, &mut buffer, &mut state);
+        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(text.contains('█') || text.contains('░'), "{text:?}");
     }
 
     #[test]

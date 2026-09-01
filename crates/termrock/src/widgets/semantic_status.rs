@@ -119,7 +119,10 @@ impl SemanticStatus {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Online | Self::Success => Role::Success,
+            // Healthy and finished are the calm baseline. Green is reserved
+            // for brand, focus, and the one primary action; the glyph + verb
+            // carries success without turning every completed row green.
+            Self::Online | Self::Success => Role::TextStrong,
             Self::Offline | Self::Idle | Self::Queued | Self::Paused | Self::Unknown => {
                 Role::TextMuted
             }

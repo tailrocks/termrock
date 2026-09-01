@@ -171,6 +171,7 @@ impl<'a> ChromeRow<'a> {
             if let Some(bg) = ground {
                 style = style.bg(bg);
             }
+            style = style.add_modifier(ratatui_core::style::Modifier::REVERSED);
             cell.set_style(style);
         }
     }
@@ -241,5 +242,28 @@ mod tests {
             })
             .count();
         assert_eq!(warned, 1, "severity belongs to the glyph");
+    }
+
+    #[test]
+    fn unicode_body_and_prefix_use_display_columns() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 8, 1);
+        let mut buffer = Buffer::empty(area);
+
+        ChromeRow::mode("界", "🙂e\u{301}", &system)
+            .caret(true)
+            .paint(area, &mut buffer);
+
+        let line = ChromeRow::mode("界", "🙂e\u{301}", &system)
+            .caret(true)
+            .text()
+            + "_";
+        let caret_x = u16::try_from(display_cols(&line).saturating_sub(1)).unwrap();
+        assert_eq!(buffer[(caret_x, 0)].symbol(), "_");
+        assert!(
+            buffer[(caret_x, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::REVERSED)
+        );
     }
 }

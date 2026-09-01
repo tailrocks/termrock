@@ -22,9 +22,11 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, Glyph, GlyphSet, Role, RolePalette, faded},
+    style::{DesignSystem, Glyph, GlyphSet, Role, faded},
     text::{display_cols, take_display_cols},
 };
+
+use super::semantic_status::SemanticStatus;
 
 /// Which band a slot belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -111,13 +113,13 @@ impl StatusKind {
 
     /// Default role when slot style is unset / default.
     #[must_use]
-    pub const fn default_role(self) -> Role {
+    const fn default_role(self) -> Role {
         match self {
             // Mode is context, not the operator's current intent: accent is
             // spent on the one live thing, never on a permanent band
             // (plans/007).
             Self::Mode => Role::TextStrong,
-            Self::Connection => Role::Success,
+            Self::Connection => Role::TextStrong,
             Self::Selection => Role::TextMuted,
             Self::Context => Role::TextMuted,
             Self::Shortcut => Role::HintKey,
@@ -179,18 +181,15 @@ pub struct StatusSlot<'a, Id> {
     pub min_width: u16,
     /// Whether this item is enabled.
     pub enabled: bool,
-    /// Explicit paint style (overrides kind role when non-default / always used if set via builder).
-    pub style: Style,
-    /// Optional style override while the slot is hovered.
-    pub hover_style: Option<Style>,
     /// Region band (default Left for backward-compat constructors).
     pub region: StatusRegion,
     /// Semantic kind.
     pub kind: StatusKind,
     /// Optional non-color glyph (defaults from kind when None and kind has glyph).
     pub glyph: Option<&'a str>,
-    /// When true, use `style` as-is; when false, merge kind role if style is empty-ish.
-    pub style_explicit: bool,
+    /// Optional typed lifecycle status. This owns semantic glyph and tone;
+    /// callers cannot bypass the recipe with a raw paint style.
+    semantic: Option<SemanticStatus>,
 }
 
 impl<'a, Id> StatusSlot<'a, Id> {
@@ -203,12 +202,10 @@ impl<'a, Id> StatusSlot<'a, Id> {
             priority: 50,
             min_width: 0,
             enabled: true,
-            style: Style::new(),
-            hover_style: None,
             region: StatusRegion::Left,
             kind: StatusKind::Text,
             glyph: None,
-            style_explicit: false,
+            semantic: None,
         }
     }
 
@@ -227,6 +224,7 @@ impl<'a, Id> StatusSlot<'a, Id> {
     pub fn connection(id: Id, content: &'a str) -> Self {
         Self::new(id, content)
             .kind(StatusKind::Connection)
+            .semantic(SemanticStatus::Online)
             .priority(90)
             .region(StatusRegion::Right)
             .min_width(3)
@@ -305,25 +303,17 @@ impl<'a, Id> StatusSlot<'a, Id> {
         self
     }
 
-    /// Explicit style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self.style_explicit = true;
-        self
-    }
-
-    /// Hover style.
-    #[must_use]
-    pub const fn hover_style(mut self, style: Style) -> Self {
-        self.hover_style = Some(style);
-        self
-    }
-
     /// Glyph override.
     #[must_use]
     pub const fn glyph(mut self, glyph: &'a str) -> Self {
         self.glyph = Some(glyph);
+        self
+    }
+
+    /// Typed status projection. Its glyph and semantic role are recipe-owned.
+    #[must_use]
+    pub const fn semantic(mut self, semantic: SemanticStatus) -> Self {
+        self.semantic = Some(semantic);
         self
     }
 }
@@ -903,8 +893,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             );
             // Slot words read as one band; the slot's own glyph carries its
             // state (plans/007).
-            let mut body = if slot.style_explicit {
-                style
+            let mut body = if hovered {
+                self.system
+                    .style(Role::Focus)
+                    .add_modifier(ratatui_core::style::Modifier::BOLD)
             } else {
                 self.system.style(Role::StatusBar)
             };
@@ -931,9 +923,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
                 apply_alpha(self.system, body, self.alpha),
             );
             let glyph = slot
-                .glyph
+                .semantic
+                .map(|status| status.glyph_for_set(self.system.glyphs))
+                .or(slot.glyph)
                 .unwrap_or_else(|| slot.kind.default_glyph(self.system.glyphs));
-            if !glyph.is_empty() && !slot.style_explicit {
+            if !glyph.is_empty() {
                 crate::widgets::row_chrome::paint_status_glyph(
                     buffer,
                     content_area,
@@ -961,7 +955,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
 
 fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> String {
     let g = slot
-        .glyph
+        .semantic
+        .map(|status| status.glyph_for_set(glyphs))
+        .or(slot.glyph)
         .unwrap_or_else(|| slot.kind.default_glyph(glyphs));
     if g.is_empty() {
         slot.content.to_string()
@@ -972,25 +968,14 @@ fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> Strin
 
 fn resolve_style<Id>(slot: &StatusSlot<'_, Id>, hovered: bool, system: &DesignSystem) -> Style {
     if hovered {
-        if let Some(h) = slot.hover_style {
-            return h;
-        }
+        return system
+            .style(Role::Focus)
+            .add_modifier(ratatui_core::style::Modifier::BOLD);
     }
-    if slot.style_explicit {
-        return slot.style;
-    }
-    // Prefer kind role; allow slot.style to add modifiers if any set
-    let mut base = system.style(slot.kind.default_role());
-    if slot.style.fg.is_some() {
-        base.fg = slot.style.fg;
-    }
-    if slot.style.bg.is_some() {
-        base.bg = slot.style.bg;
-    }
-    if slot.style.add_modifier != ratatui_core::style::Modifier::empty() {
-        base = base.add_modifier(slot.style.add_modifier);
-    }
-    base
+    system.style(
+        slot.semantic
+            .map_or_else(|| slot.kind.default_role(), SemanticStatus::role),
+    )
 }
 
 fn allocation<Id: Clone>(
@@ -1052,33 +1037,24 @@ fn apply_alpha(system: &DesignSystem, style: Style, alpha: f32) -> Style {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     use ratatui_core::style::Color;
 
-    fn legacy_slot(
+    fn slot(
         id: &'static str,
         content: &'static str,
         priority: u8,
         min_width: u16,
     ) -> StatusSlot<'static, &'static str> {
-        StatusSlot {
-            id,
-            content,
-            priority,
-            min_width,
-            enabled: true,
-            style: Style::new().fg(Color::Rgb(100, 50, 20)),
-            hover_style: Some(Style::new().fg(Color::Rgb(200, 100, 40))),
-            region: StatusRegion::Left,
-            kind: StatusKind::Text,
-            glyph: None,
-            style_explicit: true,
-        }
+        StatusSlot::new(id, content)
+            .priority(priority)
+            .min_width(min_width)
     }
 
     #[test]
     fn status_bar_paints_band() {
         let system = DesignSystem::default();
-        let left = [legacy_slot("mode", "NORMAL", 1, 4)];
+        let left = [slot("mode", "NORMAL", 1, 4)];
         let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 20, 1);
         let mut state = StatusBarState::default();
@@ -1094,10 +1070,10 @@ mod tests {
     fn priority_and_minimum_width_control_narrow_layout() {
         let theme = RolePalette::default();
         let system = DesignSystem::from_palette(theme.clone());
-        let left = [legacy_slot("activity", " activity ", 10, 4)];
+        let left = [slot("activity", " activity ", 10, 4)];
         let right = [
-            legacy_slot("usage", " usage-long ", 1, 0),
-            legacy_slot("run", " run ", 20, 0),
+            slot("usage", " usage-long ", 1, 0),
+            slot("run", " run ", 20, 0),
         ];
         // Fix region on right slots for legacy constructor
         let mut right = right;
@@ -1136,9 +1112,8 @@ mod tests {
 
     #[test]
     fn hover_and_activation_follow_only_painted_regions() {
-        let left = [legacy_slot("activity", " activity ", 1, 4)];
-        let theme = RolePalette::default()
-            .with_role(Role::StatusBar, Style::new().bg(Color::Rgb(80, 80, 80)));
+        let left = [slot("activity", " activity ", 1, 4)];
+        let theme = RolePalette::default().with_role(Role::StatusBar, Style::new().bg(Color::Blue));
         let system = DesignSystem::from_palette(theme.clone());
         let bar = StatusBar::new(&left, &[], &system).alpha(0.5);
         let area = Rect::new(4, 3, 6, 1);
@@ -1150,17 +1125,14 @@ mod tests {
         assert_eq!(state.hover(position), Some(&"activity"));
         (&bar).render(area, &mut buffer, &mut state);
         assert_eq!(state.click(position), Outcome::Activated("activity"));
-        let expected = crate::style::blend_toward(
-            Color::Rgb(80, 80, 80),
-            system.style(Role::Canvas).bg.unwrap(),
-            0.5,
-        );
+        let expected =
+            crate::style::blend_toward(Color::Blue, system.style(Role::Canvas).bg.unwrap(), 0.5);
         assert_eq!(buffer[(area.x, area.y)].bg, expected);
     }
 
     #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
-        let left = [legacy_slot("wide", " 🧪🔬🧭 ", 1, 3)];
+        let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let theme = RolePalette::default();
         let system = DesignSystem::from_palette(theme.clone());
         let bar = StatusBar::new(&left, &[], &system);
@@ -1170,6 +1142,26 @@ mod tests {
         (&bar).render(area, &mut buffer, &mut state);
         assert_eq!(state.regions[0].area.width, 3);
         assert_ne!(buffer[(2, 0)].symbol(), "\0");
+    }
+
+    #[test]
+    fn resize_cjk_combining_and_ascii_safe() {
+        let left = [slot("unicode", " 東京 Cafe\u{301} ", 10, 1)];
+        for glyphs in [GlyphSet::Unicode, GlyphSet::Ascii] {
+            let system = DesignSystem::default().glyphs(glyphs);
+            let bar = StatusBar::new(&left, &[], &system);
+            for width in [32, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut state = StatusBarState::default();
+                let mut buffer = Buffer::empty(area);
+                (&bar).render(area, &mut buffer, &mut state);
+                if width == 32 {
+                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('東'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]
@@ -1255,6 +1247,40 @@ mod tests {
         let mut buf = Buffer::empty(area);
         (&bar).render(area, &mut buf, &mut state);
         assert_eq!(buf[(0, 0)].symbol(), "*");
+    }
+
+    #[test]
+    fn semantic_status_owns_glyph_over_custom_slot_glyph() {
+        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let left = [StatusSlot::new("failure", "failed")
+            .glyph("Z")
+            .semantic(SemanticStatus::Failed)];
+        let bar = StatusBar::new(&left, &[], &system);
+        let area = Rect::new(0, 0, 20, 1);
+        let mut state = StatusBarState::default();
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "x");
+    }
+
+    #[test]
+    fn status_slot_public_api_has_no_raw_style_escape_hatch() {
+        let public = include_str!("status_bar.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("public source");
+        for forbidden in [
+            "pub style:",
+            "pub hover_style:",
+            "pub fn style(",
+            "pub const fn style(",
+            "style_explicit",
+        ] {
+            assert!(
+                !public.contains(forbidden),
+                "raw style API leaked: {forbidden}"
+            );
+        }
     }
 
     #[test]

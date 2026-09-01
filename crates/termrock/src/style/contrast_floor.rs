@@ -42,17 +42,14 @@ impl Measured {
     fn passes(&self) -> bool {
         self.ratio + 0.005 >= self.floor
     }
-
-    fn key(&self) -> (&'static str, &str) {
-        (self.preset, self.pair.as_str())
-    }
 }
 
 /// Pairs that miss their floor with the palette values on `main` today.
 ///
-/// Every entry is a palette VALUE defect, and every one of them is retired by
-/// the graphite ladder in `plans/002-role-palette-foundation.md` (phosphor +
-/// high-contrast + paper presets). The floor test asserts these still fail:
+/// Every entry is a measurable palette VALUE defect, and every one of them is
+/// retired by the graphite ladder in `plans/002-role-palette-foundation.md`.
+/// Named-ANSI phosphor is intentionally absent because its RGB is terminal
+/// owned. The floor test asserts every listed RGB pair still fails:
 /// when a palette change fixes one, its line must be deleted in the same
 /// commit, and `plans/017` re-runs the whole table then.
 ///
@@ -66,9 +63,6 @@ const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
     // (45,49,47) → Elevated (57,61,59) at 1.20 per step; it needs a second
     // border tone (or a per-elevation border) to keep hairlines visible.
     // Reported under plans/017 Part A STOP: palette identity is a design call.
-    ("phosphor", "ladder Canvas->Surface"),
-    ("phosphor", "ladder Surface->Raised"),
-    ("phosphor", "ladder Raised->Elevated"),
     ("paper", "ladder Canvas->Surface"),
     ("paper", "ladder Surface->Raised"),
     ("paper", "ladder Raised->Elevated"),
@@ -80,7 +74,6 @@ const KNOWN_SHORTFALLS: &[(&str, &str)] = &[
 ];
 fn presets() -> Vec<(&'static str, RolePalette)> {
     vec![
-        ("phosphor", RolePalette::tailrocks_phosphor()),
         ("slate", RolePalette::slate()),
         ("paper", RolePalette::paper()),
         ("high_contrast", RolePalette::high_contrast()),
@@ -381,26 +374,28 @@ fn report(measured: &[Measured]) -> String {
     failures.join("\n")
 }
 
-fn assert_floor(measured: Vec<Measured>) {
-    let known: std::collections::HashSet<(&str, &str)> = KNOWN_SHORTFALLS.iter().copied().collect();
-    let unexpected: Vec<&Measured> = measured
+fn assert_floor_exact(measured: Vec<Measured>, shortfalls: &[(&str, &str)]) {
+    let known: std::collections::BTreeSet<String> = shortfalls
         .iter()
-        .filter(|m| !m.passes() && !known.contains(&m.key()))
+        .map(|(preset, pair)| format!("{preset}\0{pair}"))
         .collect();
+    let actual: std::collections::BTreeSet<String> = measured
+        .iter()
+        .filter(|m| !m.passes())
+        .map(|m| format!("{}\0{}", m.preset, m.pair))
+        .collect();
+
+    let unexpected: Vec<&str> = actual.difference(&known).map(String::as_str).collect();
     assert!(
         unexpected.is_empty(),
         "contrast floor violated by {} pair(s):\n{}",
         unexpected.len(),
         report(&measured)
     );
-    let fixed: Vec<(&str, &str)> = measured
-        .iter()
-        .filter(|m| m.passes() && known.contains(&m.key()))
-        .map(Measured::key)
-        .collect();
+    let missing: Vec<&str> = known.difference(&actual).map(String::as_str).collect();
     assert!(
-        fixed.is_empty(),
-        "these pairs now clear their floor — delete them from KNOWN_SHORTFALLS: {fixed:?}"
+        missing.is_empty(),
+        "KNOWN_SHORTFALLS contains passing or unmeasured pairs: {missing:?}"
     );
 }
 
@@ -411,19 +406,25 @@ fn contrast_floor_holds() {
         measured.extend(palette_pairs(preset, &palette));
     }
     assert!(measured.len() > 100, "floor table lost its coverage");
-    assert_floor(measured);
+    assert_floor_exact(measured, KNOWN_SHORTFALLS);
 }
 
 #[test]
 fn recipe_pairs_pass_floor() {
-    assert_floor(recipe_pairs("phosphor", &DesignSystem::phosphor()));
+    // Named ANSI colors resolve in the operator's terminal and cannot carry a
+    // crate-owned luminance. Measure the same recipes with the RGB
+    // high-contrast pack.
+    assert_floor_exact(
+        recipe_pairs("high_contrast", &DesignSystem::high_contrast()),
+        &[],
+    );
 }
 
 #[test]
 fn floor_table_covers_every_text_tier() {
     // A new text tier that never reaches this table is a contrast defect
     // waiting to happen, so the table names the tiers it measures.
-    let measured = palette_pairs("phosphor", &RolePalette::tailrocks_phosphor());
+    let measured = palette_pairs("slate", &RolePalette::slate());
     for tier in [
         "Text",
         "TextStrong",

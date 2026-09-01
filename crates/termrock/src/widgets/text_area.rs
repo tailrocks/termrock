@@ -14,7 +14,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::{StatefulWidget, Widget},
 };
 
@@ -24,12 +24,13 @@ use crate::{
         MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{ControlState, Density, DesignSystem, Role, RolePalette},
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, ScrollArea, ScrollAreaState, ScrollBarVisibility, ScrollChain, edit_core,
+    Panel, PanelChrome, PanelVariant, ScrollArea, ScrollAreaState, ScrollBarVisibility,
+    ScrollChain, edit_core,
 };
 
 /// Undo snapshot limit for standalone TextArea.
@@ -511,23 +512,16 @@ impl TextAreaState {
         self.read_only
     }
 
-    /// Deprecated name for [`Self::set_accepts_input`].
-    #[deprecated(note = "use set_accepts_input")]
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.accepts_input = focused;
-    }
-
-    /// Deprecated name for [`Self::accepts_input`].
-    #[deprecated(note = "use accepts_input")]
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Two-axis viewport ([`ScrollAreaState`] — same engine as lists/logs).
     #[must_use]
     pub const fn scroll(&self) -> &ScrollAreaState {
         &self.scroll
+    }
+
+    /// Last painted editor body, excluding panel chrome, prompt, and gutter.
+    #[must_use]
+    pub const fn body_area(&self) -> Rect {
+        self.body
     }
 
     /// Mutable scroll (hosts may overscan / chain when nested).
@@ -1505,8 +1499,8 @@ impl<'a> TextArea<'a> {
                 .role(SemanticRole::Input)
                 .label(self.title.unwrap_or("text area"))
                 .description(self.variant.id())
-                .focusable(state.accepts_input)
-                .disabled(state.read_only && !state.accepts_input)
+                .focusable(!state.is_read_only())
+                .disabled(false)
                 .state(SemanticState {
                     selected: state.accepts_input,
                     ..Default::default()
@@ -1527,12 +1521,23 @@ impl StatefulWidget for &TextArea<'_> {
             (_, true) => PanelChrome::Focused,
             (_, false) => PanelChrome::Normal,
         };
-        let mut panel = Panel::new(&tokens).emphasis(emphasis);
+        let mut panel = Panel::new(&tokens)
+            .variant(PanelVariant::Bordered)
+            .emphasis(emphasis);
         if let Some(title) = self.title {
             panel = panel.title(title);
         }
         let inner = panel.inner(area);
         panel.render(area, buffer);
+        let input_recipe = self.system.input_recipe(
+            if focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            false,
+        );
+        buffer.set_style(inner, input_recipe.fill);
 
         let gutter = if self.line_numbers {
             let digits = state.lines.len().max(1).ilog10() as u16 + 1;
@@ -1542,28 +1547,35 @@ impl StatefulWidget for &TextArea<'_> {
         };
         state.gutter_width = gutter;
 
+        // One prompt cell is reserved in every state. Focus arrival never
+        // shifts text, line numbers, or scrollbar geometry.
+        let prompt_width = 1.min(inner.width);
         let mut show_vertical = false;
         let mut show_horizontal = false;
         for _ in 0..2 {
             let width = inner
                 .width
                 .saturating_sub(u16::from(show_vertical))
+                .saturating_sub(prompt_width)
                 .saturating_sub(gutter);
             let height = inner.height.saturating_sub(u16::from(show_horizontal));
             let content_h = match state.wrap {
                 TextWrap::Soft => state.content_height.max(state.lines.len()),
                 TextWrap::None => state.lines.len(),
             };
-            show_vertical = crate::scroll::is_scrollable(content_h, usize::from(height));
-            show_horizontal = matches!(state.wrap, TextWrap::None)
+            show_vertical =
+                width > 1 && crate::scroll::is_scrollable(content_h, usize::from(height.max(1)));
+            show_horizontal = inner.height > 1
+                && matches!(state.wrap, TextWrap::None)
                 && crate::scroll::is_scrollable(state.max_width, usize::from(width));
         }
         let body = Rect::new(
-            inner.x.saturating_add(gutter),
+            inner.x.saturating_add(gutter).saturating_add(prompt_width),
             inner.y,
             inner
                 .width
                 .saturating_sub(u16::from(show_vertical))
+                .saturating_sub(prompt_width)
                 .saturating_sub(gutter),
             inner.height.saturating_sub(u16::from(show_horizontal)),
         );
@@ -1576,6 +1588,10 @@ impl StatefulWidget for &TextArea<'_> {
         state.reveal();
         if body.is_empty() {
             return;
+        }
+        if let Some((glyph, style)) = input_recipe.prompt {
+            let prompt_x = inner.x.saturating_add(gutter);
+            buffer.set_stringn(prompt_x, inner.y, glyph, usize::from(prompt_width), style);
         }
 
         // Line number gutter
@@ -1595,7 +1611,7 @@ impl StatefulWidget for &TextArea<'_> {
                     body.y.saturating_add(u16::try_from(row).unwrap_or(0)),
                     take_display_cols(&label, usize::from(gutter)),
                     usize::from(gutter),
-                    self.system.style(Role::TextMuted),
+                    input_recipe.placeholder,
                 );
             }
         }
@@ -1605,10 +1621,11 @@ impl StatefulWidget for &TextArea<'_> {
         // away, and the ground says the field is not accepting typing. A
         // read-only area used to be pixel-identical to an editable one
         // (plans/021 Step 4).
-        let text_role = if matches!(self.variant, TextAreaVariant::Review) || state.is_read_only() {
-            Role::TextMuted
+        let text_style = if matches!(self.variant, TextAreaVariant::Review) || state.is_read_only()
+        {
+            input_recipe.value.add_modifier(Modifier::DIM)
         } else {
-            Role::Text
+            input_recipe.value
         };
 
         match state.wrap {
@@ -1644,11 +1661,11 @@ impl StatefulWidget for &TextArea<'_> {
                         y,
                         &state.scratch,
                         state.viewport_width,
-                        self.system.style(if line.is_empty() {
-                            Role::TextMuted
+                        if line.is_empty() {
+                            input_recipe.placeholder
                         } else {
-                            text_role
-                        }),
+                            text_style
+                        },
                     );
                     // Selection on this line
                     if let Some((a, b)) = state.selection_range() {
@@ -1662,7 +1679,7 @@ impl StatefulWidget for &TextArea<'_> {
                             usize::from(state.scroll.offset_x()),
                             state.viewport_width,
                             y,
-                            self.system,
+                            input_recipe.cursor,
                         );
                     }
                 }
@@ -1674,15 +1691,7 @@ impl StatefulWidget for &TextArea<'_> {
                         .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
                         .min(body.right().saturating_sub(1));
                     let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-                    let caret = if self.colorless {
-                        self.system
-                            .style(Role::TextStrong)
-                            .add_modifier(Modifier::REVERSED)
-                    } else {
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED)
-                    };
+                    let caret = input_recipe.cursor.add_modifier(Modifier::REVERSED);
                     buffer.set_style(Rect::new(x, y, 1, 1), caret);
                 }
             }
@@ -1717,16 +1726,18 @@ impl StatefulWidget for &TextArea<'_> {
                             y,
                             &state.scratch,
                             w,
-                            self.system.style(text_role),
+                            if line.is_empty() {
+                                input_recipe.placeholder
+                            } else {
+                                text_style
+                            },
                         );
                         if let Some((a, b)) = sel {
                             // soft wrap selection: approximate full-line highlight when line in range
                             if line_idx >= a.line && line_idx <= b.line {
                                 buffer.set_style(
                                     Rect::new(body.x, y, body.width.min(w as u16), 1),
-                                    self.system
-                                        .style(Role::Focus)
-                                        .add_modifier(Modifier::REVERSED),
+                                    input_recipe.cursor.add_modifier(Modifier::REVERSED),
                                 );
                             }
                         }
@@ -1751,9 +1762,7 @@ impl StatefulWidget for &TextArea<'_> {
                             .min(body.right().saturating_sub(1));
                         buffer.set_style(
                             Rect::new(x, y, 1, 1),
-                            self.system
-                                .style(Role::Focus)
-                                .add_modifier(Modifier::REVERSED),
+                            input_recipe.cursor.add_modifier(Modifier::REVERSED),
                         );
                     }
                 }
@@ -1784,7 +1793,7 @@ fn paint_selection_line(
     offset_x: usize,
     viewport_width: usize,
     y: u16,
-    system: &DesignSystem,
+    cursor_style: Style,
 ) {
     if line_idx < a.line || line_idx > b.line {
         return;
@@ -1810,7 +1819,7 @@ fn paint_selection_line(
     if ex > sx {
         buffer.set_style(
             Rect::new(sx, y, ex.saturating_sub(sx), 1),
-            system.style(Role::Focus).add_modifier(Modifier::REVERSED),
+            cursor_style.add_modifier(Modifier::REVERSED),
         );
     }
 }
@@ -2291,6 +2300,24 @@ mod tests {
     }
 
     #[test]
+    fn tiny_editor_keeps_one_content_row_before_scrollbar() {
+        let system = crate::style::DesignSystem::default();
+        let mut state = TextAreaState::new("Explain this module");
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 22, 5);
+        let mut buffer = Buffer::empty(area);
+
+        (&TextArea::new(&system)).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.body.height, 1);
+        assert!(state.horizontal_scrollbar.is_none());
+        let painted: String = (state.body.x..state.body.right())
+            .map(|x| buffer[(x, state.body.y)].symbol())
+            .collect();
+        assert!(painted.chars().any(|ch| !ch.is_whitespace()), "{painted:?}");
+    }
+
+    #[test]
     fn accepts_input_gate_and_read_only() {
         let mut state = TextAreaState::new("ab");
         assert_eq!(
@@ -2308,6 +2335,17 @@ mod tests {
             TextAreaOutcome::Ignored
         );
         let _ = state.handle_key(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE));
+    }
+
+    #[test]
+    fn escape_cancels_without_mutating_multiline_text() {
+        let mut state = TextAreaState::new("one\ntwo");
+        state.set_accepts_input(true);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextAreaOutcome::Cancelled
+        );
+        assert_eq!(state.text(), "one\ntwo");
     }
 
     #[test]
@@ -2469,7 +2507,11 @@ mod tests {
         assert!(state.gutter_width >= 2);
         assert!(!state.body.is_empty());
         // Gutter starts immediately before the live padded body.
-        let inner_x = state.body.x.saturating_sub(state.gutter_width);
+        let inner_x = state
+            .body
+            .x
+            .saturating_sub(state.gutter_width)
+            .saturating_sub(1);
         let cell = &buffer[(inner_x, state.body.y)];
         assert!(
             cell.symbol().chars().any(|c| c.is_ascii_digit()) || !cell.symbol().trim().is_empty(),

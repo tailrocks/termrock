@@ -921,36 +921,19 @@ impl<'a> ResizablePanelGroup<'a> {
             }
             let focused = state.focused_handle == Some(i);
             let hovered = state.hovered_handle == Some(i);
-            let ascii = self.system.glyphs.is_ascii();
-            let (glyph, role) = match (self.direction, focused, hovered, ascii) {
-                (SplitDirection::Horizontal, true, _, false) => {
+            let (glyph, role) = match (self.direction, focused, hovered) {
+                (SplitDirection::Horizontal, true, _) => {
                     (self.system.glyphs.rule_v(), Role::BorderFocused)
                 }
-                (SplitDirection::Horizontal, false, true, false) => {
+                (SplitDirection::Horizontal, false, true) => {
                     (self.system.glyphs.rule_v(), Role::Focus)
                 }
-                (SplitDirection::Horizontal, false, false, false) => {
-                    (self.system.glyphs.rule_v(), Role::Border)
-                }
-                (SplitDirection::Vertical, true, _, false) => {
+                (SplitDirection::Horizontal, false, false) => (" ", Role::Border),
+                (SplitDirection::Vertical, true, _) => {
                     (self.system.glyphs.rule(), Role::BorderFocused)
                 }
-                (SplitDirection::Vertical, false, true, false) => {
-                    (self.system.glyphs.rule(), Role::Focus)
-                }
-                (SplitDirection::Vertical, false, false, false) => {
-                    (self.system.glyphs.rule(), Role::Border)
-                }
-                (SplitDirection::Horizontal, true, _, true)
-                | (SplitDirection::Horizontal, false, true, true) => ("|", Role::Focus),
-                (SplitDirection::Horizontal, false, false, true) => {
-                    (self.system.glyphs.rule_v(), Role::Border)
-                }
-                (SplitDirection::Vertical, true, _, true)
-                | (SplitDirection::Vertical, false, true, true) => ("=", Role::Focus),
-                (SplitDirection::Vertical, false, false, true) => {
-                    (self.system.glyphs.rule(), Role::Border)
-                }
+                (SplitDirection::Vertical, false, true) => (self.system.glyphs.rule(), Role::Focus),
+                (SplitDirection::Vertical, false, false) => (" ", Role::Border),
             };
             let mut style = self.system.style(role);
             if focused {
@@ -1426,6 +1409,29 @@ mod tests {
         assert!(
             matches!(out, ResizablePanelOutcome::Resized { .. })
                 || matches!(out, ResizablePanelOutcome::Ignored)
+        );
+    }
+
+    #[test]
+    fn group_handles_are_quiet_until_focused() {
+        let system = DesignSystem::default();
+        let panels = [
+            ResizablePanelSpec::main("left", 1),
+            ResizablePanelSpec::main("right", 1),
+        ];
+        let group = ResizablePanelGroup::new(&panels, &system);
+        let area = Rect::new(0, 0, 21, 3);
+        let mut state = ResizablePanelGroupState::new();
+        let mut buffer = Buffer::empty(area);
+        group.paint_handles(area, &mut buffer, &mut state);
+        let handle = state.layout.handles[0];
+        assert_eq!(buffer[(handle.x, handle.y)].symbol(), " ");
+
+        state.set_focused_handle(Some(0));
+        group.paint_handles(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(handle.x, handle.y)].symbol(),
+            system.glyphs.rule_v()
         );
     }
 

@@ -46,10 +46,6 @@ use crate::{
 const GUTTER_W: u16 = 2;
 
 /// Column separator, from the glyph catalog rather than a file-local literal.
-fn system_rule_v(system: &DesignSystem) -> &'static str {
-    system.glyphs.rule_v()
-}
-
 /// Cells of indent per depth (compact default).
 const INDENT_STEP: u16 = 2;
 const INDENT_STEP_COMPACT: u16 = 1;
@@ -1009,16 +1005,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         if area.is_empty() {
             return;
         }
-        if self.rows.is_empty() {
-            buffer.set_stringn(
-                area.x,
-                area.y,
-                take_display_cols(self.empty_message, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(Role::TextMuted),
-            );
-            return;
-        }
+        let ascii = state.ascii || self.system.glyphs.is_ascii();
         let surface_focused = self.focused || state.accepts_input;
         let header_h = u16::from(self.sticky_header);
         let footer_h = 1u16;
@@ -1047,53 +1034,40 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             y = y.saturating_add(1);
         }
 
-        match &state.load {
-            LoadState::Empty { message } => {
-                paint_msg(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "[ ] " } else { "∅ " },
-                    message.as_deref().unwrap_or("No rows"),
-                    Role::TextMuted,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            LoadState::Loading { message } => {
-                paint_msg(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "... " } else { "… " },
-                    message.as_deref().unwrap_or("Loading…"),
-                    Role::TextMuted,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            LoadState::Error { message, .. } => {
-                paint_msg(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "! " } else { "✗ " },
-                    &format!("{message}  (r retry)"),
-                    Role::Danger,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            _ => {}
+        if let Some(chrome) = super::data_view::data_load_chrome(
+            &state.load,
+            self.system,
+            ascii,
+            false,
+            self.empty_message,
+        ) {
+            paint_msg(
+                self,
+                area,
+                y,
+                buffer,
+                chrome.prefix,
+                &chrome.message,
+                chrome.role,
+            );
+            state.body_origin = (area.x, y);
+            state.body_rows = 0;
+            state.body_width = area.width;
+            return;
+        }
+
+        if self.rows.is_empty() {
+            buffer.set_stringn(
+                area.x,
+                y,
+                take_display_cols(self.empty_message, usize::from(area.width)),
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+            state.body_origin = (area.x, y);
+            state.body_rows = 0;
+            state.body_width = area.width;
+            return;
         }
 
         state.body_origin = (area.x, y);
@@ -1143,7 +1117,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             }
         }
         parts.push(format!("nav:{}", state.nav_mode.id()));
-        let footer = parts.join(" · ");
+        let footer = parts.join(if ascii { " - " } else { " · " });
         if !footer.is_empty() && fy >= area.y {
             buffer.set_stringn(
                 area.x,
@@ -1245,7 +1219,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                system_rule_v(table.system),
+                super::table_chrome::column_gap(),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1267,21 +1241,26 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     ColId: Clone,
     Id: Clone,
 {
+    let ascii = state.ascii || table.system.glyphs.is_ascii();
     let selected = state.selected.as_ref() == Some(&row.id);
     let checked = state.multi && state.selection.is_row_selected(&row.id);
     let cursor = state.cursor_row == row_index;
     let hovered = state.hovered.as_ref() == Some(&row.id);
     let loading = matches!(row.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
-    let recipe = table.system.resolve_list_row(ListRowVisualState {
-        selected,
-        focused: surface_focused && selected,
-        hovered,
-        enabled: row.enabled,
-        loading,
-        checked,
-    });
+    let indicated = selected || (cursor && surface_focused);
+    let chrome = super::row_chrome::RowChrome::resolve(
+        table.system,
+        ListRowVisualState {
+            selected: indicated,
+            focused: surface_focused && cursor,
+            hovered,
+            enabled: row.enabled,
+            loading,
+            checked,
+        },
+    );
 
-    let mut base_style = match row.status {
+    let base_style = match row.status {
         TreeNodeStatus::Error => table.system.style(Role::Danger),
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => table.system.style(Role::TextMuted),
         TreeNodeStatus::Ready if !row.enabled => table.system.style(Role::TextDisabled),
@@ -1296,52 +1275,18 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 .style(Role::TextStrong)
                 .add_modifier(Modifier::BOLD)
         }
-        TreeNodeStatus::Ready if selected => recipe.label,
         TreeNodeStatus::Ready if state.striped && row_index % 2 == 1 => {
             table.system.style(Role::TextMuted)
         }
         TreeNodeStatus::Ready => table.system.style(Role::Text),
     };
-    if selected && surface_focused {
-        base_style = base_style.add_modifier(Modifier::BOLD);
-    } else if hovered && row.enabled {
-        base_style = recipe.hover;
-    }
+    let base_style = chrome.label_style(base_style);
 
     // The quiet tier for this row: same ground and weight, lower voice.
-    let quiet_style = recipe
-        .secondary
-        .fg
-        .map_or(base_style, |fg| base_style.fg(fg));
+    let quiet_style = chrome.secondary_style(base_style);
 
     let row_area = Rect::new(area.x, y, area.width, 1);
-    if recipe.use_fill && selected {
-        buffer.set_style(row_area, base_style);
-    } else if recipe.use_tint && selected {
-        buffer.set_style(row_area, recipe.tint);
-    } else if recipe.hover_fill {
-        buffer.set_style(row_area, recipe.hover_wash);
-    }
-
-    // Selection owns the gutter; "checked" is a check glyph, not a bar.
-    let gutter = if selected && surface_focused {
-        table.system.glyphs.selection_gutter()
-    } else if checked {
-        table.system.glyphs.check_on()
-    } else {
-        " "
-    };
-    buffer.set_stringn(
-        area.x,
-        y,
-        gutter,
-        1,
-        if checked || selected {
-            table.system.style(Role::Accent)
-        } else {
-            base_style
-        },
-    );
+    buffer.set_stringn(area.x, y, " ", 1, base_style);
     buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, base_style);
 
     let origin = area.x.saturating_add(GUTTER_W);
@@ -1351,8 +1296,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let mut disclosure_rect = None;
     if matches!(row.kind, TreeTableRowKind::Group) {
         let mark = if row.expanded {
-            if state.ascii { "v " } else { "▾ " }
-        } else if state.ascii {
+            if ascii { "v " } else { "▾ " }
+        } else if ascii {
             "> "
         } else {
             "▸ "
@@ -1372,6 +1317,9 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             area: row_area,
             disclosure: Some(Rect::new(origin, y, 2, 1)),
         });
+        chrome.paint(buffer, row_area);
+        paint_checked_marker(table.system, buffer, row_area, checked);
+        super::surface::normalize_content_band(table.system, buffer, row_area);
         return;
     }
 
@@ -1417,12 +1365,12 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             }
             let glyph = if row.branch {
                 if row.expanded {
-                    if state.ascii {
+                    if ascii {
                         "v"
                     } else {
                         table.system.glyphs.disclosure_open()
                     }
-                } else if state.ascii {
+                } else if ascii {
                     ">"
                 } else {
                     table.system.glyphs.disclosure_closed()
@@ -1466,7 +1414,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                system_rule_v(table.system),
+                super::table_chrome::column_gap(),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1480,6 +1428,21 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             area: row_area,
             disclosure: disclosure_rect,
         });
+    }
+    chrome.paint(buffer, row_area);
+    paint_checked_marker(table.system, buffer, row_area, checked);
+    super::surface::normalize_content_band(table.system, buffer, row_area);
+}
+
+fn paint_checked_marker(system: &DesignSystem, buffer: &mut Buffer, row: Rect, checked: bool) {
+    if checked && row.width > 1 {
+        buffer.set_stringn(
+            row.x.saturating_add(1),
+            row.y,
+            system.glyphs.check_on(),
+            1,
+            system.style(Role::Accent),
+        );
     }
 }
 
@@ -1684,6 +1647,35 @@ mod tests {
     }
 
     #[test]
+    fn non_ready_load_state_precedes_the_empty_projection_fallback() {
+        let system = DesignSystem::phosphor().no_color();
+        let columns = cols();
+        let rows: [TreeTableRow<'_, u64>; 0] = [];
+        let render = |load| {
+            let mut state = TreeTableState::<u64, &str>::new(None);
+            state.ascii = true;
+            state.load = load;
+            let area = Rect::new(0, 0, 32, 5);
+            let mut buffer = Buffer::empty(area);
+            TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
+            buffer
+                .content()
+                .iter()
+                .map(|cell| cell.symbol())
+                .collect::<String>()
+        };
+
+        assert!(render(LoadState::Loading { message: None }).contains("... Loading..."));
+        assert!(
+            render(LoadState::Error {
+                message: "failed".into(),
+                retryable: false,
+            })
+            .contains("! failed")
+        );
+    }
+
+    #[test]
     fn paint_process_tree() {
         let system = DesignSystem::default();
         let columns = cols();
@@ -1851,9 +1843,12 @@ mod tests {
         let rows = [TreeTableRow::new(1u64, 0, r0)];
         let mut state = TreeTableState::new(None);
         state.load = LoadState::Ready { count: 1 };
+        state.set_accepts_input(false);
         let area = Rect::new(0, 0, 40, 6);
         let mut buffer = Buffer::empty(area);
-        TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(false)
+            .render(area, &mut buffer, &mut state);
 
         let row_y = (0..area.height)
             .find(|y| (0..area.width).any(|x| buffer[(x, *y)].symbol().starts_with('s')))

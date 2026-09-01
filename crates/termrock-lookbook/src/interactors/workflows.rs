@@ -7,7 +7,7 @@ use ratatui::{Frame, layout::Rect};
 use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     keymap::KeyChord,
-    style::{Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{
         FieldToken, JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, KeybindingRecorder,
         KeybindingRecorderOutcome, KeybindingRecorderState, PermissionActionKind,
@@ -23,7 +23,7 @@ use super::{StoryInteraction, extended::record};
 
 pub(crate) struct ProgressStepsInteractor {
     state: ProgressStepsState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl ProgressStepsInteractor {
@@ -32,7 +32,7 @@ impl ProgressStepsInteractor {
         state.set_cursor(Some("build".into()));
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -45,7 +45,7 @@ impl ProgressStepsInteractor {
 }
 impl StoryInteraction for ProgressStepsInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let steps = Self::steps();
         ProgressSteps::new(&steps, &system)
             .title("Agent plan")
@@ -59,8 +59,8 @@ impl StoryInteraction for ProgressStepsInteractor {
         let outcome = self.state.handle_mouse(&Self::steps(), mouse, area, 2);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -77,7 +77,7 @@ impl StoryInteraction for ProgressStepsInteractor {
 
 pub(crate) struct StepperInteractor {
     state: StepperState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl StepperInteractor {
@@ -88,7 +88,7 @@ impl StepperInteractor {
         state.set_current(1, items.len(), true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -101,7 +101,7 @@ impl StepperInteractor {
 }
 impl StoryInteraction for StepperInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let items = Self::items();
         Stepper::new(&items, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
@@ -115,8 +115,8 @@ impl StoryInteraction for StepperInteractor {
         let outcome = self.state.handle_mouse(mouse, &items);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["←→ choose step", "Enter activate", "1–9 jump", "click step"]
@@ -128,7 +128,7 @@ impl StoryInteraction for StepperInteractor {
 
 pub(crate) struct KeybindingRecorderInteractor {
     state: KeybindingRecorderState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl KeybindingRecorderInteractor {
@@ -139,7 +139,7 @@ impl KeybindingRecorderInteractor {
         state.set_focused(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -149,7 +149,7 @@ impl KeybindingRecorderInteractor {
 }
 impl StoryInteraction for KeybindingRecorderInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         KeybindingRecorder::new(&system).ascii(true).paint(
             area,
             frame.buffer_mut(),
@@ -163,8 +163,8 @@ impl StoryInteraction for KeybindingRecorderInteractor {
     fn handle_mouse(&mut self, _mouse: MouseEvent, _area: Rect) -> bool {
         false
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_recording() {
@@ -188,7 +188,7 @@ impl StoryInteraction for KeybindingRecorderInteractor {
 
 pub(crate) struct QuestionFlowInteractor {
     state: QuestionFlowState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl QuestionFlowInteractor {
@@ -199,7 +199,7 @@ impl QuestionFlowInteractor {
         state.set_accepts_input(true);
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -210,7 +210,7 @@ impl QuestionFlowInteractor {
 impl StoryInteraction for QuestionFlowInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         if !self.state.is_open() {
-            let system = crate::design::lookbook_system(self.theme.clone());
+            let system = self.system.clone();
             frame.buffer_mut().set_stringn(
                 area.x,
                 area.y,
@@ -220,7 +220,7 @@ impl StoryInteraction for QuestionFlowInteractor {
             );
             return;
         }
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         frame.render_stateful_widget(&QuestionFlow::new(&system), area, &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -243,8 +243,8 @@ impl StoryInteraction for QuestionFlowInteractor {
         let outcome = self.state.handle_mouse(mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if !self.state.is_open() {
@@ -269,7 +269,7 @@ impl StoryInteraction for QuestionFlowInteractor {
 
 pub(crate) struct TokenFieldInteractor {
     state: TokenFieldState<String>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl TokenFieldInteractor {
@@ -279,7 +279,7 @@ impl TokenFieldInteractor {
         let _ = state.push_token(FieldToken::new("1".into(), "alice@example.com"));
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -289,7 +289,7 @@ impl TokenFieldInteractor {
 }
 impl StoryInteraction for TokenFieldInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let _ = TokenField::new(&system)
             .label("To")
             .placeholder("Add recipient…")
@@ -315,8 +315,8 @@ impl StoryInteraction for TokenFieldInteractor {
             _ => false,
         }
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -339,7 +339,7 @@ impl StoryInteraction for TokenFieldInteractor {
 
 pub(crate) struct PermissionPromptInteractor {
     state: PermissionPromptState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl PermissionPromptInteractor {
@@ -348,7 +348,7 @@ impl PermissionPromptInteractor {
         state.enqueue(Self::request());
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -367,7 +367,7 @@ impl PermissionPromptInteractor {
 impl StoryInteraction for PermissionPromptInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         if self.state.is_empty() {
-            let system = crate::design::lookbook_system(self.theme.clone());
+            let system = self.system.clone();
             frame.buffer_mut().set_stringn(
                 area.x,
                 area.y,
@@ -377,7 +377,7 @@ impl StoryInteraction for PermissionPromptInteractor {
             );
             return;
         }
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         frame.render_stateful_widget(&PermissionPrompt::new(&system), area, &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -399,8 +399,8 @@ impl StoryInteraction for PermissionPromptInteractor {
         let outcome = self.state.handle_mouse(mouse);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_empty() {
@@ -427,7 +427,7 @@ impl StoryInteraction for PermissionPromptInteractor {
 pub(crate) struct JumpOverlayInteractor {
     state: JumpOverlayState,
     targets: Vec<JumpTarget<&'static str>>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl JumpOverlayInteractor {
@@ -437,7 +437,7 @@ impl JumpOverlayInteractor {
         Self {
             state,
             targets: Vec::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -447,7 +447,7 @@ impl JumpOverlayInteractor {
 }
 impl StoryInteraction for JumpOverlayInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         self.targets = vec![
             JumpTarget::new(
                 "files",
@@ -495,8 +495,8 @@ impl StoryInteraction for JumpOverlayInteractor {
         let outcome = self.state.handle_mouse(mouse, &self.targets);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_open() {

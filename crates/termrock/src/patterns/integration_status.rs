@@ -44,7 +44,7 @@ use crate::{
     style::{DesignSystem, Glyph, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::Panel,
-    widgets::{EmptyKind, EmptyState},
+    widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
 
 /// Overlay id for full integration panel.
@@ -201,13 +201,17 @@ impl IntegrationHealth {
         }
     }
 
-    fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Connected => Role::Success,
-            Self::Disconnected | Self::Disabled => Role::TextMuted,
-            Self::Starting | Self::UpdateAvailable => Role::Info,
-            Self::PermissionRequired | Self::Degraded => Role::Warning,
-            Self::Error => Role::Danger,
+            Self::Connected => SemanticStatus::Online,
+            Self::Disconnected => SemanticStatus::Offline,
+            Self::Starting => SemanticStatus::Running,
+            Self::Error => SemanticStatus::Failed,
+            Self::PermissionRequired => SemanticStatus::Waiting,
+            Self::UpdateAvailable | Self::Degraded => SemanticStatus::Warning,
+            Self::Disabled => SemanticStatus::Paused,
         }
     }
 
@@ -1076,26 +1080,19 @@ impl<'a> IntegrationStatus<'a> {
     }
 
     fn paint_badge(&self, area: Rect, buffer: &mut Buffer, state: &IntegrationStatusState) {
-        let _w = usize::from(area.width);
-        let (text, role) = if let Some(e) = state.current() {
-            let g = e.health.glyph(self.ascii);
-            let k = e.kind.glyph(self.ascii);
-            let line = format!("{k}{g} {} · {}", e.name, e.health.label());
-            let role = if self.colorless {
-                Role::Text
-            } else {
-                e.health.role()
-            };
-            (line, role)
+        let (semantic, text) = if let Some(e) = state.current() {
+            (
+                e.health.semantic(),
+                format!("{}: {} · {}", e.health.label(), e.kind.label(), e.name),
+            )
         } else {
-            (state.aggregate_badge(), Role::TextMuted)
+            (SemanticStatus::Idle, state.aggregate_badge())
         };
-        self.system.paint_row(
-            buffer,
-            Rect::new(area.x, area.y, area.width, 1),
-            &text,
-            self.system.style(role),
-        );
+        StatusIndicator::new(semantic, self.system)
+            .label(&text)
+            .ascii(self.ascii)
+            .colorless(self.colorless)
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
@@ -1143,7 +1140,11 @@ impl<'a> IntegrationStatus<'a> {
                 " "
             };
             let kg = e.kind.glyph(self.ascii);
-            let hg = e.health.glyph(self.ascii);
+            let indicator = StatusIndicator::new(e.health.semantic(), self.system)
+                .label(e.health.label())
+                .ascii(self.ascii)
+                .colorless(self.colorless);
+            let status_text = indicator.text(None);
             let party = if e.provenance.third_party { "3p" } else { "1p" };
             // Egress is a fact worth a glyph, and the glyph has to survive an
             // ASCII terminal (plans/013 Step 2).
@@ -1152,20 +1153,29 @@ impl<'a> IntegrationStatus<'a> {
             } else {
                 String::new()
             };
-            let text = format!(
-                "{mark}{kg}{hg} {} · {} · {party}{egress}",
-                e.name,
-                e.health.label()
-            );
-            let style = if selected {
+            let text = format!("{mark}{kg}{status_text} {} · {party}{egress}", e.name);
+            let style = if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if self.colorless {
-                self.system.style(Role::Text)
+            } else if selected {
+                self.system
+                    .style(Role::TextStrong)
+                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
             } else {
-                self.system.style(e.health.role())
+                self.system.style(Role::Text)
             };
             self.system
                 .paint_row(buffer, Rect::new(inner.x, y, inner.width, 1), &text, style);
+            if inner.width > 2 {
+                indicator.paint(
+                    Rect::new(
+                        inner.x.saturating_add(2),
+                        y,
+                        inner.width.saturating_sub(2),
+                        1,
+                    ),
+                    buffer,
+                );
+            }
             state.row_hits.push((
                 e.id.clone(),
                 Rect {
@@ -1255,12 +1265,12 @@ impl<'a> IntegrationStatus<'a> {
         // Egress warning
         if let Some(eg) = e.egress_line() {
             if y < max_y {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(inner.x, y, inner.width, 1),
-                    &format!("! {eg}"),
-                    self.system.style(Role::Warning),
-                );
+                let warning = format!("warning: {eg}");
+                StatusIndicator::new(SemanticStatus::Warning, self.system)
+                    .label(&warning)
+                    .ascii(self.ascii)
+                    .colorless(self.colorless)
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1268,17 +1278,16 @@ impl<'a> IntegrationStatus<'a> {
         let content_bottom = max_y.saturating_sub(1);
         match state.tab {
             IntegrationDetailTab::Overview => {
+                if y < content_bottom {
+                    StatusIndicator::new(e.health.semantic(), self.system)
+                        .label(e.health.label())
+                        .ascii(self.ascii)
+                        .colorless(self.colorless)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                    y = y.saturating_add(1);
+                }
                 let lines = [
-                    format!(
-                        "status: {} {}",
-                        e.health.glyph(self.ascii),
-                        e.health.label()
-                    ),
                     e.summary.clone().unwrap_or_default(),
-                    e.last_error
-                        .as_ref()
-                        .map(|err| format!("last error: {err}"))
-                        .unwrap_or_default(),
                     format!(
                         "caps: {} · perms: {}/{}",
                         e.capabilities.len(),
@@ -1297,6 +1306,16 @@ impl<'a> IntegrationStatus<'a> {
                         self.system.style(Role::Text),
                     );
                     y = y.saturating_add(1);
+                }
+                if let Some(err) = e.last_error.as_ref()
+                    && y < content_bottom
+                {
+                    let failure = format!("last error: {err}");
+                    StatusIndicator::new(SemanticStatus::Failed, self.system)
+                        .label(&failure)
+                        .ascii(self.ascii)
+                        .colorless(self.colorless)
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
             IntegrationDetailTab::Capabilities => {
@@ -1808,21 +1827,32 @@ mod tests {
     }
 
     #[test]
-    fn unicode_names() {
+    fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        let mut st = IntegrationStatusState::new();
-        st.set_entries(vec![
-            IntegrationEntry::new("u1", "検査 MCP 🔍", IntegrationKind::McpServer)
-                .health(IntegrationHealth::Connected)
-                .provenance(IntegrationProvenance::third_party(
-                    "発行者",
-                    "pkg:日本語",
-                    "1.0",
-                )),
-        ]);
-        let area = Rect::new(0, 0, 40, 10);
-        let mut buf = Buffer::empty(area);
-        IntegrationStatus::new(&system).paint(area, &mut buf, &mut st);
+        for ascii in [false, true] {
+            for (width, height) in [(40, 10), (20, 4), (1, 1), (0, 0)] {
+                let mut st = IntegrationStatusState::new();
+                st.set_entries(vec![
+                    IntegrationEntry::new("u1", "検査 MCP Cafe\u{301}", IntegrationKind::McpServer)
+                        .health(IntegrationHealth::Connected)
+                        .provenance(IntegrationProvenance::third_party(
+                            "発行者",
+                            "pkg:日本語",
+                            "1.0",
+                        )),
+                ]);
+                let area = Rect::new(0, 0, width, height);
+                let mut buf = Buffer::empty(area);
+                IntegrationStatus::new(&system)
+                    .ascii(ascii)
+                    .paint(area, &mut buf, &mut st);
+                if width == 40 {
+                    let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
+                    assert!(text.contains('検'), "{text:?}");
+                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
+                }
+            }
+        }
     }
 
     #[test]

@@ -10,7 +10,10 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::style::{DesignSystem, Glyph, Role, blend_toward, effective_alpha, wave_brightness};
+use crate::style::{
+    ColorCapability, DesignSystem, Glyph, Role, blend_toward, effective_alpha, quantize_color,
+    wave_brightness,
+};
 
 /// Left-edge semantic chrome with deterministic optional motion.
 #[derive(Debug, Clone, Copy)]
@@ -109,7 +112,10 @@ impl<'a> AccentRail<'a> {
             } else {
                 1.0
             };
-            let color = blend_toward(base, canvas, 1.0 - brightness);
+            let color = quantize_color(
+                blend_toward(base, canvas, 1.0 - brightness),
+                ColorCapability::Ansi16,
+            );
             buffer.set_stringn(
                 rail.x,
                 rail.y.saturating_add(row),
@@ -172,5 +178,22 @@ mod tests {
             .collapsed(true)
             .paint(area, &mut buffer);
         assert_eq!(buffer[(0, 0)].symbol(), "|");
+    }
+
+    #[test]
+    fn motion_colors_stay_in_named_ansi16() {
+        let system = DesignSystem::phosphor();
+        let area = Rect::new(0, 0, 1, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = AccentRail::new(&system, Role::Accent)
+            .active(true)
+            .tick(3)
+            .paint(area, &mut buffer);
+        for y in area.top()..area.bottom() {
+            assert!(!matches!(
+                buffer[(0, y)].fg,
+                Color::Rgb(..) | Color::Indexed(_)
+            ));
+        }
     }
 }

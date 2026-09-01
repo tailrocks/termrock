@@ -1,39 +1,23 @@
 ---
-title: Task Rail
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: TaskRail
-demo: task-rail/basic
-interaction: activation
+title: "Task Rail"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: TaskRail
 source: crates/termrock/src/patterns/task_rail.rs
 classification: composite
+tags:
+  - "composite"
+  - "List"
+  - "Panel"
+aliases: []
+uses:
+  - "List"
+  - "Panel"
+supportingTypes:
+  - "ListRow"
+  - "RowRole"
+  - "SemanticStatus"
+  - "StatefulWidget"
+  - "StatusRegion"
+  - "StatusSlot"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="task-rail/basic" interactive caption="Task Rail · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 32×16
-
-Composed public building blocks: `List`, `ListRow`, `Panel`, `RowRole`, `SemanticStatus`, `StatefulWidget`, `StatusRegion`, `StatusSlot`, `Widget`.
-
-## Workflow
-
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `←→ collapse/expand`: forward this normalized action to the mounted public pattern state.
-- `/ filter`: focus the real field and edit its persistent Unicode-safe draft.
-- `Enter activate`: invoke the focused public state-machine action and inspect its typed request.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/task_rail.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/task_rail.rs)
-- Demo: `task-rail/basic`

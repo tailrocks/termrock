@@ -86,10 +86,15 @@ fn fade_row(
     }
 }
 
-/// Dim track glyph shared by every scrollbar.
+/// Unicode-profile dim track glyph shared by every scrollbar.
 pub const SCROLLBAR_TRACK: &str = "·";
-/// Heavy horizontal scrollbar thumb glyph.
+/// Unicode-profile heavy horizontal scrollbar thumb glyph.
 pub const SCROLLBAR_HORIZONTAL_THUMB: &str = "━";
+
+const SCROLLBAR_TRACK_ASCII: &str = ".";
+const SCROLLBAR_HORIZONTAL_THUMB_ASCII: &str = "=";
+const SCROLLBAR_VERTICAL_THUMB_ASCII: &str = "|";
+const SCROLLBAR_VERTICAL_BLOCK_ASCII: &str = "#";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 /// Visual weight of the vertical scrollbar thumb.
@@ -108,6 +113,17 @@ impl ScrollbarStyle {
         match self {
             Self::Line => "┃",
             Self::Block => "█",
+        }
+    }
+
+    const fn vertical_thumb_for(self, ascii: bool) -> &'static str {
+        if ascii {
+            match self {
+                Self::Line => SCROLLBAR_VERTICAL_THUMB_ASCII,
+                Self::Block => SCROLLBAR_VERTICAL_BLOCK_ASCII,
+            }
+        } else {
+            self.vertical_thumb()
         }
     }
 }
@@ -426,26 +442,34 @@ impl Widget for Scrollbar<'_> {
             return;
         };
         let thumb_range = usize::from(thumb.start)..usize::from(thumb.start + thumb.len);
+        let ascii = self.system.glyphs.is_ascii();
+        let track_symbol = if ascii {
+            SCROLLBAR_TRACK_ASCII
+        } else {
+            SCROLLBAR_TRACK
+        };
         for index in 0..track_len {
             let (x, y, thumb_symbol) = match self.spec.axis {
-                scroll::ScrollAxis::Horizontal => {
-                    (area.x + index as u16, area.y, SCROLLBAR_HORIZONTAL_THUMB)
-                }
+                scroll::ScrollAxis::Horizontal => (
+                    area.x + index as u16,
+                    area.y,
+                    if ascii {
+                        SCROLLBAR_HORIZONTAL_THUMB_ASCII
+                    } else {
+                        SCROLLBAR_HORIZONTAL_THUMB
+                    },
+                ),
                 scroll::ScrollAxis::Vertical => (
                     area.x,
                     area.y + index as u16,
-                    self.spec.style.vertical_thumb(),
+                    self.spec.style.vertical_thumb_for(ascii),
                 ),
             };
             let in_thumb = thumb_range.contains(&index);
             buffer.set_string(
                 x,
                 y,
-                if in_thumb {
-                    thumb_symbol
-                } else {
-                    SCROLLBAR_TRACK
-                },
+                if in_thumb { thumb_symbol } else { track_symbol },
                 if in_thumb {
                     self.system.style(Role::ScrollThumb)
                 } else {

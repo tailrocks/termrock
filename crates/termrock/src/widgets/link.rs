@@ -25,7 +25,7 @@ use crate::interaction::{
     default_button_intent,
 };
 use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_close, encode_hyperlink_open};
-use crate::style::{DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Destination ─────────────────────────────────────────────────────────────
@@ -457,17 +457,22 @@ impl<'a> Link<'a> {
     }
 
     fn style(&self, state: &LinkState) -> ratatui_core::style::Style {
-        if state.disabled {
-            return self.system.style(Role::TextDisabled);
-        }
-        let mut style = if state.hovered || state.focused {
-            self.system.style(Role::LinkHover)
-        } else if state.visited {
-            // Visited: muted link — use Link with DIM.
-            self.system.style(Role::Link).add_modifier(Modifier::DIM)
+        let control_state = if state.disabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
         } else {
-            self.system.style(Role::Link)
+            ControlState::Default
         };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Link, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
+        if state.visited {
+            style = style.add_modifier(Modifier::DIM);
+        }
         if self.underlines(state.hovered || state.focused) {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
@@ -828,13 +833,19 @@ impl<'a> ActionLink<'a> {
             width: w,
             height: 1.min(area.height),
         };
-        let mut style = if state.disabled {
-            self.system.style(Role::TextDisabled)
-        } else if state.hovered || state.focused {
-            self.system.style(Role::LinkHover)
+        let control_state = if state.disabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
         } else {
-            self.system.style(Role::Link)
+            ControlState::Default
         };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Link, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if self.link_style.underlines(state.hovered || state.focused)
             || matches!(
                 self.system.capability,

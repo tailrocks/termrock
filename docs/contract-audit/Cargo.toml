@@ -1,0 +1,12 @@
+[package]
+name = "termrock-contract-audit"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ratatui-core = { version = "=0.1.2", features = ["underline-color"] }
+termrock = { path = "../../crates/termrock", default-features = false }
+termrock-lookbook = { path = "../../crates/termrock-lookbook", default-features = false }

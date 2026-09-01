@@ -21,6 +21,8 @@ use std::collections::BTreeSet;
 use ratatui_core::style::Style;
 use std::num::NonZeroU16;
 
+use crate::style::{DesignSystem, Role};
+
 // ── Load / empty / error ────────────────────────────────────────────────────
 
 /// Loading and readiness for projected datasets.
@@ -78,6 +80,51 @@ impl LoadState {
     #[must_use]
     pub fn shows_error(&self) -> bool {
         matches!(self, Self::Error { .. })
+    }
+}
+
+/// Canonical non-ready dataset chrome shared by data owners.
+pub(crate) struct DataLoadChrome {
+    pub(crate) prefix: &'static str,
+    pub(crate) message: String,
+    pub(crate) role: Role,
+}
+
+/// Resolves loading/empty/error copy and non-color semantics once.
+pub(crate) fn data_load_chrome(
+    load: &LoadState,
+    system: &DesignSystem,
+    ascii: bool,
+    colorless: bool,
+    empty_message: &str,
+) -> Option<DataLoadChrome> {
+    match load {
+        LoadState::Loading { message } => Some(DataLoadChrome {
+            prefix: if ascii { "... " } else { "… " },
+            message: message
+                .clone()
+                .unwrap_or_else(|| if ascii { "Loading..." } else { "Loading…" }.into()),
+            role: Role::TextMuted,
+        }),
+        LoadState::Empty { message } => Some(DataLoadChrome {
+            prefix: if ascii { "[ ] " } else { "∅ " },
+            message: message.clone().unwrap_or_else(|| empty_message.into()),
+            role: Role::TextMuted,
+        }),
+        LoadState::Error { message, retryable } => Some(DataLoadChrome {
+            prefix: if ascii { "! " } else { "✗ " },
+            message: if *retryable {
+                format!("{message}  (r retry)")
+            } else {
+                message.clone()
+            },
+            role: if colorless || system.mono() {
+                Role::TextStrong
+            } else {
+                Role::Danger
+            },
+        }),
+        LoadState::Idle | LoadState::Partial { .. } | LoadState::Ready { .. } => None,
     }
 }
 
@@ -1004,6 +1051,46 @@ mod tests {
             }
             .shows_error()
         );
+    }
+
+    #[test]
+    fn load_state_chrome_is_shared_ascii_and_non_color_semantics() {
+        let system = DesignSystem::phosphor().no_color();
+        let loading = data_load_chrome(
+            &LoadState::Loading { message: None },
+            &system,
+            true,
+            true,
+            "No rows",
+        )
+        .unwrap();
+        let empty = data_load_chrome(
+            &LoadState::Empty { message: None },
+            &system,
+            true,
+            true,
+            "No rows",
+        )
+        .unwrap();
+        let error = data_load_chrome(
+            &LoadState::Error {
+                message: "failed".into(),
+                retryable: false,
+            },
+            &system,
+            true,
+            true,
+            "No rows",
+        )
+        .unwrap();
+
+        assert_eq!(
+            (loading.prefix, loading.message.as_str()),
+            ("... ", "Loading...")
+        );
+        assert_eq!((empty.prefix, empty.message.as_str()), ("[ ] ", "No rows"));
+        assert_eq!((error.prefix, error.message.as_str()), ("! ", "failed"));
+        assert_eq!(error.role, Role::TextStrong);
     }
 
     #[test]

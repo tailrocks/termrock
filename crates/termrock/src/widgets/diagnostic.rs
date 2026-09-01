@@ -705,6 +705,13 @@ impl<'a> CodeFrame<'a> {
 
     /// Paint. Returns rows used.
     pub fn render(&self, area: Rect, buffer: &mut Buffer) -> u16 {
+        if (!self.ascii && self.system.glyphs.is_ascii()) || (!self.colorless && self.system.mono())
+        {
+            let mut effective = self.clone();
+            effective.ascii |= self.system.glyphs.is_ascii();
+            effective.colorless |= self.system.mono();
+            return effective.render(area, buffer);
+        }
         if area.is_empty() {
             return 0;
         }
@@ -1376,8 +1383,8 @@ impl<'a> DiagnosticView<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         let recipe = match state.recipe {
             DiagnosticRecipe::List
                 if matches!(
@@ -1579,8 +1586,8 @@ fn paint_list_item(
         usize::from(area.width),
         style,
     );
-    chrome.paint(buffer, row);
     tiers.paint_tiers(buffer, row, 0);
+    chrome.paint(buffer, row);
     y = y.saturating_add(1);
 
     if !expanded && !force_frame {

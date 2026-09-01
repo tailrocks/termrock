@@ -23,13 +23,7 @@
 //! permission surfaces.
 
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    text::Text,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -43,8 +37,8 @@ use crate::{
 };
 
 use super::{
-    Action, ActionBar, ActionBarState, Dialog, DialogClosePolicy, DialogFocusZone, DialogOutcome,
-    DialogRecipe, DialogSize, DialogState, DialogVariant, open_dialog_configured,
+    Action, ActionBar, ActionBarState, ActionVariant, Dialog, DialogClosePolicy, DialogFocusZone,
+    DialogOutcome, DialogRecipe, DialogSize, DialogState, DialogVariant, open_dialog_configured,
 };
 
 /// Default overlay id for alert confirmations.
@@ -537,19 +531,18 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
     /// Build action strip with confirm enabled only when gates pass.
     #[must_use]
     pub fn actions(&self) -> [Action<'_, Id>; 2] {
-        let danger = Style::default().add_modifier(Modifier::BOLD);
         [
             Action {
                 id: self.cancel_id.clone(),
                 label: self.cancel_label.as_str(),
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: self.confirm_id.clone(),
                 label: self.confirm_label.as_str(),
                 enabled: self.confirm_enabled(),
-                style: Some(danger),
+                variant: ActionVariant::Destructive,
             },
         ]
     }

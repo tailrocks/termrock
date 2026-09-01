@@ -1,46 +1,29 @@
 ---
-title: Terminal Run Card
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: TerminalRunCard
-demo: terminal-run-card/running
-interaction: activation
+title: "Terminal Run Card"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: TerminalRunCard
 source: crates/termrock/src/patterns/terminal_run_card.rs
 classification: composite
+tags:
+  - "composite"
+  - "AccentRail"
+  - "Card"
+  - "TerminalOutput"
+aliases: []
+uses:
+  - "AccentRail"
+  - "Card"
+  - "TerminalOutput"
+supportingTypes:
+  - "TerminalCommandMeta"
+  - "TerminalEnvEntry"
+  - "TerminalLine"
+  - "TerminalOutputRecipe"
+  - "TerminalRunStatus"
+  - "ToolCall"
+  - "ToolRisk"
+  - "ToolStatus"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="terminal-run-card/running" interactive caption="Terminal Run Card · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 56×14
-
-Composed public building blocks: `AccentRail`, `Card`, `TerminalCommandMeta`, `TerminalEnvEntry`, `TerminalLine`, `TerminalOutput`, `TerminalOutputRecipe`, `TerminalRunStatus`, `ToolCall`, `ToolRisk`, `ToolStatus`.
-
-## Workflow
-
-- `Enter expand/collapse`: invoke the focused public state-machine action and inspect its typed request.
-- `wheel/↑↓ scroll`: move the pattern-owned viewport without scrolling the documentation page.
-- `S stop request`: invoke the focused public state-machine action and inspect its typed request.
-- `F full view`: forward this normalized action to the mounted public pattern state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/terminal_run_card.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/terminal_run_card.rs)
-- Demo: `terminal-run-card/running`
-
-## Migrated handbook guidance
-
-# TerminalRunCard
 
 Agent-card specialization of shell runs over the `TerminalOutput` substrate:
 proposed vs executed command, edited approval, provenance, env redaction,
@@ -48,14 +31,13 @@ stdout/stderr, exit/signal, follow/scroll, and typed control requests.
 Compact runs are one semantic status line; expanded runs continue the
 tool-actor rail. Pass `.tick(frame_tick)` for deterministic running presence.
 
-
 ## When to use / when not
 
 | Use TerminalRunCard | Prefer |
 |---------------------|--------|
 | Shell tools in agent transcript | — |
 | Full command workbench pane | [TerminalOutput](/docs/components/terminal-output) |
-| Non-shell tool calls | [ToolCallCard](/docs/interaction-notes) |
+| Non-shell tool calls | [ToolCallCard](/docs/components/tool-call-card) |
 | Multi-source logs | [LogStream](/docs/components/log-stream) |
 
 ## Phases
@@ -72,7 +54,3 @@ differs from executed.
 ## Keys
 
 Enter expand · `c` stop · `r` retry · `d` detach · `p` permission · `f`/Shift+F fullscreen · `y` copy command · scroll detaches follow
-
-## Related
-
-TerminalOutput · ToolCallCard · PermissionPrompt · migrations `0220`, `0271`

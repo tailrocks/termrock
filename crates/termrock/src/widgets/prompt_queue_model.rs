@@ -7,7 +7,7 @@
 //! `termrock::patterns::PromptQueue` management recipe. Domain hosts own
 //! persistence and drain policy; these types carry no I/O.
 
-use crate::style::Role;
+use super::SemanticStatus;
 
 /// Lifecycle of one queued prompt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -78,14 +78,16 @@ impl PromptQueueStatus {
         }
     }
 
-    pub(crate) fn role(self) -> Role {
+    /// Shared lifecycle projection for recipe-owned status paint.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Queued => Role::TextMuted,
-            Self::Sending => Role::Info,
-            Self::Blocked => Role::Warning,
-            Self::Failed => Role::Danger,
-            Self::Cancelled => Role::TextMuted,
-            Self::Sent => Role::Success,
+            Self::Queued => SemanticStatus::Queued,
+            Self::Sending => SemanticStatus::Running,
+            Self::Blocked => SemanticStatus::Waiting,
+            Self::Failed => SemanticStatus::Failed,
+            Self::Cancelled => SemanticStatus::Paused,
+            Self::Sent => SemanticStatus::Success,
         }
     }
 
@@ -320,6 +322,16 @@ impl AgentBusyState {
             Self::Busy => "agent busy",
             Self::WaitingUser => "waiting on you",
             Self::Interrupting => "interrupting…",
+        }
+    }
+
+    /// Shared lifecycle projection for queue chrome.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::Idle => SemanticStatus::Idle,
+            Self::Busy | Self::Interrupting => SemanticStatus::Running,
+            Self::WaitingUser => SemanticStatus::Waiting,
         }
     }
 

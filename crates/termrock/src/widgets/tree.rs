@@ -105,14 +105,12 @@ pub struct TreeNode<'a, Id> {
     pub leading: Option<Line<'a>>,
     /// Optional secondary metadata (composed secondary).
     pub secondary: Option<Line<'a>>,
-    /// Optional badge (composed badge; preferred over trailing when both set).
+    /// Optional badge aligned at the trailing edge.
     pub badge: Option<Line<'a>>,
     /// Optional keyboard shortcut hint.
     pub shortcut: Option<&'a str>,
     /// Optional context-action labels (display; host maps activation).
     pub actions: Option<Line<'a>>,
-    /// Optional metadata aligned at the trailing edge (maps to badge when badge unset).
-    pub trailing: Option<Line<'a>>,
     /// Zero-based hierarchy depth.
     pub depth: u16,
     /// Whether the node can request disclosure changes.
@@ -141,7 +139,6 @@ impl<'a, Id> TreeNode<'a, Id> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             depth,
             branch: false,
             expanded: false,
@@ -217,13 +214,6 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
-    /// Sets legacy trailing metadata (badge fallback).
-    #[must_use]
-    pub fn trailing(mut self, trailing: Line<'a>) -> Self {
-        self.trailing = Some(trailing);
-        self
-    }
-
     /// Marks the node disabled (skipped by keyboard, non-hittable).
     #[must_use]
     pub fn disabled(mut self) -> Self {
@@ -287,11 +277,7 @@ impl<'a, Id> TreeNode<'a, Id> {
             leading: self.leading.clone(),
             primary: self.label.clone(),
             secondary: self.secondary.clone(),
-            badge: self
-                .badge
-                .clone()
-                .or_else(|| self.actions.clone())
-                .or_else(|| self.trailing.clone()),
+            badge: self.badge.clone().or_else(|| self.actions.clone()),
             shortcut: self.shortcut,
             enabled: self.enabled,
             loading: matches!(self.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy),
@@ -971,12 +957,6 @@ impl<'a, Id> Tree<'a, Id> {
         self
     }
 
-    /// Preferred paint root from [`DesignSystem`].
-    #[must_use]
-    pub const fn from_system(nodes: &'a [TreeNode<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self::new(nodes, system)
-    }
-
     /// Message painted when `nodes` is empty.
     #[must_use]
     pub const fn empty_message(mut self, message: &'a str) -> Self {
@@ -1238,9 +1218,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                     .saturating_sub(label_x)
                     .saturating_sub(status_w);
                 // Zero-copy contraction: borrow fields; no Line clones (hot path).
-                // Fit-based: keep trailing badge whenever it still fits next to
+                // Fit-based: keep the badge whenever it still fits next to
                 // a one-cell primary identity (mirrors ComposedRow budgets).
-                let badge = node.badge.as_ref().or(node.trailing.as_ref());
+                let badge = node.badge.as_ref();
                 let badge_need = badge
                     .map(|b| {
                         u16::try_from(b.width())
@@ -1512,13 +1492,13 @@ mod tests {
     }
 
     #[test]
-    fn empty_message_and_from_system() {
+    fn empty_message_and_canonical_constructor() {
         let system = DesignSystem::phosphor();
         let nodes: [TreeNode<'_, &str>; 0] = [];
         let mut state = TreeState::<&str>::default();
         let area = Rect::new(0, 0, 24, 2);
         let mut buffer = Buffer::empty(area);
-        let tree = Tree::from_system(&nodes, &system).empty_message("No files");
+        let tree = Tree::new(&nodes, &system).empty_message("No files");
         tree.render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(0, 0)].symbol(), "N");
     }

@@ -183,6 +183,17 @@ impl ObservabilityLiveState {
             Self::Offline => "offline",
         }
     }
+
+    /// Shared lifecycle projection for status chrome.
+    #[must_use]
+    pub const fn semantic(self) -> crate::widgets::SemanticStatus {
+        match self {
+            Self::Live => crate::widgets::SemanticStatus::Running,
+            Self::Paused => crate::widgets::SemanticStatus::Paused,
+            Self::Reconnecting => crate::widgets::SemanticStatus::Waiting,
+            Self::Offline => crate::widgets::SemanticStatus::Failed,
+        }
+    }
 }
 
 /// Workbench outcomes — requests only; host owns acquisition.
@@ -603,22 +614,25 @@ impl ObservabilityDashboardState {
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let live = self.live.label();
         let mut slots = vec![
-            StatusSlot::connection("live", live).priority(10),
-            StatusSlot::context("logs", "logs").priority(20),
-            StatusSlot::context("events", "events").priority(30),
-            StatusSlot::focus_zone("focus", self.focus).priority(40),
+            StatusSlot::connection("live", live)
+                .semantic(self.live.semantic())
+                .priority(90),
+            StatusSlot::context("logs", "logs").priority(50),
+            StatusSlot::context("events", "events").priority(40),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "space live · m bookmark · a ack drop · C-r reconnect · tab",
             )
-            .priority(90),
+            .priority(10),
         ];
         if self.logs.dropped > 0 || self.events.dropped() > 0 {
             slots.insert(
                 0,
                 StatusSlot::new("dropped", "dropped")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(95),
             );
         }
         if matches!(
@@ -628,16 +642,18 @@ impl ObservabilityDashboardState {
             slots.insert(
                 0,
                 StatusSlot::new("fail", "acquisition")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(4),
+                    .priority(100),
             );
         }
         if self.alert_count > 0 && !self.open_panes.alerts {
             slots.insert(
                 0,
                 StatusSlot::new("alerts", "alerts")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(6),
+                    .priority(92),
             );
         }
         let _ = (self.log_count, self.event_count);

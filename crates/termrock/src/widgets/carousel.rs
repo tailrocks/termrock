@@ -13,9 +13,11 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 // ── Domain ──────────────────────────────────────────────────────────────────
@@ -237,6 +239,49 @@ impl CarouselState {
             _ => CarouselOutcome::Ignored,
         }
     }
+
+    /// Mouse routing for the painted footer controls.
+    ///
+    /// Indicator cells select their slide; the painted left/right arrows use
+    /// the same previous/next paths as the keyboard adapter.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        area: Rect,
+        slides: &[CarouselSlide],
+    ) -> CarouselOutcome {
+        if !self.accepts_input
+            || area.is_empty()
+            || slides.is_empty()
+            || event.kind != MouseEventKind::Down(MouseButton::Left)
+            || !area.contains(event.position)
+            || event.position.y != area.bottom().saturating_sub(1)
+        {
+            return CarouselOutcome::Ignored;
+        }
+
+        let rel_x = usize::from(event.position.x.saturating_sub(area.x));
+        for index in 0..slides.len() {
+            if rel_x == index.saturating_mul(2) {
+                self.focused = true;
+                return self.go_to(index, slides);
+            }
+        }
+
+        let current = self.index.min(slides.len() - 1);
+        let indicator_width = slides.len().saturating_mul(2).saturating_sub(1);
+        let counter = format!("  {}/{}  ", current + 1, slides.len());
+        let previous_x = indicator_width.saturating_add(display_cols(&counter));
+        if rel_x == previous_x {
+            self.focused = true;
+            return self.prev(slides);
+        }
+        if rel_x == previous_x.saturating_add(2) {
+            self.focused = true;
+            return self.next(slides);
+        }
+        CarouselOutcome::Ignored
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -414,5 +459,38 @@ mod tests {
         let area = Rect::new(0, 0, 40, 8);
         let mut buf = Buffer::empty(area);
         Carousel::new(&slides, &system).paint(area, &mut buf, &st);
+    }
+
+    #[test]
+    fn mouse_footer_matches_keyboard_and_input_gate() {
+        let slides = example_carousel_slides();
+        let area = Rect::new(0, 0, 40, 8);
+        let mut st = CarouselState::new();
+        st.set_focused(false);
+
+        let second_indicator = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(2, area.bottom() - 1),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            st.handle_mouse(second_indicator, area, &slides),
+            CarouselOutcome::Changed { index: 1, .. }
+        ));
+        assert!(st.focused, "pointer entry grants focus to the carousel");
+        assert_eq!(
+            st.handle_key(press(KeyCode::Esc), &slides),
+            CarouselOutcome::Cancelled
+        );
+
+        st.set_accepts_input(false);
+        assert_eq!(
+            st.handle_mouse(second_indicator, area, &slides),
+            CarouselOutcome::Ignored
+        );
+        assert_eq!(
+            st.handle_key(press(KeyCode::Right), &slides),
+            CarouselOutcome::Ignored
+        );
     }
 }

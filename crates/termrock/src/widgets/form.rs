@@ -1416,4 +1416,22 @@ mod unit_tests {
         );
         assert_eq!(out, FormOutcome::Ignored);
     }
+
+    #[test]
+    fn empty_form_is_safe_and_publishes_no_field_regions() {
+        let system = DesignSystem::default();
+        let fieldsets: [Fieldset<'_, &str>; 0] = [];
+        let mut state = FormState::<&str>::new();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            Form::new(&fieldsets, &system),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+
+        assert!(state.field_regions().is_empty());
+    }
 }

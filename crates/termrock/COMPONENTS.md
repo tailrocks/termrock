@@ -428,9 +428,9 @@ painted regions, and enforces named budgets `tree_viewport_10k` /
 The 2026-07-16 baseline was 45.09 ms on an Apple M1 Max; raising a budget
 requires a deliberate PR with new measurement evidence.
 
-Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. Canonical neutral stories and SVG previews are maintained by `termrock-lookbook`; the catalog coverage check derives the component inventory from `docs/api/public-api.txt`, requires at least one typed story, documented story ID, and deterministic preview per public widget, and requires an exact keyboard/mouse/focus/non-color/Unicode/narrow-terminal classification in `docs/api/component-contracts.json`.
+Every component uses borrowed render data and stable IDs where interaction identity is required. Consumers own labels, validation, filtering, lifecycle, output, and domain models. `termrock::registry::{public_ui_inventory, pattern_inventory}` owns exact catalog identities, routes, and representative stories. The docs generator joins that typed CLI projection with canonical MDX and the mandatory full `docs/api/component-contracts.v2.json`; unproved axes remain explicitly missing or partial.
 
-Cross-widget focus uses `FocusRing`: consumers register stable IDs, enabled
+Cross-widget focus uses `FocusGraph`: consumers register stable IDs, enabled
 state, and optional painted rectangles every frame. TermRock owns ordered
 Tab/BackTab traversal, dynamic reconciliation, pointer transfer, semantic
 panel emphasis, modal trapping, and opener restoration. Composite widgets

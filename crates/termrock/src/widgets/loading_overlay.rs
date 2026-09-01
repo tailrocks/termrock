@@ -555,9 +555,10 @@ impl<'a> LoadingOverlay<'a> {
     fn paint_wash(&self, area: Rect, buffer: &mut Buffer) {
         let ascii = self.use_ascii();
         let symbol = if ascii { '.' } else { '░' };
-        let style = Style::new().add_modifier(Modifier::DIM);
-        // Prefer DesignSystem muted if we can — use set_style on cells
-        let role_style = self.system.style(Role::TextDisabled);
+        let style = self
+            .system
+            .style(Role::TextDisabled)
+            .add_modifier(Modifier::DIM);
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {
                 // Preserve some readability: only dim fg, keep symbol if non-space for stale-ish
@@ -565,7 +566,7 @@ impl<'a> LoadingOverlay<'a> {
                 if matches!(self.mode, BusyMode::Blocking | BusyMode::Cancellable) {
                     // Soft wash: overwrite with dim glyph
                     cell.set_char(symbol);
-                    cell.set_style(style.patch(role_style));
+                    cell.set_style(style);
                 }
             }
         }

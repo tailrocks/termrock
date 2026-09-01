@@ -1,53 +1,25 @@
 ---
-title: Process Table
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: ProcessTable
-demo: process-table/basic
-interaction: activation
+title: "Process Table"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: ProcessTable
 source: crates/termrock/src/patterns/process_table.rs
 classification: composite
+tags:
+  - "composite"
+aliases: []
+uses: []
+supportingTypes:
+  - "ColumnModel"
+  - "DataColumn"
+  - "DataColumnWidth"
+  - "SortSpec"
+  - "VirtualWindow"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="process-table/basic" interactive caption="Process Table · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 72×14
-
-Composed public building blocks: `ColumnModel`, `DataColumn`, `DataColumnWidth`, `SortSpec`, `VirtualWindow`.
-
-## Workflow
-
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `←→ tree`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `/ filter`: focus the real field and edit its persistent Unicode-safe draft.
-- `K signal`: forward this normalized action to the mounted public pattern state.
-- `Esc cancel`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/process_table.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/process_table.rs)
-- Demo: `process-table/basic`
-
-## Migrated handbook guidance
-
-# ProcessTable
 
 Process / task monitoring table (btop/htop/procs class). Host projects
 `ProcessRow` snapshots; TermRock paints, navigates, sorts/filters, and emits
 **signal / refresh / details requests** — never enumerates processes or
 sends signals itself.
-
 
 ## When to use / when not
 
@@ -98,7 +70,3 @@ missing selection falls to nearest-neighbor; checked set drops dead keys.
 | `y` | Copy command |
 | Space | Multi-check |
 | `+` / `-` | Refresh cadence chrome |
-
-## Related
-
-TreeTable · DataTable · VirtualWindow · migration `0203`

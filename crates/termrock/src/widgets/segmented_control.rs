@@ -44,7 +44,7 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             items,
             system,
             collapse_below: 18,
-            overflow_label: "…",
+            overflow_label: system.glyphs.ellipsis(),
             colorless: false,
         }
     }
@@ -510,33 +510,26 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         hovered: bool,
         enabled: bool,
     ) -> ratatui_core::style::Style {
-        if !enabled {
-            return self.system.style(Role::TextDisabled);
-        }
-        if focused {
-            // Focused-and-selected is the bold one; focused-only carries the
-            // Focus role and, without color, the reverse cell.
-            let mut s = self.system.style(Role::Focus);
-            if selected {
-                s = s.add_modifier(Modifier::BOLD);
-            } else if self.mono() {
-                s = s.add_modifier(Modifier::REVERSED);
-            }
-            return s;
-        }
+        let control_state = if !enabled {
+            ControlState::Disabled
+        } else if focused {
+            ControlState::Focused
+        } else if hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Secondary, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if selected {
-            // Clear without neon fill: strong text + bold; reverse when mono
-            let mut s = self.system.style(Role::TextStrong);
-            s = s.add_modifier(Modifier::BOLD);
+            style = style.add_modifier(Modifier::BOLD);
             if self.mono() {
-                s = s.add_modifier(Modifier::REVERSED);
+                style = style.add_modifier(Modifier::REVERSED);
             }
-            return s;
         }
-        if hovered {
-            return self.system.style(Role::Text);
-        }
-        self.system.style(Role::TextMuted)
+        style
     }
 
     /// Paint control.
@@ -688,13 +681,20 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                         .min(area.right().saturating_sub(x));
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
-                        let mut style = self.system.style(if state.menu_open {
-                            Role::ActionFocused
+                        let recipe = self.system.button_recipe(
+                            ButtonRecipeVariant::Quiet,
+                            if state.menu_open {
+                                ControlState::Focused
+                            } else {
+                                ControlState::Default
+                            },
+                        );
+                        let mut style = recipe.fill.patch(recipe.label);
+                        if state.menu_open {
+                            style = style.add_modifier(Modifier::REVERSED);
                         } else {
-                            Role::TextMuted
-                        });
-                        style = style.add_modifier(Modifier::BOLD);
-                        style = style.patch(self.system.style(Role::SelectionTint));
+                            style = style.add_modifier(Modifier::BOLD);
+                        }
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);
@@ -763,12 +763,13 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
 
         // Collapsed: Space/Enter/Down opens menu; Left/Right cycles all enabled
         if matches!(presentation, SegmentedPresentation::Collapsed) {
-            if matches!(
-                key.code,
-                crate::input::KeyCode::Enter
-                    | crate::input::KeyCode::Char(' ')
-                    | crate::input::KeyCode::Down
-            ) {
+            let activates = default_button_intent(key).is_some_and(|intent| {
+                matches!(
+                    intent,
+                    UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle
+                )
+            });
+            if activates || matches!(key.code, crate::input::KeyCode::Down) {
                 state.menu_open = !state.menu_open;
                 return if state.menu_open {
                     SegmentedControlOutcome::MenuOpened
@@ -1199,6 +1200,15 @@ mod tests {
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
         );
         assert!(matches!(out, SegmentedControlOutcome::MenuOpened));
+        assert!(matches!(
+            g.handle_key(&mut state, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            SegmentedControlOutcome::MenuClosed
+        ));
+        assert!(!state.menu_open);
+        let _ = g.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
         let out = g.select_from_menu(&mut state, "table");
         assert!(matches!(
             out,

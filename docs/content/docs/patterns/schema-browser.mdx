@@ -1,58 +1,34 @@
 ---
-title: Schema Browser
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: SchemaBrowser
-demo: schema-browser/basic
-interaction: activation
+title: "Schema Browser"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: SchemaBrowser
 source: crates/termrock/src/patterns/schema_browser.rs
 classification: composite
+tags:
+  - "composite"
+  - "Tree"
+aliases: []
+uses:
+  - "Tree"
+supportingTypes:
+  - "BreadcrumbItem"
+  - "QuickOpenItem"
+  - "QuickOpenPreview"
+  - "StatefulWidget"
+  - "TreeNode"
+  - "TreeNodeStatus"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="schema-browser/basic" interactive caption="Schema Browser · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 40×16
-
-Composed public building blocks: `BreadcrumbItem`, `QuickOpenItem`, `QuickOpenPreview`, `StatefulWidget`, `Tree`, `TreeNode`, `TreeNodeStatus`.
-
-## Workflow
-
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `←→ collapse/expand`: forward this normalized action to the mounted public pattern state.
-- `Enter activate`: invoke the focused public state-machine action and inspect its typed request.
-- `/ filter`: focus the real field and edit its persistent Unicode-safe draft.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/schema_browser.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/schema_browser.rs)
-- Demo: `schema-browser/basic`
-
-## Migrated handbook guidance
-
-# SchemaBrowser
 
 Hierarchical catalog navigator for connections → databases → schemas →
 tables/views → columns/indexes/constraints/routines. Host owns metadata fetch
 and SQL; TermRock paints the tree and emits **typed requests**.
-
 
 ## When to use / when not
 
 | Use SchemaBrowser | Prefer |
 |-------------------|--------|
 | DB catalog side pane | — |
-| Filesystem explorer | [FileTree](/docs/interaction-notes) |
+| Filesystem explorer | [FileTree](/docs/components/file-tree) |
 | Generic hierarchy | [Tree](/docs/components/tree) |
 | Query body / results | [QueryEditor](/docs/patterns/query-editor) · [ResultGrid](/docs/patterns/result-grid) |
 
@@ -71,16 +47,6 @@ and SQL; TermRock paints the tree and emits **typed requests**.
 3. `state.expanded` accumulates open branch ids.
 4. On refresh/reconnect: reproject, then `apply_expanded_set(&mut entries, &state.expanded)` and `state.reconcile_expanded(&live_ids)`.
 
-## Integration
-
-```rust
-// QuickOpen over tables/views
-schema_to_quick_open_items(&entries, false)
-
-// Breadcrumbs
-schema_breadcrumbs_from_path(entry.path)
-```
-
 ## Presentation
 
 `SidePane` (default) → `Drawer` → `Fullscreen` via Ctrl+M or auto from bounds.
@@ -93,7 +59,3 @@ schema_breadcrumbs_from_path(entry.path)
 | `y` · `p` · Ctrl+O | Copy path · preview · QuickOpen |
 | `q` · `d` · `x` | Query · describe · context |
 | Ctrl+M · Ctrl+Shift+C | Presentation · reconnect |
-
-## Related
-
-Tree · FileTree · QuickOpen · Breadcrumbs · QueryEditor · migration `0206`

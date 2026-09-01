@@ -379,27 +379,30 @@ impl StatefulWidget for &SplitPane<'_> {
             });
             return;
         }
-        let (glyph, role) = match (self.direction, state.collapsed, state.focused) {
-            (SplitDirection::Horizontal, Some(SplitSide::First), _) => ("›", Role::Accent),
-            (SplitDirection::Horizontal, Some(SplitSide::Second), _) => ("‹", Role::Accent),
-            (SplitDirection::Vertical, Some(SplitSide::First), _) => ("⌄", Role::Accent),
-            (SplitDirection::Vertical, Some(SplitSide::Second), _) => ("⌃", Role::Accent),
-            (SplitDirection::Horizontal, None, true) => {
+        let ascii = self.system.glyphs.is_ascii();
+        let (glyph, role) = match (self.direction, state.collapsed, state.focused, ascii) {
+            (SplitDirection::Horizontal, Some(SplitSide::First), _, true) => (">", Role::Accent),
+            (SplitDirection::Horizontal, Some(SplitSide::Second), _, true) => ("<", Role::Accent),
+            (SplitDirection::Vertical, Some(SplitSide::First), _, true) => ("v", Role::Accent),
+            (SplitDirection::Vertical, Some(SplitSide::Second), _, true) => ("^", Role::Accent),
+            (SplitDirection::Horizontal, Some(SplitSide::First), _, false) => ("›", Role::Accent),
+            (SplitDirection::Horizontal, Some(SplitSide::Second), _, false) => ("‹", Role::Accent),
+            (SplitDirection::Vertical, Some(SplitSide::First), _, false) => ("⌄", Role::Accent),
+            (SplitDirection::Vertical, Some(SplitSide::Second), _, false) => ("⌃", Role::Accent),
+            (SplitDirection::Horizontal, None, true, _) => {
                 (self.system.glyphs.rule_v(), Role::BorderFocused)
             }
-            (SplitDirection::Horizontal, None, false) if state.hovered => {
+            (SplitDirection::Horizontal, None, false, _) if state.hovered => {
                 (self.system.glyphs.rule_v(), Role::Focus)
             }
-            (SplitDirection::Horizontal, None, false) => {
-                (self.system.glyphs.rule_v(), Role::Border)
-            }
-            (SplitDirection::Vertical, None, true) => {
+            (SplitDirection::Horizontal, None, false, _) => (" ", Role::Border),
+            (SplitDirection::Vertical, None, true, _) => {
                 (self.system.glyphs.rule(), Role::BorderFocused)
             }
-            (SplitDirection::Vertical, None, false) if state.hovered => {
+            (SplitDirection::Vertical, None, false, _) if state.hovered => {
                 (self.system.glyphs.rule(), Role::Focus)
             }
-            (SplitDirection::Vertical, None, false) => (self.system.glyphs.rule(), Role::Border),
+            (SplitDirection::Vertical, None, false, _) => (" ", Role::Border),
         };
         let mut style = self.system.style(role);
         if state.focused {
@@ -495,5 +498,40 @@ fn painted_area(layout: SplitPaneLayout, direction: SplitDirection) -> Rect {
                 .saturating_add(layout.divider.height)
                 .saturating_add(layout.second.height),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::style::GlyphSet;
+
+    #[test]
+    fn expanded_divider_is_invisible_until_interaction() {
+        let system = DesignSystem::default();
+        let split = SplitPane::new(SplitDirection::Horizontal, 1, 1, &system);
+        let area = Rect::new(0, 0, 9, 3);
+        let mut state = SplitPaneState::default();
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&split, area, &mut buffer, &mut state);
+        let x = state.layout().divider.x;
+        assert_eq!(buffer[(x, 1)].symbol(), " ");
+
+        state.set_focused(true);
+        StatefulWidget::render(&split, area, &mut buffer, &mut state);
+        assert_eq!(buffer[(x, 1)].symbol(), system.glyphs.rule_v());
+        assert!(buffer[(x, 1)].modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn collapsed_handle_obeys_ascii_profile() {
+        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let split = SplitPane::new(SplitDirection::Horizontal, 1, 1, &system);
+        let area = Rect::new(0, 0, 9, 2);
+        let mut state = SplitPaneState::default();
+        state.collapse(SplitSide::First);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&split, area, &mut buffer, &mut state);
+        assert_eq!(buffer[(state.layout().divider.x, 0)].symbol(), ">");
     }
 }

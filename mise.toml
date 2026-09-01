@@ -56,8 +56,8 @@ cargo check --workspace --examples --features crossterm --locked
 cargo check -p termrock-lookbook-web --target wasm32-unknown-unknown --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
 mkdir -p target
-rustup toolchain install nightly --profile minimal
-mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
+rustup toolchain install nightly-2026-09-01 --profile minimal
+RUSTUP_TOOLCHAIN=nightly-2026-09-01 mise x cargo:cargo-public-api@0.52.0 -- cargo public-api -p termrock --all-features > target/public-api-fresh.txt
 diff -u docs/api/public-api.txt target/public-api-fresh.txt
 cargo hack check --workspace --feature-powerset --all-targets --locked
 cargo deny check advisories bans licenses sources

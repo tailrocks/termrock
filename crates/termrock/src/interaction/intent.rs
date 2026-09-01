@@ -256,7 +256,7 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
-/// Default intent map for [`crate::widgets::Menu`] / context menus.
+/// Default intent map for [`crate::widgets::DropdownMenu`] / context menus.
 #[must_use]
 pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
     if key.kind == KeyEventKind::Release {

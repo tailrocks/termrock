@@ -24,7 +24,6 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
@@ -33,17 +32,19 @@ use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
-        HitRegion, NavigationMove, Outcome, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy,
-        OverlaySize, OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent, place_overlay,
+        BackdropPolicy, HitRegion, NavigationMove, Outcome, OverlayId, OverlayKind, OverlayOutcome,
+        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, SemanticNode, SemanticRole,
+        SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     scroll::DialogScroll,
     style::{Density, DesignSystem, Role, RolePalette},
 };
 
+#[cfg(test)]
+use super::ActionVariant;
 use super::{
     Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
-    PanelChrome, Surface, SurfaceRecipe,
+    PanelChrome, PanelVariant,
 };
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
@@ -335,9 +336,7 @@ pub enum DialogOutcome<Id> {
 }
 
 impl<Id> DialogOutcome<Id> {
-    /// Map into legacy [`Outcome`] for ChoiceDialog hosts.
-    #[must_use]
-    pub fn into_outcome(self) -> Outcome<Id> {
+    fn into_choice_outcome(self) -> Outcome<Id> {
         match self {
             Self::Ignored | Self::LoadingBlocked | Self::ValidationFailed | Self::Scrolled => {
                 Outcome::Ignored
@@ -498,101 +497,79 @@ pub fn dismiss_dialog_overlay<FocusId: Clone>(
 
 // ── Backdrop ────────────────────────────────────────────────────────────────
 
-/// A themed fill painted behind modal content.
+/// A semantic backdrop painted behind modal content.
+///
+/// The design system remains the sole paint authority. Callers choose only the
+/// overlay policy; raw symbols and styles cannot bypass the family recipe.
 #[derive(Debug, Clone, Copy)]
-pub struct Backdrop {
-    symbol: char,
-    style: Style,
+pub struct Backdrop<'a> {
+    system: &'a DesignSystem,
+    policy: BackdropPolicy,
 }
 
-impl Default for Backdrop {
-    fn default() -> Self {
-        Self::dim_wash(false)
-    }
-}
-
-impl Backdrop {
-    /// Fully opaque backdrop.
+impl<'a> Backdrop<'a> {
+    /// Dimmed modal wash.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Terminal-default background (`Color::Reset`).
-    ///
-    /// For hosts that opt out of dimming: the layer behind the modal keeps the
-    /// operator's terminal background instead of receding.
-    #[must_use]
-    pub fn reset() -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
-            symbol: ' ',
-            style: Style::new().fg(Color::Reset).bg(Color::Reset),
+            system,
+            policy: BackdropPolicy::Dim,
         }
     }
 
-    /// Stippled wash for terminals with no usable background color.
+    /// Opaque backdrop for blocking/fullscreen layers.
     #[must_use]
-    pub fn dim_wash(ascii: bool) -> Self {
+    pub const fn occluding(system: &'a DesignSystem) -> Self {
         Self {
-            symbol: if ascii { '.' } else { '░' },
-            style: Style::new()
-                .fg(Color::DarkGray)
-                .add_modifier(ratatui_core::style::Modifier::DIM),
+            system,
+            policy: BackdropPolicy::Occlude,
         }
     }
 
-    /// From design tokens — a solid recede, not a stipple.
-    ///
-    /// Paints `Role::BackdropWash` (the canvas blended toward black), so the
-    /// covered content actually darkens. The old `░` field over `Color::Reset`
-    /// left themed terminals with no dim at all: the background never changed,
-    /// only a sprinkle of gray glyphs appeared.
+    /// Selects the semantic policy requested by the overlay stack.
     #[must_use]
-    pub fn from_tokens(tokens: &DesignSystem) -> Self {
-        Self {
-            symbol: ' ',
-            style: tokens.style(Role::BackdropWash),
-        }
-    }
-
-    /// How far the backdrop has arrived (`0.0` invisible, `1.0` full).
-    ///
-    /// A modal whose backdrop appears at full strength in one frame reads as
-    /// the lights being switched off. Blending it toward the canvas over the
-    /// first frames is the whole of the overlay entrance (plans/014 Step 3b).
-    #[must_use]
-    pub fn alpha(mut self, alpha: f32, tokens: &DesignSystem) -> Self {
-        let canvas = tokens.style(Role::Canvas).bg.unwrap_or(Color::Reset);
-        self.style = crate::style::fade_style(self.style, alpha.clamp(0.0, 1.0), canvas);
-        self
-    }
-
-    /// Fill symbol.
-    #[must_use]
-    pub const fn symbol(mut self, symbol: char) -> Self {
-        self.symbol = symbol;
-        self
-    }
-
-    /// Fill style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
+    pub const fn policy(mut self, policy: BackdropPolicy) -> Self {
+        self.policy = policy;
         self
     }
 }
 
-impl Widget for &Backdrop {
+impl Widget for &Backdrop<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
+        let (symbol, style) = match self.policy {
+            BackdropPolicy::None => return,
+            BackdropPolicy::Occlude => (' ', self.system.style(Role::Canvas)),
+            BackdropPolicy::Dim => {
+                let wash = self.system.style(Role::BackdropWash);
+                if wash
+                    .bg
+                    .is_some_and(|background| background != ratatui_core::style::Color::Reset)
+                {
+                    (' ', wash)
+                } else {
+                    let symbol = if matches!(self.system.glyphs, crate::style::GlyphSet::Ascii) {
+                        '.'
+                    } else {
+                        '░'
+                    };
+                    (
+                        symbol,
+                        self.system
+                            .style(Role::TextDisabled)
+                            .add_modifier(ratatui_core::style::Modifier::DIM),
+                    )
+                }
+            }
+        };
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {
-                buffer[(x, y)].set_char(self.symbol).set_style(self.style);
+                buffer[(x, y)].set_char(symbol).set_style(style);
             }
         }
     }
 }
 
-impl Widget for Backdrop {
+impl Widget for Backdrop<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
         reason = "explicitly delegate the owned contract to the borrowed renderer"
@@ -1122,7 +1099,6 @@ pub struct Dialog<'a> {
     title: &'a str,
     description: Option<&'a str>,
     body: Text<'a>,
-    style: Style,
     tokens: &'a DesignSystem,
     emphasis: PanelChrome,
     variant: DialogVariant,
@@ -1142,7 +1118,6 @@ impl<'a> Dialog<'a> {
             title,
             description: None,
             body,
-            style: Style::new(),
             tokens,
             emphasis: PanelChrome::Normal,
             variant: DialogVariant::Default,
@@ -1153,12 +1128,6 @@ impl<'a> Dialog<'a> {
             ascii: false,
             colorless: false,
         }
-    }
-
-    /// Preferred constructor from [`DesignSystem`].
-    #[must_use]
-    pub const fn from_system(title: &'a str, body: Text<'a>, system: &'a DesignSystem) -> Self {
-        Self::new(title, body, system)
     }
 
     /// Description under the title.
@@ -1178,13 +1147,6 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn tokens(&self) -> &DesignSystem {
         self.tokens
-    }
-
-    /// Body style override.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
-        self
     }
 
     /// Panel emphasis (overridden by danger variant / destructive recipe).
@@ -1277,25 +1239,10 @@ impl<'a> Dialog<'a> {
     }
 
     fn content_rect(&self, area: Rect) -> Rect {
-        let inner = Panel::new(self.tokens).block().inner(area);
-        let pad_x = if inner.width
-            >= self
-                .tokens
-                .spacing
-                .pad_x
-                .saturating_mul(2)
-                .saturating_add(4)
-        {
-            self.tokens.spacing.pad_x
-        } else {
-            0
-        };
-        Rect::new(
-            inner.x.saturating_add(pad_x),
-            inner.y,
-            inner.width.saturating_sub(pad_x.saturating_mul(2)),
-            inner.height,
-        )
+        Panel::new(self.tokens)
+            .variant(PanelVariant::Bordered)
+            .overlay(true)
+            .inner(area)
     }
 
     /// Paint chrome and compute slots into `state` (optional actions height reserved).
@@ -1312,12 +1259,6 @@ impl<'a> Dialog<'a> {
         }
         state.slots.root = area;
         Clear.render(area, buffer);
-        Surface::new(self.tokens)
-            .recipe(SurfaceRecipe::Overlay)
-            .bordered(false)
-            .padding(0, 0)
-            .paint(area, buffer);
-
         let emphasis = if matches!(
             state.focus_zone,
             DialogFocusZone::Actions | DialogFocusZone::Body
@@ -1333,11 +1274,13 @@ impl<'a> Dialog<'a> {
 
         let title = self.title_for_paint();
         let panel = Panel::new(self.tokens)
+            .variant(PanelVariant::Bordered)
+            .overlay(true)
             .title(title.as_str())
             .emphasis(emphasis);
 
         if area.height < 3 {
-            panel.block().render(area, buffer);
+            panel.paint(area, buffer, None);
             return;
         }
 
@@ -1349,10 +1292,9 @@ impl<'a> Dialog<'a> {
         let desc_rows = u16::from(has_desc);
         let action_h = action_rows.min(area.height.saturating_sub(3));
 
-        // Panel block paints border+title; body uses inner area.
-        let block = panel.block();
-        let inner = block.inner(area);
-        block.render(area, buffer);
+        // Panel owns the single elevated surface, outline, and title.
+        let inner = panel.inner(area);
+        panel.paint(area, buffer, None);
 
         let content = self.content_rect(area);
         let rhythm = inner.height
@@ -1394,14 +1336,10 @@ impl<'a> Dialog<'a> {
         state.slots.body = Rect::new(content.x, y, content.width, body_h);
 
         // Body paragraph with scroll
-        let mut body_style = self.style;
-        if body_style.fg.is_none() {
-            body_style = body_style.patch(self.tokens.style(Role::Text));
-        }
         state.body_line_count = self.body.lines.len();
         let scroll_y = state.scroll.scroll_y;
         Paragraph::new(self.body.clone())
-            .style(body_style)
+            .style(self.tokens.style(Role::Text))
             .scroll((scroll_y, state.scroll.scroll_x))
             .render(state.slots.body, buffer);
 
@@ -1567,13 +1505,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         self.cursor.as_ref()
     }
 
-    /// Deprecated name for [`Self::cursor`].
-    #[deprecated(note = "use cursor")]
-    #[must_use]
-    pub fn focused(&self) -> Option<&Id> {
-        self.cursor.as_ref()
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -1619,7 +1550,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
             return self.handle_intent(actions, intent);
         }
         // Fallback dialog intent (body scroll etc.)
-        self.dialog.handle_key(key, actions).into_outcome()
+        self.dialog.handle_key(key, actions).into_choice_outcome()
     }
 
     /// Semantic intent routing for footer actions.
@@ -1637,9 +1568,10 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
                     self.dialog.open = false;
                     Outcome::Cancelled
                 }
-                DialogClosePolicy::ConfirmOnly | DialogClosePolicy::Locked => {
-                    self.dialog.handle_intent(intent, actions).into_outcome()
-                }
+                DialogClosePolicy::ConfirmOnly | DialogClosePolicy::Locked => self
+                    .dialog
+                    .handle_intent(intent, actions)
+                    .into_choice_outcome(),
             };
         }
         // Ensure action zone for classic choice intents
@@ -1661,7 +1593,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         let out = self.dialog.handle_intent(intent, actions);
         self.cursor = self.dialog.action_cursor.clone();
         self.loading = self.dialog.loading;
-        out.into_outcome()
+        out.into_choice_outcome()
     }
 
     /// Move to next enabled action.
@@ -1944,33 +1876,20 @@ mod backdrop_tests {
     };
 
     #[test]
-    fn default_backdrop_dims_terminal_background() {
-        let backdrop = Backdrop::default();
-        assert_eq!(backdrop.symbol, '░');
-        assert!(
-            backdrop
-                .style
-                .add_modifier
-                .contains(ratatui_core::style::Modifier::DIM),
-            "the stipple fallback still has to read as dimmed"
-        );
-    }
-
-    #[test]
-    fn backdrop_from_tokens_dims() {
+    fn backdrop_from_design_system_dims() {
         let system = DesignSystem::default();
-        let backdrop = Backdrop::from_tokens(&system);
+        let area = Rect::new(0, 0, 8, 2);
+        let mut buffer = Buffer::empty(area);
+        Backdrop::new(&system).render(area, &mut buffer);
         // A solid recede, not a sprinkle of glyphs over an unchanged terminal
         // background: the covered layer must actually darken.
-        assert_eq!(backdrop.symbol, ' ');
-        assert_eq!(backdrop.style.bg, system.style(Role::BackdropWash).bg);
-        assert_ne!(
-            backdrop.style.bg,
-            Some(Color::Reset),
-            "Reset leaves themed terminals undimmed"
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(
+            buffer[(0, 0)].bg,
+            system.style(Role::BackdropWash).bg.unwrap()
         );
         assert_ne!(
-            backdrop.style.bg,
+            Some(buffer[(0, 0)].bg),
             system.style(Role::Canvas).bg,
             "the wash has to sit below the canvas it covers"
         );
@@ -2068,19 +1987,19 @@ mod backdrop_tests {
                 id: "accept",
                 label: "Accept",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "blocked",
                 label: "Blocked",
                 enabled: false,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: "cancel",
                 label: "Cancel",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let mut state = ChoiceDialogState::new(Some("accept"));
@@ -2113,7 +2032,7 @@ mod backdrop_tests {
             id: "ok",
             label: "OK",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         let mut state = ChoiceDialogState::new(Some("ok"));
         state.set_accepts_input(false);
@@ -2130,13 +2049,13 @@ mod backdrop_tests {
                 id: "a",
                 label: "Accept",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "c",
                 label: "Cancel",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let system = DesignSystem::default();
@@ -2145,7 +2064,14 @@ mod backdrop_tests {
             &actions,
         )
         .ascii(true);
-        let stacked_area = Rect::new(0, 0, 22, 8);
+        let required = ActionBar::new(&actions, &system)
+            .gap(" ")
+            .ascii(true)
+            .required_horizontal_width();
+        let horizontal_width = (1..80)
+            .find(|width| dialog.dialog.content_rect(Rect::new(0, 0, *width, 8)).width >= required)
+            .expect("dialog reaches the action bar reference width");
+        let stacked_area = Rect::new(0, 0, horizontal_width.saturating_sub(1), 8);
         let mut stacked_buffer = Buffer::empty(stacked_area);
         let mut stacked_state = ChoiceDialogState::new(Some("a"));
         (&dialog).render(stacked_area, &mut stacked_buffer, &mut stacked_state);
@@ -2162,8 +2088,8 @@ mod backdrop_tests {
             );
         }
 
-        // One more content cell admits both labels plus their one-cell gap.
-        let horizontal_area = Rect::new(0, 0, 23, 8);
+        // The first width meeting the measured action-bar contract stays one row.
+        let horizontal_area = Rect::new(0, 0, horizontal_width, 8);
         let mut horizontal_buffer = Buffer::empty(horizontal_area);
         let mut horizontal_state = ChoiceDialogState::new(Some("a"));
         (&dialog).render(
@@ -2194,7 +2120,7 @@ mod backdrop_tests {
             id: "accept",
             label: "Accept",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         let tokens = DesignSystem::default();
         let dialog = ChoiceDialog::new(
@@ -2302,7 +2228,7 @@ mod backdrop_tests {
             id: "ok",
             label: "OK",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         let mut state = ChoiceDialogState::new(Some("ok"));
         state.set_loading(true);
@@ -2318,10 +2244,9 @@ mod backdrop_tests {
     }
 
     #[test]
-    fn empty_body_and_from_system() {
+    fn empty_body_uses_canonical_constructor() {
         let system = DesignSystem::phosphor();
-        let dialog =
-            Dialog::from_system("Empty", Text::default(), &system).footer_hint("esc cancel");
+        let dialog = Dialog::new("Empty", Text::default(), &system).footer_hint("esc cancel");
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
@@ -2331,10 +2256,17 @@ mod backdrop_tests {
     }
 
     #[test]
-    fn dim_wash_backdrop_is_not_hard_black() {
-        let wash = Backdrop::dim_wash(false);
-        assert_ne!(wash.symbol, '\0');
-        assert_eq!(wash.style.bg, None, "the stipple never forces a background");
+    fn monochrome_backdrop_keeps_a_non_color_recede_cue() {
+        let system = DesignSystem::default().no_color();
+        let area = Rect::new(0, 0, 4, 1);
+        let mut buffer = Buffer::empty(area);
+        Backdrop::new(&system).render(area, &mut buffer);
+        assert_ne!(buffer[(0, 0)].symbol(), " ");
+        assert!(
+            buffer[(0, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::DIM)
+        );
     }
 
     #[test]
@@ -2353,13 +2285,13 @@ mod backdrop_tests {
                 id: "ok",
                 label: "OK",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "cancel",
                 label: "Cancel",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let mut state = DialogState::new();
@@ -2384,7 +2316,7 @@ mod backdrop_tests {
             id: "save",
             label: "Save",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         let mut state = DialogState::new();
         state.set_action_cursor(Some("save"));
@@ -2403,7 +2335,7 @@ mod backdrop_tests {
             id: "ok",
             label: "OK",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         }];
         let mut state = DialogState::alert();
         state.set_action_cursor(Some("ok"));
@@ -2467,13 +2399,13 @@ mod backdrop_tests {
                 id: "a",
                 label: "A",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: "b",
                 label: "B",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let mut state = DialogState::new();
@@ -2509,13 +2441,13 @@ mod backdrop_tests {
                 id: "ok",
                 label: "OK",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Primary,
             },
             Action {
                 id: "cancel",
                 label: "Cancel",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         let dialog = ChoiceDialog::new(

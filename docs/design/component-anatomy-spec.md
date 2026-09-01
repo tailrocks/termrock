@@ -13,23 +13,23 @@
 
 ## A. Current inventory → proposed taxonomy
 
-**HEAD inventory** (`COMPONENTS.md` / public API): ActionBar, ApprovalCard, Backdrop, Badge, Banner, BarSeries, Button, Callout, Checkbox, ChoiceDialog, CodeBlock, CommandPalette, CompletionMenu, DataTable, DesignInspector, DetailTable, Dialog, DiffView, Drawer, EmptyState, ErrorView, Form, FormWizard, Heading, HintBar, ImageSurface, JumpOverlay, Kbd, List, LoadingView, LogPane, MarkdownView, Menu, MessageDialog, ModeRibbon, Panel, Paragraph, PermissionPrompt, Picker, PlanReview, Popover, Progress, PromptBox, PromptComposer, QuestionFlow, SegmentedMeter, SeparatorLine, SessionPicker, Skeleton, Sparkline, SplitPane, StatusBar, StreamView, Surface, Table, Tabs, TaskRail, TextArea, TextInput, ThemePicker, ThinkingBlock, Timeline, Toast, TokenMeter, ToolCard, Transcript, Tree, Viewport, VirtualGrid (+ patterns: agent_shell, ops_dashboard, resource_browser, studio_shell).
+**HEAD inventory** (`COMPONENTS.md` / public API): ActionBar, ApprovalCard, Backdrop, Badge, Banner, BarSeries, Button, Callout, Checkbox, ChoiceDialog, CodeBlock, CommandPalette, CompletionMenu, DataTable, DesignInspector, DetailTable, Dialog, DiffView, Drawer, EmptyState, ErrorState, Form, FormWizard, Heading, HintBar, ImageSurface, JumpOverlay, Kbd, List, LoadingView, LogPane, MarkdownView, Menu, MessageDialog, ModeRibbon, Panel, Paragraph, PermissionPrompt, Picker, PlanReview, Popover, ProgressBar, PromptBox, PromptComposer, QuestionFlow, SegmentedMeter, Separator, SessionPicker, Skeleton, Sparkline, SplitPane, StatusBar, StreamView, Surface, Table, Tabs, TaskRail, TextArea, TextInput, ThemePicker, ThinkingBlock, Timeline, Toast, TokenMeter, ToolCard, Transcript, Tree, Viewport, VirtualGrid (+ patterns: agent_shell, ops_dashboard, resource_browser, studio_shell).
 
 | Proposed name | Taxonomy | HEAD mapping | Status |
 |---------------|----------|--------------|--------|
 | Button, IconButton | Primitives | Button exists; IconButton incomplete | Harden / add |
 | Badge, Tag, Chip, Kbd | Primitives | Badge, Kbd exist; Tag/Chip partial | Harden / add |
-| Separator | Primitives | SeparatorLine | Rename recipe-only ok |
-| Spinner | Primitives | Inside Progress/Loading | Promote first-class |
+| Separator | Primitives | Separator | Rename recipe-only ok |
+| Spinner | Primitives | Inside ProgressBar/Loading | Promote first-class |
 | Heading, Paragraph, Markdown, CodeBlock | Content | Heading, Paragraph, MarkdownView, CodeBlock | Rename Markdown |
 | Surface, Section, Callout, Alert | Content/Layout | Surface, Panel, Callout, Banner | Section new; Banner→Alert |
 | ScrollArea, WorkspacePane | Layout | Viewport, SplitPane | Evolve names |
-| Tabs, Sidebar, Breadcrumbs, Menu, ContextMenu | Navigation | Tabs, Menu exist; Sidebar/Breadcrumbs/ContextMenu gaps | Fill |
+| Tabs, Sidebar, Breadcrumbs, Menu, DropdownMenu | Navigation | Tabs, Menu exist; Sidebar/Breadcrumbs/DropdownMenu gaps | Fill |
 | ActionBar, HintBar, StatusBar | Navigation | Exist | Contract stories |
 | TextInput, TextArea, Checkbox, RadioGroup, Switch, Form | Forms | Input/Area/Checkbox/Form exist; Radio/Switch gaps | Fill |
 | Select, MultiSelect, Combobox | Selection | Picker → Combobox; Select/MultiSelect thin | Fill |
 | List, Tree, CompletionMenu | Selection | Exist | Full part×state recipes |
-| Toast, Progress, Skeleton, EmptyState, LoadingView, ErrorView | Feedback | Exist | Spinner + Alert polish |
+| Toast, ProgressBar, Skeleton, EmptyState, LoadingView, ErrorState | Feedback | Exist | Spinner + Alert polish |
 | Dialog, Drawer, Popover, Tooltip, CommandPalette | Overlays | Most exist; Tooltip thin | Fill |
 | Table, DataTable, ObjectInspector, LogStream, Timeline, DiffReview | Data | Table/DataTable/DetailTable/LogPane/Timeline/DiffView | Rename + harden |
 | Charts | Data | Sparkline, BarSeries, SegmentedMeter | Keep |
@@ -88,8 +88,8 @@ Move prev/next · Page · Home/End · Activate · Toggle · Cancel · Submit · 
 4. **Navigation** — Tabs, Sidebar, Breadcrumbs, Menu, ActionBar, HintBar, StatusBar  
 5. **Forms and input** — TextInput, TextArea, Checkbox, RadioGroup, Switch, Form  
 6. **Selection** — Select, MultiSelect, Combobox, List, Tree, CompletionMenu  
-7. **Feedback** — Toast, Progress, Skeleton, EmptyState, Spinner, LoadingView, ErrorView  
-8. **Overlays** — Dialog, Drawer, Popover, Tooltip, ContextMenu, CommandPalette, JumpOverlay, Backdrop  
+7. **Feedback** — Toast, ProgressBar, Skeleton, EmptyState, Spinner, LoadingView, ErrorState
+8. **Overlays** — Dialog, Drawer, Popover, Tooltip, DropdownMenu, CommandPalette, JumpOverlay, Backdrop
 9. **Data presentation** — Table, DataTable, ObjectInspector, LogStream, Timeline, DiffReview, Charts  
 10. **Developer tools** — ThemePicker, DesignInspector  
 11. **AI-agent** — PromptComposer, PermissionPrompt, QuestionFlow, PlanReview, ToolCallCard, TaskRail, SessionPicker, ThinkingBlock, TokenMeter, Transcript  
@@ -451,7 +451,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** header tab stop if collapsible; actions separate stops.  
 12. **Disabled:** N/A body; actions respect disabled.  
 13. **Loading:** body may be Skeleton.  
-14. **Error:** body may be ErrorView.  
+14. **Error:** body may be ErrorState.
 15. **Narrow:** drop description → actions → collapse body by default optional.  
 16. **Tiny:** title only.  
 17. **Unicode/ASCII:** disclosure `▾`/`▸` vs `v`/`>`.  
@@ -478,7 +478,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** optional tab stop when dismissible or actions present.  
 12. **Disabled:** N/A.  
 13. **Loading:** N/A.  
-14. **Error:** tone=danger for soft errors (hard → ErrorView/Alert).  
+14. **Error:** tone=danger for soft errors (hard → ErrorState/Alert).
 15. **Narrow:** single-line title + icon.  
 16. **Tiny:** icon + title.  
 17. **Unicode/ASCII:** tone glyphs `ℹ`/`!`/`✗` → `i`/`!`/`x`.  
@@ -681,14 +681,14 @@ Every component below uses sections **1–24**:
 16. **Tiny:** labels only, clip.  
 17. **Unicode/ASCII:** submenu `▸`/`>`; check `✓`/`*`.  
 18. **Colorless:** reverse highlight.  
-19. **Composition:** ContextMenu shares item model; ActionBar overflow.  
+19. **Composition:** DropdownMenu shares item model; ActionBar overflow.
 20. **Outcomes:** `Activated(Id)` · `Cancelled` · `OpenChanged`  
 21. **Stories:** `menu/nested`, `menu/disabled-items`  
 22. **Snapshots:** nested open path.  
 23. **Interaction tests:** Esc peels one level; Enter activates leaf.  
 24. **Perf:** O(visible items).
 
-## ContextMenu
+## DropdownMenu
 
 1. **Purpose:** Pointer-triggered Menu at a point.  
 2. **Anatomy:** Menu anatomy + `anchor`  
@@ -1205,7 +1205,7 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** TTL expire; manual dismiss.  
 24. **Perf:** O(toasts visible).
 
-## Progress
+## ProgressBar
 
 1. **Purpose:** Determinate or indeterminate progress.  
 2. **Anatomy:** `track` · `fill` · `label` · `percent`  
@@ -1247,7 +1247,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** not a tab stop.  
 12. **Disabled:** N/A.  
 13. **Loading:** this *is* loading UI.  
-14. **Error:** N/A (ErrorView).  
+14. **Error:** N/A (ErrorState).
 15. **Narrow:** fewer/shorter bones.  
 16. **Tiny:** one bone.  
 17. **Unicode/ASCII:** `░`/`~`.  
@@ -1274,7 +1274,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** action if present; else not a stop.  
 12. **Disabled:** action disabled respected.  
 13. **Loading:** N/A (Skeleton/LoadingView).  
-14. **Error:** prefer ErrorView for hard failures.  
+14. **Error:** prefer ErrorState for hard failures.
 15. **Narrow:** stack parts.  
 16. **Tiny:** glyph + title.  
 17. **Unicode/ASCII:** glyph catalog.  
@@ -1297,7 +1297,7 @@ Every component below uses sections **1–24**:
 7. **Visual states:** animating / static (Motion off).  
 8–12. **Interaction/focus/disabled:** non-interactive; not a tab stop.  
 13. **Loading:** this *is* loading UI.  
-14. **Error:** N/A (use ErrorView).  
+14. **Error:** N/A (use ErrorState).
 15. **Narrow:** truncate label.  
 16. **Tiny:** spinner only.  
 17. **Unicode/ASCII:** Spinner catalog.  
@@ -1309,7 +1309,7 @@ Every component below uses sections **1–24**:
 23. **Interaction tests:** Motion::Off stable.  
 24. **Perf:** O(1).
 
-## ErrorView
+## ErrorState
 
 1. **Purpose:** Hard failure surface with optional recovery action.  
 2. **Anatomy:** `root` · `glyph` · `title` · `detail` · `action`  
@@ -2665,7 +2665,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** transcript surface + optional item focus.  
 12. **Disabled:** N/A.  
 13. **Loading/async:** append/stream without full scan; skeleton pending.  
-14. **Error:** ErrorView item or banner.  
+14. **Error:** ErrorState item or banner.
 15. **Narrow:** drop secondary item parts via child recipes.  
 16. **Tiny:** last item + composer sibling.  
 17. **Unicode/ASCII:** child rules.  
@@ -2696,7 +2696,7 @@ Every component below uses sections **1–24**:
 11. **Focus:** scene-owned; one leaf.  
 12. **Disabled:** N/A block.  
 13. **Loading:** transcript skeleton / stream.  
-14. **Error:** ErrorView in center optional.  
+14. **Error:** ErrorState in center optional.
 15. **Narrow:** collapse TaskRail to rail; stack south.  
 16. **Tiny:** Transcript + Prompt only.  
 17. **Unicode/ASCII:** child glyph catalogs.  
@@ -2830,7 +2830,7 @@ pub enum ApprovalDecision {
 | 045 | Composed row anatomy on List/Tree/Menus |
 | Primitives wave | Button family, Badge/Tag/Chip/Kbd/Separator/Spinner |
 | Forms wave | Checkbox, RadioGroup, Switch, Select, MultiSelect |
-| Overlay wave | Menu, ContextMenu, Popover, Tooltip, Drawer |
+| Overlay wave | Menu, DropdownMenu, Popover, Tooltip, Drawer |
 | Flagship | AgentWorkbench + stories + contraction tests |
 | Studio | DesignInspector + capability preview host (048–049) |
 
@@ -2863,10 +2863,10 @@ Every row must have axes **1–24** specified in this document (interactive axes
 | Primitives | Button, IconButton, Badge, Tag, Chip, Kbd, Separator, Spinner |
 | Content | Heading, Paragraph, Markdown, CodeBlock, Surface, Section, Callout, Alert |
 | Layout | Surface, Section, ScrollArea, WorkspacePane/Split |
-| Navigation | Tabs, Sidebar, Breadcrumbs, Menu, ContextMenu, ActionBar, HintBar, StatusBar |
+| Navigation | Tabs, Sidebar, Breadcrumbs, Menu, DropdownMenu, ActionBar, HintBar, StatusBar |
 | Forms | TextInput, TextArea, Checkbox, RadioGroup, Switch, Form |
 | Selection | Select, MultiSelect, Combobox, List, Tree, CompletionMenu |
-| Feedback | Toast, Progress, Skeleton, EmptyState, LoadingView, ErrorView, Spinner |
+| Feedback | Toast, ProgressBar, Skeleton, EmptyState, LoadingView, ErrorState, Spinner |
 | Overlays | Dialog, Drawer, Popover, Tooltip, CommandPalette, Backdrop, JumpOverlay |
 | Data | Table, DataTable, ObjectInspector, LogStream, Timeline, DiffReview, Sparkline, BarSeries, SegmentedMeter |
 | Dev tools | ThemePicker, DesignInspector |
@@ -2883,4 +2883,4 @@ Every row must have axes **1–24** specified in this document (interactive axes
 - Quality gate: [`component-quality-standard.md`](./component-quality-standard.md)  
 - Agent implement prompts: [`component-prompt-library.md`](./component-prompt-library.md)  
 - Agent pack: [`termrock-agent.md`](./termrock-agent.md)  
-- Contracts JSON: `docs/api/component-contracts.json` (machine inventory)
+- Contracts JSON: `docs/api/component-contracts.v2.json` (mandatory evidence ledger)

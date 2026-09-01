@@ -1159,15 +1159,24 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         // The menu declares itself non-focusable — the editor keeps focus — so
         // it must not wear the focused border. A host that gives the menu its
         // own focus says so with `focused(true)` (plans/009 Step 4).
-        let border = if self.focused && !self.colorless {
-            self.system.style(Role::BorderFocused)
+        let recipe = if self.focused {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            self.system.style(Role::Border)
+            super::SurfaceRecipe::Overlay
         };
-        super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(border)
             .padding(0, 0)
             .paint(menu, buffer);
 

@@ -17,12 +17,7 @@
 //!
 //! Research: Radix Popover, terminal pickers, Textual overlays.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
@@ -656,22 +651,9 @@ pub struct Popover<'a> {
 }
 
 impl<'a> Popover<'a> {
-    /// Title-only convenience (legacy `Popover::new(title, system)`).
+    /// Creates a popover with empty header/footer slots.
     #[must_use]
-    pub const fn new(title: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            header: Some(title),
-            footer: None,
-            border: true,
-            ascii: false,
-            colorless: false,
-        }
-    }
-
-    /// Slot-oriented constructor without default title.
-    #[must_use]
-    pub const fn slots(system: &'a DesignSystem) -> Self {
+    pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
             header: None,
@@ -727,17 +709,25 @@ impl<'a> Popover<'a> {
         }
         state.slots.root = area;
 
-        let border_role = if state.focused && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.focused {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            super::SurfaceRecipe::Overlay
         };
-        let border_style = self.system.style(border_role);
 
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(self.border)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
 
@@ -837,6 +827,7 @@ impl<'a> Popover<'a> {
                 .label("popover")
                 .description(desc)
                 .focusable(state.enabled && state.accepts_input)
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
                     expanded: state.open,
@@ -859,26 +850,6 @@ impl StatefulWidget for Popover<'_> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         <&Self as StatefulWidget>::render(&self, area, buffer, state);
-    }
-}
-
-// Legacy Widget without state (title-only paint for lookbook snapshots).
-impl Widget for &Popover<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = PopoverState::new();
-        state.open = true;
-        state.focused = true;
-        state.set_header_rows(1);
-        state.set_footer_rows(0);
-        // ephemeral
-        let mut st = state;
-        Popover::paint(self, area, buffer, &mut st);
-    }
-}
-
-impl Widget for Popover<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -1003,7 +974,8 @@ mod tests {
         state.set_footer_rows(1);
         let area = Rect::new(0, 0, 30, 10);
         let mut buf = Buffer::empty(area);
-        Popover::new("Settings", &system)
+        Popover::new(&system)
+            .header(Some("Settings"))
             .footer(Some("esc cancel"))
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.header.height, 1);
@@ -1030,24 +1002,31 @@ mod tests {
         state.set_footer_rows(0);
         let area = Rect::new(0, 0, 20, 6);
         let mut buf = Buffer::empty(area);
-        Popover::slots(&system)
+        Popover::new(&system)
             .border(false)
             .paint(area, &mut buf, &mut state);
         assert_eq!(state.slots.body, area);
     }
 
     #[test]
-    fn legacy_widget_title_paint() {
+    fn colorless_focus_keeps_strong_overlay_outline() {
         let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 20, 5);
-        let mut buf = Buffer::empty(area);
-        Widget::render(&Popover::new("Tip", &system), area, &mut buf);
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(text.contains("Tip"), "{text}");
+        let area = Rect::new(0, 0, 20, 6);
+        let mut state = PopoverState::new();
+        state.set_open(true);
+        state.set_focused(true);
+        let mut buffer = Buffer::empty(area);
+
+        Popover::new(&system)
+            .colorless(true)
+            .paint(area, &mut buffer, &mut state);
+
+        assert!(
+            buffer[(0, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::BOLD),
+            "focus must remain visible after chroma is removed"
+        );
     }
 
     #[test]
@@ -1068,7 +1047,7 @@ mod tests {
         let mut state = PopoverState::new();
         state.open = true;
         let mut scene = SemanticScene::<&str, ()>::default();
-        Popover::new("X", &system).register_semantic(
+        Popover::new(&system).header(Some("X")).register_semantic(
             &mut scene,
             "p",
             Rect::new(0, 0, 20, 5),
@@ -1080,6 +1059,29 @@ mod tests {
                 .iter()
                 .any(|n| n.label.as_deref() == Some("popover"))
         );
+    }
+
+    #[test]
+    fn disabled_popover_rejects_input_and_registers_disabled_semantics() {
+        let system = DesignSystem::default();
+        let mut state = PopoverState::new();
+        state.set_open(true);
+        state.set_focused(true);
+        state.set_enabled(false);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PopoverOutcome::Ignored
+        );
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Popover::new(&system).register_semantic(
+            &mut scene,
+            "popover",
+            Rect::new(0, 0, 20, 5),
+            &state,
+        );
+        let node = scene.nodes().first().expect("popover semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
     }
 
     #[test]
@@ -1199,11 +1201,10 @@ mod tests {
         for _ in 0..300 {
             terminal
                 .draw(|f| {
-                    Popover::new("Settings", &system).footer(Some("esc")).paint(
-                        f.area(),
-                        f.buffer_mut(),
-                        &mut state,
-                    );
+                    Popover::new(&system)
+                        .header(Some("Settings"))
+                        .footer(Some("esc"))
+                        .paint(f.area(), f.buffer_mut(), &mut state);
                 })
                 .unwrap();
         }
@@ -1223,11 +1224,10 @@ mod tests {
         let mut terminal = Terminal::new(TestBackend::new(24, 8)).unwrap();
         terminal
             .draw(|f| {
-                Popover::new("Filter", &system).footer(Some("esc")).paint(
-                    f.area(),
-                    f.buffer_mut(),
-                    &mut state,
-                );
+                Popover::new(&system)
+                    .header(Some("Filter"))
+                    .footer(Some("esc"))
+                    .paint(f.area(), f.buffer_mut(), &mut state);
             })
             .unwrap();
         let text: String = terminal
@@ -1249,11 +1249,10 @@ mod tests {
         state2.set_footer_rows(1);
         terminal2
             .draw(|f| {
-                Popover::new("Filter", &system).footer(Some("esc")).paint(
-                    f.area(),
-                    f.buffer_mut(),
-                    &mut state2,
-                );
+                Popover::new(&system)
+                    .header(Some("Filter"))
+                    .footer(Some("esc"))
+                    .paint(f.area(), f.buffer_mut(), &mut state2);
             })
             .unwrap();
         let text2: String = terminal2

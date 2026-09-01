@@ -113,7 +113,7 @@ impl<'a, Id> VirtualListItem<'a, Id> {
     pub fn placeholder(logical_index: u64, id: Id) -> Self {
         Self {
             logical_index,
-            row: ListRow::item(id, Line::from("…")).loading(),
+            row: ListRow::item(id, Line::from("loading")).loading(),
         }
     }
 }
@@ -358,7 +358,7 @@ impl<Id> VirtualListState<Id> {
     /// Measure/overscan slice (what host should project).
     #[must_use]
     pub fn measure_slice(&self) -> VirtSlice {
-        self.virt.measure_slice()
+        self.virt.visible_slice()
     }
 
     /// Indices the host should project this frame (sticky + measure window).
@@ -367,7 +367,7 @@ impl<Id> VirtualListState<Id> {
     pub fn projection_indices(&self, out: &mut Vec<u64>) {
         out.clear();
         self.virt.sticky_indices(out);
-        let m = self.virt.measure_slice();
+        let m = self.virt.visible_slice();
         for i in m.measure_start..m.measure_end {
             if !out.contains(&i) {
                 out.push(i);
@@ -620,6 +620,7 @@ impl<'a, Id> VirtualList<'a, Id> {
         }
         state.regions.clear();
         state.pointer = state.list.hovered().and_then(|_| state.pointer);
+        let ascii = self.system.glyphs.is_ascii();
 
         let mut y = area.y;
         let mut h = area.height;
@@ -627,7 +628,7 @@ impl<'a, Id> VirtualList<'a, Id> {
         // Filter / page chrome
         if let Some(q) = state.filter_query.as_ref() {
             let n = state.filter_match_count.unwrap_or(state.virt.logical_len());
-            let line = format!("filter:{q} · {n} matches");
+            let line = format!("filter:{q}{}{n} matches", if ascii { " - " } else { " · " });
             buffer.set_stringn(
                 area.x,
                 y,
@@ -643,7 +644,13 @@ impl<'a, Id> VirtualList<'a, Id> {
             VirtualPageStatus::Loading | VirtualPageStatus::Placeholder
         ) {
             let msg = match state.page_status {
-                VirtualPageStatus::Loading => "loading page…",
+                VirtualPageStatus::Loading => {
+                    if ascii {
+                        "loading page..."
+                    } else {
+                        "loading page…"
+                    }
+                }
                 VirtualPageStatus::Placeholder => "placeholders in window",
                 VirtualPageStatus::Ready => "",
             };
@@ -1063,7 +1070,7 @@ mod tests {
 
     #[test]
     fn async_placeholder_and_loading() {
-        let system = system();
+        let system = system().glyphs(crate::style::GlyphSet::Ascii);
         let mut state = VirtualListState::<u64>::new();
         state.set_logical_len(1000);
         state.set_viewport_extent(8);
@@ -1078,6 +1085,13 @@ mod tests {
         let mut buf = Buffer::empty(area);
         VirtualList::new(&projected, &system).paint(area, &mut buf, &mut state);
         assert_eq!(state.page_status(), VirtualPageStatus::Loading);
+        let text = buf
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("loading page..."), "{text}");
+        assert!(text.chars().all(|ch| !matches!(ch, '…' | '·')));
     }
 
     #[test]

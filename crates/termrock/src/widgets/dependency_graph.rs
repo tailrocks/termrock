@@ -24,7 +24,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
         data_view::{ColumnModel, DataColumn, DataColumnWidth},
@@ -1172,7 +1172,7 @@ impl<'a> DependencyGraph<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
         state.node_regions.clear();
 
         let filtered = filter_dep_nodes(self.nodes, state.filter.as_deref().unwrap_or(""));
@@ -1365,22 +1365,23 @@ fn paint_graph(
         } else {
             n.status.letter()
         };
-        let mark = if selected {
-            if ascii { "*" } else { "›" }
-        } else {
-            " "
-        };
+        let mark = " ";
         let label = format!(
             "{mark}{}{} {}",
             n.kind.glyph(ascii),
             letter,
             take_display_cols(n.label, usize::from(w.saturating_sub(4)))
         );
-        let style = if selected && focused {
-            system.style(Role::Focus)
-        } else {
-            system.style(n.status.role())
-        };
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected,
+                focused: selected && focused,
+                enabled: true,
+                ..Default::default()
+            },
+        );
+        let style = chrome.label_style(system.style(n.status.role()));
         buffer.set_stringn(
             x,
             y,
@@ -1399,6 +1400,7 @@ fn paint_graph(
                 );
             }
         }
+        chrome.paint(buffer, Rect::new(x, y, w, h));
         state.node_regions.push((
             n.id.to_string(),
             Rect {
@@ -1509,28 +1511,30 @@ fn paint_list_or_tree(
         } else {
             "  "
         };
-        let mark = if selected {
-            if ascii { ">" } else { "›" }
-        } else {
-            " "
-        };
+        let mark = " ";
         let line = format!(
             "{mark}{indent}{disc}{:<16} {:<8} {}",
             take_display_cols(&cells[0], 16),
             cells[1],
             cells[2]
         );
+        let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+            system,
+            ListRowVisualState {
+                selected,
+                focused: selected && focused,
+                enabled: true,
+                ..Default::default()
+            },
+        );
         buffer.set_stringn(
             area.x,
             y,
             take_display_cols(&line, usize::from(area.width)),
             usize::from(area.width),
-            if selected && focused {
-                system.style(Role::Focus)
-            } else {
-                system.style(Role::Text)
-            },
+            chrome.label_style(system.style(Role::Text)),
         );
+        chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
         state.node_regions.push((
             m.0.clone(),
             Rect {

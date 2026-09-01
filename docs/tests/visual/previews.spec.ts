@@ -9,13 +9,24 @@ async function settlePaint(page: import('@playwright/test').Page) {
 async function preview(page: Page, route: string, story: string) {
   await page.goto(route)
   const figure = page.locator(`[data-termrock-preview="${story}"]`)
+  await figure.getByRole('button', { name: 'Run live', exact: true }).click()
   await expect(figure).toHaveAttribute('data-preview-live', 'rust-wasm')
   await expect(figure.locator('canvas')).toBeVisible()
   return figure
 }
 
 async function focusPreview(figure: Locator) {
-  await figure.locator('[role="application"]').focus()
+  await figure.locator('[data-termrock-interaction="1"]').click()
+  await expect(figure).toHaveAttribute('data-preview-engaged', 'true')
+  const host = figure.locator('[role="application"]')
+  await expect
+    .poll(() =>
+      host.evaluate(
+        (element) =>
+          element === document.activeElement || element.contains(document.activeElement),
+      ),
+    )
+    .toBe(true)
 }
 
 async function capture(
@@ -86,7 +97,7 @@ test('Dialog visual lifecycle: closed, open, dismissed', async ({ page }, testIn
   await expect(figure).toHaveAttribute('data-preview-outcome', 'Dialog opened')
   await capture(page, figure, testInfo, 'dialog-open')
 
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Shift+Escape')
   await expect(figure).toHaveAttribute(
     'data-preview-outcome',
     'Dialog closed: Escape; focus restored to Open dialog',
@@ -203,6 +214,7 @@ for (const [route, story] of [
   }, testInfo) => {
     await page.goto(route)
     const preview = page.locator(`[data-termrock-preview="${story}"]`)
+    await preview.getByRole('button', { name: 'Run live', exact: true }).click()
     await expect(preview).toHaveAttribute('data-preview-live', 'rust-wasm')
     await expect(preview.locator('canvas')).toBeVisible()
 
@@ -220,8 +232,7 @@ for (const [route, story] of [
     expect(metrics.colors).toBeGreaterThan(3)
     expect(metrics.nonDominant).toBeGreaterThan(100)
 
-    const host = preview.locator('[role="application"]')
-    await host.focus()
+    await focusPreview(preview)
     if (story === 'text-input/basic') await page.keyboard.type('λ')
     else if (story === 'connection-manager/full') await page.keyboard.press('ArrowDown')
     else await page.keyboard.press('Enter')

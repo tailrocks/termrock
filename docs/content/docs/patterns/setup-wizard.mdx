@@ -1,50 +1,35 @@
 ---
-title: Setup Wizard
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: SetupWizard
-demo: setup-wizard/welcome
-interaction: activation
+title: "Setup Wizard"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: SetupWizard
 source: crates/termrock/src/patterns/setup_wizard.rs
 classification: application
+tags:
+  - "application"
+  - "Form"
+  - "FormWizard"
+  - "PermissionPrompt"
+aliases: []
+uses:
+  - "Form"
+  - "FormWizard"
+  - "PermissionPrompt"
+  - "ThemePicker"
+supportingTypes:
+  - "Field"
+  - "Fieldset"
+  - "StatefulWidget"
+  - "StepChangeReason"
+  - "ThemePreset"
+  - "Widget"
+  - "WizardGate"
+  - "WizardPhase"
+  - "WizardProgress"
+  - "WizardStep"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="setup-wizard/welcome" interactive caption="Setup Wizard · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 80×22
-
-Composed public building blocks: `Field`, `Fieldset`, `Form`, `FormWizard`, `PermissionPrompt`, `StatefulWidget`, `StepChangeReason`, `ThemePicker`, `ThemePreset`, `Widget`, `WizardGate`, `WizardPhase`, `WizardProgress`, `WizardStep`.
-
-## Workflow
-
-- `Enter/→ next`: invoke the focused public state-machine action and inspect its typed request.
-- `← back`: forward this normalized action to the mounted public pattern state.
-- `S skip optional`: forward this normalized action to the mounted public pattern state.
-- `Esc cancel`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/setup_wizard.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/setup_wizard.rs)
-- Demo: `setup-wizard/welcome`
-
-## Migrated handbook guidance
-
-# SetupWizard
 
 Source-owned onboarding block (migration `0238`). Composes **FormWizard** +
 **Stepper** with step-kind body paint. Domain values and auth stay host-owned.
-
 
 ## When to use
 
@@ -71,37 +56,3 @@ Welcome · Capability · Account · Connection · Choices · Validation · Permi
 | Resume | `WizardProgress` chrome only |
 | Keyboard-only | Enter/n next · p back · s skip · Ctrl+S save progress |
 | No marketing splash | One-line welcome detail |
-
-## Minimal host loop
-
-```rust
-use termrock::patterns::{
-    SetupWizardState, SetupWizardSurfaces, example_setup_steps,
-    example_capability_lines, render_setup_wizard,
-};
-use termrock::widgets::BUILTIN_THEME_PRESETS;
-
-let mut state = SetupWizardState::from_steps(example_setup_steps())
-    .with_title("First run");
-
-render_setup_wizard(buf, area, SetupWizardSurfaces {
-    system: &system,
-    state: &mut state,
-    fieldsets: &fieldsets_for_step,
-    capabilities: &example_capability_lines(),
-    summary_lines: &summary,
-    welcome_title: "Setup",
-    welcome_detail: "Configure once. Keyboard-first.",
-    theme_presets: BUILTIN_THEME_PRESETS,
-    theme_paint: Some(&system),
-    permission: None,
-});
-```
-
-## Stories
-
-`setup-wizard/{welcome,capability,account,permission,theme,summary,recovery,inline,resume,cancel-confirm}`
-
-## Related
-
-FormWizard · Stepper · Form · ThemePicker · PermissionPrompt · EmptyState · migration `0238`

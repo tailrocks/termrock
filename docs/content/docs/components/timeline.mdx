@@ -1,118 +1,17 @@
 ---
-title: Timeline
-description: 'Vertical activity timeline with active markers.'
-component: Timeline
-demo: timeline/basic
-interaction: scrolling-virtualization
-actions:
-  - "↑↓ move"
-  - "Enter select"
-  - "/ filter"
-  - "F follow"
-  - "wheel scroll"
-  - "click event"
-expectedOutcomes:
-  - "The \"↑↓ move\" action updates visible mounted state and reports its typed outcome."
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "The \"F follow\" action updates visible mounted state and reports its typed outcome."
-  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+title: "Timeline"
+description: "Vertical activity timeline with active markers."
+catalogId: Timeline
 source: crates/termrock/src/widgets/timeline.rs
+tags:
+  - "visualization"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="timeline/basic" interactive caption="Timeline · Timeline — live shared Rust state" />
-
-## Try it
-
-- `↑↓ move`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `Enter select`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `F follow`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
-- `click event`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | not-applicable in primary demo |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `timeline/basic` | Timeline | interactive |
-| `timeline/checkpoint` | Timeline checkpoint rows | paint-only |
-| `timeline/grouped` | Timeline grouped day | paint-only |
-| `timeline/in-app` | In application | interactive |
-| `timeline/narrow` | Narrow Timeline | paint-only |
-| `timeline/rail` | Timeline rail | paint-only |
-| `timeline/streaming` | Timeline streaming | paint-only |
-| `timeline/unicode` | Unicode Timeline | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `timeline/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn timeline(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let events = [
-        TimelineEvent::with_id("a", "12:01", "Started deploy")
-            .status(TimelineStatus::Success)
-            .actor("ci")
-            .relative("1h ago")
-            .duration("12s"),
-        TimelineEvent::with_id("b", "12:02", "Running tests")
-            .status(TimelineStatus::Running)
-            .active()
-            .actor("ci")
-            .correlation("trace-9"),
-        TimelineEvent::with_id("c", "12:03", "Open PR")
-            .status(TimelineStatus::Pending)
-            .actor("bot"),
-    ];
-    let mut state = TimelineState::new();
-    state.following = false;
-    state.cursor = 1;
-    frame.render_stateful_widget(
-        Timeline::with_events(&events, system).focused(true),
-        area,
-        &mut state,
-    );
-}
-```
-
-## Migrated handbook guidance
-
-# Timeline
 
 **Purpose.** Present time-ordered events with status, actor, and optional
 grouping. Supports live streaming while preserving reading position when the
 user scrolls up.
-
 
 ## Recipes
 
@@ -128,25 +27,6 @@ user scrolls up.
 - Moving up / wheel-up **pauses** follow.
 - `f` or End re-follows; call `on_append(len)` after host appends.
 
-## Example
-
-```rust
-use termrock::widgets::{
-    Timeline, TimelineEvent, TimelineState, TimelineStatus, TimelineRecipe,
-};
-
-let events = [
-    TimelineEvent::with_id("a", "12:01", "Deploy")
-        .status(TimelineStatus::Success)
-        .actor("ci"),
-    TimelineEvent::with_id("b", "12:02", "Tests")
-        .status(TimelineStatus::Running)
-        .active(),
-];
-let mut state = TimelineState::new();
-// Timeline::with_events(&events, &system).recipe(TimelineRecipe::Rail)
-```
-
 ## Checkpoint mode (Timeline)
 
 `TimelineState::set_checkpoint_mode(true)`: Enter → `RestoreRequested`, `c` →
@@ -154,44 +34,3 @@ let mut state = TimelineState::new();
 
 For full session restore/rewind UX (boundaries, preview, draft preserved), use
 [CheckpointTimeline](/docs/components/checkpoint-timeline) (migration `0229`).
-
-## Related
-
-- Migration `0193-v0.13.0-timeline`
-- Compose with LogStream, ProgressSteps, task history
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `timeline/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `timeline/basic` | Timeline | **Primary (live preview)** |
-| `timeline/checkpoint` | Timeline checkpoint rows | checkpoint |
-| `timeline/grouped` | Timeline grouped day | grouped |
-| `timeline/narrow` | Narrow Timeline | Narrow terminal |
-| `timeline/rail` | Timeline rail | rail |
-| `timeline/streaming` | Timeline streaming | streaming |
-| `timeline/unicode` | Unicode Timeline | Unicode / wide glyphs |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/timeline.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/timeline.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `timeline/basic`
-
-## Seen in applications
-
-<SeenInApplications component="Timeline" />

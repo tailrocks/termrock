@@ -413,7 +413,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
                 let out = self.sidebar.handle_key(key, nav);
                 match out {
                     SidebarOutcome::Ignored => SettingsScreenOutcome::Ignored,
-                    SidebarOutcome::Selected(id) => {
+                    SidebarOutcome::RouteChanged { id } => {
                         self.region = SettingsRegion::Body;
                         self.drawer_open = false;
                         self.sync_region_focus_flags();

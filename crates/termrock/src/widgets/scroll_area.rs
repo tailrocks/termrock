@@ -777,13 +777,18 @@ impl<'a> ScrollArea<'a> {
         }
     }
 
-    /// Paint new-content indicator (non-color: `↓ N new` with Role::Warning).
+    /// Paint new-content indicator with a structural down cue and warning role.
     pub fn render_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if !self.show_new_content || !state.indicator.visible || area.height == 0 {
             return;
         }
         let style = self.tokens.style(Role::Warning);
-        let label = format!("↓ {} new", state.indicator.unseen);
+        let marker = if self.tokens.glyphs.is_ascii() {
+            "v"
+        } else {
+            "↓"
+        };
+        let label = format!("{marker} {} new", state.indicator.unseen);
         let y = area.bottom().saturating_sub(1);
         let text = take_display_cols(&label, usize::from(area.width));
         buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
@@ -952,7 +957,7 @@ mod tests {
     #[test]
     fn visual_bars_and_new_content_paint() {
         use ratatui_core::buffer::Buffer;
-        let system = DesignSystem::default();
+        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
         let mut s = ScrollAreaState::new();
         s.set_content_size(20, 100);
         s.set_viewport(10, 10);
@@ -970,6 +975,13 @@ mod tests {
             .iter()
             .any(|c| !c.symbol().trim().is_empty() && c.symbol() != " ");
         assert!(any_glyph);
+        let text = buf
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(text.contains("v 130 new"), "{text}");
+        assert!(text.chars().all(|ch| !matches!(ch, '↓' | '·' | '┃')));
     }
 
     #[test]

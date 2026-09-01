@@ -17,6 +17,49 @@ fn scrollbar_styles_use_canonical_glyphs() {
 }
 
 #[test]
+fn ascii_profile_paints_single_cell_ascii_track_and_thumbs() {
+    let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+    let render = |axis, style, area| {
+        let mut buffer = Buffer::empty(area);
+        render_scrollbar(
+            &mut buffer,
+            area,
+            ScrollbarSpec::new(axis, ScrollbarGeometry::new(10, 5, 0)).style(style),
+            &system,
+        );
+        buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect::<Vec<_>>()
+    };
+
+    let line = render(
+        scroll::ScrollAxis::Vertical,
+        ScrollbarStyle::Line,
+        Rect::new(0, 0, 1, 5),
+    );
+    let block = render(
+        scroll::ScrollAxis::Vertical,
+        ScrollbarStyle::Block,
+        Rect::new(0, 0, 1, 5),
+    );
+    let horizontal = render(
+        scroll::ScrollAxis::Horizontal,
+        ScrollbarStyle::Line,
+        Rect::new(0, 0, 5, 1),
+    );
+
+    assert!(line.iter().any(|symbol| symbol == "|"));
+    assert!(block.iter().any(|symbol| symbol == "#"));
+    assert!(horizontal.iter().any(|symbol| symbol == "="));
+    for symbol in line.iter().chain(&block).chain(&horizontal) {
+        assert!(symbol.is_ascii(), "{symbol:?}");
+        assert_eq!(crate::text::display_cols(symbol), 1);
+    }
+}
+
+#[test]
 fn vertical_thumb_moves_and_keeps_length() {
     let render = |offset| {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 10));

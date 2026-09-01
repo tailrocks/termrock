@@ -270,7 +270,7 @@ use termrock::runtime::{FrameTick, Instant};
 use termrock::style::SPINNER_DOT_PULSE_FRAMES;
 use termrock::style::{DesignSystem, MotionPolicy};
 use termrock::widgets::{
-    Progress, ProgressKind, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
+    ProgressBar, ProgressKind, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
     SPINNER_RECONNECT_UNICODE, SPINNER_STREAM_ASCII, SPINNER_STREAM_UNICODE, SPINNER_WAITING_ASCII,
     SPINNER_WAITING_UNICODE, Skeleton, SkeletonState, Spinner, SpinnerState,
 };
@@ -319,12 +319,14 @@ fn motion_policy_off_is_static() {
         assert_eq!(a, c, "Skeleton animated under {motion:?}");
 
         let a = painted(area, |b| {
-            Progress::new(ProgressKind::indeterminate_from(first, motion), &system).paint(area, b);
+            ProgressBar::new(ProgressKind::indeterminate_from(first, motion), &system)
+                .paint(area, b);
         });
         let c = painted(area, |b| {
-            Progress::new(ProgressKind::indeterminate_from(second, motion), &system).paint(area, b);
+            ProgressBar::new(ProgressKind::indeterminate_from(second, motion), &system)
+                .paint(area, b);
         });
-        assert_eq!(a, c, "Progress animated under {motion:?}");
+        assert_eq!(a, c, "ProgressBar animated under {motion:?}");
     }
 }
 
@@ -587,6 +589,37 @@ fn interaction_underline_is_dead() {
     );
 }
 
+/// Palette roles obey the same underline grammar as widget paint.
+#[test]
+fn tab_palette_roles_are_underline_free() {
+    use ratatui_core::style::Modifier;
+    use termrock::style::{Role, RolePalette};
+
+    for (name, palette) in [
+        ("phosphor", RolePalette::tailrocks_phosphor()),
+        ("terminal-native", RolePalette::terminal_native()),
+        ("slate", RolePalette::slate()),
+        ("paper", RolePalette::paper()),
+        ("ansi", RolePalette::ansi()),
+        ("high-contrast", RolePalette::high_contrast()),
+    ] {
+        for role in [
+            Role::TabActive,
+            Role::TabInactive,
+            Role::TabActiveHovered,
+            Role::TabInactiveHovered,
+        ] {
+            assert!(
+                !palette
+                    .style(role)
+                    .add_modifier
+                    .contains(Modifier::UNDERLINED),
+                "{name} {role:?} uses link underline for tab state"
+            );
+        }
+    }
+}
+
 // ── Selection / focus paint authority (plan 004) ─────────────────────────────
 
 use ratatui_core::{text::Line, widgets::StatefulWidget};
@@ -605,7 +638,6 @@ fn rows() -> [ListRow<'static, &'static str>; 3] {
         badge: None,
         shortcut: None,
         actions: None,
-        trailing: None,
         custom: None,
         role: RowRole::Item,
         enabled: true,
@@ -1380,7 +1412,6 @@ fn accent_budget() {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -2089,4 +2120,274 @@ fn no_wide_emoji_in_chrome() {
         "wide emoji in painted chrome — use a one-column catalog glyph:\n{}",
         offenders.join("\n")
     );
+}
+
+/// Every public component family resolves through one semantic contract.
+#[test]
+fn recipe_families_are_complete_and_restrained() {
+    use termrock::style::{AccentUsage, DesignSystem, MotionSemantics, NonColorCue, RecipeFamily};
+
+    let system = DesignSystem::default();
+    let ids = RecipeFamily::ALL.map(RecipeFamily::id);
+    assert_eq!(
+        ids,
+        [
+            "action",
+            "input",
+            "collection",
+            "overlay",
+            "status",
+            "data",
+            "layout"
+        ]
+    );
+
+    for family in RecipeFamily::ALL {
+        let recipe = system.family_recipe(family);
+        assert_eq!(recipe.family, family);
+        assert!(!recipe.non_color_cue.id().is_empty());
+        assert_ne!(
+            recipe.primary, recipe.secondary,
+            "{family:?} flattened text hierarchy"
+        );
+    }
+
+    assert_eq!(
+        system.family_recipe(RecipeFamily::Action).accent,
+        AccentUsage::PrimaryIntent
+    );
+    for family in [
+        RecipeFamily::Input,
+        RecipeFamily::Collection,
+        RecipeFamily::Overlay,
+    ] {
+        assert_eq!(system.family_recipe(family).accent, AccentUsage::FocusOnly);
+    }
+    assert_eq!(
+        system.family_recipe(RecipeFamily::Status).non_color_cue,
+        NonColorCue::GlyphAndLabel
+    );
+    assert_eq!(
+        system.family_recipe(RecipeFamily::Data).motion,
+        MotionSemantics::Static
+    );
+    assert_eq!(
+        system.family_recipe(RecipeFamily::Layout).accent,
+        AccentUsage::None
+    );
+}
+
+/// Every exact public UI owner joins to one recipe and one monochrome proof.
+#[test]
+fn public_ui_inventory_has_exact_recipe_and_monochrome_evidence() {
+    use std::collections::BTreeSet;
+
+    use termrock::{
+        registry::{ComponentFamily, DocumentationKind, public_ui_inventory},
+        style::{DesignSystem, RecipeFamily},
+    };
+
+    fn recipe_family(family: ComponentFamily) -> RecipeFamily {
+        #[allow(unreachable_patterns)]
+        match family {
+            ComponentFamily::Action => RecipeFamily::Action,
+            ComponentFamily::Input => RecipeFamily::Input,
+            ComponentFamily::Navigation => RecipeFamily::Collection,
+            ComponentFamily::Data | ComponentFamily::Visualization | ComponentFamily::Content => {
+                RecipeFamily::Data
+            }
+            ComponentFamily::Feedback => RecipeFamily::Status,
+            ComponentFamily::Overlay => RecipeFamily::Overlay,
+            ComponentFamily::Layout => RecipeFamily::Layout,
+            other => panic!("unmapped public UI family: {other:?}"),
+        }
+    }
+
+    let inventory = public_ui_inventory();
+    let mono = DesignSystem::default().no_color();
+    let mut ids = BTreeSet::new();
+    let mut documentation = BTreeSet::new();
+    let mut evidence = Vec::with_capacity(inventory.len());
+
+    for entry in inventory {
+        assert!(ids.insert(entry.id.as_str()), "duplicate recipe evidence");
+        documentation.insert(entry.documentation);
+        let family = recipe_family(entry.family);
+        let recipe = mono.family_recipe(family);
+        assert_eq!(recipe.family, family);
+        assert!(
+            !recipe.non_color_cue.id().is_empty(),
+            "{} / {} has no monochrome cue evidence",
+            entry.id,
+            entry.representative_story
+        );
+        assert_ne!(
+            mono.style(recipe.primary),
+            mono.style(recipe.secondary),
+            "{} / {} loses hierarchy in monochrome",
+            entry.id,
+            entry.representative_story
+        );
+        assert!(
+            entry.representative_story.split_once('/').is_some(),
+            "{} lacks representative story evidence",
+            entry.id
+        );
+        evidence.push((
+            entry.id,
+            entry.representative_story,
+            recipe.family,
+            recipe.non_color_cue,
+        ));
+    }
+
+    assert_eq!(evidence.len(), inventory.len());
+    assert_eq!(ids.len(), inventory.len());
+    assert!(documentation.contains(&DocumentationKind::Component));
+    assert!(documentation.contains(&DocumentationKind::Pattern));
+}
+
+/// Reduced motion keeps brief state transitions and freezes activity loops.
+#[test]
+fn family_motion_semantics_respect_reduced_motion() {
+    use termrock::style::{DesignSystem, MotionPolicy, RecipeFamily};
+
+    let system = DesignSystem::default();
+    let transition = system.family_recipe(RecipeFamily::Action).motion;
+    let activity = system.family_recipe(RecipeFamily::Status).motion;
+    let static_data = system.family_recipe(RecipeFamily::Data).motion;
+
+    assert!(transition.animates(MotionPolicy::Full));
+    assert!(transition.animates(MotionPolicy::Basic));
+    assert!(!transition.animates(MotionPolicy::Off));
+    assert!(activity.animates(MotionPolicy::Full));
+    assert!(!activity.animates(MotionPolicy::Basic));
+    assert!(!activity.animates(MotionPolicy::Off));
+    assert!(!static_data.animates(MotionPolicy::Full));
+}
+
+/// Focus and selection remain visible when color is unavailable.
+#[test]
+fn family_focus_and_selection_have_non_color_cues() {
+    use ratatui_core::style::Modifier;
+    use termrock::{
+        style::{
+            ButtonRecipeVariant, ControlState, DesignSystem, Elevation, PanelChrome, RecipeFamily,
+        },
+        widgets::SurfaceRecipe,
+    };
+
+    let system = DesignSystem::default();
+    let panel = system.panel_recipe(PanelChrome::Focused, Elevation::Overlay);
+    assert!(panel.border.add_modifier.contains(Modifier::BOLD));
+    assert!(
+        panel.title_prefix.is_some(),
+        "focused panel needs a title marker"
+    );
+
+    let selected = system.list_row_recipe(true, true, true);
+    assert!(
+        selected.gutter.is_some(),
+        "selection needs a stable gutter glyph"
+    );
+    assert!(selected.label.add_modifier.contains(Modifier::BOLD));
+
+    let mono = system.clone().no_color();
+    for variant in [
+        ButtonRecipeVariant::Primary,
+        ButtonRecipeVariant::Secondary,
+        ButtonRecipeVariant::Destructive,
+        ButtonRecipeVariant::Quiet,
+        ButtonRecipeVariant::Outline,
+        ButtonRecipeVariant::Link,
+    ] {
+        let idle = mono.button_recipe(variant, ControlState::Default);
+        let focused = mono.button_recipe(variant, ControlState::Focused);
+        assert_ne!(focused, idle, "{variant:?} focus collapsed in no-color");
+        assert!(
+            focused.label.add_modifier != idle.label.add_modifier
+                || focused.border.add_modifier != idle.border.add_modifier
+                || focused.bordered != idle.bordered,
+            "{variant:?} focus has no structural delta"
+        );
+        if idle.label.add_modifier.contains(Modifier::BOLD)
+            && !idle.label.sub_modifier.contains(Modifier::BOLD)
+        {
+            if idle.label.add_modifier.contains(Modifier::REVERSED)
+                && !idle.label.sub_modifier.contains(Modifier::REVERSED)
+            {
+                assert!(
+                    focused.label.sub_modifier.contains(Modifier::REVERSED),
+                    "{variant:?} was already reversed and must toggle that cue"
+                );
+            } else {
+                assert!(
+                    focused.label.add_modifier.contains(Modifier::REVERSED),
+                    "{variant:?} was pre-emphasized and needs another focus cue"
+                );
+            }
+        }
+    }
+
+    let selected_surface = system.surface_recipe(SurfaceRecipe::Selected);
+    assert_eq!(selected_surface.family, RecipeFamily::Collection);
+    assert!(
+        system
+            .family_recipe(selected_surface.family)
+            .selection
+            .is_some()
+    );
+
+    let warning = system.surface_recipe(SurfaceRecipe::Warning);
+    assert_eq!(warning.family, RecipeFamily::Status);
+    assert!(
+        warning
+            .border
+            .expect("warning border")
+            .add_modifier
+            .contains(Modifier::BOLD)
+    );
+}
+
+/// Recipe deltas must survive composition by every public button variant.
+#[test]
+fn every_button_variant_paints_distinct_focus_without_color() {
+    use termrock::{
+        style::DesignSystem,
+        widgets::{Button, ButtonState, ButtonVariant},
+    };
+
+    let system = DesignSystem::default().no_color();
+    let area = Rect::new(0, 0, 18, 1);
+    for variant in [
+        ButtonVariant::Primary,
+        ButtonVariant::Secondary,
+        ButtonVariant::Quiet,
+        ButtonVariant::Outline,
+        ButtonVariant::Destructive,
+        ButtonVariant::Link,
+        ButtonVariant::Success,
+        ButtonVariant::Command,
+    ] {
+        let mut idle_state = ButtonState::new();
+        let idle = painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(variant)
+                .paint(area, buffer, &mut idle_state);
+        });
+
+        let mut focused_state = ButtonState::new();
+        focused_state.activation.set_accepts_input(true);
+        let focused = painted(area, |buffer| {
+            Button::new("Run", &system)
+                .variant(variant)
+                .paint(area, buffer, &mut focused_state);
+        });
+
+        assert_ne!(
+            focused.content(),
+            idle.content(),
+            "{variant:?} focus vanished after real no-color paint"
+        );
+    }
 }

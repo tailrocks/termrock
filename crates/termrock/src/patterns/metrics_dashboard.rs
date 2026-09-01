@@ -31,7 +31,10 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, Role},
-    widgets::{CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation},
+    widgets::{
+        CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation,
+        SemanticStatus, StatusIndicator,
+    },
 };
 
 /// Width at or below which layout becomes a vertical summary stack.
@@ -209,13 +212,13 @@ impl MetricAlertSeverity {
         }
     }
 
-    /// Role.
+    /// Shared severity projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Info => Role::Info,
-            Self::Warning => Role::Warning,
-            Self::Critical => Role::Danger,
+            Self::Info => SemanticStatus::Idle,
+            Self::Warning => SemanticStatus::Warning,
+            Self::Critical => SemanticStatus::Failed,
         }
     }
 }
@@ -1060,18 +1063,43 @@ impl<'a> MetricsDashboard<'a> {
                 let focused = matches!(state.focus, MetricsFocus::Alerts)
                     && i == state.focus_alert
                     && self.focused;
-                let letter = a.severity.letter();
-                let line = format!("{letter} {}", a.message);
+                let mark = if focused {
+                    if ascii { ">" } else { "›" }
+                } else {
+                    " "
+                };
+                let indicator = StatusIndicator::new(a.severity.semantic(), self.system)
+                    .label(a.severity.id())
+                    .ascii(ascii);
+                let status_text = indicator.text(None);
+                let line = format!("{mark} {status_text} · {}", a.message);
                 self.system.paint_row(
                     buffer,
                     Rect::new(slots.alerts.x, y, slots.alerts.width, 1),
                     &line,
-                    if focused {
-                        self.system.style(Role::Focus)
-                    } else {
-                        self.system.style(a.severity.role())
-                    },
+                    self.system.style(Role::Text),
                 );
+                self.system.paint_row(
+                    buffer,
+                    Rect::new(slots.alerts.x, y, slots.alerts.width.min(1), 1),
+                    mark,
+                    self.system.style(if focused {
+                        Role::Focus
+                    } else {
+                        Role::TextMuted
+                    }),
+                );
+                if slots.alerts.width > 2 {
+                    indicator.paint(
+                        Rect::new(
+                            slots.alerts.x.saturating_add(2),
+                            y,
+                            slots.alerts.width.saturating_sub(2),
+                            1,
+                        ),
+                        buffer,
+                    );
+                }
                 y = y.saturating_add(1);
             }
             // An alert list that stops at three says so.

@@ -28,7 +28,7 @@ use crate::interaction::{
     EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     UiIntent, default_button_intent,
 };
-use crate::style::{DesignSystem, GlyphSet, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, GlyphSet, RecipeFamily, Role};
 use crate::text::{display_cols, take_display_cols};
 
 /// Layout orientation.
@@ -1079,17 +1079,24 @@ fn paint_item<Id: Clone + PartialEq>(
         height: 1.min(slot.height),
     };
     let style = if matches!(item.kind, ToolbarItemKind::Label) {
-        bar.system.style(Role::TextMuted)
-    } else if !item.enabled {
-        bar.system.style(Role::ActionDisabled)
-    } else if on_cursor && state.surface_focused {
-        if bar.colorless || bar.ascii {
-            bar.system.style(Role::TextStrong)
-        } else {
-            bar.system.style(Role::ActionFocused)
-        }
+        let contract = bar.system.family_recipe(RecipeFamily::Action);
+        bar.system.style(contract.secondary)
     } else {
-        bar.system.style(Role::Text)
+        let control_state = if !item.enabled {
+            ControlState::Disabled
+        } else if on_cursor && state.surface_focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        };
+        let recipe = bar
+            .system
+            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
+        if matches!(item.kind, ToolbarItemKind::Toggle { pressed: true }) {
+            style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
+        }
+        style
     };
     let clipped = take_display_cols(&label, usize::from(rect.width));
     buffer.set_stringn(rect.x, rect.y, &clipped, usize::from(rect.width), style);
@@ -1125,15 +1132,20 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
         width: need,
         height: 1.min(slot.height),
     };
-    let style = if on && state.surface_focused {
-        if bar.colorless || bar.ascii {
-            bar.system.style(Role::TextStrong)
+    let recipe = bar.system.button_recipe(
+        ButtonRecipeVariant::Quiet,
+        if on && state.surface_focused {
+            ControlState::Focused
         } else {
-            bar.system.style(Role::ActionFocused)
-        }
+            ControlState::Default
+        },
+    );
+    let mut style = recipe.fill.patch(recipe.label);
+    if on && state.surface_focused {
+        style = style.add_modifier(ratatui_core::style::Modifier::REVERSED);
     } else {
-        bar.system.style(Role::TextMuted)
-    };
+        style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
+    }
     buffer.set_stringn(
         rect.x,
         rect.y,
@@ -1362,6 +1374,15 @@ mod tests {
         );
         assert!(matches!(out, ToolbarOutcome::OverflowOpened));
         assert!(state.overflow_open);
+        assert!(matches!(
+            tb.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                area,
+            ),
+            ToolbarOutcome::OverflowClosed
+        ));
+        assert!(!state.overflow_open);
     }
 
     #[test]
@@ -1386,5 +1407,19 @@ mod tests {
         // content selection would live elsewhere — toolbar does not clear it.
         assert!(!state.surface_focused);
         assert_eq!(state.cursor(), Some(&"a"));
+    }
+
+    #[test]
+    fn empty_toolbar_is_safe_and_publishes_no_targets() {
+        let system = DesignSystem::default();
+        let items: [ToolbarItem<'_, &str>; 0] = [];
+        let mut state = ToolbarState::<&str>::horizontal();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(Toolbar::new(&items, &system), area, &mut buffer, &mut state);
+
+        assert!(state.regions.is_empty());
+        assert!(state.overflow_indices.is_empty());
     }
 }

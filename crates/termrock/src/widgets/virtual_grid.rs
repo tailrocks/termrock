@@ -953,6 +953,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             .enumerate()
             .skip(state.first_col())
         {
+            let gap = u16::from(!visible.is_empty());
+            if used.saturating_add(gap) >= content_width {
+                break;
+            }
+            used = used.saturating_add(gap);
             if used >= content_width {
                 break;
             }
@@ -974,6 +979,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             .enumerate()
             .skip(state.first_col())
         {
+            let gap = u16::from(!visible.is_empty());
+            if used.saturating_add(gap) >= content_width {
+                break;
+            }
+            used = used.saturating_add(gap);
             if used >= content_width {
                 break;
             }
@@ -1000,7 +1010,17 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 
         if self.show_header && area.height > 0 {
             let mut x = content_x;
-            for &(col_index, width) in &visible {
+            for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
+                if visible_index > 0 {
+                    buffer.set_stringn(
+                        x,
+                        area.y,
+                        super::table_chrome::column_gap(),
+                        1,
+                        Style::new(),
+                    );
+                    x = x.saturating_add(1);
+                }
                 let column = &self.columns[col_index];
                 let region = Rect {
                     x,
@@ -1066,7 +1086,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 }
             }
             let mut x = content_x;
-            for &(col_index, width) in &visible {
+            for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
+                if visible_index > 0 {
+                    buffer.set_stringn(x, y, super::table_chrome::column_gap(), 1, Style::new());
+                    x = x.saturating_add(1);
+                }
                 let region = Rect {
                     x,
                     y,
@@ -1092,7 +1116,15 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 } else {
                     cell.style.unwrap_or(cell_style)
                 };
-                let text = if cell.pending { "…" } else { cell.text };
+                let text = if cell.pending {
+                    if self.system.glyphs.is_ascii() {
+                        "..."
+                    } else {
+                        "…"
+                    }
+                } else {
+                    cell.text
+                };
                 let label = take_display_cols(text, usize::from(width));
                 // Clear then paint (avoids leftover glyphs on narrow columns).
                 for dx in 0..width {
@@ -1112,6 +1144,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 });
                 x = x.saturating_add(width);
             }
+            super::surface::normalize_content_band(
+                self.system,
+                buffer,
+                Rect::new(area.x, y, area.width, 1),
+            );
         }
     }
 }
@@ -1301,6 +1338,33 @@ mod tests {
                 frame.render_stateful_widget(&grid, Rect::new(0, 0, 20, 4), &mut state);
             })
             .unwrap();
+    }
+
+    #[test]
+    fn adjacent_columns_keep_a_stable_blank_gap() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed("a", "Alpha", 5),
+            GridColumn::fixed("b", "Beta", 4),
+        ];
+        let cells = [GridCell::text("aaaaa"), GridCell::text("bbbb")];
+        let rows = [GridRow::new(7, 0, &cells)];
+        let grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let area = Rect::new(0, 0, 12, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = VirtualGridState::new();
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+
+        let first = &state.cell_regions[0];
+        let second = &state.cell_regions[1];
+        assert_eq!(second.area.x, first.area.right().saturating_add(1));
+        assert_eq!(buffer[(first.area.right(), 1)].symbol(), " ");
+        assert_eq!(
+            state.header_regions[1].area.x,
+            state.header_regions[0].area.right().saturating_add(1)
+        );
     }
 
     #[test]

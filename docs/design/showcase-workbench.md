@@ -790,7 +790,7 @@ Rules:
 | **Queue while busy** | Enter → `Queued`; badge `queue:N`; fail/cancel **do not** auto-drain (KD-29) |
 | **Stale permission** | `StaleIgnored` toast; no effect |
 
-Use public `EmptyState`, `ErrorView`, `LoadingView`, `Skeleton`, `Banner`, `Toast`.
+Use public `EmptyState`, `ErrorState`, `LoadingView`, `Skeleton`, `Banner`, `Toast`.
 
 ---
 
@@ -1043,7 +1043,7 @@ Legend: **OK** = public in crate today and usable; **SEED** = public but incompl
 | Completion | `CompletionMenu`, prompt completion ids | OK | |
 | Help / hints | `HintBar`, `Dialog` | OK | |
 | Status | `StatusBar`, `StatusSlot` | OK | |
-| Empty/load/error | `EmptyState`, `LoadingView`, `ErrorView`, `Skeleton`, `Banner` | OK | |
+| Empty/load/error | `EmptyState`, `LoadingView`, `ErrorState`, `Skeleton`, `Banner` | OK | |
 | Toasts | `Toast` | OK | |
 | Drawers | `Drawer`, `open_drawer_overlay` | OK | |
 | Capability | `resolve_capabilities`, doctor | OK | |

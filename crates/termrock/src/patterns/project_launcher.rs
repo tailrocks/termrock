@@ -55,7 +55,7 @@ use crate::{
         ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
         PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
         QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        SemanticStatus, StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
 };
 
@@ -250,13 +250,13 @@ impl ProjectPathStatus {
         }
     }
 
-    /// Role.
+    /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            Self::Ok => Role::Success,
-            Self::Missing | Self::Error => Role::Danger,
-            Self::Stale => Role::Warning,
+            Self::Ok => SemanticStatus::Success,
+            Self::Missing | Self::Error => SemanticStatus::Failed,
+            Self::Stale => SemanticStatus::Warning,
         }
     }
 
@@ -448,7 +448,12 @@ pub fn project_list_rows<'a>(entries: &[&'a ProjectEntry]) -> Vec<ListRow<'a, St
             label = format!("{label} · {b}");
         }
         if e.path_status.is_problem() {
-            label = format!("[{}] {label}", e.path_status.label());
+            let status = e.path_status.semantic();
+            label = format!(
+                "| {} {} · {label}",
+                status.glyph_ascii(),
+                e.path_status.label()
+            );
         }
         let mut row = ListRow::item(e.id.clone(), Line::from(label));
         let mut secondary = e.path.clone();
@@ -812,24 +817,28 @@ impl ProjectLauncherState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::connection("conn", self.connection.label()).priority(10),
-            StatusSlot::context("mode", self.mode.id()).priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(30),
-            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+            StatusSlot::connection("conn", self.connection.label())
+                .semantic(self.connection.semantic())
                 .priority(90),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
+            StatusSlot::shortcut("keys", "enter open · n new · i import · f fav · C-o quick")
+                .priority(10),
         ];
         if self.problem_count > 0 {
             slots.push(
                 StatusSlot::new("problems", "stale/missing")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(95),
             );
         }
         if self.host_error.is_some() {
             slots.push(
                 StatusSlot::new("err", "error")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
                     .region(StatusRegion::Left)
-                    .priority(4),
+                    .priority(100),
             );
         }
         slots

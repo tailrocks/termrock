@@ -30,7 +30,7 @@ use crate::{
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     runtime::FrameTick,
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -704,7 +704,7 @@ impl<'a> SearchInput<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             label: "",
-            placeholder: "Search…",
+            placeholder: "Search",
             system,
             status: SearchStatus::Idle,
             status_message: None,
@@ -800,14 +800,24 @@ impl<'a> SearchInput<'a> {
                 cursor: None,
             };
         }
+        let invalid = matches!(self.status, SearchStatus::Error)
+            || matches!(self.validation, Validation::Invalid(_));
+        let field_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if matches!(self.status, SearchStatus::Searching) {
+                ControlState::Loading
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+        );
 
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
-            let style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let style = field_recipe.value;
             let style = if state.focused {
                 style.add_modifier(Modifier::BOLD)
             } else {
@@ -836,7 +846,7 @@ impl<'a> SearchInput<'a> {
         // Leading icon (contracts before query)
         if self.show_leading_icon && row.width > 4 {
             let icon = if self.ascii { "/" } else { "⌕" };
-            buffer.set_stringn(x, row.y, icon, 1, self.system.style(Role::TextMuted));
+            buffer.set_stringn(x, row.y, icon, 1, field_recipe.placeholder);
             x = x.saturating_add(2);
         }
 
@@ -845,8 +855,8 @@ impl<'a> SearchInput<'a> {
             if x.saturating_add(3) >= right {
                 break;
             }
-            let label = take_display_cols(chip.label, 8);
-            let w = display_cols(&label).min(8) as u16;
+            let label = format!("[{}]", take_display_cols(chip.label, 8));
+            let w = display_cols(&label).min(10) as u16;
             if x.saturating_add(w.saturating_add(1)) >= right {
                 break;
             }
@@ -856,9 +866,7 @@ impl<'a> SearchInput<'a> {
                 row.y,
                 &label,
                 usize::from(w),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
+                field_recipe.cursor.add_modifier(Modifier::REVERSED),
             );
             chip_rects.push(rect);
             x = x.saturating_add(w).saturating_add(1);
@@ -870,10 +878,10 @@ impl<'a> SearchInput<'a> {
         let mut clear_rect = None;
         let mut status_rect = None;
         let status_text = self.status_label(state);
-        if !status_text.is_empty() && right > x.saturating_add(4) {
-            let sw = display_cols(&status_text).min(12) as u16;
-            if right > x.saturating_add(sw.saturating_add(1)) {
-                right = right.saturating_sub(sw.saturating_add(1));
+        if right > x.saturating_add(13) {
+            let sw = 12u16;
+            right = right.saturating_sub(sw.saturating_add(1));
+            if !status_text.is_empty() {
                 status_rect = Some(Rect::new(right.saturating_add(1), row.y, sw, 1));
                 let role = match self.status {
                     SearchStatus::Error => Role::Danger,
@@ -896,16 +904,21 @@ impl<'a> SearchInput<'a> {
             && state.enabled
             && !state.query.value().is_empty()
             && right > x.saturating_add(2);
-        if show_clear {
+        if self.show_clear && right > x.saturating_add(2) {
             right = right.saturating_sub(2);
-            clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                row.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            if show_clear {
+                clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
+                let action = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    row.y,
+                    self.system.glyphs.resolve(Glyph::Close).text,
+                    1,
+                    action.fill.patch(action.label),
+                );
+            }
         }
 
         let field = Rect::new(x, row.y, right.saturating_sub(x).max(1), 1);
@@ -915,17 +928,28 @@ impl<'a> SearchInput<'a> {
         let ti = input.paint(field, buffer, &mut state.query);
 
         // Second row: expanded status / error
-        if area.height >= 3 {
-            if let Some(msg) = self.status_message {
-                if matches!(self.status, SearchStatus::Error) || !msg.is_empty() {
-                    buffer.set_stringn(
-                        area.x,
-                        area.y.saturating_add(2),
-                        take_display_cols(msg, usize::from(area.width)),
-                        usize::from(area.width),
-                        self.system.style(Role::Danger),
-                    );
+        if ti.field.y.saturating_add(1) < area.bottom() {
+            let feedback = match self.validation {
+                Validation::Invalid(msg) => {
+                    Some((crate::widgets::label::DescriptionKind::Error, msg))
                 }
+                Validation::Valid => self.status_message.map(|msg| {
+                    let kind = if matches!(self.status, SearchStatus::Error) {
+                        crate::widgets::label::DescriptionKind::Error
+                    } else {
+                        crate::widgets::label::DescriptionKind::Meta
+                    };
+                    (kind, msg)
+                }),
+            };
+            if let Some((kind, msg)) = feedback {
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, ti.field.y.saturating_add(1), area.width, 1),
+                    self.system,
+                    kind,
+                    msg,
+                );
             }
         }
 

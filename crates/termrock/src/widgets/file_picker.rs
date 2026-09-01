@@ -32,13 +32,14 @@ use crate::{
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
-    style::{DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, PanelTitleSpec, PathExpect, PathFsStatus, PathInput, PathInputOutcome,
-    PathInputState, PathStyle, Selection, Validation, join_path, normalize_separators,
+    Panel, PanelChrome, PanelTitleSpec, PanelVariant, PathExpect, PathFsStatus, PathInput,
+    PathInputOutcome, PathInputState, PathStyle, Selection, Validation, join_path,
+    normalize_separators,
 };
 
 /// Overlay id for modal file pickers.
@@ -1429,6 +1430,7 @@ impl<'a> FilePicker<'a> {
             spec = spec.filter(filter);
         }
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .title_spec(spec)
             .emphasis(if state.focused {
@@ -1458,16 +1460,16 @@ impl<'a> FilePicker<'a> {
                 let label = take_display_cols(&crumb.label, 12);
                 let w = display_cols(&label) as u16;
                 let rect = Rect::new(x, y, w.min(inner.right().saturating_sub(x)), 1);
+                let recipe = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                buffer.set_style(rect, recipe.fill);
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
                     &label,
                     usize::from(rect.width),
-                    self.system.style(if state.focused {
-                        Role::Focus
-                    } else {
-                        Role::Text
-                    }),
+                    recipe.label,
                 );
                 state.breadcrumb_hits.push((crumb.path.clone(), rect));
                 x = x.saturating_add(w).saturating_add(1);
@@ -1480,7 +1482,7 @@ impl<'a> FilePicker<'a> {
             let path_row = Rect::new(inner.x, y, inner.width, 1);
             state.path_area = path_row;
             let _ = PathInput::new(self.system)
-                .placeholder("Path…")
+                .placeholder(if self.ascii { "Path..." } else { "Path…" })
                 .show_browse(false)
                 .ascii(self.ascii)
                 .paint(path_row, buffer, &mut state.path);
@@ -1488,15 +1490,15 @@ impl<'a> FilePicker<'a> {
         }
 
         // Status / error
-        if self.show_status
-            && y < inner.bottom()
-            && (matches!(
-                state.status,
-                FileListingStatus::Loading | FileListingStatus::Error
-            ) || state.error_message.is_some())
-        {
+        if self.show_status && y < inner.bottom() {
             let msg = match state.status {
-                FileListingStatus::Loading => "Loading…",
+                FileListingStatus::Loading => {
+                    if self.ascii {
+                        "Loading..."
+                    } else {
+                        "Loading…"
+                    }
+                }
                 FileListingStatus::Error => state
                     .error_message
                     .as_deref()
@@ -1504,20 +1506,27 @@ impl<'a> FilePicker<'a> {
                 _ => "",
             };
             if !msg.is_empty() {
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(msg, usize::from(inner.width)),
-                    usize::from(inner.width),
-                    self.system
-                        .style(if matches!(state.status, FileListingStatus::Error) {
-                            Role::Danger
-                        } else {
-                            Role::TextMuted
-                        }),
-                );
-                y = y.saturating_add(1);
+                if matches!(state.status, FileListingStatus::Error) {
+                    super::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        self.system,
+                        super::DescriptionKind::Error,
+                        msg,
+                    );
+                } else {
+                    buffer.set_stringn(
+                        inner.x,
+                        y,
+                        take_display_cols(msg, usize::from(inner.width)),
+                        usize::from(inner.width),
+                        self.system.style(Role::TextMuted),
+                    );
+                }
             }
+            // Status/error is inline field feedback. Keep its row present so
+            // an asynchronous failure never moves the list under the cursor.
+            y = y.saturating_add(1);
         }
 
         // Reserve the footer row before the body claims the space, so the
@@ -1660,13 +1669,9 @@ impl<'a> FilePicker<'a> {
                 format!("{check}! {} ({err})", entry.name)
             };
             let style = if entry.error.is_some() {
-                self.system.style(Role::Danger)
-            } else if active {
-                recipe.label
-            } else if is_sel {
-                self.system.style(Role::TextStrong)
+                recipe.label.patch(self.system.style(Role::Danger))
             } else {
-                self.system.style(Role::Text)
+                recipe.label
             };
             buffer.set_stringn(
                 rect.x,
@@ -2372,7 +2377,7 @@ mod tests {
             .paint(area, &mut buffer, &mut state);
         assert!(state.breadcrumb_hits.is_empty());
         assert!(state.path_area.is_empty());
-        assert_eq!(state.list_area.y, default_body_y.saturating_sub(2));
+        assert_eq!(state.list_area.y, default_body_y.saturating_sub(3));
         assert!(state.list_area.height > default_body_height);
         assert!(!state.preview_area.is_empty());
     }

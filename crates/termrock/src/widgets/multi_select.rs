@@ -30,14 +30,14 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    Panel, PanelChrome, SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption,
-    SelectPresentation, SelectRecipe, SelectRowKind, Selection, TextInput, TextInputOutcome,
-    TextInputState, Validation,
+    Panel, PanelChrome, PanelVariant, SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH,
+    SelectOption, SelectPresentation, SelectRecipe, SelectRowKind, Selection, TextInput,
+    TextInputOutcome, TextInputState, Validation,
 };
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
@@ -789,7 +789,7 @@ impl<'a, Id> MultiSelect<'a, Id> {
         Self {
             options,
             system,
-            placeholder: "Select…",
+            placeholder: "Select",
             label: "",
             validation: Validation::Valid,
             ascii: false,
@@ -840,11 +840,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             self.paint_trigger_only(area, buffer, state);
             return;
         }
-        let trigger_h = if !self.label.is_empty() && area.height >= 3 {
+        let base_trigger_h: u16 = if !self.label.is_empty() && area.height >= 3 {
             2
         } else {
             1
         };
+        let trigger_h = base_trigger_h.saturating_add(1).min(area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -884,16 +885,23 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         buffer: &mut Buffer,
         state: &mut MultiSelectState<Id>,
     ) {
+        let invalid = matches!(self.validation, Validation::Invalid(_));
+        let recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused || state.is_open() {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+        );
         let mut y = area.y;
         if (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty())
             && area.height >= 2
             && !self.label.is_empty()
         {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let mut style = recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -917,33 +925,44 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             return;
         }
 
-        let invalid = matches!(self.validation, Validation::Invalid(_));
-        let role = if !state.enabled {
-            Role::TextDisabled
-        } else if invalid {
-            Role::InputInvalid
-        } else if state.focused || state.is_open() {
-            Role::Focus
-        } else {
-            Role::Input
-        };
-        buffer.set_style(trigger, self.system.style(role));
+        buffer.set_style(trigger, recipe.fill);
+        if let Some((glyph, style)) = recipe.prompt {
+            buffer.set_stringn(trigger.x, trigger.y, glyph, 1, style);
+        }
+
+        if let Validation::Invalid(message) = self.validation
+            && trigger.y.saturating_add(1) < area.bottom()
+        {
+            crate::widgets::field_message::paint_field_message(
+                buffer,
+                Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
+                self.system,
+                crate::widgets::label::DescriptionKind::Error,
+                message,
+            );
+        }
 
         let checked = state.selection.checked();
-        let mut x = trigger.x;
+        let mut x = trigger.x.saturating_add(1).min(trigger.right());
         let mut right = trigger.right();
 
         // clear
-        if self.show_clear && state.enabled && !checked.is_empty() && trigger.width > 6 {
+        let show_clear = state.enabled && !checked.is_empty();
+        if self.show_clear && trigger.width > 6 {
             right = right.saturating_sub(2);
-            state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
-            buffer.set_stringn(
-                right.saturating_add(1),
-                trigger.y,
-                "×",
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            if show_clear {
+                state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
+                let clear_recipe = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                buffer.set_stringn(
+                    right.saturating_add(1),
+                    trigger.y,
+                    self.system.glyphs.resolve(Glyph::Close).text,
+                    1,
+                    clear_recipe.fill.patch(clear_recipe.label),
+                );
+            }
         }
 
         let chev = if self.ascii {
@@ -955,13 +974,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         };
         if right > x {
             right = right.saturating_sub(1);
-            buffer.set_stringn(
-                right,
-                trigger.y,
-                chev,
-                1,
-                self.system.style(Role::TextMuted),
-            );
+            buffer.set_stringn(right, trigger.y, chev, 1, recipe.placeholder);
         }
 
         if checked.is_empty() {
@@ -970,7 +983,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 take_display_cols(self.placeholder, usize::from(right.saturating_sub(x))),
                 usize::from(right.saturating_sub(x).max(1)),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
             return;
         }
@@ -996,9 +1009,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &take_display_cols(&chip, usize::from(w)),
                 usize::from(w),
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED),
+                recipe.cursor.add_modifier(Modifier::REVERSED),
             );
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -1009,13 +1020,14 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &ov,
                 usize::from(right.saturating_sub(x)),
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
         }
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(if state.focused {
                 PanelChrome::Focused
@@ -1050,9 +1062,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             let search_row = Rect::new(inner.x, list_top, inner.width, 1);
             state.search_region = Some(search_row);
             state.search.set_focused(true);
-            let _ = TextInput::new("", self.system)
-                .placeholder("Filter…")
-                .paint(search_row, buffer, &mut state.search);
+            let _ = TextInput::new("", self.system).placeholder("Filter").paint(
+                search_row,
+                buffer,
+                &mut state.search,
+            );
             list_top = list_top.saturating_add(1);
         }
 
@@ -1163,17 +1177,13 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                         "[ ]"
                     };
                     // Highlight = reverse focus; checked mark independent
-                    let style = if opt.disabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if is_hi {
-                        recipe.label
-                    } else if is_on {
-                        self.system.style(Role::TextStrong)
-                    } else {
-                        self.system.style(Role::Text)
-                    };
+                    let style = recipe.label;
                     let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} — {desc}", opt.label)
+                        format!(
+                            "{mark} {} {} {desc}",
+                            opt.label,
+                            if self.ascii { "-" } else { "—" }
+                        )
                     } else {
                         format!("{mark} {}", opt.label)
                     };

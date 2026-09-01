@@ -64,7 +64,7 @@ impl BadgeVariant {
         match self {
             Self::Neutral | Self::Count => Role::TextMuted,
             Self::Info => Role::Info,
-            Self::Success => Role::Success,
+            Self::Success => Role::TextStrong,
             Self::Warning => Role::Warning,
             Self::Destructive => Role::Danger,
             Self::Outline => Role::Border,

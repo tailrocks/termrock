@@ -11,7 +11,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, StatefulWidget, Widget},
 };
 use termrock::{
     interaction::{
@@ -28,14 +28,15 @@ use termrock::{
         SchemaNodeKind, SessionPicker, SessionPickerState, TaskRail, example_agent_workbench_nav,
         example_database_nav,
     },
+    registry::{PatternId, PublicUiId, pattern_inventory},
     scroll::DialogScroll,
     style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
     widgets::{
-        Action, ActionBar, ActionBarState, ActionLink, ActivityIndicator, ActivityPhase, Alert,
-        AlertConfirmGates, AlertDialog, AlertDialogState, AlertKind, AlertScope, AlertState,
-        AlertTone, Anchor, AnsiParseOptions, AnsiText, AnsiTextMode, AnsiTextState, AvatarFace,
-        AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner, BarDatum,
-        BarSeries, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs,
+        Action, ActionBar, ActionBarState, ActionLink, ActionVariant, ActivityIndicator,
+        ActivityPhase, Alert, AlertConfirmGates, AlertDialog, AlertDialogState, AlertKind,
+        AlertScope, AlertState, Anchor, AnsiParseOptions, AnsiText, AnsiTextMode, AnsiTextState,
+        AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
+        BarDatum, BarSeries, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs,
         BreadcrumbsState, BusyBoundary, BusyBoundaryState, BusyMode, Button, ButtonGroup,
         ButtonGroupItem, ButtonGroupState, ButtonState, Callout, CalloutTone, CellAlignment, Chart,
         ChartSeries, Checkbox, CheckboxState, CheckboxValue, CheckpointTimeline,
@@ -52,32 +53,32 @@ use termrock::{
         DiagnosticView, Dialog, DialogRecipe, DiffDecision, DiffHunk, DiffKind, DiffLine, DiffMode,
         DiffReview, DiffReviewFileRow, DiffReviewState, DiffReviewUnit, DiffView, DiffViewState,
         DiffWordKind, DiffWordSpan, Drawer, DropdownMenu, DropdownMenuState, EmptyAction,
-        EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, ErrorView, EventSeverity,
-        EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry, FileEntryKind,
-        FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview, FileSortKey,
-        FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState, FormWizard,
-        FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell, GridColumn,
-        GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer, HexViewerState,
-        HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram, HistoryEntry,
-        HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity, IdentityRole,
-        ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel, JumpFilter,
-        JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList, KeyValueListState,
-        KeyValueTable, KeyValueTableState, KeybindingRecorder, KeybindingRecorderState,
-        KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus, KvtField, KvtMode,
-        KvtValidation, Link, LinkState, List, ListRow, ListSelectionMode, ListState,
-        LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane, LogPaneState, LogStream,
-        LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState,
-        MatchKind, MatchRange, MatchRanges, MatchTruncate, Menu, MenuBar, MenuBarState, MenuItem,
-        MenuNode, MenuState, MessageDialog, MeterSegment, MetricTile, MetricTileHealth, MetricViz,
-        ModeRibbon, MultiSelect, MultiSelectState, NavItem, NavigationList, NavigationListState,
-        NotificationCenter, NotificationCenterState, NotificationRecipe, NumberConstraints,
-        NumberInput, NumberInputState, NumberKind, ObjectInspector, ObjectInspectorState,
-        OfflineBanner, OfflineSurface, PageTotal, Pagination, PaginationState, Panel, PanelChrome,
-        PasswordInput, PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus,
-        PathInput, PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
+        EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, EventSeverity, EventStream,
+        EventStreamState, Field, FieldToken, Fieldset, FileEntry, FileEntryKind, FileGitStatus,
+        FilePicker, FilePickerMode, FilePickerState, FilePreview, FileSortKey, FileTree,
+        FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState, FormWizard, FormWizardState,
+        FullscreenViewer, FullscreenViewerState, Gauge, GridCell, GridColumn, GridRow, Heading,
+        HeadingLevel, HexAsciiMode, HexEndian, HexViewer, HexViewerState, HexWindow,
+        HighlightedText, Hint, HintBar, HistBucket, Histogram, HistoryEntry, HistoryKind,
+        HistoryPicker, HistoryPickerState, HistoryRedaction, Identity, IdentityRole, ImageMeta,
+        ImageProtocol, ImageSurface, InspectorField, InspectorPanel, JumpFilter, JumpOverlay,
+        JumpOverlayState, JumpTarget, Kbd, KeyValueList, KeyValueListState, KeyValueTable,
+        KeyValueTableState, KeybindingRecorder, KeybindingRecorderState, KeyboardHelp,
+        KeyboardHelpState, KvEntry, KvLayout, KvStatus, KvtField, KvtMode, KvtValidation, Link,
+        LinkState, List, ListRow, ListSelectionMode, ListState, LoadingOverlay, LoadingView,
+        LogLevel, LogLine, LogPane, LogPaneState, LogStream, LogStreamState, MarkdownBlock,
+        MarkdownBlockKind, MarkdownView, MarkdownViewState, MatchKind, MatchRange, MatchRanges,
+        MatchTruncate, MenuBar, MenuBarState, MenuNode, MessageDialog, MeterSegment, MetricTile,
+        MetricTileHealth, MetricViz, ModeRibbon, MultiSelect, MultiSelectState, NavItem,
+        NavigationList, NavigationListState, NotificationCenter, NotificationCenterState,
+        NotificationRecipe, NumberConstraints, NumberInput, NumberInputState, NumberKind,
+        ObjectInspector, ObjectInspectorState, OfflineBanner, OfflineSurface, PageTotal,
+        Pagination, PaginationState, Panel, PanelChrome, PanelVariant, PasswordInput,
+        PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus, PathInput,
+        PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
         PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
         PickerState, Popover, PopoverState, PresenceStatus, PreviewCard, PreviewCardContent,
-        PreviewCardState, PreviewLoadState, PreviewResourceKind, Progress, ProgressKind,
+        PreviewCardState, PreviewLoadState, PreviewResourceKind, ProgressBar, ProgressKind,
         ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode,
         ProgressStepsPresentation, ProgressStepsState, PromptComposer, PromptComposerState,
         QuestionFlow, QuestionFlowState, QuickOpen, QuickOpenState, RadioGroup, RadioOption,
@@ -86,10 +87,10 @@ use termrock::{
         SearchInputState, SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults,
         SearchResultsState, SearchResultsStatus, SearchStatus, SegmentedControl,
         SegmentedControlState, SegmentedItem, SegmentedMeter, Select, SelectOption, SelectRecipe,
-        SelectState, SemanticStatus, SemanticZoomBadge, SemanticZoomState, SeparatorLine, Severity,
-        Sidebar, SidebarPresentation, SidebarState, Skeleton, Slider, SliderBounds, SliderMark,
-        SliderState, SortDirection, SourceContext, SourceLabel, SourceRange, SpanStyle, Sparkline,
-        Spinner, SpinnerState, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
+        SelectState, SemanticStatus, SemanticZoomBadge, SemanticZoomState, Severity, Sidebar,
+        SidebarPresentation, SidebarState, Skeleton, Slider, SliderBounds, SliderMark, SliderState,
+        SortDirection, SourceContext, SourceLabel, SourceRange, SpanStyle, Sparkline, Spinner,
+        SpinnerState, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
         StatusBarState, StatusIndicator, StatusSlot, StepItem, StepStatus, Stepper,
         StepperNavPolicy, StepperOrientation, StepperPresentation, StepperState, StickyRegion,
         StreamEvent, SuggestedFix, SuggestionStatus, Surface, SurfaceFill, SurfaceRecipe, Switch,
@@ -139,13 +140,13 @@ use crate::interactors::{
     HistoryPickerInteractor, IconButtonInteractor, JumpOverlayInteractor, KeyValueListInteractor,
     KeyValueTableInteractor, KeybindingRecorderInteractor, KeyboardHelpInteractor, LinkInteractor,
     ListInteractor, LogPaneInteractor, LogStreamInteractor, MarkdownViewInteractor,
-    MenuBarInteractor, MenuInteractor, ModeRibbonInteractor, MultiSelectInteractor,
-    NavigationListInteractor, NotificationCenterInteractor, NumberInputInteractor,
-    ObjectInspectorInteractor, OfflineBannerInteractor, PaginationInteractor, PanelInteractor,
-    PasswordInputInteractor, PathInputInteractor, PatternAppInteractor, PermissionPromptInteractor,
-    PickerInteractor, PopoverInteractor, PreviewCardInteractor, ProgressStepsInteractor,
-    PromptComposerInteractor, QuestionFlowInteractor, QuickOpenInteractor, RadioGroupInteractor,
-    RangeSliderInteractor, ResizablePanelGroupInteractor, SearchInputInteractor, SectionInteractor,
+    MenuBarInteractor, ModeRibbonInteractor, MultiSelectInteractor, NavigationListInteractor,
+    NotificationCenterInteractor, NumberInputInteractor, ObjectInspectorInteractor,
+    OfflineBannerInteractor, PaginationInteractor, PanelInteractor, PasswordInputInteractor,
+    PathInputInteractor, PatternAppInteractor, PermissionPromptInteractor, PickerInteractor,
+    PopoverInteractor, PreviewCardInteractor, ProgressStepsInteractor, PromptComposerInteractor,
+    QuestionFlowInteractor, QuickOpenInteractor, RadioGroupInteractor, RangeSliderInteractor,
+    ResizablePanelGroupInteractor, SearchInputInteractor, SectionInteractor,
     SegmentedControlInteractor, SelectInteractor, SidebarInteractor, SliderInteractor,
     SplitPaneInteractor, StaticStory, StepperInteractor, StoryInteraction, SwitchInteractor,
     TableInteractor, TabsInteractor, TagInteractor, TerminalOutputInteractor, TextAreaInteractor,
@@ -155,9 +156,41 @@ use crate::interactors::{
     VirtualGridInteractor, VirtualListInteractor,
 };
 
-/// Static story paint function using only public TermRock APIs.
-pub type RenderFn = fn(&mut Frame<'_>, Rect, &DesignSystem);
-type InteractorFactory = fn(RenderFn) -> Box<dyn StoryInteraction>;
+type FixturePaint = fn(&mut Frame<'_>, Rect, &DesignSystem);
+type MountedStoryFactory = fn() -> Box<dyn StoryInteraction>;
+
+/// Executable story fixture. Every host mounts this specification before paint.
+#[derive(Debug, Clone, Copy)]
+pub enum StorySpec {
+    /// Passive public-API fixture.
+    Fixture(FixturePaint),
+    /// Persistent stateful public-API mount.
+    Mounted(MountedStoryFactory),
+}
+
+impl StorySpec {
+    const fn fixture(fixture: FixturePaint) -> Self {
+        Self::Fixture(fixture)
+    }
+
+    const fn mounted(mount: MountedStoryFactory) -> Self {
+        Self::Mounted(mount)
+    }
+
+    fn mount(self) -> Box<dyn StoryInteraction> {
+        match self {
+            Self::Fixture(fixture) => Box::new(StaticStory {
+                render_fn: fixture,
+                system: crate::design::lookbook_system(RolePalette::default()),
+            }),
+            Self::Mounted(mount) => mount(),
+        }
+    }
+
+    const fn is_interactive(self) -> bool {
+        matches!(self, Self::Mounted(_))
+    }
+}
 
 /// Demo minimum width of the first split-pane region.
 pub const SPLIT_PANE_MIN: u16 = 12;
@@ -165,24 +198,50 @@ pub const SPLIT_PANE_MIN: u16 = 12;
 pub const SPLIT_PANE_MAX: u16 = 16;
 
 #[derive(Debug, Clone, Copy)]
-/// One registered public-API demo and its persistent-state factory.
+/// One registered public-API demo and its mounted fixture specification.
 pub struct Story {
     /// Stable catalog identifier.
     pub id: &'static str,
     /// Human-readable variant title.
     pub title: &'static str,
-    /// Public component or pattern type demonstrated.
-    pub component: &'static str,
+    /// Typed public component or composed-pattern identity.
+    pub identity: StoryIdentity,
     /// Concise purpose statement.
     pub description: &'static str,
     /// Preferred inner width in terminal cells.
     pub width: u16,
     /// Preferred inner height in terminal cells.
     pub height: u16,
-    /// Whether this story owns persistent interactive state.
-    pub interactive: bool,
-    render: RenderFn,
-    interactor: InteractorFactory,
+    spec: StorySpec,
+}
+
+/// Typed identity of one story-owned visual surface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StoryIdentity {
+    /// Exact public visual owner.
+    PublicUi(PublicUiId),
+    /// Composed pattern concept without an exact public owner.
+    Pattern(PatternId),
+}
+
+impl StoryIdentity {
+    /// Canonical public visual-owner or composed-pattern label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::PublicUi(id) => id.as_str(),
+            Self::Pattern(id) => id.as_str(),
+        }
+    }
+
+    /// Exact public visual owner, when this is not a composed-only pattern.
+    #[must_use]
+    pub const fn public_ui(self) -> Option<PublicUiId> {
+        match self {
+            Self::PublicUi(id) => Some(id),
+            Self::Pattern(_) => None,
+        }
+    }
 }
 
 impl Story {
@@ -190,85 +249,84 @@ impl Story {
     pub const fn new(
         id: &'static str,
         title: &'static str,
-        component: &'static str,
+        identity: StoryIdentity,
         description: &'static str,
         width: u16,
         height: u16,
-        render: RenderFn,
+        fixture: FixturePaint,
     ) -> Self {
         Self {
             id,
             title,
-            component,
+            identity,
             description,
             width,
             height,
-            interactive: false,
-            render,
-            interactor: static_interactor,
+            spec: StorySpec::fixture(fixture),
         }
     }
-    const fn with_interactor(mut self, interactor: InteractorFactory) -> Self {
-        self.interactor = interactor;
-        self.interactive = true;
-        self
+    const fn mounted(
+        id: &'static str,
+        title: &'static str,
+        identity: StoryIdentity,
+        description: &'static str,
+        width: u16,
+        height: u16,
+        mount: MountedStoryFactory,
+    ) -> Self {
+        Self {
+            id,
+            title,
+            identity,
+            description,
+            width,
+            height,
+            spec: StorySpec::mounted(mount),
+        }
     }
-    /// Paint the passive story with a supplied design system.
+    /// Whether the mounted specification owns persistent interactive state.
+    #[must_use]
+    pub const fn is_interactive(self) -> bool {
+        self.spec.is_interactive()
+    }
+    /// Exclusive executable authority for structural host validation.
+    #[must_use]
+    #[cfg(test)]
+    pub(crate) const fn spec(self) -> StorySpec {
+        self.spec
+    }
+    /// Canonical component or composed-pattern label derived from typed identity.
+    #[must_use]
+    pub const fn component(self) -> &'static str {
+        self.identity.label()
+    }
+    /// Typed public component identity, or `None` for composed-only patterns.
+    #[must_use]
+    pub const fn public_ui_id(self) -> Option<PublicUiId> {
+        self.identity.public_ui()
+    }
+    /// Typed owner. Construction makes unresolved identities impossible.
+    #[must_use]
+    pub const fn identity(self) -> StoryIdentity {
+        self.identity
+    }
+    /// Paint a freshly mounted representative state with a supplied design system.
     pub fn render(self, frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-        (self.render)(frame, area, system);
+        let mut mounted = self.mount();
+        mounted.set_system(system.clone());
+        mounted.render(frame, area);
     }
-    /// Create a fresh persistent interactor for this story.
-    pub fn make_interactor(&self) -> Box<dyn StoryInteraction> {
-        let mut interactor = (self.interactor)(self.render);
-        interactor.set_demo_id(self.id);
-        interactor
+    /// Mount the representative fixture state used by sessions, frames, and posters.
+    pub fn mount(self) -> Box<dyn StoryInteraction> {
+        let mut mounted = self.spec.mount();
+        mounted.set_demo_id(self.id);
+        mounted
     }
 }
 
-fn static_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(StaticStory {
-        render_fn: render,
-        theme: RolePalette::default(),
-    })
+fn pattern_app_interactor() -> Box<dyn StoryInteraction> {
+    Box::new(PatternAppInteractor::new())
 }
-
-fn pattern_app_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(PatternAppInteractor::new(render))
-}
-
-pub(crate) const PATTERN_DEMO_IDS: &[&str] = &[
-    "activity-shelf/statuses",
-    "agent-status-header/basic",
-    "agent-workbench/basic",
-    "app-shell/workbench",
-    "approval-queue/basic",
-    "auth-entry/basic",
-    "background-tasks/mixed-statuses",
-    "connection-manager/full",
-    "database-workbench/basic",
-    "design-inspector/basic",
-    "error-recovery/basic",
-    "file-manager/basic",
-    "git-workbench/basic",
-    "help-center/basic",
-    "integration-status/list",
-    "metrics-dashboard/basic",
-    "observability-dashboard/basic",
-    "plan-review/basic",
-    "process-table/basic",
-    "project-launcher/basic",
-    "prompt-queue/compact",
-    "query-editor/basic",
-    "result-grid/basic",
-    "schema-browser/basic",
-    "session-picker/basic",
-    "settings-screen/basic",
-    "setup-wizard/welcome",
-    "subagent-card/running",
-    "task-rail/basic",
-    "terminal-run-card/running",
-    "working-state-card/basic",
-];
 
 /// Components shown inside a real application, and the scene that shows them.
 ///
@@ -277,180 +335,282 @@ pub(crate) const PATTERN_DEMO_IDS: &[&str] = &[
 /// story — no new state machines, no new interactors — and label it with the
 /// component, so the page's variant picker offers "In application"
 /// (plans/018 Step 2).
-const IN_APP_SCENES: &[(&str, &str, &str)] = &[
+const IN_APP_SCENES: &[(PublicUiId, &str, &str)] = &[
     // Collections, inputs and chrome live in the workbench shells.
-    ("List", "list/in-app", "app-shell/workbench"),
-    ("Panel", "panel/in-app", "app-shell/workbench"),
-    ("Sidebar", "sidebar/in-app", "app-shell/workbench"),
-    ("StatusBar", "status-bar/in-app", "app-shell/workbench"),
-    ("Tabs", "tabs/in-app", "app-shell/workbench"),
-    ("Toolbar", "toolbar/in-app", "app-shell/workbench"),
-    ("Transcript", "transcript/in-app", "agent-workbench/basic"),
+    (PublicUiId::List, "list/in-app", "app-shell/workbench"),
+    (PublicUiId::Panel, "panel/in-app", "app-shell/workbench"),
+    (PublicUiId::Sidebar, "sidebar/in-app", "app-shell/workbench"),
     (
-        "PromptComposer",
+        PublicUiId::StatusBar,
+        "status-bar/in-app",
+        "app-shell/workbench",
+    ),
+    (PublicUiId::Tabs, "tabs/in-app", "app-shell/workbench"),
+    (PublicUiId::Toolbar, "toolbar/in-app", "app-shell/workbench"),
+    (
+        PublicUiId::Transcript,
+        "transcript/in-app",
+        "agent-workbench/basic",
+    ),
+    (
+        PublicUiId::PromptComposer,
         "prompt-composer/in-app",
         "agent-workbench/basic",
     ),
-    ("TaskRail", "task-rail/in-app", "agent-workbench/basic"),
-    ("ModeRibbon", "mode-ribbon/in-app", "agent-workbench/basic"),
     (
-        "PermissionPrompt",
+        PublicUiId::TaskRail,
+        "task-rail/in-app",
+        "agent-workbench/basic",
+    ),
+    (
+        PublicUiId::ModeRibbon,
+        "mode-ribbon/in-app",
+        "agent-workbench/basic",
+    ),
+    (
+        PublicUiId::PermissionPrompt,
         "permission-prompt/in-app",
         "approval-queue/basic",
     ),
     (
-        "ApprovalQueue",
+        PublicUiId::ApprovalQueue,
         "approval-queue/in-app",
         "approval-queue/basic",
     ),
     (
-        "AgentStatusHeader",
+        PublicUiId::AgentStatusHeader,
         "agent-status-header/in-app",
         "agent-status-header/basic",
     ),
     (
-        "WorkingStateCard",
+        PublicUiId::WorkingStateCard,
         "working-state-card/in-app",
         "working-state-card/basic",
     ),
     (
-        "ThinkingBlock",
+        PublicUiId::ThinkingBlock,
         "thinking-block/in-app",
         "working-state-card/basic",
     ),
-    ("ToolCard", "tool-card/in-app", "subagent-card/running"),
-    ("Timeline", "timeline/in-app", "checkpoint-timeline/basic"),
-    // Data surfaces.
-    ("DataTable", "data-table/in-app", "result-grid/basic"),
-    ("Table", "table/in-app", "process-table/basic"),
-    ("TreeTable", "tree-table/in-app", "process-table/basic"),
-    ("Tree", "tree/in-app", "schema-browser/basic"),
     (
-        "TreeNavigation",
+        PublicUiId::ToolCard,
+        "tool-card/in-app",
+        "subagent-card/running",
+    ),
+    (
+        PublicUiId::Timeline,
+        "timeline/in-app",
+        "checkpoint-timeline/basic",
+    ),
+    // Data surfaces.
+    (
+        PublicUiId::DataTable,
+        "data-table/in-app",
+        "result-grid/basic",
+    ),
+    (PublicUiId::Table, "table/in-app", "process-table/basic"),
+    (
+        PublicUiId::TreeTable,
+        "tree-table/in-app",
+        "process-table/basic",
+    ),
+    (PublicUiId::Tree, "tree/in-app", "schema-browser/basic"),
+    (
+        PublicUiId::TreeNavigation,
         "tree-navigation/in-app",
         "file-manager/basic",
     ),
-    ("VirtualList", "virtual-list/in-app", "session-picker/basic"),
     (
-        "ObjectInspector",
+        PublicUiId::VirtualList,
+        "virtual-list/in-app",
+        "session-picker/basic",
+    ),
+    (
+        PublicUiId::ObjectInspector,
         "object-inspector/in-app",
         "observability-dashboard/basic",
     ),
     (
-        "LogStream",
+        PublicUiId::LogStream,
         "log-stream/in-app",
         "observability-dashboard/basic",
     ),
     (
-        "EventStream",
+        PublicUiId::EventStream,
         "event-stream/in-app",
         "observability-dashboard/basic",
     ),
     (
-        "DetailTable",
+        PublicUiId::DetailTable,
         "detail-table/in-app",
         "integration-status/list",
     ),
     (
-        "KeyValueList",
+        PublicUiId::KeyValueList,
         "key-value-list/in-app",
         "integration-status/list",
     ),
-    ("DiffReview", "diff-review/in-app", "git-workbench/basic"),
-    ("DiffView", "diff-view/in-app", "git-workbench/basic"),
     (
-        "CheckpointTimeline",
+        PublicUiId::DiffReview,
+        "diff-review/in-app",
+        "git-workbench/basic",
+    ),
+    (
+        PublicUiId::DiffView,
+        "diff-view/in-app",
+        "git-workbench/basic",
+    ),
+    (
+        PublicUiId::CheckpointTimeline,
         "checkpoint-timeline/in-app",
         "git-workbench/basic",
     ),
     (
-        "TerminalOutput",
+        PublicUiId::TerminalOutput,
         "terminal-output/in-app",
         "terminal-run-card/running",
     ),
-    ("CodeBlock", "code-block/in-app", "query-editor/basic"),
     (
-        "DiagnosticView",
+        PublicUiId::CodeBlock,
+        "code-block/in-app",
+        "query-editor/basic",
+    ),
+    (
+        PublicUiId::DiagnosticView,
         "diagnostic-view/in-app",
         "error-recovery/basic",
     ),
     // Feedback.
-    ("Toast", "toast/in-app", "background-tasks/mixed-statuses"),
     (
-        "Progress",
-        "progress/in-app",
+        PublicUiId::Toast,
+        "toast/in-app",
         "background-tasks/mixed-statuses",
     ),
     (
-        "ProgressBar",
+        PublicUiId::ProgressBar,
         "progress-bar/in-app",
         "background-tasks/mixed-statuses",
     ),
     (
-        "Spinner",
+        PublicUiId::Spinner,
         "spinner/in-app",
         "background-tasks/mixed-statuses",
     ),
     (
-        "StatusIndicator",
+        PublicUiId::StatusIndicator,
         "status-indicator/in-app",
         "process-table/basic",
     ),
     (
-        "ActivityIndicator",
+        PublicUiId::ActivityIndicator,
         "activity-indicator/in-app",
         "activity-shelf/statuses",
     ),
     (
-        "NotificationCenter",
+        PublicUiId::NotificationCenter,
         "notification-center/in-app",
         "activity-shelf/statuses",
     ),
-    ("Sparkline", "sparkline/in-app", "metrics-dashboard/basic"),
-    ("Gauge", "gauge/in-app", "metrics-dashboard/basic"),
-    ("Chart", "chart/in-app", "metrics-dashboard/basic"),
-    // Forms.
-    ("Form", "form/in-app", "settings-screen/basic"),
-    ("Fieldset", "fieldset/in-app", "settings-screen/basic"),
-    ("FieldRow", "field-row/in-app", "settings-screen/basic"),
-    ("Checkbox", "checkbox/in-app", "settings-screen/basic"),
-    ("Switch", "switch/in-app", "settings-screen/basic"),
-    ("RadioGroup", "radio-group/in-app", "settings-screen/basic"),
     (
-        "ThemePicker",
+        PublicUiId::Sparkline,
+        "sparkline/in-app",
+        "metrics-dashboard/basic",
+    ),
+    (PublicUiId::Gauge, "gauge/in-app", "metrics-dashboard/basic"),
+    (PublicUiId::Chart, "chart/in-app", "metrics-dashboard/basic"),
+    // Forms.
+    (PublicUiId::Form, "form/in-app", "settings-screen/basic"),
+    (
+        PublicUiId::FieldRow,
+        "field-row/in-app",
+        "settings-screen/basic",
+    ),
+    (
+        PublicUiId::Checkbox,
+        "checkbox/in-app",
+        "settings-screen/basic",
+    ),
+    (PublicUiId::Switch, "switch/in-app", "settings-screen/basic"),
+    (
+        PublicUiId::RadioGroup,
+        "radio-group/in-app",
+        "settings-screen/basic",
+    ),
+    (
+        PublicUiId::ThemePicker,
         "theme-picker/in-app",
         "settings-screen/basic",
     ),
     (
-        "KeybindingRecorder",
+        PublicUiId::KeybindingRecorder,
         "keybinding-recorder/in-app",
         "settings-screen/basic",
     ),
-    ("TextInput", "text-input/in-app", "auth-entry/basic"),
-    ("PasswordInput", "password-input/in-app", "auth-entry/basic"),
-    ("Button", "button/in-app", "auth-entry/basic"),
-    ("FormWizard", "form-wizard/in-app", "setup-wizard/welcome"),
     (
-        "ProgressSteps",
+        PublicUiId::TextInput,
+        "text-input/in-app",
+        "auth-entry/basic",
+    ),
+    (
+        PublicUiId::PasswordInput,
+        "password-input/in-app",
+        "auth-entry/basic",
+    ),
+    (PublicUiId::Button, "button/in-app", "auth-entry/basic"),
+    (
+        PublicUiId::FormWizard,
+        "form-wizard/in-app",
+        "setup-wizard/welcome",
+    ),
+    (
+        PublicUiId::ProgressSteps,
         "progress-steps/in-app",
         "setup-wizard/welcome",
     ),
     // Overlays and navigation.
     (
-        "CommandPalette",
+        PublicUiId::CommandPalette,
         "command-palette/in-app",
         "app-shell/workbench",
     ),
-    ("QuickOpen", "quick-open/in-app", "project-launcher/basic"),
-    ("Dialog", "dialog/in-app", "session-picker/basic"),
-    ("SearchInput", "search-input/in-app", "help-center/basic"),
-    ("MarkdownView", "markdown-view/in-app", "help-center/basic"),
-    ("KeyboardHelp", "keyboard-help/in-app", "help-center/basic"),
-    ("Breadcrumbs", "breadcrumbs/in-app", "file-manager/basic"),
-    ("PreviewCard", "preview-card/in-app", "file-manager/basic"),
-    ("Select", "select/in-app", "connection-manager/full"),
     (
-        "EmptyState",
+        PublicUiId::QuickOpen,
+        "quick-open/in-app",
+        "project-launcher/basic",
+    ),
+    (PublicUiId::Dialog, "dialog/in-app", "session-picker/basic"),
+    (
+        PublicUiId::SearchInput,
+        "search-input/in-app",
+        "help-center/basic",
+    ),
+    (
+        PublicUiId::MarkdownView,
+        "markdown-view/in-app",
+        "help-center/basic",
+    ),
+    (
+        PublicUiId::KeyboardHelp,
+        "keyboard-help/in-app",
+        "help-center/basic",
+    ),
+    (
+        PublicUiId::Breadcrumbs,
+        "breadcrumbs/in-app",
+        "file-manager/basic",
+    ),
+    (
+        PublicUiId::PreviewCard,
+        "preview-card/in-app",
+        "file-manager/basic",
+    ),
+    (
+        PublicUiId::Select,
+        "select/in-app",
+        "connection-manager/full",
+    ),
+    (
+        PublicUiId::EmptyState,
         "empty-state/in-app",
         "connection-manager/full",
     ),
@@ -478,7 +638,7 @@ fn in_app_stories(catalog: &[Story]) -> Vec<Story> {
         out.push(Story {
             id,
             title: "In application",
-            component,
+            identity: StoryIdentity::PublicUi(*component),
             description: "The component inside a real application scene.",
             ..*host
         });
@@ -486,189 +646,185 @@ fn in_app_stories(catalog: &[Story]) -> Vec<Story> {
     out
 }
 
-fn panel_interactor(render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(PanelInteractor::new(render))
+fn panel_interactor() -> Box<dyn StoryInteraction> {
+    Box::new(PanelInteractor::new())
 }
 
-fn tree_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn tree_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TreeInteractor::new())
 }
 
-fn form_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn form_interactor() -> Box<dyn StoryInteraction> {
     Box::new(FormInteractor::new())
 }
 
-fn split_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn split_pane_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SplitPaneInteractor::new())
 }
 
-fn choice_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn choice_dialog_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ChoiceDialogInteractor::new())
 }
 
-fn list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn list_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ListInteractor::new())
 }
 
-fn picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn picker_interactor() -> Box<dyn StoryInteraction> {
     Box::new(PickerInteractor::new())
 }
 
-fn log_pane_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn log_pane_interactor() -> Box<dyn StoryInteraction> {
     Box::new(LogPaneInteractor::new())
 }
 
-fn toast_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn toast_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ToastInteractor::new())
 }
 
-fn text_area_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn text_area_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TextAreaInteractor::new())
 }
 
-fn tabs_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn tabs_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TabsInteractor::new())
 }
 
-fn table_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn table_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TableInteractor::new())
 }
 
-fn theme_picker_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn theme_picker_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ThemePickerInteractor::new())
 }
 
-fn command_palette_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn command_palette_interactor() -> Box<dyn StoryInteraction> {
     Box::new(CommandPaletteInteractor::new())
 }
 
-fn design_inspector_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn design_inspector_interactor() -> Box<dyn StoryInteraction> {
     Box::new(DesignInspectorInteractor::new())
 }
 
-fn transcript_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn transcript_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TranscriptInteractor::new())
 }
 
-fn prompt_composer_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn prompt_composer_interactor() -> Box<dyn StoryInteraction> {
     Box::new(PromptComposerInteractor::new())
 }
 
-fn virtual_grid_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn virtual_grid_interactor() -> Box<dyn StoryInteraction> {
     Box::new(VirtualGridInteractor::new())
 }
 
-fn action_link_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn action_link_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ActionLinkInteractor::new())
 }
 
-fn button_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn button_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ButtonInteractor::new())
 }
 
-fn dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn dialog_interactor() -> Box<dyn StoryInteraction> {
     Box::new(DialogInteractor::new())
 }
 
-fn text_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn text_input_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TextInputInteractor::new())
 }
 
-fn slider_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn slider_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SliderInteractor::new())
 }
 
-fn range_slider_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn range_slider_interactor() -> Box<dyn StoryInteraction> {
     Box::new(RangeSliderInteractor::new())
 }
 
-fn password_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn password_input_interactor() -> Box<dyn StoryInteraction> {
     Box::new(PasswordInputInteractor::new())
 }
 
-fn alert_dialog_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn alert_dialog_interactor() -> Box<dyn StoryInteraction> {
     Box::new(AlertDialogInteractor::new())
 }
 
-fn popover_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn popover_interactor() -> Box<dyn StoryInteraction> {
     Box::new(PopoverInteractor::new())
 }
 
-fn dropdown_menu_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn dropdown_menu_interactor() -> Box<dyn StoryInteraction> {
     Box::new(DropdownMenuInteractor::new())
 }
 
-fn menu_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(MenuInteractor::new())
-}
-
-fn sidebar_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn sidebar_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SidebarInteractor::new())
 }
 
-fn resizable_panel_group_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn resizable_panel_group_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ResizablePanelGroupInteractor::new())
 }
 
-fn form_wizard_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn form_wizard_interactor() -> Box<dyn StoryInteraction> {
     Box::new(FormWizardInteractor::new())
 }
 
-fn checkbox_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn checkbox_interactor() -> Box<dyn StoryInteraction> {
     Box::new(CheckboxInteractor::new())
 }
 
-fn accordion_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn accordion_interactor() -> Box<dyn StoryInteraction> {
     Box::new(AccordionInteractor::new())
 }
 
-fn collapsible_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn collapsible_interactor() -> Box<dyn StoryInteraction> {
     Box::new(CollapsibleInteractor::new())
 }
 
-fn number_input_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn number_input_interactor() -> Box<dyn StoryInteraction> {
     Box::new(NumberInputInteractor::new())
 }
 
-fn select_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn select_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SelectInteractor::new())
 }
 
-fn pagination_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn pagination_interactor() -> Box<dyn StoryInteraction> {
     Box::new(PaginationInteractor::new())
 }
 
-fn multi_select_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn multi_select_interactor() -> Box<dyn StoryInteraction> {
     Box::new(MultiSelectInteractor::new())
 }
 
-fn switch_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn switch_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SwitchInteractor::new())
 }
 
-fn toggle_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn toggle_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ToggleInteractor::new())
 }
 
-fn toggle_group_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn toggle_group_interactor() -> Box<dyn StoryInteraction> {
     Box::new(ToggleGroupInteractor::new())
 }
 
-fn segmented_control_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn segmented_control_interactor() -> Box<dyn StoryInteraction> {
     Box::new(SegmentedControlInteractor::new())
 }
 
-fn tree_table_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn tree_table_interactor() -> Box<dyn StoryInteraction> {
     Box::new(TreeTableInteractor::new())
 }
 
-fn virtual_list_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn virtual_list_interactor() -> Box<dyn StoryInteraction> {
     Box::new(VirtualListInteractor::new())
 }
 
 macro_rules! interactor_factory {
     ($name:ident, $interactor:ty) => {
-        fn $name(_render: RenderFn) -> Box<dyn StoryInteraction> {
+        fn $name() -> Box<dyn StoryInteraction> {
             Box::new(<$interactor>::new())
         }
     };
@@ -728,15 +884,15 @@ interactor_factory!(diff_review_interactor, DiffReviewInteractor);
 interactor_factory!(key_value_list_interactor, KeyValueListInteractor);
 interactor_factory!(key_value_table_interactor, KeyValueTableInteractor);
 
-fn drawer_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn drawer_interactor() -> Box<dyn StoryInteraction> {
     Box::new(DrawerInteractor::drawer())
 }
 
-fn sheet_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
-    Box::new(DrawerInteractor::sheet())
+fn bottom_drawer_interactor() -> Box<dyn StoryInteraction> {
+    Box::new(DrawerInteractor::bottom())
 }
 
-fn offline_surface_interactor(_render: RenderFn) -> Box<dyn StoryInteraction> {
+fn offline_surface_interactor() -> Box<dyn StoryInteraction> {
     Box::new(OfflineBannerInteractor::surface())
 }
 
@@ -746,7 +902,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ui-context/frame",
             "UiContext frame",
-            "UiContext",
+            StoryIdentity::PublicUi(PublicUiId::UiContext),
             "Per-frame host: design + scene + focus + overlays + semantics + tick.",
             56,
             12,
@@ -755,7 +911,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ui-context/nested",
             "UiContext nested register",
-            "UiContext",
+            StoryIdentity::PublicUi(PublicUiId::UiContext),
             "Nested components register into one scene/semantics via &mut UiContext.",
             48,
             10,
@@ -764,7 +920,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "design-system/presets",
             "DesignSystem presets",
-            "DesignSystem",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Phosphor · Slate · Paper · ANSI · High Contrast ladder.",
             72,
             18,
@@ -773,7 +929,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "design-system/no-color",
             "DesignSystem no-color",
-            "DesignSystem",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Monochrome + ASCII glyphs; roles still carry meaning.",
             48,
             8,
@@ -782,7 +938,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "design-system/button-recipes",
             "Button recipes",
-            "DesignSystem",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Primary/secondary/destructive × default/focused/disabled.",
             56,
             10,
@@ -791,7 +947,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/both",
             "Center both axes",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Child panel centered horizontally and vertically.",
             48,
             14,
@@ -800,7 +956,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/dialog",
             "Center dialog safe margin",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Dialog-style center with one-cell safe margin.",
             40,
             12,
@@ -809,7 +965,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/horizontal",
             "Center horizontal only",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Horizontal center; full height strip.",
             40,
             8,
@@ -818,7 +974,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/max",
             "Center max-width",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Preferred width capped by max_width.",
             48,
             10,
@@ -827,7 +983,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/tiny",
             "Center tiny terminal",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "No underflow when outer is smaller than preferred.",
             12,
             4,
@@ -836,7 +992,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/vertical",
             "Center vertical only",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Vertical axis: width fills; height preferred.",
             40,
             10,
@@ -845,7 +1001,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/onboarding",
             "Center onboarding recipe",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Onboarding hero with max-width and safe margin.",
             56,
             14,
@@ -854,7 +1010,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "center/failure",
             "Center failure recipe",
-            "Center",
+            StoryIdentity::PublicUi(PublicUiId::Center),
             "Failure/error panel placement with caps.",
             48,
             12,
@@ -863,7 +1019,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/columns",
             "Grid columns",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Equal fr columns with gap; auto-flow cards.",
             56,
             12,
@@ -872,7 +1028,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/span",
             "Grid span",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Header spans full width; detail cells below.",
             48,
             10,
@@ -881,7 +1037,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/dashboard",
             "Grid dashboard template",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Responsive card grid (up to 3 columns).",
             72,
             14,
@@ -890,7 +1046,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/form",
             "Grid form template",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "form_grid_template: 2-col wide / 1-col narrow.",
             70,
             12,
@@ -899,7 +1055,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/narrow",
             "Grid narrow",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Single-column collapse under narrow width.",
             28,
             10,
@@ -908,7 +1064,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/settings",
             "Grid settings template",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Label + value columns; host-measured label track.",
             48,
             8,
@@ -917,7 +1073,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/overflow",
             "Grid overflow clip-tail",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "ClipTail keeps head tracks; tail collapses.",
             20,
             6,
@@ -926,7 +1082,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "grid/nav",
             "Grid spatial neighbor",
-            "Grid",
+            StoryIdentity::PublicUi(PublicUiId::Grid),
             "Focus index 0 → right/down neighbor (debug labels).",
             36,
             8,
@@ -935,7 +1091,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/vertical",
             "Stack vertical",
-            "Stack",
+            StoryIdentity::PublicUi(PublicUiId::Stack),
             "Fixed + weight + fixed vertical packing with gap.",
             40,
             12,
@@ -944,7 +1100,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/inline",
             "Inline horizontal",
-            "Inline",
+            StoryIdentity::PublicUi(PublicUiId::Inline),
             "Equal-weight horizontal columns.",
             48,
             6,
@@ -953,7 +1109,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/wrap",
             "Inline wrap",
-            "Inline",
+            StoryIdentity::PublicUi(PublicUiId::Inline),
             "Wrapping chips when children exceed width.",
             24,
             6,
@@ -962,7 +1118,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/responsive",
             "Stack responsive direction",
-            "Stack",
+            StoryIdentity::PublicUi(PublicUiId::Stack),
             "direction_for_width: stack narrow, inline wide.",
             60,
             8,
@@ -971,7 +1127,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/narrow",
             "Stack narrow overflow",
-            "Stack",
+            StoryIdentity::PublicUi(PublicUiId::Stack),
             "Fixed children shrink from end when area too small.",
             16,
             5,
@@ -980,7 +1136,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/overflow-clip",
             "Stack overflow clip-tail",
-            "Stack",
+            StoryIdentity::PublicUi(PublicUiId::Stack),
             "ClipTail keeps head children; tail collapses to zero.",
             16,
             5,
@@ -989,26 +1145,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stack/justify",
             "Inline space-around",
-            "Inline",
+            StoryIdentity::PublicUi(PublicUiId::Inline),
             "Justify::SpaceAround distributes free main-axis cells.",
             40,
             4,
             stack_justify_story,
         ),
-        Story::new(
+        Story::mounted(
             "section/quiet",
             "Section quiet",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Quiet editorial header + description + body.",
             48,
             8,
-            section_quiet_story,
-        )
-        .with_interactor(section_interactor),
+            section_interactor,
+        ),
         Story::new(
             "section/emphasized",
             "Section emphasized",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Strong title + divider under header.",
             48,
             8,
@@ -1017,7 +1172,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "section/collapsible",
             "Section collapsible",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Disclosure header; body collapses.",
             40,
             8,
@@ -1026,7 +1181,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "section/actions",
             "Section header actions",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Status + actions; actions drop under narrow width.",
             48,
             7,
@@ -1035,7 +1190,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "section/nested",
             "Section nested",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Depth indent for nested groups.",
             44,
             10,
@@ -1044,26 +1199,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "section/narrow",
             "Section narrow",
-            "Section",
+            StoryIdentity::PublicUi(PublicUiId::Section),
             "Description and actions contract.",
             18,
             6,
             section_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "panel/focused",
             "Focused panel",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "A semantically focused bordered panel.",
             48,
             7,
-            panel,
-        )
-        .with_interactor(panel_interactor),
+            panel_interactor,
+        ),
         Story::new(
             "panel/variants",
             "Panel variants",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Bordered · quiet · divider · interactive · selected ladder.",
             56,
             16,
@@ -1072,7 +1226,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel-stack/omission",
             "Measured panel stack",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Content-sized panels; hidden blocks consume neither rows nor gaps.",
             56,
             17,
@@ -1081,7 +1235,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/empty",
             "Panel empty body",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Built-in empty body mode with non-color glyph.",
             36,
             8,
@@ -1090,7 +1244,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/collapsible",
             "Panel collapsible",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Collapsible header with disclosure; focus owns activate/toggle.",
             40,
             8,
@@ -1099,7 +1253,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "card/basic",
             "Card basic",
-            "Card",
+            StoryIdentity::PublicUi(PublicUiId::Card),
             "Raised card with title, description, body, footer.",
             36,
             9,
@@ -1108,7 +1262,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "card/tool",
             "Card tool example",
-            "Card",
+            StoryIdentity::PublicUi(PublicUiId::Card),
             "Agent tool-style card (status leading + badge + summary).",
             42,
             7,
@@ -1117,7 +1271,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "card/dashboard",
             "Card dashboard tiles",
-            "Card",
+            StoryIdentity::PublicUi(PublicUiId::Card),
             "Dashboard metric cards in a compact grid.",
             56,
             12,
@@ -1126,7 +1280,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/loading",
             "Panel loading body",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Built-in loading body mode with detail copy.",
             36,
             8,
@@ -1135,7 +1289,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/error",
             "Panel error body",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Built-in error body mode with non-color title.",
             36,
             8,
@@ -1144,7 +1298,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/actions",
             "Panel header actions",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Badge + header action band; actions drop under narrow width.",
             48,
             8,
@@ -1153,26 +1307,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-bar/basic",
             "Action bar",
-            "ActionBar",
+            StoryIdentity::PublicUi(PublicUiId::ActionBar),
             "Stable-ID caller-defined actions.",
             48,
             2,
             action_bar,
         ),
-        Story::new(
+        Story::mounted(
             "button-group/dialog",
             "ButtonGroup dialog",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Cancel + Save primary + Delete; Enter submits Save.",
             48,
             3,
-            button_group_dialog_story,
-        )
-        .with_interactor(button_group_interactor),
+            button_group_interactor,
+        ),
         Story::new(
             "button-group/connected",
             "ButtonGroup connected",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Connected recipe for segmented actions.",
             36,
             3,
@@ -1181,7 +1334,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button-group/overflow",
             "ButtonGroup overflow",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Secondary actions collapse into overflow at narrow width.",
             22,
             3,
@@ -1190,26 +1343,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button-group/loading",
             "ButtonGroup loading",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Default action loading; siblings remain.",
             40,
             3,
             button_group_loading_story,
         ),
-        Story::new(
+        Story::mounted(
             "toggle/pressed",
             "Toggle pressed",
-            "Toggle",
+            StoryIdentity::PublicUi(PublicUiId::Toggle),
             "Single sticky toggle: unpressed vs pressed brackets.",
             36,
             3,
-            toggle_pressed_story,
-        )
-        .with_interactor(toggle_interactor),
+            toggle_interactor,
+        ),
         Story::new(
             "toggle/icon",
             "Toggle icon-only",
-            "Toggle",
+            StoryIdentity::PublicUi(PublicUiId::Toggle),
             "Icon-only with mandatory accessible label.",
             24,
             3,
@@ -1218,26 +1370,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle/indeterminate",
             "Toggle indeterminate",
-            "Toggle",
+            StoryIdentity::PublicUi(PublicUiId::Toggle),
             "Mixed selection mark [~B].",
             24,
             3,
             toggle_indeterminate_story,
         ),
-        Story::new(
+        Story::mounted(
             "toggle-group/format",
             "ToggleGroup multi format",
-            "ToggleGroup",
+            StoryIdentity::PublicUi(PublicUiId::ToggleGroup),
             "Bold/Italic/Underline multi-select toolbar.",
             40,
             3,
-            toggle_group_format_story,
-        )
-        .with_interactor(toggle_group_interactor),
+            toggle_group_interactor,
+        ),
         Story::new(
             "toggle-group/align",
             "ToggleGroup single align",
-            "ToggleGroup",
+            StoryIdentity::PublicUi(PublicUiId::ToggleGroup),
             "Connected single-select L|C|R.",
             28,
             3,
@@ -1246,26 +1397,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle-group/overflow",
             "ToggleGroup overflow",
-            "ToggleGroup",
+            StoryIdentity::PublicUi(PublicUiId::ToggleGroup),
             "Low-priority toggles collapse to …",
             18,
             3,
             toggle_group_overflow_story,
         ),
-        Story::new(
+        Story::mounted(
             "accordion/section",
             "Accordion section",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Multi-open section recipe with roving cursor.",
             44,
             14,
-            accordion_section_story,
-        )
-        .with_interactor(accordion_interactor),
+            accordion_interactor,
+        ),
         Story::new(
             "accordion/settings",
             "Accordion settings",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Single-open settings groups.",
             44,
             12,
@@ -1274,7 +1424,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "accordion/logs",
             "Accordion logs",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Multi-open log/tool streams; keep-mounted policy.",
             48,
             14,
@@ -1283,7 +1433,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "accordion/faq",
             "Accordion FAQ",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Single-open FAQ help recipe.",
             48,
             12,
@@ -1292,7 +1442,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "accordion/narrow",
             "Accordion narrow",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Triggers truncate; layout survives narrow width.",
             18,
             10,
@@ -1301,26 +1451,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "accordion/scroll-body",
             "Accordion scroll body",
-            "Accordion",
+            StoryIdentity::PublicUi(PublicUiId::Accordion),
             "Capped content height for nested scroll hosts.",
             44,
             12,
             accordion_scroll_body_story,
         ),
-        Story::new(
+        Story::mounted(
             "collapsible/inline",
             "Collapsible inline",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "Compact disclosure; open body for optional detail.",
             40,
             6,
-            collapsible_inline_story,
-        )
-        .with_interactor(collapsible_interactor),
+            collapsible_interactor,
+        ),
         Story::new(
             "collapsible/section",
             "Collapsible section",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "Section-style trigger with open-state rule fill.",
             44,
             7,
@@ -1329,7 +1478,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "collapsible/nested",
             "Collapsible nested",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "Depth indent for nested disclosures.",
             44,
             10,
@@ -1338,7 +1487,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "collapsible/disabled",
             "Collapsible disabled",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "Disabled trigger ignores activate; · marker.",
             36,
             3,
@@ -1347,7 +1496,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "collapsible/ascii",
             "Collapsible ascii",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "ASCII disclosure glyphs (v/>) without Unicode.",
             36,
             5,
@@ -1356,26 +1505,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "collapsible/narrow",
             "Collapsible narrow",
-            "Collapsible",
+            StoryIdentity::PublicUi(PublicUiId::Collapsible),
             "Trigger truncates; body still opens.",
             18,
             5,
             collapsible_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "toolbar/basic",
             "Toolbar basic",
-            "Toolbar",
+            StoryIdentity::PublicUi(PublicUiId::Toolbar),
             "Roving-focus strip with actions, separator, toggle, hints.",
             64,
             1,
-            toolbar_basic_story,
-        )
-        .with_interactor(toolbar_interactor),
+            toolbar_interactor,
+        ),
         Story::new(
             "toolbar/overflow",
             "Toolbar overflow",
-            "Toolbar",
+            StoryIdentity::PublicUi(PublicUiId::Toolbar),
             "Low-priority items move to overflow chip.",
             28,
             1,
@@ -1384,7 +1532,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toolbar/vertical",
             "Toolbar vertical",
-            "Toolbar",
+            StoryIdentity::PublicUi(PublicUiId::Toolbar),
             "Compact vertical orientation.",
             12,
             8,
@@ -1393,26 +1541,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toolbar/compact",
             "Toolbar compact icons",
-            "Toolbar",
+            StoryIdentity::PublicUi(PublicUiId::Toolbar),
             "Compact variant prefers icons.",
             40,
             1,
             toolbar_compact_story,
         ),
-        Story::new(
+        Story::mounted(
             "sidebar/settings",
             "Sidebar settings",
-            "Sidebar",
+            StoryIdentity::PublicUi(PublicUiId::Sidebar),
             "Settings navigation with sections and badges.",
             28,
             14,
-            sidebar_settings_story,
-        )
-        .with_interactor(sidebar_interactor),
+            sidebar_interactor,
+        ),
         Story::new(
             "sidebar/database",
             "Sidebar database",
-            "Sidebar",
+            StoryIdentity::PublicUi(PublicUiId::Sidebar),
             "Database explorer hierarchy projection.",
             28,
             16,
@@ -1421,7 +1568,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "sidebar/agent",
             "Sidebar agent workbench",
-            "Sidebar",
+            StoryIdentity::PublicUi(PublicUiId::Sidebar),
             "Agent workbench nav with status and separator.",
             24,
             12,
@@ -1430,36 +1577,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "sidebar/rail",
             "Sidebar rail",
-            "Sidebar",
+            StoryIdentity::PublicUi(PublicUiId::Sidebar),
             "Compact rail presentation.",
             8,
             12,
             sidebar_rail_story,
         ),
-        Story::new(
+        Story::mounted(
             "navigation-list/basic",
             "NavigationList",
-            "NavigationList",
+            StoryIdentity::PublicUi(PublicUiId::NavigationList),
             "Route distinct from focus; filterable list.",
             28,
             12,
-            navigation_list_basic_story,
-        )
-        .with_interactor(navigation_list_interactor),
-        Story::new(
+            navigation_list_interactor,
+        ),
+        Story::mounted(
             "pagination/full",
             "Pagination full",
-            "Pagination",
+            StoryIdentity::PublicUi(PublicUiId::Pagination),
             "Full control with page numbers and summary.",
             64,
             1,
-            pagination_full_story,
-        )
-        .with_interactor(pagination_interactor),
+            pagination_interactor,
+        ),
         Story::new(
             "pagination/unknown",
             "Pagination unknown total",
-            "Pagination",
+            StoryIdentity::PublicUi(PublicUiId::Pagination),
             "Unknown total — next allowed without last.",
             40,
             1,
@@ -1468,7 +1613,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "pagination/loading",
             "Pagination loading",
-            "Pagination",
+            StoryIdentity::PublicUi(PublicUiId::Pagination),
             "Loading disables nav; compact width.",
             36,
             1,
@@ -1477,7 +1622,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "pagination/minimal",
             "Pagination minimal",
-            "Pagination",
+            StoryIdentity::PublicUi(PublicUiId::Pagination),
             "Narrow minimal prev/next + page label.",
             18,
             1,
@@ -1486,26 +1631,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "pagination/jump",
             "Pagination jump",
-            "Pagination",
+            StoryIdentity::PublicUi(PublicUiId::Pagination),
             "Direct page entry draft active.",
             48,
             1,
             pagination_jump_story,
         ),
-        Story::new(
+        Story::mounted(
             "stepper/horizontal",
             "Stepper horizontal",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "Expanded horizontal multi-step progress.",
             72,
             2,
-            stepper_horizontal_story,
-        )
-        .with_interactor(stepper_interactor),
+            stepper_interactor,
+        ),
         Story::new(
             "stepper/vertical",
             "Stepper vertical",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "Vertical steps with descriptions.",
             28,
             14,
@@ -1514,7 +1658,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stepper/error",
             "Stepper error state",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "Error + complete marks without relying on color alone.",
             64,
             2,
@@ -1523,7 +1667,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stepper/numeric",
             "Stepper numeric",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "Narrow numeric current/total contraction.",
             20,
             1,
@@ -1532,7 +1676,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stepper/menu",
             "Stepper menu",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "Menu presentation open with step list.",
             24,
             8,
@@ -1541,26 +1685,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "stepper/ascii",
             "Stepper ASCII",
-            "Stepper",
+            StoryIdentity::PublicUi(PublicUiId::Stepper),
             "ASCII marks + colorless roles.",
             56,
             2,
             stepper_ascii_story,
         ),
-        Story::new(
+        Story::mounted(
             "history-picker/basic",
             "HistoryPicker basic",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "Recent history with pins, groups, and preview.",
             64,
             16,
-            history_picker_basic,
-        )
-        .with_interactor(history_picker_interactor),
+            history_picker_interactor,
+        ),
         Story::new(
             "history-picker/search",
             "HistoryPicker search",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "Filter history entries.",
             56,
             12,
@@ -1569,7 +1712,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "history-picker/redacted",
             "HistoryPicker redacted",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "Sensitive values masked in list.",
             56,
             12,
@@ -1578,7 +1721,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "history-picker/draft",
             "HistoryPicker draft preserved",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "Draft stash banner while browsing.",
             56,
             12,
@@ -1587,7 +1730,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "history-picker/empty",
             "HistoryPicker empty",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "Empty history state.",
             40,
             8,
@@ -1596,26 +1739,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "history-picker/ascii",
             "HistoryPicker ASCII",
-            "HistoryPicker",
+            StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
             "ASCII chrome and colorless paint.",
             48,
             12,
             history_picker_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "keyboard-help/footer",
             "KeyboardHelp footer",
-            "KeyboardHelp",
+            StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
             "Compact footer opens a categorized, searchable help dialog.",
             72,
             16,
-            keyboard_help_footer,
-        )
-        .with_interactor(keyboard_help_interactor),
+            keyboard_help_interactor,
+        ),
         Story::new(
             "keyboard-help/modal",
             "KeyboardHelp modal",
-            "KeyboardHelp",
+            StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
             "Categorized searchable modal help.",
             64,
             16,
@@ -1624,7 +1766,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "keyboard-help/search",
             "KeyboardHelp search",
-            "KeyboardHelp",
+            StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
             "Modal filtered to save bindings.",
             56,
             12,
@@ -1633,7 +1775,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "keyboard-help/tiny",
             "KeyboardHelp tiny",
-            "KeyboardHelp",
+            StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
             "Tiny-terminal priority contraction.",
             22,
             1,
@@ -1642,7 +1784,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "keyboard-help/ascii",
             "KeyboardHelp ASCII",
-            "KeyboardHelp",
+            StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
             "ASCII footer + colorless roles.",
             56,
             1,
@@ -1651,7 +1793,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tooltip/plain",
             "Tooltip plain",
-            "Tooltip",
+            StoryIdentity::PublicUi(PublicUiId::Tooltip),
             "Plain delayed help (forced visible for snapshot).",
             28,
             1,
@@ -1660,7 +1802,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tooltip/shortcut",
             "Tooltip shortcut",
-            "Tooltip",
+            StoryIdentity::PublicUi(PublicUiId::Tooltip),
             "Body + shortcut chord variant.",
             32,
             1,
@@ -1669,7 +1811,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tooltip/rich",
             "Tooltip rich",
-            "Tooltip",
+            StoryIdentity::PublicUi(PublicUiId::Tooltip),
             "Title + body compact rich variant.",
             36,
             2,
@@ -1678,26 +1820,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tooltip/ascii",
             "Tooltip ASCII",
-            "Tooltip",
+            StoryIdentity::PublicUi(PublicUiId::Tooltip),
             "ASCII / colorless tooltip paint.",
             28,
             2,
             tooltip_ascii_story,
         ),
-        Story::new(
+        Story::mounted(
             "dropdown-menu/basic",
             "DropdownMenu basic",
-            "DropdownMenu",
+            StoryIdentity::PublicUi(PublicUiId::DropdownMenu),
             "Trigger-opened cascade with shortcuts and checkbox.",
             40,
             14,
-            dropdown_menu_basic_story,
-        )
-        .with_interactor(dropdown_menu_interactor),
+            dropdown_menu_interactor,
+        ),
         Story::new(
             "dropdown-menu/nested",
             "DropdownMenu nested",
-            "DropdownMenu",
+            StoryIdentity::PublicUi(PublicUiId::DropdownMenu),
             "Submenu open (Export › Image).",
             56,
             14,
@@ -1706,44 +1847,43 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dropdown-menu/kinds",
             "DropdownMenu item kinds",
-            "DropdownMenu",
+            StoryIdentity::PublicUi(PublicUiId::DropdownMenu),
             "Checkbox, radio, separator, label, loading, destructive.",
             44,
             16,
             dropdown_menu_kinds_story,
         ),
         Story::new(
-            "context-menu/basic",
-            "ContextMenu basic",
-            "ContextMenu",
+            "dropdown-menu/context-origin",
+            "DropdownMenu pointer origin",
+            StoryIdentity::PublicUi(PublicUiId::DropdownMenu),
             "Pointer-origin context menu (AtOrigin placement).",
             36,
             12,
-            context_menu_basic_story,
+            dropdown_menu_context_origin_story,
         ),
         Story::new(
-            "context-menu/nested",
-            "ContextMenu nested",
-            "ContextMenu",
+            "dropdown-menu/context-nested",
+            "DropdownMenu context cascade",
+            StoryIdentity::PublicUi(PublicUiId::DropdownMenu),
             "Nested context cascade with parent dismiss.",
             52,
             14,
-            context_menu_nested_story,
+            dropdown_menu_context_nested_story,
         ),
-        Story::new(
+        Story::mounted(
             "menu-bar/basic",
             "MenuBar basic",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "Top-level menus closed; single Tab-stop bar.",
             64,
             3,
-            menu_bar_basic_story,
-        )
-        .with_interactor(menu_bar_interactor),
+            menu_bar_interactor,
+        ),
         Story::new(
             "menu-bar/open",
             "MenuBar open cascade",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "File menu open with nested Export path ready.",
             72,
             14,
@@ -1752,7 +1892,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "menu-bar/nested",
             "MenuBar nested dismiss",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "Submenu open; Esc peels one layer.",
             72,
             14,
@@ -1761,7 +1901,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "menu-bar/mnemonic",
             "MenuBar mnemonic mode",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "Sticky mnemonic arm (host F10 maps here).",
             64,
             3,
@@ -1770,7 +1910,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "menu-bar/narrow",
             "MenuBar narrow palette",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "Narrow chip prefers CommandPalette.",
             28,
             2,
@@ -1779,7 +1919,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "menu-bar/unicode",
             "MenuBar Unicode",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "CJK labels and mnemonics.",
             48,
             10,
@@ -1788,26 +1928,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "menu-bar/ascii",
             "MenuBar ASCII",
-            "MenuBar",
+            StoryIdentity::PublicUi(PublicUiId::MenuBar),
             "ASCII check/radio/mnemonic glyphs.",
             64,
             12,
             menu_bar_ascii_story,
         ),
-        Story::new(
+        Story::mounted(
             "breadcrumbs/path",
             "Breadcrumbs path",
-            "Breadcrumbs",
+            StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
             "Full path trail with the current segment in bold.",
             48,
             1,
-            breadcrumbs_path_story,
-        )
-        .with_interactor(breadcrumbs_interactor),
+            breadcrumbs_interactor,
+        ),
         Story::new(
             "breadcrumbs/collapsed",
             "Breadcrumbs collapsed",
-            "Breadcrumbs",
+            StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
             "Narrow collapse keeps root and current; middle ellipsis.",
             28,
             1,
@@ -1816,7 +1955,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "breadcrumbs/editable",
             "Breadcrumbs editable",
-            "Breadcrumbs",
+            StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
             "Editable path mode draft.",
             48,
             1,
@@ -1825,7 +1964,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "breadcrumbs/status",
             "Breadcrumbs status",
-            "Breadcrumbs",
+            StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
             "ASCII status marks on segments.",
             40,
             1,
@@ -1834,26 +1973,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "breadcrumbs/schema",
             "Breadcrumbs schema",
-            "Breadcrumbs",
+            StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
             "Schema object path trail (master-detail).",
             48,
             1,
             breadcrumbs_schema_story,
         ),
-        Story::new(
+        Story::mounted(
             "tree-navigation/project",
             "TreeNavigation project",
-            "TreeNavigation",
+            StoryIdentity::PublicUi(PublicUiId::TreeNavigation),
             "Project explorer with lazy branch and dirty leaf.",
             36,
             14,
-            tree_navigation_project_story,
-        )
-        .with_interactor(tree_navigation_interactor),
+            tree_navigation_interactor,
+        ),
         Story::new(
             "tree-navigation/schema",
             "TreeNavigation schema",
-            "TreeNavigation",
+            StoryIdentity::PublicUi(PublicUiId::TreeNavigation),
             "Database schema browser with loading branch.",
             36,
             12,
@@ -1862,7 +2000,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-navigation/settings",
             "TreeNavigation settings",
-            "TreeNavigation",
+            StoryIdentity::PublicUi(PublicUiId::TreeNavigation),
             "Settings hierarchy with badges and dirty state.",
             36,
             12,
@@ -1871,7 +2009,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-navigation/docs",
             "TreeNavigation docs",
-            "TreeNavigation",
+            StoryIdentity::PublicUi(PublicUiId::TreeNavigation),
             "Documentation nav with error leaf.",
             36,
             12,
@@ -1880,26 +2018,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-navigation/narrow",
             "TreeNavigation narrow",
-            "TreeNavigation",
+            StoryIdentity::PublicUi(PublicUiId::TreeNavigation),
             "Narrow-terminal compact indent and labels.",
             14,
             12,
             tree_navigation_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "tabs/status",
             "Tabs",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Tabs with styled per-item glyphs and state.",
             52,
             2,
-            tabs,
-        )
-        .with_interactor(tabs_interactor),
+            tabs_interactor,
+        ),
         Story::new(
             "tabs/overflow",
             "Tabs overflow",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Overflow presentation under width pressure.",
             28,
             2,
@@ -1908,7 +2045,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/vertical",
             "Tabs vertical",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Vertical orientation stack.",
             16,
             6,
@@ -1917,7 +2054,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/manual",
             "Tabs manual",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Manual activation: focus ≠ selection until Enter.",
             48,
             2,
@@ -1926,7 +2063,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/closable",
             "Tabs closable",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Closable tabs with close affordance.",
             48,
             2,
@@ -1935,36 +2072,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hint-bar/wrapped",
             "Measured hint bar",
-            "HintBar",
+            StoryIdentity::PublicUi(PublicUiId::HintBar),
             "Measured wrapping with an intentional leading spacer band.",
             42,
             12,
             hint_bar,
         ),
-        Story::new(
+        Story::mounted(
             "list/selection",
             "List",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Stable-ID rows with checks and aligned metadata.",
             42,
             6,
-            list,
-        )
-        .with_interactor(list_interactor),
-        Story::new(
+            list_interactor,
+        ),
+        Story::mounted(
             "tree/navigation",
             "Tree navigation",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Stable-ID hierarchy with checks, metadata, disclosure, and status.",
             42,
             7,
-            tree,
-        )
-        .with_interactor(tree_interactor),
+            tree_interactor,
+        ),
         Story::new(
             "tree/empty",
             "Empty tree",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Empty-message projection when the flattened projection is empty.",
             32,
             4,
@@ -1973,7 +2108,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/loading-error",
             "Tree loading and error",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Loading muted and error danger status nodes.",
             40,
             6,
@@ -1982,7 +2117,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/ascii",
             "ASCII tree glyphs",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "ASCII disclosure and selection gutter fallbacks.",
             36,
             6,
@@ -1991,7 +2126,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/composed",
             "Composed tree anatomy",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Leading, secondary, badge, and shortcut on hierarchical rows.",
             48,
             6,
@@ -2000,7 +2135,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/tiny",
             "Tiny tree",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Disclosure + primary survive extreme width.",
             12,
             5,
@@ -2009,7 +2144,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/deep",
             "Deep indent tree",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Deep hierarchy with density indent and clamp.",
             44,
             8,
@@ -2018,7 +2153,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/lazy",
             "Tree lazy children",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Lazy/unloaded branch, loading child, error child.",
             44,
             8,
@@ -2027,7 +2162,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/filter",
             "Tree filter ancestors",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Filter keeps matching nodes and ancestors.",
             44,
             8,
@@ -2036,7 +2171,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/actions",
             "Tree context actions",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Context actions + typeahead-ready labels.",
             48,
             6,
@@ -2045,62 +2180,61 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/tone-scroll",
             "Tree tone and pinned scroll",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Primary/live tone tiers with fixed hierarchy prefix under horizontal scroll.",
             38,
             7,
             tree_tone_scroll_story,
         ),
         Story::new(
-            "progress/determinate",
-            "Progress",
-            "Progress",
+            "progress-bar/determinate",
+            "ProgressBar",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Caller-ticked determinate and indeterminate progress.",
             42,
             2,
             progress,
         ),
         Story::new(
-            "progress/detailed",
+            "progress-bar/detailed",
             "ProgressBar detailed",
-            "Progress",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Transfer units, rate, and ETA meta on one row.",
             56,
             1,
             progress_detailed_story,
         ),
         Story::new(
-            "progress/multi-line",
+            "progress-bar/multi-line",
             "ProgressBar multi-line",
-            "Progress",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Title, track, and phase/rate meta stack.",
             48,
             3,
             progress_multiline_story,
         ),
         Story::new(
-            "progress/failed",
+            "progress-bar/failed",
             "ProgressBar failed",
-            "Progress",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Failed status with danger fill role.",
             40,
             1,
             progress_failed_story,
         ),
-        Story::new(
+        Story::mounted(
             "progress-steps/pipeline",
             "ProgressSteps pipeline",
-            "ProgressSteps",
+            StoryIdentity::PublicUi(PublicUiId::ProgressSteps),
             "CI-style pipeline with running compile phase.",
             48,
             12,
-            progress_steps_pipeline_story,
-        )
-        .with_interactor(progress_steps_interactor),
+            progress_steps_interactor,
+        ),
         Story::new(
             "progress-steps/agent",
             "ProgressSteps agent plan",
-            "ProgressSteps",
+            StoryIdentity::PublicUi(PublicUiId::ProgressSteps),
             "Agent plan with warning, failed+retry, cancelled.",
             48,
             12,
@@ -2109,7 +2243,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "progress-steps/summary",
             "ProgressSteps narrow summary",
-            "ProgressSteps",
+            StoryIdentity::PublicUi(PublicUiId::ProgressSteps),
             "Contracted n/total · verb summary for narrow terminals.",
             20,
             1,
@@ -2118,63 +2252,61 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "progress-steps/interactive",
             "ProgressSteps interactive",
-            "ProgressSteps",
+            StoryIdentity::PublicUi(PublicUiId::ProgressSteps),
             "Interactive mode with cursor and retry affordance.",
             48,
             12,
             progress_steps_interactive_story,
         ),
         Story::new(
-            "progress/narrow",
+            "progress-bar/narrow",
             "Narrow progress",
-            "Progress",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Percentage elision and custom ASCII frames in fourteen columns.",
             14,
             2,
             progress_narrow,
         ),
         Story::new(
-            "progress/unicode",
+            "progress-bar/unicode",
             "Unicode progress labels",
-            "Progress",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Wide CJK and emoji labels clipped on grapheme boundaries.",
             34,
             2,
             progress_unicode_story,
         ),
-        Story::new(
+        Story::mounted(
             "log-pane/follow",
             "Following log pane",
-            "LogPane",
+            StoryIdentity::PublicUi(PublicUiId::LogPane),
             "Tail-following output; scroll up to freeze and End to resume.",
             52,
             8,
-            log_pane,
-        )
-        .with_interactor(log_pane_interactor),
+            log_pane_interactor,
+        ),
         Story::new(
             "log-pane/scrolled",
             "Frozen log scrollback",
-            "LogPane",
+            StoryIdentity::PublicUi(PublicUiId::LogPane),
             "Scrolled-back distance plus wide CJK and emoji output.",
             52,
             8,
             log_pane_scrolled,
         ),
-        Story::new(
+        Story::mounted(
             "form/responsive",
             "Responsive form",
-            "Form",
+            StoryIdentity::PublicUi(PublicUiId::Form),
             "Sections, validation, disabled state, and stable-ID focus.",
             68,
             12,
-            form,
-        )
-        .with_interactor(form_interactor),
+            form_interactor,
+        ),
         Story::new(
             "form/compact",
             "Form compact",
-            "Form",
+            StoryIdentity::PublicUi(PublicUiId::Form),
             "Compact layout recipe.",
             44,
             12,
@@ -2183,36 +2315,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "form/validation",
             "Form validation",
-            "Form",
+            StoryIdentity::PublicUi(PublicUiId::Form),
             "Error summary + first invalid focus target.",
             44,
             14,
             form_validation_story,
         ),
-        Story::new(
+        Story::mounted(
             "split-pane/horizontal",
             "Horizontal split pane",
-            "SplitPane",
+            StoryIdentity::PublicUi(PublicUiId::SplitPane),
             "Bounded resizable panes with focus, drag, and collapse.",
             68,
             10,
-            split_pane,
-        )
-        .with_interactor(split_pane_interactor),
-        Story::new(
+            split_pane_interactor,
+        ),
+        Story::mounted(
             "resizable-panel-group/workbench",
             "ResizablePanelGroup workbench",
-            "ResizablePanelGroup",
+            StoryIdentity::PublicUi(PublicUiId::ResizablePanelGroup),
             "Sidebar | main | inspector with resize handles.",
             80,
             16,
-            resizable_workbench_story,
-        )
-        .with_interactor(resizable_panel_group_interactor),
+            resizable_panel_group_interactor,
+        ),
         Story::new(
             "resizable-panel-group/dashboard",
             "ResizablePanelGroup dashboard",
-            "ResizablePanelGroup",
+            StoryIdentity::PublicUi(PublicUiId::ResizablePanelGroup),
             "Main | log horizontal dashboard split.",
             72,
             14,
@@ -2221,26 +2351,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "resizable-panel-group/drawers",
             "ResizablePanelGroup drawers",
-            "ResizablePanelGroup",
+            StoryIdentity::PublicUi(PublicUiId::ResizablePanelGroup),
             "Narrow workbench: side docks flagged as drawers.",
             48,
             12,
             resizable_drawers_story,
         ),
-        Story::new(
+        Story::mounted(
             "picker/basic",
             "Filterable picker",
-            "Picker",
+            StoryIdentity::PublicUi(PublicUiId::Picker),
             "Caller-filtered rows with stable selection and semantic activation.",
             42,
             7,
-            picker_basic,
-        )
-        .with_interactor(picker_interactor),
+            picker_interactor,
+        ),
         Story::new(
             "picker/empty",
             "Empty picker",
-            "Picker",
+            StoryIdentity::PublicUi(PublicUiId::Picker),
             "Product-neutral empty-result cue.",
             30,
             4,
@@ -2249,36 +2378,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "picker/narrow-unicode",
             "Narrow Unicode picker",
-            "Picker",
+            StoryIdentity::PublicUi(PublicUiId::Picker),
             "Wide and combining labels clipped in a narrow result list.",
             22,
             5,
             picker_narrow_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "detail-table/basic",
             "Detail table",
-            "DetailTable",
+            StoryIdentity::PublicUi(PublicUiId::DetailTable),
             "Neutral label/value rows with capabilities.",
             54,
             5,
-            detail_table,
-        )
-        .with_interactor(detail_table_interactor),
-        Story::new(
+            detail_table_interactor,
+        ),
+        Story::mounted(
             "object-inspector/flat",
             "Object inspector flat",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Flat key/value fields with list-local cursor gutter.",
             48,
             6,
-            object_inspector_flat,
-        )
-        .with_interactor(object_inspector_interactor),
+            object_inspector_interactor,
+        ),
         Story::new(
             "object-inspector/nested",
             "Object inspector nested",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Nested depth pad + cursor on a child field.",
             48,
             8,
@@ -2287,7 +2414,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/empty",
             "Object inspector empty",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Empty-object non-color mark.",
             32,
             3,
@@ -2296,7 +2423,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/narrow",
             "Object inspector narrow",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Narrow key=value geometry (22 cols).",
             22,
             5,
@@ -2305,7 +2432,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/ascii",
             "Object inspector ASCII",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "ASCII cursor and empty glyphs.",
             40,
             5,
@@ -2314,7 +2441,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/json",
             "Object inspector JSON",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Typed JSON-like tree with secret redaction.",
             56,
             12,
@@ -2323,7 +2450,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/compare",
             "Object inspector compare",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Compare/diff mode for local vs remote values.",
             56,
             8,
@@ -2332,7 +2459,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/lazy",
             "Object inspector lazy",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Lazy container expansion for huge trees.",
             48,
             6,
@@ -2341,26 +2468,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "object-inspector/fullscreen",
             "Object inspector fullscreen",
-            "ObjectInspector",
+            StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
             "Fullscreen presentation chrome for deep inspection.",
             64,
             10,
             object_inspector_fullscreen,
         ),
-        Story::new(
+        Story::mounted(
             "log-stream/follow",
             "Log stream follow",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Tail-follow chip with timestamp/source/level recipe.",
             72,
             10,
-            log_stream_follow,
-        )
-        .with_interactor(log_stream_interactor),
+            log_stream_interactor,
+        ),
         Story::new(
             "log-stream/structured",
             "Log stream detailed",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Detailed recipe + pin + multi-level projection.",
             72,
             10,
@@ -2369,7 +2495,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-stream/filter",
             "Log stream filter",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Search + level floor chrome on follow chip.",
             72,
             10,
@@ -2378,7 +2504,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-stream/dropped",
             "Log stream dropped",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Bounded history drop + reconnect banner + batch.",
             72,
             10,
@@ -2387,7 +2513,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-stream/empty",
             "Log stream empty",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Empty-log non-color mark.",
             32,
             3,
@@ -2396,7 +2522,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-stream/narrow",
             "Log stream narrow",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "Narrow log geometry (22 cols).",
             22,
             6,
@@ -2405,26 +2531,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-stream/ascii",
             "Log stream ASCII",
-            "LogStream",
+            StoryIdentity::PublicUi(PublicUiId::LogStream),
             "ASCII level letters and follow chip.",
             40,
             6,
             log_stream_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "event-stream/basic",
             "EventStream",
-            "EventStream",
+            StoryIdentity::PublicUi(PublicUiId::EventStream),
             "Structured k8s/agent events with severity and source.",
             80,
             12,
-            event_stream_basic,
-        )
-        .with_interactor(event_stream_interactor),
+            event_stream_interactor,
+        ),
         Story::new(
             "event-stream/burst",
             "EventStream burst",
-            "EventStream",
+            StoryIdentity::PublicUi(PublicUiId::EventStream),
             "Batch markers and backpressure drop chip.",
             72,
             10,
@@ -2433,7 +2558,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "event-stream/filter",
             "EventStream filter",
-            "EventStream",
+            StoryIdentity::PublicUi(PublicUiId::EventStream),
             "Severity floor + text filter chrome.",
             72,
             10,
@@ -2442,7 +2567,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "event-stream/detail",
             "EventStream detail",
-            "EventStream",
+            StoryIdentity::PublicUi(PublicUiId::EventStream),
             "Selected event with inline inspector detail.",
             72,
             10,
@@ -2451,26 +2576,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "event-stream/narrow",
             "EventStream narrow",
-            "EventStream",
+            StoryIdentity::PublicUi(PublicUiId::EventStream),
             "Narrow-terminal contraction for structured events.",
             28,
             10,
             event_stream_narrow,
         ),
-        Story::new(
+        Story::mounted(
             "diff-review/hunks",
             "Diff review workbench",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "File tree, decisions, summary strip over DiffView.",
             80,
             16,
-            diff_review_hunks,
-        )
-        .with_interactor(diff_review_interactor),
+            diff_review_interactor,
+        ),
         Story::new(
             "diff-review/decisions",
             "Diff review decisions",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "Approved/staged marks and multi-select.",
             80,
             14,
@@ -2479,7 +2603,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff-review/comments",
             "Diff review comments",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "Comment draft and anchors on lines.",
             72,
             14,
@@ -2488,7 +2612,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff-review/confirm",
             "Diff review confirm",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "Safe destructive confirm banner for bulk reject.",
             72,
             12,
@@ -2497,7 +2621,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff-review/empty",
             "Diff review empty",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "Empty-diff non-color mark.",
             32,
             3,
@@ -2506,7 +2630,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff-review/narrow",
             "Diff review narrow",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "Narrow layout hides file tree (22 cols).",
             22,
             10,
@@ -2515,26 +2639,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff-review/ascii",
             "Diff review ASCII",
-            "DiffReview",
+            StoryIdentity::PublicUi(PublicUiId::DiffReview),
             "ASCII decision glyphs and colorless paint.",
             72,
             12,
             diff_review_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "diagnostic/list",
             "Diagnostic list",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "Problems panel with severity letters (not color alone).",
             72,
             10,
-            diagnostic_list,
-        )
-        .with_interactor(diagnostic_view_interactor),
+            diagnostic_view_interactor,
+        ),
         Story::new(
             "diagnostic/full",
             "Diagnostic code frame",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "Full recipe: source, carets, notes, fixes.",
             72,
             16,
@@ -2543,7 +2666,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diagnostic/inline",
             "Diagnostic inline",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "Inline form/editor recipe.",
             48,
             1,
@@ -2552,7 +2675,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diagnostic/code-frame",
             "CodeFrame",
-            "CodeFrame",
+            StoryIdentity::PublicUi(PublicUiId::CodeFrame),
             "Standalone code frame with overlapping spans.",
             56,
             10,
@@ -2561,7 +2684,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diagnostic/empty",
             "Diagnostic empty",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "Empty problems panel mark.",
             32,
             3,
@@ -2570,7 +2693,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diagnostic/narrow",
             "Diagnostic narrow",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "Narrow list geometry (22 cols).",
             22,
             8,
@@ -2579,7 +2702,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diagnostic/ascii",
             "Diagnostic ASCII",
-            "DiagnosticView",
+            StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
             "ASCII severity letters and caret rows.",
             64,
             12,
@@ -2588,7 +2711,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-cell-grid/basic",
             "TerminalCellGrid basic",
-            "TerminalCellGrid",
+            StoryIdentity::PublicUi(PublicUiId::TerminalCellGrid),
             "Borrowed terminal cells with exact colors and modifiers.",
             42,
             5,
@@ -2597,26 +2720,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-cell-grid/narrow",
             "TerminalCellGrid narrow",
-            "TerminalCellGrid",
+            StoryIdentity::PublicUi(PublicUiId::TerminalCellGrid),
             "Terminal-cell projection clipped safely at narrow width.",
             18,
             5,
             terminal_cell_grid_story,
         ),
-        Story::new(
+        Story::mounted(
             "terminal-output/running",
             "TerminalOutput running",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Live follow-tail command pane with stdout/stderr.",
             72,
             14,
-            terminal_output_running,
-        )
-        .with_interactor(terminal_output_interactor),
+            terminal_output_interactor,
+        ),
         Story::new(
             "terminal-output/failed",
             "TerminalOutput failed",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Failed exit status, duration, stderr emphasis.",
             72,
             12,
@@ -2625,7 +2747,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/compact",
             "TerminalOutput compact",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Compact card recipe for agent tools.",
             48,
             6,
@@ -2634,7 +2756,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/env",
             "TerminalOutput env",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Environment summary with redacted secrets.",
             72,
             14,
@@ -2643,7 +2765,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/pinned",
             "TerminalOutput pinned",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Detached scroll while streaming (unread chip).",
             72,
             12,
@@ -2652,7 +2774,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/empty",
             "TerminalOutput empty",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Pending empty output mark.",
             40,
             5,
@@ -2661,7 +2783,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/narrow",
             "TerminalOutput narrow",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "Narrow pane geometry (22 cols).",
             22,
             10,
@@ -2670,26 +2792,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-output/ascii",
             "TerminalOutput ASCII",
-            "TerminalOutput",
+            StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
             "ASCII status/stream glyphs and plain paint.",
             64,
             10,
             terminal_output_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "hex-viewer/basic",
             "HexViewer basic",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Offset + hex + ASCII with cursor brackets.",
             72,
             14,
-            hex_viewer_basic,
-        )
-        .with_interactor(hex_viewer_interactor),
+            hex_viewer_interactor,
+        ),
         Story::new(
             "hex-viewer/selection",
             "HexViewer selection",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Selected range braces without color dependence.",
             72,
             12,
@@ -2698,7 +2819,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hex-viewer/inspector",
             "HexViewer inspector",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Endian-aware value strip at cursor.",
             72,
             12,
@@ -2707,7 +2828,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hex-viewer/search",
             "HexViewer search",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Hex search query chrome.",
             64,
             10,
@@ -2716,7 +2837,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hex-viewer/empty",
             "HexViewer empty",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Empty buffer mark.",
             40,
             4,
@@ -2725,7 +2846,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hex-viewer/narrow",
             "HexViewer narrow",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "Tiny-terminal compact mode (18 cols).",
             18,
             8,
@@ -2734,7 +2855,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hex-viewer/ascii",
             "HexViewer ASCII",
-            "HexViewer",
+            StoryIdentity::PublicUi(PublicUiId::HexViewer),
             "ASCII chrome and colorless selection marks.",
             64,
             10,
@@ -2743,7 +2864,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/basic",
             "FileTree basic",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Git status, kinds, lazy dir chrome.",
             40,
             14,
@@ -2752,7 +2873,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/filter",
             "FileTree filter",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Search filter with ancestor retention.",
             40,
             12,
@@ -2761,7 +2882,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/hidden",
             "FileTree hidden",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Show hidden and ignored entries.",
             40,
             12,
@@ -2770,7 +2891,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/confirm",
             "FileTree delete confirm",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Safe multi-delete confirm banner.",
             48,
             10,
@@ -2779,7 +2900,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/empty",
             "FileTree empty",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Empty tree mark.",
             28,
             4,
@@ -2788,7 +2909,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/narrow",
             "FileTree narrow",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "Narrow file tree (22 cols).",
             22,
             10,
@@ -2797,25 +2918,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-tree/ascii",
             "FileTree ASCII",
-            "FileTree",
+            StoryIdentity::PublicUi(PublicUiId::FileTree),
             "ASCII kind glyphs.",
             36,
             10,
             file_tree_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "process-table/basic",
             "ProcessTable basic",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Flat CPU-sorted process monitor.",
             72,
             14,
-            process_table_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "process-table/tree",
             "ProcessTable tree",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Parent/child hierarchy mode.",
             72,
             14,
@@ -2824,7 +2945,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "process-table/filter",
             "ProcessTable filter",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Search filter on command/user.",
             64,
             12,
@@ -2833,7 +2954,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "process-table/confirm",
             "ProcessTable signal confirm",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Safe TERM/KILL confirmation banner.",
             64,
             12,
@@ -2842,7 +2963,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "process-table/empty",
             "ProcessTable empty",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Empty process list mark.",
             40,
             6,
@@ -2851,7 +2972,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "process-table/narrow",
             "ProcessTable narrow",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "Narrow process table (36 cols).",
             36,
             12,
@@ -2860,25 +2981,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "process-table/ascii",
             "ProcessTable ASCII",
-            "ProcessTable",
+            StoryIdentity::PublicUi(PublicUiId::ProcessTable),
             "ASCII selection and tree glyphs.",
             64,
             12,
             process_table_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "query-editor/basic",
             "QueryEditor basic",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "SQL draft with results slot chrome.",
             72,
             18,
-            query_editor_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "query-editor/running",
             "QueryEditor running",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "In-flight run status chrome.",
             72,
             16,
@@ -2887,7 +3008,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/diagnostics",
             "QueryEditor diagnostics",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "Diagnostic strip with severity letters.",
             72,
             16,
@@ -2896,7 +3017,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/parameters",
             "QueryEditor parameters",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "Parameter chips including secret redaction.",
             72,
             14,
@@ -2905,7 +3026,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/compact",
             "QueryEditor compact",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "Compact mode hides results slot.",
             56,
             10,
@@ -2914,7 +3035,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/empty",
             "QueryEditor empty",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "Empty draft with placeholder.",
             48,
             10,
@@ -2923,7 +3044,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/narrow",
             "QueryEditor narrow",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "Narrow query workbench (36 cols).",
             36,
             14,
@@ -2932,25 +3053,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "query-editor/ascii",
             "QueryEditor ASCII",
-            "QueryEditor",
+            StoryIdentity::PublicUi(PublicUiId::QueryEditor),
             "ASCII focus and status glyphs.",
             64,
             14,
             query_editor_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "result-grid/basic",
             "ResultGrid basic",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Typed cells, nulls, binary, secrets.",
             80,
             14,
-            result_grid_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "result-grid/streaming",
             "ResultGrid streaming",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Partial/streaming load chrome.",
             72,
             12,
@@ -2959,7 +3080,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/stats",
             "ResultGrid stats",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Column statistics strip.",
             72,
             12,
@@ -2968,7 +3089,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/wide",
             "ResultGrid wide schema",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Many columns under priority pressure.",
             60,
             12,
@@ -2977,7 +3098,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/empty",
             "ResultGrid empty",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Empty result set.",
             40,
             8,
@@ -2986,7 +3107,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/error",
             "ResultGrid error",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Failed query status.",
             48,
             8,
@@ -2995,7 +3116,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/narrow",
             "ResultGrid narrow",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "Narrow results (36 cols).",
             36,
             12,
@@ -3004,25 +3125,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "result-grid/ascii",
             "ResultGrid ASCII",
-            "ResultGrid",
+            StoryIdentity::PublicUi(PublicUiId::ResultGrid),
             "ASCII null glyphs and safe redaction.",
             72,
             12,
             result_grid_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "schema-browser/basic",
             "SchemaBrowser basic",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Connection → db → schema → tables/columns.",
             40,
             16,
-            schema_browser_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "schema-browser/lazy",
             "SchemaBrowser lazy",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Lazy table and offline connection.",
             40,
             14,
@@ -3031,7 +3152,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/filter",
             "SchemaBrowser filter",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Search with ancestor retention.",
             40,
             12,
@@ -3040,7 +3161,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/error",
             "SchemaBrowser error",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Load error on branch.",
             40,
             10,
@@ -3049,7 +3170,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/drawer",
             "SchemaBrowser drawer",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Drawer presentation mode.",
             36,
             12,
@@ -3058,7 +3179,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/empty",
             "SchemaBrowser empty",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Empty catalog.",
             28,
             6,
@@ -3067,7 +3188,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/narrow",
             "SchemaBrowser narrow",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "Narrow side pane (24 cols).",
             24,
             12,
@@ -3076,7 +3197,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "schema-browser/ascii",
             "SchemaBrowser ASCII",
-            "SchemaBrowser",
+            StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
             "ASCII kind glyphs.",
             36,
             12,
@@ -3085,7 +3206,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/basic",
             "SearchResults basic",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "Grouped hits with match snippets.",
             64,
             14,
@@ -3094,7 +3215,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/loading",
             "SearchResults loading",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "In-flight search chrome.",
             48,
             8,
@@ -3103,7 +3224,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/empty",
             "SearchResults empty",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "No matches.",
             40,
             6,
@@ -3112,7 +3233,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/stale",
             "SearchResults stale",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "Stale generation banner.",
             48,
             8,
@@ -3121,7 +3242,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/collapsed",
             "SearchResults collapsed group",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "Collapsed group band.",
             56,
             12,
@@ -3130,7 +3251,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/streaming",
             "SearchResults streaming",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "Partial streaming status.",
             56,
             12,
@@ -3139,7 +3260,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/narrow",
             "SearchResults narrow",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "Narrow results (32 cols).",
             32,
             12,
@@ -3148,25 +3269,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-results/ascii",
             "SearchResults ASCII",
-            "SearchResults",
+            StoryIdentity::PublicUi(PublicUiId::SearchResults),
             "ASCII selection glyphs.",
             56,
             12,
             search_results_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "metrics-dashboard/basic",
             "MetricsDashboard basic",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "Metric cards, sparklines, gauges, alerts.",
             88,
             20,
-            metrics_dashboard_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "metrics-dashboard/narrow",
             "MetricsDashboard narrow",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "Vertical summary under 48 cols.",
             40,
             14,
@@ -3175,7 +3296,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metrics-dashboard/partial-fail",
             "MetricsDashboard partial fail",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "One failed tile among healthy metrics.",
             80,
             18,
@@ -3184,7 +3305,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metrics-dashboard/paused",
             "MetricsDashboard paused",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "Paused auto-refresh chrome.",
             72,
             16,
@@ -3193,7 +3314,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metrics-dashboard/empty",
             "MetricsDashboard empty",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "No tiles yet.",
             48,
             8,
@@ -3202,7 +3323,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metrics-dashboard/ascii",
             "MetricsDashboard ASCII",
-            "MetricsDashboard",
+            StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
             "ASCII glyphs and borders.",
             72,
             16,
@@ -3211,7 +3332,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/basic",
             "TraceWaterfall basic",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Nested spans with duration bars and critical path.",
             80,
             14,
@@ -3220,7 +3341,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/error",
             "TraceWaterfall error span",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Failed tool span in hierarchy.",
             72,
             12,
@@ -3229,7 +3350,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/critical",
             "TraceWaterfall critical only",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Critical-path filter.",
             72,
             12,
@@ -3238,7 +3359,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/zoomed",
             "TraceWaterfall zoomed",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Time window zoomed into mid-trace.",
             72,
             12,
@@ -3247,7 +3368,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/empty",
             "TraceWaterfall empty",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Empty span set.",
             40,
             6,
@@ -3256,7 +3377,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/narrow",
             "TraceWaterfall narrow",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "Narrow waterfall (36 cols).",
             36,
             12,
@@ -3265,7 +3386,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "trace-waterfall/ascii",
             "TraceWaterfall ASCII",
-            "TraceWaterfall",
+            StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
             "ASCII bars and markers.",
             72,
             12,
@@ -3274,7 +3395,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/basic",
             "DependencyGraph basic",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "Layered package/service deps with ASCII connectors.",
             72,
             16,
@@ -3283,7 +3404,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/tree",
             "DependencyGraph tree fallback",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "TreeTable-shaped fallback view.",
             56,
             14,
@@ -3292,7 +3413,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/list",
             "DependencyGraph list",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "Flat list representation.",
             56,
             12,
@@ -3301,7 +3422,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/filter",
             "DependencyGraph filter",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "Filtered node set.",
             56,
             12,
@@ -3310,7 +3431,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/narrow",
             "DependencyGraph narrow",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "Auto tree under 40 cols.",
             36,
             12,
@@ -3319,26 +3440,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dependency-graph/ascii",
             "DependencyGraph ASCII",
-            "DependencyGraph",
+            StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
             "ASCII connectors and glyphs.",
             64,
             14,
             dependency_graph_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "completion-menu/basic",
             "Completion menu",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Groups, glyphs, details, docs panel; active-descendant selection.",
             56,
             12,
-            completion_menu_basic,
-        )
-        .with_interactor(completion_menu_interactor),
+            completion_menu_interactor,
+        ),
         Story::new(
             "completion-menu/loading",
             "Completion menu loading",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Async loading chrome with generation-gated empty list.",
             40,
             6,
@@ -3347,7 +3467,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "completion-menu/docs",
             "Completion menu docs",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Documentation side preview for selected candidate.",
             64,
             12,
@@ -3356,7 +3476,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "completion-menu/edge",
             "Completion menu edge flip",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Bottom-right anchor flips above and clamps inside bounds.",
             40,
             12,
@@ -3365,7 +3485,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "completion-menu/narrow",
             "Completion menu narrow",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Narrow bounds promote fullscreen presentation.",
             22,
             8,
@@ -3374,26 +3494,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "completion-menu/unicode",
             "Completion menu Unicode",
-            "CompletionMenu",
+            StoryIdentity::PublicUi(PublicUiId::CompletionMenu),
             "Display-width clipping preserves complete Unicode candidates.",
             40,
             10,
             completion_menu_unicode_story,
         ),
-        Story::new(
+        Story::mounted(
             "virtual-grid/basic",
             "Virtual grid",
-            "VirtualGrid",
+            StoryIdentity::PublicUi(PublicUiId::VirtualGrid),
             "Two-axis virtualized grid with resident window and pending cells.",
             72,
             12,
-            virtual_grid_basic,
-        )
-        .with_interactor(virtual_grid_interactor),
+            virtual_grid_interactor,
+        ),
         Story::new(
             "virtual-grid/million",
             "Virtual grid million-row window",
-            "VirtualGrid",
+            StoryIdentity::PublicUi(PublicUiId::VirtualGrid),
             "Viewport over a synthetic 1_000_000-row corpus (windowed only).",
             72,
             14,
@@ -3402,7 +3521,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "virtual-grid/narrow",
             "Virtual grid narrow",
-            "VirtualGrid",
+            StoryIdentity::PublicUi(PublicUiId::VirtualGrid),
             "Column clipping stays bounded in a narrow viewport.",
             28,
             8,
@@ -3411,26 +3530,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "virtual-grid/unicode",
             "Virtual grid Unicode",
-            "VirtualGrid",
+            StoryIdentity::PublicUi(PublicUiId::VirtualGrid),
             "Headers and cells preserve Unicode display-column boundaries.",
             48,
             10,
             virtual_grid_unicode_story,
         ),
-        Story::new(
+        Story::mounted(
             "table/basic",
             "Data table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Stable-ID columnar data with selection and headers.",
             68,
             8,
-            table_basic,
-        )
-        .with_interactor(table_interactor),
+            table_interactor,
+        ),
         Story::new(
             "table/sorted",
             "Sorted table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Caller-owned descending sort projection.",
             68,
             8,
@@ -3439,7 +3557,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/narrow",
             "Narrow table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Deterministic rightmost-column collapse.",
             20,
             6,
@@ -3448,7 +3566,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/unicode",
             "Unicode table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Styled CJK and emoji cells clip at display boundaries.",
             42,
             6,
@@ -3457,7 +3575,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/disabled",
             "Disabled table row",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Disabled rows remain visible but non-interactive.",
             52,
             6,
@@ -3466,7 +3584,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/empty",
             "Empty table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Header plus empty body message.",
             42,
             4,
@@ -3475,7 +3593,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/bordered",
             "Bordered table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Quiet vertical separators and header rule.",
             68,
             8,
@@ -3484,7 +3602,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/striped",
             "Striped table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Alternate-row muted text without heavy fill.",
             68,
             8,
@@ -3493,7 +3611,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/compact",
             "Compact table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Tight column gap recipe.",
             68,
             8,
@@ -3502,7 +3620,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/loading",
             "Loading table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Sticky header with loading body message.",
             52,
             5,
@@ -3511,7 +3629,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/error",
             "Error table",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Sticky header with error body message.",
             52,
             5,
@@ -3520,26 +3638,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "table/priority",
             "Priority columns",
-            "Table",
+            StoryIdentity::PublicUi(PublicUiId::Table),
             "Low-priority columns drop first under width pressure.",
             28,
             6,
             table_priority,
         ),
-        Story::new(
+        Story::mounted(
             "text-area/basic",
             "Text area",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Multi-line editing with caller-owned submission policy.",
             52,
             9,
-            text_area_basic,
-        )
-        .with_interactor(text_area_interactor),
+            text_area_interactor,
+        ),
         Story::new(
             "text-area/narrow",
             "Narrow text area",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Horizontal viewport clips only complete graphemes.",
             18,
             7,
@@ -3548,7 +3665,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/unicode",
             "Unicode text area",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Combining, CJK, emoji, and remembered goal-column content.",
             38,
             8,
@@ -3557,7 +3674,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/empty",
             "Empty text area",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Product-neutral placeholder in an empty document.",
             38,
             6,
@@ -3566,7 +3683,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/scrolled",
             "Scrolled text area",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Two-axis cursor-follow viewport over logical lines.",
             34,
             7,
@@ -3575,7 +3692,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/line-numbers",
             "Text area line numbers",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Gutter line numbers beside multi-line body.",
             40,
             8,
@@ -3584,7 +3701,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/soft-wrap",
             "Text area soft wrap",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Soft-wrap long lines without horizontal scroll.",
             28,
             8,
@@ -3593,7 +3710,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-area/review",
             "Text area review",
-            "TextArea",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
             "Review/comment muted chrome variant.",
             40,
             7,
@@ -3602,7 +3719,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/basic",
             "Status bar",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Filled band with muted separators: mode, focus zone, selection, shortcuts.",
             64,
             1,
@@ -3611,7 +3728,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/minimal",
             "Status bar minimal",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Minimal recipe: mode + connection.",
             48,
             1,
@@ -3620,7 +3737,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/transient",
             "Status bar transient",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Transient message without dropping essentials.",
             56,
             1,
@@ -3629,7 +3746,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/rich",
             "Status bar rich",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Rich recipe keeps key hints.",
             72,
             1,
@@ -3638,7 +3755,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-indicator/catalog",
             "StatusIndicator catalog",
-            "StatusIndicator",
+            StoryIdentity::PublicUi(PublicUiId::StatusIndicator),
             "Shared vocabulary: all kinds with glyph + label.",
             40,
             12,
@@ -3647,7 +3764,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-indicator/compact",
             "StatusIndicator compact",
-            "StatusIndicator",
+            StoryIdentity::PublicUi(PublicUiId::StatusIndicator),
             "Dot-like compact glyphs for rows and rails.",
             24,
             1,
@@ -3656,7 +3773,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-indicator/elapsed",
             "StatusIndicator elapsed",
-            "StatusIndicator",
+            StoryIdentity::PublicUi(PublicUiId::StatusIndicator),
             "Running status with elapsed-time suffix.",
             28,
             1,
@@ -3665,26 +3782,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-indicator/ascii",
             "StatusIndicator ASCII",
-            "StatusIndicator",
+            StoryIdentity::PublicUi(PublicUiId::StatusIndicator),
             "ASCII capability profile glyphs (no Unicode dots).",
             36,
             4,
             status_indicator_ascii_story,
         ),
-        Story::new(
+        Story::mounted(
             "design-inspector/basic",
             "Design inspector",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Studio focus/layer/capability strip with Semantics panel.",
             48,
             4,
-            design_inspector,
-        )
-        .with_interactor(design_inspector_interactor),
+            design_inspector_interactor,
+        ),
         Story::new(
             "semantic-scene/tree",
             "Semantic scene tree",
-            "SemanticScene",
+            StoryIdentity::PublicUi(PublicUiId::SemanticScene),
             "Frame-local parent tree, labels, and snapshot lines for Studio/AI.",
             48,
             8,
@@ -3693,7 +3809,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "semantic-scene/hit-jump",
             "Semantic hit and jump",
-            "SemanticScene",
+            StoryIdentity::PublicUi(PublicUiId::SemanticScene),
             "Hit-test focusable nodes; jump badges from jump_regions.",
             48,
             10,
@@ -3702,7 +3818,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "semantic-scene/snapshot",
             "Semantic snapshot text",
-            "SemanticScene",
+            StoryIdentity::PublicUi(PublicUiId::SemanticScene),
             "Portable to_text / from_text for remote and AI-readable UI.",
             56,
             12,
@@ -3711,7 +3827,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "semantic-scene/virt-window",
             "Semantic virtualized window",
-            "SemanticScene",
+            StoryIdentity::PublicUi(PublicUiId::SemanticScene),
             "Only visible rows registered (not full logical length).",
             40,
             12,
@@ -3720,7 +3836,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "event-result/compose",
             "EventResult bubble compose",
-            "EventResult",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Child Stop wins; parent only runs when child bubbles.",
             48,
             6,
@@ -3729,7 +3845,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "focus-graph/workbench",
             "FocusGraph workbench zones",
-            "FocusGraph",
+            StoryIdentity::PublicUi(PublicUiId::FocusGraph),
             "Linear tab order, roving list, trap, Focus Lens markers.",
             56,
             12,
@@ -3738,7 +3854,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "roving-focus/group",
             "RovingFocusGroup",
-            "RovingFocusGroup",
+            StoryIdentity::PublicUi(PublicUiId::RovingFocusGroup),
             "Active descendant skips disabled; typeahead; vertical orientation.",
             40,
             8,
@@ -3747,7 +3863,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "collection-state/headless",
             "CollectionState headless",
-            "CollectionState",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Shared model: active id, virt offset, disabled skip (list paint).",
             40,
             8,
@@ -3756,7 +3872,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "selection-model/multi",
             "SelectionModel multi + checks",
-            "SelectionModel",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Ordered multi-select with check glyphs (not color alone).",
             40,
             8,
@@ -3765,26 +3881,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "scroll-area/follow-paused",
             "ScrollArea follow + bars + new",
-            "ScrollArea",
+            StoryIdentity::PublicUi(PublicUiId::ScrollArea),
             "Vertical bars, paused follow, ↓ N new non-color indicator.",
             48,
             12,
             scroll_area_follow_story,
         ),
-        Story::new(
+        Story::mounted(
             "virtual-list/million",
             "VirtualList million-row",
-            "VirtualList",
+            StoryIdentity::PublicUi(PublicUiId::VirtualList),
             "1M logical rows; O(viewport) project+paint; sticky header; diagnostics.",
             52,
             16,
-            virtual_list_million_story,
-        )
-        .with_interactor(virtual_list_interactor),
+            virtual_list_interactor,
+        ),
         Story::new(
             "virtual-list/follow-tail",
             "VirtualList follow-tail",
-            "VirtualList",
+            StoryIdentity::PublicUi(PublicUiId::VirtualList),
             "Streaming tail follow with live growth.",
             48,
             12,
@@ -3793,7 +3908,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "virtual-list/loading",
             "VirtualList page loading",
-            "VirtualList",
+            StoryIdentity::PublicUi(PublicUiId::VirtualList),
             "Async page loading chrome with placeholders.",
             48,
             12,
@@ -3802,7 +3917,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "virtualizer/million-fixed",
             "Virtualizer 1M fixed slots",
-            "Virtualizer",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "O(viewport) window over 1_000_000 logical rows; semantic budget tiny.",
             48,
             12,
@@ -3811,7 +3926,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "capability/color-ladder",
             "Capability color ladder",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Truecolor / 256 / 16 / mono swatches for capability degradation.",
             56,
             14,
@@ -3820,7 +3935,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "capability/no-color",
             "Capability no-color",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Monochrome system still conveys roles via structure.",
             48,
             10,
@@ -3829,7 +3944,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "capability/ascii-glyphs",
             "Capability ASCII glyphs",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "ASCII glyph set for disclosure/selection without Unicode.",
             40,
             8,
@@ -3838,7 +3953,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "capability/headless",
             "Capability headless doctor",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Headless profile: keyboard off, mono-friendly chrome.",
             48,
             8,
@@ -3847,7 +3962,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "capability/profiles",
             "Capability profiles matrix",
-            "TerminalCapabilities",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Modern / Compatible / Minimal / Inline / Headless boundary flags.",
             56,
             12,
@@ -3856,8 +3971,8 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "motion/presence-spinner",
             "FrameClock presence + spinner",
-            "FrameClock",
-            "MotionPolicy::Full vs Off spinner; toast presence TTL; no idle redraw demand.",
+            StoryIdentity::PublicUi(PublicUiId::ActivityIndicator),
+            "Full vs Off dot pulse with edge-faded presence copy.",
             48,
             10,
             motion_presence_story,
@@ -3865,7 +3980,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "spinner/labeled",
             "Spinner labeled",
-            "Spinner",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "Indeterminate spinner with required verb label.",
             28,
             2,
@@ -3874,7 +3989,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "spinner/phases",
             "Spinner phases",
-            "Spinner",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "Indeterminate, waiting, queued, reconnecting phases.",
             40,
             8,
@@ -3883,7 +3998,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "motion/presence",
             "MotionPolicy presence kit",
-            "Spinner",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
             48,
             8,
@@ -3892,7 +4007,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "spinner/compact",
             "Spinner compact embedded",
-            "Spinner",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "Compact inline glyph when embedded in labeled control.",
             12,
             1,
@@ -3901,7 +4016,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "spinner/ascii",
             "Spinner ASCII",
-            "Spinner",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "ASCII |/-\\ frames with MotionPolicy::Off static glyph.",
             24,
             2,
@@ -3910,7 +4025,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "activity-indicator/basic",
             "ActivityIndicator",
-            "ActivityIndicator",
+            StoryIdentity::PublicUi(PublicUiId::ActivityIndicator),
             "Phase activity with verb and detail line.",
             40,
             3,
@@ -3919,7 +4034,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "registry/contracts",
             "ComponentContract catalog",
-            "ComponentContract",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Official kernel contracts: kind, complete, stories, module.",
             56,
             12,
@@ -3928,7 +4043,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "overlay/nested-escape",
             "Nested overlays",
-            "OverlayStack",
+            StoryIdentity::PublicUi(PublicUiId::OverlayStack),
             "Parent dialog + child menu; Esc peels one layer.",
             48,
             14,
@@ -3937,7 +4052,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dismissable/gestures",
             "DismissableLayer gestures",
-            "DismissableLayer",
+            StoryIdentity::PublicUi(PublicUiId::DismissableLayer),
             "Press/release outside dismiss; trap critical; drag-cancel.",
             48,
             10,
@@ -3946,7 +4061,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "responsive/ladder-inspector",
             "Responsive ladder inspector",
-            "Responsive",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "WIDTH_LADDER stages for Form + Table; essential always on.",
             56,
             14,
@@ -3955,7 +4070,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "overlay/edge-placement",
             "Overlay edges",
-            "OverlayStack",
+            StoryIdentity::PublicUi(PublicUiId::OverlayStack),
             "Menus near top/bottom/left/right clamp and flip.",
             50,
             16,
@@ -3964,7 +4079,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "overlay/tiny",
             "Tiny overlay fallback",
-            "OverlayStack",
+            StoryIdentity::PublicUi(PublicUiId::OverlayStack),
             "Dialog promotes fullscreen; tooltip hides.",
             28,
             8,
@@ -3973,7 +4088,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "overlay/queued-dialogs",
             "Queued dialogs",
-            "OverlayStack",
+            StoryIdentity::PublicUi(PublicUiId::OverlayStack),
             "OpenMode::Queue: deferred dialog waits behind blocking top.",
             44,
             12,
@@ -3982,26 +4097,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "overlay/fullscreen-promote",
             "Fullscreen promote",
-            "OverlayStack",
+            StoryIdentity::PublicUi(PublicUiId::OverlayStack),
             "Popover promoted to fullscreen bounds.",
             40,
             12,
             overlay_fullscreen_promote,
         ),
-        Story::new(
+        Story::mounted(
             "dialog/message",
             "Message dialog",
-            "Dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
             "Elevated modal shell over a dim backdrop, with description and footer hint.",
             48,
             9,
-            dialog,
-        )
-        .with_interactor(dialog_interactor),
+            dialog_interactor,
+        ),
         Story::new(
             "dialog/destructive",
             "Destructive dialog",
-            "Dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
             "Destructive recipe with choice actions; Enter only on action zone.",
             48,
             10,
@@ -4010,26 +4124,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dialog/compact",
             "Compact dialog",
-            "Dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
             "Compact recipe for tight confirmations.",
             36,
             6,
             dialog_compact_story,
         ),
-        Story::new(
+        Story::mounted(
             "alert-dialog/delete",
             "AlertDialog delete",
-            "AlertDialog",
+            StoryIdentity::PublicUi(PublicUiId::AlertDialog),
             "Permanent delete: scope, consequences, safer alternative; safe focus.",
             56,
             16,
-            alert_dialog_delete_story,
-        )
-        .with_interactor(alert_dialog_interactor),
+            alert_dialog_interactor,
+        ),
         Story::new(
             "alert-dialog/overwrite",
             "AlertDialog overwrite",
-            "AlertDialog",
+            StoryIdentity::PublicUi(PublicUiId::AlertDialog),
             "Overwrite confirmation with recoverable reversibility.",
             52,
             14,
@@ -4038,7 +4151,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "alert-dialog/terminate",
             "AlertDialog terminate",
-            "AlertDialog",
+            StoryIdentity::PublicUi(PublicUiId::AlertDialog),
             "Process terminate with countdown gate.",
             52,
             14,
@@ -4047,7 +4160,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "alert-dialog/egress",
             "AlertDialog data egress",
-            "AlertDialog",
+            StoryIdentity::PublicUi(PublicUiId::AlertDialog),
             "Data egress risk with typed confirmation phrase.",
             56,
             16,
@@ -4056,45 +4169,43 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "alert-dialog/locked",
             "AlertDialog locked critical",
-            "AlertDialog",
+            StoryIdentity::PublicUi(PublicUiId::AlertDialog),
             "Non-dismissable critical: Esc trapped; must choose action.",
             52,
             14,
             alert_dialog_locked_story,
         ),
-        Story::new(
+        Story::mounted(
             "choice-dialog/basic",
             "Choice dialog",
-            "ChoiceDialog",
+            StoryIdentity::PublicUi(PublicUiId::ChoiceDialog),
             "Caller-owned stable actions in a neutral dialog shell.",
             48,
             7,
-            choice_dialog,
-        )
-        .with_interactor(choice_dialog_interactor),
+            choice_dialog_interactor,
+        ),
         Story::new(
             "message-dialog/details",
             "Detailed message dialog",
-            "MessageDialog",
+            StoryIdentity::PublicUi(PublicUiId::MessageDialog),
             "Caller-owned detail rows composed into a neutral message shell.",
             52,
             8,
             message_dialog,
         ),
-        Story::new(
+        Story::mounted(
             "diff/basic",
             "Diff view unified",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Unified professional diff with line numbers and hunk chip.",
             72,
             12,
-            diff_basic,
-        )
-        .with_interactor(diff_view_interactor),
+            diff_view_interactor,
+        ),
         Story::new(
             "diff/split",
             "Diff view split",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Side-by-side mode when width allows.",
             80,
             12,
@@ -4103,7 +4214,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff/word",
             "Diff view word-level",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Word-level change spans within a line.",
             64,
             8,
@@ -4112,26 +4223,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff/search",
             "Diff view search",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Search filter chrome on status chip.",
             64,
             10,
             diff_search,
         ),
-        Story::new(
+        Story::mounted(
             "toast/success",
             "Toast success",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "Elevated transient success card with muted border and semantic accent rail.",
             34,
             4,
-            toast,
-        )
-        .with_interactor(toast_interactor),
+            toast_interactor,
+        ),
         Story::new(
             "toast/kinds",
             "Toast kinds",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "Info/success/warning/error/progress/undo stacked kinds.",
             48,
             16,
@@ -4140,7 +4250,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toast/stack",
             "Toast stack",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "ToastQueue multi-notification stack with priority.",
             40,
             14,
@@ -4149,26 +4259,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toast/persistent",
             "Toast persistent",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "Persistent toast until host dismiss (no TTL).",
             36,
             4,
             toast_persistent_story,
         ),
-        Story::new(
+        Story::mounted(
             "notification-center/drawer",
             "NotificationCenter drawer",
-            "NotificationCenter",
+            StoryIdentity::PublicUi(PublicUiId::NotificationCenter),
             "Right-edge drawer recipe with unread, kinds, progress, undo.",
             56,
             18,
-            notification_center_drawer_story,
-        )
-        .with_interactor(notification_center_interactor),
+            notification_center_interactor,
+        ),
         Story::new(
             "notification-center/full-page",
             "NotificationCenter full page",
-            "NotificationCenter",
+            StoryIdentity::PublicUi(PublicUiId::NotificationCenter),
             "Full-page recipe for dense history browsing.",
             64,
             18,
@@ -4177,7 +4286,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "notification-center/filtered",
             "NotificationCenter unread filter",
-            "NotificationCenter",
+            StoryIdentity::PublicUi(PublicUiId::NotificationCenter),
             "Unread filter applied to history list.",
             48,
             14,
@@ -4186,7 +4295,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "notification-center/empty",
             "NotificationCenter empty",
-            "NotificationCenter",
+            StoryIdentity::PublicUi(PublicUiId::NotificationCenter),
             "Empty state after clear-all.",
             40,
             12,
@@ -4195,7 +4304,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "backdrop/basic",
             "Backdrop",
-            "Backdrop",
+            StoryIdentity::PublicUi(PublicUiId::Backdrop),
             "Neutral modal backdrop policy.",
             34,
             4,
@@ -4204,7 +4313,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "viewport/both-axes",
             "Scrollable viewport",
-            "Viewport",
+            StoryIdentity::PublicUi(PublicUiId::Viewport),
             "Borrowed lines with bounded horizontal and vertical scroll state.",
             44,
             7,
@@ -4213,7 +4322,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/narrow",
             "Narrow list",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Narrow-terminal clipping and metadata priority.",
             14,
             6,
@@ -4222,7 +4331,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/narrow",
             "Narrow tabs",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Narrow-terminal tab clipping and selection cues.",
             16,
             2,
@@ -4231,7 +4340,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "form/narrow",
             "Narrow form",
-            "Form",
+            StoryIdentity::PublicUi(PublicUiId::Form),
             "Responsive single-column form at narrow width.",
             24,
             12,
@@ -4240,7 +4349,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/narrow",
             "Narrow status bar",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Priority-based slot elision at narrow width.",
             20,
             1,
@@ -4249,7 +4358,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dialog/narrow",
             "Narrow dialog",
-            "Dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
             "Responsive dialog shell at narrow width.",
             20,
             7,
@@ -4258,7 +4367,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toast/narrow",
             "Narrow toast",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "Bounded transient message at narrow width.",
             16,
             4,
@@ -4267,7 +4376,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/unicode",
             "Unicode list",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "CJK, emoji, and combining-mark row geometry.",
             28,
             5,
@@ -4276,7 +4385,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/multi",
             "Multi-select list",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Checked membership with glyph catalog chrome.",
             42,
             6,
@@ -4285,7 +4394,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/empty",
             "Empty list",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Empty-message projection when there are no rows.",
             32,
             4,
@@ -4294,7 +4403,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/loading",
             "Loading list rows",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Per-row loading leading glyph with muted primary.",
             40,
             5,
@@ -4303,7 +4412,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/disabled",
             "Disabled list rows",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Disabled rows skipped by keyboard; dim recipe.",
             36,
             5,
@@ -4312,7 +4421,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/ascii",
             "ASCII list glyphs",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "ASCII gutter and check fallbacks under GlyphSet::Ascii.",
             36,
             5,
@@ -4321,7 +4430,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/composed-row",
             "Composed list anatomy",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Leading, secondary, badge, and shortcut parts.",
             48,
             5,
@@ -4330,7 +4439,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/tiny",
             "Tiny list",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Primary identity survives extreme width contraction.",
             10,
             4,
@@ -4339,7 +4448,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/comfortable",
             "List comfortable density",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Secondary metadata on its own row under primary.",
             42,
             6,
@@ -4348,7 +4457,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/groups",
             "List group headers",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Group headers, status, trailing actions, typeahead-ready labels.",
             48,
             8,
@@ -4357,7 +4466,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "list/search",
             "List search strip",
-            "List",
+            StoryIdentity::PublicUi(PublicUiId::List),
             "Active search query strip with filtered projection.",
             40,
             6,
@@ -4366,7 +4475,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-input/unicode",
             "Unicode text input",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Wide and combining graphemes with a mid-string cursor.",
             28,
             1,
@@ -4375,26 +4484,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "detail-table/unicode",
             "Unicode detail table",
-            "DetailTable",
+            StoryIdentity::PublicUi(PublicUiId::DetailTable),
             "CJK labels and emoji values under wrapping.",
             30,
             6,
             detail_table_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "empty-state/basic",
             "Empty state",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Framed inset no-results card with primary clear action.",
             40,
             10,
-            empty_state,
-        )
-        .with_interactor(empty_state_interactor),
+            empty_state_interactor,
+        ),
         Story::new(
             "empty-state/first-use",
             "EmptyState first-use",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Sessions first-run welcome with primary New session.",
             42,
             10,
@@ -4403,7 +4511,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/table",
             "EmptyState table",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Table no-data recipe with add/import actions.",
             42,
             10,
@@ -4412,7 +4520,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/permission",
             "EmptyState permission",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Permission-limited empty with safe primary request.",
             42,
             10,
@@ -4421,7 +4529,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/inline",
             "EmptyState inline",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Concise inline form for small panes.",
             28,
             2,
@@ -4430,7 +4538,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-view/basic",
             "Loading view",
-            "LoadingView",
+            StoryIdentity::PublicUi(PublicUiId::LoadingView),
             "Centered loading label with spinner frame.",
             36,
             3,
@@ -4439,7 +4547,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/blocking",
             "LoadingOverlay blocking",
-            "LoadingOverlay",
+            StoryIdentity::PublicUi(PublicUiId::LoadingOverlay),
             "Regional blocking wash after min-show; content unavailable.",
             42,
             10,
@@ -4448,7 +4556,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/cancellable",
             "LoadingOverlay cancellable",
-            "LoadingOverlay",
+            StoryIdentity::PublicUi(PublicUiId::LoadingOverlay),
             "Cancellable long op with esc cancel routing.",
             42,
             10,
@@ -4457,7 +4565,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/non-blocking",
             "LoadingOverlay non-blocking",
-            "LoadingOverlay",
+            StoryIdentity::PublicUi(PublicUiId::LoadingOverlay),
             "Non-blocking busy cue; input still delivered.",
             36,
             6,
@@ -4466,7 +4574,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/optimistic",
             "LoadingOverlay optimistic",
-            "LoadingOverlay",
+            StoryIdentity::PublicUi(PublicUiId::LoadingOverlay),
             "Optimistic update badge; content preserved.",
             36,
             5,
@@ -4475,7 +4583,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/stale",
             "LoadingOverlay stale",
-            "LoadingOverlay",
+            StoryIdentity::PublicUi(PublicUiId::LoadingOverlay),
             "Stale-content presentation while revalidating.",
             40,
             8,
@@ -4484,36 +4592,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-overlay/nested",
             "BusyBoundary nested",
-            "BusyBoundary",
+            StoryIdentity::PublicUi(PublicUiId::BusyBoundary),
             "Parent + child regional busy without freezing whole app.",
             48,
             12,
             loading_overlay_nested_story,
         ),
-        Story::new(
+        Story::mounted(
             "connectivity/banner",
             "Offline banner",
-            "OfflineBanner",
+            StoryIdentity::PublicUi(PublicUiId::OfflineBanner),
             "Unobtrusive reconnecting banner with queue count.",
             56,
             1,
-            connectivity_banner_story,
-        )
-        .with_interactor(offline_banner_interactor),
-        Story::new(
+            offline_banner_interactor,
+        ),
+        Story::mounted(
             "connectivity/reconnecting",
             "Reconnecting full",
-            "OfflineSurface",
+            StoryIdentity::PublicUi(PublicUiId::OfflineSurface),
             "Full reconnect surface: attempts, queue, offline caps, drafts.",
             52,
             14,
-            connectivity_reconnecting_story,
-        )
-        .with_interactor(offline_surface_interactor),
+            offline_surface_interactor,
+        ),
         Story::new(
             "connectivity/auth",
             "Auth required",
-            "OfflineSurface",
+            StoryIdentity::PublicUi(PublicUiId::OfflineSurface),
             "Authentication required full recovery surface.",
             48,
             12,
@@ -4522,7 +4628,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connectivity/unavailable",
             "Server unavailable",
-            "OfflineSurface",
+            StoryIdentity::PublicUi(PublicUiId::OfflineSurface),
             "Server unavailable with queued query and cached-read caps.",
             50,
             14,
@@ -4531,7 +4637,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connectivity/status-bar",
             "Connectivity StatusBar",
-            "ReconnectingState",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "StatusBar connection slot projected from ReconnectingState.",
             64,
             1,
@@ -4540,35 +4646,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connectivity/notification",
             "Connectivity notification",
-            "ReconnectingState",
+            StoryIdentity::PublicUi(PublicUiId::NotificationCenter),
             "NotificationCenter ingest from connectivity state.",
             48,
             12,
             connectivity_notification_story,
         ),
         Story::new(
-            "error-view/basic",
-            "Error view",
-            "ErrorView",
-            "Network failure with recovery (ErrorState / ErrorView).",
+            "error-state/basic",
+            "ErrorState basic",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
+            "Network failure with recovery.",
             48,
             12,
-            error_view,
+            error_state,
         ),
-        Story::new(
+        Story::mounted(
             "error-state/network",
             "ErrorState network",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Network error: summary, safety, retry, copy diagnostics.",
             48,
             12,
-            error_state_network_story,
-        )
-        .with_interactor(error_state_interactor),
+            error_state_interactor,
+        ),
         Story::new(
             "error-state/validation",
             "ErrorState validation",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Validation failure: work preserved, alternative edit.",
             48,
             10,
@@ -4577,7 +4682,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-state/permission",
             "ErrorState permission",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Permission denied with report/copy recovery.",
             48,
             11,
@@ -4586,7 +4691,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-state/details",
             "ErrorState technical details",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Technical details expanded (collapsed by default).",
             50,
             12,
@@ -4595,7 +4700,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-state/inline",
             "ErrorState inline",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Inline recipe for small panes.",
             36,
             2,
@@ -4604,7 +4709,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-state/dialog",
             "ErrorState dialog",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Dialog-sized recoverable error.",
             44,
             12,
@@ -4613,7 +4718,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-state/fullscreen",
             "ErrorState full-screen",
-            "ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Full-screen crash recovery surface.",
             56,
             16,
@@ -4622,7 +4727,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "banner/basic",
             "Banner",
-            "Banner",
+            StoryIdentity::PublicUi(PublicUiId::Banner),
             "Single-line severity banner.",
             40,
             1,
@@ -4631,7 +4736,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/basic",
             "Skeleton lines",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Staggered text-line placeholders (structure-known loading).",
             32,
             4,
@@ -4640,7 +4745,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/card",
             "Skeleton card",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Card header + body line placeholders.",
             28,
             6,
@@ -4649,7 +4754,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/table",
             "Skeleton table",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Multi-column table row placeholders.",
             36,
             6,
@@ -4658,7 +4763,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/tiny",
             "Skeleton tiny",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Capability/tiny geometry without panic.",
             8,
             3,
@@ -4667,73 +4772,70 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/ascii",
             "Skeleton ASCII",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "ASCII # fill for no-Unicode terminals.",
             24,
             4,
             skeleton_ascii_story,
         ),
-        Story::new(
+        Story::mounted(
             "jump-overlay/basic",
             "Jump overlay",
-            "JumpOverlay",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "Letter badges over target regions.",
             40,
             6,
-            jump_overlay,
-        )
-        .with_interactor(jump_overlay_interactor),
-        Story::new(
-            "jump-mode/multi",
-            "JumpMode multi-key",
-            "JumpMode",
+            jump_overlay_interactor,
+        ),
+        Story::mounted(
+            "jump-overlay/multi-key",
+            "JumpOverlay multi-key",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "Prefix-free multi-key labels for dense targets.",
             48,
             14,
-            jump_mode_multi,
-        )
-        .with_interactor(jump_overlay_interactor),
+            jump_overlay_interactor,
+        ),
         Story::new(
-            "jump-mode/filter",
-            "JumpMode role filter",
-            "JumpMode",
+            "jump-overlay/role-filter",
+            "JumpOverlay role filter",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "Buttons only via JumpFilter from SemanticScene.",
             48,
             10,
-            jump_mode_filter,
+            jump_overlay_role_filter,
         ),
         Story::new(
-            "jump-mode/ascii",
-            "JumpMode ASCII",
-            "JumpMode",
+            "jump-overlay/ascii",
+            "JumpOverlay ASCII",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "ASCII badges + colorless paint.",
             40,
             8,
-            jump_mode_ascii,
+            jump_overlay_ascii,
         ),
         Story::new(
             "focus-lens/combined",
             "FocusLens combined",
-            "FocusLens",
+            StoryIdentity::PublicUi(PublicUiId::FocusLens),
             "Tab-order indices + focused marker.",
             48,
             10,
             focus_lens_combined,
         ),
-        Story::new(
+        Story::mounted(
             "command-palette/basic",
             "Command palette",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Flagship command surface with groups and shortcuts.",
             48,
             14,
-            command_palette,
-        )
-        .with_interactor(command_palette_interactor),
+            command_palette_interactor,
+        ),
         Story::new(
             "command-palette/empty",
             "Command palette empty",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Empty catalog with non-color mark and footer.",
             42,
             10,
@@ -4742,7 +4844,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/no-result",
             "Command palette no result",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Query with zero matches — polished empty state.",
             42,
             10,
@@ -4751,7 +4853,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/loading",
             "Command palette loading",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Async loading state before results apply.",
             42,
             10,
@@ -4760,7 +4862,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/fuzzy",
             "Command palette fuzzy",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Fuzzy highlight ranges on matching labels.",
             48,
             12,
@@ -4769,7 +4871,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/nested",
             "Command palette nested page",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Nested page for keybindings.",
             48,
             12,
@@ -4778,7 +4880,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/args",
             "Command palette arguments",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Argument phase for Go to line.",
             48,
             10,
@@ -4787,26 +4889,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/ascii",
             "Command palette ASCII",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "ASCII empty cue and normal surface chrome.",
             40,
             8,
             command_palette_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "quick-open/basic",
             "QuickOpen files",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Multi-provider fuzzy opener with preview pane.",
             72,
             18,
-            quick_open_basic,
-        )
-        .with_interactor(quick_open_interactor),
+            quick_open_interactor,
+        ),
         Story::new(
             "quick-open/symbols",
             "QuickOpen symbols",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Symbols provider active.",
             64,
             14,
@@ -4815,7 +4916,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "quick-open/fuzzy",
             "QuickOpen fuzzy",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Fuzzy highlight on filter.",
             64,
             14,
@@ -4824,7 +4925,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "quick-open/loading",
             "QuickOpen loading",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Streaming search chrome.",
             48,
             12,
@@ -4833,7 +4934,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "quick-open/empty",
             "QuickOpen empty",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Empty query polish.",
             48,
             12,
@@ -4842,7 +4943,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "quick-open/narrow",
             "QuickOpen narrow",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "Narrow / fullscreen-class geometry.",
             36,
             14,
@@ -4851,26 +4952,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "quick-open/ascii",
             "QuickOpen ASCII",
-            "QuickOpen",
+            StoryIdentity::PublicUi(PublicUiId::QuickOpen),
             "ASCII glyphs and colorless roles.",
             56,
             14,
             quick_open_ascii,
         ),
-        Story::new(
+        Story::mounted(
             "code-block/basic",
             "Code block",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Source listing with line numbers, path meta, and role syntax.",
             48,
             6,
-            code_block,
-        )
-        .with_interactor(code_block_interactor),
+            code_block_interactor,
+        ),
         Story::new(
             "code-block/no-color",
             "CodeBlock no-color",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Monochrome syntax fallback — bold/dim/italic roles.",
             48,
             6,
@@ -4879,7 +4979,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "code-block/streaming",
             "CodeBlock streaming",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Unfinished fence with streaming cue.",
             40,
             5,
@@ -4888,7 +4988,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "code-block/wrap",
             "CodeBlock wrap",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Soft-wrap policy for long lines.",
             28,
             6,
@@ -4897,26 +4997,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "code-block/highlights",
             "CodeBlock highlights",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Diagnostic / selection highlight ranges and gutter marks.",
             48,
             6,
             code_block_highlights_story,
         ),
-        Story::new(
+        Story::mounted(
             "markdown-view/basic",
             "Markdown view",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Editorial blocks: heading, list, task, fence, link, table.",
             48,
             14,
-            markdown_view,
-        )
-        .with_interactor(markdown_view_interactor),
+            markdown_view_interactor,
+        ),
         Story::new(
             "markdown-view/streaming",
             "Markdown streaming fence",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Unfinished code fence with streaming cue.",
             40,
             8,
@@ -4925,7 +5024,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "markdown-view/table",
             "Markdown responsive table",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Pipe table with column contraction.",
             36,
             6,
@@ -4934,7 +5033,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "markdown-view/no-color",
             "Markdown no-color",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Compact headings and mono hierarchy cues.",
             40,
             10,
@@ -4943,7 +5042,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "sparkline/basic",
             "Sparkline",
-            "Sparkline",
+            StoryIdentity::PublicUi(PublicUiId::Sparkline),
             "One-row density chart with threshold and selection.",
             40,
             1,
@@ -4952,7 +5051,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "chart/basic",
             "Chart multi-series",
-            "Chart",
+            StoryIdentity::PublicUi(PublicUiId::Chart),
             "Legend, axes, thresholds, selected point.",
             48,
             10,
@@ -4961,7 +5060,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "chart/nocolor",
             "Chart no-color",
-            "Chart",
+            StoryIdentity::PublicUi(PublicUiId::Chart),
             "ASCII markers without color dependence.",
             40,
             8,
@@ -4970,7 +5069,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "gauge/basic",
             "Gauge",
-            "Gauge",
+            StoryIdentity::PublicUi(PublicUiId::Gauge),
             "Single-value gauge with thresholds.",
             36,
             1,
@@ -4979,7 +5078,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metric-tile/basic",
             "Metric tile",
-            "MetricTileView",
+            StoryIdentity::PublicUi(PublicUiId::MetricTileView),
             "One measured number with health and trend context.",
             32,
             6,
@@ -4988,7 +5087,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "metric-radar/basic",
             "Metric radar",
-            "MetricRadar",
+            StoryIdentity::PublicUi(PublicUiId::MetricRadar),
             "Multi-axis metric radar (terminal-honest peer).",
             48,
             12,
@@ -4997,7 +5096,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "progress-bar/basic",
             "Progress bar",
-            "ProgressBar",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
             "Determinate progress bar.",
             40,
             2,
@@ -5006,7 +5105,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "histogram/basic",
             "Histogram",
-            "Histogram",
+            StoryIdentity::PublicUi(PublicUiId::Histogram),
             "Vertical buckets with selection.",
             36,
             8,
@@ -5015,7 +5114,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "bar-series/basic",
             "Bar series",
-            "BarSeries",
+            StoryIdentity::PublicUi(PublicUiId::BarSeries),
             "Labeled horizontal bars.",
             36,
             3,
@@ -5024,7 +5123,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-meter/basic",
             "Segmented meter",
-            "SegmentedMeter",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedMeter),
             "Proportional stacked meter.",
             36,
             1,
@@ -5033,7 +5132,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-meter/basic",
             "Token meter",
-            "TokenMeter",
+            StoryIdentity::PublicUi(PublicUiId::TokenMeter),
             "Usage meter with threshold roles.",
             36,
             1,
@@ -5042,7 +5141,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "thinking-block/basic",
             "Thinking block",
-            "ThinkingBlock",
+            StoryIdentity::PublicUi(PublicUiId::ThinkingBlock),
             "Collapsible reasoning chrome.",
             40,
             3,
@@ -5051,26 +5150,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-card/basic",
             "Tool card",
-            "ToolCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCard),
             "Streaming tool invocation card.",
             44,
             4,
             tool_card,
         ),
-        Story::new(
+        Story::mounted(
             "transcript/basic",
             "Transcript",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Variable-height multi-block transcript viewport.",
             48,
             10,
-            transcript_basic,
-        )
-        .with_interactor(transcript_interactor),
+            transcript_interactor,
+        ),
         Story::new(
             "transcript/narrow",
             "Transcript narrow",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Transcript contraction at narrow widths.",
             24,
             8,
@@ -5079,7 +5177,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "transcript/empty",
             "Transcript empty",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Empty-state label distinct from content.",
             40,
             6,
@@ -5088,7 +5186,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "transcript/folded-follow",
             "Transcript folded follow",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Folded tool block + follow-tail chrome.",
             56,
             10,
@@ -5097,7 +5195,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "transcript/ascii-colorless",
             "Transcript ASCII colorless",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "ASCII prefixes and colorless kind roles.",
             48,
             8,
@@ -5106,7 +5204,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "transcript/tiny",
             "Transcript tiny",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Tiny-terminal geometry for transcript.",
             12,
             4,
@@ -5115,26 +5213,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "transcript/unicode",
             "Transcript unicode",
-            "Transcript",
+            StoryIdentity::PublicUi(PublicUiId::Transcript),
             "Grapheme-safe multi-block transcript lines.",
             48,
             8,
             transcript_unicode_story,
         ),
-        Story::new(
+        Story::mounted(
             "timeline/basic",
             "Timeline",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Detailed activity timeline with live follow chrome.",
             64,
             10,
-            timeline,
-        )
-        .with_interactor(timeline_interactor),
+            timeline_interactor,
+        ),
         Story::new(
             "timeline/rail",
             "Timeline rail",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Compact rail recipe for side panels.",
             36,
             8,
@@ -5143,7 +5240,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "timeline/grouped",
             "Timeline grouped day",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Grouped-day headers with deploy/test events.",
             64,
             12,
@@ -5152,7 +5249,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "timeline/streaming",
             "Timeline streaming",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Follow-tail live stream with newest active event.",
             56,
             10,
@@ -5161,26 +5258,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "timeline/checkpoint",
             "Timeline checkpoint rows",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Timeline events with Checkpoint row kind (substrate).",
             52,
             8,
             timeline_checkpoint_rows,
         ),
-        Story::new(
+        Story::mounted(
             "checkpoint-timeline/basic",
             "CheckpointTimeline",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Rewindable session history — browse mode, draft preserved.",
             64,
             16,
-            checkpoint_timeline_story,
-        )
-        .with_interactor(checkpoint_timeline_interactor),
+            checkpoint_timeline_interactor,
+        ),
         Story::new(
             "checkpoint-timeline/preview",
             "CheckpointTimeline preview",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Preview checkpoint without mutation.",
             64,
             16,
@@ -5189,7 +5285,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkpoint-timeline/confirm",
             "CheckpointTimeline confirm",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Confirm restore with Cancel default focus.",
             64,
             14,
@@ -5198,44 +5294,43 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkpoint-timeline/boundaries",
             "CheckpointTimeline boundaries",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Dirty / external / irreversible boundary warnings.",
             64,
             16,
             checkpoint_timeline_boundaries_story,
         ),
-        Story::new(
+        Story::mounted(
             "prompt-composer/basic",
             "Prompt composer",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Flagship agent input: chips, mode, model, context, draft.",
             56,
             8,
-            prompt_composer_basic,
-        )
-        .with_interactor(prompt_composer_interactor),
+            prompt_composer_interactor,
+        ),
         Story::new(
             "prompt-composer/busy-queue",
             "Prompt composer busy",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Busy agent queues submit; stop chrome.",
             56,
             8,
             prompt_composer_busy,
         ),
-        Story::new(
+        Story::mounted(
             "approval-queue/basic",
             "ApprovalQueue",
-            "ApprovalQueue",
+            StoryIdentity::PublicUi(PublicUiId::ApprovalQueue),
             "Mixed permissions/questions/plans — Open default, no bulk high-risk.",
             64,
             16,
-            approval_queue_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "approval-queue/badge",
             "ApprovalQueue badge",
-            "ApprovalQueue",
+            StoryIdentity::PublicUi(PublicUiId::ApprovalQueue),
             "Compact pending badge with high-risk count.",
             40,
             1,
@@ -5244,25 +5339,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "approval-queue/drawer",
             "ApprovalQueue drawer",
-            "ApprovalQueue",
+            StoryIdentity::PublicUi(PublicUiId::ApprovalQueue),
             "Drawer presentation list.",
             48,
             12,
             approval_queue_drawer_story,
         ),
-        Story::new(
+        Story::mounted(
             "working-state-card/basic",
             "WorkingStateCard",
-            "WorkingStateCard",
+            StoryIdentity::PublicUi(PublicUiId::WorkingStateCard),
             "Public status summary — phase, files, inspect/cancel.",
             56,
             12,
-            working_state_card_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "working-state-card/waiting",
             "WorkingStateCard waiting",
-            "WorkingStateCard",
+            StoryIdentity::PublicUi(PublicUiId::WorkingStateCard),
             "Waiting phase with public reason (not CoT).",
             56,
             10,
@@ -5271,25 +5366,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "working-state-card/collapsed",
             "WorkingStateCard collapsed",
-            "WorkingStateCard",
+            StoryIdentity::PublicUi(PublicUiId::WorkingStateCard),
             "Collapsed line for ActivityShelf composition.",
             48,
             1,
             working_state_card_collapsed_story,
         ),
-        Story::new(
+        Story::mounted(
             "integration-status/list",
             "IntegrationStatus list",
-            "IntegrationStatus",
+            StoryIdentity::PublicUi(PublicUiId::IntegrationStatus),
             "MCP/plugin inventory with provenance and egress cues.",
             64,
             14,
-            integration_status_list_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "integration-status/panel",
             "IntegrationStatus panel",
-            "IntegrationStatus",
+            StoryIdentity::PublicUi(PublicUiId::IntegrationStatus),
             "Diagnostic panel — permissions and egress language.",
             64,
             16,
@@ -5298,25 +5393,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "integration-status/badge",
             "IntegrationStatus badge",
-            "IntegrationStatus",
+            StoryIdentity::PublicUi(PublicUiId::IntegrationStatus),
             "Compact single-line badge.",
             48,
             1,
             integration_status_badge_story,
         ),
-        Story::new(
+        Story::mounted(
             "agent-status-header/basic",
             "AgentStatusHeader",
-            "AgentStatusHeader",
+            StoryIdentity::PublicUi(PublicUiId::AgentStatusHeader),
             "Action-required header with quick actions.",
             72,
             3,
-            agent_status_header_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "agent-status-header/idle",
             "AgentStatusHeader idle",
-            "AgentStatusHeader",
+            StoryIdentity::PublicUi(PublicUiId::AgentStatusHeader),
             "Idle connected session chrome.",
             72,
             3,
@@ -5325,25 +5420,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-status-header/narrow",
             "AgentStatusHeader narrow",
-            "AgentStatusHeader",
+            StoryIdentity::PublicUi(PublicUiId::AgentStatusHeader),
             "Contracts into StatusBar projection.",
             40,
             1,
             agent_status_header_story,
         ),
-        Story::new(
+        Story::mounted(
             "prompt-queue/compact",
             "PromptQueue compact",
-            "PromptQueue",
+            StoryIdentity::PublicUi(PublicUiId::PromptQueue),
             "Composer summary strip while agent busy.",
             56,
             2,
-            prompt_queue_compact_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "prompt-queue/expanded",
             "PromptQueue expanded",
-            "PromptQueue",
+            StoryIdentity::PublicUi(PublicUiId::PromptQueue),
             "Management list: reorder, edit, send, interrupt.",
             64,
             14,
@@ -5352,7 +5447,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-queue/failed",
             "PromptQueue failed held",
-            "PromptQueue",
+            StoryIdentity::PublicUi(PublicUiId::PromptQueue),
             "Failed entry held (no auto-drain) with retry.",
             56,
             12,
@@ -5361,7 +5456,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/compact",
             "Prompt composer compact",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Narrow-terminal compact presentation.",
             36,
             5,
@@ -5370,7 +5465,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/paste-chip",
             "Prompt composer paste chip",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Large paste becomes a chip with payload (not wall-of-text).",
             56,
             8,
@@ -5379,7 +5474,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/disconnected",
             "Prompt composer disconnected",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Offline connection blocks submit with validation chrome.",
             56,
             8,
@@ -5388,45 +5483,43 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/fullscreen",
             "Prompt composer fullscreen",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Fullscreen presentation for long prompts.",
             72,
             16,
             prompt_composer_fullscreen,
         ),
-        Story::new(
+        Story::mounted(
             "system-picker/basic",
             "Theme picker",
-            "ThemePicker",
+            StoryIdentity::PublicUi(PublicUiId::ThemePicker),
             "Live system preset selection list.",
             36,
             6,
-            theme_picker,
-        )
-        .with_interactor(theme_picker_interactor),
+            theme_picker_interactor,
+        ),
         Story::new(
             "image-surface/basic",
             "Image surface",
-            "ImageSurface",
+            StoryIdentity::PublicUi(PublicUiId::ImageSurface),
             "Placeholder image frame with protocol label.",
             28,
             8,
             image_surface,
         ),
-        Story::new(
+        Story::mounted(
             "button/activation",
             "Button primary",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Primary accent chip driven by the shared button recipe.",
             28,
             3,
-            button_story,
-        )
-        .with_interactor(button_interactor),
+            button_interactor,
+        ),
         Story::new(
             "button/variants",
             "Button variants",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Primary, secondary, quiet, outline, destructive, link, success, command.",
             56,
             10,
@@ -5435,7 +5528,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/destructive",
             "Button destructive",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Destructive not granted default surface input.",
             28,
             3,
@@ -5444,26 +5537,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/toolbar",
             "Button toolbar row",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Compact quiet actions in a toolbar row.",
             48,
             3,
             button_toolbar_story,
         ),
-        Story::new(
+        Story::mounted(
             "button/icon",
             "Icon button",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Icon-only with required accessible label.",
             12,
             3,
-            button_icon_story,
-        )
-        .with_interactor(icon_button_interactor),
+            icon_button_interactor,
+        ),
         Story::new(
             "icon-button/toolbar",
             "IconButton toolbar",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Compact toolbar icons with toggle and badge.",
             24,
             3,
@@ -5472,7 +5564,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon-button/destructive",
             "IconButton destructive",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Destructive icon; not default-focused.",
             8,
             3,
@@ -5481,7 +5573,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon-button/loading",
             "IconButton loading",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Loading blocks activation; distinct from disabled.",
             8,
             3,
@@ -5490,7 +5582,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon-button/row",
             "IconButton data row",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Compact row action with hit slop.",
             28,
             2,
@@ -5499,7 +5591,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/dialog",
             "Button dialog actions",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Cancel (secondary) + Save (primary); destructive not default.",
             48,
             3,
@@ -5508,7 +5600,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/form",
             "Button form full-width",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Full-width primary submit for form footers.",
             40,
             3,
@@ -5517,7 +5609,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/inline",
             "Button inline link",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Link-like inline action among prose.",
             48,
             3,
@@ -5526,7 +5618,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/pending",
             "Button pending confirm",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Destructive awaiting second Activate (?).",
             28,
             3,
@@ -5535,26 +5627,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/no-color",
             "Button no-color",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Weight and border affordance without color fill.",
             40,
             4,
             button_no_color_story,
         ),
-        Story::new(
+        Story::mounted(
             "checkbox/switch",
             "Checkbox and Switch",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Controlled checkbox and switch projections.",
             40,
             4,
-            checkbox_switch_story,
-        )
-        .with_interactor(checkbox_interactor),
+            checkbox_interactor,
+        ),
         Story::new(
             "checkbox/states",
             "Checkbox states",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Unchecked, checked, indeterminate, invalid, read-only.",
             48,
             8,
@@ -5563,7 +5654,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/indeterminate",
             "Checkbox indeterminate",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Mixed-group parent with child list.",
             44,
             6,
@@ -5572,7 +5663,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/description",
             "Checkbox description",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Label + secondary description row.",
             48,
             3,
@@ -5581,26 +5672,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/list",
             "Checkbox list",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "List composition with independent controlled values.",
             40,
             5,
             checkbox_list_story,
         ),
-        Story::new(
+        Story::mounted(
             "slider/basic",
             "Slider basic",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "Horizontal volume-style slider with value text.",
             44,
             3,
-            slider_basic_story,
-        )
-        .with_interactor(slider_interactor),
+            slider_interactor,
+        ),
         Story::new(
             "slider/marks",
             "Slider marks",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "Marks at 0/50/100 with labels.",
             40,
             4,
@@ -5609,7 +5699,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slider/vertical",
             "Slider vertical",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "Vertical orientation for side panels.",
             8,
             12,
@@ -5618,36 +5708,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slider/numeric",
             "Slider numeric fallback",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "Tiny width falls back to numeric face.",
             8,
             2,
             slider_numeric_story,
         ),
-        Story::new(
+        Story::mounted(
             "range-slider/basic",
             "RangeSlider basic",
-            "RangeSlider",
+            StoryIdentity::PublicUi(PublicUiId::RangeSlider),
             "Dual-thumb filter range.",
             44,
             3,
-            range_slider_basic_story,
-        )
-        .with_interactor(range_slider_interactor),
-        Story::new(
+            range_slider_interactor,
+        ),
+        Story::mounted(
             "segmented-control/basic",
             "SegmentedControl basic",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "View mode List/Grid/Table exclusive segments.",
             44,
             3,
-            segmented_control_basic_story,
-        )
-        .with_interactor(segmented_control_interactor),
+            segmented_control_interactor,
+        ),
         Story::new(
             "segmented-control/icons",
             "SegmentedControl icons",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "Icon + badge segments for density filters.",
             40,
             3,
@@ -5656,7 +5744,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-control/overflow",
             "SegmentedControl overflow",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "Low-priority segments collapse to …",
             22,
             3,
@@ -5665,26 +5753,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-control/collapsed",
             "SegmentedControl collapsed",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "Select-like trigger when very narrow.",
             14,
             3,
             segmented_control_collapsed_story,
         ),
-        Story::new(
+        Story::mounted(
             "switch/basic",
             "Switch basic",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "Settings-row On/Off with explicit value text.",
             44,
             3,
-            switch_basic_story,
-        )
-        .with_interactor(switch_interactor),
+            switch_interactor,
+        ),
         Story::new(
             "switch/loading",
             "Switch loading",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "Busy track; activation blocked.",
             40,
             2,
@@ -5693,7 +5780,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "switch/states",
             "Switch states",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "Off, on, disabled, read-only, invalid.",
             44,
             7,
@@ -5702,26 +5789,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "switch/compact",
             "Switch compact",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "Leading track + label density.",
             36,
             2,
             switch_compact_story,
         ),
-        Story::new(
+        Story::mounted(
             "radio-group/basic",
             "RadioGroup basic",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "Vertical exclusive choice with legend and description.",
             44,
             8,
-            radio_group_basic_story,
-        )
-        .with_interactor(radio_group_interactor),
+            radio_group_interactor,
+        ),
         Story::new(
             "radio-group/horizontal",
             "RadioGroup horizontal",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "Horizontal risk/permission style choices.",
             52,
             3,
@@ -5730,7 +5816,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "radio-group/disabled",
             "RadioGroup disabled option",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "Disabled option skipped by roving; selected middle.",
             40,
             6,
@@ -5739,26 +5825,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "radio-group/badges",
             "RadioGroup badges",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "Recommended badge + long labels.",
             48,
             7,
             radio_group_badges_story,
         ),
-        Story::new(
+        Story::mounted(
             "data-table/toolbar",
             "DataTable",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Toolbar, header, and visible projected rows.",
             60,
             10,
-            data_table_story,
-        )
-        .with_interactor(data_table_interactor),
+            data_table_interactor,
+        ),
         Story::new(
             "data-table/rows-10",
             "DataTable 10 rows",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Baseline 10-row projected table.",
             56,
             14,
@@ -5767,7 +5852,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/rows-10k",
             "DataTable 10k virtual",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "10k logical rows; only viewport slice projected.",
             56,
             12,
@@ -5776,7 +5861,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/rows-1m-virtual",
             "DataTable 1M virtual",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "1M logical rows; paint only visible window.",
             56,
             12,
@@ -5785,7 +5870,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/wide-64",
             "DataTable wide",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Many columns with pin + priority (wide content).",
             72,
             10,
@@ -5794,7 +5879,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/cjk",
             "DataTable CJK",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "CJK headers and cells; display_cols safe.",
             48,
             8,
@@ -5803,7 +5888,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/combining",
             "DataTable combining",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Combining marks / grapheme-safe cells.",
             48,
             8,
@@ -5812,7 +5897,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/stream-partial",
             "DataTable streaming",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Partial load footer for rapid streaming updates.",
             56,
             10,
@@ -5821,7 +5906,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/narrow-priority",
             "DataTable narrow priority",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "contract_to_budget drops low-priority columns.",
             22,
             10,
@@ -5830,7 +5915,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/loading",
             "DataTable loading",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Loading chrome.",
             48,
             8,
@@ -5839,7 +5924,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/visidata",
             "DataTable VisiData",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Cell nav, sort markers, pin, multi-select chrome.",
             68,
             12,
@@ -5848,7 +5933,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/range",
             "DataTable range select",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Range navigation mode with cell selection.",
             56,
             10,
@@ -5857,7 +5942,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/groups",
             "DataTable groups",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Group header bands in the projected stream.",
             56,
             10,
@@ -5866,7 +5951,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/edit",
             "DataTable inline edit",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Inline edit draft on focused cell.",
             48,
             8,
@@ -5875,46 +5960,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/error",
             "DataTable error",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Error load state with retry hint.",
             48,
             8,
             data_table_error,
         ),
-        Story::new(
-            "menu/roving",
-            "Menu",
-            "Menu",
-            "Menu with disabled item skipped by roving focus.",
-            36,
-            8,
-            menu_story,
-        )
-        .with_interactor(menu_interactor),
-        Story::new(
+        Story::mounted(
             "tag/removable",
             "Tag removable",
-            "Tag",
+            StoryIdentity::PublicUi(PublicUiId::Tag),
             "Removable attachment tag with body/remove part focus.",
             36,
             2,
-            tag_removable_story,
-        )
-        .with_interactor(tag_interactor),
-        Story::new(
+            tag_interactor,
+        ),
+        Story::mounted(
             "chip/filter",
             "Chip filter",
-            "Chip",
+            StoryIdentity::PublicUi(PublicUiId::Chip),
             "Selectable filter chips with selection marks.",
             48,
             3,
-            chip_filter_story,
-        )
-        .with_interactor(chip_interactor),
+            chip_interactor,
+        ),
         Story::new(
             "chip/error-loading",
             "Chip error and loading",
-            "Chip",
+            StoryIdentity::PublicUi(PublicUiId::Chip),
             "Error and loading chip status.",
             40,
             3,
@@ -5923,7 +5996,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-strip/wrap",
             "Token strip wrap",
-            "TokenStrip",
+            StoryIdentity::PublicUi(PublicUiId::TokenStrip),
             "Wrap layout for filters and paste chips.",
             36,
             4,
@@ -5932,7 +6005,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-strip/overflow",
             "Token strip overflow",
-            "TokenStrip",
+            StoryIdentity::PublicUi(PublicUiId::TokenStrip),
             "+N overflow summary when max_visible exceeded.",
             40,
             2,
@@ -5941,7 +6014,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "attachment-chip/file",
             "AttachmentChip file",
-            "AttachmentChip",
+            StoryIdentity::PublicUi(PublicUiId::AttachmentChip),
             "File attachment with size meta and remove chrome.",
             48,
             3,
@@ -5950,7 +6023,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "attachment-chip/broken-path",
             "AttachmentChip error",
-            "AttachmentChip",
+            StoryIdentity::PublicUi(PublicUiId::AttachmentChip),
             "Broken path / validation error still removable.",
             48,
             3,
@@ -5959,7 +6032,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "attachment-chip/upload",
             "AttachmentChip upload progress",
-            "AttachmentChip",
+            StoryIdentity::PublicUi(PublicUiId::AttachmentChip),
             "Upload progress percent on attachment chip.",
             48,
             2,
@@ -5968,7 +6041,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paste-chip/large",
             "PasteChip large",
-            "PasteChip",
+            StoryIdentity::PublicUi(PublicUiId::PasteChip),
             "Collapsed large paste with byte size.",
             48,
             4,
@@ -5977,7 +6050,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paste-chip/binary",
             "PasteChip binary",
-            "PasteChip",
+            StoryIdentity::PublicUi(PublicUiId::PasteChip),
             "Binary paste badge; no auto-insert.",
             40,
             2,
@@ -5986,7 +6059,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paste-chip/expanded",
             "PasteChip expanded",
-            "PasteChip",
+            StoryIdentity::PublicUi(PublicUiId::PasteChip),
             "Expanded paste preview lines under chip.",
             52,
             8,
@@ -5995,7 +6068,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "attachment-strip/wrap",
             "Attachment strip wrap",
-            "AttachmentChip",
+            StoryIdentity::PublicUi(PublicUiId::AttachmentChip),
             "Mixed attachments + pastes with wrap layout.",
             40,
             5,
@@ -6004,7 +6077,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-mention/basic",
             "FileMention basic",
-            "FileMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Inline file mention tokens with type glyphs.",
             48,
             3,
@@ -6013,7 +6086,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-mention/missing",
             "FileMention missing",
-            "FileMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Missing path validity on file mention.",
             40,
             2,
@@ -6022,7 +6095,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-mention/ambiguous",
             "FileMention ambiguous",
-            "FileMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Ambiguous basename with disambiguation list.",
             48,
             8,
@@ -6031,7 +6104,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "entity-mention/agent-tool",
             "EntityMention agent tool",
-            "EntityMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Agent and tool entity mention tokens.",
             48,
             3,
@@ -6040,7 +6113,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "entity-mention/stale",
             "EntityMention stale",
-            "EntityMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Stale session entity mention.",
             40,
             2,
@@ -6049,7 +6122,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "mention-draft/atomic",
             "Mention draft atomic",
-            "FileMention",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
             "Text plus atomic mention segments (display form).",
             52,
             3,
@@ -6058,7 +6131,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slash-command-menu/filter",
             "SlashCommandMenu filter",
-            "SlashCommandMenu",
+            StoryIdentity::PublicUi(PublicUiId::SlashCommandMenu),
             "Filtered slash commands with docs pane.",
             48,
             12,
@@ -6067,7 +6140,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slash-command-menu/loading",
             "SlashCommandMenu loading",
-            "SlashCommandMenu",
+            StoryIdentity::PublicUi(PublicUiId::SlashCommandMenu),
             "Async plugin loading chrome.",
             40,
             10,
@@ -6076,7 +6149,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slash-command-menu/arguments",
             "SlashCommandMenu arguments",
-            "SlashCommandMenu",
+            StoryIdentity::PublicUi(PublicUiId::SlashCommandMenu),
             "Nested argument completion for /model.",
             40,
             10,
@@ -6085,7 +6158,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slash-command-menu/narrow",
             "SlashCommandMenu narrow",
-            "SlashCommandMenu",
+            StoryIdentity::PublicUi(PublicUiId::SlashCommandMenu),
             "Compact slash menu on narrow width.",
             28,
             10,
@@ -6094,7 +6167,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slash-command-menu/disabled",
             "SlashCommandMenu disabled",
-            "SlashCommandMenu",
+            StoryIdentity::PublicUi(PublicUiId::SlashCommandMenu),
             "Disabled command with reason detail.",
             40,
             10,
@@ -6103,7 +6176,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "model-selector/compact",
             "ModelSelector compact",
-            "ModelSelector",
+            StoryIdentity::PublicUi(PublicUiId::ModelSelector),
             "Compact model status for composer chrome.",
             40,
             2,
@@ -6112,7 +6185,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "model-selector/expanded",
             "ModelSelector expanded",
-            "ModelSelector",
+            StoryIdentity::PublicUi(PublicUiId::ModelSelector),
             "Searchable model list with cost/context meta.",
             48,
             12,
@@ -6121,7 +6194,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "model-selector/empty",
             "ModelSelector empty",
-            "ModelSelector",
+            StoryIdentity::PublicUi(PublicUiId::ModelSelector),
             "Empty filter result.",
             36,
             6,
@@ -6130,7 +6203,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-mode-selector/ribbon",
             "AgentModeSelector ribbon",
-            "AgentModeSelector",
+            StoryIdentity::PublicUi(PublicUiId::AgentModeSelector),
             "Mode ribbon with FullAuto warning.",
             48,
             2,
@@ -6139,7 +6212,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-mode-selector/menu",
             "AgentModeSelector menu",
-            "AgentModeSelector",
+            StoryIdentity::PublicUi(PublicUiId::AgentModeSelector),
             "Mode menu with consequence text.",
             40,
             12,
@@ -6148,7 +6221,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-mode-selector/compact",
             "AgentModeSelector compact",
-            "AgentModeSelector",
+            StoryIdentity::PublicUi(PublicUiId::AgentModeSelector),
             "Compact mode badge for composer.",
             24,
             2,
@@ -6157,7 +6230,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "composer-selectors/strip",
             "ComposerSelectors strip",
-            "ModelSelector",
+            StoryIdentity::PublicUi(PublicUiId::ComposerSelectors),
             "Composed mode · model status line.",
             48,
             2,
@@ -6166,7 +6239,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/basic",
             "MessageThread basic",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "Mixed user/assistant/tool/event/error session.",
             56,
             16,
@@ -6175,7 +6248,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/follow",
             "MessageThread follow",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "Follow-tail session at end.",
             48,
             12,
@@ -6184,7 +6257,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/unread",
             "MessageThread unread",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "New-content indicator when not following.",
             48,
             12,
@@ -6193,7 +6266,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/compact-zoom",
             "MessageThread compact zoom",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "Semantic zoom compact (folded tools).",
             48,
             12,
@@ -6202,7 +6275,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/narrow",
             "MessageThread narrow",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "Narrow-terminal thread paint.",
             28,
             10,
@@ -6211,7 +6284,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-thread/ascii",
             "MessageThread ascii",
-            "MessageThread",
+            StoryIdentity::PublicUi(PublicUiId::MessageThread),
             "ASCII/colorless prefixes.",
             48,
             12,
@@ -6220,7 +6293,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "streaming-markdown/mid-fence",
             "StreamingMarkdown mid-fence",
-            "StreamingMarkdown",
+            StoryIdentity::PublicUi(PublicUiId::StreamingMarkdown),
             "Incomplete code fence while streaming.",
             48,
             14,
@@ -6229,7 +6302,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "streaming-markdown/complete",
             "StreamingMarkdown complete",
-            "StreamingMarkdown",
+            StoryIdentity::PublicUi(PublicUiId::StreamingMarkdown),
             "Finished stream with closed fences.",
             48,
             14,
@@ -6238,7 +6311,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "streaming-markdown/failed",
             "StreamingMarkdown failed",
-            "StreamingMarkdown",
+            StoryIdentity::PublicUi(PublicUiId::StreamingMarkdown),
             "Failed phase with raw fallback cue.",
             40,
             10,
@@ -6247,7 +6320,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "streaming-markdown/citations",
             "StreamingMarkdown citations",
-            "StreamingMarkdown",
+            StoryIdentity::PublicUi(PublicUiId::StreamingMarkdown),
             "Sources footer + tool insertion.",
             48,
             12,
@@ -6256,7 +6329,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "streaming-markdown/narrow",
             "StreamingMarkdown narrow",
-            "StreamingMarkdown",
+            StoryIdentity::PublicUi(PublicUiId::StreamingMarkdown),
             "Narrow width streaming paint.",
             28,
             12,
@@ -6265,7 +6338,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "source-citation/inline",
             "SourceCitation inline",
-            "SourceCitation",
+            StoryIdentity::PublicUi(PublicUiId::SourceCitation),
             "Inline citation chips with dest fallback.",
             48,
             3,
@@ -6274,7 +6347,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "source-citation/offline",
             "SourceCitation offline",
-            "SourceCitation",
+            StoryIdentity::PublicUi(PublicUiId::SourceCitation),
             "Offline/unavailable citation chrome.",
             40,
             2,
@@ -6283,7 +6356,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "citation-list/expanded",
             "CitationList expanded",
-            "CitationList",
+            StoryIdentity::PublicUi(PublicUiId::CitationList),
             "Expanded source list with duplicates grouped.",
             56,
             12,
@@ -6292,7 +6365,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "citation-list/collapsed",
             "CitationList collapsed",
-            "CitationList",
+            StoryIdentity::PublicUi(PublicUiId::CitationList),
             "Collapsed sources summary.",
             40,
             2,
@@ -6301,7 +6374,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "citation-list/narrow",
             "CitationList narrow",
-            "CitationList",
+            StoryIdentity::PublicUi(PublicUiId::CitationList),
             "Narrow citation list.",
             28,
             10,
@@ -6310,7 +6383,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-call-card/running",
             "ToolCallCard running",
-            "ToolCallCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Running tool in compact and expanded actor-rail states.",
             56,
             12,
@@ -6319,7 +6392,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-call-card/error",
             "ToolCallCard error",
-            "ToolCallCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Failed tool with redacted args detail.",
             48,
             8,
@@ -6328,7 +6401,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-call-card/expanded",
             "ToolCallCard expanded",
-            "ToolCallCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Success card expanded with action strip.",
             52,
             10,
@@ -6337,7 +6410,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-call-card/permission",
             "ToolCallCard permission",
-            "ToolCallCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Waiting permission + network egress note.",
             48,
             7,
@@ -6346,25 +6419,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-call-card/narrow",
             "ToolCallCard narrow",
-            "ToolCallCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Narrow ASCII tool card.",
             28,
             6,
             tool_call_card_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "terminal-run-card/running",
             "TerminalRunCard running",
-            "TerminalRunCard",
+            StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
             "Live shell run with follow stream.",
             56,
             14,
-            terminal_run_card_running_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "terminal-run-card/permission",
             "TerminalRunCard permission",
-            "TerminalRunCard",
+            StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
             "Proposed high-risk command awaiting permission.",
             52,
             10,
@@ -6373,7 +6446,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-run-card/edited",
             "TerminalRunCard edited",
-            "TerminalRunCard",
+            StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
             "Proposed vs executed after edited approval.",
             56,
             12,
@@ -6382,7 +6455,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-run-card/failed",
             "TerminalRunCard failed",
-            "TerminalRunCard",
+            StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
             "Non-zero exit with stderr.",
             52,
             12,
@@ -6391,25 +6464,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "terminal-run-card/narrow",
             "TerminalRunCard narrow",
-            "TerminalRunCard",
+            StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
             "Narrow ASCII terminal run card.",
             28,
             10,
             terminal_run_card_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "activity-shelf/statuses",
             "ActivityShelf statuses",
-            "ActivityShelf",
+            StoryIdentity::PublicUi(PublicUiId::ActivityShelf),
             "Chips prioritize action-required and blocked.",
             72,
             2,
-            activity_shelf_statuses_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "activity-shelf/many-overflow",
             "ActivityShelf overflow",
-            "ActivityShelf",
+            StoryIdentity::PublicUi(PublicUiId::ActivityShelf),
             "Many activities with +N overflow.",
             48,
             2,
@@ -6418,7 +6491,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "activity-shelf/summary",
             "ActivityShelf summary",
-            "ActivityShelf",
+            StoryIdentity::PublicUi(PublicUiId::ActivityShelf),
             "Narrow one-line summary contraction.",
             32,
             1,
@@ -6427,7 +6500,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "activity-shelf/badge",
             "ActivityShelf badge",
-            "ActivityShelf",
+            StoryIdentity::PublicUi(PublicUiId::ActivityShelf),
             "Tiny badge count.",
             12,
             1,
@@ -6436,26 +6509,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "activity-shelf/statusbar",
             "ActivityShelf StatusBar",
-            "ActivityShelf",
+            StoryIdentity::PublicUi(PublicUiId::ActivityShelf),
             "Projected activity summary as StatusBar slot.",
             64,
             1,
             activity_shelf_statusbar_story,
         ),
-        Story::new(
+        Story::mounted(
             "badge/basic",
             "Badge variants",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Soft surface chips: neutral, info, success, warning, destructive, outline, count.",
             48,
             8,
-            badge_story,
-        )
-        .with_interactor(badge_interactor),
+            badge_interactor,
+        ),
         Story::new(
             "badge/table",
             "Badge in table context",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Dense row badges with calm shared-surface fills.",
             48,
             5,
@@ -6464,7 +6536,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "badge/task",
             "Badge task status",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Agent/task status chips with glyphs.",
             40,
             5,
@@ -6473,7 +6545,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "badge/settings",
             "Badge settings",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Settings category badges: outline, optional interactive filter.",
             44,
             4,
@@ -6482,7 +6554,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "badge/count",
             "Badge counts",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Count variant with 99+ clamp.",
             32,
             3,
@@ -6491,7 +6563,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "callout/basic",
             "Callout warning",
-            "Callout",
+            StoryIdentity::PublicUi(PublicUiId::Callout),
             "Inline callout with tone gutter rail and non-color glyph.",
             44,
             4,
@@ -6500,7 +6572,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "callout/tones",
             "Callout tones",
-            "Callout",
+            StoryIdentity::PublicUi(PublicUiId::Callout),
             "Info/success/warning/danger/destructive/neutral compact stack.",
             48,
             12,
@@ -6509,26 +6581,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "callout/section",
             "Callout section",
-            "Callout",
+            StoryIdentity::PublicUi(PublicUiId::Callout),
             "Prominent section recipe with border, source, body.",
             48,
             7,
             callout_section_story,
         ),
-        Story::new(
+        Story::mounted(
             "alert/danger",
             "Alert danger",
-            "Alert",
+            StoryIdentity::PublicUi(PublicUiId::Alert),
             "Strong danger alert with description, details, source.",
             52,
             8,
-            alert_danger_story,
-        )
-        .with_interactor(alert_interactor),
+            alert_interactor,
+        ),
         Story::new(
             "alert/banner",
             "Alert banner",
-            "Alert",
+            StoryIdentity::PublicUi(PublicUiId::Alert),
             "Section banner alert with actions and dismiss chrome.",
             52,
             8,
@@ -6537,64 +6608,61 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "alert/compact",
             "Alert compact",
-            "Alert",
+            StoryIdentity::PublicUi(PublicUiId::Alert),
             "Compact inline success alert.",
             40,
             3,
             alert_compact_story,
         ),
-        Story::new(
+        Story::mounted(
             "drawer/basic",
             "Drawer right",
-            "Drawer",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Right-edge inspector with handle, header, body, footer.",
             28,
             14,
-            drawer_story,
-        )
-        .with_interactor(drawer_interactor),
+            drawer_interactor,
+        ),
         Story::new(
             "drawer/left",
             "Drawer left",
-            "Drawer",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Left-edge navigation rail drawer.",
             24,
             12,
             drawer_left_story,
         ),
-        Story::new(
-            "drawer/sheet",
-            "Sheet bottom",
-            "Sheet",
+        Story::mounted(
+            "drawer/bottom",
+            "Drawer bottom edge",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Bottom sheet (DrawerEdge::Bottom) for mobile-style secondary content.",
             48,
             10,
-            drawer_sheet_story,
-        )
-        .with_interactor(sheet_interactor),
+            bottom_drawer_interactor,
+        ),
         Story::new(
             "drawer/non-modal",
             "Drawer non-modal",
-            "Drawer",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Non-modal task rail — no focus trap; main selection preserved by host.",
             28,
             12,
             drawer_non_modal_story,
         ),
-        Story::new(
+        Story::mounted(
             "fullscreen-viewer/basic",
             "FullscreenViewer code",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Fullscreen chrome over CodeBlock host body; breadcrumbs + actions.",
             56,
             18,
-            fullscreen_viewer_code_story,
-        )
-        .with_interactor(fullscreen_viewer_interactor),
+            fullscreen_viewer_interactor,
+        ),
         Story::new(
             "fullscreen-viewer/diff",
             "FullscreenViewer diff",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Diff content kind with search strip open.",
             56,
             16,
@@ -6603,7 +6671,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "fullscreen-viewer/log",
             "FullscreenViewer log",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Log stream body slot; help strip open.",
             52,
             14,
@@ -6612,7 +6680,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "fullscreen-viewer/zoom-badge",
             "SemanticZoom badge",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Compact/detail/full zoom level badges (host paints row→detail).",
             40,
             5,
@@ -6621,7 +6689,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "fullscreen-viewer/narrow",
             "FullscreenViewer narrow",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Narrow terminal chrome contraction (title + body + footer).",
             28,
             12,
@@ -6630,26 +6698,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "fullscreen-viewer/unicode",
             "FullscreenViewer unicode",
-            "FullscreenViewer",
+            StoryIdentity::PublicUi(PublicUiId::FullscreenViewer),
             "Unicode path breadcrumbs and title safe under CJK width.",
             48,
             14,
             fullscreen_viewer_unicode_story,
         ),
-        Story::new(
+        Story::mounted(
             "preview-card/file",
             "PreviewCard file",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "File resource preview with metadata and snippet body.",
             44,
             12,
-            preview_card_file_story,
-        )
-        .with_interactor(preview_card_interactor),
+            preview_card_interactor,
+        ),
         Story::new(
             "preview-card/command",
             "PreviewCard command",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Command preview with shell/cwd metadata.",
             44,
             10,
@@ -6658,7 +6725,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "preview-card/symbol",
             "PreviewCard symbol",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Symbol definition preview.",
             44,
             10,
@@ -6667,7 +6734,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "preview-card/session",
             "PreviewCard session",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Session transcript excerpt preview.",
             44,
             10,
@@ -6676,7 +6743,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "preview-card/loading",
             "PreviewCard loading",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Async loading chrome while host fetch is in flight.",
             36,
             8,
@@ -6685,7 +6752,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "preview-card/error",
             "PreviewCard error",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Error state for failed preview fetch.",
             36,
             8,
@@ -6694,7 +6761,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "preview-card/pinned",
             "PreviewCard pinned",
-            "PreviewCard",
+            StoryIdentity::PublicUi(PublicUiId::PreviewCard),
             "Pinned sticky preview (popover policy; pin mark).",
             44,
             12,
@@ -6703,7 +6770,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/basic",
             "Text basic",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "Semantic body text with preserve-bg paint.",
             40,
             3,
@@ -6712,7 +6779,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/spans",
             "Text spans",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "Multi-role spans, emphasis, annotation, highlight.",
             48,
             3,
@@ -6721,7 +6788,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/wrap",
             "Text wrap",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "Soft-wrap on display columns.",
             28,
             6,
@@ -6730,7 +6797,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/truncate",
             "Text truncate",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "End ellipsis truncation.",
             24,
             1,
@@ -6739,7 +6806,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/unicode",
             "Text unicode",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "CJK, combining marks, emoji, tabs.",
             36,
             3,
@@ -6748,7 +6815,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text/narrow",
             "Text narrow",
-            "Text",
+            StoryIdentity::PublicUi(PublicUiId::Text),
             "Narrow clip and center align.",
             14,
             3,
@@ -6757,7 +6824,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "heading/basic",
             "Heading H1 reading",
-            "Heading",
+            StoryIdentity::PublicUi(PublicUiId::Heading),
             "H1 with heading weight and rule row.",
             40,
             3,
@@ -6766,7 +6833,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "heading/levels",
             "Heading levels",
-            "Heading",
+            StoryIdentity::PublicUi(PublicUiId::Heading),
             "H1 / H2 / H3 hierarchy in one stack.",
             40,
             6,
@@ -6775,7 +6842,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "heading/compact",
             "Heading compact",
-            "Heading",
+            StoryIdentity::PublicUi(PublicUiId::Heading),
             "ASCII # prefixes for no-color hierarchy.",
             36,
             3,
@@ -6784,7 +6851,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon/browser",
             "Icon glyph browser",
-            "Icon",
+            StoryIdentity::PublicUi(PublicUiId::Icon),
             "Semantic glyph catalog by group (Unicode).",
             56,
             18,
@@ -6793,7 +6860,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon/ascii",
             "Icon ASCII fallback",
-            "Icon",
+            StoryIdentity::PublicUi(PublicUiId::Icon),
             "Same semantic names under GlyphSet::Ascii.",
             48,
             10,
@@ -6802,7 +6869,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon/enhanced",
             "Icon enhanced",
-            "Icon",
+            StoryIdentity::PublicUi(PublicUiId::Icon),
             "Enhanced profile (richer file/status cells).",
             48,
             6,
@@ -6811,7 +6878,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon/labeled",
             "Icon with labels",
-            "Icon",
+            StoryIdentity::PublicUi(PublicUiId::Icon),
             "Glyph + text so meaning is not glyph-only.",
             40,
             5,
@@ -6820,7 +6887,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/basic",
             "AvatarGlyph initials",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "Two-cell initials avatar.",
             12,
             3,
@@ -6829,7 +6896,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/compact",
             "AvatarGlyph compact",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "One-cell compact faces.",
             16,
             3,
@@ -6838,7 +6905,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/presence",
             "AvatarGlyph presence",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "Face plus presence status cell.",
             16,
             3,
@@ -6847,7 +6914,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/no-color",
             "AvatarGlyph no-color",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "Monochrome face remains legible.",
             12,
             3,
@@ -6856,7 +6923,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "identity/basic",
             "Identity row",
-            "Identity",
+            StoryIdentity::PublicUi(PublicUiId::Identity),
             "Avatar, name, secondary, role badge.",
             48,
             3,
@@ -6865,7 +6932,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "identity/thread",
             "Identity thread roles",
-            "Identity",
+            StoryIdentity::PublicUi(PublicUiId::Identity),
             "User / agent / service in a thread list.",
             48,
             5,
@@ -6874,7 +6941,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/basic",
             "HighlightedText matches",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Substring matches with keep-first truncation.",
             40,
             4,
@@ -6883,7 +6950,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/selected",
             "HighlightedText selected",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Selected row visual with focused match.",
             40,
             2,
@@ -6892,7 +6959,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/no-color",
             "HighlightedText no-color",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Monochrome match emphasis (reverse/bold).",
             40,
             2,
@@ -6901,7 +6968,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/overlap",
             "HighlightedText overlaps",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Overlapping soft/match/focused ranges.",
             36,
             2,
@@ -6910,7 +6977,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "label/basic",
             "Label basic",
-            "Label",
+            StoryIdentity::PublicUi(PublicUiId::Label),
             "Required label with help description.",
             40,
             3,
@@ -6919,7 +6986,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "field-caption/basic",
             "Field caption",
-            "FieldCaption",
+            StoryIdentity::PublicUi(PublicUiId::FieldCaption),
             "Label + help caption pair.",
             40,
             3,
@@ -6928,7 +6995,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "field-row/states",
             "Field row states",
-            "FieldRow",
+            StoryIdentity::PublicUi(PublicUiId::FieldRow),
             "Plain, masked, required-unset, selected, and annotated rows.",
             56,
             7,
@@ -6937,7 +7004,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "accent-rail/actors",
             "Accent rail actors",
-            "AccentRail",
+            StoryIdentity::PublicUi(PublicUiId::AccentRail),
             "Static, active-wave, tool, and collapsed semantic rails.",
             52,
             12,
@@ -6946,7 +7013,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "label/states",
             "Label states",
-            "Label",
+            StoryIdentity::PublicUi(PublicUiId::Label),
             "Required, optional, disabled, invalid, warning.",
             44,
             6,
@@ -6955,7 +7022,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "label/layouts",
             "Label layouts",
-            "Label",
+            StoryIdentity::PublicUi(PublicUiId::Label),
             "Stacked vs compact caption recipes.",
             40,
             5,
@@ -6964,7 +7031,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "label/narrow",
             "Label narrow",
-            "Label",
+            StoryIdentity::PublicUi(PublicUiId::Label),
             "Description contracts before the label.",
             20,
             3,
@@ -6973,7 +7040,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "description/kinds",
             "Description kinds",
-            "Description",
+            StoryIdentity::PublicUi(PublicUiId::Description),
             "Help, error, warning, meta descriptions.",
             40,
             5,
@@ -6982,26 +7049,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "kbd/basic",
             "Kbd keycap",
-            "Kbd",
+            StoryIdentity::PublicUi(PublicUiId::Kbd),
             "Keycap form for a compact chord.",
             16,
             3,
             kbd_story,
         ),
-        Story::new(
+        Story::mounted(
             "key-value-list/basic",
             "KeyValueList reading",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Groups, status, copy, secret, and link rows.",
             48,
             12,
-            key_value_list_basic_story,
-        )
-        .with_interactor(key_value_list_interactor),
+            key_value_list_interactor,
+        ),
         Story::new(
             "key-value-list/dense",
             "KeyValueList dense",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Dense recipe for settings drawers.",
             40,
             8,
@@ -7010,7 +7076,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-list/stacked",
             "KeyValueList stacked",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Forced stacked anatomy (narrow/read).",
             28,
             12,
@@ -7019,7 +7085,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-list/secret",
             "KeyValueList secret",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Redacted secret with reveal affordance.",
             40,
             4,
@@ -7028,26 +7094,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "kbd/platform",
             "Kbd platforms",
-            "Kbd",
+            StoryIdentity::PublicUi(PublicUiId::Kbd),
             "Emacs / spelled / Mac symbol modifier styles.",
             48,
             4,
             kbd_platform_story,
         ),
-        Story::new(
+        Story::mounted(
             "link/basic",
             "Link external",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "External URL with visible destination and external cue.",
             56,
             3,
-            link_basic_story,
-        )
-        .with_interactor(link_interactor),
+            link_interactor,
+        ),
         Story::new(
             "link/no-hyperlink",
             "Link no-hyperlink",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "OSC 8 off — destination always painted as text fallback.",
             56,
             3,
@@ -7056,7 +7121,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "link/no-color",
             "Link no-color",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "No-color path: links underline, focus adds bold; destination still visible.",
             56,
             3,
@@ -7065,26 +7130,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "link/app-route",
             "Link app route",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "Application-routed link (no OSC 8, no external cue).",
             40,
             3,
             link_app_route_story,
         ),
-        Story::new(
+        Story::mounted(
             "action-link/basic",
             "ActionLink",
-            "ActionLink",
+            StoryIdentity::PublicUi(PublicUiId::ActionLink),
             "Inline action with link chrome and visible risk note.",
             40,
             3,
-            action_link_story,
-        )
-        .with_interactor(action_link_interactor),
+            action_link_interactor,
+        ),
         Story::new(
             "ansi-text/basic",
             "AnsiText SGR",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "SGR colors and styles from command output.",
             48,
             5,
@@ -7093,7 +7157,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ansi-text/no-color",
             "AnsiText no-color",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "No-color mode keeps bold/dim cues only.",
             48,
             4,
@@ -7102,7 +7166,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ansi-text/cr-bs",
             "AnsiText CR/BS",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "Carriage return overwrite and backspace erase.",
             32,
             3,
@@ -7111,7 +7175,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ansi-text/hyperlink",
             "AnsiText OSC-8",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "OSC 8 hyperlink styled as Link role.",
             40,
             2,
@@ -7120,7 +7184,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "shortcut-hint/footer",
             "ShortcutHint footer",
-            "ShortcutHint",
+            StoryIdentity::PublicUi(PublicUiId::ShortcutHint),
             "Footer form derived from a Keymap binding.",
             40,
             3,
@@ -7129,7 +7193,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "shortcut-hint/inline",
             "ShortcutHint inline docs",
-            "ShortcutHint",
+            StoryIdentity::PublicUi(PublicUiId::ShortcutHint),
             "Inline documentation form with command first.",
             44,
             3,
@@ -7138,7 +7202,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "shortcut-hint/narrow",
             "ShortcutHint narrow",
-            "ShortcutHint",
+            StoryIdentity::PublicUi(PublicUiId::ShortcutHint),
             "Command contracts before chord when narrow.",
             14,
             2,
@@ -7147,7 +7211,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/basic",
             "Paragraph body",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "Body paragraph wrap.",
             40,
             4,
@@ -7156,7 +7220,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/quote",
             "Paragraph quote",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "Block quote with hanging gutter.",
             40,
             4,
@@ -7165,7 +7229,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/list",
             "Paragraph list",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "List and ordered items with hanging wrap.",
             40,
             6,
@@ -7174,7 +7238,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/reading",
             "Paragraph reading",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "Reading recipe body + quote.",
             44,
             6,
@@ -7183,7 +7247,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/basic",
             "Surface raised",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Raised surface with border (card body).",
             24,
             6,
@@ -7192,7 +7256,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/ladder",
             "Surface recipe ladder",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Canvas · inset · raised · overlay · interactive · focused · selected · warning · destructive.",
             72,
             22,
@@ -7201,7 +7265,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/focused",
             "Surface focused",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Focused recipe uses Role::BorderFocused, not border weight.",
             28,
             6,
@@ -7210,7 +7274,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/terminal-default",
             "Surface terminal-default",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Canvas + transparent fill; compatible with host terminal bg / no-color.",
             28,
             5,
@@ -7219,7 +7283,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/basic",
             "Separator quiet",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Quiet horizontal rule.",
             48,
             1,
@@ -7228,7 +7292,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/strong",
             "Separator strong",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Strong horizontal rule.",
             48,
             1,
@@ -7237,7 +7301,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/labeled",
             "Separator labeled",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Labeled horizontal divider.",
             48,
             1,
@@ -7246,7 +7310,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/section-break",
             "Separator section break",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Band spacing recipe: pad + rule + pad.",
             48,
             3,
@@ -7255,7 +7319,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/vertical",
             "Separator vertical",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Vertical quiet rule.",
             3,
             8,
@@ -7264,26 +7328,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "separator/focus-zone",
             "Separator focus zone",
-            "Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
             "Non-color zone boundary (not BorderFocused).",
             48,
             1,
             separator_focus_zone_story,
         ),
-        Story::new(
+        Story::mounted(
             "popover/basic",
             "Popover basic",
-            "Popover",
+            StoryIdentity::PublicUi(PublicUiId::Popover),
             "Anchored non-modal popover with header/body slots.",
             32,
             10,
-            popover_story,
-        )
-        .with_interactor(popover_interactor),
+            popover_interactor,
+        ),
         Story::new(
             "popover/slots",
             "Popover slots",
-            "Popover",
+            StoryIdentity::PublicUi(PublicUiId::Popover),
             "Header / body / footer slots without Panel.",
             36,
             12,
@@ -7292,25 +7355,70 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "popover/modal",
             "Popover modal",
-            "Popover",
+            StoryIdentity::PublicUi(PublicUiId::Popover),
             "Modal modality: focus trap + dim chrome.",
             36,
             12,
             popover_modal_story,
         ),
-        Story::new(
+        Story::mounted(
+            "agent-shell/basic",
+            "Agent shell",
+            StoryIdentity::Pattern(PatternId::AgentShell),
+            "Agent shell slots mounted with representative workbench state.",
+            100,
+            28,
+            pattern_app_interactor,
+        ),
+        Story::mounted(
+            "app-dashboard/basic",
+            "Application dashboard",
+            StoryIdentity::Pattern(PatternId::AppDashboard),
+            "Application dashboard mounted with representative metric state.",
+            100,
+            28,
+            pattern_app_interactor,
+        ),
+        Story::mounted(
             "app-shell/workbench",
             "AppShell workbench",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Header + sidebar + main + inspector + footer; multi-pane recipe.",
             100,
             28,
-            app_shell_workbench_story,
+            pattern_app_interactor,
+        ),
+        Story::mounted(
+            "ops-dashboard/basic",
+            "Operations dashboard",
+            StoryIdentity::Pattern(PatternId::OpsDashboard),
+            "Operations dashboard mounted with representative live telemetry state.",
+            100,
+            28,
+            pattern_app_interactor,
+        ),
+        Story::mounted(
+            "resource-browser/basic",
+            "Resource browser",
+            StoryIdentity::Pattern(PatternId::ResourceBrowser),
+            "Resource browser mounted with representative hierarchical data.",
+            80,
+            24,
+            pattern_app_interactor,
+        ),
+        Story::mounted(
+            "studio-shell/basic",
+            "Studio shell",
+            StoryIdentity::Pattern(PatternId::StudioShell),
+            "Studio shell slots mounted with representative workspace state.",
+            100,
+            28,
+            pattern_app_interactor,
         ),
         Story::new(
             "app-shell/dashboard",
             "AppShell dashboard",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Metrics strip + main + log + footer ops recipe.",
             80,
             28,
@@ -7319,7 +7427,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "app-shell/master-detail",
             "AppShell master-detail",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Sidebar master list + detail main + footer.",
             80,
             24,
@@ -7328,7 +7436,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "app-shell/minimal",
             "AppShell minimal",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Main + footer only (inline/tiny tools).",
             48,
             12,
@@ -7337,7 +7445,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "app-shell/narrow-drawer",
             "AppShell narrow drawer",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Workbench under drawer/single-pane pressure; collapsed rails listed.",
             48,
             20,
@@ -7346,25 +7454,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "app-shell/offline",
             "AppShell offline lifecycle",
-            "AppShell",
+            StoryIdentity::Pattern(PatternId::AppShell),
             "Offline lifecycle compact chrome on workbench.",
             80,
             24,
             app_shell_offline_story,
         ),
-        Story::new(
+        Story::mounted(
             "agent-workbench/basic",
             "Agent workbench",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "North-star block: TaskRail, transcript, ActivityShelf, PromptComposer.",
             100,
             28,
-            agent_workbench_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "agent-workbench/tool-running",
             "Agent workbench tools",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "Tool-running: TaskRail + ActivityShelf concurrent jobs.",
             100,
             28,
@@ -7373,7 +7481,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/permission",
             "Agent workbench permission",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "PermissionPrompt overlay — default-deny; draft preserved.",
             80,
             24,
@@ -7382,7 +7490,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/plan",
             "Agent workbench plan",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "PlanReview overlay on composed workbench.",
             80,
             24,
@@ -7391,7 +7499,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/diff",
             "Agent workbench diff",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "DiffReview overlay on composed workbench.",
             80,
             24,
@@ -7400,7 +7508,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/session",
             "Agent workbench session",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "SessionPicker overlay — cancel keeps composer draft.",
             80,
             24,
@@ -7409,7 +7517,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/multi-agent",
             "Agent workbench multi-agent",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "Multi-agent: subagent tasks + activity shelf waiting chips.",
             100,
             28,
@@ -7418,7 +7526,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/narrow",
             "Agent workbench narrow",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "Narrow density — activity strip, no west rail.",
             50,
             20,
@@ -7427,7 +7535,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/tiny",
             "Agent workbench tiny",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "Tiny density — transcript + composer only.",
             30,
             16,
@@ -7436,7 +7544,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/ascii",
             "Agent workbench ASCII",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "ASCII glyph preference on elevated surfaces.",
             100,
             28,
@@ -7445,25 +7553,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-workbench/no-color",
             "Agent workbench no-color",
-            "AgentWorkbench",
+            StoryIdentity::Pattern(PatternId::AgentWorkbench),
             "Colorless preference — mono status cues.",
             100,
             28,
             agent_workbench_no_color,
         ),
-        Story::new(
+        Story::mounted(
             "database-workbench/basic",
             "Database workbench",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "Flagship DB composition: connections, schema, query, results, inspector.",
             120,
             36,
-            database_workbench_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "database-workbench/disconnected",
             "Database workbench disconnected",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "Disconnected gate blocks run; offline chrome.",
             100,
             28,
@@ -7472,7 +7580,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "database-workbench/error",
             "Database workbench error",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "Query error + failed transaction status projection.",
             100,
             28,
@@ -7481,7 +7589,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "database-workbench/running",
             "Database workbench running",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "In-flight query run chrome.",
             100,
             28,
@@ -7490,7 +7598,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "database-workbench/narrow",
             "Database workbench narrow",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "Narrow density — inspector collapsed.",
             70,
             24,
@@ -7499,25 +7607,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "database-workbench/unicode",
             "Database workbench unicode",
-            "DatabaseWorkbench",
+            StoryIdentity::Pattern(PatternId::DatabaseWorkbench),
             "Unicode titles / schema path paint.",
             100,
             28,
             database_workbench_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "git-workbench/basic",
             "Git workbench",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Dirty repo: files, diff, history, branches, output.",
             120,
             36,
-            git_workbench_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "git-workbench/conflict",
             "Git workbench conflict",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Conflict status + diagnostics chrome.",
             100,
             28,
@@ -7526,7 +7634,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "git-workbench/narrow",
             "Git workbench narrow",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Narrow density — history/branches collapsed.",
             70,
             24,
@@ -7535,7 +7643,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "git-workbench/fullscreen-diff",
             "Git workbench fullscreen diff",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Fullscreen diff promotion.",
             100,
             28,
@@ -7544,7 +7652,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "git-workbench/unicode",
             "Git workbench unicode",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Unicode-safe diff path paint.",
             100,
             28,
@@ -7553,7 +7661,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "git-workbench/clean",
             "Git workbench clean",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Clean worktree fixture paint path.",
             100,
             28,
@@ -7562,25 +7670,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "git-workbench/empty",
             "Git workbench empty",
-            "GitWorkbench",
+            StoryIdentity::Pattern(PatternId::GitWorkbench),
             "Empty repo / no files projected.",
             80,
             20,
             git_workbench_empty,
         ),
-        Story::new(
+        Story::mounted(
             "observability-dashboard/basic",
             "Observability dashboard",
-            "ObservabilityDashboard",
+            StoryIdentity::Pattern(PatternId::ObservabilityDashboard),
             "Live logs + events + metrics composition.",
             120,
             36,
-            observability_dashboard_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "observability-dashboard/failure",
             "Observability reconnect/dropped",
-            "ObservabilityDashboard",
+            StoryIdentity::Pattern(PatternId::ObservabilityDashboard),
             "Reconnecting acquisition + dropped-data warning.",
             100,
             28,
@@ -7589,7 +7697,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "observability-dashboard/narrow",
             "Observability narrow",
-            "ObservabilityDashboard",
+            StoryIdentity::Pattern(PatternId::ObservabilityDashboard),
             "Narrow density — inspector collapsed.",
             70,
             24,
@@ -7598,25 +7706,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "observability-dashboard/unicode",
             "Observability unicode",
-            "ObservabilityDashboard",
+            StoryIdentity::Pattern(PatternId::ObservabilityDashboard),
             "Unicode-safe log line paint path.",
             100,
             28,
             observability_dashboard_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "file-manager/basic",
             "File manager",
-            "FileManager",
+            StoryIdentity::Pattern(PatternId::FileManager),
             "Browse tree + preview + operation queue.",
             120,
             36,
-            file_manager_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "file-manager/conflict",
             "File manager conflict",
-            "FileManager",
+            StoryIdentity::Pattern(PatternId::FileManager),
             "Conflict dialog + queue progress/failure.",
             100,
             28,
@@ -7625,7 +7733,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-manager/narrow",
             "File manager narrow",
-            "FileManager",
+            StoryIdentity::Pattern(PatternId::FileManager),
             "Narrow density — queue collapsed; preview drawer.",
             70,
             24,
@@ -7634,25 +7742,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-manager/unicode",
             "File manager unicode",
-            "FileManager",
+            StoryIdentity::Pattern(PatternId::FileManager),
             "Unicode path/name paint path.",
             100,
             28,
             file_manager_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "project-launcher/basic",
             "Project launcher home",
-            "ProjectLauncher",
+            StoryIdentity::Pattern(PatternId::ProjectLauncher),
             "Home: projects + sessions + preview.",
             120,
             36,
-            project_launcher_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "project-launcher/stale",
             "Project launcher stale",
-            "ProjectLauncher",
+            StoryIdentity::Pattern(PatternId::ProjectLauncher),
             "Missing/stale paths + offline status.",
             100,
             28,
@@ -7661,7 +7769,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "project-launcher/narrow",
             "Project launcher narrow",
-            "ProjectLauncher",
+            StoryIdentity::Pattern(PatternId::ProjectLauncher),
             "Narrow density — preview collapsed.",
             70,
             24,
@@ -7670,7 +7778,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "project-launcher/inline",
             "Project launcher inline",
-            "ProjectLauncher",
+            StoryIdentity::Pattern(PatternId::ProjectLauncher),
             "Inline quick launcher (search + list).",
             64,
             16,
@@ -7679,25 +7787,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "project-launcher/unicode",
             "Project launcher unicode",
-            "ProjectLauncher",
+            StoryIdentity::Pattern(PatternId::ProjectLauncher),
             "Unicode project name paint path.",
             100,
             28,
             project_launcher_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "help-center/basic",
             "Help center full docs",
-            "HelpCenter",
+            StoryIdentity::Pattern(PatternId::HelpCenter),
             "Full multi-pane help + keyboard + commands.",
             120,
             40,
-            help_center_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "help-center/compact",
             "Help center compact",
-            "HelpCenter",
+            StoryIdentity::Pattern(PatternId::HelpCenter),
             "Compact overlay mode.",
             72,
             20,
@@ -7706,7 +7814,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "help-center/narrow",
             "Help center narrow",
-            "HelpCenter",
+            StoryIdentity::Pattern(PatternId::HelpCenter),
             "Narrow density — keyboard collapsed.",
             70,
             24,
@@ -7715,7 +7823,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "help-center/doctor",
             "Help center doctor",
-            "HelpCenter",
+            StoryIdentity::Pattern(PatternId::HelpCenter),
             "Diagnostics pane with doctor findings.",
             100,
             32,
@@ -7724,25 +7832,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "help-center/unicode",
             "Help center unicode",
-            "HelpCenter",
+            StoryIdentity::Pattern(PatternId::HelpCenter),
             "Unicode topic paint path.",
             100,
             28,
             help_center_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "error-recovery/basic",
             "Error recovery full",
-            "ErrorRecovery",
+            StoryIdentity::Pattern(PatternId::ErrorRecovery),
             "Full recovery surface with actions.",
             100,
             32,
-            error_recovery_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "error-recovery/redacted",
             "Error recovery redacted crash",
-            "ErrorRecovery",
+            StoryIdentity::Pattern(PatternId::ErrorRecovery),
             "Crash report with secrets redacted.",
             100,
             32,
@@ -7751,7 +7859,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-recovery/inline",
             "Error recovery inline fallback",
-            "ErrorRecovery",
+            StoryIdentity::Pattern(PatternId::ErrorRecovery),
             "Inline fallback when full-screen compromised.",
             64,
             12,
@@ -7760,25 +7868,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "error-recovery/unicode",
             "Error recovery unicode",
-            "ErrorRecovery",
+            StoryIdentity::Pattern(PatternId::ErrorRecovery),
             "Unicode summary paint path.",
             80,
             24,
             error_recovery_unicode,
         ),
-        Story::new(
+        Story::mounted(
             "auth-entry/basic",
             "Auth entry sign-up",
-            "AuthEntry",
+            StoryIdentity::Pattern(PatternId::AuthEntry),
             "Sign-up gate: identity, password, confirm, terms.",
             64,
             20,
-            auth_entry_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "auth-entry/sign-in",
             "Auth entry sign-in",
-            "AuthEntry",
+            StoryIdentity::Pattern(PatternId::AuthEntry),
             "Password login gate (login-01 peer).",
             56,
             14,
@@ -7787,7 +7895,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "auth-entry/email-only",
             "Auth entry email-only",
-            "AuthEntry",
+            StoryIdentity::Pattern(PatternId::AuthEntry),
             "Passwordless magic-link request (login-05 peer).",
             48,
             10,
@@ -7796,7 +7904,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "input-otp/basic",
             "Input OTP",
-            "InputOtp",
+            StoryIdentity::PublicUi(PublicUiId::InputOtp),
             "Six-digit OTP slots with label.",
             32,
             4,
@@ -7805,7 +7913,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "carousel/basic",
             "Carousel",
-            "Carousel",
+            StoryIdentity::PublicUi(PublicUiId::Carousel),
             "Three-slide keyboard carousel.",
             48,
             10,
@@ -7814,26 +7922,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "input-group/basic",
             "Input group",
-            "InputGroup",
+            StoryIdentity::PublicUi(PublicUiId::InputGroup),
             "URL prefix + field + suffix action.",
             48,
             3,
             input_group_basic,
         ),
-        Story::new(
+        Story::mounted(
             "permission-prompt/basic",
             "Permission prompt",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "Default-deny permission surface.",
             48,
             10,
-            permission_prompt_story,
-        )
-        .with_interactor(permission_prompt_interactor),
+            permission_prompt_interactor,
+        ),
         Story::new(
             "permission-prompt/low-read",
             "Permission low-risk read",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "Low-risk file read with prior grant hint; focus Deny.",
             52,
             11,
@@ -7842,7 +7949,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "permission-prompt/destructive-nested",
             "Permission destructive nested",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "High-risk shell via main > subagent > MCP with DESTRUCTIVE banner.",
             56,
             12,
@@ -7851,35 +7958,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "permission-prompt/egress",
             "Permission data egress",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "Critical network egress warning; default-deny focus.",
             56,
             12,
             permission_prompt_egress,
         ),
-        Story::new(
+        Story::mounted(
             "mode-ribbon/basic",
             "Mode ribbon",
-            "ModeRibbon",
+            StoryIdentity::PublicUi(PublicUiId::ModeRibbon),
             "Agent mode strip.",
             48,
             3,
-            mode_ribbon_story,
-        )
-        .with_interactor(mode_ribbon_interactor),
-        Story::new(
+            mode_ribbon_interactor,
+        ),
+        Story::mounted(
             "plan-review/basic",
             "Plan review",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Markdown plan with tasks, risks, safe action focus.",
             56,
             16,
-            plan_review_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "plan-review/high-risk",
             "PlanReview high risk",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Critical plan defaults action focus to Abandon.",
             56,
             14,
@@ -7888,7 +7994,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "plan-review/diff",
             "PlanReview version diff",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Structural changes between plan revisions.",
             56,
             14,
@@ -7897,7 +8003,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "plan-review/comments",
             "PlanReview comments",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Line comments and notes pane.",
             56,
             14,
@@ -7906,7 +8012,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent/tool-block-parity",
             "Agent tool block parity",
-            "AgentParity",
+            StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
             "Public ToolCallCard compact and expanded running states.",
             56,
             12,
@@ -7915,7 +8021,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent/plan-approval-parity",
             "Agent plan approval parity",
-            "AgentParity",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Public PlanReview golden plan and approval composition.",
             56,
             16,
@@ -7924,26 +8030,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent/turn-status-parity",
             "Agent turn status parity",
-            "AgentParity",
+            StoryIdentity::PublicUi(PublicUiId::Spinner),
             "Public spinner, token glyph, elapsed meta, and stop chip.",
             56,
             3,
             agent_turn_status_parity_story,
         ),
-        Story::new(
+        Story::mounted(
             "question-flow/basic",
             "Question flow",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Multi-step interview with provenance.",
             52,
             14,
-            question_flow_story,
-        )
-        .with_interactor(question_flow_interactor),
+            question_flow_interactor,
+        ),
         Story::new(
             "question-flow/review",
             "QuestionFlow review",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Review-before-submit phase.",
             52,
             12,
@@ -7952,7 +8057,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "question-flow/multi",
             "QuestionFlow multi",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Multi-select question step.",
             48,
             12,
@@ -7961,25 +8066,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "question-flow/text",
             "QuestionFlow free text",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Free-text question.",
             48,
             8,
             question_flow_text_story,
         ),
-        Story::new(
+        Story::mounted(
             "session-picker/basic",
             "Session picker",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Create/resume sessions with search, pin, preview.",
             64,
             16,
-            session_picker_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "session-picker/search",
             "SessionPicker search",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Filtered session list by query.",
             56,
             14,
@@ -7988,7 +8093,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "session-picker/confirm",
             "SessionPicker delete confirm",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Safe delete confirm with Cancel default.",
             56,
             12,
@@ -7997,25 +8102,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "session-picker/empty",
             "SessionPicker empty",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Empty catalog — create prompt.",
             48,
             10,
             session_picker_empty_story,
         ),
-        Story::new(
+        Story::mounted(
             "connection-manager/full",
             "ConnectionManager full",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Full management view: list, status, detail, offline banner.",
             72,
             18,
-            connection_manager_full_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "connection-manager/launcher",
             "ConnectionManager launcher",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Compact launcher presentation for quick connect.",
             48,
             12,
@@ -8024,7 +8129,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/empty",
             "ConnectionManager empty",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Empty catalog — add prompt.",
             48,
             10,
@@ -8033,7 +8138,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/error",
             "ConnectionManager error",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Connection with last_error + diagnostic projection.",
             64,
             14,
@@ -8042,7 +8147,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/secret",
             "ConnectionManager secret form",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Add form with masked secret field (never paints raw secret).",
             56,
             14,
@@ -8051,25 +8156,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/confirm",
             "ConnectionManager delete confirm",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Safe delete confirm with Cancel default focus.",
             56,
             12,
             connection_manager_confirm_story,
         ),
-        Story::new(
+        Story::mounted(
             "task-rail/basic",
             "Task rail",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Grouped ActivityModel rail with needs-input first.",
             32,
             16,
-            task_rail_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "task-rail/input",
             "TaskRail needs input",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Permission/input prioritized selection.",
             32,
             14,
@@ -8078,7 +8183,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "task-rail/filter",
             "TaskRail filter",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Filter query in title chrome.",
             32,
             14,
@@ -8087,7 +8192,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "task-rail/drawer-narrow",
             "TaskRail drawer-narrow",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Narrow width recommends Drawer presentation.",
             20,
             14,
@@ -8096,25 +8201,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "task-rail/statusbar",
             "TaskRail StatusBar",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Collapsed rail summary as StatusBar slot.",
             64,
             1,
             task_rail_statusbar_story,
         ),
-        Story::new(
+        Story::mounted(
             "subagent-card/running",
             "SubagentCard running",
-            "SubagentCard",
+            StoryIdentity::PublicUi(PublicUiId::SubagentCard),
             "Live nested subagent with provenance.",
             56,
             12,
-            subagent_card_running_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "subagent-card/failed",
             "SubagentCard failed",
-            "SubagentCard",
+            StoryIdentity::PublicUi(PublicUiId::SubagentCard),
             "Artifact failed result.",
             52,
             10,
@@ -8123,7 +8228,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "subagent-card/nested-provenance",
             "SubagentCard nested",
-            "SubagentCard",
+            StoryIdentity::PublicUi(PublicUiId::SubagentCard),
             "Deep provenance hops + depth.",
             56,
             12,
@@ -8132,7 +8237,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "subagent-card/row",
             "SubagentCard compact row",
-            "SubagentCard",
+            StoryIdentity::PublicUi(PublicUiId::SubagentCard),
             "Compact row presentation.",
             56,
             1,
@@ -8141,25 +8246,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "subagent-card/result",
             "SubagentCard result",
-            "SubagentCard",
+            StoryIdentity::PublicUi(PublicUiId::SubagentCard),
             "Success artifact promote-ready.",
             52,
             10,
             subagent_card_result_story,
         ),
-        Story::new(
+        Story::mounted(
             "background-tasks/mixed-statuses",
             "BackgroundTaskPanel mixed",
-            "BackgroundTaskPanel",
+            StoryIdentity::PublicUi(PublicUiId::BackgroundTaskPanel),
             "Runners, lost, reconnect, failed with output.",
             88,
             20,
-            background_tasks_mixed_story,
+            pattern_app_interactor,
         ),
         Story::new(
             "background-tasks/clear-completed",
             "BackgroundTaskPanel clear",
-            "BackgroundTaskPanel",
+            StoryIdentity::PublicUi(PublicUiId::BackgroundTaskPanel),
             "Hide completed filter view.",
             72,
             16,
@@ -8168,7 +8273,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "background-tasks/rail",
             "BackgroundTaskPanel rail",
-            "BackgroundTaskPanel",
+            StoryIdentity::PublicUi(PublicUiId::BackgroundTaskPanel),
             "Compact rail list.",
             26,
             14,
@@ -8177,7 +8282,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "background-tasks/lost",
             "BackgroundTaskPanel lost",
-            "BackgroundTaskPanel",
+            StoryIdentity::PublicUi(PublicUiId::BackgroundTaskPanel),
             "Lost process detail chrome.",
             80,
             16,
@@ -8186,7 +8291,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "background-tasks/dropped-lines",
             "BackgroundTaskPanel drops",
-            "BackgroundTaskPanel",
+            StoryIdentity::PublicUi(PublicUiId::BackgroundTaskPanel),
             "Bounded history dropped-line banner.",
             80,
             16,
@@ -8195,7 +8300,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/low-mid-high",
             "ContextMeter pressure",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Low / mid / high token pressure.",
             48,
             6,
@@ -8204,7 +8309,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/indeterminate",
             "ContextMeter indeterminate",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Unknown totals — never claim 100%.",
             40,
             4,
@@ -8213,7 +8318,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/approximate",
             "ContextMeter approximate",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Approximate estimates with ~ formatting.",
             44,
             6,
@@ -8222,7 +8327,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/expanded",
             "ContextMeter expanded",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Breakdown, threshold, compact action.",
             48,
             12,
@@ -8231,7 +8336,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/mono",
             "ContextMeter mono",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Monochrome density bar.",
             40,
             3,
@@ -8240,26 +8345,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "context-meter/bytes",
             "ContextMeter bytes",
-            "ContextMeter",
+            StoryIdentity::PublicUi(PublicUiId::ContextMeter),
             "Non-token byte budget.",
             40,
             4,
             context_meter_bytes_story,
         ),
-        Story::new(
+        Story::mounted(
             "blocks/form-wizard",
             "FormWizard",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Multi-step wizard with stepper and nav.",
             56,
             12,
-            form_wizard_story,
-        )
-        .with_interactor(form_wizard_interactor),
+            form_wizard_interactor,
+        ),
         Story::new(
             "form-wizard/review",
             "FormWizard review",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Review phase before submit.",
             56,
             12,
@@ -8268,7 +8372,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "form-wizard/failure",
             "FormWizard failure",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Failure/retry surface.",
             56,
             10,
@@ -8277,25 +8381,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "form-wizard/resume",
             "FormWizard resume",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Restored progress mid-flow.",
             56,
             12,
             form_wizard_resume_story,
         ),
-        Story::new(
+        Story::mounted(
             "settings-screen/basic",
             "Settings screen",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Searchable settings: Sidebar, SearchInput, Form, footer.",
             100,
             28,
-            settings_screen_basic,
+            pattern_app_interactor,
         ),
         Story::new(
             "settings-screen/search",
             "Settings search filter",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Search focused with filtered categories.",
             100,
             28,
@@ -8304,7 +8408,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/validation",
             "Settings validation",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Required field error + dirty modified cue.",
             100,
             28,
@@ -8313,7 +8417,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/conflicts",
             "Settings conflicts",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Keybinding conflict + restart-required banner.",
             100,
             28,
@@ -8322,7 +8426,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/theme",
             "Settings theme preview",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "ThemePicker body mode with live paint system.",
             100,
             28,
@@ -8331,7 +8435,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/keybinding",
             "Settings keybinding",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "KeybindingRecorder integrated body.",
             80,
             16,
@@ -8340,7 +8444,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/narrow",
             "Settings narrow",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Narrow density with category drawer open.",
             60,
             22,
@@ -8349,7 +8453,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/tiny",
             "Settings tiny",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Tiny density — body + search only.",
             40,
             16,
@@ -8358,7 +8462,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/no-results",
             "Settings no results",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Empty search guidance.",
             80,
             20,
@@ -8367,25 +8471,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "settings-screen/help",
             "Settings keyboard help",
-            "SettingsScreen",
+            StoryIdentity::Pattern(PatternId::SettingsScreen),
             "Keyboard help overlay.",
             80,
             22,
             settings_screen_help,
         ),
-        Story::new(
+        Story::mounted(
             "setup-wizard/welcome",
             "Setup wizard welcome",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Dense first-run welcome — no marketing splash.",
             80,
             22,
-            setup_wizard_welcome,
+            pattern_app_interactor,
         ),
         Story::new(
             "setup-wizard/capability",
             "Setup wizard capability",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Terminal capability doctor projection.",
             80,
             22,
@@ -8394,7 +8498,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/account",
             "Setup wizard account",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Account form step with validation gate.",
             80,
             22,
@@ -8403,7 +8507,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/permission",
             "Setup wizard trust",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Permissions / trust step.",
             80,
             20,
@@ -8412,7 +8516,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/theme",
             "Setup wizard theme",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Theme preview step.",
             80,
             22,
@@ -8421,7 +8525,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/summary",
             "Setup wizard summary",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Review summary before finish.",
             80,
             22,
@@ -8430,7 +8534,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/recovery",
             "Setup wizard recovery",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Failure recovery with retry.",
             72,
             16,
@@ -8439,7 +8543,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/inline",
             "Setup wizard inline",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Inline mode in a tight pane.",
             48,
             14,
@@ -8448,7 +8552,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/resume",
             "Setup wizard resume",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Restored WizardProgress mid-flow.",
             80,
             22,
@@ -8457,7 +8561,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "setup-wizard/cancel-confirm",
             "Setup wizard cancel confirm",
-            "SetupWizard",
+            StoryIdentity::Pattern(PatternId::SetupWizard),
             "Safe two-step cancel strip.",
             72,
             16,
@@ -8467,7 +8571,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-bar/narrow",
             "Narrow ActionBar",
-            "ActionBar",
+            StoryIdentity::PublicUi(PublicUiId::ActionBar),
             "Narrow-terminal geometry for ActionBar (22 cols).",
             22,
             2,
@@ -8476,7 +8580,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button-group/narrow",
             "Narrow ButtonGroup",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Overflow + keep primary at 20 cols.",
             20,
             2,
@@ -8485,7 +8589,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button-group/unicode",
             "Unicode ButtonGroup",
-            "ButtonGroup",
+            StoryIdentity::PublicUi(PublicUiId::ButtonGroup),
             "Unicode action labels.",
             40,
             2,
@@ -8494,7 +8598,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle/narrow",
             "Narrow Toggle",
-            "Toggle",
+            StoryIdentity::PublicUi(PublicUiId::Toggle),
             "Compact toggle at 16 cols.",
             16,
             2,
@@ -8503,7 +8607,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle/unicode",
             "Unicode Toggle",
-            "Toggle",
+            StoryIdentity::PublicUi(PublicUiId::Toggle),
             "Unicode face label.",
             28,
             2,
@@ -8512,7 +8616,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle-group/narrow",
             "Narrow ToggleGroup",
-            "ToggleGroup",
+            StoryIdentity::PublicUi(PublicUiId::ToggleGroup),
             "Overflow recipe at 16 cols.",
             16,
             2,
@@ -8521,7 +8625,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toggle-group/unicode",
             "Unicode ToggleGroup",
-            "ToggleGroup",
+            StoryIdentity::PublicUi(PublicUiId::ToggleGroup),
             "CJK labels in multi group.",
             36,
             2,
@@ -8530,7 +8634,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-bar/unicode",
             "Unicode ActionBar",
-            "ActionBar",
+            StoryIdentity::PublicUi(PublicUiId::ActionBar),
             "Unicode-safe paint path for ActionBar (CJK/emoji-capable layout).",
             48,
             2,
@@ -8539,7 +8643,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "backdrop/narrow",
             "Narrow Backdrop",
-            "Backdrop",
+            StoryIdentity::PublicUi(PublicUiId::Backdrop),
             "Narrow-terminal geometry for Backdrop (17 cols).",
             17,
             4,
@@ -8548,7 +8652,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "backdrop/unicode",
             "Unicode Backdrop",
-            "Backdrop",
+            StoryIdentity::PublicUi(PublicUiId::Backdrop),
             "Unicode-safe paint path for Backdrop (CJK/emoji-capable layout).",
             34,
             4,
@@ -8557,7 +8661,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "badge/narrow",
             "Narrow Badge",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Narrow-terminal geometry for Badge (12 cols).",
             12,
             3,
@@ -8566,7 +8670,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "badge/unicode",
             "Unicode Badge",
-            "Badge",
+            StoryIdentity::PublicUi(PublicUiId::Badge),
             "Unicode-safe paint path for Badge (CJK/emoji-capable layout).",
             28,
             3,
@@ -8575,7 +8679,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "banner/narrow",
             "Narrow Banner",
-            "Banner",
+            StoryIdentity::PublicUi(PublicUiId::Banner),
             "Narrow-terminal geometry for Banner (20 cols).",
             20,
             1,
@@ -8584,7 +8688,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "banner/unicode",
             "Unicode Banner",
-            "Banner",
+            StoryIdentity::PublicUi(PublicUiId::Banner),
             "Unicode-safe paint path for Banner (CJK/emoji-capable layout).",
             40,
             1,
@@ -8593,7 +8697,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "bar-series/narrow",
             "Narrow BarSeries",
-            "BarSeries",
+            StoryIdentity::PublicUi(PublicUiId::BarSeries),
             "Narrow-terminal geometry for BarSeries (18 cols).",
             18,
             3,
@@ -8602,7 +8706,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "bar-series/unicode",
             "Unicode BarSeries",
-            "BarSeries",
+            StoryIdentity::PublicUi(PublicUiId::BarSeries),
             "Unicode-safe paint path for BarSeries (CJK/emoji-capable layout).",
             36,
             3,
@@ -8611,7 +8715,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/narrow",
             "Narrow Button",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Narrow-terminal geometry for Button (16 cols).",
             16,
             3,
@@ -8620,7 +8724,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/unicode",
             "Unicode Button",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Unicode-safe paint path for Button (CJK/emoji-capable layout).",
             32,
             3,
@@ -8629,7 +8733,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon-button/narrow",
             "Narrow IconButton",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Hit slop preserved at 3 cols; glyph unstretched.",
             5,
             2,
@@ -8638,7 +8742,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "icon-button/unicode",
             "Unicode IconButton",
-            "IconButton",
+            StoryIdentity::PublicUi(PublicUiId::IconButton),
             "Unicode glyph with ASCII fallback available.",
             16,
             2,
@@ -8647,7 +8751,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "callout/narrow",
             "Narrow Callout",
-            "Callout",
+            StoryIdentity::PublicUi(PublicUiId::Callout),
             "Narrow-terminal geometry for Callout (20 cols).",
             20,
             4,
@@ -8656,7 +8760,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "callout/unicode",
             "Unicode Callout",
-            "Callout",
+            StoryIdentity::PublicUi(PublicUiId::Callout),
             "Unicode-safe paint path for Callout (CJK/emoji-capable layout).",
             40,
             4,
@@ -8665,7 +8769,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/narrow",
             "Narrow Checkbox",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Narrow-terminal geometry for Checkbox (20 cols).",
             20,
             4,
@@ -8674,7 +8778,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/unicode",
             "Unicode Checkbox",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Unicode-safe paint path for Checkbox (CJK/emoji-capable layout).",
             40,
             4,
@@ -8683,7 +8787,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "radio-group/narrow",
             "Narrow RadioGroup",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "Horizontal collapses to vertical under stack_below.",
             22,
             6,
@@ -8692,7 +8796,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "radio-group/unicode",
             "Unicode RadioGroup",
-            "RadioGroup",
+            StoryIdentity::PublicUi(PublicUiId::RadioGroup),
             "CJK labels and descriptions.",
             40,
             6,
@@ -8701,7 +8805,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slider/narrow",
             "Narrow Slider",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "Numeric fallback at narrow width.",
             8,
             2,
@@ -8710,7 +8814,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "slider/unicode",
             "Unicode Slider",
-            "Slider",
+            StoryIdentity::PublicUi(PublicUiId::Slider),
             "CJK label with track.",
             36,
             3,
@@ -8719,7 +8823,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "range-slider/narrow",
             "Narrow RangeSlider",
-            "RangeSlider",
+            StoryIdentity::PublicUi(PublicUiId::RangeSlider),
             "Range numeric fallback.",
             8,
             2,
@@ -8728,7 +8832,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-control/narrow",
             "Narrow SegmentedControl",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "Overflow at 20 cols.",
             20,
             2,
@@ -8737,7 +8841,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-control/unicode",
             "Unicode SegmentedControl",
-            "SegmentedControl",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedControl),
             "CJK mode labels.",
             36,
             2,
@@ -8746,7 +8850,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "switch/narrow",
             "Narrow Switch",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "Settings row at 22 cols; keep track.",
             22,
             2,
@@ -8755,7 +8859,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "switch/unicode",
             "Unicode Switch",
-            "Switch",
+            StoryIdentity::PublicUi(PublicUiId::Switch),
             "CJK settings label.",
             36,
             3,
@@ -8764,7 +8868,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "choice-dialog/narrow",
             "Narrow ChoiceDialog",
-            "ChoiceDialog",
+            StoryIdentity::PublicUi(PublicUiId::ChoiceDialog),
             "Narrow-terminal geometry for ChoiceDialog (22 cols).",
             22,
             7,
@@ -8773,7 +8877,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "choice-dialog/unicode",
             "Unicode ChoiceDialog",
-            "ChoiceDialog",
+            StoryIdentity::PublicUi(PublicUiId::ChoiceDialog),
             "Unicode-safe paint path for ChoiceDialog (CJK/emoji-capable layout).",
             48,
             7,
@@ -8782,7 +8886,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "code-block/narrow",
             "Narrow CodeBlock",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Narrow-terminal geometry for CodeBlock (20 cols).",
             20,
             5,
@@ -8791,7 +8895,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "code-block/unicode",
             "Unicode CodeBlock",
-            "CodeBlock",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
             "Unicode-safe paint path for CodeBlock (CJK/emoji-capable layout).",
             40,
             5,
@@ -8800,7 +8904,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/narrow",
             "Narrow CommandPalette",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Narrow-terminal geometry for CommandPalette (21 cols).",
             21,
             10,
@@ -8809,7 +8913,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "command-palette/unicode",
             "Unicode CommandPalette",
-            "CommandPalette",
+            StoryIdentity::PublicUi(PublicUiId::CommandPalette),
             "Unicode-safe paint path for CommandPalette (CJK/emoji-capable layout).",
             42,
             10,
@@ -8818,7 +8922,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/narrow",
             "Narrow DataTable",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Narrow-terminal geometry for DataTable (22 cols).",
             22,
             10,
@@ -8827,7 +8931,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/unicode",
             "Unicode DataTable",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Unicode-safe paint path for DataTable (CJK/emoji-capable layout).",
             60,
             10,
@@ -8836,7 +8940,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "design-inspector/narrow",
             "Narrow DesignInspector",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Narrow-terminal geometry for DesignInspector (22 cols).",
             22,
             4,
@@ -8845,7 +8949,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "design-inspector/unicode",
             "Unicode DesignInspector",
-            "DesignInspector",
+            StoryIdentity::PublicUi(PublicUiId::DesignInspector),
             "Unicode-safe paint path for DesignInspector (CJK/emoji-capable layout).",
             48,
             4,
@@ -8854,7 +8958,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "detail-table/narrow",
             "Narrow DetailTable",
-            "DetailTable",
+            StoryIdentity::PublicUi(PublicUiId::DetailTable),
             "Narrow-terminal geometry for DetailTable (22 cols).",
             22,
             5,
@@ -8863,7 +8967,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "dialog/unicode",
             "Unicode Dialog",
-            "Dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
             "Unicode-safe paint path for Dialog (CJK/emoji-capable layout).",
             48,
             7,
@@ -8872,7 +8976,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff/narrow",
             "Narrow DiffView",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Narrow forces unified mode (22 cols).",
             22,
             8,
@@ -8881,7 +8985,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "diff/unicode",
             "Unicode DiffView",
-            "DiffView",
+            StoryIdentity::PublicUi(PublicUiId::DiffView),
             "Unicode-safe paint path for DiffView (CJK/emoji-capable layout).",
             64,
             10,
@@ -8890,7 +8994,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "drawer/narrow",
             "Narrow Drawer",
-            "Drawer",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Compact/fullscreen contraction path (16 cols).",
             16,
             12,
@@ -8899,7 +9003,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "drawer/unicode",
             "Unicode Drawer",
-            "Drawer",
+            StoryIdentity::PublicUi(PublicUiId::Drawer),
             "Unicode-safe paint path for Drawer (CJK/emoji-capable layout).",
             28,
             12,
@@ -8908,7 +9012,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/narrow",
             "Narrow EmptyState",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Narrow-terminal geometry contracts toward inline form.",
             18,
             5,
@@ -8917,7 +9021,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/unicode",
             "Unicode EmptyState",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Unicode-safe paint path for EmptyState (CJK/emoji-capable layout).",
             40,
             8,
@@ -8926,7 +9030,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/logs",
             "EmptyState logs",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Log stream empty recipe.",
             42,
             9,
@@ -8935,34 +9039,34 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "empty-state/projects",
             "EmptyState projects",
-            "EmptyState",
+            StoryIdentity::PublicUi(PublicUiId::EmptyState),
             "Projects first-use recipe.",
             42,
             10,
             empty_state_projects_story,
         ),
         Story::new(
-            "error-view/narrow",
-            "Narrow ErrorView",
-            "ErrorView",
+            "error-state/narrow",
+            "Narrow ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
             "Narrow-terminal geometry contracts toward inline error.",
             18,
             5,
-            error_view_narrow_story,
+            error_state_narrow_story,
         ),
         Story::new(
-            "error-view/unicode",
-            "Unicode ErrorView",
-            "ErrorView",
-            "Unicode-safe paint path for ErrorView (CJK/emoji-capable layout).",
+            "error-state/unicode",
+            "Unicode ErrorState",
+            StoryIdentity::PublicUi(PublicUiId::ErrorState),
+            "Unicode-safe paint path for ErrorState (CJK/emoji-capable layout).",
             40,
             8,
-            error_view_unicode_story,
+            error_state_unicode_story,
         ),
         Story::new(
             "form/unicode",
             "Unicode Form",
-            "Form",
+            StoryIdentity::PublicUi(PublicUiId::Form),
             "Unicode-safe paint path for Form (CJK/emoji-capable layout).",
             68,
             12,
@@ -8971,7 +9075,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "blocks/narrow",
             "Narrow FormWizard",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Narrow-terminal single-step layout (20 cols).",
             20,
             10,
@@ -8980,7 +9084,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "blocks/unicode",
             "Unicode FormWizard",
-            "FormWizard",
+            StoryIdentity::PublicUi(PublicUiId::FormWizard),
             "Unicode-safe paint path for FormWizard (CJK/emoji-capable layout).",
             56,
             12,
@@ -8989,7 +9093,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "heading/narrow",
             "Narrow Heading",
-            "Heading",
+            StoryIdentity::PublicUi(PublicUiId::Heading),
             "Narrow-terminal geometry for Heading (20 cols).",
             20,
             3,
@@ -8998,7 +9102,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "heading/unicode",
             "Unicode Heading",
-            "Heading",
+            StoryIdentity::PublicUi(PublicUiId::Heading),
             "Unicode-safe paint path for Heading (CJK/emoji-capable layout).",
             40,
             3,
@@ -9007,7 +9111,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hint-bar/narrow",
             "Narrow HintBar",
-            "HintBar",
+            StoryIdentity::PublicUi(PublicUiId::HintBar),
             "Narrow-terminal geometry for HintBar (21 cols).",
             21,
             2,
@@ -9016,7 +9120,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "hint-bar/unicode",
             "Unicode HintBar",
-            "HintBar",
+            StoryIdentity::PublicUi(PublicUiId::HintBar),
             "Unicode-safe paint path for HintBar (CJK/emoji-capable layout).",
             42,
             2,
@@ -9025,7 +9129,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "image-surface/narrow",
             "Narrow ImageSurface",
-            "ImageSurface",
+            StoryIdentity::PublicUi(PublicUiId::ImageSurface),
             "Narrow-terminal geometry for ImageSurface (14 cols).",
             14,
             8,
@@ -9034,7 +9138,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "image-surface/unicode",
             "Unicode ImageSurface",
-            "ImageSurface",
+            StoryIdentity::PublicUi(PublicUiId::ImageSurface),
             "Unicode-safe paint path for ImageSurface (CJK/emoji-capable layout).",
             28,
             8,
@@ -9043,7 +9147,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "jump-overlay/narrow",
             "Narrow JumpOverlay",
-            "JumpOverlay",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "Narrow-terminal geometry for JumpOverlay (20 cols).",
             20,
             6,
@@ -9052,7 +9156,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "jump-overlay/unicode",
             "Unicode JumpOverlay",
-            "JumpOverlay",
+            StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
             "Unicode-safe paint path for JumpOverlay (CJK/emoji-capable layout).",
             40,
             6,
@@ -9061,7 +9165,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ansi-text/narrow",
             "Narrow AnsiText",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "Narrow-terminal geometry for AnsiText (16 cols).",
             16,
             4,
@@ -9070,7 +9174,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "ansi-text/unicode",
             "Unicode AnsiText",
-            "AnsiText",
+            StoryIdentity::PublicUi(PublicUiId::AnsiText),
             "Unicode-safe paint path for AnsiText.",
             40,
             3,
@@ -9079,7 +9183,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/narrow",
             "Narrow AvatarGlyph",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "One-cell footprint in tight gutters.",
             8,
             2,
@@ -9088,7 +9192,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "avatar-glyph/unicode",
             "Unicode AvatarGlyph",
-            "AvatarGlyph",
+            StoryIdentity::PublicUi(PublicUiId::AvatarGlyph),
             "Unicode-safe initials seed.",
             12,
             2,
@@ -9097,7 +9201,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/narrow",
             "Narrow HighlightedText",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Match-preserving truncate at 16 cols.",
             16,
             2,
@@ -9106,7 +9210,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "highlighted-text/unicode",
             "Unicode HighlightedText",
-            "HighlightedText",
+            StoryIdentity::PublicUi(PublicUiId::HighlightedText),
             "Grapheme-safe matches on CJK/emoji.",
             32,
             2,
@@ -9115,7 +9219,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "identity/narrow",
             "Narrow Identity",
-            "Identity",
+            StoryIdentity::PublicUi(PublicUiId::Identity),
             "Compact identity in narrow columns.",
             20,
             2,
@@ -9124,7 +9228,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "identity/unicode",
             "Unicode Identity",
-            "Identity",
+            StoryIdentity::PublicUi(PublicUiId::Identity),
             "Unicode display names.",
             40,
             2,
@@ -9133,7 +9237,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-list/narrow",
             "Narrow KeyValueList",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Auto-stacks on narrow terminals (24 cols).",
             24,
             12,
@@ -9142,7 +9246,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-list/unicode",
             "Unicode KeyValueList",
-            "KeyValueList",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueList),
             "Unicode-safe keys and values.",
             40,
             6,
@@ -9151,7 +9255,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "kbd/narrow",
             "Narrow Kbd",
-            "Kbd",
+            StoryIdentity::PublicUi(PublicUiId::Kbd),
             "Narrow-terminal geometry for Kbd (12 cols).",
             12,
             3,
@@ -9160,7 +9264,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "kbd/unicode",
             "Unicode Kbd",
-            "Kbd",
+            StoryIdentity::PublicUi(PublicUiId::Kbd),
             "Unicode-safe paint path for Kbd (CJK/emoji-capable layout).",
             28,
             3,
@@ -9169,7 +9273,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "link/narrow",
             "Narrow Link",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "Narrow-terminal geometry for Link (16 cols).",
             16,
             2,
@@ -9178,7 +9282,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "link/unicode",
             "Unicode Link",
-            "Link",
+            StoryIdentity::PublicUi(PublicUiId::Link),
             "Unicode-safe paint path for Link (CJK/emoji-capable layout).",
             48,
             2,
@@ -9187,7 +9291,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-link/narrow",
             "Narrow ActionLink",
-            "ActionLink",
+            StoryIdentity::PublicUi(PublicUiId::ActionLink),
             "Narrow-terminal geometry for ActionLink (14 cols).",
             14,
             2,
@@ -9196,7 +9300,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-link/unicode",
             "Unicode ActionLink",
-            "ActionLink",
+            StoryIdentity::PublicUi(PublicUiId::ActionLink),
             "Unicode-safe paint path for ActionLink.",
             36,
             2,
@@ -9205,7 +9309,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-view/narrow",
             "Narrow LoadingView",
-            "LoadingView",
+            StoryIdentity::PublicUi(PublicUiId::LoadingView),
             "Narrow-terminal geometry for LoadingView (18 cols).",
             18,
             3,
@@ -9214,7 +9318,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "loading-view/unicode",
             "Unicode LoadingView",
-            "LoadingView",
+            StoryIdentity::PublicUi(PublicUiId::LoadingView),
             "Unicode-safe paint path for LoadingView (CJK/emoji-capable layout).",
             36,
             3,
@@ -9223,7 +9327,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-pane/narrow",
             "Narrow LogPane",
-            "LogPane",
+            StoryIdentity::PublicUi(PublicUiId::LogPane),
             "Narrow-terminal geometry for LogPane (22 cols).",
             22,
             8,
@@ -9232,7 +9336,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "log-pane/unicode",
             "Unicode LogPane",
-            "LogPane",
+            StoryIdentity::PublicUi(PublicUiId::LogPane),
             "Unicode-safe paint path for LogPane (CJK/emoji-capable layout).",
             52,
             8,
@@ -9241,7 +9345,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "markdown-view/narrow",
             "Narrow MarkdownView",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Narrow-terminal geometry for MarkdownView (20 cols).",
             20,
             6,
@@ -9250,34 +9354,16 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "markdown-view/unicode",
             "Unicode MarkdownView",
-            "MarkdownView",
+            StoryIdentity::PublicUi(PublicUiId::MarkdownView),
             "Unicode-safe paint path for MarkdownView (CJK/emoji-capable layout).",
             40,
             6,
             markdown_view_unicode_story,
         ),
         Story::new(
-            "menu/narrow",
-            "Narrow Menu",
-            "Menu",
-            "Narrow-terminal geometry for Menu (18 cols).",
-            18,
-            8,
-            menu_story,
-        ),
-        Story::new(
-            "menu/unicode",
-            "Unicode Menu",
-            "Menu",
-            "Unicode-safe paint path for Menu (CJK/emoji-capable layout).",
-            36,
-            8,
-            menu_unicode_story,
-        ),
-        Story::new(
             "message-dialog/narrow",
             "Narrow MessageDialog",
-            "MessageDialog",
+            StoryIdentity::PublicUi(PublicUiId::MessageDialog),
             "Narrow-terminal geometry for MessageDialog (22 cols).",
             22,
             8,
@@ -9286,7 +9372,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "message-dialog/unicode",
             "Unicode MessageDialog",
-            "MessageDialog",
+            StoryIdentity::PublicUi(PublicUiId::MessageDialog),
             "Unicode-safe paint path for MessageDialog (CJK/emoji-capable layout).",
             52,
             8,
@@ -9295,7 +9381,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "mode-ribbon/narrow",
             "Narrow ModeRibbon",
-            "ModeRibbon",
+            StoryIdentity::PublicUi(PublicUiId::ModeRibbon),
             "Narrow-terminal geometry for ModeRibbon (22 cols).",
             22,
             3,
@@ -9304,7 +9390,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "mode-ribbon/unicode",
             "Unicode ModeRibbon",
-            "ModeRibbon",
+            StoryIdentity::PublicUi(PublicUiId::ModeRibbon),
             "Unicode-safe paint path for ModeRibbon (CJK/emoji-capable layout).",
             48,
             3,
@@ -9313,7 +9399,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/narrow",
             "Narrow Panel",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Title contraction drops trailing then subtitle then leading.",
             18,
             6,
@@ -9322,7 +9408,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "panel/unicode",
             "Unicode Panel",
-            "Panel",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
             "Unicode-safe paint path for Panel (CJK/emoji-capable layout).",
             48,
             7,
@@ -9331,7 +9417,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/narrow",
             "Narrow Paragraph",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "Narrow-terminal geometry for Paragraph (20 cols).",
             20,
             4,
@@ -9340,7 +9426,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "paragraph/unicode",
             "Unicode Paragraph",
-            "Paragraph",
+            StoryIdentity::PublicUi(PublicUiId::Paragraph),
             "Unicode-safe paint path for Paragraph (CJK/emoji-capable layout).",
             40,
             4,
@@ -9349,7 +9435,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "permission-prompt/narrow",
             "Narrow PermissionPrompt",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "Narrow-terminal geometry for PermissionPrompt (22 cols).",
             22,
             10,
@@ -9358,7 +9444,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "permission-prompt/unicode",
             "Unicode PermissionPrompt",
-            "PermissionPrompt",
+            StoryIdentity::PublicUi(PublicUiId::PermissionPrompt),
             "Unicode-safe paint path for PermissionPrompt (CJK/emoji-capable layout).",
             48,
             10,
@@ -9367,7 +9453,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "plan-review/narrow",
             "Narrow PlanReview",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Narrow-terminal geometry for PlanReview (22 cols).",
             22,
             14,
@@ -9376,7 +9462,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "plan-review/unicode",
             "Unicode PlanReview",
-            "PlanReview",
+            StoryIdentity::PublicUi(PublicUiId::PlanReview),
             "Unicode-safe paint path for PlanReview (CJK/emoji-capable layout).",
             48,
             14,
@@ -9385,7 +9471,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "popover/narrow",
             "Narrow Popover",
-            "Popover",
+            StoryIdentity::PublicUi(PublicUiId::Popover),
             "Contract path toward drawer/fullscreen (14 cols).",
             14,
             12,
@@ -9394,7 +9480,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "popover/unicode",
             "Unicode Popover",
-            "Popover",
+            StoryIdentity::PublicUi(PublicUiId::Popover),
             "Unicode-safe paint path for Popover (CJK/emoji-capable layout).",
             32,
             10,
@@ -9403,7 +9489,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-queue/narrow",
             "Narrow PromptQueue",
-            "PromptQueue",
+            StoryIdentity::PublicUi(PublicUiId::PromptQueue),
             "Narrow-terminal geometry for PromptQueue (22 cols).",
             22,
             12,
@@ -9412,7 +9498,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "approval-queue/narrow",
             "Narrow ApprovalQueue",
-            "ApprovalQueue",
+            StoryIdentity::PublicUi(PublicUiId::ApprovalQueue),
             "Narrow-terminal geometry (22 cols).",
             22,
             12,
@@ -9421,7 +9507,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "approval-queue/unicode",
             "Unicode ApprovalQueue",
-            "ApprovalQueue",
+            StoryIdentity::PublicUi(PublicUiId::ApprovalQueue),
             "Unicode-safe paint path.",
             48,
             10,
@@ -9430,7 +9516,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "working-state-card/narrow",
             "Narrow WorkingStateCard",
-            "WorkingStateCard",
+            StoryIdentity::PublicUi(PublicUiId::WorkingStateCard),
             "Narrow-terminal geometry (22 cols).",
             22,
             10,
@@ -9439,7 +9525,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "working-state-card/unicode",
             "Unicode WorkingStateCard",
-            "WorkingStateCard",
+            StoryIdentity::PublicUi(PublicUiId::WorkingStateCard),
             "Unicode-safe paint path.",
             40,
             8,
@@ -9448,7 +9534,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "integration-status/narrow",
             "Narrow IntegrationStatus",
-            "IntegrationStatus",
+            StoryIdentity::PublicUi(PublicUiId::IntegrationStatus),
             "Narrow-terminal geometry (22 cols).",
             22,
             12,
@@ -9457,7 +9543,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "integration-status/unicode",
             "Unicode IntegrationStatus",
-            "IntegrationStatus",
+            StoryIdentity::PublicUi(PublicUiId::IntegrationStatus),
             "Unicode-safe paint path.",
             48,
             10,
@@ -9466,7 +9552,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "agent-status-header/unicode",
             "Unicode AgentStatusHeader",
-            "AgentStatusHeader",
+            StoryIdentity::PublicUi(PublicUiId::AgentStatusHeader),
             "Unicode-safe paint path for AgentStatusHeader.",
             48,
             3,
@@ -9475,7 +9561,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-queue/unicode",
             "Unicode PromptQueue",
-            "PromptQueue",
+            StoryIdentity::PublicUi(PublicUiId::PromptQueue),
             "Unicode-safe paint path for PromptQueue.",
             48,
             10,
@@ -9484,7 +9570,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/narrow",
             "Narrow PromptComposer",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Narrow-terminal geometry for PromptComposer (22 cols).",
             22,
             8,
@@ -9493,7 +9579,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "prompt-composer/unicode",
             "Unicode PromptComposer",
-            "PromptComposer",
+            StoryIdentity::PublicUi(PublicUiId::PromptComposer),
             "Unicode-safe paint path for PromptComposer (CJK/emoji-capable layout).",
             56,
             8,
@@ -9502,7 +9588,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "question-flow/narrow",
             "Narrow QuestionFlow",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Narrow-terminal geometry for QuestionFlow (22 cols).",
             22,
             8,
@@ -9511,7 +9597,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "question-flow/unicode",
             "Unicode QuestionFlow",
-            "QuestionFlow",
+            StoryIdentity::PublicUi(PublicUiId::QuestionFlow),
             "Unicode-safe paint path for QuestionFlow (CJK/emoji-capable layout).",
             48,
             8,
@@ -9520,7 +9606,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-meter/narrow",
             "Narrow SegmentedMeter",
-            "SegmentedMeter",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedMeter),
             "Narrow-terminal geometry for SegmentedMeter (18 cols).",
             18,
             1,
@@ -9529,7 +9615,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "segmented-meter/unicode",
             "Unicode SegmentedMeter",
-            "SegmentedMeter",
+            StoryIdentity::PublicUi(PublicUiId::SegmentedMeter),
             "Unicode-safe paint path for SegmentedMeter (CJK/emoji-capable layout).",
             36,
             1,
@@ -9537,18 +9623,18 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "separator/narrow",
-            "Narrow SeparatorLine",
-            "SeparatorLine",
-            "Narrow-terminal geometry for SeparatorLine (15 cols).",
+            "Narrow Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
+            "Narrow-terminal geometry for Separator (15 cols).",
             15,
             3,
             separator_story,
         ),
         Story::new(
             "separator/unicode",
-            "Unicode SeparatorLine",
-            "SeparatorLine",
-            "Unicode-safe paint path for SeparatorLine (CJK/emoji-capable layout).",
+            "Unicode Separator",
+            StoryIdentity::PublicUi(PublicUiId::Separator),
+            "Unicode-safe paint path for Separator (CJK/emoji-capable layout).",
             30,
             3,
             separator_unicode_story,
@@ -9556,7 +9642,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "session-picker/narrow",
             "Narrow SessionPicker",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Narrow-terminal geometry for SessionPicker (20 cols).",
             20,
             14,
@@ -9565,7 +9651,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "session-picker/unicode",
             "Unicode SessionPicker",
-            "SessionPicker",
+            StoryIdentity::PublicUi(PublicUiId::SessionPicker),
             "Unicode-safe paint path for SessionPicker (CJK/emoji-capable layout).",
             48,
             12,
@@ -9574,7 +9660,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/narrow",
             "Narrow ConnectionManager",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Narrow-terminal geometry for ConnectionManager (20 cols).",
             20,
             14,
@@ -9583,7 +9669,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "connection-manager/unicode",
             "Unicode ConnectionManager",
-            "ConnectionManager",
+            StoryIdentity::PublicUi(PublicUiId::ConnectionManager),
             "Unicode-safe paint path for ConnectionManager (CJK/emoji-capable layout).",
             48,
             12,
@@ -9592,7 +9678,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/narrow",
             "Narrow Skeleton",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Narrow-terminal geometry for Skeleton (16 cols).",
             16,
             4,
@@ -9601,7 +9687,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "skeleton/unicode",
             "Unicode Skeleton",
-            "Skeleton",
+            StoryIdentity::PublicUi(PublicUiId::Skeleton),
             "Unicode-safe paint path for Skeleton (CJK/emoji-capable layout).",
             32,
             4,
@@ -9610,7 +9696,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "sparkline/narrow",
             "Narrow Sparkline",
-            "Sparkline",
+            StoryIdentity::PublicUi(PublicUiId::Sparkline),
             "Narrow-terminal geometry for Sparkline (16 cols).",
             16,
             1,
@@ -9619,7 +9705,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "sparkline/unicode",
             "Unicode Sparkline",
-            "Sparkline",
+            StoryIdentity::PublicUi(PublicUiId::Sparkline),
             "Unicode-safe paint path for Sparkline (CJK/emoji-capable layout).",
             32,
             1,
@@ -9628,7 +9714,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "split-pane/narrow",
             "Narrow SplitPane",
-            "SplitPane",
+            StoryIdentity::PublicUi(PublicUiId::SplitPane),
             "Narrow-terminal geometry for SplitPane (22 cols).",
             22,
             10,
@@ -9637,7 +9723,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "split-pane/unicode",
             "Unicode SplitPane",
-            "SplitPane",
+            StoryIdentity::PublicUi(PublicUiId::SplitPane),
             "Unicode-safe paint path for SplitPane (CJK/emoji-capable layout).",
             68,
             10,
@@ -9646,7 +9732,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/unicode",
             "Unicode StatusBar",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Unicode-safe paint path for StatusBar (CJK/emoji-capable layout).",
             60,
             1,
@@ -9655,7 +9741,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/narrow",
             "Narrow Surface",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Narrow-terminal geometry for Surface (12 cols).",
             12,
             5,
@@ -9664,7 +9750,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "surface/unicode",
             "Unicode Surface",
-            "Surface",
+            StoryIdentity::PublicUi(PublicUiId::Surface),
             "Unicode-safe paint path for Surface (CJK/emoji-capable layout).",
             28,
             5,
@@ -9673,7 +9759,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/unicode",
             "Unicode Tabs",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Unicode-safe paint path for Tabs (CJK/emoji-capable layout).",
             52,
             2,
@@ -9682,7 +9768,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "task-rail/narrow",
             "Narrow TaskRail",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Narrow-terminal geometry for TaskRail (14 cols).",
             14,
             10,
@@ -9691,7 +9777,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "task-rail/unicode",
             "Unicode TaskRail",
-            "TaskRail",
+            StoryIdentity::PublicUi(PublicUiId::TaskRail),
             "Unicode-safe paint path for TaskRail (CJK/emoji-capable layout).",
             28,
             10,
@@ -9700,7 +9786,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-input/narrow",
             "Narrow TextInput",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Narrow-terminal geometry for TextInput (14 cols).",
             14,
             1,
@@ -9709,7 +9795,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "system-picker/narrow",
             "Narrow ThemePicker",
-            "ThemePicker",
+            StoryIdentity::PublicUi(PublicUiId::ThemePicker),
             "Narrow-terminal geometry for ThemePicker (18 cols).",
             18,
             6,
@@ -9718,7 +9804,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "system-picker/unicode",
             "Unicode ThemePicker",
-            "ThemePicker",
+            StoryIdentity::PublicUi(PublicUiId::ThemePicker),
             "Unicode-safe paint path for ThemePicker (CJK/emoji-capable layout).",
             36,
             6,
@@ -9727,7 +9813,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "thinking-block/narrow",
             "Narrow ThinkingBlock",
-            "ThinkingBlock",
+            StoryIdentity::PublicUi(PublicUiId::ThinkingBlock),
             "Narrow-terminal geometry for ThinkingBlock (20 cols).",
             20,
             3,
@@ -9736,7 +9822,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "thinking-block/unicode",
             "Unicode ThinkingBlock",
-            "ThinkingBlock",
+            StoryIdentity::PublicUi(PublicUiId::ThinkingBlock),
             "Unicode-safe paint path for ThinkingBlock (CJK/emoji-capable layout).",
             40,
             3,
@@ -9745,7 +9831,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkpoint-timeline/narrow",
             "Narrow CheckpointTimeline",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Narrow-terminal geometry for CheckpointTimeline (22 cols).",
             22,
             14,
@@ -9754,7 +9840,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkpoint-timeline/unicode",
             "Unicode CheckpointTimeline",
-            "CheckpointTimeline",
+            StoryIdentity::PublicUi(PublicUiId::CheckpointTimeline),
             "Unicode-safe paint path for CheckpointTimeline.",
             48,
             12,
@@ -9763,7 +9849,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "timeline/narrow",
             "Narrow Timeline",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Narrow-terminal geometry for Timeline (20 cols).",
             20,
             4,
@@ -9772,7 +9858,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "timeline/unicode",
             "Unicode Timeline",
-            "Timeline",
+            StoryIdentity::PublicUi(PublicUiId::Timeline),
             "Unicode-safe paint path for Timeline (CJK/emoji-capable layout).",
             40,
             4,
@@ -9781,7 +9867,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "toast/unicode",
             "Unicode Toast",
-            "Toast",
+            StoryIdentity::PublicUi(PublicUiId::Toast),
             "Unicode-safe paint path for Toast (CJK/emoji-capable layout).",
             34,
             4,
@@ -9790,7 +9876,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-meter/narrow",
             "Narrow TokenMeter",
-            "TokenMeter",
+            StoryIdentity::PublicUi(PublicUiId::TokenMeter),
             "Narrow-terminal geometry for TokenMeter (18 cols).",
             18,
             1,
@@ -9799,7 +9885,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-meter/unicode",
             "Unicode TokenMeter",
-            "TokenMeter",
+            StoryIdentity::PublicUi(PublicUiId::TokenMeter),
             "Unicode-safe paint path for TokenMeter (CJK/emoji-capable layout).",
             36,
             1,
@@ -9808,7 +9894,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-card/narrow",
             "Narrow ToolCard",
-            "ToolCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCard),
             "Narrow-terminal geometry for ToolCard (22 cols).",
             22,
             4,
@@ -9817,7 +9903,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tool-card/unicode",
             "Unicode ToolCard",
-            "ToolCard",
+            StoryIdentity::PublicUi(PublicUiId::ToolCard),
             "Unicode-safe paint path for ToolCard (CJK/emoji-capable layout).",
             44,
             4,
@@ -9826,7 +9912,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/narrow",
             "Narrow Tree",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Narrow-terminal geometry for Tree (21 cols).",
             21,
             7,
@@ -9835,7 +9921,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree/unicode",
             "Unicode Tree",
-            "Tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
             "Unicode-safe paint path for Tree (CJK/emoji-capable layout).",
             42,
             7,
@@ -9844,7 +9930,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "viewport/narrow",
             "Narrow Viewport",
-            "Viewport",
+            StoryIdentity::PublicUi(PublicUiId::Viewport),
             "Narrow-terminal geometry for Viewport (22 cols).",
             22,
             7,
@@ -9853,7 +9939,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "viewport/unicode",
             "Unicode Viewport",
-            "Viewport",
+            StoryIdentity::PublicUi(PublicUiId::Viewport),
             "Unicode-safe paint path for Viewport (CJK/emoji-capable layout).",
             44,
             7,
@@ -9862,7 +9948,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/disabled",
             "Disabled button",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Disabled control never activates.",
             32,
             3,
@@ -9871,7 +9957,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "button/loading",
             "Loading button",
-            "Button",
+            StoryIdentity::PublicUi(PublicUiId::Button),
             "Loading control never activates.",
             32,
             3,
@@ -9880,7 +9966,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "checkbox/disabled",
             "Disabled checkbox",
-            "Checkbox",
+            StoryIdentity::PublicUi(PublicUiId::Checkbox),
             "Disabled checkbox ignores toggle.",
             40,
             3,
@@ -9889,26 +9975,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "data-table/empty",
             "Empty data table",
-            "DataTable",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
             "Empty/load projection chrome.",
             60,
             8,
             data_table_empty_story,
         ),
-        Story::new(
+        Story::mounted(
             "tree-table/process",
             "TreeTable process",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Process tree with CPU/MEM columns; hierarchy nav.",
             64,
             12,
-            tree_table_process,
-        )
-        .with_interactor(tree_table_interactor),
+            tree_table_interactor,
+        ),
         Story::new(
             "tree-table/schema",
             "TreeTable schema",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Database schema browser with types and nullability.",
             64,
             12,
@@ -9917,7 +10002,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-table/tasks",
             "TreeTable tasks",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Task hierarchy with status and owner columns.",
             60,
             12,
@@ -9926,7 +10011,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-table/deps",
             "TreeTable dependencies",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Package dependency tree with versions.",
             60,
             12,
@@ -9935,7 +10020,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-table/narrow",
             "TreeTable narrow",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Priority drop under width pressure; compact indent.",
             28,
             10,
@@ -9944,26 +10029,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tree-table/aggregate",
             "TreeTable aggregate",
-            "TreeTable",
+            StoryIdentity::PublicUi(PublicUiId::TreeTable),
             "Group band plus aggregate totals row.",
             56,
             10,
             tree_table_aggregate,
         ),
-        Story::new(
+        Story::mounted(
             "key-value-table/http",
             "KeyValueTable HTTP",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Request headers with secret redaction and types.",
             72,
             14,
-            key_value_table_http,
-        )
-        .with_interactor(key_value_table_interactor),
+            key_value_table_interactor,
+        ),
         Story::new(
             "key-value-table/database",
             "KeyValueTable database",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Column metadata with validation and source.",
             68,
             12,
@@ -9972,7 +10056,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-table/process",
             "KeyValueTable process",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Process facts for ops detail panel.",
             60,
             12,
@@ -9981,7 +10065,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-table/permission",
             "KeyValueTable permission",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Permission claim details with status tones.",
             64,
             12,
@@ -9990,7 +10074,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-table/agent",
             "KeyValueTable agent",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Agent/tool detail with editable fields.",
             64,
             12,
@@ -9999,7 +10083,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-table/compare",
             "KeyValueTable compare",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Compare/diff mode before vs after.",
             72,
             10,
@@ -10008,45 +10092,43 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "key-value-table/narrow",
             "KeyValueTable narrow",
-            "KeyValueTable",
+            StoryIdentity::PublicUi(PublicUiId::KeyValueTable),
             "Stacked contraction under width pressure.",
             28,
             12,
             key_value_table_narrow,
         ),
-        Story::new(
+        Story::mounted(
             "text-input/basic",
             "Text input",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Default focused text input.",
             40,
             2,
-            text_input_basic_story,
-        )
-        .with_interactor(text_input_interactor),
+            text_input_interactor,
+        ),
         Story::new(
             "text-input/secret",
             "TextInput secret",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Paint-only mask (prefer PasswordInput for credentials).",
             36,
             2,
             text_input_secret_story,
         ),
-        Story::new(
+        Story::mounted(
             "password-input/basic",
             "Password input",
-            "PasswordInput",
+            StoryIdentity::PublicUi(PublicUiId::PasswordInput),
             "Masked secret field with redacted diagnostics.",
             36,
             2,
-            password_input_basic_story,
-        )
-        .with_interactor(password_input_interactor),
+            password_input_interactor,
+        ),
         Story::new(
             "password-input/reveal",
             "Password reveal",
-            "PasswordInput",
+            StoryIdentity::PublicUi(PublicUiId::PasswordInput),
             "Explicit reveal policy with toggle glyph.",
             36,
             2,
@@ -10055,7 +10137,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "password-input/invalid",
             "Password invalid",
-            "PasswordInput",
+            StoryIdentity::PublicUi(PublicUiId::PasswordInput),
             "Invalid + strength status without leaking secret.",
             36,
             3,
@@ -10064,26 +10146,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "password-input/pending",
             "Password pending",
-            "PasswordInput",
+            StoryIdentity::PublicUi(PublicUiId::PasswordInput),
             "Pending verification blocks edits.",
             36,
             3,
             password_input_pending_story,
         ),
-        Story::new(
+        Story::mounted(
             "number-input/basic",
             "Number input",
-            "NumberInput",
+            StoryIdentity::PublicUi(PublicUiId::NumberInput),
             "Integer field with steppers and unit.",
             36,
             2,
-            number_input_basic_story,
-        )
-        .with_interactor(number_input_interactor),
+            number_input_interactor,
+        ),
         Story::new(
             "number-input/decimal",
             "Number decimal",
-            "NumberInput",
+            StoryIdentity::PublicUi(PublicUiId::NumberInput),
             "Decimal kind with fraction digits.",
             36,
             2,
@@ -10092,7 +10173,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "number-input/invalid",
             "Number invalid",
-            "NumberInput",
+            StoryIdentity::PublicUi(PublicUiId::NumberInput),
             "Out-of-range draft chrome.",
             36,
             3,
@@ -10101,26 +10182,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "number-input/narrow",
             "Number narrow",
-            "NumberInput",
+            StoryIdentity::PublicUi(PublicUiId::NumberInput),
             "Compact steppers at narrow width.",
             16,
             2,
             number_input_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "search-input/basic",
             "Search input",
-            "SearchInput",
+            StoryIdentity::PublicUi(PublicUiId::SearchInput),
             "Query field with clear and result count.",
             48,
             2,
-            search_input_basic_story,
-        )
-        .with_interactor(search_input_interactor),
+            search_input_interactor,
+        ),
         Story::new(
             "search-input/searching",
             "Search searching",
-            "SearchInput",
+            StoryIdentity::PublicUi(PublicUiId::SearchInput),
             "In-progress search status.",
             48,
             2,
@@ -10129,7 +10209,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-input/filters",
             "Search filters",
-            "SearchInput",
+            StoryIdentity::PublicUi(PublicUiId::SearchInput),
             "Active filter chips before query text.",
             48,
             2,
@@ -10138,26 +10218,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "search-input/empty",
             "Search empty",
-            "SearchInput",
+            StoryIdentity::PublicUi(PublicUiId::SearchInput),
             "No-results status projection.",
             40,
             2,
             search_input_empty_story,
         ),
-        Story::new(
+        Story::mounted(
             "path-input/basic",
             "Path input",
-            "PathInput",
+            StoryIdentity::PublicUi(PublicUiId::PathInput),
             "Path field with directory status and browse.",
             52,
             2,
-            path_input_basic_story,
-        )
-        .with_interactor(path_input_interactor),
+            path_input_interactor,
+        ),
         Story::new(
             "path-input/missing",
             "Path missing",
-            "PathInput",
+            StoryIdentity::PublicUi(PublicUiId::PathInput),
             "Missing path status for new targets.",
             52,
             2,
@@ -10166,7 +10245,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "path-input/destructive",
             "Path destructive",
-            "PathInput",
+            StoryIdentity::PublicUi(PublicUiId::PathInput),
             "Destructive target warning chrome.",
             52,
             3,
@@ -10175,26 +10254,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "path-input/relative",
             "Path relative",
-            "PathInput",
+            StoryIdentity::PublicUi(PublicUiId::PathInput),
             "Relative path with base context.",
             52,
             3,
             path_input_relative_story,
         ),
-        Story::new(
+        Story::mounted(
             "token-field/basic",
             "Token field",
-            "TokenField",
+            StoryIdentity::PublicUi(PublicUiId::TokenField),
             "Recipients-style tokens with draft input.",
             52,
             2,
-            token_field_basic_story,
-        )
-        .with_interactor(token_field_interactor),
+            token_field_interactor,
+        ),
         Story::new(
             "token-field/overflow",
             "Token field overflow",
-            "TokenField",
+            StoryIdentity::PublicUi(PublicUiId::TokenField),
             "Overflow +N when many tokens.",
             40,
             2,
@@ -10203,7 +10281,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-field/error",
             "Token field error",
-            "TokenField",
+            StoryIdentity::PublicUi(PublicUiId::TokenField),
             "Invalid token status chrome.",
             48,
             2,
@@ -10212,26 +10290,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "token-field/multiselect",
             "Token field multi-select",
-            "TokenField",
+            StoryIdentity::PublicUi(PublicUiId::TokenField),
             "Filter chips multi-select mode.",
             48,
             2,
             token_field_multiselect_story,
         ),
-        Story::new(
+        Story::mounted(
             "select/basic",
             "Select",
-            "Select",
+            StoryIdentity::PublicUi(PublicUiId::Select),
             "Closed form select with value.",
             36,
             12,
-            select_basic_story,
-        )
-        .with_interactor(select_interactor),
+            select_interactor,
+        ),
         Story::new(
             "select/open",
             "Select open",
-            "Select",
+            StoryIdentity::PublicUi(PublicUiId::Select),
             "Open list with groups and highlight.",
             40,
             12,
@@ -10240,7 +10317,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "select/search",
             "Select search",
-            "Select",
+            StoryIdentity::PublicUi(PublicUiId::Select),
             "Searchable open list.",
             40,
             12,
@@ -10249,26 +10326,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "select/compact",
             "Select compact",
-            "Select",
+            StoryIdentity::PublicUi(PublicUiId::Select),
             "Toolbar compact recipe.",
             24,
             1,
             select_compact_story,
         ),
-        Story::new(
+        Story::mounted(
             "multi-select/basic",
             "MultiSelect",
-            "MultiSelect",
+            StoryIdentity::PublicUi(PublicUiId::MultiSelect),
             "Closed summary with chips.",
             40,
             12,
-            multi_select_basic_story,
-        )
-        .with_interactor(multi_select_interactor),
+            multi_select_interactor,
+        ),
         Story::new(
             "multi-select/open",
             "MultiSelect open",
-            "MultiSelect",
+            StoryIdentity::PublicUi(PublicUiId::MultiSelect),
             "Open checklist with highlight vs checks.",
             42,
             14,
@@ -10277,7 +10353,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "multi-select/overflow",
             "MultiSelect overflow",
-            "MultiSelect",
+            StoryIdentity::PublicUi(PublicUiId::MultiSelect),
             "Summary +N overflow chips.",
             32,
             2,
@@ -10286,26 +10362,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "multi-select/search",
             "MultiSelect search",
-            "MultiSelect",
+            StoryIdentity::PublicUi(PublicUiId::MultiSelect),
             "Searchable open multi-select.",
             42,
             14,
             multi_select_search_story,
         ),
-        Story::new(
+        Story::mounted(
             "keybinding-recorder/idle",
             "KeybindingRecorder idle",
-            "KeybindingRecorder",
+            StoryIdentity::PublicUi(PublicUiId::KeybindingRecorder),
             "Idle binding with default and restore hints.",
             48,
             8,
-            keybinding_recorder_idle_story,
-        )
-        .with_interactor(keybinding_recorder_interactor),
+            keybinding_recorder_interactor,
+        ),
         Story::new(
             "keybinding-recorder/recording",
             "KeybindingRecorder recording",
-            "KeybindingRecorder",
+            StoryIdentity::PublicUi(PublicUiId::KeybindingRecorder),
             "Recording mode with escape-law caption.",
             48,
             8,
@@ -10314,7 +10389,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "keybinding-recorder/conflict",
             "KeybindingRecorder conflict",
-            "KeybindingRecorder",
+            StoryIdentity::PublicUi(PublicUiId::KeybindingRecorder),
             "Conflict validation against occupied chords.",
             48,
             8,
@@ -10323,26 +10398,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "keybinding-recorder/reserved",
             "KeybindingRecorder reserved",
-            "KeybindingRecorder",
+            StoryIdentity::PublicUi(PublicUiId::KeybindingRecorder),
             "Reserved chord (Ctrl+C) blocked.",
             48,
             8,
             keybinding_recorder_reserved_story,
         ),
-        Story::new(
+        Story::mounted(
             "date-time-picker/date",
             "DateTimePicker date",
-            "DateTimePicker",
+            StoryIdentity::PublicUi(PublicUiId::DateTimePicker),
             "Open calendar with today, selected, and focus marks.",
             48,
             16,
-            date_time_picker_date_story,
-        )
-        .with_interactor(date_time_picker_interactor),
+            date_time_picker_interactor,
+        ),
         Story::new(
             "date-time-picker/time",
             "DateTimePicker time",
-            "DateTimePicker",
+            StoryIdentity::PublicUi(PublicUiId::DateTimePicker),
             "Stepped time list with timezone label.",
             36,
             14,
@@ -10351,7 +10425,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "date-time-picker/range",
             "DateTimePicker range",
-            "DateTimePicker",
+            StoryIdentity::PublicUi(PublicUiId::DateTimePicker),
             "Inclusive date range selection.",
             48,
             16,
@@ -10360,26 +10434,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "date-time-picker/narrow",
             "DateTimePicker narrow",
-            "DateTimePicker",
+            StoryIdentity::PublicUi(PublicUiId::DateTimePicker),
             "Tiny-terminal day-list fallback.",
             28,
             12,
             date_time_picker_narrow_story,
         ),
-        Story::new(
+        Story::mounted(
             "file-picker/unix",
             "FilePicker Unix",
-            "FilePicker",
+            StoryIdentity::PublicUi(PublicUiId::FilePicker),
             "Unix browser with breadcrumbs, list, and preview.",
             72,
             18,
-            file_picker_unix_story,
-        )
-        .with_interactor(file_picker_interactor),
+            file_picker_interactor,
+        ),
         Story::new(
             "file-picker/windows",
             "FilePicker Windows",
-            "FilePicker",
+            StoryIdentity::PublicUi(PublicUiId::FilePicker),
             "Windows path style listing.",
             72,
             16,
@@ -10388,7 +10461,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-picker/ssh",
             "FilePicker SSH",
-            "FilePicker",
+            StoryIdentity::PublicUi(PublicUiId::FilePicker),
             "SSH-like remote path provider projection.",
             72,
             16,
@@ -10397,26 +10470,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "file-picker/no-preview",
             "FilePicker no preview",
-            "FilePicker",
+            StoryIdentity::PublicUi(PublicUiId::FilePicker),
             "List-only layout without preview pane.",
             56,
             14,
             file_picker_no_preview_story,
         ),
-        Story::new(
+        Story::mounted(
             "combobox/basic",
             "Combobox",
-            "Combobox",
+            StoryIdentity::PublicUi(PublicUiId::Combobox),
             "Closed combobox field with value.",
             36,
             2,
-            combobox_basic_story,
-        )
-        .with_interactor(combobox_interactor),
+            combobox_interactor,
+        ),
         Story::new(
             "combobox/open",
             "Combobox open",
-            "Combobox",
+            StoryIdentity::PublicUi(PublicUiId::Combobox),
             "Open suggestions via CompletionMenu.",
             40,
             10,
@@ -10425,25 +10497,25 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "combobox/loading",
             "Combobox loading",
-            "Combobox",
+            StoryIdentity::PublicUi(PublicUiId::Combobox),
             "Async suggestion loading status.",
             36,
             2,
             combobox_loading_story,
         ),
         Story::new(
-            "autocomplete/basic",
-            "Autocomplete",
-            "Autocomplete",
+            "combobox/creatable",
+            "Combobox creatable",
+            StoryIdentity::PublicUi(PublicUiId::Combobox),
             "Creatable free-text autocomplete.",
             40,
             10,
-            autocomplete_basic_story,
+            combobox_creatable_story,
         ),
         Story::new(
             "text-input/invalid",
             "TextInput invalid",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Validation error chrome.",
             40,
             3,
@@ -10452,7 +10524,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-input/prefix",
             "TextInput prefix/suffix",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Prefix and suffix adornments.",
             40,
             2,
@@ -10461,7 +10533,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-input/focused",
             "TextInput focused",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Blurred field above focused field: cursor and focus chrome delta.",
             40,
             5,
@@ -10470,7 +10542,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "text-input/disabled",
             "TextInput disabled",
-            "TextInput",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
             "Disabled input; edits blocked and cursor suppressed.",
             40,
             2,
@@ -10479,7 +10551,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/focused",
             "Tabs focused",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Blurred strip above focused strip with roving focus cue.",
             52,
             5,
@@ -10488,7 +10560,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/disabled",
             "Tabs disabled",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "A disabled tab muted among enabled ones.",
             48,
             2,
@@ -10497,7 +10569,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "tabs/hover",
             "Tabs hover",
-            "Tabs",
+            StoryIdentity::PublicUi(PublicUiId::Tabs),
             "Pointer hover tint on an inactive tab.",
             52,
             2,
@@ -10506,7 +10578,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "status-bar/hover",
             "Status bar hover",
-            "StatusBar",
+            StoryIdentity::PublicUi(PublicUiId::StatusBar),
             "Hovered slot painted with its hover style.",
             64,
             1,
@@ -10515,7 +10587,7 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-bar/focused",
             "Action bar focused",
-            "ActionBar",
+            StoryIdentity::PublicUi(PublicUiId::ActionBar),
             "Bar without cursor above bar with action cursor.",
             48,
             3,
@@ -10524,19 +10596,121 @@ pub fn stories() -> Vec<Story> {
         Story::new(
             "action-bar/disabled",
             "Action bar disabled",
-            "ActionBar",
+            StoryIdentity::PublicUi(PublicUiId::ActionBar),
             "Disabled action muted beside an enabled one.",
             48,
             2,
             action_bar_disabled_story,
         ),
+        Story::new(
+            "work-surface/basic",
+            "WorkSurface regions",
+            StoryIdentity::PublicUi(PublicUiId::WorkSurface),
+            "Public weighted region layout painted with caller-owned panels.",
+            64,
+            12,
+            work_surface_story,
+        ),
+        Story::new(
+            "workspace/basic",
+            "Workspace split tree",
+            StoryIdentity::PublicUi(PublicUiId::Workspace),
+            "Public responsive workspace geometry with caller-owned panes.",
+            64,
+            12,
+            workspace_story,
+        ),
+        Story::new(
+            "dialog-scroll/basic",
+            "DialogScroll offsets",
+            StoryIdentity::PublicUi(PublicUiId::DialogScroll),
+            "Canonical two-axis navigation projected into a bounded viewport.",
+            44,
+            8,
+            dialog_scroll_story,
+        ),
+        Story::new(
+            "interaction-scene/basic",
+            "InteractionScene frame",
+            StoryIdentity::PublicUi(PublicUiId::InteractionScene),
+            "Registered layer, controls, and reconciled focus from one frame.",
+            48,
+            8,
+            interaction_scene_story,
+        ),
+        Story::new(
+            "chrome-row/basic",
+            "ChromeRow vocabulary",
+            StoryIdentity::PublicUi(PublicUiId::ChromeRow),
+            "Query, mode, and notice rows through the public paint API.",
+            48,
+            5,
+            chrome_row_story,
+        ),
+        Story::new(
+            "composed-row-parts/basic",
+            "ComposedRowParts contraction",
+            StoryIdentity::PublicUi(PublicUiId::ComposedRowParts),
+            "Resolved public row parts painted after width contraction.",
+            48,
+            4,
+            composed_row_parts_story,
+        ),
+        Story::new(
+            "confirm-prompt/basic",
+            "ConfirmPrompt safe focus",
+            StoryIdentity::PublicUi(PublicUiId::ConfirmPrompt),
+            "Destructive confirmation with safe cancellation focus.",
+            52,
+            5,
+            confirm_prompt_story,
+        ),
+        Story::new(
+            "inline-mention/basic",
+            "InlineMention file",
+            StoryIdentity::PublicUi(PublicUiId::InlineMention),
+            "Removable public file mention with focused token chrome.",
+            42,
+            3,
+            inline_mention_story,
+        ),
+        Story::new(
+            "offline-chrome/basic",
+            "OfflineChrome projection",
+            StoryIdentity::PublicUi(PublicUiId::OfflineChrome),
+            "Preferred reconnecting presentation selected by public state.",
+            56,
+            9,
+            offline_chrome_story,
+        ),
+        Story::new(
+            "semantic-zoom-badge/basic",
+            "SemanticZoomBadge level",
+            StoryIdentity::PublicUi(PublicUiId::SemanticZoomBadge),
+            "Compact public semantic-zoom level badge.",
+            24,
+            3,
+            semantic_zoom_badge_story,
+        ),
+        Story::new(
+            "status-strip/basic",
+            "StatusStrip priorities",
+            StoryIdentity::PublicUi(PublicUiId::StatusStrip),
+            "Priority-aware facts constrained by the public color budget.",
+            56,
+            1,
+            status_strip_story,
+        ),
+        Story::new(
+            "toast-stack/basic",
+            "ToastStack placement",
+            StoryIdentity::PublicUi(PublicUiId::ToastStack),
+            "Multiple public toast entries placed by queue priority.",
+            56,
+            12,
+            toast_stack_story,
+        ),
     ];
-    for story in &mut catalog {
-        if PATTERN_DEMO_IDS.contains(&story.id) && !story.interactive {
-            story.interactor = pattern_app_interactor;
-            story.interactive = true;
-        }
-    }
     catalog.extend(in_app_stories(&catalog));
     catalog
 }
@@ -10553,7 +10727,204 @@ pub fn gallery_stories() -> Vec<Story> {
 /// Whether a story is the canonical mounted demo for an application pattern.
 #[must_use]
 pub fn is_pattern_demo(id: &str) -> bool {
-    PATTERN_DEMO_IDS.contains(&id)
+    pattern_inventory()
+        .iter()
+        .any(|pattern| pattern.representative_story == id)
+}
+
+fn work_surface_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{RegionId, RegionSize, RegionSpec, WorkSurface};
+
+    let regions = [
+        RegionSpec {
+            id: RegionId::from_static("queue"),
+            size: RegionSize::Fixed(3),
+        },
+        RegionSpec {
+            id: RegionId::from_static("work"),
+            size: RegionSize::Weight(2),
+        },
+        RegionSpec {
+            id: RegionId::from_static("detail"),
+            size: RegionSize::Weight(1),
+        },
+    ];
+    for region in WorkSurface::new().regions(regions).layout(area) {
+        if !region.area.is_empty() {
+            frame.render_widget(Panel::new(system).title(&region.id.0), region.area);
+        }
+    }
+}
+
+fn workspace_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::layout::{
+        PaneConstraint, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
+    };
+
+    let leaf = |id| WorkspaceNode::Leaf {
+        id: PaneId::from_static(id),
+        constraint: PaneConstraint::Weight(1),
+        collapse_priority: 0,
+    };
+    let root = WorkspaceNode::Split {
+        axis: WorkspaceAxis::Horizontal,
+        ratio_percent: 35,
+        first: Box::new(leaf("navigator")),
+        second: Box::new(WorkspaceNode::Split {
+            axis: WorkspaceAxis::Vertical,
+            ratio_percent: 65,
+            first: Box::new(leaf("editor")),
+            second: Box::new(leaf("terminal")),
+        }),
+    };
+    for pane in Workspace::new(root).layout(area, &WorkspaceState::new()) {
+        if !pane.collapsed && !pane.area.is_empty() {
+            frame.render_widget(Panel::new(system).title(&pane.id.0), pane.area);
+        }
+    }
+}
+
+fn dialog_scroll_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::input::{KeyCode, KeyEvent, KeyModifiers};
+
+    let mut scroll = DialogScroll::new();
+    for key in [KeyCode::Down, KeyCode::Down, KeyCode::Right] {
+        let _ = scroll.handle_key(
+            KeyEvent::new(key, KeyModifiers::NONE),
+            12,
+            usize::from(area.height),
+            72,
+            usize::from(area.width),
+        );
+    }
+    let text = format!(
+        "Dialog body line 0\nDialog body line 1\nDialog body line 2\nDialog body line 3\n\noffset x={} y={}",
+        scroll.scroll_x, scroll.scroll_y
+    );
+    frame.render_widget(
+        Paragraph::new(text)
+            .style(system.style(Role::Text))
+            .scroll((scroll.scroll_y, scroll.scroll_x)),
+        area,
+    );
+}
+
+fn interaction_scene_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::interaction::{
+        InteractionElement, InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind,
+    };
+
+    let mut scene = InteractionScene::<&str, &str, &str>::new();
+    scene.ensure_root(InteractionLayer {
+        id: "root",
+        kind: LayerKind::Root,
+        owns_input: true,
+        esc: LayerDismissPolicy::Ignore,
+        outside: LayerDismissPolicy::Ignore,
+        focus_return: None,
+    });
+    let first = Rect::new(area.x, area.y.saturating_add(2), area.width.min(18), 1);
+    let second = Rect::new(area.x, area.y.saturating_add(4), area.width.min(18), 1);
+    let _ = scene.register(InteractionElement::control("open", "root", first));
+    let _ = scene.register(InteractionElement::control("cancel", "root", second));
+    scene.reconcile();
+    let summary = format!(
+        "layers={} controls={} focused={}",
+        scene.layers().len(),
+        scene.elements().len(),
+        scene.focused().copied().unwrap_or("none")
+    );
+    frame.render_widget(
+        Paragraph::new(summary).style(system.style(Role::Text)),
+        area,
+    );
+    frame.buffer_mut().set_stringn(
+        first.x,
+        first.y,
+        "[ Open ]",
+        usize::from(first.width),
+        system.style(Role::BorderFocused),
+    );
+    frame.buffer_mut().set_stringn(
+        second.x,
+        second.y,
+        "[ Cancel ]",
+        usize::from(second.width),
+        system.style(Role::TextMuted),
+    );
+}
+
+fn chrome_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ChromeRow;
+
+    let rows = [
+        ChromeRow::query("owner:me status:open", system),
+        ChromeRow::mode("mode", "review", system),
+        ChromeRow::notice("!", "connection degraded", system),
+    ];
+    for (index, row) in rows.iter().enumerate() {
+        row.paint(
+            Rect::new(area.x, area.y.saturating_add(index as u16), area.width, 1),
+            frame.buffer_mut(),
+        );
+    }
+}
+
+fn composed_row_parts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ComposedRowParts;
+
+    let parts = ComposedRowParts {
+        leading: Some(Line::from("●")),
+        primary: Line::from("compile workspace"),
+        secondary: Some(Line::from("running")),
+        badge: Some(Line::from("2m")),
+        shortcut: Some("Enter"),
+    };
+    parts.paint(frame.buffer_mut(), area, system.style(Role::Text));
+}
+
+fn confirm_prompt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ConfirmFocus, ConfirmPrompt};
+
+    let _ = ConfirmPrompt::new("Delete local branch?", "Delete", system)
+        .detail("This cannot be undone")
+        .focus(ConfirmFocus::Cancel)
+        .paint(area, frame.buffer_mut());
+}
+
+fn inline_mention_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{InlineMention, InlineMentionState, MentionRef};
+
+    let mention = MentionRef::file("readme", "README.md", "docs/README.md");
+    let mut state = InlineMentionState::new();
+    state.set_focused(true);
+    let _ = InlineMention::new(&mention, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn offline_chrome_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::OfflineChrome;
+
+    let mut state = example_reconnecting_agent();
+    state.set_presentation(ConnectivityPresentation::Full);
+    OfflineChrome::paint(area, frame.buffer_mut(), &mut state, system);
+}
+
+fn status_strip_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{SemanticStatus, StatusSegment, StatusStrip};
+
+    let segments = [
+        StatusSegment::new("running")
+            .semantic(SemanticStatus::Running)
+            .priority(100),
+        StatusSegment::new("offline")
+            .semantic(SemanticStatus::Offline)
+            .priority(90),
+        StatusSegment::new("opus-5").priority(60),
+        StatusSegment::new("$0.42").priority(10),
+    ];
+    StatusStrip::new(&segments, system)
+        .overflow_hint("+more")
+        .paint(area, frame.buffer_mut());
 }
 
 fn ui_context_frame_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -10784,7 +11155,7 @@ fn center_both_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .paint(child, frame.buffer_mut(), None);
     let inner = Panel::new(system).title("centered").inner(child);
     Widget::render(
-        &EmptyState::new("No selection", system).detail("Pick a story"),
+        &EmptyState::new("No selection", system).explanation("Pick a story"),
         inner,
         frame.buffer_mut(),
     );
@@ -10891,23 +11262,6 @@ fn center_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .body_title("Timeout")
         .body_detail("upstream 30s")
         .paint(child, frame.buffer_mut(), None);
-}
-
-fn section_quiet_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::Section;
-    let body = Section::new("Appearance", system)
-        .description("Theme and density")
-        .quiet()
-        .paint(area, frame.buffer_mut(), None);
-    if body.width > 2 && body.height > 0 {
-        frame.buffer_mut().set_stringn(
-            body.x,
-            body.y,
-            "Theme: phosphor",
-            usize::from(body.width),
-            system.style(Role::Text),
-        );
-    }
 }
 
 fn section_emphasized_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11604,7 +11958,7 @@ fn card_tool_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             body.y,
             "running…",
             usize::from(body.width),
-            system.style(status.role()),
+            system.style(status.semantic().role()),
         );
     }
 }
@@ -11703,31 +12057,15 @@ fn panel_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     }
 }
 
-fn panel(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let panel_tokens = system.clone().density(Density::default());
-    frame.render_widget(
-        Panel::new(&panel_tokens)
-            .title("Summary")
-            .emphasis(PanelChrome::Focused),
-        area,
-    );
-    if area.width > 2 && area.height > 2 {
-        frame.render_widget(
-            Paragraph::new("State   Ready\nMode    Interactive"),
-            Rect::new(area.x + 1, area.y + 1, area.width - 2, area.height - 2),
-        );
-    }
-}
-
 fn progress(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let determinate = Rect::new(area.x, area.y, area.width, area.height.min(1));
     frame.render_widget(
-        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Processing"),
+        ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Processing"),
         determinate,
     );
     if area.height > 1 {
         frame.render_widget(
-            Progress::new(ProgressKind::Indeterminate { tick: 3 }, system).label("Waiting"),
+            ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, system).label("Waiting"),
             Rect::new(area.x, area.y.saturating_add(1), area.width, 1),
         );
     }
@@ -11773,14 +12111,6 @@ fn progress_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .paint(area, frame.buffer_mut());
 }
 
-fn progress_steps_pipeline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let steps = example_build_pipeline();
-    let mut state = ProgressStepsState::new();
-    ProgressSteps::new(&steps, system)
-        .title("Build pipeline")
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn progress_steps_agent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let steps = example_agent_plan_steps();
     let mut state = ProgressStepsState::new();
@@ -11810,11 +12140,11 @@ fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let [bar, spinner] =
         Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
     frame.render_widget(
-        Progress::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Build"),
+        ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, system).label("Build"),
         bar,
     );
     frame.render_widget(
-        Progress::new(ProgressKind::Indeterminate { tick: 3 }, system)
+        ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, system)
             .frames(&ASCII_FRAMES)
             .label("Waiting"),
         spinner,
@@ -11850,33 +12180,6 @@ fn log_pane_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let pane = LogPane::new(system).title("Frozen build log");
     state.scroll_to_oldest();
     frame.render_stateful_widget(&pane, area, &mut state);
-}
-
-fn accordion_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use ratatui::widgets::Widget as _;
-    use termrock::widgets::{Accordion, AccordionItem, AccordionState};
-    let items = [
-        AccordionItem::new("gen", "General").content_height(2),
-        AccordionItem::new("net", "Network").content_height(2),
-        AccordionItem::new("adv", "Advanced").content_height(2),
-    ];
-    let mut state = AccordionState::new().initially_open(["gen", "adv"]);
-    state.set_surface_focused(true);
-    state.set_cursor(Some("gen"));
-    let parts = Accordion::section(&items, system).paint(area, frame.buffer_mut(), &mut state);
-    for (id, body) in [
-        ("gen", "Theme · density"),
-        ("net", "Proxy · DNS"),
-        ("adv", "Experimental flags"),
-    ] {
-        if let Some(r) = parts.content_of(&id)
-            && r.height > 0
-        {
-            Paragraph::new(body)
-                .style(system.style(Role::TextMuted))
-                .render(r, frame.buffer_mut());
-        }
-    }
 }
 
 fn accordion_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -11996,19 +12299,6 @@ fn accordion_scroll_body_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     }
 }
 
-fn collapsible_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use ratatui::widgets::Widget as _;
-    use termrock::widgets::{Collapsible, CollapsibleState};
-    let mut state = CollapsibleState::new().initially_open(true);
-    state.set_focused(true);
-    let body = Collapsible::new("Tool details", system).paint(area, frame.buffer_mut(), &mut state);
-    if body.height > 0 {
-        Paragraph::new("args: --json\nstatus: ok")
-            .style(system.style(Role::TextMuted))
-            .render(body, frame.buffer_mut());
-    }
-}
-
 fn collapsible_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use ratatui::widgets::Widget as _;
     use termrock::widgets::{Collapsible, CollapsibleState};
@@ -12094,25 +12384,6 @@ fn collapsible_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     }
 }
 
-fn toolbar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
-    let items = [
-        ToolbarItem::action("save", "Save").hint("C-s").priority(90),
-        ToolbarItem::action("open", "Open").priority(50),
-        ToolbarItem::separator("s1"),
-        ToolbarItem::toggle("wrap", "Wrap", true).priority(40),
-        ToolbarItem::action("find", "Find").priority(30),
-    ];
-    let mut state = ToolbarState::horizontal();
-    state.set_surface_focused(true);
-    state.set_cursor(Some("save"));
-    frame.render_stateful_widget(
-        &Toolbar::new(&items, system).overflow_id("more"),
-        area,
-        &mut state,
-    );
-}
-
 fn toolbar_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Toolbar, ToolbarItem, ToolbarState};
     let items = [
@@ -12162,21 +12433,6 @@ fn toolbar_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         area,
         &mut state,
     );
-}
-
-fn button_group_dialog_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        ButtonGroupItem::new("cancel", "Cancel"),
-        ButtonGroupItem::destructive("delete", "Delete"),
-        ButtonGroupItem::primary("save", "Save").leading("✓"),
-    ];
-    let mut state = ButtonGroupState::new();
-    state.set_surface_focused(true);
-    state.cursor = Some("save");
-    let _ =
-        ButtonGroup::new(&items, system)
-            .separated()
-            .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn button_group_connected_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -12259,22 +12515,6 @@ fn toggle_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let _ = Toggle::new("Emphasis ✨", system).paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn toggle_group_format_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        ToggleGroupItem::new("b", "B").pressed(true).priority(90),
-        ToggleGroupItem::new("i", "I").pressed(true).priority(80),
-        ToggleGroupItem::new("u", "U").priority(70),
-    ];
-    let mut state = ToggleGroupState::new();
-    state.set_surface_focused(true);
-    state.cursor = Some("i");
-    let _ = ToggleGroup::new(&items, system).multiple().compact().paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
-}
-
 fn toggle_group_align_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
         ToggleGroupItem::new("l", "L").pressed(true),
@@ -12328,13 +12568,13 @@ fn action_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             id: "accept",
             label: "Accept",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let mut state = ActionBarState {
@@ -12356,10 +12596,9 @@ pub fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             label: Line::from("Workspace"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("4 items")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("4 items")),
             depth: 0,
             branch: true,
             expanded: true,
@@ -12373,10 +12612,9 @@ pub fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             label: Line::from("Documents"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("2 items")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("2 items")),
             depth: 1,
             branch: true,
             expanded: false,
@@ -12393,7 +12631,6 @@ pub fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             depth: 1,
             branch: true,
             expanded: false,
@@ -12407,10 +12644,9 @@ pub fn tree_nodes() -> Vec<TreeNode<'static, &'static str>> {
             label: Line::from("Wide 🧪 notes"),
             leading: None,
             secondary: None,
-            badge: None,
+            badge: Some(Line::from("12 KiB")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("12 KiB")),
             depth: 1,
             branch: false,
             expanded: false,
@@ -12518,25 +12754,6 @@ pub(crate) fn render_split_pane(
 fn split_pane(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SplitPaneState::new(SplitRatio::from_percent(38));
     render_split_pane(frame, area, &mut state, system);
-}
-
-fn resizable_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{
-        Panel, ResizablePanelGroup, ResizablePanelGroupState, three_pane_panels,
-    };
-    let panels = three_pane_panels();
-    let group = ResizablePanelGroup::new(&panels, system).workbench();
-    let mut state = ResizablePanelGroupState::new();
-    let layout = group.layout(area, &mut state);
-    group.paint_handles(area, frame.buffer_mut(), &mut state);
-    for p in &layout.panels {
-        if p.drawer || p.collapsed || p.area.width < 3 || p.area.height < 2 {
-            continue;
-        }
-        let _ = Panel::new(system)
-            .title(p.id.0.as_str())
-            .paint(p.area, frame.buffer_mut(), None);
-    }
 }
 
 fn resizable_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -12814,17 +13031,6 @@ fn tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_stateful_widget(&Tree::new(&nodes, &tokens), area, &mut state);
 }
 
-fn sidebar_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = example_settings_nav();
-    let mut state = SidebarState::new(Some("profile"));
-    state.set_focused(true);
-    Sidebar::new(&items, system)
-        .ascii(true)
-        .show_panel(true)
-        .title("Settings")
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn sidebar_database_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = example_database_nav();
     let mut state = SidebarState::new(Some("users"));
@@ -12852,35 +13058,6 @@ fn sidebar_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let mut state = SidebarState::new(Some("chat")).with_presentation(SidebarPresentation::Rail);
     state.set_focused(true);
     Sidebar::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn navigation_list_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        NavItem::new("a", "Inbox").badge("3"),
-        NavItem::new("b", "Starred"),
-        NavItem::new("c", "Archive"),
-    ];
-    let mut state = NavigationListState::new(Some("a"));
-    state.set_focused(true);
-    // focus moved to b, route still a
-    let _ = state.handle_key(
-        termrock::input::KeyEvent::new(
-            termrock::input::KeyCode::Down,
-            termrock::input::KeyModifiers::NONE,
-        ),
-        &items,
-    );
-    NavigationList::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn pagination_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = PaginationState::new(3, 25, PageTotal::Known(240));
-    state.set_focused(true);
-    Pagination::new(system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -12928,15 +13105,6 @@ fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     Pagination::new(system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn stepper_horizontal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = example_onboarding_steps();
-    let mut state = StepperState::with_len(items.len()).policy(StepperNavPolicy::Linear);
-    state.set_focused(true);
-    state.set_status(0, StepStatus::Complete);
-    state.set_current(1, items.len(), true);
-    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn stepper_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13005,15 +13173,6 @@ fn stepper_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn history_picker_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let entries = example_history_entries();
-    let visible = filter_history_entries(&entries, "");
-    let mut state = HistoryPickerState::new();
-    let _ = state.open(None);
-    state.reconcile(&visible);
-    HistoryPicker::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn history_picker_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = example_history_entries();
     let visible = filter_history_entries(&entries, "git");
@@ -13063,12 +13222,6 @@ fn history_picker_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn keyboard_help_footer(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let entries = example_help_entries(system);
-    let mut state = KeyboardHelpState::new();
-    KeyboardHelp::new(&entries, system).paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn keyboard_help_modal(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = example_help_entries(system);
     let mut state = KeyboardHelpState::modal();
@@ -13116,7 +13269,11 @@ fn tooltip_visible_state() -> TooltipState {
 
 fn tooltip_plain_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let state = tooltip_visible_state();
-    Tooltip::new("Truncated path help", system).paint(area, frame.buffer_mut(), &state);
+    Tooltip::content(TooltipContent::plain("Truncated path help"), system).paint(
+        area,
+        frame.buffer_mut(),
+        &state,
+    );
 }
 
 fn tooltip_shortcut_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13156,14 +13313,6 @@ fn tooltip_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     .ascii(true)
     .colorless(true)
     .paint(area, frame.buffer_mut(), &state);
-}
-
-fn menu_bar_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let menus = example_app_menus();
-    let mut state = MenuBarState::new();
-    state.set_focused(true);
-    let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
-    MenuBar::new(&menus, system).paint(bar, frame.buffer_mut(), &mut state);
 }
 
 fn menu_bar_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13257,22 +13406,6 @@ fn menu_bar_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .paint_all(bar, area, frame.buffer_mut(), &mut state);
 }
 
-fn breadcrumbs_path_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        BreadcrumbItem::new("home", "home"),
-        BreadcrumbItem::new("proj", "projects"),
-        BreadcrumbItem::new("tr", "termrock"),
-        BreadcrumbItem::new("src", "src").current(true),
-    ];
-    let mut state = BreadcrumbsState::new();
-    state.set_focused(true);
-    state.set_focus_index(2);
-    let _ = Breadcrumbs::new(&items, system)
-        .ascii(true)
-        .separator(BreadcrumbSeparator::Slash)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn breadcrumbs_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let items = [
         BreadcrumbItem::new("r", "root"),
@@ -13335,17 +13468,6 @@ fn breadcrumbs_schema_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn tree_navigation_project_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let nodes = example_project_tree();
-    let mut state = TreeNavigationState::new(Some("main"));
-    state.set_focused(true);
-    state.reconcile_route(&nodes);
-    state.focus_route(&nodes);
-    TreeNavigation::new(&nodes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn tree_navigation_schema_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let nodes = example_schema_tree();
     let mut state = TreeNavigationState::new(Some("users"));
@@ -13395,9 +13517,8 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             id: "overview",
             label: "Overview",
             glyph: Some(Span::styled("●", system.style(Role::Success))),
-            badge: None,
+            badge: Some("sample"),
             status: TabStatus::Success,
-            active: true,
             enabled: true,
             closable: false,
         },
@@ -13407,7 +13528,6 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             glyph: None,
             badge: Some("2"),
             status: TabStatus::None,
-            active: false,
             enabled: true,
             closable: false,
         },
@@ -13417,7 +13537,6 @@ fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             glyph: None,
             badge: None,
             status: TabStatus::Running,
-            active: false,
             enabled: true,
             closable: false,
         },
@@ -13728,10 +13847,9 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("sample")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("sample")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13743,10 +13861,9 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("✅")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("✅")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13758,10 +13875,9 @@ fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("e\u{301}")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("e\u{301}")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13780,10 +13896,9 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("3 entries")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("3 entries")),
             custom: None,
             role: RowRole::Separator,
             enabled: true,
@@ -13795,10 +13910,9 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("12 ms")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("12 ms")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13810,10 +13924,9 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("28 ms")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("28 ms")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13828,20 +13941,12 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: false,
             loading: false,
         },
     ]
-}
-
-fn picker_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
-    let rows = picker_rows("");
-    let mut state = PickerState::new(Some("alpha"));
-    frame.render_stateful_widget(&Picker::new(&rows, &tokens), area, &mut state);
 }
 
 fn picker_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13859,10 +13964,9 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("Actions")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("Actions")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13874,10 +13978,9 @@ fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             leading: None,
             secondary: None,
             status: None,
-            badge: None,
+            badge: Some(Line::from("View")),
             shortcut: None,
             actions: None,
-            trailing: Some(Line::from("View")),
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -13911,7 +14014,7 @@ pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
     .filter(|(_, label, _)| label.to_ascii_lowercase().contains(&query))
     .map(|(id, label, kind)| {
         let mut row = ListRow::item(id, Line::from(label));
-        row.trailing = Some(Line::from(kind));
+        row.badge = Some(Line::from(kind));
         row
     })
     .collect()
@@ -14322,17 +14425,6 @@ pub(crate) fn event_stream_sample() -> Vec<StreamEvent<'static, &'static str>> {
     ]
 }
 
-fn event_stream_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let events = event_stream_sample();
-    let mut state = EventStreamState::new();
-    state.set_following(false);
-    state.cursor = 2;
-    state.on_append(events.len() as u16, area.height.saturating_sub(1));
-    EventStream::with_events(&events, system)
-        .focused(true)
-        .render(area, frame.buffer_mut(), &mut state);
-}
-
 fn event_stream_burst(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let events = [
         StreamEvent::with_id("b1", "Warning", "12:02:00", "Probe failed")
@@ -14677,7 +14769,7 @@ pub(crate) fn terminal_output_sample_lines() -> [TerminalLine<'static>; 6] {
     ]
 }
 
-fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, _system: &DesignSystem) {
+fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     struct StoryTerminalCells<'a> {
         cells: &'a [TerminalCell<'a>],
         columns: u16,
@@ -14718,7 +14810,13 @@ fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, _system: &DesignS
         cells: &cells,
         columns: 8,
     };
-    frame.render_widget(TerminalCellGrid::new(&source), area);
+    let panel = Panel::new(system)
+        .title("Terminal cells · exact source styles")
+        .variant(PanelVariant::Bordered)
+        .emphasis(PanelChrome::Normal);
+    let body = panel.inner(area);
+    frame.render_widget(panel, area);
+    frame.render_widget(TerminalCellGrid::new(&source), body);
 }
 
 fn terminal_output_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15875,7 +15973,6 @@ fn dependency_graph_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 
 #[derive(Clone, Copy)]
 enum TableVariant {
-    Basic,
     Sorted,
     Narrow,
     Unicode,
@@ -16065,9 +16162,6 @@ fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem,
     frame.render_stateful_widget(&grid, area, &mut state);
 }
 
-fn table_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    render_table(frame, area, system, TableVariant::Basic);
-}
 fn table_sorted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_table(frame, area, system, TableVariant::Sorted);
 }
@@ -16237,16 +16331,6 @@ fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, varian
     frame.render_stateful_widget(&table, area, &mut state);
 }
 
-fn text_area_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    render_text_area(
-        frame,
-        area,
-        system,
-        "Compose",
-        "First line\nSecond line\nThird line",
-        None,
-    );
-}
 fn text_area_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_text_area(
         frame,
@@ -16330,14 +16414,10 @@ fn render_text_area(
 
 fn status_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{StatusRegion, StatusSlot};
-    let left = [StatusSlot::mode("mode", "NOR")
-        .style(Style::new().reversed())
-        .hover_style(Style::new().bold().reversed())];
+    let left = [StatusSlot::mode("mode", "NOR")];
     let center = [StatusSlot::focus_zone("focus", "main")];
     let right = [
-        StatusSlot::selection("sel", "3/12")
-            .style(Style::new().dim())
-            .hover_style(Style::new().bold()),
+        StatusSlot::selection("sel", "3/12"),
         StatusSlot::shortcut("hint", "? help").region(StatusRegion::Right),
     ];
     let mut state = StatusBarState::default();
@@ -16449,50 +16529,6 @@ fn status_indicator_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     }
 }
 
-fn virtual_list_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Panel, PanelChrome, VIRTUAL_LIST_BENCH_ROWS};
-    let mut state = VirtualListState::<u64>::million_fixed();
-    state.set_sticky(StickyRegion {
-        leading: 1,
-        trailing: 0,
-    });
-    state.set_offset(250_000);
-    state.set_viewport_extent(area.height.saturating_sub(2).max(8));
-    let mut idx = Vec::new();
-    state.projection_indices(&mut idx);
-    let projected: Vec<_> = idx
-        .iter()
-        .map(|&i| {
-            let label: &'static str = if i == 0 {
-                "★ sticky header"
-            } else {
-                // Stable short labels without leak: format into owned via Box::leak for story
-                Box::leak(format!("row {i:>9} · O(viewport)").into_boxed_str())
-            };
-            let row = if i == 0 {
-                ListRow::group_header(i, Line::from(label))
-            } else {
-                ListRow::item(i, Line::from(label))
-            };
-            VirtualListItem::new(i, row)
-        })
-        .collect();
-    let title = format!("VirtualList · {VIRTUAL_LIST_BENCH_ROWS} logical");
-    let _ = Panel::new(system)
-        .title(title.as_str())
-        .chrome(PanelChrome::Focused)
-        .paint(area, frame.buffer_mut(), None);
-    let inner = Rect::new(
-        area.x.saturating_add(1),
-        area.y.saturating_add(1),
-        area.width.saturating_sub(2),
-        area.height.saturating_sub(2),
-    );
-    VirtualList::new(&projected, system)
-        .show_diagnostics(true)
-        .paint(inner, frame.buffer_mut(), &mut state);
-}
-
 fn virtual_list_follow_tail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = VirtualListState::<u64>::new();
     state.set_logical_len(5000);
@@ -16545,7 +16581,8 @@ fn virtualizer_million_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     frame.render_widget(
         Panel::new(system)
             .title("Virtualizer · 1M logical · O(viewport)")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -16610,7 +16647,8 @@ fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     frame.render_widget(
         Panel::new(system)
             .title("ScrollArea · paused · new content")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -16656,7 +16694,6 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16671,7 +16708,6 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16686,7 +16722,6 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16707,7 +16742,8 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             } else {
                 "SelectionModel"
             })
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -16734,7 +16770,6 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16749,7 +16784,6 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: false,
@@ -16764,7 +16798,6 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16779,7 +16812,6 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             custom: None,
             role: RowRole::Item,
             enabled: true,
@@ -16791,7 +16823,8 @@ fn collection_state_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     frame.render_widget(
         Panel::new(system)
             .title("CollectionState → List")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -16820,7 +16853,8 @@ fn roving_focus_group_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     frame.render_widget(
         Panel::new(system)
             .title("RovingFocusGroup")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let mut y = area.y.saturating_add(1);
@@ -16890,7 +16924,8 @@ fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     frame.render_widget(
         Panel::new(system)
             .title("FocusGraph")
-            .chrome(g.panel_chrome_for(&"files")),
+            .variant(PanelVariant::Bordered)
+            .emphasis(g.panel_chrome_for(&"files")),
         area,
     );
     // Zone panels
@@ -16902,7 +16937,8 @@ fn focus_graph_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         frame.render_widget(
             Panel::new(system)
                 .title(title)
-                .chrome(g.panel_chrome_for(&id)),
+                .variant(PanelVariant::Bordered)
+                .emphasis(g.panel_chrome_for(&id)),
             r,
         );
     }
@@ -16940,7 +16976,7 @@ fn event_result_compose_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let line = format!(
         "bubble: child-stop → msg={:?} consumed={} redraw={:?}",
         merged.message(),
-        merged.is_consumed(),
+        merged.consumed(),
         merged.redraw()
     );
     let bubbled = compose_bubble(EventResult::<DemoMsg>::ignored(), || {
@@ -16949,12 +16985,13 @@ fn event_result_compose_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let line2 = format!(
         "bubble: child-ignore → msg={:?} consumed={}",
         bubbled.message(),
-        bubbled.is_consumed()
+        bubbled.consumed()
     );
     frame.render_widget(
         Panel::new(system)
             .title("EventResult")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17070,7 +17107,8 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     frame.render_widget(
         Panel::new(system)
             .title("SemanticScene")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17111,7 +17149,8 @@ fn semantic_scene_hit_jump_story(frame: &mut Frame<'_>, area: Rect, system: &Des
         Panel::new(system)
             .title("hit+jump")
             .subtitle(hit)
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     frame.render_widget(JumpOverlay::new(&targets, system), area);
@@ -17185,7 +17224,10 @@ fn semantic_scene_virt_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     }));
     let title = format!("virt {}/{}", scene.len(), logical);
     frame.render_widget(
-        Panel::new(system).title(&title).chrome(PanelChrome::Normal),
+        Panel::new(system)
+            .title(&title)
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Normal),
         area,
     );
     let summary = scene.snapshot().summary_lines(visible.min(8));
@@ -17305,7 +17347,8 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     frame.render_widget(
         Panel::new(system)
             .title("ComponentContract · official catalog")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17336,6 +17379,9 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::style::MotionPolicy;
+    use termrock::widgets::{Spinner, SpinnerGlyphSet, SpinnerState};
+
     let tick = 11;
     let canvas = system
         .style(Role::Canvas)
@@ -17352,20 +17398,31 @@ fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
             termrock::style::fade_style(accent, alpha, canvas),
         );
     }
-    let pulse = termrock::style::pulse_brightness(tick, 16);
-    frame.buffer_mut().set_stringn(
-        area.x.saturating_add(3),
-        area.y,
-        termrock::style::SPINNER_DOT_PULSE_FRAMES[2],
-        1,
-        termrock::style::fade_style(accent, pulse, canvas),
+    let mut spinner = SpinnerState::new();
+    spinner.set_glyph_set(SpinnerGlyphSet::DotPulse);
+    let content_x = area.x.saturating_add(3);
+    let content_width = area.right().saturating_sub(content_x);
+    Spinner::labeled("Full motion", system).paint(
+        Rect::new(content_x, area.y, content_width, 1),
+        frame.buffer_mut(),
+        &spinner,
+        crate::demo::demo_tick(400),
+        MotionPolicy::Full,
+    );
+    Spinner::labeled("Motion off", system).paint(
+        Rect::new(content_x, area.y.saturating_add(1), content_width, 1),
+        frame.buffer_mut(),
+        &spinner,
+        crate::demo::demo_tick(400),
+        MotionPolicy::Off,
     );
     let label = "Presence travels without breaking terminal rhythm";
-    let width = area.width.saturating_sub(3).min(44);
-    for (col, ch) in label.chars().take(usize::from(width)).enumerate() {
+    let width = content_width.min(44);
+    let fitted = termrock::text::truncate_cols(label, usize::from(width), system.glyphs.ellipsis());
+    for (col, ch) in fitted.chars().enumerate() {
         let alpha = termrock::style::edge_fade(col as u16, width, 5);
         frame.buffer_mut().set_stringn(
-            area.x.saturating_add(3).saturating_add(col as u16),
+            content_x.saturating_add(col as u16),
             area.y.saturating_add(3),
             ch.to_string(),
             1,
@@ -17478,7 +17535,8 @@ fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     frame.render_widget(
         Panel::new(system)
             .title("TerminalCapabilities · profiles")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17529,7 +17587,8 @@ fn responsive_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     frame.render_widget(
         Panel::new(system)
             .title("Responsive · Form@40 + ladder")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17593,7 +17652,8 @@ fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     frame.render_widget(
         Panel::new(system)
             .title("DismissableLayer")
-            .chrome(PanelChrome::Focused),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Focused),
         area,
     );
     let inner = Rect::new(
@@ -17605,7 +17665,8 @@ fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     frame.render_widget(
         Panel::new(system)
             .title("menu body")
-            .chrome(PanelChrome::Normal),
+            .variant(PanelVariant::Bordered)
+            .emphasis(PanelChrome::Normal),
         menu.rect(),
     );
     frame.buffer_mut().set_stringn(
@@ -17624,7 +17685,7 @@ fn overlay_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         OverlaySpec::dialog("parent", OverlaySize::dialog(36, 10), None),
     );
-    let parent = stack.top().unwrap().rect;
+    let parent = stack.top_rect().unwrap_or(area);
     let anchor = Rect::new(parent.x.saturating_add(2), parent.y.saturating_add(4), 6, 1);
     let _ = stack.open(
         area,
@@ -17675,7 +17736,7 @@ fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         OverlaySpec::dialog("d", OverlaySize::dialog(48, 12), None),
     );
-    let dialog_rect = stack.top().map(|e| e.rect).unwrap_or(area);
+    let dialog_rect = stack.top_rect().unwrap_or(area);
     frame.render_widget(
         Dialog::new("Tiny", Line::from("fullscreen promote").into(), &tokens)
             .emphasis(PanelChrome::Focused),
@@ -17717,7 +17778,7 @@ fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(
         Paragraph::new(Line::from(format!(
             "open={} queue={} (Esc peels one)",
-            stack.entries().len(),
+            stack.len(),
             stack.queue_len()
         ))),
         Rect::new(area.x, area.bottom().saturating_sub(1), area.width, 1),
@@ -17737,12 +17798,12 @@ fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, system: &Design
         ),
     );
     let _ = stack.promote_top_fullscreen(area);
-    if let Some(top) = stack.top() {
+    if let Some(top) = stack.top_rect() {
         frame.render_widget(
             Panel::new(&tokens)
                 .title("promoted")
                 .emphasis(PanelChrome::Focused),
-            top.rect,
+            top,
         );
     }
 }
@@ -17754,11 +17815,12 @@ fn paint_stack_rects(
     tokens: &DesignSystem,
     _system: &DesignSystem,
 ) {
-    for (i, entry) in stack.entries().iter().enumerate() {
-        if entry.rect.width == 0 || entry.rect.height == 0 {
+    let layer_count = stack.len();
+    for (i, (_, kind, rect)) in stack.resolved_layers().enumerate() {
+        if rect.width == 0 || rect.height == 0 {
             continue;
         }
-        let title = match entry.kind {
+        let title = match kind {
             OverlayKind::Dialog => "dialog",
             OverlayKind::Menu => "menu",
             OverlayKind::Popover => "popover",
@@ -17767,12 +17829,12 @@ fn paint_stack_rects(
         frame.render_widget(
             Panel::new(tokens)
                 .title(title)
-                .emphasis(if i + 1 == stack.entries().len() {
+                .emphasis(if i + 1 == layer_count {
                     PanelChrome::Focused
                 } else {
                     PanelChrome::Normal
                 }),
-            entry.rect,
+            rect,
         );
     }
 }
@@ -17802,7 +17864,6 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             &tokens,
         )
         .description("All changes were written successfully.")
-        .style(Style::new())
         .emphasis(termrock::widgets::PanelChrome::Focused)
         .recipe(DialogRecipe::Normal)
         .footer_hint("esc dismiss"),
@@ -17817,13 +17878,13 @@ fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
             id: "delete",
             label: "Delete",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Destructive,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let mut state = ChoiceDialogState::new(Some("cancel"));
@@ -17854,16 +17915,6 @@ fn dialog_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
             .footer_hint("esc"),
         area,
     );
-}
-
-fn alert_dialog_delete_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = AlertDialogState::new(
-        AlertKind::Delete,
-        AlertScope::example_delete(),
-        "delete",
-        "keep",
-    );
-    AlertDialog::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn alert_dialog_overwrite_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -17930,13 +17981,13 @@ pub(crate) fn choice_actions() -> [Action<'static, &'static str>; 2] {
             id: "continue",
             label: "Continue",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: Some(Style::new().bold()),
+            variant: ActionVariant::Secondary,
         },
     ]
 }
@@ -17956,7 +18007,6 @@ pub(crate) fn render_choice_dialog(
                 Line::from("Continue with this operation?").into(),
                 &tokens,
             )
-            .style(Style::new())
             .emphasis(termrock::widgets::PanelChrome::Focused),
             &actions,
         )
@@ -17996,7 +18046,6 @@ fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
                 Line::from("The operation completed.").into(),
                 &tokens,
             )
-            .style(Style::new())
             .emphasis(termrock::widgets::PanelChrome::Focused),
             &details,
             system,
@@ -18196,15 +18245,6 @@ fn toast_persistent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     );
 }
 
-fn notification_center_drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = NotificationCenterState::new();
-    state.replace_items(example_notifications(1_700_000_000));
-    state.set_recipe(NotificationRecipe::Drawer);
-    let _ = state.open();
-    state.set_focused(true);
-    NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn notification_center_full_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = NotificationCenterState::new();
     state.replace_items(example_notifications(1_700_000_000));
@@ -18235,7 +18275,7 @@ fn notification_center_empty_story(frame: &mut Frame<'_>, area: Rect, system: &D
 
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     // The shipped default: a solid recede from the theme, not a stipple.
-    frame.render_widget(Backdrop::from_tokens(system), area);
+    frame.render_widget(Backdrop::new(system), area);
 }
 
 fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18258,10 +18298,6 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         &mut state,
     );
-}
-
-fn empty_state(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    example_empty_search(system).paint(area, frame.buffer_mut());
 }
 
 fn empty_state_first_use_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18432,17 +18468,6 @@ fn loading_overlay_nested_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     );
 }
 
-fn connectivity_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let s = example_reconnecting_agent();
-    OfflineBanner::new(&s, system).paint(area, frame.buffer_mut());
-}
-
-fn connectivity_reconnecting_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut s = example_reconnecting_agent();
-    s.set_presentation(ConnectivityPresentation::Full);
-    OfflineSurface::new(system).paint(area, frame.buffer_mut(), &mut s);
-}
-
 fn connectivity_auth_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut s = example_auth_required();
     OfflineSurface::new(system).paint(area, frame.buffer_mut(), &mut s);
@@ -18474,11 +18499,7 @@ fn connectivity_notification_story(frame: &mut Frame<'_>, area: Rect, system: &D
     NotificationCenter::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn error_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    example_error_network(system).paint(area, frame.buffer_mut());
-}
-
-fn error_state_network_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn error_state(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     example_error_network(system).paint(area, frame.buffer_mut());
 }
 
@@ -18508,7 +18529,7 @@ fn error_state_fullscreen_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     example_error_crash(system).paint(area, frame.buffer_mut());
 }
 
-fn error_view_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn error_state_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     ErrorState::new("Request failed", system)
         .kind(ErrorKind::Network)
         .explanation("Timed out")
@@ -18574,52 +18595,7 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(JumpOverlay::new(&targets, system).ascii(false), area);
 }
 
-fn jump_mode_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    frame.render_widget(
-        Panel::new(system)
-            .title("Jump multi-key")
-            .emphasis(PanelChrome::Normal),
-        area,
-    );
-    let labels = generate_jump_labels(30);
-    let targets: Vec<_> = labels
-        .iter()
-        .enumerate()
-        .map(|(i, k)| {
-            let row = (i as u16) % area.height.saturating_sub(2).max(1);
-            let col = ((i as u16) / area.height.saturating_sub(2).max(1)) * 6;
-            JumpTarget::new(
-                i,
-                Rect::new(
-                    area.x.saturating_add(1).saturating_add(col),
-                    area.y.saturating_add(1).saturating_add(row),
-                    5,
-                    1,
-                ),
-                k.clone(),
-            )
-        })
-        .collect();
-    let mut state = JumpOverlayState::new();
-    state.open();
-    // Prefix first letter of a multi-key label for dim demo
-    if let Some(t) = targets.iter().find(|t| t.keys.len() >= 2) {
-        let ch = t.keys.chars().next().unwrap();
-        let _ = state.handle_key(
-            termrock::input::KeyEvent::new(
-                termrock::input::KeyCode::Char(ch),
-                termrock::input::KeyModifiers::NONE,
-            ),
-            &targets,
-        );
-    }
-    frame.render_widget(
-        JumpOverlay::from_state(&targets, system, &state).ascii(false),
-        area,
-    );
-}
-
-fn jump_mode_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn jump_overlay_role_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SemanticNode, SemanticRole, SemanticScene};
     frame.render_widget(
         Panel::new(system)
@@ -18650,7 +18626,7 @@ fn jump_mode_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     frame.render_widget(JumpOverlay::new(&targets, system), area);
 }
 
-fn jump_mode_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn jump_overlay_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let targets = [
         JumpTarget::new(
             "a",
@@ -18844,15 +18820,6 @@ fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         area,
         &mut state,
     );
-}
-
-fn quick_open_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let providers = example_quick_open_providers();
-    let items = example_quick_open_files();
-    let mut state = QuickOpenState::new();
-    state.set_focused(true);
-    let _ = state.apply_results(0, &items, true, Some(items.len() as u64));
-    QuickOpen::new(&providers, &items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn quick_open_symbols(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -19672,19 +19639,6 @@ fn agent_status_header_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
     frame.render_stateful_widget(&AgentStatusHeader::new(system), area, &mut state);
 }
 
-fn prompt_queue_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        AgentBusyState, PromptQueue, PromptQueuePresentation, PromptQueueState,
-        example_prompt_queue,
-    };
-    let mut state = PromptQueueState::new();
-    state.set_items(example_prompt_queue());
-    state.set_agent(AgentBusyState::Busy);
-    state.presentation = PromptQueuePresentation::Compact;
-    state.focused = true;
-    frame.render_stateful_widget(&PromptQueue::new(system), area, &mut state);
-}
-
 fn prompt_queue_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::patterns::{
         AgentBusyState, PromptQueue, PromptQueuePresentation, PromptQueueState,
@@ -20071,14 +20025,6 @@ fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     );
 }
 
-fn slider_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = SliderState::new(62.0);
-    state.set_focused(true);
-    let _ = Slider::new(SliderBounds::percent(), system)
-        .label("Volume")
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn slider_marks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let marks = [
         SliderMark::labeled(0.0, "lo"),
@@ -20117,14 +20063,6 @@ fn slider_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn range_slider_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = RangeSliderState::new(20.0, 80.0);
-    state.set_focused(true);
-    let _ = RangeSlider::new(SliderBounds::percent(), system)
-        .label("Price filter")
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn range_slider_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = RangeSliderState::new(10.0, 90.0);
     state.set_focused(true);
@@ -20133,19 +20071,6 @@ fn range_slider_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         frame.buffer_mut(),
         &mut state,
     );
-}
-
-fn segmented_control_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let items = [
-        SegmentedItem::new("list", "List").priority(90),
-        SegmentedItem::new("grid", "Grid").priority(80),
-        SegmentedItem::new("table", "Table").priority(70),
-    ];
-    let mut state = SegmentedControlState::new(Some("grid"));
-    state.set_surface_focused(true);
-    let _ = SegmentedControl::new(&items, system)
-        .collapse_below(0)
-        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn segmented_control_icons_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20376,19 +20301,6 @@ fn checkbox_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
             &mut st,
         );
     }
-}
-
-fn radio_group_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let options = [
-        RadioOption::new("plan", "Plan").description("Read-only analysis"),
-        RadioOption::new("build", "Build").description("Apply edits with approval"),
-        RadioOption::new("ask", "Ask").description("Questions only"),
-    ];
-    let mut state = RadioState::new(Some("build"));
-    state.set_surface_focused(true);
-    let _ = RadioGroup::new(&options, system)
-        .legend("Workbench mode")
-        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn radio_group_horizontal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20751,17 +20663,6 @@ fn data_table_edit(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let items = [
-        MenuItem::new("a", "Open"),
-        MenuItem::new("b", "Disabled").enabled(false),
-        MenuItem::new("c", "Save"),
-    ];
-    let mut state = MenuState::new();
-    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
-}
-
 fn example_dropdown_nodes() -> Vec<MenuNode<&'static str>> {
     vec![
         MenuNode::command("open", "Open")
@@ -20787,13 +20688,6 @@ fn example_dropdown_nodes() -> Vec<MenuNode<&'static str>> {
         ),
         MenuNode::command("delete", "Delete").destructive(true),
     ]
-}
-
-fn dropdown_menu_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let nodes = example_dropdown_nodes();
-    let mut state = DropdownMenuState::new();
-    let _ = state.open_from_keyboard(&nodes, area);
-    DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn dropdown_menu_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20858,7 +20752,7 @@ fn dropdown_menu_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn context_menu_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn dropdown_menu_context_origin_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let nodes = vec![
         MenuNode::command("cut", "Cut").shortcut("C-x"),
         MenuNode::command("copy", "Copy").shortcut("C-c"),
@@ -20872,7 +20766,7 @@ fn context_menu_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     DropdownMenu::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn context_menu_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn dropdown_menu_context_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let nodes = vec![
         MenuNode::command("open", "Open"),
         MenuNode::submenu(
@@ -20970,40 +20864,6 @@ fn form_wizard_resume_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .title("Resume setup")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut resumed);
-}
-
-fn tag_removable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Tag, TagState};
-    let chunks = Layout::horizontal([Constraint::Length(18), Constraint::Min(12)]).split(area);
-    let tag = Tag::removable_tag("f1", "paste-body.txt", system);
-    let mut st = TagState::new();
-    st.set_focused(true);
-    st.set_part(termrock::widgets::TokenPart::Remove);
-    let _ = tag.paint(chunks[0], frame.buffer_mut(), &mut st);
-    let tag2 = Tag::new("s", "static-entity", system);
-    let mut st2 = TagState::new();
-    let _ = tag2.paint(chunks[1], frame.buffer_mut(), &mut st2);
-}
-
-fn chip_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{Chip, ChipState};
-    let chunks = Layout::horizontal([
-        Constraint::Length(14),
-        Constraint::Length(14),
-        Constraint::Min(12),
-    ])
-    .split(area);
-    let mut a = ChipState::new(true);
-    a.set_focused(true);
-    let _ = Chip::new("rust", "rust", system).paint(chunks[0], frame.buffer_mut(), &mut a);
-    let mut b = ChipState::new(false);
-    let _ = Chip::new("go", "go", system).paint(chunks[1], frame.buffer_mut(), &mut b);
-    let mut c = ChipState::new(false);
-    let _ = Chip::new("ts", "typescript", system).removable(true).paint(
-        chunks[2],
-        frame.buffer_mut(),
-        &mut c,
-    );
 }
 
 fn chip_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21677,23 +21537,6 @@ fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         .paint(area, frame.buffer_mut(), &mut st);
 }
 
-fn terminal_run_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        TerminalRunCard, TerminalRunCardState, TerminalRunPresentation, example_terminal_run_lines,
-        example_terminal_runs,
-    };
-    let runs = example_terminal_runs();
-    let lines = example_terminal_run_lines();
-    let run = runs.iter().find(|r| r.id == "r1").unwrap_or(&runs[0]);
-    let mut st = TerminalRunCardState::new();
-    st.focused = true;
-    st.presentation = TerminalRunPresentation::Expanded;
-    st.on_append(lines.len() as u16, 8);
-    TerminalRunCard::new(run, &lines, system)
-        .tick(3)
-        .paint(area, frame.buffer_mut(), &mut st);
-}
-
 fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::patterns::{
         TerminalRunCard, TerminalRunCardState, TerminalRunPresentation, example_terminal_runs,
@@ -21748,18 +21591,6 @@ fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
     TerminalRunCard::new(run, &lines, system)
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut st);
-}
-
-fn activity_shelf_statuses_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        ActivityShelf, ActivityShelfPresentation, ActivityShelfState, example_activities,
-    };
-    let items = example_activities();
-    let mut st = ActivityShelfState::new();
-    st.focused = true;
-    st.force_presentation = Some(ActivityShelfPresentation::Chips);
-    st.selected = 0;
-    ActivityShelf::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn activity_shelf_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21957,7 +21788,7 @@ fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone().density(Density::default());
     Widget::render(
         &Callout::new("Heads up", &tokens)
-            .body("Non-color risk glyph present.")
+            .description("Non-color risk glyph present.")
             .tone(CalloutTone::Warning),
         area,
         frame.buffer_mut(),
@@ -21988,7 +21819,7 @@ fn callout_tones_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         }
         let _ = Callout::new(title, system)
             .tone(tone)
-            .body("status readable without color")
+            .description("status readable without color")
             .paint(chunks[i], frame.buffer_mut());
     }
 }
@@ -21997,23 +21828,11 @@ fn callout_section_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let _ = Callout::new("Diagnostics", system)
         .tone(CalloutTone::Info)
         .section()
-        .body("Compose with forms and empty states.")
+        .description("Compose with forms and empty states.")
         .details("expanded detail line")
         .show_details(true)
         .source("termrock · callout")
         .paint(area, frame.buffer_mut());
-}
-
-fn alert_danger_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = AlertState::<()>::new();
-    state.set_focused(true);
-    Alert::new("Deploy failed", system)
-        .tone(AlertTone::Danger)
-        .body("Rollout aborted at step 3.")
-        .details("timeout waiting for health check")
-        .source("pipeline #42")
-        .banner()
-        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn alert_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -22021,14 +21840,14 @@ fn alert_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         id: "retry",
         label: "Retry",
         enabled: true,
-        style: None,
+        variant: ActionVariant::Primary,
     }];
     let mut state = AlertState::new();
     state.set_focused(true);
     state.set_action_cursor(Some("retry"));
     Alert::new("Write conflict", system)
-        .tone(AlertTone::Warning)
-        .body("Remote changed while editing.")
+        .tone(CalloutTone::Warning)
+        .description("Remote changed while editing.")
         .source("git status")
         .actions(&actions)
         .banner()
@@ -22038,18 +21857,19 @@ fn alert_banner_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 fn alert_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = AlertState::<()>::new();
     Alert::new("Saved", system)
-        .tone(AlertTone::Success)
-        .body("checkpoint written")
+        .tone(CalloutTone::Success)
+        .description("checkpoint written")
         .compact()
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = termrock::widgets::DrawerState::new();
-    state.open();
+    state.set_open(true);
     state.set_header_rows(1);
     state.set_footer_rows(1);
-    Drawer::new("Inspector", system)
+    Drawer::new(system)
+        .title(Some("Inspector"))
         .footer(Some("esc · [ ] resize"))
         .paint(area, frame.buffer_mut(), &mut state);
     let body = state.body_area();
@@ -22067,33 +21887,17 @@ fn drawer_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn drawer_left_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = termrock::widgets::DrawerState::new();
     state.set_edge(termrock::widgets::DrawerEdge::Left);
-    state.open();
-    Drawer::new("Nav", system).paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn drawer_sheet_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = termrock::widgets::DrawerState::sheet();
-    state.open();
-    state.set_header_rows(1);
-    termrock::widgets::Sheet::new("Sheet", system)
-        .footer(Some("drag handle"))
+    state.set_open(true);
+    Drawer::new(system)
+        .title(Some("Nav"))
         .paint(area, frame.buffer_mut(), &mut state);
-    let body = state.body_area();
-    if !body.is_empty() {
-        frame.buffer_mut().set_stringn(
-            body.x,
-            body.y,
-            "bottom sheet content",
-            usize::from(body.width),
-            system.style(termrock::style::Role::TextMuted),
-        );
-    }
 }
 
 fn drawer_non_modal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = termrock::widgets::DrawerState::non_modal();
-    state.open();
-    Drawer::new("Task rail", system)
+    state.set_open(true);
+    Drawer::new(system)
+        .title(Some("Task rail"))
         .footer(Some("non-modal"))
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -22128,34 +21932,12 @@ fn paint_viewer_body(frame: &mut Frame<'_>, body: Rect, system: &DesignSystem, l
     }
 }
 
-fn fullscreen_viewer_code_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let actions = [
-        Action {
-            id: "copy",
-            label: "Copy",
-            enabled: true,
-            style: None,
-        },
-        Action {
-            id: "raw",
-            label: "Raw",
-            enabled: true,
-            style: None,
-        },
-    ];
-    let mut state = FullscreenViewerState::new();
-    state.zoom_mut().set_content_kind(ViewerContentKind::Code);
-    let _ = state.enter_fullscreen(fv_source("main.rs", &["repo", "src", "main.rs"]), "main.rs");
-    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
-    paint_viewer_body(frame, state.body_area(), system, "fn main() { /* … */ }");
-}
-
 fn fullscreen_viewer_diff_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let actions = [Action {
         id: "stage",
         label: "Stage",
         enabled: true,
-        style: None,
+        variant: ActionVariant::Primary,
     }];
     let mut state = FullscreenViewerState::new();
     state.zoom_mut().set_content_kind(ViewerContentKind::Diff);
@@ -22214,7 +21996,7 @@ fn fullscreen_viewer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
         id: "open",
         label: "Open",
         enabled: true,
-        style: None,
+        variant: ActionVariant::Primary,
     }];
     let mut state = FullscreenViewerState::new();
     state.zoom_mut().set_content_kind(ViewerContentKind::Media);
@@ -22224,13 +22006,6 @@ fn fullscreen_viewer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &D
     );
     FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
     paint_viewer_body(frame, state.body_area(), system, "Media · 🖼");
-}
-
-fn preview_card_file_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let (content, _, _) = example_file_preview();
-    let mut state = PreviewCardState::with_delay(std::time::Duration::ZERO);
-    let _ = state.tick_hover(1, true);
-    PreviewCard::new(content, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn preview_card_command_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23292,28 +23067,28 @@ fn surface_terminal_default_story(frame: &mut Frame<'_>, area: Rect, system: &De
 
 fn separator_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .quiet()
         .paint(area, frame.buffer_mut());
 }
 
 fn separator_strong_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .strong()
         .paint(area, frame.buffer_mut());
 }
 
 fn separator_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .label("OR")
         .paint(area, frame.buffer_mut());
 }
 
 fn separator_section_break_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .section_break()
         .with_density(system.density)
         .paint(area, frame.buffer_mut());
@@ -23326,7 +23101,7 @@ fn separator_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn separator_focus_zone_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .focus_zone()
         .paint(area, frame.buffer_mut());
 }
@@ -23340,29 +23115,13 @@ fn popover_open_state() -> PopoverState {
     state
 }
 
-fn popover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = popover_open_state();
-    Popover::new("Settings", system).paint(area, frame.buffer_mut(), &mut state);
-    // Host paints body content into slots (not forced Panel).
-    let body = state.slots().body;
-    if !body.is_empty() {
-        frame.buffer_mut().set_stringn(
-            body.x,
-            body.y,
-            "filter · sort · density",
-            usize::from(body.width),
-            system.style(termrock::style::Role::Text),
-        );
-    }
-}
-
 fn popover_slots_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = PopoverState::new();
     state.set_open(true);
     state.set_focused(true);
     state.set_header_rows(1);
     state.set_footer_rows(1);
-    Popover::slots(system)
+    Popover::new(system)
         .header(Some("Filters"))
         .footer(Some("esc · close"))
         .paint(area, frame.buffer_mut(), &mut state);
@@ -23393,7 +23152,8 @@ fn popover_modal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     state.set_focused(true);
     state.set_header_rows(1);
     state.set_footer_rows(1);
-    Popover::new("Confirm scope", system)
+    Popover::new(system)
+        .header(Some("Confirm scope"))
         .footer(Some("modal · esc"))
         .paint(area, frame.buffer_mut(), &mut state);
     let body = state.slots().body;
@@ -23415,7 +23175,8 @@ fn popover_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     state.set_header_rows(1);
     state.set_footer_rows(1);
     // Presentation would be Drawer/Fullscreen at this width; paint still slots.
-    Popover::new("More", system)
+    Popover::new(system)
+        .header(Some("More"))
         .footer(Some("esc"))
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
@@ -23643,15 +23404,13 @@ fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &De
     let spinner_area = Rect::new(area.x, area.y, area.width.saturating_sub(22), 1);
     let mut spinner_state = SpinnerState::new();
     spinner_state.set_glyph_set(SpinnerGlyphSet::DotPulse);
-    Spinner::labeled("Building catalog", system)
-        .role(Role::ActorAssistant)
-        .paint(
-            spinner_area,
-            frame.buffer_mut(),
-            &spinner_state,
-            tick,
-            system.motion,
-        );
+    Spinner::labeled("Building catalog", system).paint(
+        spinner_area,
+        frame.buffer_mut(),
+        &spinner_state,
+        tick,
+        system.motion,
+    );
     let token = Glyph::Token.resolve(system.glyphs).text;
     let meta = format!("2.4s  {token} 12.8k");
     let meta_width = 14_u16.min(area.width);
@@ -23667,7 +23426,7 @@ fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &De
         id: "stop",
         label: "Stop",
         enabled: true,
-        style: Some(system.style(Role::Danger)),
+        variant: ActionVariant::Destructive,
     }];
     let mut action_state = ActionBarState {
         cursor: Some("stop"),
@@ -23903,20 +23662,6 @@ fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     frame.render_stateful_widget(StatusBar::new(&[], &right, system), area, &mut st);
 }
 
-fn subagent_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        SubagentCard, SubagentCardState, SubagentPresentation, example_subagent_runs,
-    };
-    let runs = example_subagent_runs();
-    let run = runs.iter().find(|r| r.id == "sa1").unwrap_or(&runs[0]);
-    let mut st = SubagentCardState::new();
-    st.focused = true;
-    st.presentation = SubagentPresentation::Card;
-    SubagentCard::new(run, system)
-        .tick(3)
-        .paint(area, frame.buffer_mut(), &mut st);
-}
-
 fn subagent_card_failed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::patterns::{
         SubagentCard, SubagentCardState, SubagentPresentation, example_subagent_runs,
@@ -23964,17 +23709,6 @@ fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     st.focused = true;
     st.presentation = SubagentPresentation::Card;
     SubagentCard::new(run, system).paint(area, frame.buffer_mut(), &mut st);
-}
-
-fn background_tasks_mixed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        BackgroundTaskPanel, BackgroundTaskPanelState, example_background_tasks,
-    };
-    let tasks = example_background_tasks();
-    let mut st = BackgroundTaskPanelState::new();
-    st.focused = true;
-    st.list.select(Some("b1".into()));
-    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn background_tasks_clear_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -24109,7 +23843,7 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     state.activation.set_accepts_input(true);
     state.activation.set_enabled(false);
     frame.render_stateful_widget(
-        &Button::new("Save", &tokens).primary(true),
+        &Button::new("Save", &tokens).variant(termrock::widgets::ButtonVariant::Primary),
         area,
         &mut state,
     );
@@ -24128,7 +23862,7 @@ fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
     frame.render_stateful_widget(
-        &Button::new("Save ✨", &tokens).primary(true),
+        &Button::new("Save ✨", &tokens).variant(termrock::widgets::ButtonVariant::Primary),
         area,
         &mut state,
     );
@@ -24180,50 +23914,6 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     };
     DataTable::new(&tokens, &columns, &rows)
         .toolbar(&toolbar)
-        .render(area, frame.buffer_mut(), &mut state);
-}
-
-fn tree_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState, SortSpec};
-    let tokens = system.clone().density(Density::Compact);
-    let columns = ColumnModel::new(vec![
-        DataColumn::new("name", "PROCESS", DataColumnWidth::Min(14)).priority(100),
-        DataColumn::new("pid", "PID", DataColumnWidth::Fixed(6))
-            .priority(90)
-            .sortable(),
-        DataColumn::new("cpu", "CPU%", DataColumnWidth::Fixed(6))
-            .priority(70)
-            .sortable(),
-        DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(7)).priority(50),
-    ]);
-    let r0: &[&str] = &["systemd", "1", "0.1", "4.2M"];
-    let r1: &[&str] = &["sshd", "482", "0.0", "8.1M"];
-    let r2: &[&str] = &["bash", "1204", "1.2", "12M"];
-    let r3: &[&str] = &["cargo", "1888", "42.0", "640M"];
-    let r4: &[&str] = &["rustc", "1902", "88.4", "1.1G"];
-    let rows = [
-        TreeTableRow::new(1u64, 0, r0).branch().expanded(),
-        TreeTableRow::new(482, 1, r1).branch().expanded().parent(1),
-        TreeTableRow::new(1204, 2, r2)
-            .branch()
-            .expanded()
-            .parent(482),
-        TreeTableRow::new(1888, 3, r3)
-            .branch()
-            .expanded()
-            .parent(1204),
-        TreeTableRow::new(1902, 4, r4).parent(1888),
-    ];
-    let mut state = TreeTableState::new(Some(1888));
-    state.hovered = Some(1204);
-    state.load = LoadState::Ready { count: 5 };
-    state.sort = Some(SortSpec {
-        column: "cpu",
-        ascending: false,
-    });
-    TreeTable::new(&tokens, &columns, &rows)
-        .focused(true)
-        .compact_indent(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -24380,41 +24070,6 @@ fn tree_table_aggregate(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     TreeTable::new(&tokens, &columns, &rows)
         .focused(true)
         .render(area, frame.buffer_mut(), &mut state);
-}
-
-fn key_value_table_http(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::LoadState;
-    let fields = [
-        KvtField::group("g", "Request"),
-        KvtField::pair("m", "method", "GET")
-            .value_type("string")
-            .source("line")
-            .copyable()
-            .depth(1),
-        KvtField::pair("h", "host", "api.tailrocks.dev")
-            .value_type("host")
-            .source("header")
-            .copyable()
-            .depth(1),
-        KvtField::pair("a", "authorization", "Bearer sk-live-…")
-            .value_type("secret")
-            .source("header")
-            .secret()
-            .copyable()
-            .depth(1),
-        KvtField::pair("c", "content-type", "application/json")
-            .value_type("mime")
-            .source("header")
-            .editable()
-            .depth(1),
-        KvtField::pair("u", "user-agent", "termrock/0.11")
-            .value_type("string")
-            .source("header")
-            .depth(1),
-    ];
-    let mut state = KeyValueTableState::new().with_cursor("h");
-    state.load = LoadState::Ready { count: 5 };
-    KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
 fn key_value_table_database(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -24609,30 +24264,19 @@ fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .render(area, frame.buffer_mut(), &mut state);
 }
 
-fn menu_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
-    let items = [
-        MenuItem::new("a", "Open 📂"),
-        MenuItem::new("b", "Disabled").enabled(false),
-        MenuItem::new("c", "Save ✨"),
-    ];
-    let mut state = MenuState::new();
-    Menu::new(&items, &tokens).render(area, frame.buffer_mut(), &mut state);
-}
-
 fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let actions = [
         Action {
             id: "accept",
             label: "Approve ✅",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel 🚫",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let mut state = ActionBarState {
@@ -24673,7 +24317,6 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             depth: 0,
             branch: true,
             expanded: true,
@@ -24690,7 +24333,6 @@ fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             badge: None,
             shortcut: None,
             actions: None,
-            trailing: None,
             depth: 1,
             branch: false,
             expanded: false,
@@ -24712,7 +24354,6 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             glyph: Some(Span::styled("●", system.style(Role::Success))),
             badge: None,
             status: TabStatus::Success,
-            active: true,
             enabled: true,
             closable: false,
         },
@@ -24722,7 +24363,6 @@ fn tabs_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             glyph: None,
             badge: None,
             status: TabStatus::None,
-            active: false,
             enabled: true,
             closable: false,
         },
@@ -24995,7 +24635,7 @@ fn empty_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         .paint(area, frame.buffer_mut());
 }
 
-fn error_view_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn error_state_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     ErrorState::new("Failed 💥", system)
         .kind(ErrorKind::Network)
         .explanation("Please try again")
@@ -25281,18 +24921,19 @@ fn task_rail_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn drawer_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = termrock::widgets::DrawerState::new();
-    state.open();
-    Drawer::new("Settings ⚙️", system).paint(area, frame.buffer_mut(), &mut state);
+    state.set_open(true);
+    Drawer::new(system)
+        .title(Some("Settings ⚙️"))
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = popover_open_state();
     state.set_footer_rows(1);
-    Popover::new("Hint 💡", system).footer(Some("Close")).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    Popover::new(system)
+        .header(Some("Hint 💡"))
+        .footer(Some("Close"))
+        .paint(area, frame.buffer_mut(), &mut state);
     let body = state.slots().body;
     if !body.is_empty() {
         frame.buffer_mut().set_stringn(
@@ -25307,7 +24948,7 @@ fn popover_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Separator;
-    Separator::horizontal(system)
+    Separator::new(system)
         .label("Rule")
         .paint(area, frame.buffer_mut());
     // Distinct label cell so body differs even though rule glyphs match.
@@ -25381,20 +25022,11 @@ fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let tokens = system.clone().density(Density::default());
     Widget::render(
         &Callout::new("Note", &tokens)
-            .body("Note with emoji ⚠️")
+            .description("Note with emoji ⚠️")
             .tone(CalloutTone::Warning),
         area,
         frame.buffer_mut(),
     );
-}
-
-fn text_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = TextInputState::new("filter term");
-    state.set_focused(true);
-    let _ = TextInput::new("Query", system)
-        .placeholder("Search…")
-        .show_clear(true)
-        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25403,15 +25035,6 @@ fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let _ = TextInput::new("Password", system)
         .secret(true)
         .show_clear(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn password_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = PasswordInputState::with_secret("hunter2");
-    state.set_focused(true);
-    let _ = PasswordInput::new("Password", system)
-        .placeholder("Enter secret…")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25442,17 +25065,6 @@ fn password_input_pending_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_pending(true);
     let _ = PasswordInput::new("Token", system)
         .strength(PasswordStrengthHint::Pending)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn number_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = NumberInputState::new()
-        .with_constraints(NumberConstraints::bounded(0.0, 100.0, 1.0))
-        .with_value(42.0);
-    state.set_focused(true);
-    let _ = NumberInput::new("Opacity", system)
-        .unit("%")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -25490,16 +25102,6 @@ fn number_input_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
-fn search_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = SearchInputState::new().with_query("table");
-    state.set_focused(true);
-    let _ = SearchInput::new(system)
-        .placeholder("Search…")
-        .status(SearchStatus::Results { count: 12 })
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn search_input_searching_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SearchInputState::new().with_query("async");
     state.set_focused(true);
@@ -25528,18 +25130,6 @@ fn search_input_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     state.set_focused(true);
     let _ = SearchInput::new(system)
         .status(SearchStatus::NoResults)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn path_input_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = PathInputState::new()
-        .with_style(PathStyle::Unix)
-        .with_path("/usr/local/bin");
-    state.set_focused(true);
-    state.set_fs_status(PathFsStatus::Directory);
-    let _ = PathInput::new(system)
-        .label("Install dir")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -25582,18 +25172,6 @@ fn path_input_relative_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let _ = PathInput::new(system)
         .label("Source")
         .show_base(true)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn token_field_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = TokenFieldState::new();
-    state.set_focused(true);
-    let _ = state.push_token(FieldToken::new("1".into(), "alice@ex.com"));
-    let _ = state.push_token(FieldToken::new("2".into(), "bob@ex.com"));
-    let _ = TokenField::new(system)
-        .label("To")
-        .placeholder("Add recipient…")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -25645,19 +25223,6 @@ fn select_demo_options() -> Vec<SelectOption<&'static str>> {
         SelectOption::group("g2", "Other"),
         SelectOption::option("date", "Date"),
     ]
-}
-
-fn select_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let opts = select_demo_options();
-    let mut state = SelectState::new()
-        .with_recipe(SelectRecipe::Form)
-        .with_value("apple");
-    state.set_focused(true);
-    frame.render_stateful_widget(
-        Select::new(&opts, system).label("Fruit").ascii(true),
-        area,
-        &mut state,
-    );
 }
 
 fn select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25718,19 +25283,6 @@ fn multi_select_demo_options() -> Vec<SelectOption<&'static str>> {
     ]
 }
 
-fn multi_select_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let opts = multi_select_demo_options();
-    let mut state = MultiSelectState::new()
-        .with_recipe(SelectRecipe::Form)
-        .with_selected(["rs", "go"]);
-    state.set_focused(true);
-    frame.render_stateful_widget(
-        MultiSelect::new(&opts, system).label("Filters").ascii(true),
-        area,
-        &mut state,
-    );
-}
-
 fn multi_select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let opts = multi_select_demo_options();
     let mut state = MultiSelectState::new().with_selected(["rs"]);
@@ -25781,33 +25333,6 @@ fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         .paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
-fn file_picker_unix_entries() -> Vec<FileEntry> {
-    vec![
-        FileEntry::directory("d1", "src", "/home/u/proj/src"),
-        FileEntry::directory("d2", "docs", "/home/u/proj/docs"),
-        FileEntry::file("f1", "README.md", "/home/u/proj/README.md").size(420),
-        FileEntry::file("f2", "Cargo.toml", "/home/u/proj/Cargo.toml").size(180),
-        FileEntry::file("f3", ".gitignore", "/home/u/proj/.gitignore")
-            .hidden(true)
-            .size(40),
-        FileEntry::file("f4", "secret.env", "/home/u/proj/secret.env").error("permission denied"),
-    ]
-}
-
-fn keybinding_recorder_idle_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::input::KeyCode;
-    use termrock::keymap::KeyChord;
-    use termrock::widgets::ChordFormat;
-    let mut state = KeybindingRecorderState::new("app.save", "Save")
-        .with_chords([KeyChord::ctrl(KeyCode::Char('s'))])
-        .with_format(ChordFormat::footer())
-        .with_reserved(Vec::new());
-    state.set_focused(true);
-    KeybindingRecorder::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
 fn keybinding_recorder_recording_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::input::KeyCode;
     use termrock::keymap::KeyChord;
@@ -25854,22 +25379,6 @@ fn keybinding_recorder_reserved_story(frame: &mut Frame<'_>, area: Rect, system:
     let _ = state.start_recording();
     let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('c')));
     KeybindingRecorder::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
-}
-
-fn date_time_picker_date_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let today = CivilDate::new(2026, 8, 10).unwrap();
-    let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
-        .with_date(CivilDate::new(2026, 8, 15).unwrap())
-        .with_min_date(CivilDate::new(2026, 8, 1).unwrap())
-        .with_max_date(CivilDate::new(2026, 8, 31).unwrap())
-        .with_timezone_label("UTC");
-    state.set_focused(true);
-    state.set_today(today);
-    let _ = state.open(area);
-    DateTimePicker::new(system)
-        .label("Due date")
         .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -25923,30 +25432,6 @@ fn file_picker_seed(state: &mut FilePickerState, cwd: &str, entries: Vec<FileEnt
         }
         other => panic!("expected ListRequested, got {other:?}"),
     }
-}
-
-fn file_picker_unix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state = FilePickerState::new("/home/u/proj")
-        .with_mode(FilePickerMode::OpenFile)
-        .with_preview(true)
-        .with_path_style(PathStyle::Unix);
-    state.set_focused(true);
-    file_picker_seed(&mut state, "/home/u/proj", file_picker_unix_entries());
-    let _ = state.apply_preview(
-        state.preview_generation(),
-        FilePreview::text(
-            "README.md",
-            [
-                "# proj".into(),
-                "".into(),
-                "Hello from Unix FS host.".into(),
-            ],
-        ),
-    );
-    FilePicker::new(system)
-        .title("Open file")
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn file_picker_windows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -26036,20 +25521,6 @@ fn combobox_candidates() -> Vec<CompletionCandidate<'static, &'static str>> {
     ]
 }
 
-fn combobox_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let mut state: ComboboxState<&'static str> = ComboboxState::new()
-        .with_creatable(false)
-        .with_exact_required(true);
-    state.set_focused(true);
-    state.set_value(Some("rs"), Some("Rust".into()));
-    state.set_draft("Rust");
-    let _ = Combobox::new(system).label("Language").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
-}
-
 fn combobox_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let cands = combobox_candidates();
     let mut state: ComboboxState<&'static str> = ComboboxState::new();
@@ -26076,7 +25547,7 @@ fn combobox_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     );
 }
 
-fn autocomplete_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+fn combobox_creatable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let cands = combobox_candidates();
     let mut state: ComboboxState<&'static str> = ComboboxState::autocomplete();
     state.set_focused(true);
@@ -26174,7 +25645,8 @@ fn paint_app_shell_slots(
             Panel::new(system)
                 .title(label)
                 .subtitle(&dim)
-                .chrome(chrome),
+                .variant(PanelVariant::Bordered)
+                .emphasis(chrome),
             r,
         );
         if r.height > 2 && r.width > 4 {
@@ -26227,12 +25699,6 @@ fn paint_app_shell_slots(
             system.style(Role::TextMuted),
         );
     }
-}
-
-fn app_shell_workbench_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{AppShellConfig, layout_app_shell};
-    let slots = layout_app_shell(area, AppShellConfig::workbench());
-    paint_app_shell_slots(frame, &slots, system, "workbench");
 }
 
 fn app_shell_dashboard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -26431,7 +25897,6 @@ fn paint_agent_workbench_story(
 
 #[derive(Clone, Copy)]
 enum AgentWorkbenchStoryKind {
-    Basic,
     ToolRunning,
     Permission,
     Plan,
@@ -26442,10 +25907,6 @@ enum AgentWorkbenchStoryKind {
     Tiny,
     Ascii,
     NoColor,
-}
-
-fn agent_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_agent_workbench_story(frame, area, system, AgentWorkbenchStoryKind::Basic);
 }
 
 fn agent_workbench_tool_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -26490,7 +25951,6 @@ fn agent_workbench_no_color(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 #[derive(Clone, Copy)]
 enum DatabaseWorkbenchStoryKind {
-    Basic,
     Disconnected,
     Error,
     Running,
@@ -26540,10 +26000,6 @@ fn paint_database_workbench_story(
             state.query.set_text(&state.tabs[0].draft);
             state.query.title = Some("Users".into());
         }
-        DatabaseWorkbenchStoryKind::Basic => {
-            state.conn_gate = DatabaseConnGate::Connected;
-            state.finish_run_success(3, 12);
-        }
     }
 
     let schema = if matches!(kind, DatabaseWorkbenchStoryKind::Unicode) {
@@ -26582,10 +26038,6 @@ fn paint_database_workbench_story(
     );
 }
 
-fn database_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_database_workbench_story(frame, area, system, DatabaseWorkbenchStoryKind::Basic);
-}
-
 fn database_workbench_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_database_workbench_story(
         frame,
@@ -26613,7 +26065,6 @@ fn database_workbench_unicode(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 #[derive(Clone, Copy)]
 enum GitWorkbenchStoryKind {
-    Basic,
     Conflict,
     Narrow,
     Fullscreen,
@@ -26653,7 +26104,7 @@ fn paint_git_workbench_story(
         GitWorkbenchStoryKind::Clean | GitWorkbenchStoryKind::Empty => {
             state.repo_status = GitRepoStatus::Clean;
         }
-        GitWorkbenchStoryKind::Unicode | GitWorkbenchStoryKind::Basic => {
+        GitWorkbenchStoryKind::Unicode => {
             state.repo_status = GitRepoStatus::Dirty;
         }
     }
@@ -26717,10 +26168,6 @@ fn paint_git_workbench_story(
     );
 }
 
-fn git_workbench_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Basic);
-}
-
 fn git_workbench_conflict(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_git_workbench_story(frame, area, system, GitWorkbenchStoryKind::Conflict);
 }
@@ -26747,7 +26194,6 @@ fn git_workbench_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 #[derive(Clone, Copy)]
 enum ObservabilityStoryKind {
-    Basic,
     Failure,
     Narrow,
     Unicode,
@@ -26774,7 +26220,7 @@ fn paint_observability_story(
         ObservabilityStoryKind::Failure => {
             seed_failure_state(&mut state);
         }
-        ObservabilityStoryKind::Unicode | ObservabilityStoryKind::Basic => {
+        ObservabilityStoryKind::Unicode => {
             state.live = ObservabilityLiveState::Live;
         }
     }
@@ -26800,10 +26246,6 @@ fn paint_observability_story(
     );
 }
 
-fn observability_dashboard_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_observability_story(frame, area, system, ObservabilityStoryKind::Basic);
-}
-
 fn observability_dashboard_failure(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_observability_story(frame, area, system, ObservabilityStoryKind::Failure);
 }
@@ -26818,7 +26260,6 @@ fn observability_dashboard_unicode(frame: &mut Frame<'_>, area: Rect, system: &D
 
 #[derive(Clone, Copy)]
 enum FileManagerStoryKind {
-    Basic,
     Conflict,
     Narrow,
     Unicode,
@@ -26846,7 +26287,7 @@ fn paint_file_manager_story(
         FileManagerStoryKind::Conflict => {
             seed_conflict_state(&mut state);
         }
-        FileManagerStoryKind::Unicode | FileManagerStoryKind::Basic => {}
+        FileManagerStoryKind::Unicode => {}
     }
 
     let entries = example_file_entries();
@@ -26866,10 +26307,6 @@ fn paint_file_manager_story(
             quick_open_items: &qo,
         },
     );
-}
-
-fn file_manager_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_file_manager_story(frame, area, system, FileManagerStoryKind::Basic);
 }
 
 fn file_manager_conflict(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -26947,10 +26384,6 @@ fn paint_project_launcher_story(
     );
 }
 
-fn project_launcher_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Basic);
-}
-
 fn project_launcher_stale(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_project_launcher_story(frame, area, system, ProjectLauncherStoryKind::Stale);
 }
@@ -26969,7 +26402,6 @@ fn project_launcher_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum HelpCenterStoryKind {
-    Basic,
     Compact,
     Narrow,
     Doctor,
@@ -27002,7 +26434,7 @@ fn paint_help_center_story(
         HelpCenterStoryKind::Doctor => {
             seed_diagnostics_state(&mut state);
         }
-        HelpCenterStoryKind::Basic | HelpCenterStoryKind::Unicode => {}
+        HelpCenterStoryKind::Unicode => {}
     }
     if kind == HelpCenterStoryKind::Unicode {
         state.selected_topic = Some("unicode".into());
@@ -27031,10 +26463,6 @@ fn paint_help_center_story(
     );
 }
 
-fn help_center_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_help_center_story(frame, area, system, HelpCenterStoryKind::Basic);
-}
-
 fn help_center_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_help_center_story(frame, area, system, HelpCenterStoryKind::Compact);
 }
@@ -27053,7 +26481,6 @@ fn help_center_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ErrorRecoveryStoryKind {
-    Basic,
     Redacted,
     Inline,
     Unicode,
@@ -27074,7 +26501,6 @@ fn paint_error_recovery_story(
     let mut state = ErrorRecoveryState::new();
     let mut snap = match kind {
         ErrorRecoveryStoryKind::Redacted => example_crash_snapshot_with_secrets(),
-        ErrorRecoveryStoryKind::Basic => example_recovery_snapshot(),
         ErrorRecoveryStoryKind::Inline => example_crash_snapshot_with_secrets(),
         ErrorRecoveryStoryKind::Unicode => CrashReportSnapshot {
             summary: "unexpected error · unexpected".into(),
@@ -27095,7 +26521,7 @@ fn paint_error_recovery_story(
         ErrorRecoveryStoryKind::Redacted => {
             seed_terminal_restore_failed(&mut state);
         }
-        ErrorRecoveryStoryKind::Basic | ErrorRecoveryStoryKind::Unicode => {
+        ErrorRecoveryStoryKind::Unicode => {
             state.mode = ErrorRecoveryMode::Full;
         }
     }
@@ -27113,10 +26539,6 @@ fn paint_error_recovery_story(
     );
 }
 
-fn error_recovery_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Basic);
-}
-
 fn error_recovery_redacted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Redacted);
 }
@@ -27127,16 +26549,6 @@ fn error_recovery_inline(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn error_recovery_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_error_recovery_story(frame, area, system, ErrorRecoveryStoryKind::Unicode);
-}
-
-fn auth_entry_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::patterns::{
-        AuthEntryState, AuthEntrySurfaces, example_auth_aside_lines, render_auth_entry,
-    };
-    let mut st = AuthEntryState::sign_up();
-    let mut surfaces = AuthEntrySurfaces::english(system, &mut st);
-    surfaces.aside_lines = example_auth_aside_lines();
-    render_auth_entry(frame.buffer_mut(), area, surfaces);
 }
 
 fn auth_entry_sign_in(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -27188,7 +26600,6 @@ fn input_group_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 #[derive(Clone, Copy)]
 enum SettingsScreenStoryKind {
-    Basic,
     Search,
     Validation,
     Conflicts,
@@ -27225,7 +26636,7 @@ fn paint_settings_screen_story(
 
     let (fieldsets, title, body_mode): (Vec<Fieldset<'_, &str>>, &str, SettingsBodyMode) =
         match kind {
-            SettingsScreenStoryKind::Basic | SettingsScreenStoryKind::Search => {
+            SettingsScreenStoryKind::Search => {
                 state.region = SettingsRegion::Body;
                 let _ = state.select_section("appearance");
                 (
@@ -27325,9 +26736,6 @@ fn paint_settings_screen_story(
     );
 }
 
-fn settings_screen_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Basic);
-}
 fn settings_screen_search(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_settings_screen_story(frame, area, system, SettingsScreenStoryKind::Search);
 }
@@ -27358,7 +26766,6 @@ fn settings_screen_help(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 
 #[derive(Clone, Copy)]
 enum SetupWizardStoryKind {
-    Welcome,
     Capability,
     Account,
     Permission,
@@ -27398,7 +26805,7 @@ fn paint_setup_wizard_story(
 
     // Position wizard on the desired step kind
     let target = match kind {
-        SetupWizardStoryKind::Welcome | SetupWizardStoryKind::Inline => SetupStepKind::Welcome,
+        SetupWizardStoryKind::Inline => SetupStepKind::Welcome,
         SetupWizardStoryKind::Capability => SetupStepKind::Capability,
         SetupWizardStoryKind::Account => SetupStepKind::Account,
         SetupWizardStoryKind::Permission => SetupStepKind::Permission,
@@ -27477,9 +26884,6 @@ fn paint_setup_wizard_story(
     );
 }
 
-fn setup_wizard_welcome(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Welcome);
-}
 fn setup_wizard_capability(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     paint_setup_wizard_story(frame, area, system, SetupWizardStoryKind::Capability);
 }
@@ -27565,8 +26969,8 @@ fn transcript_ascii_colorless(frame: &mut Frame<'_>, area: Rect, system: &Design
 // - Tabs: hover is modeled by TabsState::hovered; focused paint is the roving
 //   focus cue on a non-selected tab; per-tab enabled(false) paints disabled.
 // - Toast: never focusable by design and exposes no disabled or hover API.
-// - StatusBar: hover is modeled by StatusSlot::hover_style and
-//   StatusBarState::hovered. It has no focused state; disabled slots are omitted.
+// - StatusBar: hover is recipe-owned and modeled by StatusBarState::hovered.
+//   It has no focused state; disabled slots are omitted.
 // - ActionBar: cursor and Action.enabled paint focused and disabled. It has no
 //   hover API.
 
@@ -27645,14 +27049,10 @@ fn tabs_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn status_bar_hover_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{StatusRegion, StatusSlot};
 
-    let left = [StatusSlot::mode("mode", "NOR")
-        .style(Style::new().reversed())
-        .hover_style(Style::new().bold().reversed())];
+    let left = [StatusSlot::mode("mode", "NOR")];
     let center = [StatusSlot::focus_zone("focus", "main")];
     let right = [
-        StatusSlot::selection("sel", "3/12")
-            .style(Style::new().dim())
-            .hover_style(Style::new().bold()),
+        StatusSlot::selection("sel", "3/12"),
         StatusSlot::shortcut("hint", "? help").region(StatusRegion::Right),
     ];
     let mut state = StatusBarState::default();
@@ -27672,13 +27072,13 @@ fn action_bar_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
             id: "accept",
             label: "Accept",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         },
     ];
     let [resting, _, focused] = Layout::vertical([
@@ -27710,13 +27110,13 @@ fn action_bar_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
             id: "accept",
             label: "Accept",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Primary,
         },
         Action {
             id: "delete",
             label: "Delete",
             enabled: false,
-            style: None,
+            variant: ActionVariant::Destructive,
         },
     ];
     let mut state = ActionBarState::default();

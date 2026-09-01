@@ -20,13 +20,14 @@
 //! **vs [`Select`](crate::widgets::Select).** Select is a form field. These
 //! selectors are composer/status chrome with metadata rows and consequence cues.
 
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Role},
+    interaction::{NavigationMove, UiIntent, default_button_intent, default_list_intent},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         agent_blocks::WorkbenchMode,
@@ -912,23 +913,45 @@ impl ModelSelectorState {
             return ModelSelectorOutcome::Ignored;
         }
         match self.presentation {
-            ModelSelectorPresentation::Compact => match key.code {
-                KeyCode::Enter | KeyCode::Char(' ') => self.open(),
-                KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => self.open(),
-                KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    self.reasoning = cycle_reasoning(self.reasoning);
-                    ModelSelectorOutcome::ReasoningChanged {
-                        effort: self.reasoning,
+            ModelSelectorPresentation::Compact => {
+                if matches!(default_button_intent(key), Some(UiIntent::Activate)) {
+                    return self.open();
+                }
+                match key.code {
+                    KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        self.open()
                     }
+                    KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        self.reasoning = cycle_reasoning(self.reasoning);
+                        ModelSelectorOutcome::ReasoningChanged {
+                            effort: self.reasoning,
+                        }
+                    }
+                    _ => ModelSelectorOutcome::Ignored,
                 }
-                _ => ModelSelectorOutcome::Ignored,
-            },
+            }
             ModelSelectorPresentation::Expanded => {
-                if key.code == KeyCode::Esc {
-                    return self.close();
-                }
-                if key.code == KeyCode::Enter {
-                    return self.confirm(options);
+                if let Some(intent) = default_list_intent(key) {
+                    match intent {
+                        UiIntent::Cancel => return self.close(),
+                        UiIntent::Activate => return self.confirm(options),
+                        UiIntent::Move(NavigationMove::Next) => {
+                            let visible = self.visible(options);
+                            self.move_highlight(&visible, 1);
+                            return ModelSelectorOutcome::HighlightChanged {
+                                id: self.highlight.clone().unwrap_or_default(),
+                            };
+                        }
+                        UiIntent::Move(NavigationMove::Previous) => {
+                            let visible = self.visible(options);
+                            self.move_highlight(&visible, -1);
+                            return ModelSelectorOutcome::HighlightChanged {
+                                id: self.highlight.clone().unwrap_or_default(),
+                            };
+                        }
+                        // Space remains search text in this editable surface.
+                        _ => {}
+                    }
                 }
                 let visible = self.visible(options);
                 if visible.is_empty() {
@@ -936,18 +959,6 @@ impl ModelSelectorState {
                     return self.handle_search_char(key);
                 }
                 match key.code {
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        self.move_highlight(&visible, 1);
-                        ModelSelectorOutcome::HighlightChanged {
-                            id: self.highlight.clone().unwrap_or_default(),
-                        }
-                    }
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        self.move_highlight(&visible, -1);
-                        ModelSelectorOutcome::HighlightChanged {
-                            id: self.highlight.clone().unwrap_or_default(),
-                        }
-                    }
                     KeyCode::Backspace => {
                         self.search.pop();
                         ModelSelectorOutcome::SearchChanged {
@@ -1092,7 +1103,11 @@ impl<'a> ModelSelector<'a> {
             .map(|o| o.status_text(self.ascii))
             .unwrap_or_else(|| "model?".into());
         if self.show_reasoning {
-            format!("{base} · {}", state.reasoning.short())
+            format!(
+                "{base}{}{}",
+                if self.ascii { " | " } else { " · " },
+                state.reasoning.short()
+            )
         } else {
             base
         }
@@ -1111,32 +1126,68 @@ impl<'a> ModelSelector<'a> {
         }
         match state.presentation {
             ModelSelectorPresentation::Compact => {
-                let line = format!("⚙ {}", self.compact_status(state));
-                let style = if state.focused {
-                    self.system.style(Role::TextStrong)
+                let line = format!(
+                    "{} {}",
+                    if self.ascii { "M" } else { "⚙" },
+                    self.compact_status(state)
+                );
+                let control_state = if !state.accepts_input {
+                    ControlState::Disabled
+                } else if state.focused {
+                    ControlState::Focused
                 } else {
-                    self.system.style(Role::TextMuted)
+                    ControlState::Default
                 };
+                let recipe = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                buffer.set_style(area, recipe.fill);
                 buffer.set_stringn(
                     area.x,
                     area.y,
                     take_display_cols(&line, usize::from(area.width)),
                     usize::from(area.width),
-                    style,
+                    recipe.label,
                 );
             }
             ModelSelectorPresentation::Expanded => {
                 let mut y = area.y;
                 // search line
                 if area.height > 0 {
-                    let q = format!("/{}", state.search);
+                    let control_state = if !state.accepts_input {
+                        ControlState::Disabled
+                    } else if state.focused {
+                        ControlState::Focused
+                    } else {
+                        ControlState::Default
+                    };
+                    let recipe = self.system.input_recipe(control_state, false);
+                    let search_area = Rect::new(area.x, y, area.width, 1);
+                    buffer.set_style(search_area, recipe.fill);
+                    if area.width > 0 {
+                        let prompt = if self.ascii { ">" } else { "›" };
+                        buffer.set_stringn(area.x, y, prompt, 1, recipe.cursor);
+                    }
+                    let value_x = area.x.saturating_add(1).min(area.right());
+                    let value_w = area.width.saturating_sub(1);
+                    let (q, style) = if state.search.is_empty() {
+                        ("Search models", recipe.placeholder)
+                    } else {
+                        (state.search.as_str(), recipe.value)
+                    };
                     buffer.set_stringn(
-                        area.x,
+                        value_x,
                         y,
-                        take_display_cols(&q, usize::from(area.width)),
-                        usize::from(area.width),
-                        self.system.style(Role::Accent),
+                        take_display_cols(q, usize::from(value_w)),
+                        usize::from(value_w),
+                        style,
                     );
+                    if state.focused && !state.search.is_empty() {
+                        let caret_x = value_x
+                            .saturating_add(display_cols(&state.search) as u16)
+                            .min(area.right().saturating_sub(1));
+                        buffer.set_stringn(caret_x, y, " ", 1, recipe.cursor);
+                    }
                     y = y.saturating_add(1);
                 }
                 let visible = state.visible(self.options);
@@ -1167,8 +1218,14 @@ impl<'a> ModelSelector<'a> {
                     } else {
                         ""
                     };
+                    let committed = state.selected.as_deref() == Some(o.id.as_str());
+                    let checked = if committed {
+                        if self.ascii { "*" } else { "✓" }
+                    } else {
+                        " "
+                    };
                     let line = format!(
-                        "{mark}{} {}{}",
+                        "{mark}{checked} {} {}{}",
                         o.label,
                         if o.context_tokens > 0 {
                             format_context(o.context_tokens)
@@ -1177,14 +1234,24 @@ impl<'a> ModelSelector<'a> {
                         },
                         warn
                     );
-                    let style = if !o.availability.is_selectable() {
-                        self.system.style(Role::TextDisabled)
-                    } else if selected {
-                        self.system.style(Role::Focus)
-                    } else if o.warning.is_some() {
-                        self.system.style(Role::Warning)
+                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                        selected,
+                        focused: selected && state.focused,
+                        hovered: false,
+                        enabled: o.availability.is_selectable(),
+                        loading: false,
+                        checked: committed,
+                    });
+                    let rect = Rect::new(area.x, y, area.width, 1);
+                    if recipe.use_fill {
+                        buffer.set_style(rect, recipe.label);
+                    } else if recipe.use_tint {
+                        buffer.set_style(rect, recipe.tint);
+                    }
+                    let style = if o.warning.is_some() && o.availability.is_selectable() {
+                        recipe.label.patch(self.system.style(Role::Warning))
                     } else {
-                        self.system.style(Role::Text)
+                        recipe.label
                     };
                     buffer.set_stringn(
                         area.x,
@@ -1204,14 +1271,18 @@ impl<'a> ModelSelector<'a> {
                     ));
                     y = y.saturating_add(1);
                     // meta line if room
-                    let meta = o.row_meta();
+                    let meta = if self.ascii {
+                        o.row_meta().replace(" · ", " | ")
+                    } else {
+                        o.row_meta()
+                    };
                     if !meta.is_empty() && y < area.bottom() && area.height > 4 {
                         buffer.set_stringn(
                             area.x.saturating_add(2),
                             y,
                             take_display_cols(&meta, usize::from(area.width.saturating_sub(2))),
                             usize::from(area.width.saturating_sub(2)),
-                            self.system.style(Role::TextMuted),
+                            recipe.secondary,
                         );
                         y = y.saturating_add(1);
                     }
@@ -1405,53 +1476,61 @@ impl AgentModeSelectorState {
             return AgentModeSelectorOutcome::Ignored;
         }
         match self.presentation {
-            AgentModePresentation::Compact => match key.code {
-                KeyCode::Enter | KeyCode::Char(' ') => self.open_menu(),
-                KeyCode::Left | KeyCode::Char('h') => self.cycle(modes, -1),
-                KeyCode::Right | KeyCode::Char('l') => self.cycle(modes, 1),
-                KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    self.open_menu()
+            AgentModePresentation::Compact => {
+                if matches!(default_button_intent(key), Some(UiIntent::Activate)) {
+                    return self.open_menu();
                 }
-                KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    // cycle policy
-                    let next = cycle_policy(self.policy.unwrap_or(ExecutionPolicyKind::Default));
-                    self.policy = Some(next);
-                    AgentModeSelectorOutcome::PolicyChanged {
-                        policy: next,
-                        warning: next.is_warning(),
-                    }
-                }
-                _ => AgentModeSelectorOutcome::Ignored,
-            },
-            AgentModePresentation::Ribbon => match key.code {
-                KeyCode::Left | KeyCode::Char('h') => self.cycle(modes, -1),
-                KeyCode::Right | KeyCode::Char('l') => self.cycle(modes, 1),
-                KeyCode::Enter => {
-                    // confirm current highlight if set
-                    if self.highlight.is_none() {
-                        self.highlight = self.selected.clone();
-                    }
-                    self.confirm(modes)
-                }
-                KeyCode::Char(' ') => self.open_menu(),
-                _ => AgentModeSelectorOutcome::Ignored,
-            },
-            AgentModePresentation::Menu => {
-                if key.code == KeyCode::Esc {
-                    return self.close_menu();
-                }
-                if key.code == KeyCode::Enter {
-                    return self.confirm(modes);
-                }
-                let enabled: Vec<&AgentModeOption> = modes.iter().filter(|m| m.enabled).collect();
                 match key.code {
-                    KeyCode::Down | KeyCode::Char('j') => {
+                    KeyCode::Left | KeyCode::Char('h') => self.cycle(modes, -1),
+                    KeyCode::Right | KeyCode::Char('l') => self.cycle(modes, 1),
+                    KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        self.open_menu()
+                    }
+                    KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        // cycle policy
+                        let next =
+                            cycle_policy(self.policy.unwrap_or(ExecutionPolicyKind::Default));
+                        self.policy = Some(next);
+                        AgentModeSelectorOutcome::PolicyChanged {
+                            policy: next,
+                            warning: next.is_warning(),
+                        }
+                    }
+                    _ => AgentModeSelectorOutcome::Ignored,
+                }
+            }
+            AgentModePresentation::Ribbon => {
+                if let Some(intent) = default_list_intent(key) {
+                    match intent {
+                        UiIntent::Activate => {
+                            // confirm current highlight if set
+                            if self.highlight.is_none() {
+                                self.highlight = self.selected.clone();
+                            }
+                            return self.confirm(modes);
+                        }
+                        UiIntent::Toggle => return self.open_menu(),
+                        _ => {}
+                    }
+                }
+                match key.code {
+                    KeyCode::Left | KeyCode::Char('h') => self.cycle(modes, -1),
+                    KeyCode::Right | KeyCode::Char('l') => self.cycle(modes, 1),
+                    _ => AgentModeSelectorOutcome::Ignored,
+                }
+            }
+            AgentModePresentation::Menu => {
+                let enabled: Vec<&AgentModeOption> = modes.iter().filter(|m| m.enabled).collect();
+                match default_list_intent(key) {
+                    Some(UiIntent::Cancel) => self.close_menu(),
+                    Some(UiIntent::Activate | UiIntent::Toggle) => self.confirm(modes),
+                    Some(UiIntent::Move(NavigationMove::Next)) => {
                         self.move_hl(&enabled, 1);
                         AgentModeSelectorOutcome::HighlightChanged {
                             id: self.highlight.clone().unwrap_or_default(),
                         }
                     }
-                    KeyCode::Up | KeyCode::Char('k') => {
+                    Some(UiIntent::Move(NavigationMove::Previous)) => {
                         self.move_hl(&enabled, -1);
                         AgentModeSelectorOutcome::HighlightChanged {
                             id: self.highlight.clone().unwrap_or_default(),
@@ -1548,7 +1627,7 @@ impl<'a> AgentModeSelector<'a> {
             .map(|m| m.status_text())
             .unwrap_or_else(|| "MODE".into());
         if let Some(p) = state.policy {
-            format!("{mode}·{}", p.short())
+            format!("{mode}{}{}", if self.ascii { "/" } else { "·" }, p.short())
         } else {
             mode
         }
@@ -1571,13 +1650,27 @@ impl<'a> AgentModeSelector<'a> {
                     .selected()
                     .and_then(|id| self.modes.iter().find(|m| m.id == id));
                 let warn = mode.is_some_and(|m| m.needs_warning_role());
-                let line = format!("[{}]", self.compact_status(state));
-                let style = if warn {
-                    self.system.style(Role::Warning)
-                } else if state.focused {
-                    self.system.style(Role::Accent)
+                let warning = if warn {
+                    if self.ascii { "!" } else { "⚠" }
                 } else {
-                    self.system.style(Role::TextMuted)
+                    ""
+                };
+                let line = format!("[{}]{warning}", self.compact_status(state));
+                let control_state = if !state.accepts_input {
+                    ControlState::Disabled
+                } else if state.focused {
+                    ControlState::Focused
+                } else {
+                    ControlState::Default
+                };
+                let recipe = self
+                    .system
+                    .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                buffer.set_style(area, recipe.fill);
+                let style = if warn {
+                    recipe.label.patch(self.system.style(Role::Warning))
+                } else {
+                    recipe.label
                 };
                 buffer.set_stringn(
                     area.x,
@@ -1602,15 +1695,25 @@ impl<'a> AgentModeSelector<'a> {
                     let w = (display_cols(&label) as u16)
                         .min(area.right().saturating_sub(x))
                         .max(1);
-                    let style = if !m.enabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if m.needs_warning_role() && active {
-                        self.system.style(Role::Warning)
-                    } else if active {
-                        self.system.style(Role::Accent)
+                    let control_state = if !m.enabled || !state.accepts_input {
+                        ControlState::Disabled
+                    } else if active && state.focused {
+                        ControlState::Focused
                     } else {
-                        self.system.style(Role::TextMuted)
+                        ControlState::Default
                     };
+                    let recipe = self
+                        .system
+                        .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                    let rect = Rect::new(x, area.y, w, 1);
+                    buffer.set_style(rect, recipe.fill);
+                    let mut style = recipe.label;
+                    if active {
+                        style = style.add_modifier(Modifier::REVERSED);
+                    }
+                    if m.needs_warning_role() {
+                        style = style.patch(self.system.style(Role::Warning));
+                    }
                     buffer.set_stringn(
                         x,
                         area.y,
@@ -1643,14 +1746,25 @@ impl<'a> AgentModeSelector<'a> {
                         " "
                     };
                     let line = format!("{mark}{} {}", m.short_label, m.label);
-                    let style = if !m.enabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if m.needs_warning_role() {
-                        self.system.style(Role::Warning)
-                    } else if selected {
-                        self.system.style(Role::Focus)
+                    let committed = state.selected.as_deref() == Some(m.id.as_str());
+                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                        selected,
+                        focused: selected && state.focused,
+                        hovered: false,
+                        enabled: m.enabled && state.accepts_input,
+                        loading: false,
+                        checked: committed,
+                    });
+                    let rect = Rect::new(area.x, y, area.width, 1);
+                    if recipe.use_fill {
+                        buffer.set_style(rect, recipe.label);
+                    } else if recipe.use_tint {
+                        buffer.set_style(rect, recipe.tint);
+                    }
+                    let style = if m.needs_warning_role() {
+                        recipe.label.patch(self.system.style(Role::Warning))
                     } else {
-                        self.system.style(Role::Text)
+                        recipe.label
                     };
                     buffer.set_stringn(
                         area.x,
@@ -1676,7 +1790,7 @@ impl<'a> AgentModeSelector<'a> {
                                 y,
                                 take_display_cols(c, usize::from(area.width.saturating_sub(2))),
                                 usize::from(area.width.saturating_sub(2)),
-                                self.system.style(Role::TextMuted),
+                                recipe.secondary,
                             );
                             y = y.saturating_add(1);
                         }
@@ -1748,7 +1862,11 @@ impl<'a> ComposerSelectors<'a> {
             .selected()
             .and_then(|id| self.modes.iter().find(|m| m.id == id))
             .is_some_and(|m| m.needs_warning_role());
-        let line = format!("[{mode}] · {model}");
+        let line = format!(
+            "[{mode}]{}{}",
+            if self.ascii { " | " } else { " · " },
+            model
+        );
         let style = if warn {
             self.system.style(Role::Warning)
         } else {
@@ -1861,6 +1979,17 @@ mod tests {
         st.highlight = Some("smart".into());
         assert!(matches!(st.close(), ModelSelectorOutcome::Closed));
         assert_eq!(st.selected(), Some("fast"));
+
+        let mut mode = AgentModeSelectorState::with_selected("edit");
+        mode.open_menu();
+        assert!(matches!(
+            mode.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &default_agent_modes(),
+            ),
+            AgentModeSelectorOutcome::Closed
+        ));
+        assert_eq!(mode.selected(), Some("edit"));
     }
 
     #[test]
@@ -1942,6 +2071,29 @@ mod tests {
     }
 
     #[test]
+    fn empty_selector_catalogs_paint_stable_fallbacks() {
+        let system = DesignSystem::default();
+        let models: [ModelOption; 0] = [];
+        let modes: [AgentModeOption; 0] = [];
+        let model_state = ModelSelectorState::new();
+        let mode_state = AgentModeSelectorState::new();
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+
+        ComposerSelectors::new(&modes, &models, &system).paint_compact(
+            area,
+            &mut buffer,
+            &mode_state,
+            &model_state,
+        );
+
+        let row = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>();
+        assert!(!row.trim().is_empty(), "{row:?}");
+    }
+
+    #[test]
     fn accepts_input_gate() {
         let mut st = ModelSelectorState::new();
         st.set_accepts_input(false);
@@ -1954,6 +2106,36 @@ mod tests {
         assert!(matches!(
             ms.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &[]),
             AgentModeSelectorOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn model_and_mode_mouse_confirm_only_hit_options() {
+        let models = example_model_catalog();
+        let hit = Rect::new(3, 2, 10, 1);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(hit.x, hit.y),
+            modifiers: KeyModifiers::NONE,
+        };
+        let mut model = ModelSelectorState::new();
+        model.presentation = ModelSelectorPresentation::Expanded;
+        assert!(matches!(
+            model.handle_mouse(
+                mouse,
+                Rect::new(0, 0, 30, 8),
+                &models,
+                &[("smart".into(), hit)],
+            ),
+            ModelSelectorOutcome::Confirmed { id, .. } if id == "smart"
+        ));
+
+        let modes = default_agent_modes();
+        let mut mode = AgentModeSelectorState::new();
+        mode.presentation = AgentModePresentation::Menu;
+        assert!(matches!(
+            mode.handle_mouse(mouse, &modes, &[("edit".into(), hit)]),
+            AgentModeSelectorOutcome::ModeChanged { id, .. } if id == "edit"
         ));
     }
 

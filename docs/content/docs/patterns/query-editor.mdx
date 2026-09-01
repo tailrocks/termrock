@@ -1,52 +1,35 @@
 ---
-title: Query Editor
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: QueryEditor
-demo: query-editor/basic
-interaction: activation
+title: "Query Editor"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: QueryEditor
 source: crates/termrock/src/patterns/query_editor.rs
 classification: composite
+tags:
+  - "composite"
+  - "CodeFrame"
+  - "TextArea"
+aliases: []
+uses:
+  - "CodeFrame"
+  - "TextArea"
+supportingTypes:
+  - "CodeFrameLine"
+  - "Diagnostic"
+  - "DiagnosticSeverity"
+  - "HelpEntry"
+  - "HistoryEntry"
+  - "SourceLabel"
+  - "SourceRange"
+  - "SpanStyle"
+  - "StatefulWidget"
+  - "TextCursor"
+  - "TextWrap"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="query-editor/basic" interactive caption="Query Editor · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 72×18
-
-Composed public building blocks: `CodeFrame`, `CodeFrameLine`, `Diagnostic`, `DiagnosticSeverity`, `HelpEntry`, `HistoryEntry`, `SourceLabel`, `SourceRange`, `SpanStyle`, `StatefulWidget`, `TextArea`, `TextCursor`, `TextWrap`.
-
-## Workflow
-
-- `type/paste query`: focus the real field and edit its persistent Unicode-safe draft.
-- `Ctrl+Enter run`: invoke the focused public state-machine action and inspect its typed request.
-- `Tab panes`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Esc cancel`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/query_editor.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/query_editor.rs)
-- Demo: `query-editor/basic`
-
-## Migrated handbook guidance
-
-# QueryEditor
 
 Multiline query workbench for SQL, logs, search DSLs, and structured queries.
 TermRock owns draft editing, focus zones, run/stop chrome, parameters, and
 typed **requests**. Host owns language services, execution, formatting, and
 result grids.
-
 
 ## When to use / when not
 
@@ -102,7 +85,3 @@ completion overlays and help modals.
 | Ctrl+J · Ctrl+1..4 | Focus zones |
 | Ctrl+M · Ctrl+Shift+F | Mode · fullscreen |
 | Ctrl+? | Help |
-
-## Related
-
-TextArea · CompletionMenu · Diagnostic · KeyboardHelp · HistoryPicker · DataTable · migration `0204`

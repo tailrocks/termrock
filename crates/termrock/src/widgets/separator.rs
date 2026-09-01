@@ -126,12 +126,6 @@ impl<'a> Separator<'a> {
         }
     }
 
-    /// Horizontal quiet rule (legacy ergonomics).
-    #[must_use]
-    pub const fn horizontal(system: &'a DesignSystem) -> Self {
-        Self::new(system)
-    }
-
     /// Vertical quiet rule.
     #[must_use]
     pub const fn vertical(system: &'a DesignSystem) -> Self {
@@ -270,9 +264,6 @@ impl<'a> Separator<'a> {
         );
     }
 }
-
-/// Legacy name kept as an alias of [`Separator`].
-pub type SeparatorLine<'a> = Separator<'a>;
 
 impl Widget for &Separator<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
@@ -482,7 +473,7 @@ mod tests {
     fn horizontal_quiet_fills_width() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 10, 1));
-        Separator::horizontal(&system).paint(Rect::new(0, 0, 10, 1), &mut buf);
+        Separator::new(&system).paint(Rect::new(0, 0, 10, 1), &mut buf);
         assert!(!buf[(0, 0)].symbol().is_empty());
         assert!(!buf[(9, 0)].symbol().is_empty());
     }
@@ -501,7 +492,7 @@ mod tests {
     fn empty_area_no_panic() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 0, 0));
-        Separator::horizontal(&system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+        Separator::new(&system).paint(Rect::new(0, 0, 0, 0), &mut buf);
         Separator::vertical(&system).paint(Rect::new(0, 0, 0, 0), &mut buf);
     }
 
@@ -509,7 +500,7 @@ mod tests {
     fn one_cell_horizontal_and_vertical() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
-        Separator::horizontal(&system).paint(Rect::new(0, 0, 1, 1), &mut buf);
+        Separator::new(&system).paint(Rect::new(0, 0, 1, 1), &mut buf);
         assert!(!buf[(0, 0)].symbol().is_empty());
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
         Separator::vertical(&system).paint(Rect::new(0, 0, 1, 1), &mut buf);
@@ -549,10 +540,10 @@ mod tests {
     fn ascii_glyphs() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let mut buf = Buffer::empty(Rect::new(0, 0, 5, 1));
-        Separator::horizontal(&system).paint(Rect::new(0, 0, 5, 1), &mut buf);
+        Separator::new(&system).paint(Rect::new(0, 0, 5, 1), &mut buf);
         assert_eq!(buf[(0, 0)].symbol(), "-");
         let mut buf = Buffer::empty(Rect::new(0, 0, 5, 1));
-        Separator::horizontal(&system)
+        Separator::new(&system)
             .strong()
             .paint(Rect::new(0, 0, 5, 1), &mut buf);
         assert_eq!(buf[(0, 0)].symbol(), "=");
@@ -567,7 +558,7 @@ mod tests {
     fn labeled_centers_text() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        Separator::horizontal(&system)
+        Separator::new(&system)
             .label("OR")
             .paint(Rect::new(0, 0, 20, 1), &mut buf);
         // Label cells should include 'O' somewhere mid-line.
@@ -585,7 +576,7 @@ mod tests {
     fn labeled_tiny_falls_back_to_rule() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let mut buf = Buffer::empty(Rect::new(0, 0, 3, 1));
-        Separator::horizontal(&system)
+        Separator::new(&system)
             .label("LONG LABEL")
             .paint(Rect::new(0, 0, 3, 1), &mut buf);
         assert_eq!(buf[(0, 0)].symbol(), "-");
@@ -595,7 +586,7 @@ mod tests {
     fn section_break_uses_middle_row_when_tall() {
         let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 3));
-        Separator::horizontal(&system)
+        Separator::new(&system)
             .section_break()
             .paint(Rect::new(0, 0, 8, 3), &mut buf);
         // Middle row has rule.
@@ -607,9 +598,9 @@ mod tests {
     #[test]
     fn preferred_cross_size_recipes() {
         let system = DesignSystem::default();
-        assert_eq!(Separator::horizontal(&system).preferred_cross_size(), 1);
+        assert_eq!(Separator::new(&system).preferred_cross_size(), 1);
         assert_eq!(
-            Separator::horizontal(&system)
+            Separator::new(&system)
                 .section_break()
                 .preferred_cross_size(),
             3
@@ -617,14 +608,10 @@ mod tests {
     }
 
     #[test]
-    fn legacy_alias_and_widget() {
+    fn separator_implements_widget() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 4, 1));
-        Widget::render(
-            &SeparatorLine::horizontal(&system),
-            Rect::new(0, 0, 4, 1),
-            &mut buf,
-        );
+        Widget::render(&Separator::new(&system), Rect::new(0, 0, 4, 1), &mut buf);
         assert!(!buf[(0, 0)].symbol().is_empty());
     }
 
@@ -634,13 +621,13 @@ mod tests {
         let system = DesignSystem::default();
         let mut scene = SemanticScene::<&str, ()>::new();
         scene.begin_frame();
-        Separator::horizontal(&system).register_semantic_if_labeled(
+        Separator::new(&system).register_semantic_if_labeled(
             &mut scene,
             "a",
             Rect::new(0, 0, 10, 1),
         );
         assert!(scene.is_empty());
-        Separator::horizontal(&system)
+        Separator::new(&system)
             .label("Part 2")
             .register_semantic_if_labeled(&mut scene, "b", Rect::new(0, 0, 10, 1));
         assert_eq!(scene.len(), 1);
@@ -653,7 +640,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 80, 3));
         let area = Rect::new(0, 0, 80, 1);
         for _ in 0..50_000 {
-            Separator::horizontal(&system)
+            Separator::new(&system)
                 .label("SECTION")
                 .paint(area, &mut buf);
         }

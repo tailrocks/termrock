@@ -1,7 +1,7 @@
 metrics-dashboard/basic 90x22 (story 88x20)
                                                                                           
  ops · 15m · live                                                                         
- ─· CPU────────────────────── ─! Memory─────────────────── ─· RPS──────────────────────── 
+ ─┃ ✓ ok CPU───────────────── ─┃ ! warning Memory───────── ─┃ ✓ ok RPS─────────────────── 
   42%                          71%                          1.2k                          
       ▂▂▂▄▄▄▃▃▃▆▆▆▆▅▅▅███▆▆▆   Memory  ███████████░░░░ 71       ▂▂▂▄▄▄▄▃▃▃▆▆▆▆▅▅▅████▆▆▆  
                                                                                           
@@ -9,7 +9,7 @@ metrics-dashboard/basic 90x22 (story 88x20)
                                                                                           
                                                                                           
                                                                                           
- ─· p99──────────────────────                                                             
+ ─┃ ✓ ok p99─────────────────                                                             
   48ms                                                                                    
       ▂▂▂▄▄▄▃▃▃▆▆▆▆▅▅▅███▆▆▆                                                              
                                                                                           
@@ -17,7 +17,7 @@ metrics-dashboard/basic 90x22 (story 88x20)
                                                                                           
                                                                                           
                                                                                           
- w memory > 70%                                                                           
+   ┃ ! warning · memory > 70%                                                             
                                                                                           
  Tab zones · hjkl tiles · Enter drill · C-t range · C-k cmds                              
                                                                                           

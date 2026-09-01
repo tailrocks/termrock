@@ -45,10 +45,6 @@ use crate::{
 const GUTTER_W: u16 = 2;
 
 /// Column separator, from the glyph catalog rather than a file-local literal.
-fn system_rule_v(system: &DesignSystem) -> &'static str {
-    system.glyphs.rule_v()
-}
-
 const RESIZE_HIT: u16 = 1;
 
 /// Keyboard navigation mode (VisiData-like layers).
@@ -1126,6 +1122,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         if area.is_empty() {
             return;
         }
+        let ascii = state.ascii || self.system.glyphs.is_ascii();
         let surface_focused = self.focused || state.accepts_input;
         let has_toolbar = self.toolbar.is_some();
         let has_footer = true;
@@ -1139,7 +1136,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         if let Some(tb) = self.toolbar
             && y < area.bottom()
         {
-            let line = tb.actions.join(" · ");
+            let line = tb.actions.join(if ascii { " - " } else { " · " });
             let text = take_display_cols(&line, usize::from(area.width));
             buffer.set_stringn(
                 area.x,
@@ -1184,58 +1181,26 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        match &state.load {
-            LoadState::Empty { message } => {
-                paint_status_line(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "[ ] " } else { "∅ " },
-                    message.as_deref().unwrap_or("No rows"),
-                    Role::TextMuted,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            LoadState::Loading { message } => {
-                paint_status_line(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "... " } else { "… " },
-                    message.as_deref().unwrap_or("Loading…"),
-                    Role::TextMuted,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            LoadState::Error { message, .. } => {
-                let role = if state.colorless {
-                    Role::TextStrong
-                } else {
-                    Role::Danger
-                };
-                paint_status_line(
-                    self,
-                    area,
-                    y,
-                    buffer,
-                    if state.ascii { "! " } else { "✗ " },
-                    &format!("{message}  (r retry)"),
-                    role,
-                );
-                state.body_origin = (area.x, y);
-                state.body_rows = 0;
-                state.body_width = area.width;
-                return;
-            }
-            _ => {}
+        if let Some(chrome) = super::data_view::data_load_chrome(
+            &state.load,
+            self.system,
+            ascii,
+            state.colorless,
+            "No rows",
+        ) {
+            paint_status_line(
+                self,
+                area,
+                y,
+                buffer,
+                chrome.prefix,
+                &chrome.message,
+                chrome.role,
+            );
+            state.body_origin = (area.x, y);
+            state.body_rows = 0;
+            state.body_width = area.width;
+            return;
         }
 
         state.body_origin = (area.x, y);
@@ -1285,7 +1250,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             if state.editing {
                 parts.push(format!("edit:{}", state.edit_draft));
             }
-            let footer = parts.join(" · ");
+            let footer = parts.join(if ascii { " - " } else { " · " });
             if !footer.is_empty() {
                 let text = take_display_cols(&footer, usize::from(area.width));
                 buffer.set_stringn(
@@ -1330,9 +1295,10 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     group: &GroupHeader<RowId>,
     state: &DataTableState<RowId, ColId>,
 ) {
+    let ascii = state.ascii || table.system.glyphs.is_ascii();
     let mark = if group.expanded {
-        if state.ascii { "v " } else { "▾ " }
-    } else if state.ascii {
+        if ascii { "v " } else { "▾ " }
+    } else if ascii {
         "> "
     } else {
         "▸ "
@@ -1439,7 +1405,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                system_rule_v(table.system),
+                super::table_chrome::column_gap(),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1497,48 +1463,33 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     ColId: Clone,
     RowId: Clone,
 {
+    let ascii = state.ascii || table.system.glyphs.is_ascii();
     let cursor = state.cursor_row == row_index;
     let selected = state.selection.is_row_selected(id);
     let expanded = state.expand.expanded.contains(id);
     let logical_row = state.window.offset.saturating_add(row_index as u64);
 
-    let recipe = table.system.resolve_list_row(ListRowVisualState {
-        selected,
-        focused: cursor && surface_focused,
-        hovered: state.hovered_row.as_ref() == Some(id),
-        enabled: true,
-        loading: false,
-        checked: selected,
-    });
-    let style = if state.colorless {
-        if selected || (cursor && surface_focused) {
-            table.system.style(Role::TextStrong)
-        } else {
-            table.system.style(Role::Text)
-        }
-    } else if selected {
-        recipe.label.patch(recipe.tint)
-    } else if cursor && surface_focused {
-        table.system.style(Role::Focus)
-    } else if state.striped && row_index % 2 == 1 {
+    let indicated = selected || (cursor && surface_focused);
+    let chrome = super::row_chrome::RowChrome::resolve(
+        table.system,
+        ListRowVisualState {
+            selected: indicated,
+            focused: cursor && surface_focused,
+            hovered: state.hovered_row.as_ref() == Some(id),
+            enabled: true,
+            loading: false,
+            checked: selected,
+        },
+    )
+    .colorless(state.colorless || table.system.mono());
+    let base = if state.striped && row_index % 2 == 1 {
         table.system.style(Role::TextMuted)
     } else {
         table.system.style(Role::Text)
     };
+    let style = chrome.label_style(base);
 
-    let gutter = if selected || (cursor && surface_focused) {
-        table.system.glyphs.selection_gutter()
-    } else if expanded {
-        if state.ascii { "v" } else { "▾" }
-    } else {
-        " "
-    };
-    let gstyle = if selected {
-        table.system.style(Role::Accent)
-    } else {
-        style
-    };
-    buffer.set_stringn(area.x, y, gutter, 1, gstyle);
+    buffer.set_stringn(area.x, y, " ", 1, style);
     buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
     let origin = area.x.saturating_add(GUTTER_W);
@@ -1579,10 +1530,10 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             row: logical_row,
             col: paint_ord,
         });
-        let quiet = if state.colorless {
+        let quiet = if state.colorless || table.system.mono() {
             style
         } else {
-            recipe.secondary.fg.map_or(style, |fg| style.fg(fg))
+            chrome.secondary_style(style)
         };
         let mut cell_style = col.kind.cell_style(style, quiet);
         if cell_selected {
@@ -1610,7 +1561,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_end.min(clip_right.saturating_sub(1)),
                 y,
-                system_rule_v(table.system),
+                super::table_chrome::column_gap(),
                 1,
                 table.system.style(Role::Border),
             );
@@ -1619,6 +1570,34 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             x_pin = paint_end.saturating_add(1);
         }
     }
+    chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
+    if area.width > 1 {
+        let auxiliary = if selected {
+            Some(table.system.glyphs.check_on())
+        } else if expanded {
+            Some(if ascii { "v" } else { "▾" })
+        } else {
+            None
+        };
+        if let Some(glyph) = auxiliary {
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                y,
+                glyph,
+                1,
+                if selected {
+                    table.system.style(Role::Accent)
+                } else {
+                    table.system.style(Role::TextMuted)
+                },
+            );
+        }
+    }
+    super::surface::normalize_content_band(
+        table.system,
+        buffer,
+        Rect::new(area.x, y, area.width, 1),
+    );
 }
 
 impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
@@ -1876,6 +1855,44 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains("no data") || text.contains("∅") || text.contains("empty"));
+    }
+
+    #[test]
+    fn load_states_paint_explicit_ascii_no_color_cues() {
+        let system = DesignSystem::phosphor().no_color();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let rows: [(u64, &[&str]); 0] = [];
+        let render = |load| {
+            let mut state = DataTableState::<u64, &str>::new();
+            state.load = load;
+            let area = Rect::new(0, 0, 32, 5);
+            let mut buffer = Buffer::empty(area);
+            DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+            buffer
+                .content()
+                .iter()
+                .map(|cell| cell.symbol())
+                .collect::<String>()
+        };
+
+        let loading = render(LoadState::Loading { message: None });
+        let empty = render(LoadState::Empty {
+            message: Some("no data".into()),
+        });
+        let error = render(LoadState::Error {
+            message: "failed".into(),
+            retryable: true,
+        });
+
+        assert!(loading.contains("... Loading..."), "{loading}");
+        assert!(empty.contains("[ ] no data"), "{empty}");
+        assert!(error.contains("! failed"), "{error}");
+        for text in [&loading, &empty, &error] {
+            assert!(
+                text.chars().all(|ch| !matches!(ch, '…' | '∅' | '✗' | '·')),
+                "ASCII state copy contains a Unicode-only cue: {text}"
+            );
+        }
     }
 
     #[test]
@@ -2144,6 +2161,7 @@ mod tests {
         let rows = [(1u64, c0)];
         let mut state = DataTableState::<u64, &str>::new();
         state.load = LoadState::Ready { count: 1 };
+        state.set_accepts_input(false);
         let area = Rect::new(0, 0, 30, 6);
         let mut buffer = Buffer::empty(area);
         DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
@@ -2163,6 +2181,60 @@ mod tests {
             "a count must not read as loudly as the identity beside it"
         );
         assert_eq!(at('1'), system.style(Role::TextMuted).fg);
+    }
+
+    #[test]
+    fn selected_row_copy_stays_visible_in_named_and_no_color_profiles() {
+        use ratatui_core::style::Color;
+
+        let render = |system: &DesignSystem| {
+            let cols = ColumnModel::new(vec![
+                DataColumn::new("name", "Name", DataColumnWidth::Fixed(8)),
+                DataColumn::new("count", "Count", DataColumnWidth::Fixed(6))
+                    .kind(ColumnKind::Numeric),
+            ]);
+            let cells: &[&str] = &["alpha", "42"];
+            let rows = [(1u64, cells)];
+            let mut state = DataTableState::<u64, &str>::new();
+            let area = Rect::new(0, 0, 20, 4);
+            let mut buffer = Buffer::empty(area);
+
+            DataTable::new(system, &cols, &rows).render(area, &mut buffer, &mut state);
+            (buffer, state)
+        };
+
+        let phosphor = DesignSystem::phosphor();
+        let (buffer, state) = render(&phosphor);
+        let row_y = state.body_origin.1;
+        let label_x = (0..buffer.area.width)
+            .find(|x| buffer[(*x, row_y)].symbol() == "l")
+            .expect("selected label copy must remain painted");
+        let number_x = (0..buffer.area.width)
+            .find(|x| buffer[(*x, row_y)].symbol() == "4")
+            .expect("selected numeric copy must remain painted");
+        let label = &buffer[(label_x, row_y)];
+        let number = &buffer[(number_x, row_y)];
+        for cell in [label, number] {
+            assert_eq!(cell.fg, phosphor.style(Role::TextStrong).fg.unwrap());
+            assert_eq!(cell.bg, phosphor.style(Role::SelectionTint).bg.unwrap());
+            assert_ne!(cell.fg, cell.bg);
+        }
+        assert!(label.modifier.contains(Modifier::BOLD));
+        assert!(!number.modifier.contains(Modifier::BOLD));
+
+        let no_color = DesignSystem::phosphor().no_color();
+        let (buffer, state) = render(&no_color);
+        let row_y = state.body_origin.1;
+        let label_x = (0..buffer.area.width)
+            .find(|x| buffer[(*x, row_y)].symbol() == "l")
+            .expect("ASCII/no-color selected label must remain painted");
+        let label = &buffer[(label_x, row_y)];
+        assert_eq!((label.fg, label.bg), (Color::Reset, Color::Reset));
+        assert!(label.modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            buffer[(buffer.area.x, row_y)].symbol(),
+            no_color.glyphs.selection_gutter()
+        );
     }
 
     #[test]

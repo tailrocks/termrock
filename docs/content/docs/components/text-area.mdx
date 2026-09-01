@@ -1,98 +1,18 @@
 ---
-title: TextArea
-description: 'A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks.'
-component: TextArea
-demo: text-area/basic
-interaction: editor-form
-actions:
-  - "click to focus"
-  - "type to edit"
-  - "paste"
-  - "arrow keys"
-expectedOutcomes:
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "Navigation moves visible focus or selection and preserves it for the next event."
+title: "Text Area"
+description: "A multi-line grapheme-safe editor with selection, undo/redo, soft wrap, line numbers, and host clipboard/external-editor hooks."
+catalogId: TextArea
 source: crates/termrock/src/widgets/text_area.rs
+tags:
+  - "input"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="text-area/basic" interactive caption="TextArea · Text area — live shared Rust state" />
-
-## Try it
-
-- `click to focus`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `type to edit`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `paste`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `arrow keys`: Move through the real focus/selection model; the next action uses the new target.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The demo owns ephemeral widget state between events. The widget owns painted geometry, focus/selection mechanics, and typed outcomes. The host owns domain effects and decides what an emitted outcome means to the application.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | covered |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `text-area/basic` | Text area | interactive |
-| `text-area/empty` | Empty text area | paint-only |
-| `text-area/line-numbers` | Text area line numbers | paint-only |
-| `text-area/narrow` | Narrow text area | paint-only |
-| `text-area/review` | Text area review | paint-only |
-| `text-area/scrolled` | Scrolled text area | paint-only |
-| `text-area/soft-wrap` | Text area soft wrap | paint-only |
-| `text-area/unicode` | Unicode text area | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `text-area/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn text_area_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    render_text_area(
-        frame,
-        area,
-        system,
-        "Compose",
-        "First line\nSecond line\nThird line",
-        None,
-    );
-}
-```
-
-## Migrated handbook guidance
-
-# TextArea
 
 **Purpose.** Multi-line editing for forms, notes, prompts, and comments:
 grapheme-safe cursor ops, selection, undo/redo, word/indent motion, optional
 soft wrap, line numbers, ScrollArea dual-axis viewport, and host-owned side
 effects (clipboard, external editor, fullscreen).
-
 
 ## When to use / when not
 
@@ -143,69 +63,3 @@ Up/Down line motion, word chords, indent, undo, and character insert stay on
 | Wrap None | Horizontal scroll for wide lines |
 | Resize / reflow | Caret absolute; `reveal` re-centers viewport |
 | Line numbers | Gutter width scales with line count (capped) |
-
-## Example
-
-```rust
-use termrock::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    style::DesignSystem,
-    widgets::{TextArea, TextAreaOutcome, TextAreaState, TextWrap},
-};
-
-let system = DesignSystem::default();
-let mut state = TextAreaState::new("hello");
-state.set_accepts_input(true);
-state.set_wrap(TextWrap::Soft);
-assert!(matches!(
-    state.handle_key(KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE)),
-    TextAreaOutcome::Changed
-));
-let _ = TextArea::new(&system)
-    .title("Notes")
-    .placeholder("Type…")
-    .line_numbers(true)
-    .soft_wrap();
-```
-
-## Related
-
-TextInput · PromptComposer · ScrollArea · migration `0139` · design
-`text-area-accepts-input.md`
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `text-area/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `text-area/basic` | Text area | **Primary (live preview)** |
-| `text-area/empty` | Empty text area | Empty state |
-| `text-area/line-numbers` | Text area line numbers | line numbers |
-| `text-area/narrow` | Narrow text area | Narrow terminal |
-| `text-area/review` | Text area review | review |
-| `text-area/scrolled` | Scrolled text area | scrolled |
-| `text-area/soft-wrap` | Text area soft wrap | soft wrap |
-| `text-area/unicode` | Unicode text area | Unicode / wide glyphs |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/text_area.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/text_area.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `text-area/basic`
-
-## Seen in applications
-
-<SeenInApplications component="TextArea" />

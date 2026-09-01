@@ -11,7 +11,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     style::DesignSystem,
     style::{ColorCapability, Role, RolePalette},
-    text::take_display_cols,
+    text::truncate_cols,
 };
 
 /// Which inspector panel is active.
@@ -135,11 +135,20 @@ impl Widget for &DesignInspector<'_> {
         let style = self.system.style(Role::TextMuted);
         let strong = self.system.style(Role::TextStrong);
 
-        // Tab strip on row 0 when height >= 2.
+        // Tab strip on row 0 when height >= 2. Preserve every destination at
+        // narrow widths by contracting labels before applying an explicit
+        // ellipsis.
         let body_y = if area.height >= 2 {
-            let tabs = " F:focus L:layers T:tokens R:recipes S:sem G:graph ";
-            let clipped = take_display_cols(tabs, usize::from(area.width));
-            buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), strong);
+            let full = "F:focus L:layers T:tokens R:recipes S:sem G:graph";
+            let compact = "F:foc L:lay T:tok R:rec S:sem G:graph";
+            let tabs = if crate::text::display_cols(full) <= usize::from(area.width) {
+                full
+            } else {
+                compact
+            };
+            let contracted =
+                truncate_cols(tabs, usize::from(area.width), self.system.glyphs.ellipsis());
+            buffer.set_stringn(area.x, area.y, &contracted, usize::from(area.width), strong);
             area.y.saturating_add(1)
         } else {
             area.y
@@ -151,12 +160,25 @@ impl Widget for &DesignInspector<'_> {
 
         let lines: Vec<String> = match self.panel {
             InspectorPanel::Focus => {
-                let focus = self.frame.focused.unwrap_or("—");
+                let focus = self
+                    .frame
+                    .focused
+                    .unwrap_or(if self.system.glyphs.is_ascii() {
+                        "-"
+                    } else {
+                        "—"
+                    });
                 let layer = self.frame.layer.unwrap_or("root");
-                vec![format!(
-                    "focus:{focus} layer:{layer} dens:{} cap:{:?} sel:{}",
+                let location = format!("focus:{focus} layer:{layer}");
+                let capability = format!(
+                    "dens:{} cap:{:?} sel:{}",
                     self.frame.density, self.frame.capability, self.frame.selection_chrome
-                )]
+                );
+                if body_h >= 2 {
+                    vec![location, capability]
+                } else {
+                    vec![format!("{location} {capability}")]
+                }
             }
             InspectorPanel::Layers => {
                 if self.frame.layers.is_empty() {
@@ -214,8 +236,12 @@ impl Widget for &DesignInspector<'_> {
 
         for (i, line) in lines.into_iter().take(usize::from(body_h)).enumerate() {
             let y = body_y.saturating_add(u16::try_from(i).unwrap_or(u16::MAX));
-            let clipped = take_display_cols(&line, usize::from(area.width));
-            buffer.set_stringn(area.x, y, &clipped, usize::from(area.width), style);
+            let contracted = truncate_cols(
+                &line,
+                usize::from(area.width),
+                self.system.glyphs.ellipsis(),
+            );
+            buffer.set_stringn(area.x, y, &contracted, usize::from(area.width), style);
         }
     }
 }
@@ -229,7 +255,15 @@ impl Widget for DesignInspector<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
+    use crate::style::{GlyphSet, RolePalette};
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol())
+            .collect::<String>()
+            .trim_end()
+            .to_owned()
+    }
 
     #[test]
     fn studio_shell_paints_tab_and_layers() {
@@ -285,5 +319,48 @@ mod tests {
             .collect();
         assert!(text.contains("list") || text.contains("sem") || text.contains("S:sem"));
         assert!(text.contains("row0") || text.contains("Files"));
+    }
+
+    #[test]
+    fn narrow_focus_panel_reflows_without_losing_semantic_facts() {
+        let system = crate::style::DesignSystem::phosphor();
+        let frame = DesignInspectorFrame {
+            focused: Some("focus"),
+            layer: Some("root"),
+            capability: ColorCapability::Monochrome,
+            density: "comfortable",
+            selection_chrome: "gutter",
+            ..DesignInspectorFrame::default()
+        };
+        let area = Rect::new(0, 0, 46, 3);
+        let mut buffer = Buffer::empty(area);
+
+        Widget::render(DesignInspector::new(frame, &system), area, &mut buffer);
+
+        assert_eq!(
+            row_text(&buffer, 0, area.width),
+            "F:foc L:lay T:tok R:rec S:sem G:graph"
+        );
+        assert_eq!(row_text(&buffer, 1, area.width), "focus:focus layer:root");
+        assert_eq!(
+            row_text(&buffer, 2, area.width),
+            "dens:comfortable cap:Monochrome sel:gutter"
+        );
+    }
+
+    #[test]
+    fn one_line_ascii_inspector_marks_contraction() {
+        let system = crate::style::DesignSystem::phosphor().glyphs(GlyphSet::Ascii);
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+
+        Widget::render(
+            DesignInspector::new(DesignInspectorFrame::default(), &system),
+            area,
+            &mut buffer,
+        );
+
+        assert!(row_text(&buffer, 0, area.width).ends_with("..."));
+        assert!(row_text(&buffer, 1, area.width).ends_with("..."));
     }
 }

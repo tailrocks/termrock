@@ -316,8 +316,16 @@ impl StatefulWidget for &LogPane<'_> {
         (&viewport).render(area, buffer, &mut scroll);
 
         if area.height > 0 {
+            let ascii_indicator;
             let indicator = if state.follow {
-                " ⇣ following "
+                if self.system.glyphs.is_ascii() {
+                    " v following "
+                } else {
+                    " ⇣ following "
+                }
+            } else if self.system.glyphs.is_ascii() {
+                ascii_indicator = format!(" ^ +{} ", state.tail.offset());
+                &ascii_indicator
             } else {
                 &state.scroll_indicator
             };
@@ -468,6 +476,26 @@ mod tests {
         let text: String = first.content().iter().map(|cell| cell.symbol()).collect();
         assert!(text.contains("⇣ following"));
         (&pane).render(Rect::new(0, 0, 1, 1), &mut first, &mut state);
+    }
+
+    #[test]
+    fn ascii_profile_replaces_follow_and_scroll_chrome() {
+        let system = crate::style::DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
+        let pane = LogPane::new(&system).title("Build");
+        let area = Rect::new(0, 0, 32, 4);
+        let mut state = LogPaneState::new();
+        for line in ["one", "two", "three", "four"] {
+            state.append(line);
+        }
+        let mut buffer = Buffer::empty(area);
+
+        (&pane).render(area, &mut buffer, &mut state);
+        assert!(rendered(&buffer).contains("v following"));
+        assert!(state.scroll_by(-1));
+        (&pane).render(area, &mut buffer, &mut state);
+        let text = rendered(&buffer);
+        assert!(text.contains("^ +1"), "{text}");
+        assert!(text.chars().all(|ch| !matches!(ch, '⇣' | '⇡')));
     }
 
     #[test]

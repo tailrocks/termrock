@@ -34,11 +34,13 @@ use crate::{
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::{Panel, PanelChrome, TextInput, TextInputOutcome, TextInputState, Validation};
+use super::{
+    Panel, PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState, Validation,
+};
 
 /// Overlay id for modal datetime pickers.
 pub const DATE_TIME_PICKER_OVERLAY_ID: &str = "termrock.date-time-picker";
@@ -1916,6 +1918,20 @@ impl<'a> DateTimePicker<'a> {
             state.presentation = DateTimePickerPresentation::Fullscreen;
         }
 
+        let invalid = matches!(
+            state.validity,
+            DateTimeValidity::Invalid | DateTimeValidity::OutOfRange
+        );
+        let input_recipe = self.system.input_recipe(
+            if !state.enabled {
+                ControlState::Disabled
+            } else if state.focused && matches!(state.view, DateTimePickerView::Field) {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+            invalid,
+        );
         let mut y = area.y;
         if !self.label.is_empty() && area.height >= 1 {
             buffer.set_stringn(
@@ -1923,7 +1939,7 @@ impl<'a> DateTimePicker<'a> {
                 y,
                 take_display_cols(self.label, usize::from(area.width)),
                 usize::from(area.width),
-                self.system.style(Role::TextMuted),
+                input_recipe.value,
             );
             y = y.saturating_add(1);
         }
@@ -1963,20 +1979,14 @@ impl<'a> DateTimePicker<'a> {
                     y,
                     mark,
                     1,
-                    self.system.style(Role::TextMuted),
+                    input_recipe.placeholder,
                 );
             }
             y = y.saturating_add(1);
         }
 
         // TZ + validity caption
-        if y < area.bottom()
-            && (self.show_timezone && state.timezone_label.is_some()
-                || !matches!(
-                    state.validity,
-                    DateTimeValidity::Valid | DateTimeValidity::Empty
-                ))
-        {
+        if y < area.bottom() {
             let mut parts = Vec::new();
             if self.show_timezone {
                 if let Some(tz) = &state.timezone_label {
@@ -1989,23 +1999,26 @@ impl<'a> DateTimePicker<'a> {
             ) {
                 parts.push(state.validity.id().to_owned());
             }
-            let cap = parts.join(" · ");
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&cap, usize::from(area.width)),
-                usize::from(area.width),
-                self.system.style(
-                    if matches!(
-                        state.validity,
-                        DateTimeValidity::Invalid | DateTimeValidity::OutOfRange
-                    ) {
-                        Role::Danger
-                    } else {
-                        Role::TextMuted
-                    },
-                ),
-            );
+            let cap = parts.join(if self.ascii { " | " } else { " · " });
+            if invalid {
+                super::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(area.x, y, area.width, 1),
+                    self.system,
+                    super::DescriptionKind::Error,
+                    &cap,
+                );
+            } else if !cap.is_empty() {
+                buffer.set_stringn(
+                    area.x,
+                    y,
+                    take_display_cols(&cap, usize::from(area.width)),
+                    usize::from(area.width),
+                    input_recipe.placeholder,
+                );
+            }
+            // Validation/timezone feedback owns a stable row. Opening or an
+            // async range failure must not move the calendar under the cursor.
             y = y.saturating_add(1);
         }
 
@@ -2027,6 +2040,7 @@ impl<'a> DateTimePicker<'a> {
         }
 
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .emphasis(if state.focused {
                 PanelChrome::Focused
@@ -2127,30 +2141,36 @@ impl<'a> DateTimePicker<'a> {
                 } else if in_month {
                     format!(" {} ", num.trim())
                 } else {
-                    format!("·{}·", num.trim())
+                    if self.ascii {
+                        format!(".{}.", num.trim())
+                    } else {
+                        format!("·{}·", num.trim())
+                    }
                 };
 
-                let style = if !available {
-                    self.system.style(Role::TextMuted)
-                } else if is_focus {
-                    self.system
-                        .style(Role::Focus)
-                        .add_modifier(Modifier::REVERSED)
-                } else if is_selected {
-                    self.system
-                        .style(Role::TextStrong)
-                        .add_modifier(Modifier::BOLD)
-                } else if is_today {
+                let recipe = self.system.resolve_list_row(ListRowVisualState {
+                    selected: is_focus,
+                    focused: is_focus && state.focused,
+                    hovered: false,
+                    enabled: available,
+                    loading: false,
+                    checked: is_selected,
+                });
+                let mut style = recipe.label;
+                if is_today && !is_focus && !is_selected {
                     // "Today" is a fact about the date, not a selection: it
                     // reads through the accent, and the cursor still reverses.
-                    self.system.style(Role::Accent)
-                } else if in_month {
-                    self.system.style(Role::Text)
-                } else {
-                    self.system.style(Role::TextMuted)
-                };
+                    style = style.patch(self.system.style(Role::Accent));
+                } else if !in_month && available {
+                    style = recipe.secondary;
+                }
 
                 let rect = Rect::new(x, y, col_w.min(area.right().saturating_sub(x)), 1);
+                if recipe.use_fill {
+                    buffer.set_style(rect, recipe.label);
+                } else if recipe.use_tint {
+                    buffer.set_style(rect, recipe.tint);
+                }
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
@@ -2220,22 +2240,26 @@ impl<'a> DateTimePicker<'a> {
                 " "
             };
             let line = format!("{mark}{}", item.label);
-            let style = if is_hi {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
-            } else if is_sel {
-                self.system.style(Role::TextStrong)
-            } else {
-                self.system.style(Role::Text)
-            };
             let rect = Rect::new(list.x, y, list.width, 1);
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: is_hi,
+                focused: is_hi && state.focused,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: is_sel,
+            });
+            if recipe.use_fill {
+                buffer.set_style(rect, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(rect, recipe.tint);
+            }
             buffer.set_stringn(
                 rect.x,
                 rect.y,
                 take_display_cols(&line, usize::from(rect.width)),
                 usize::from(rect.width),
-                style,
+                recipe.label,
             );
             if let Some(d) = d {
                 state.cell_hits.push((d, rect));
@@ -2279,22 +2303,26 @@ impl<'a> DateTimePicker<'a> {
             let is_sel = t.is_some_and(|t| state.value_time == Some(t));
             let mark = if is_sel { "*" } else { " " };
             let line = format!("{mark}{}", item.label);
-            let style = if is_hi {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
-            } else if is_sel {
-                self.system.style(Role::TextStrong)
-            } else {
-                self.system.style(Role::Text)
-            };
             let rect = Rect::new(list.x, y, list.width, 1);
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected: is_hi,
+                focused: is_hi && state.focused,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: is_sel,
+            });
+            if recipe.use_fill {
+                buffer.set_style(rect, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(rect, recipe.tint);
+            }
             buffer.set_stringn(
                 rect.x,
                 rect.y,
                 take_display_cols(&line, usize::from(rect.width)),
                 usize::from(rect.width),
-                style,
+                recipe.label,
             );
             if let Some(t) = t {
                 state.time_hits.push((t, rect));

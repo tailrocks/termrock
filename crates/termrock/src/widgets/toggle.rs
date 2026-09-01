@@ -45,7 +45,7 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Value / size / recipe ───────────────────────────────────────────────────
@@ -141,7 +141,7 @@ pub enum ToggleRecipe {
     Outline,
     /// Minimal chrome; pressed uses reverse/bold only.
     Quiet,
-    /// Solid accent when pressed.
+    /// Solid secondary selection when pressed.
     Solid,
 }
 
@@ -456,39 +456,34 @@ impl<'a> Toggle<'a> {
     }
 
     fn face_style(&self, state: &ToggleState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
-        let mono = self.colorless
-            || self.system.glyphs.is_ascii()
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            );
-        let mut style = match (self.recipe, state.value) {
-            (ToggleRecipe::Solid, ToggleValue::Pressed) => self.system.style(Role::Accent),
-            (_, ToggleValue::Pressed) if mono => self.system.style(Role::TextStrong),
-            (_, ToggleValue::Pressed) => self.system.style(Role::ActionFocused),
-            (_, ToggleValue::Indeterminate) => self.system.style(Role::TextMuted),
-            (ToggleRecipe::Quiet, _) => self.system.style(Role::TextMuted),
-            _ => self.system.style(Role::Text),
+        let variant = if self.colorless {
+            ButtonRecipeVariant::Quiet
+        } else {
+            match self.recipe {
+                ToggleRecipe::Solid => ButtonRecipeVariant::Secondary,
+                ToggleRecipe::Outline => ButtonRecipeVariant::Outline,
+                ToggleRecipe::Quiet => ButtonRecipeVariant::Quiet,
+            }
         };
-        if state.focused {
-            // Pressed-and-focused stays bold; focus alone is the Focus role.
-            // The bracket chrome around the label already says "pressed".
-            style = self.system.style(Role::Focus);
-            if matches!(state.value, ToggleValue::Pressed) {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-        } else if matches!(state.value, ToggleValue::Pressed) {
-            style = style.add_modifier(Modifier::BOLD);
-            if mono || matches!(self.recipe, ToggleRecipe::Quiet) {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
         } else if state.hovered {
-            style = self.system.style(Role::TextStrong);
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.button_recipe(variant, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
+        if matches!(state.value, ToggleValue::Pressed) {
+            // Selection is not a primary action. Brackets plus reverse video
+            // carry it in colour and monochrome without creating extra solid
+            // commit actions in a multi-toggle group.
+            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
+        } else if matches!(state.value, ToggleValue::Indeterminate) {
+            style = style.add_modifier(Modifier::DIM);
         }
-        // Brackets already encode pressed without color; reverse reinforces mono.
         style
     }
 
@@ -531,12 +526,6 @@ impl<'a> Toggle<'a> {
                 state.value = next;
                 return ToggleOutcome::ValueChanged { value: next };
             }
-        }
-        // Explicit Space as Toggle even if button map differs
-        if matches!(key.code, crate::input::KeyCode::Char(' ')) {
-            let next = state.value.activate();
-            state.value = next;
-            return ToggleOutcome::ValueChanged { value: next };
         }
         ToggleOutcome::Ignored
     }
@@ -838,7 +827,7 @@ impl<'a, Id> ToggleGroup<'a, Id> {
             orientation: ToggleGroupOrientation::Horizontal,
             size: ToggleSize::Default,
             face_recipe: ToggleRecipe::Outline,
-            overflow_label: "…",
+            overflow_label: system.glyphs.ellipsis(),
         }
     }
 
@@ -1142,13 +1131,20 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                         .min(area.right().saturating_sub(x));
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
-                        let mut style = self.system.style(if state.overflow_open {
-                            Role::ActionFocused
+                        let recipe = self.system.button_recipe(
+                            ButtonRecipeVariant::Quiet,
+                            if state.overflow_open {
+                                ControlState::Focused
+                            } else {
+                                ControlState::Default
+                            },
+                        );
+                        let mut style = recipe.fill.patch(recipe.label);
+                        if state.overflow_open {
+                            style = style.add_modifier(Modifier::REVERSED);
                         } else {
-                            Role::TextMuted
-                        });
-                        style = style.add_modifier(Modifier::BOLD);
-                        style = style.patch(self.system.style(Role::SelectionTint));
+                            style = style.add_modifier(Modifier::BOLD);
+                        }
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);
@@ -1271,12 +1267,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                 }
             }
         }
-        if matches!(key.code, crate::input::KeyCode::Char(' ')) {
-            if let Some(c) = state.cursor.clone() {
-                return self.activate_item(state, c);
-            }
-        }
-
         let ro = state.roving.handle_key(key, &visible);
         if let RovingOutcome::ActiveChanged { to: Some(id), .. } = ro {
             state.cursor = Some(id.clone());
@@ -1678,6 +1668,15 @@ mod tests {
             "pressed high-priority kept; vis={vis:?} over={over:?}"
         );
         assert!(!over.is_empty() || vis.len() < 4);
+
+        let mut state = ToggleGroupState::new();
+        state.set_surface_focused(true);
+        state.overflow_open = true;
+        assert!(matches!(
+            g.handle_key(&mut state, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ToggleGroupOutcome::OverflowClosed
+        ));
+        assert!(!state.overflow_open);
     }
 
     #[test]

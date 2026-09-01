@@ -25,7 +25,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         completion_menu::CompletionCandidate,
@@ -249,7 +249,7 @@ impl MentionValidity {
             }
             Self::Unknown => {
                 if ascii {
-                    "…"
+                    "."
                 } else {
                     "…"
                 }
@@ -1508,20 +1508,34 @@ impl<'a> InlineMention<'a> {
                 " "
             };
             let line = match &d.detail {
-                Some(det) => format!("{mark} {} · {det}", d.label),
+                Some(det) => format!(
+                    "{mark} {} {} {det}",
+                    d.label,
+                    if self.ascii { "|" } else { "·" }
+                ),
                 None => format!("{mark} {}", d.label),
             };
-            let style = if i == state.disambiguation_cursor {
-                self.system.style(Role::Focus)
-            } else {
-                self.system.style(Role::Text)
-            };
+            let selected = i == state.disambiguation_cursor;
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected,
+                focused: selected && state.tag.focused,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+            });
+            let row = Rect::new(area.x, y, area.width, 1);
+            if recipe.use_fill {
+                buffer.set_style(row, recipe.label);
+            } else if recipe.use_tint {
+                buffer.set_style(row, recipe.tint);
+            }
             buffer.set_stringn(
                 area.x,
                 y,
                 take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                style,
+                recipe.label,
             );
         }
     }
@@ -1852,7 +1866,7 @@ fn unescape_markup_part(s: &str) -> String {
 }
 
 fn redacted_canonical(c: &str) -> &str {
-    c.rsplit(['/', '\\', ':']).next().unwrap_or("…")
+    c.rsplit(['/', '\\', ':']).next().unwrap_or("redacted")
 }
 
 fn prev_char_boundary(s: &str, byte: usize) -> usize {

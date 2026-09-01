@@ -1,13 +1,92 @@
 ---
-title: Interaction conventions
+title: Interaction architecture
+description: Compose focus, pointer, overlays, async state, and host-owned effects without creating competing interaction systems.
 ---
 
-`FocusRing` coordinates focus between widgets from stable identities registered
-in traversal order each frame. Dynamic or disabled targets reconcile without
-durable indices; pointer focus uses the same painted rectangles. Modal open,
-sub-modal open, pop, and clear operations update the existing `ModalStack` and
-focus-scope stack atomically, trapping traversal and restoring the opener.
-Composite widgets remain one screen focus target and keep their own internal
-field, tab, or row navigation.
+Treat interaction as one screen-level system. Every widget may keep local
+selection or editing state, but the screen owns one scene, one focus order, and
+one overlay stack.
 
-Tabs use one focus stop with arrow navigation. Their painted label and active-indicator rows share the same hit geometry. Disabled items are not hit targets. Hover never moves keyboard focus. Scroll only over the owning region. Dialog geometry and inside/outside classification are pure; `DialogSpec` expresses independent horizontal and vertical margins, and applications own modal stacks. `bottom_rows` provides one tiny-terminal collapse contract for product-defined bottom chrome slots. Hints advertise primary bindings and hide aliases. Navigation uses stable IDs, never durable indices.
+## One scene, stable identity
+
+- Register focus targets by stable domain identity every frame. Never persist a
+  row index as identity: filtering, disabling, and reordering make it stale.
+- Register the rectangle that was actually painted. Keyboard focus and pointer
+  hit testing must resolve through the same geometry.
+- Keep composites such as tabs, tables, and editors as one screen focus target.
+  Their internal arrows, rows, or fields remain local state.
+- Hover may preview or highlight. It does not move keyboard focus.
+
+Use [InteractionScene](/docs/components/interaction-scene) as the screen
+authority. A second ad hoc hit map or focus list can disagree with what the
+user sees.
+
+## Frame order
+
+Run the frame as a transaction:
+
+1. Begin the scene and register the root focus scope.
+2. Project current domain state and register visible targets with stable IDs.
+3. Lay out and paint base content.
+4. Reconcile focus after filtering, disabling, or viewport changes.
+5. Paint focus from the reconciled target.
+6. Reflow, dim, and paint overlays from bottom to top.
+
+Reconciliation belongs after registration because the live target set is a
+property of this frame. Pointer dispatch must use the final painted rectangles,
+not an independently predicted layout.
+
+## One floating-layer authority
+
+[OverlayStack](/docs/components/overlay-stack) owns dialogs, popovers, command
+surfaces, and nested floating content for the screen.
+
+- Dispatch input to the top layer first. Lower layers and root content do not
+  receive the same event.
+- Escape closes at most one layer. If the top layer is non-dismissible, it
+  consumes or ignores Escape according to its contract; it never leaks the key
+  to a parent layer.
+- Trapping keeps traversal inside the active scope and restores the opener when
+  that scope closes.
+- Inside/outside classification comes from painted overlay geometry. The host
+  chooses whether outside activation dismisses, confirms, or does nothing.
+- A backdrop communicates blocking and contrast. It does not replace the
+  stack's routing or focus rules.
+
+## Outcomes stop at the effects boundary
+
+Components return requests and intents. The host validates permissions and
+performs filesystem, process, clipboard, network, persistence, and provider
+operations. Keep product protocol and secret-bearing data out of reusable
+component state.
+
+This boundary also applies to diagnostics and tools: TermRock can present an
+apply, open, copy, approve, retry, or cancel request; the application decides
+whether and how that effect occurs.
+
+## Async and streaming state
+
+Assign each request generation or stable request ID. Apply a completion only
+when it still matches the active query, expanded node, tool run, or stream.
+Without that gate, a slow earlier response can overwrite a newer state.
+
+For streaming prose, preserve the committed prefix and isolate the incomplete
+tail until its delimiter closes. For composer editing, treat mentions and
+attachment tokens atomically; slash completion replaces only the active
+trigger-to-cursor span.
+
+Large pasted text, attachment bodies, command output, and source bodies belong
+in host-owned payload storage. Semantic summaries should carry bounded labels
+and status, not duplicate sensitive content. Require explicit host confirmation
+before binary or privileged actions.
+
+## Capability fallbacks are interaction fallbacks
+
+Reduced color, ASCII glyphs, reduced motion, and narrow layouts must preserve
+meaning and reachability. Keep text or glyph markers for severity and status;
+collapse optional chrome before hiding primary actions; keep functional timing
+even when decorative motion is reduced.
+
+Continue with [Advanced composition](/docs/advanced-composition) for choosing
+component families or [Runtime integration](/docs/runtime) for event-loop and
+terminal-session ownership.

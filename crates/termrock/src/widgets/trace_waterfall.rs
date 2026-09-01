@@ -23,7 +23,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
         data_view::VirtualWindow,
@@ -1013,7 +1013,7 @@ impl<'a> TraceWaterfall<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
         state.row_regions.clear();
         state.bar_regions.clear();
         state.sync_total(self.spans);
@@ -1128,11 +1128,7 @@ impl<'a> TraceWaterfall<'a> {
                 break;
             }
             let selected = Some(span.id) == state.selected.as_deref();
-            let mark = if selected {
-                if ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
+            let mark = " ";
             let disc = if span.branch {
                 if span.expanded {
                     if ascii { "v" } else { "▾" }
@@ -1158,11 +1154,16 @@ impl<'a> TraceWaterfall<'a> {
             // The status is the letter's, not the whole name's: a column of
             // trace rows reads as one column of state instead of as five
             // colored sentences (plans/012 Step 3).
-            let style = if selected && self.focused {
-                self.system.style(Role::Focus)
-            } else {
-                self.system.style(Role::Text)
-            };
+            let chrome = crate::widgets::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected,
+                    focused: selected && self.focused,
+                    enabled: true,
+                    ..Default::default()
+                },
+            );
+            let style = chrome.label_style(self.system.style(Role::Text));
             let mut row = TieredRow::with_separator("");
             row.push_joined(mark, None);
             row.push_joined(disc, None);
@@ -1243,11 +1244,7 @@ impl<'a> TraceWaterfall<'a> {
                     // painted in severity was a wall of colour with no shape
                     // in it; failure still shows in the fill glyph above and
                     // in the status letter in the name column.
-                    let bar_role = if selected && self.focused {
-                        Role::ChartSeries2
-                    } else {
-                        Role::ChartSeries1
-                    };
+                    let bar_role = Role::ChartSeries1;
                     let bx = bar_x.saturating_add(c0);
                     for dx in 0..bw {
                         let x = bx.saturating_add(dx);
@@ -1267,6 +1264,7 @@ impl<'a> TraceWaterfall<'a> {
                     ));
                 }
             }
+            chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
             let _ = i;
             py = py.saturating_add(1);
         }

@@ -521,9 +521,6 @@ pub struct ErrorState<'a> {
     system: &'a DesignSystem,
 }
 
-/// Legacy name for [`ErrorState`] (call sites and Panel body).
-pub type ErrorView<'a> = ErrorState<'a>;
-
 impl<'a> ErrorState<'a> {
     /// Summary + system (generic kind, pane recipe, no recovery).
     #[must_use]
@@ -553,13 +550,6 @@ impl<'a> ErrorState<'a> {
     #[must_use]
     pub const fn explanation(mut self, text: &'a str) -> Self {
         self.explanation = Some(text);
-        self
-    }
-
-    /// Legacy alias for [`Self::explanation`].
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.explanation = Some(detail);
         self
     }
 
@@ -1342,11 +1332,11 @@ mod tests {
     }
 
     #[test]
-    fn legacy_new_detail_still_works() {
+    fn explanation_renders_summary_and_detail() {
         let system = system();
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
-            ErrorView::new("Failed", &system)
-                .detail("Timed out")
+            ErrorState::new("Failed", &system)
+                .explanation("Timed out")
                 .paint(a, b);
         });
         assert!(text.contains("Failed"), "{text}");

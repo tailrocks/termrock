@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **ProgressBar** (also [`Progress`]) — determinate and indeterminate progress
-//! with numeric and textual context.
+//! **ProgressBar** — determinate and indeterminate progress with numeric and
+//! textual context.
 //!
 //! **Mission.** Rich Progress / indicatif-class bars for builds, downloads, and
 //! transfers: percentage, units, rate, ETA, phases, buffering, paused,
@@ -27,6 +27,8 @@ use crate::{
     style::{DesignSystem, MotionPolicy, Role, RolePalette},
     text::{display_cols, take_display_cols},
 };
+
+use super::{SemanticStatus, StatusIndicator};
 
 /// Default indeterminate braille frames (preserved).
 pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
@@ -114,16 +116,15 @@ impl ProgressStatus {
         matches!(self, Self::Running | Self::Buffering)
     }
 
-    /// Semantic paint role for status text.
+    /// Shared lifecycle projection used by status recipes.
     #[must_use]
-    pub const fn role(self) -> Role {
+    pub const fn semantic(self) -> SemanticStatus {
         match self {
-            // Live work reads as information, not as the brand (plans/007).
-            Self::Running | Self::Buffering => Role::InfoDim,
-            Self::Paused => Role::Warning,
-            Self::Cancelled => Role::TextMuted,
-            Self::Complete => Role::Success,
-            Self::Failed => Role::Danger,
+            Self::Running => SemanticStatus::Running,
+            Self::Paused | Self::Cancelled => SemanticStatus::Paused,
+            Self::Buffering => SemanticStatus::Waiting,
+            Self::Complete => SemanticStatus::Success,
+            Self::Failed => SemanticStatus::Failed,
         }
     }
 }
@@ -676,9 +677,6 @@ pub struct ProgressBar<'a> {
     meta: Option<&'a str>,
 }
 
-/// Legacy name — same type as [`ProgressBar`].
-pub type Progress<'a> = ProgressBar<'a>;
-
 impl<'a> ProgressBar<'a> {
     /// Creates an unlabeled progress indicator in the supplied mode.
     #[must_use]
@@ -983,6 +981,26 @@ fn empty_glyph(ascii: bool) -> &'static str {
     if ascii { "-" } else { "░" }
 }
 
+fn reserve_lifecycle_status(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    ascii: bool,
+    status: ProgressStatus,
+) -> Rect {
+    if matches!(status, ProgressStatus::Running) || area.is_empty() {
+        return area;
+    }
+    let indicator = StatusIndicator::new(status.semantic(), system)
+        .label(status.id())
+        .ascii(ascii);
+    let status_width = indicator.measure_width(None).min(area.width);
+    indicator.paint(Rect::new(area.x, area.y, status_width, 1), buffer);
+    let gap = u16::from(status_width < area.width);
+    let x = area.x.saturating_add(status_width).saturating_add(gap);
+    Rect::new(x, area.y, area.right().saturating_sub(x), area.height)
+}
+
 fn render_determinate(
     area: Rect,
     buffer: &mut Buffer,
@@ -994,6 +1012,10 @@ fn render_determinate(
     detailed: bool,
     meta: Option<&str>,
 ) {
+    let area = reserve_lifecycle_status(area, buffer, system, ascii, status);
+    if area.is_empty() {
+        return;
+    }
     let fraction = clamp_fraction(fraction);
     let percentage = format!("{:>3}%", (fraction * 100.0).round() as u8);
     let show_pct = area.width >= MIN_WIDTH_WITH_PERCENTAGE;
@@ -1074,7 +1096,7 @@ fn render_determinate(
     let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
     let fill = fill_glyph(ascii);
     let empty = empty_glyph(ascii);
-    let fill_role = status.role();
+    let fill_role = status.semantic().role();
     for column in 0..track_width {
         buffer.set_string(
             track_x.saturating_add(column),
@@ -1105,6 +1127,21 @@ fn render_indeterminate(
     ascii: bool,
     status: ProgressStatus,
 ) {
+    let area = reserve_lifecycle_status(area, buffer, system, ascii, status);
+    if area.is_empty() || !matches!(status, ProgressStatus::Running) {
+        if let Some(label) = label
+            && !area.is_empty()
+        {
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                take_display_cols(label, usize::from(area.width)),
+                usize::from(area.width),
+                system.style(Role::TextMuted),
+            );
+        }
+        return;
+    }
     if frames.is_empty() {
         return;
     }
@@ -1129,7 +1166,7 @@ fn render_indeterminate(
         area.y,
         glyph,
         usize::from(glyph_width),
-        system.style(status.role()),
+        system.style(status.semantic().role()),
     );
     // Pulse track remainder for wider areas
     if area.width > glyph_width.saturating_add(4) && status.animates() {
@@ -1145,7 +1182,11 @@ fn render_indeterminate(
                     track_x.saturating_add(c),
                     area.y,
                     if on { fill } else { empty },
-                    system.style(if on { status.role() } else { Role::Sunken }),
+                    system.style(if on {
+                        status.semantic().role()
+                    } else {
+                        Role::Sunken
+                    }),
                 );
             }
             // label after? put label at end if fits - skip if track used
@@ -1189,7 +1230,7 @@ mod tests {
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(2, 1, 18, 1);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 22, 3));
-        (&Progress::new(ProgressKind::Determinate { fraction: 1.5 }, &system).label("Index"))
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 1.5 }, &system).label("Index"))
             .render(area, &mut buffer);
 
         let row = rendered(&buffer);
@@ -1206,7 +1247,7 @@ mod tests {
         let mut first = Buffer::empty(area);
         let mut second = Buffer::empty(area);
         let progress =
-            Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
+            ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
         (&progress).render(area, &mut first);
         (&progress).render(area, &mut second);
 
@@ -1220,7 +1261,8 @@ mod tests {
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, width, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction }, &system)).render(area, &mut buffer);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction }, &system))
+            .render(area, &mut buffer);
         buffer
     }
 
@@ -1265,7 +1307,7 @@ mod tests {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let progress = Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
+        let progress = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
         (&progress).render(Rect::new(0, 0, 0, 0), &mut buffer);
         (&progress).render(Rect::new(0, 0, 1, 1), &mut buffer);
     }
@@ -1277,16 +1319,30 @@ mod tests {
     }
 
     #[test]
-    fn wide_char_label_truncates_on_grapheme_boundary() {
+    fn cjk_and_combining_labels_resize_on_grapheme_boundaries() {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system).label("東京🪨"))
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system).label("東京🪨"))
             .render(area, &mut buffer);
         assert_eq!(buffer[(0, 0)].symbol(), "東");
         assert_eq!(buffer[(2, 0)].symbol(), "京");
         assert!(!rendered(&buffer).contains('🪨'));
+
+        for ascii in [false, true] {
+            for width in [20, 12, 1, 0] {
+                let area = Rect::new(0, 0, width, 1);
+                let mut buffer = Buffer::empty(area);
+                ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
+                    .label("Cafe\u{301}")
+                    .ascii(ascii)
+                    .paint(area, &mut buffer);
+                if width == 20 {
+                    assert!(rendered(&buffer).contains("Cafe\u{301}"));
+                }
+            }
+        }
     }
 
     #[test]
@@ -1297,7 +1353,7 @@ mod tests {
         for (tick, expected) in [(0, "A"), (1, "B"), (2, "A")] {
             let area = Rect::new(0, 0, 3, 1);
             let mut buffer = Buffer::empty(area);
-            (&Progress::new(ProgressKind::Indeterminate { tick }, &system).frames(&frames))
+            (&ProgressBar::new(ProgressKind::Indeterminate { tick }, &system).frames(&frames))
                 .render(area, &mut buffer);
             assert_eq!(buffer[(0, 0)].symbol(), expected);
         }
@@ -1310,7 +1366,7 @@ mod tests {
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
         let before = buffer.clone();
-        (&Progress::new(ProgressKind::Indeterminate { tick: 3 }, &system)
+        (&ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system)
             .frames(&[])
             .label("hidden"))
             .render(area, &mut buffer);
@@ -1323,7 +1379,7 @@ mod tests {
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 14, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.62 }, &system).label("Build"))
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, &system).label("Build"))
             .render(area, &mut buffer);
         let row = rendered(&buffer);
         assert!(!row.contains('%'));
@@ -1337,7 +1393,7 @@ mod tests {
         let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, 14, 1);
         let mut buffer = Buffer::empty(area);
-        (&Progress::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
             .label("An extremely long build label"))
             .render(area, &mut buffer);
         let row = rendered(&buffer);
@@ -1377,6 +1433,7 @@ mod tests {
         let mut s = ProgressBarState::task(3, 10);
         s.set_label("Build");
         s.set_status(ProgressStatus::Failed);
+        s.set_ascii(true);
         let area = Rect::new(0, 0, 40, 1);
         let mut buf = Buffer::empty(area);
         ProgressBar::paint_state(
@@ -1388,6 +1445,7 @@ mod tests {
             MotionPolicy::Off,
         );
         assert!(!s.needs_paint());
+        assert!(rendered(&buf).starts_with("| x failed"));
     }
 
     #[test]

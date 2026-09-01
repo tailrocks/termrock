@@ -730,9 +730,9 @@ impl FileManagerState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("cwd", "cwd").priority(10),
-            StatusSlot::context("entries", "entries").priority(20),
-            StatusSlot::focus_zone("focus", self.focus).priority(30),
+            StatusSlot::context("cwd", "cwd").priority(60),
+            StatusSlot::context("entries", "entries").priority(40),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             // Every pointer action needs a keyboard path, and this slot is
             // where they are advertised — parity outranks the hint budget
             // (docs/design/web-premium-tui-law.md §4.2).
@@ -740,13 +740,13 @@ impl FileManagerState {
                 "keys",
                 "y yank · x cut · v paste · d del · r ren · n new · p preview · C-o open",
             )
-            .priority(90),
+            .priority(10),
         ];
         if !self.clipboard.is_empty() {
             slots.push(
                 StatusSlot::new("clip", self.clipboard_mode_label())
                     .region(StatusRegion::Left)
-                    .priority(40),
+                    .priority(50),
             );
         }
         let running = matches!(
@@ -757,8 +757,9 @@ impl FileManagerState {
         if running {
             slots.push(
                 StatusSlot::new("conflict", "conflict")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
                     .region(StatusRegion::Left)
-                    .priority(5),
+                    .priority(100),
             );
         }
         slots

@@ -1,39 +1,19 @@
 ---
-title: Prompt Queue
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: PromptQueue
-demo: prompt-queue/compact
-interaction: activation
+title: "Prompt Queue"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: PromptQueue
 source: crates/termrock/src/patterns/prompt_queue.rs
 classification: composite
+tags:
+  - "composite"
+  - "Panel"
+aliases: []
+uses:
+  - "Panel"
+supportingTypes:
+  - "PromptQueueItem"
+  - "PromptQueueRef"
+  - "PromptQueueStatus"
+  - "StatefulWidget"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="prompt-queue/compact" interactive caption="Prompt Queue · shared Rust demo" />
-
-## Classification and composition
-
-**composite** · default grid 56×2
-
-Composed public building blocks: `Panel`, `PromptQueueItem`, `PromptQueueRef`, `PromptQueueStatus`, `StatefulWidget`, `Widget`.
-
-## Workflow
-
-- `↑↓ select`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter edit`: focus the real field and edit its persistent Unicode-safe draft.
-- `D remove`: forward this normalized action to the mounted public pattern state.
-- `Esc cancel`: peel or cancel the current transient layer and preserve underlying state.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/prompt_queue.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/prompt_queue.rs)
-- Demo: `prompt-queue/compact`

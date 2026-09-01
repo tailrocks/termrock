@@ -279,13 +279,6 @@ impl<'a> EmptyState<'a> {
         self
     }
 
-    /// Alias for [`Self::explanation`] (legacy call sites).
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.explanation = Some(detail);
-        self
-    }
-
     /// Primary recovery action (dominant; never painted as destructive).
     #[must_use]
     pub const fn primary(mut self, action: EmptyAction<'a>) -> Self {
@@ -317,13 +310,6 @@ impl<'a> EmptyState<'a> {
     /// Override illustration glyph (non-color cue).
     #[must_use]
     pub const fn glyph(mut self, glyph: &'a str) -> Self {
-        self.illustration = Some(glyph);
-        self
-    }
-
-    /// Alias for [`Self::glyph`].
-    #[must_use]
-    pub const fn illustration(mut self, glyph: &'a str) -> Self {
         self.illustration = Some(glyph);
         self
     }
@@ -910,11 +896,11 @@ mod tests {
     }
 
     #[test]
-    fn legacy_new_detail_glyph_still_works() {
+    fn explanation_and_glyph_render() {
         let system = system();
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
             EmptyState::new("No results", &system)
-                .detail("Try another query")
+                .explanation("Try another query")
                 .glyph("○")
                 .paint(a, b);
         });

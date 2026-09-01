@@ -11,7 +11,7 @@
 //! rail, a detail pane, and an optional preview.
 //!
 //! Composes: [`crate::widgets::ScrollAreaState`],
-//! [`crate::widgets::SidebarItem`], [`crate::widgets::SidebarOutcome`],
+//! [`crate::widgets::NavItem`], [`crate::widgets::SidebarOutcome`],
 //! [`crate::widgets::SidebarState`].
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
@@ -352,7 +352,7 @@ mod tests {
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
-    widgets::{ScrollAreaState, SidebarItem, SidebarOutcome, SidebarState},
+    widgets::{NavItem, ScrollAreaState, SidebarOutcome, SidebarState},
 };
 
 // ── ResourceBrowser ─────────────────────────────────────────────────────────
@@ -397,11 +397,11 @@ impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        items: &[crate::widgets::SidebarItem<Id>],
+        items: &[NavItem<Id>],
     ) -> ResourceBrowserOutcome<Id> {
         let out = self.sidebar.handle_key(key, items);
         match out {
-            SidebarOutcome::Selected(id) => {
+            SidebarOutcome::RouteChanged { id } => {
                 self.selection_generation = self.selection_generation.saturating_add(1);
                 ResourceBrowserOutcome::LoadRequested(id)
             }
@@ -420,12 +420,12 @@ impl<Id: Clone + PartialEq> Default for ResourceBrowserState<Id> {
 mod state_tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers};
-    use crate::widgets::SidebarItem;
+    use crate::widgets::NavItem;
 
     #[test]
     fn resource_load_on_select() {
         let mut state = ResourceBrowserState::new();
-        let items = [SidebarItem::new("a", "A")];
+        let items = [NavItem::new("a", "A")];
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
         assert!(matches!(out, ResourceBrowserOutcome::LoadRequested("a")));
         assert_eq!(state.selection_generation, 1);

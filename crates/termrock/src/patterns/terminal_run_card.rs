@@ -37,13 +37,14 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_DOT_PULSE_FRAMES},
+    style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        AccentRail, Card, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
-        TerminalOutputOutcome, TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode,
-        TerminalRunStatus, ToolCall, ToolRisk, ToolStatus, escape_raw_terminal,
-        filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
+        AccentRail, Card, SemanticStatus, StatusIndicator, TerminalCommandMeta, TerminalEnvEntry,
+        TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe,
+        TerminalOutputState, TerminalPaintMode, TerminalRunStatus, ToolCall, ToolRisk, ToolStatus,
+        escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
+        redact_tool_secrets,
     },
 };
 
@@ -53,6 +54,33 @@ pub const TERMINAL_RUN_FULLSCREEN_OVERLAY_ID: &str = "termrock.terminal_run";
 pub const TERMINAL_RUN_ENV_CAP: usize = 6;
 /// Compact body lines when not expanded.
 pub const TERMINAL_RUN_COMPACT_BODY_LINES: u16 = 3;
+
+const fn terminal_run_semantic(status: TerminalRunStatus) -> SemanticStatus {
+    match status {
+        TerminalRunStatus::Pending => SemanticStatus::Queued,
+        TerminalRunStatus::WaitingPermission => SemanticStatus::Waiting,
+        TerminalRunStatus::Running | TerminalRunStatus::Detached => SemanticStatus::Running,
+        TerminalRunStatus::Succeeded => SemanticStatus::Success,
+        TerminalRunStatus::Failed | TerminalRunStatus::Signaled | TerminalRunStatus::TimedOut => {
+            SemanticStatus::Failed
+        }
+        TerminalRunStatus::Cancelled => SemanticStatus::Paused,
+    }
+}
+
+const fn terminal_run_verb(status: TerminalRunStatus) -> &'static str {
+    match status {
+        TerminalRunStatus::Pending => "queued",
+        TerminalRunStatus::WaitingPermission => "waiting permission",
+        TerminalRunStatus::Running => "running",
+        TerminalRunStatus::Succeeded => "succeeded",
+        TerminalRunStatus::Failed => "failed",
+        TerminalRunStatus::Signaled => "signaled",
+        TerminalRunStatus::Cancelled => "cancelled",
+        TerminalRunStatus::TimedOut => "timed out",
+        TerminalRunStatus::Detached => "detached",
+    }
+}
 
 // ── Domain ──────────────────────────────────────────────────────────────────
 
@@ -908,31 +936,38 @@ impl<'a> TerminalRunCard<'a> {
 
         let phase = run.phase();
         if matches!(state.presentation, TerminalRunPresentation::Compact) {
-            let running = matches!(run.status, TerminalRunStatus::Running);
-            let marker = if running {
-                if ascii || !matches!(self.system.motion, MotionPolicy::Full) {
-                    if ascii { "." } else { "●" }
-                } else {
-                    SPINNER_DOT_PULSE_FRAMES[self.tick as usize % SPINNER_DOT_PULSE_FRAMES.len()]
-                }
+            let semantic = terminal_run_semantic(run.status);
+            let rail_role = if colorless {
+                Role::TextStrong
             } else {
-                run.status.glyph(ascii || colorless)
+                semantic.role()
             };
+            let inner = AccentRail::new(self.system, rail_role)
+                .active(matches!(run.status, TerminalRunStatus::Running))
+                .tick(self.tick)
+                .paint(area, buffer);
+            if ascii && area.width > 0 {
+                buffer.set_string(area.x, area.y, "|", self.system.style(rail_role));
+            }
+            if inner.is_empty() {
+                return;
+            }
+            let marker = semantic.glyph(ascii);
             let line = format!(
-                "{marker} {} ({})",
-                run.display_command(),
-                run.status.label()
+                "{marker} {} · {}",
+                terminal_run_verb(run.status),
+                run.display_command()
             );
             self.system.paint_row(
                 buffer,
-                Rect::new(area.x, area.y, area.width, 1),
+                Rect::new(inner.x, inner.y, inner.width, 1),
                 &line,
-                self.system.style(if colorless {
-                    Role::Text
-                } else {
-                    run.status.role()
-                }),
+                self.system.style(Role::Text),
             );
+            StatusIndicator::compact(semantic, self.system)
+                .ascii(ascii)
+                .colorless(colorless)
+                .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             state.header_hit = Rect::new(area.x, area.y, area.width, 1);
             return;
         }
@@ -945,7 +980,7 @@ impl<'a> TerminalRunCard<'a> {
         if ascii {
             title = format!("{} {title}", run.status.glyph(true));
         }
-        let mut subtitle = format!("{} · {}", phase.badge(), run.status.label());
+        let mut subtitle = format!("{} · {}", phase.badge(), terminal_run_verb(run.status));
         if let Some(ms) = run.duration_ms {
             subtitle.push_str(" · ");
             subtitle.push_str(&format_duration_ms(ms));
@@ -1032,7 +1067,7 @@ impl<'a> TerminalRunCard<'a> {
                     buffer,
                     Rect::new(body.x, y, body.width, 1),
                     &line,
-                    self.system.style(Role::Accent),
+                    self.system.style(Role::TextStrong),
                 );
                 y = y.saturating_add(1);
             }
@@ -1060,22 +1095,21 @@ impl<'a> TerminalRunCard<'a> {
             }
         }
         if run.status.needs_permission() && y < max_y {
-            self.system.paint_row(
-                buffer,
-                Rect::new(body.x, y, body.width, 1),
-                "permission required · p",
-                self.system.style(Role::Warning),
-            );
+            StatusIndicator::new(SemanticStatus::Waiting, self.system)
+                .label("permission required · p")
+                .ascii(ascii)
+                .colorless(colorless)
+                .paint(Rect::new(body.x, y, body.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
             if y < max_y {
-                self.system.paint_row(
-                    buffer,
-                    Rect::new(body.x, y, body.width, 1),
-                    &format!("egress: {e}"),
-                    self.system.style(Role::Warning),
-                );
+                let warning = format!("warning: egress {e}");
+                StatusIndicator::new(SemanticStatus::Warning, self.system)
+                    .label(&warning)
+                    .ascii(ascii)
+                    .colorless(colorless)
+                    .paint(Rect::new(body.x, y, body.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1186,6 +1220,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::ansi_text::{AnsiParseOptions, parse_to_line};
+    use crate::style::MotionPolicy;
     use ratatui_core::layout::Position;
 
     #[test]

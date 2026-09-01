@@ -771,17 +771,17 @@ impl HelpCenterState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("mode", self.mode.id()).priority(10),
-            StatusSlot::focus_zone("focus", self.focus).priority(20),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut(
                 "keys",
                 "enter open · / search · k keys · d doctor · esc close",
             )
-            .priority(90),
+            .priority(10),
         ];
         if let Some(ctx) = &self.context_label {
             let _ = ctx; // content is &'static in StatusSlot — use fixed label
-            slots.push(StatusSlot::context("ctx", "context").priority(30));
+            slots.push(StatusSlot::context("ctx", "context").priority(40));
         }
         slots
     }

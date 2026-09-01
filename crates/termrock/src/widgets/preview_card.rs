@@ -1113,27 +1113,28 @@ impl<'a> PreviewCard<'a> {
         }
 
         let ascii = self.ascii || state.ascii;
-        let border = if state.pinned && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.pinned {
+            SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            SurfaceRecipe::Overlay
         };
-        let ascii_system;
-        let surface_system = if ascii {
-            ascii_system = self.system.clone().glyphs(GlyphSet::Ascii);
-            &ascii_system
-        } else {
-            self.system
-        };
+        let adapted_system = (ascii || self.colorless).then(|| {
+            let system = if ascii {
+                self.system.clone().glyphs(GlyphSet::Ascii)
+            } else {
+                self.system.clone()
+            };
+            if self.colorless {
+                system.capability(crate::style::ColorCapability::Monochrome)
+            } else {
+                system
+            }
+        });
+        let surface_system = adapted_system.as_ref().unwrap_or(self.system);
         state.slots.root = area;
         let inner = Surface::new(surface_system)
-            .recipe(if self.colorless {
-                SurfaceRecipe::Inset
-            } else {
-                SurfaceRecipe::Overlay
-            })
+            .recipe(recipe)
             .bordered(true)
-            .border_style(self.system.style(border))
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {

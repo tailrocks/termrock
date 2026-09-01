@@ -4,7 +4,6 @@
 mod collection;
 mod dismissable;
 mod event_result;
-mod focus;
 mod focus_graph;
 mod intent;
 mod keymap_bridge;
@@ -20,8 +19,7 @@ pub use dismissable::{
     DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack, evaluate_outside_top,
 };
 pub use event_result::{
-    EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble,
-    compose_capture, from_consumed_flag,
+    EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
 };
 pub use focus_graph::{
     FocusDebugSnapshot, FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode, FocusOutcome,
@@ -35,10 +33,6 @@ pub use selection_model::{
     SelectionModel, SelectionVisual, deselect_subtree, select_subtree,
 };
 
-// FocusRing remains crate-private (pre-1.0 M3). Public focus graph is FocusGraph.
-// Overlay authority is OverlayStack only (Break D / M4). ModalStack is crate-private.
-pub(crate) use focus::{FocusRing, FocusTarget};
-// Legacy name: FocusRing used FocusOutcome from focus.rs — re-export graph's outcome privately for ring tests via focus module.
 pub use intent::{
     NavigationMove, PageMove, UiIntent, default_button_intent, default_choice_dialog_intent,
     default_data_table_intent, default_diff_review_intent, default_form_intent,
@@ -47,18 +41,17 @@ pub use intent::{
     default_text_area_intent, default_transcript_intent, default_tree_intent,
 };
 pub use keymap_bridge::dispatch_keymap_action;
-pub(crate) use modal::ModalStack;
 /// Paint a dim/occlude wash when [`OverlayStack::backdrop_policy`] requests it.
 pub use modal::render_backdrop;
 pub use overlay_stack::{
-    BackdropPolicy, NarrowFallback, OpenMode, OverlayEntry, OverlayId, OverlayKind, OverlayOutcome,
+    BackdropPolicy, NarrowFallback, OpenMode, OverlayFit, OverlayId, OverlayKind, OverlayOutcome,
     OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, PlacementResult,
     PointerRoute, kind_blocks_queue, place_overlay, place_overlay_detailed,
 };
 pub use scene::{
     InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene, LayerDismissPolicy,
-    LayerKind, SceneError, SemanticDiagnostic, SemanticElement, SemanticError, SemanticNode,
-    SemanticRole, SemanticScene, SemanticSnapshot, SemanticSnapshotNode, SemanticState,
+    LayerKind, SceneError, SemanticDiagnostic, SemanticError, SemanticNode, SemanticRole,
+    SemanticScene, SemanticSnapshot, SemanticSnapshotNode, SemanticState,
 };
 
 use ratatui_core::layout::{Position, Rect};

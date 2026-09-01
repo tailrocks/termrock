@@ -1,6 +1,6 @@
 quick-open/basic 74x20 (story 72x18)
                                                                           
- ┌ Quick Open ──────────────────────────────────────────────────────────┐ 
+ ┌ ◊ Quick Open ────────────────────────────────────────────────────────┐ 
  │                                                                      │ 
  │  [Files] Symbols  Sessions  Tables                                   │ 
  │  ❯Search resources  (@files query)                                   │ 

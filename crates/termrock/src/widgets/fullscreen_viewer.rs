@@ -26,7 +26,9 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         HitRegion, OverlayId, OverlayOutcome, OverlayStack, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -35,6 +37,8 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
+#[cfg(test)]
+use super::ActionVariant;
 use super::{Action, Surface, SurfaceRecipe};
 
 /// Default overlay id for fullscreen viewer.
@@ -988,6 +992,56 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
         }
     }
 
+    /// Pointer routing for chrome painted by [`FullscreenViewer`].
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        actions: &[Action<'_, Id>],
+    ) -> FullscreenViewerOutcome<Id> {
+        if !self.open
+            || !self.enabled
+            || !self.accepts_input
+            || event.kind != MouseEventKind::Down(MouseButton::Left)
+        {
+            return FullscreenViewerOutcome::Ignored;
+        }
+
+        if let Some(region) = self
+            .action_regions
+            .iter()
+            .find(|region| region.area.contains(event.position))
+        {
+            if actions
+                .iter()
+                .any(|action| action.id == region.id && action.enabled)
+            {
+                self.chrome_focus = ViewerChromeFocus::Actions;
+                self.action_cursor = Some(region.id.clone());
+                return FullscreenViewerOutcome::ActionActivated {
+                    id: region.id.clone(),
+                };
+            }
+            return FullscreenViewerOutcome::Ignored;
+        }
+
+        let focus = if self.slots.search.contains(event.position) && self.search_open {
+            Some(ViewerChromeFocus::Search)
+        } else if self.slots.breadcrumbs.contains(event.position) {
+            Some(ViewerChromeFocus::Breadcrumbs)
+        } else if self.slots.title.contains(event.position) {
+            Some(ViewerChromeFocus::Title)
+        } else if self.slots.body.contains(event.position) {
+            Some(ViewerChromeFocus::Body)
+        } else {
+            None
+        };
+        if let Some(focus) = focus {
+            self.chrome_focus = focus;
+            return FullscreenViewerOutcome::ChromeFocusMoved { focus };
+        }
+        FullscreenViewerOutcome::Ignored
+    }
+
     fn toggle_search(&mut self) -> FullscreenViewerOutcome<Id> {
         self.search_open = !self.search_open;
         if self.search_open {
@@ -1124,26 +1178,28 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         }
         state.slots.root = area;
 
-        let border = if state.chrome_focus != ViewerChromeFocus::Body && !self.colorless {
-            Role::BorderFocused
+        let recipe = if state.enabled && state.chrome_focus != ViewerChromeFocus::Body {
+            SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            SurfaceRecipe::Overlay
         };
-        let ascii_system;
-        let surface_system = if self.ascii || state.ascii {
-            ascii_system = self.system.clone().glyphs(GlyphSet::Ascii);
-            &ascii_system
-        } else {
-            self.system
-        };
-        let inner = Surface::new(surface_system)
-            .recipe(if self.colorless {
-                SurfaceRecipe::Inset
+        let ascii = self.ascii || state.ascii;
+        let adapted_system = (ascii || self.colorless).then(|| {
+            let system = if ascii {
+                self.system.clone().glyphs(GlyphSet::Ascii)
             } else {
-                SurfaceRecipe::Overlay
-            })
+                self.system.clone()
+            };
+            if self.colorless {
+                system.capability(crate::style::ColorCapability::Monochrome)
+            } else {
+                system
+            }
+        });
+        let surface_system = adapted_system.as_ref().unwrap_or(self.system);
+        let inner = Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(self.system.style(border))
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -1169,13 +1225,20 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         // Title
         state.slots.title = Rect::new(inner.x, y, inner.width, title_h);
         let kind = state.zoom.content_kind().badge();
-        let title = if state.title.is_empty() {
+        let base_title = if state.title.is_empty() {
             format!("[{kind}]")
         } else {
             format!("[{kind}] {}", state.title)
         };
+        let title = if state.enabled {
+            base_title
+        } else {
+            format!("[disabled] {base_title}")
+        };
         let close = if self.ascii { " [x]" } else { " ×" };
-        let title_style = if matches!(state.chrome_focus, ViewerChromeFocus::Title) {
+        let title_style = if !state.enabled {
+            self.system.style(Role::TextDisabled)
+        } else if matches!(state.chrome_focus, ViewerChromeFocus::Title) {
             self.system
                 .style(Role::TextStrong)
                 .add_modifier(Modifier::BOLD | Modifier::REVERSED)
@@ -1205,7 +1268,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             if let Some(src) = state.zoom.source() {
                 let sep = if self.ascii { " > " } else { " › " };
                 let path = src.path_labels.join(sep);
-                let style = if matches!(state.chrome_focus, ViewerChromeFocus::Breadcrumbs) {
+                let style = if !state.enabled {
+                    self.system.style(Role::TextDisabled)
+                } else if matches!(state.chrome_focus, ViewerChromeFocus::Breadcrumbs) {
                     self.system.style(Role::Text).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::TextMuted)
@@ -1239,7 +1304,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                     format!(" {} ", a.label)
                 };
                 let w = display_cols(&label) as u16;
-                let style = if !a.enabled {
+                let style = if !state.enabled || !a.enabled {
                     self.system.style(Role::TextDisabled)
                 } else if active {
                     self.system
@@ -1271,7 +1336,9 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             state.slots.search = Rect::new(inner.x, y, inner.width, 1);
             let prefix = if self.ascii { "/ " } else { "⌕ " };
             let q = format!("{prefix}{}", state.search_query);
-            let style = if matches!(state.chrome_focus, ViewerChromeFocus::Search) {
+            let style = if !state.enabled {
+                self.system.style(Role::TextDisabled)
+            } else if matches!(state.chrome_focus, ViewerChromeFocus::Search) {
                 self.system.style(Role::Input)
             } else {
                 self.system.style(Role::TextMuted)
@@ -1345,7 +1412,8 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 .role(SemanticRole::Dialog)
                 .label("fullscreen-viewer")
                 .description(desc)
-                .focusable(state.accepts_input && state.open)
+                .focusable(state.enabled && state.accepts_input && state.open)
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: true,
                     expanded: state.open,
@@ -1627,13 +1695,13 @@ mod tests {
                 id: "copy",
                 label: "Copy",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: "raw",
                 label: "Raw",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ];
         state.chrome_focus = ViewerChromeFocus::Actions;
@@ -1645,13 +1713,64 @@ mod tests {
     }
 
     #[test]
+    fn mouse_uses_painted_action_regions_and_disabled_gate() {
+        let system = DesignSystem::default();
+        let actions = [
+            Action {
+                id: "copy",
+                label: "Copy",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+            Action {
+                id: "raw",
+                label: "Raw",
+                enabled: false,
+                variant: ActionVariant::Secondary,
+            },
+        ];
+        let mut state = FullscreenViewerState::new();
+        let _ = state.enter_fullscreen(ctx("x"), "viewer");
+        let area = Rect::new(0, 0, 60, 16);
+        let mut buffer = Buffer::empty(area);
+        FullscreenViewer::new(&system, &actions).paint(area, &mut buffer, &mut state);
+        let copy = state
+            .action_regions
+            .iter()
+            .find(|region| region.id == "copy")
+            .expect("copy action region")
+            .area;
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(copy.x, copy.y),
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &actions),
+            FullscreenViewerOutcome::ActionActivated { id: "copy" }
+        ));
+
+        state.set_enabled(false);
+        assert_eq!(
+            state.handle_mouse(event, &actions),
+            FullscreenViewerOutcome::Ignored
+        );
+        let mut scene = SemanticScene::<&str, ()>::default();
+        FullscreenViewer::new(&system, &actions)
+            .register_semantic(&mut scene, "viewer", area, &state);
+        let node = scene.nodes().first().expect("viewer semantic node");
+        assert!(node.disabled);
+        assert!(!node.focusable);
+    }
+
+    #[test]
     fn paint_slots_and_body_for_host() {
         let system = DesignSystem::default();
         let actions = [Action {
             id: "copy",
             label: "Copy",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         }];
         let mut state = FullscreenViewerState::new();
         state.zoom.set_content_kind(ViewerContentKind::Diff);
@@ -1739,7 +1858,7 @@ mod tests {
             id: "a",
             label: "A",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         }];
         let keys = [
             KeyCode::Esc,
@@ -1772,7 +1891,7 @@ mod tests {
             id: "c",
             label: "Copy",
             enabled: true,
-            style: None,
+            variant: ActionVariant::Secondary,
         }];
         let mut state = FullscreenViewerState::new();
         let _ = state.enter_fullscreen(ctx("file").path(["a", "b", "c"]), "big.rs");

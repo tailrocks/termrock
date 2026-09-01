@@ -6,9 +6,11 @@
 use ratatui_core::{
     buffer::{Buffer, CellDiffOption},
     layout::Rect,
-    style::Style,
+    style::{Color, Modifier, Style},
     widgets::Widget,
 };
+
+use crate::style::{ColorCapability, DesignSystem, quantize_color};
 
 /// One projected terminal cell.
 ///
@@ -59,6 +61,7 @@ pub trait TerminalCellSource {
 #[derive(Clone, Copy)]
 pub struct TerminalCellGrid<'a> {
     source: &'a dyn TerminalCellSource,
+    monochrome: bool,
 }
 
 impl core::fmt::Debug for TerminalCellGrid<'_> {
@@ -73,7 +76,22 @@ impl<'a> TerminalCellGrid<'a> {
     /// Borrows a terminal-cell snapshot for this frame.
     #[must_use]
     pub const fn new(source: &'a dyn TerminalCellSource) -> Self {
-        Self { source }
+        Self {
+            source,
+            monochrome: false,
+        }
+    }
+
+    /// Borrows a snapshot and follows the active system's colorless policy.
+    ///
+    /// Color output remains named ANSI-16 even when the host theme supports a
+    /// deeper palette: emulator data must not become a second theme authority.
+    #[must_use]
+    pub const fn for_system(source: &'a dyn TerminalCellSource, system: &DesignSystem) -> Self {
+        Self {
+            source,
+            monochrome: system.mono(),
+        }
     }
 }
 
@@ -97,7 +115,7 @@ impl Widget for TerminalCellGrid<'_> {
                 } else {
                     cell.symbol
                 });
-                destination.set_style(cell.style);
+                destination.set_style(project_terminal_style(cell.style, self.monochrome));
                 let diff = match cell.diff {
                     // Skip would preserve stale destination content and violate
                     // this widget's one-frame projection contract.
@@ -113,6 +131,28 @@ impl Widget for TerminalCellGrid<'_> {
             }
         }
     }
+}
+
+fn project_terminal_style(mut style: Style, monochrome: bool) -> Style {
+    if monochrome {
+        let had_ground = style.bg.is_some_and(|color| color != Color::Reset);
+        style = Style {
+            fg: None,
+            bg: None,
+            ..style
+        };
+        if had_ground {
+            style = style.add_modifier(Modifier::REVERSED);
+        }
+        return style;
+    }
+    if let Some(fg) = style.fg {
+        style.fg = Some(quantize_color(fg, ColorCapability::Ansi16));
+    }
+    if let Some(bg) = style.bg {
+        style.bg = Some(quantize_color(bg, ColorCapability::Ansi16));
+    }
+    style
 }
 
 #[cfg(test)]
@@ -156,6 +196,42 @@ mod tests {
         assert_eq!(buffer[(1, 0)].symbol(), "β");
         assert_eq!(buffer[(1, 0)].bg, Color::Blue);
         assert!(buffer[(1, 0)].modifier.contains(Modifier::ITALIC));
+    }
+
+    #[test]
+    fn extended_colors_are_projected_to_named_ansi() {
+        let grid = Grid(vec![vec![TerminalCell::new(
+            "x",
+            Style::new()
+                .fg(Color::Rgb(240, 30, 30))
+                .bg(Color::Indexed(27)),
+        )]]);
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+        TerminalCellGrid::new(&grid).render(area, &mut buffer);
+        assert!(!matches!(
+            buffer[(0, 0)].fg,
+            Color::Rgb(..) | Color::Indexed(..)
+        ));
+        assert!(!matches!(
+            buffer[(0, 0)].bg,
+            Color::Rgb(..) | Color::Indexed(..)
+        ));
+    }
+
+    #[test]
+    fn no_color_keeps_background_information_as_reverse() {
+        let grid = Grid(vec![vec![TerminalCell::new(
+            "x",
+            Style::new().bg(Color::Red),
+        )]]);
+        let system = DesignSystem::default().no_color();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+        TerminalCellGrid::for_system(&grid, &system).render(area, &mut buffer);
+        assert_eq!(buffer[(0, 0)].fg, Color::Reset);
+        assert_eq!(buffer[(0, 0)].bg, Color::Reset);
+        assert!(buffer[(0, 0)].modifier.contains(Modifier::REVERSED));
     }
 
     #[test]

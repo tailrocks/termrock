@@ -41,7 +41,7 @@ supported via `ColorCapability` (including `NO_COLOR` → monochrome),
 truecolor-only forever.
 
 ```toml
-termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "FULL_COMMIT_SHA" }
+termrock = { git = "https://github.com/tailrocks/termrock.git", rev = "5283c2acf9154d0cfcd37b1ffe821c00faf90ea2" }
 ```
 
 Default features are empty. Enable `crossterm` only for its event, backend, and scoped-session adapters.

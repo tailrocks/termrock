@@ -20,7 +20,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -32,7 +32,7 @@ use crate::{
         CollectionItem, CollectionState, NavigationMove, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -846,48 +846,49 @@ impl<'a> Stepper<'a> {
         }
     }
 
-    fn style_for(
-        &self,
-        status: StepStatus,
-        active_cursor: bool,
-        focused: bool,
-    ) -> ratatui_core::style::Style {
+    fn status_style(&self, status: StepStatus, base: Style) -> Style {
         if self.colorless {
             return match status {
-                StepStatus::Current if focused => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::REVERSED | Modifier::BOLD),
-                StepStatus::Complete => self.system.style(Role::TextStrong),
-                StepStatus::Error => self
-                    .system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
-                StepStatus::Disabled | StepStatus::Skipped | StepStatus::Future => {
-                    self.system.style(Role::TextMuted)
+                StepStatus::Current | StepStatus::Complete | StepStatus::Error => {
+                    base.add_modifier(Modifier::BOLD)
                 }
-                StepStatus::Optional => self.system.style(Role::Text),
-                StepStatus::Current => self.system.style(Role::TextStrong),
+                _ => base,
             };
         }
-        let mut style = match status {
+        match status {
             // The current step is stated by its glyph and its weight, not by a
             // reversed slab — a solid block reads as a selection the operator
             // made, not as where they are (plans/008 Step 4).
-            StepStatus::Current => self
-                .system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD),
-            StepStatus::Complete => self.system.style(Role::Success),
-            StepStatus::Error => self.system.style(Role::Danger),
-            StepStatus::Disabled => self.system.style(Role::TextDisabled),
-            StepStatus::Skipped | StepStatus::Future => self.system.style(Role::TextMuted),
-            StepStatus::Optional => self.system.style(Role::Text),
-        };
-        if active_cursor && focused && !matches!(status, StepStatus::Current) {
-            style = style.add_modifier(Modifier::BOLD);
+            StepStatus::Current => base.add_modifier(Modifier::BOLD),
+            StepStatus::Complete => base.patch(self.system.style(Role::Success)),
+            StepStatus::Error => base.patch(self.system.style(Role::Danger)),
+            _ => base,
         }
-        style
+    }
+
+    fn paint_step_row(
+        &self,
+        rect: Rect,
+        buffer: &mut Buffer,
+        status: StepStatus,
+        cursor: bool,
+        focused: bool,
+        enabled: bool,
+    ) -> Style {
+        let recipe = self.system.resolve_list_row(ListRowVisualState {
+            selected: cursor,
+            focused: cursor && focused,
+            hovered: false,
+            enabled: enabled && !matches!(status, StepStatus::Disabled),
+            loading: false,
+            checked: matches!(status, StepStatus::Complete),
+        });
+        if recipe.use_fill {
+            buffer.set_style(rect, recipe.label);
+        } else if recipe.use_tint {
+            buffer.set_style(rect, recipe.tint);
+        }
+        self.status_style(status, recipe.label)
     }
 
     fn paint_horizontal(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
@@ -920,7 +921,14 @@ impl<'a> Stepper<'a> {
                 break;
             }
             let rect = Rect::new(x, y, w, 1);
-            let style = self.style_for(status, cursor == i, surface);
+            let style = self.paint_step_row(
+                rect,
+                buffer,
+                status,
+                cursor == i,
+                surface,
+                state.accepts_input,
+            );
             buffer.set_stringn(
                 rect.x,
                 rect.y,
@@ -947,7 +955,14 @@ impl<'a> Stepper<'a> {
             let title = take_display_cols(&step.title, usize::from(area.width.saturating_sub(6)));
             let line = format!("{mark} {title}");
             let rect = Rect::new(area.x, y, area.width, 1);
-            let style = self.style_for(status, cursor == i, surface);
+            let style = self.paint_step_row(
+                rect,
+                buffer,
+                status,
+                cursor == i,
+                surface,
+                state.accepts_input,
+            );
             buffer.set_stringn(
                 rect.x,
                 rect.y,
@@ -1004,7 +1019,18 @@ impl<'a> Stepper<'a> {
             "{mark} {cur}/{n} {}",
             take_display_cols(title, usize::from(area.width.saturating_sub(12)))
         );
-        let style = self.style_for(status, true, state.focused);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            if !state.accepts_input || matches!(status, StepStatus::Disabled) {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+        );
+        buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
+        let style = self.status_style(status, recipe.label);
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1039,7 +1065,18 @@ impl<'a> Stepper<'a> {
             "▸"
         };
         let line = format!("{mark} {cur}/{n} {title} {chev}");
-        let style = self.style_for(status, true, state.focused);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            if !state.accepts_input || matches!(status, StepStatus::Disabled) {
+                ControlState::Disabled
+            } else if state.focused {
+                ControlState::Focused
+            } else {
+                ControlState::Default
+            },
+        );
+        buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
+        let style = self.status_style(status, recipe.label);
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1065,7 +1102,14 @@ impl<'a> Stepper<'a> {
                     take_display_cols(&step.title, usize::from(area.width.saturating_sub(5)))
                 );
                 let rect = Rect::new(area.x, y, area.width, 1);
-                let style = self.style_for(st, cursor == i, state.focused);
+                let style = self.paint_step_row(
+                    rect,
+                    buffer,
+                    st,
+                    cursor == i,
+                    state.focused,
+                    state.accepts_input,
+                );
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
@@ -1247,6 +1291,11 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             StepperOutcome::StepActivated { .. }
         ));
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items);
+        assert!(matches!(
+            s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
+            StepperOutcome::MenuToggled { open: false }
+        ));
     }
 
     #[test]
@@ -1298,6 +1347,32 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(t2.contains("Account") || t2.contains("[>]"), "{t2}");
+    }
+
+    #[test]
+    fn mouse_activates_only_painted_step_hit() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        let area = Rect::new(0, 0, 72, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        let (index, hit) = state.hits[1];
+
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index,
+                id: items[index].id.clone()
+            }
+        );
     }
 
     #[test]
@@ -1372,5 +1447,22 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             StepperOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn empty_stepper_is_safe_and_never_activates() {
+        let system = DesignSystem::default();
+        let items: [StepItem; 0] = [];
+        let mut state = StepperState::with_len(0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
     }
 }

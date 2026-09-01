@@ -276,6 +276,158 @@ impl SurfaceFamily {
     }
 }
 
+/// Component recipe families governed by one semantic visual contract.
+///
+/// This is deliberately coarser than individual widgets. A new control joins
+/// one family and inherits its surface, hierarchy, focus, accent, motion, and
+/// non-color cue instead of inventing a private visual language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum RecipeFamily {
+    /// Buttons and other commit controls.
+    Action,
+    /// Editable fields and pickers.
+    Input,
+    /// Lists, trees, menus, and row-based tables.
+    Collection,
+    /// Dialogs, popovers, drawers, and transient layers.
+    Overlay,
+    /// Notices, progress, validation, and live state.
+    Status,
+    /// Metrics, key-value facts, tables, and charts.
+    Data,
+    /// Shell regions, panes, panels, and structural dividers.
+    Layout,
+}
+
+impl RecipeFamily {
+    /// Every enforced family, in stable inspector order.
+    pub const ALL: [Self; 7] = [
+        Self::Action,
+        Self::Input,
+        Self::Collection,
+        Self::Overlay,
+        Self::Status,
+        Self::Data,
+        Self::Layout,
+    ];
+
+    /// Stable id for inspectors and design gates.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Action => "action",
+            Self::Input => "input",
+            Self::Collection => "collection",
+            Self::Overlay => "overlay",
+            Self::Status => "status",
+            Self::Data => "data",
+            Self::Layout => "layout",
+        }
+    }
+}
+
+/// Structural cue that keeps a recipe legible without hue.
+///
+/// No `None` variant exists: joining a recipe family requires choosing a cue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum NonColorCue {
+    /// Focus/commit state changes label weight or reverse.
+    WeightedLabel,
+    /// A focused field carries a prompt glyph in its reserved leading cell.
+    PromptGlyph,
+    /// Selection carries a stable leading gutter or marker glyph.
+    SelectionGlyph,
+    /// Overlay ownership is stated by a frame and title marker.
+    FramedTitle,
+    /// Status pairs a semantic glyph with a written label.
+    GlyphAndLabel,
+    /// Primary, secondary, and metadata text occupy distinct tiers.
+    TieredText,
+    /// Structure is expressed through boundaries and spacing.
+    BorderedRegion,
+}
+
+impl NonColorCue {
+    /// Stable id for design inspection.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::WeightedLabel => "weighted-label",
+            Self::PromptGlyph => "prompt-glyph",
+            Self::SelectionGlyph => "selection-glyph",
+            Self::FramedTitle => "framed-title",
+            Self::GlyphAndLabel => "glyph-and-label",
+            Self::TieredText => "tiered-text",
+            Self::BorderedRegion => "bordered-region",
+        }
+    }
+}
+
+/// Where the brand accent may appear inside a family.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum AccentUsage {
+    /// Reserved for the primary commit action and its current intent.
+    PrimaryIntent,
+    /// Reserved for the one focus indicator; never ambient decoration.
+    FocusOnly,
+    /// Reserved for a small semantic mark, not whole sentences or surfaces.
+    SemanticMark,
+    /// This family does not spend brand accent.
+    None,
+}
+
+/// Motion owned by a semantic recipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum MotionSemantics {
+    /// Short state transition; retained (capped) under reduced motion.
+    StateTransition,
+    /// Ambient/activity motion; static under reduced motion.
+    Activity,
+    /// No motion is part of this family's meaning.
+    Static,
+}
+
+impl MotionSemantics {
+    /// Whether this channel may animate under `policy`.
+    #[must_use]
+    pub const fn animates(self, policy: MotionPolicy) -> bool {
+        match self {
+            Self::StateTransition => policy.allows_transitions(),
+            Self::Activity => policy.animate_spinners(),
+            Self::Static => false,
+        }
+    }
+}
+
+/// Semantic contract shared by every component in one [`RecipeFamily`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FamilyRecipe {
+    /// Family represented by this recipe.
+    pub family: RecipeFamily,
+    /// Default surface role.
+    pub surface: Role,
+    /// Primary content role.
+    pub primary: Role,
+    /// Secondary/meta content role.
+    pub secondary: Role,
+    /// Resting boundary role.
+    pub border: Role,
+    /// Focus vocabulary when the family can own interaction.
+    pub focus: Option<FocusEmphasis>,
+    /// Selection vocabulary when the family has membership/cursor state.
+    pub selection: Option<SelectionChrome>,
+    /// Required structure that survives monochrome projection.
+    pub non_color_cue: NonColorCue,
+    /// Restriction on brand-accent use.
+    pub accent: AccentUsage,
+    /// Motion class owned by the family.
+    pub motion: MotionSemantics,
+}
+
 impl SelectionChrome {
     /// Stable id, for inspectors and story metadata.
     #[must_use]
@@ -289,7 +441,7 @@ impl SelectionChrome {
     }
 }
 
-/// Corner-glyph family for single-line borders. Focus stays color-only.
+/// Corner-glyph family for single-line borders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum BorderShape {
@@ -474,7 +626,7 @@ impl PanelChrome {
 /// Resolved paint plan for a panel chrome surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PanelRecipe {
-    /// Single-line border style (weight never encodes focus).
+    /// Single-line border style; focus adds weight as a non-color cue.
     pub border: ratatui_core::style::Style,
     /// Title text style.
     pub title: ratatui_core::style::Style,
@@ -725,19 +877,17 @@ impl DesignSystem {
     /// Default phosphor Obsidian system (quiet gutter selection).
     #[must_use]
     pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor()).selection(SelectionChrome::Gutter)
+        Self::from_palette(RolePalette::tailrocks_phosphor())
+            .capability(ColorCapability::Ansi16)
+            .selection(SelectionChrome::Gutter)
     }
 
     /// Terminal-default background variant of the phosphor system.
     #[must_use]
     pub fn terminal_native() -> Self {
-        Self::from_palette(RolePalette::terminal_native()).selection(SelectionChrome::Gutter)
-    }
-
-    /// Alias for [`Self::phosphor`] (marketing name).
-    #[must_use]
-    pub fn obsidian() -> Self {
-        Self::phosphor()
+        Self::from_palette(RolePalette::terminal_native())
+            .capability(ColorCapability::Ansi16)
+            .selection(SelectionChrome::Gutter)
     }
 
     /// Cool-gray slate system.
@@ -815,6 +965,97 @@ impl DesignSystem {
     #[must_use]
     pub const fn focus_emphasis(&self, family: SurfaceFamily) -> FocusEmphasis {
         self.focus[family.index()]
+    }
+
+    /// Resolves the enforced semantic contract for a component family.
+    #[must_use]
+    pub const fn family_recipe(&self, family: RecipeFamily) -> FamilyRecipe {
+        match family {
+            RecipeFamily::Action => FamilyRecipe {
+                family,
+                surface: Role::Surface,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: Some(FocusEmphasis::BrightBorder),
+                selection: None,
+                non_color_cue: NonColorCue::WeightedLabel,
+                accent: AccentUsage::PrimaryIntent,
+                motion: MotionSemantics::StateTransition,
+            },
+            RecipeFamily::Input => FamilyRecipe {
+                family,
+                surface: Role::Sunken,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: Some(self.focus_emphasis(SurfaceFamily::Field)),
+                selection: None,
+                non_color_cue: NonColorCue::PromptGlyph,
+                accent: AccentUsage::FocusOnly,
+                motion: MotionSemantics::StateTransition,
+            },
+            RecipeFamily::Collection => FamilyRecipe {
+                family,
+                surface: Role::Surface,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: Some(self.focus_emphasis(SurfaceFamily::Row)),
+                selection: Some(self.selection),
+                non_color_cue: NonColorCue::SelectionGlyph,
+                accent: AccentUsage::FocusOnly,
+                motion: MotionSemantics::StateTransition,
+            },
+            RecipeFamily::Overlay => FamilyRecipe {
+                family,
+                surface: Role::Elevated,
+                primary: Role::TextStrong,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: Some(self.focus_emphasis(SurfaceFamily::Container)),
+                selection: None,
+                non_color_cue: NonColorCue::FramedTitle,
+                accent: AccentUsage::FocusOnly,
+                motion: MotionSemantics::StateTransition,
+            },
+            RecipeFamily::Status => FamilyRecipe {
+                family,
+                surface: Role::StatusBar,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: None,
+                selection: None,
+                non_color_cue: NonColorCue::GlyphAndLabel,
+                accent: AccentUsage::SemanticMark,
+                motion: MotionSemantics::Activity,
+            },
+            RecipeFamily::Data => FamilyRecipe {
+                family,
+                surface: Role::Surface,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::ChartGrid,
+                focus: Some(self.focus_emphasis(SurfaceFamily::Cell)),
+                selection: Some(self.selection),
+                non_color_cue: NonColorCue::TieredText,
+                accent: AccentUsage::SemanticMark,
+                motion: MotionSemantics::Static,
+            },
+            RecipeFamily::Layout => FamilyRecipe {
+                family,
+                surface: Role::Canvas,
+                primary: Role::Text,
+                secondary: Role::TextMuted,
+                border: Role::Border,
+                focus: Some(self.focus_emphasis(SurfaceFamily::Container)),
+                selection: None,
+                non_color_cue: NonColorCue::BorderedRegion,
+                accent: AccentUsage::None,
+                motion: MotionSemantics::StateTransition,
+            },
+        }
     }
 
     /// Overrides one family's focus cue (themes state the vocabulary).
@@ -1078,20 +1319,29 @@ impl DesignSystem {
         elevation: Elevation,
         settled: f32,
     ) -> PanelRecipe {
+        let family = if matches!(elevation, Elevation::Overlay) {
+            RecipeFamily::Overlay
+        } else {
+            RecipeFamily::Layout
+        };
+        let contract = self.family_recipe(family);
         let (border_role, title_role) = match emphasis {
-            PanelChrome::Normal => (Role::Border, Role::TextStrong),
+            PanelChrome::Normal => (contract.border, Role::TextStrong),
             PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
             PanelChrome::Danger => (Role::Danger, Role::TextStrong),
         };
-        let border = if self.motion.allows_transitions() && settled < 1.0 {
+        let mut border = if contract.motion.animates(self.motion) && settled < 1.0 {
             let from = match emphasis {
-                PanelChrome::Focused => Role::Border,
+                PanelChrome::Focused => contract.border,
                 PanelChrome::Normal | PanelChrome::Danger => Role::BorderFocused,
             };
             self.blend_role(from, border_role, settled)
         } else {
             self.style(border_role)
         };
+        if matches!(emphasis, PanelChrome::Focused) {
+            border = border.add_modifier(Modifier::BOLD);
+        }
         PanelRecipe {
             border,
             title: self.style(title_role),
@@ -1100,7 +1350,8 @@ impl DesignSystem {
             surface: self.style(elevation.role()),
             title_prefix: match emphasis {
                 PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Warning).text),
-                PanelChrome::Normal | PanelChrome::Focused => None,
+                PanelChrome::Focused => Some(self.glyphs.resolve(Glyph::FocusDiamond).text),
+                PanelChrome::Normal => None,
             },
         }
     }
@@ -1125,17 +1376,18 @@ impl DesignSystem {
     /// Button part×state recipe (no hard-coded RGB).
     #[must_use]
     pub fn button_recipe(&self, variant: ButtonRecipeVariant, state: ControlState) -> ButtonRecipe {
+        let contract = self.family_recipe(RecipeFamily::Action);
         let base_role = match variant {
             ButtonRecipeVariant::Primary => Role::ActionFocused,
             ButtonRecipeVariant::Destructive => Role::Danger,
             ButtonRecipeVariant::Link => Role::Link,
             ButtonRecipeVariant::Secondary
             | ButtonRecipeVariant::Quiet
-            | ButtonRecipeVariant::Outline => Role::Text,
+            | ButtonRecipeVariant::Outline => contract.primary,
         };
         let mut label = self.style(base_role);
         let mut fill = Style::new();
-        let mut border = self.style(Role::Border);
+        let mut border = self.style(contract.border);
         let mut bordered = matches!(
             variant,
             ButtonRecipeVariant::Outline
@@ -1163,7 +1415,17 @@ impl DesignSystem {
         }
         match state {
             ControlState::Focused => {
-                border = self.style(Role::BorderFocused);
+                // Some semantic defaults already carry bold weight (primary,
+                // danger, and high-contrast roles). Re-applying bold would
+                // make focus structurally invisible once hue is removed, so
+                // every pre-weighted label advances to reverse video. A
+                // monochrome filled action is already reversed, so its focus
+                // toggles reverse off instead of collapsing into the idle fill.
+                let label_was_bold = label.add_modifier.contains(Modifier::BOLD)
+                    && !label.sub_modifier.contains(Modifier::BOLD);
+                let label_was_reversed = label.add_modifier.contains(Modifier::REVERSED)
+                    && !label.sub_modifier.contains(Modifier::REVERSED);
+                border = self.style(Role::BorderFocused).add_modifier(Modifier::BOLD);
                 if !matches!(
                     variant,
                     ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link
@@ -1171,6 +1433,13 @@ impl DesignSystem {
                     bordered = true;
                 }
                 label = label.add_modifier(Modifier::BOLD);
+                if label_was_bold {
+                    label = if label_was_reversed {
+                        label.remove_modifier(Modifier::REVERSED)
+                    } else {
+                        label.add_modifier(Modifier::REVERSED)
+                    };
+                }
             }
             ControlState::Hovered => {
                 // Only a link repaints its label on hover. A filled button that
@@ -1199,24 +1468,26 @@ impl DesignSystem {
                 // Pressed is a distinct fact, not "hover but bolder": the
                 // control sinks into the press for the frame it is held
                 // (plans/021 Step 2).
-                label = label.add_modifier(Modifier::BOLD);
                 fill = self.style(Role::SelectionTint);
+                label = self.style(Role::TextStrong).add_modifier(Modifier::BOLD);
+                if let Some(bg) = fill.bg {
+                    label = label.bg(bg);
+                }
                 if matches!(variant, ButtonRecipeVariant::Destructive) {
-                    label = label.add_modifier(Modifier::REVERSED);
+                    border = self.style(Role::Danger);
                 }
             }
             ControlState::Disabled => {
                 label = self.style(Role::ActionDisabled);
                 fill = Style::new();
-                border = self.style(Role::Border);
+                border = self.style(contract.border);
             }
             ControlState::Loading => {
                 // Loading is not disabled: the button keeps its identity and
                 // dims, so a spinner beside a still-recognizable action does
                 // not read as "this control is gone".
                 label = label.add_modifier(Modifier::DIM);
-                fill = Style::new();
-                border = self.style(Role::Border);
+                border = self.style(contract.border);
             }
             ControlState::Default => {}
         }
@@ -1244,13 +1515,14 @@ impl DesignSystem {
     /// field is leaving, `1.0` the one it is arriving at.
     #[must_use]
     pub fn input_recipe_at(&self, state: ControlState, invalid: bool, settled: f32) -> InputRecipe {
-        let mut border = self.style(Role::Border);
+        let contract = self.family_recipe(RecipeFamily::Input);
+        let mut border = self.style(contract.border);
         // The value is text; the well is the fill. Reading both from
         // `Role::Input` made the value inherit the well's background and
         // nothing else.
-        let mut value = self.style(Role::Text);
-        let placeholder = self.style(Role::TextMuted);
-        let mut fill = self.style(Role::Sunken);
+        let mut value = self.style(contract.primary);
+        let placeholder = self.style(contract.secondary);
+        let mut fill = self.style(contract.surface);
         let cursor = self.style(Role::Focus);
         if invalid {
             border = self.style(Role::InputInvalid);
@@ -1258,15 +1530,16 @@ impl DesignSystem {
         }
         match state {
             ControlState::Focused => {
-                border = if self.motion.allows_transitions() && settled < 1.0 {
-                    self.blend_role(Role::Border, Role::BorderFocused, settled)
+                border = if contract.motion.animates(self.motion) && settled < 1.0 {
+                    self.blend_role(contract.border, Role::BorderFocused, settled)
                 } else {
                     self.style(Role::BorderFocused)
-                };
+                }
+                .add_modifier(Modifier::BOLD);
             }
             ControlState::Disabled => {
                 value = self.style(Role::TextDisabled);
-                border = self.style(Role::Border);
+                border = self.style(contract.border);
             }
             ControlState::Hovered => {
                 // Hover lifts the well; only focus is allowed to brighten the
@@ -1308,17 +1581,18 @@ impl DesignSystem {
     /// Full part×state list row recipe (quiet canvas, bright intent).
     #[must_use]
     pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
+        let contract = self.family_recipe(RecipeFamily::Collection);
+        let selection = contract
+            .selection
+            .expect("collection family always defines selection chrome");
         let disabled = !state.enabled;
         let label = if disabled {
             self.style(Role::TextDisabled)
         } else if state.selected
-            && matches!(
-                self.selection,
-                SelectionChrome::Fill | SelectionChrome::Marker
-            )
+            && matches!(selection, SelectionChrome::Fill | SelectionChrome::Marker)
         {
             self.style(Role::Selection)
-        } else if state.selected && matches!(self.selection, SelectionChrome::Tint) {
+        } else if state.selected && matches!(selection, SelectionChrome::Tint) {
             self.style(Role::TextStrong)
                 .patch(self.style(Role::SelectionTint))
         } else if state.selected {
@@ -1326,12 +1600,12 @@ impl DesignSystem {
         } else if state.loading {
             self.style(Role::TextMuted)
         } else {
-            self.style(Role::Text)
+            self.style(contract.primary)
         };
         let secondary = self.style(if disabled {
             Role::TextDisabled
         } else {
-            Role::TextMuted
+            contract.secondary
         });
         let shortcut = secondary;
         // The gutter says "selected"; its color says whether this collection
@@ -1339,7 +1613,7 @@ impl DesignSystem {
         // Marker chrome paints `▸` into a full-row fill, so the marker must
         // speak the fill's own foreground (label style) or it disappears.
         let gutter = if state.selected {
-            if matches!(self.selection, SelectionChrome::Marker) {
+            if matches!(selection, SelectionChrome::Marker) {
                 Some((self.glyphs.selection_marker(), label))
             } else {
                 let tone = if state.focused {
@@ -1352,12 +1626,9 @@ impl DesignSystem {
         } else {
             None
         };
-        let use_fill = state.selected
-            && matches!(
-                self.selection,
-                SelectionChrome::Fill | SelectionChrome::Marker
-            );
-        let use_tint = state.selected && matches!(self.selection, SelectionChrome::Tint);
+        let use_fill =
+            state.selected && matches!(selection, SelectionChrome::Fill | SelectionChrome::Marker);
+        let use_tint = state.selected && matches!(selection, SelectionChrome::Tint);
         let hover_fill = state.hovered && !state.selected && !disabled;
         ListRowRecipe {
             label,
@@ -1377,7 +1648,7 @@ impl DesignSystem {
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
             show_gutter_slot: matches!(
-                self.selection,
+                selection,
                 SelectionChrome::Gutter
                     | SelectionChrome::Tint
                     | SelectionChrome::Fill
@@ -1614,6 +1885,46 @@ mod tests {
         let idle = system.button_recipe(ButtonRecipeVariant::Secondary, ControlState::Default);
         assert_ne!(focused.border, idle.border);
         assert!(focused.bordered);
+    }
+
+    #[test]
+    fn no_color_focus_has_structure_for_every_button_variant() {
+        let system = DesignSystem::phosphor().no_color();
+        for variant in [
+            ButtonRecipeVariant::Primary,
+            ButtonRecipeVariant::Secondary,
+            ButtonRecipeVariant::Destructive,
+            ButtonRecipeVariant::Quiet,
+            ButtonRecipeVariant::Outline,
+            ButtonRecipeVariant::Link,
+        ] {
+            let idle = system.button_recipe(variant, ControlState::Default);
+            let focused = system.button_recipe(variant, ControlState::Focused);
+            assert_ne!(focused, idle, "{variant:?} focus collapsed in no-color");
+            assert!(
+                focused.label.add_modifier != idle.label.add_modifier
+                    || focused.border.add_modifier != idle.border.add_modifier
+                    || focused.bordered != idle.bordered,
+                "{variant:?} focus has no structural delta"
+            );
+            if idle.label.add_modifier.contains(Modifier::BOLD)
+                && !idle.label.sub_modifier.contains(Modifier::BOLD)
+            {
+                if idle.label.add_modifier.contains(Modifier::REVERSED)
+                    && !idle.label.sub_modifier.contains(Modifier::REVERSED)
+                {
+                    assert!(
+                        focused.label.sub_modifier.contains(Modifier::REVERSED),
+                        "{variant:?} was already reversed and must toggle that cue"
+                    );
+                } else {
+                    assert!(
+                        focused.label.add_modifier.contains(Modifier::REVERSED),
+                        "{variant:?} was pre-emphasized and needs another focus cue"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

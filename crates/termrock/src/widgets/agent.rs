@@ -15,6 +15,8 @@ use crate::{
     widgets::{PanelChrome, SemanticStatus},
 };
 
+use super::{accent_rail::AccentRail, status_indicator::StatusIndicator};
+
 // ── Token meter ─────────────────────────────────────────────────────────────
 
 /// Compact token/cost usage meter.
@@ -66,21 +68,38 @@ impl Widget for &TokenMeter<'_> {
             self.limit,
             fraction * 100.0
         );
-        let role = if fraction >= 0.9 {
-            Role::Danger
+        let warning = if fraction >= 0.9 {
+            Some("critical")
         } else if fraction >= 0.75 {
-            Role::Warning
+            Some("warning")
         } else {
-            Role::TextMuted
+            None
         };
-        let clipped = take_display_cols(&text, usize::from(area.width));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &clipped,
-            usize::from(area.width),
-            self.system.style(role),
-        );
+        if let Some(label) = warning {
+            let status = StatusIndicator::new(SemanticStatus::Warning, self.system).label(label);
+            let status_width = status.measure_width(None).min(area.width);
+            Widget::render(&status, Rect::new(area.x, area.y, status_width, 1), buffer);
+            let x = area.x.saturating_add(status_width.saturating_add(1));
+            let width = area.right().saturating_sub(x);
+            if width > 0 {
+                buffer.set_stringn(
+                    x,
+                    area.y,
+                    take_display_cols(&format!("· {text}"), usize::from(width)),
+                    usize::from(width),
+                    self.system.style(Role::TextMuted),
+                );
+            }
+        } else {
+            let clipped = take_display_cols(&text, usize::from(area.width));
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                &clipped,
+                usize::from(area.width),
+                self.system.style(Role::TextMuted),
+            );
+        }
     }
 }
 
@@ -148,18 +167,30 @@ impl Widget for &ThinkingBlock<'_> {
         }
         use crate::layout::{FlexSize, Stack};
 
-        let show_body = self.expanded && !self.body.is_empty() && area.height > 1;
+        let content = AccentRail::new(self.system, Role::ActorAssistant)
+            .active(true)
+            .tick(self.system.elapsed_ms() / 80)
+            .paint(area, buffer);
+        if content.is_empty() {
+            return;
+        }
+        let show_body = self.expanded && !self.body.is_empty() && content.height > 1;
         let layout = if show_body {
-            Stack::new().layout(area, &[FlexSize::Fixed(1), FlexSize::fill()])
+            Stack::new().layout(content, &[FlexSize::Fixed(1), FlexSize::fill()])
         } else {
-            Stack::new().layout(area, &[FlexSize::Fixed(1)])
+            Stack::new().layout(content, &[FlexSize::Fixed(1)])
         };
         let marker = if self.expanded {
             self.system.glyphs.disclosure_open()
         } else {
             self.system.glyphs.disclosure_closed()
         };
-        let header = format!("{} {} {}", marker, self.frame, self.summary);
+        let frame = if self.system.motion.animate_spinners() && !self.frame.is_empty() {
+            self.frame
+        } else {
+            SemanticStatus::Running.glyph_for_set(self.system.glyphs)
+        };
+        let header = format!("{marker} {frame} {}", self.summary);
         if let Some(header_r) = layout.get(0) {
             let clipped = take_display_cols(&header, usize::from(header_r.width));
             buffer.set_stringn(
@@ -325,12 +356,6 @@ impl ToolStatus {
     pub const fn can_retry(self) -> bool {
         matches!(self, Self::Failed | Self::Cancelled | Self::Warning)
     }
-
-    /// Theme role for the status (aligned with [`SemanticStatus`]).
-    #[must_use]
-    pub const fn role(self) -> Role {
-        self.semantic().role()
-    }
 }
 
 /// Mutable streaming tool call card.
@@ -426,7 +451,7 @@ impl Widget for &ToolCard<'_> {
                 body.y,
                 &line,
                 usize::from(body.width),
-                self.system.style(self.status.role()),
+                self.system.style(Role::TextMuted),
             );
         }
     }
@@ -463,6 +488,35 @@ mod tests {
             SemanticStatus::Paused.glyph_unicode()
         );
         assert_eq!(ToolStatus::Queued.semantic(), SemanticStatus::Queued);
+    }
+
+    #[test]
+    fn warning_meter_spells_status_with_rail_and_glyph() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 48, 1);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(TokenMeter::new(90, 100, &system), area, &mut buffer);
+        let text = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>();
+        assert!(text.contains("┃ ! critical"), "{text:?}");
+    }
+
+    #[test]
+    fn reduced_motion_thinking_block_uses_static_status_glyph() {
+        let system = DesignSystem::default().motion(crate::style::MotionPolicy::Off);
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+        Widget::render(
+            ThinkingBlock::new("reviewing files", &system).frame("⠋"),
+            area,
+            &mut buffer,
+        );
+        let text = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol())
+            .collect::<String>();
+        assert!(text.contains("◉ reviewing files"), "{text:?}");
+        assert!(!text.contains('⠋'));
     }
 
     #[test]

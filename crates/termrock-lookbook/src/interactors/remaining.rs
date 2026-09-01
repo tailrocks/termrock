@@ -6,15 +6,15 @@
 use ratatui::{Frame, layout::Rect, widgets::Widget};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
-    style::{Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{
-        Action, Button, ButtonState, CheckpointTimeline, CheckpointTimelineState, DiffHunk,
-        DiffLine, DiffReview, DiffReviewFileRow, DiffReviewState, Drawer, DrawerOutcome,
+        Action, ActionVariant, Button, ButtonState, CheckpointTimeline, CheckpointTimelineState,
+        DiffHunk, DiffLine, DiffReview, DiffReviewFileRow, DiffReviewState, Drawer, DrawerOutcome,
         DrawerState, EmptyStateOutcome, EmptyStateState, ErrorStateOutcome, ErrorStateState,
         FullscreenViewer, FullscreenViewerOutcome, FullscreenViewerState, KeyValueList,
         KeyValueListState, KeyValueTable, KeyValueTableOutcome, KeyValueTableState, KvEntry,
         KvStatus, KvtField, LoadState, ModeRibbon, ModeRibbonOutcome, ModeRibbonState,
-        OfflineBanner, OfflineSurface, PreviewCard, PreviewCardState, ReconnectingState, Sheet,
+        OfflineBanner, OfflineSurface, PreviewCard, PreviewCardState, ReconnectingState,
         SourceContext, ViewerContentKind, WorkbenchMode, example_checkpoints, example_empty_search,
         example_error_network, example_file_preview, example_reconnecting_agent,
     },
@@ -25,14 +25,14 @@ use crate::stories::diff_review_sample;
 
 pub(crate) struct EmptyStateInteractor {
     state: EmptyStateState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl EmptyStateInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: EmptyStateState::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -42,21 +42,21 @@ impl EmptyStateInteractor {
 }
 impl StoryInteraction for EmptyStateInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         example_empty_search(&system).paint_with_state(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = example_empty_search(&system).handle_key(key, &mut self.state);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = example_empty_search(&system).handle_mouse(mouse, area, &mut self.state);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -73,14 +73,14 @@ impl StoryInteraction for EmptyStateInteractor {
 
 pub(crate) struct ErrorStateInteractor {
     state: ErrorStateState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl ErrorStateInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ErrorStateState::new(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -90,21 +90,21 @@ impl ErrorStateInteractor {
 }
 impl StoryInteraction for ErrorStateInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         example_error_network(&system).paint_with_state(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = example_error_network(&system).handle_key(key, &mut self.state);
         self.apply(outcome)
     }
     fn handle_mouse(&mut self, mouse: MouseEvent, area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let outcome = example_error_network(&system).handle_mouse(mouse, area, &mut self.state);
         self.apply(outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -124,50 +124,46 @@ impl StoryInteraction for ErrorStateInteractor {
 pub(crate) struct DrawerInteractor {
     state: DrawerState,
     trigger: ButtonState,
-    sheet: bool,
+    bottom: bool,
     area: Rect,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl DrawerInteractor {
     pub(crate) fn drawer() -> Self {
         Self::new(false)
     }
-    pub(crate) fn sheet() -> Self {
+    pub(crate) fn bottom() -> Self {
         Self::new(true)
     }
-    fn new(sheet: bool) -> Self {
+    fn new(bottom: bool) -> Self {
         let mut trigger = ButtonState::new();
         trigger.activation.set_accepts_input(true);
         Self {
-            state: if sheet {
+            state: if bottom {
                 DrawerState::sheet()
             } else {
                 DrawerState::new()
             },
             trigger,
-            sheet,
+            bottom,
             area: Rect::default(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
     fn apply(&mut self, outcome: DrawerOutcome) -> bool {
-        record(
-            &mut self.outcome,
-            if self.sheet { "Sheet" } else { "Drawer" },
-            outcome,
-        )
+        record(&mut self.outcome, "Drawer", outcome)
     }
 }
 impl StoryInteraction for DrawerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if !self.state.is_open() {
             let _ = Button::new(
-                if self.sheet {
-                    "Open sheet"
+                if self.bottom {
+                    "Open bottom drawer"
                 } else {
                     "Open drawer"
                 },
@@ -180,12 +176,14 @@ impl StoryInteraction for DrawerInteractor {
             );
             return;
         }
-        if self.sheet {
-            Sheet::new("Details", &system)
+        if self.bottom {
+            Drawer::new(&system)
+                .title(Some("Details"))
                 .footer(Some("Esc close · drag handle"))
                 .paint(area, frame.buffer_mut(), &mut self.state);
         } else {
-            Drawer::new("Inspector", &system)
+            Drawer::new(&system)
+                .title(Some("Inspector"))
                 .footer(Some("Esc close · [ ] resize"))
                 .paint(area, frame.buffer_mut(), &mut self.state);
         }
@@ -225,12 +223,12 @@ impl StoryInteraction for DrawerInteractor {
         }
         self.trigger != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_open() {
-            if self.sheet {
+            if self.bottom {
                 vec!["Esc close", "drag handle resize"]
             } else {
                 vec!["Esc close", "[ ] resize", "drag handle resize"]
@@ -254,7 +252,7 @@ impl StoryInteraction for DrawerInteractor {
 pub(crate) struct FullscreenViewerInteractor {
     state: FullscreenViewerState<&'static str>,
     trigger: ButtonState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl FullscreenViewerInteractor {
@@ -266,7 +264,7 @@ impl FullscreenViewerInteractor {
         Self {
             state,
             trigger,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -276,13 +274,13 @@ impl FullscreenViewerInteractor {
                 id: "copy",
                 label: "Copy",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
             Action {
                 id: "raw",
                 label: "Raw",
                 enabled: true,
-                style: None,
+                variant: ActionVariant::Secondary,
             },
         ]
     }
@@ -292,7 +290,7 @@ impl FullscreenViewerInteractor {
 }
 impl StoryInteraction for FullscreenViewerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if !self.state.is_open() {
             let _ = Button::new("Open fullscreen viewer", &system).paint(
                 Rect::new(area.x, area.y, area.width.min(24), 1.min(area.height)),
@@ -343,8 +341,8 @@ impl StoryInteraction for FullscreenViewerInteractor {
         }
         self.trigger != before
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_open() {
@@ -376,14 +374,14 @@ impl StoryInteraction for FullscreenViewerInteractor {
 
 pub(crate) struct ModeRibbonInteractor {
     state: ModeRibbonState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl ModeRibbonInteractor {
     pub(crate) fn new() -> Self {
         Self {
             state: ModeRibbonState::new(Some("plan")),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -393,7 +391,7 @@ impl ModeRibbonInteractor {
 }
 impl StoryInteraction for ModeRibbonInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let selected = self.state.selected().copied();
         let modes = [
             WorkbenchMode {
@@ -445,8 +443,8 @@ impl StoryInteraction for ModeRibbonInteractor {
     fn handle_mouse(&mut self, _mouse: MouseEvent, _area: Rect) -> bool {
         false
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec!["←→ change mode", "Enter request mode"]
@@ -460,7 +458,7 @@ pub(crate) struct OfflineBannerInteractor {
     state: ReconnectingState,
     area: Rect,
     full: bool,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl OfflineBannerInteractor {
@@ -482,7 +480,7 @@ impl OfflineBannerInteractor {
             state,
             area: Rect::default(),
             full,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -490,7 +488,7 @@ impl OfflineBannerInteractor {
 impl StoryInteraction for OfflineBannerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if self.full {
             OfflineSurface::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
         } else {
@@ -514,8 +512,8 @@ impl StoryInteraction for OfflineBannerInteractor {
         let outcome = self.state.handle_mouse(mouse, self.area);
         record(&mut self.outcome, "OfflineBanner", outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.banner_dismissed() {
@@ -538,7 +536,7 @@ impl StoryInteraction for OfflineBannerInteractor {
 pub(crate) struct PreviewCardInteractor {
     state: PreviewCardState,
     area: Rect,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 impl PreviewCardInteractor {
@@ -546,7 +544,7 @@ impl PreviewCardInteractor {
         Self {
             state: PreviewCardState::with_delay(std::time::Duration::ZERO),
             area: Rect::default(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -554,7 +552,7 @@ impl PreviewCardInteractor {
 impl StoryInteraction for PreviewCardInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         self.area = area;
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         if self.state.is_visible() {
             let (content, _, _) = example_file_preview();
             PreviewCard::new(content, &system).paint(area, frame.buffer_mut(), &mut self.state);
@@ -588,8 +586,8 @@ impl StoryInteraction for PreviewCardInteractor {
         let outcome = self.state.tick_hover(1, hovering);
         record(&mut self.outcome, "PreviewCard", outcome)
     }
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         if self.state.is_pinned() {
@@ -605,7 +603,7 @@ impl StoryInteraction for PreviewCardInteractor {
 
 pub(crate) struct CheckpointTimelineInteractor {
     state: CheckpointTimelineState,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -616,7 +614,7 @@ impl CheckpointTimelineInteractor {
         state.focused = true;
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -624,7 +622,7 @@ impl CheckpointTimelineInteractor {
 
 impl StoryInteraction for CheckpointTimelineInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         CheckpointTimeline::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
 
@@ -638,8 +636,8 @@ impl StoryInteraction for CheckpointTimelineInteractor {
         record(&mut self.outcome, "CheckpointTimeline", outcome)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -662,7 +660,7 @@ pub(crate) struct DiffReviewInteractor {
     lines: Vec<DiffLine<'static>>,
     hunks: [DiffHunk; 2],
     files: [DiffReviewFileRow<'static>; 2],
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -674,7 +672,7 @@ impl DiffReviewInteractor {
             lines,
             hunks,
             files,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -682,7 +680,7 @@ impl DiffReviewInteractor {
 
 impl StoryInteraction for DiffReviewInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         DiffReview::new(&self.lines, &system)
             .hunks(&self.hunks)
             .files(&self.files)
@@ -704,8 +702,8 @@ impl StoryInteraction for DiffReviewInteractor {
         record(&mut self.outcome, "DiffReview", outcome)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -747,7 +745,7 @@ fn key_value_entries() -> [KvEntry<'static, &'static str>; 7] {
 
 pub(crate) struct KeyValueListInteractor {
     state: KeyValueListState<&'static str>,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -758,7 +756,7 @@ impl KeyValueListInteractor {
         state.cursor = Some("status");
         Self {
             state,
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -766,7 +764,7 @@ impl KeyValueListInteractor {
 
 impl StoryInteraction for KeyValueListInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = key_value_entries();
         let _ = KeyValueList::reading(&entries, &system).paint(
             area,
@@ -776,21 +774,21 @@ impl StoryInteraction for KeyValueListInteractor {
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = key_value_entries();
         let outcome = KeyValueList::reading(&entries, &system).handle_key(&mut self.state, key);
         record(&mut self.outcome, "KeyValueList", outcome)
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let entries = key_value_entries();
         let outcome = KeyValueList::reading(&entries, &system).handle_mouse(&mut self.state, mouse);
         record(&mut self.outcome, "KeyValueList", outcome)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![
@@ -810,7 +808,7 @@ impl StoryInteraction for KeyValueListInteractor {
 pub(crate) struct KeyValueTableInteractor {
     state: KeyValueTableState<&'static str>,
     content_type: String,
-    theme: RolePalette,
+    system: DesignSystem,
     outcome: Option<String>,
 }
 
@@ -821,7 +819,7 @@ impl KeyValueTableInteractor {
         Self {
             state,
             content_type: "application/json".into(),
-            theme: RolePalette::default(),
+            system: crate::design::lookbook_system(RolePalette::default()),
             outcome: None,
         }
     }
@@ -860,14 +858,14 @@ fn key_value_table_fields(content_type: &str) -> [KvtField<'_, &'static str>; 6]
 
 impl StoryInteraction for KeyValueTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         KeyValueTable::new(&fields, &system).render(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         let outcome = KeyValueTable::new(&fields, &system).handle_key(&mut self.state, key);
@@ -878,15 +876,15 @@ impl StoryInteraction for KeyValueTableInteractor {
     }
 
     fn handle_mouse(&mut self, mouse: MouseEvent, _area: Rect) -> bool {
-        let system = crate::design::lookbook_system(self.theme.clone());
+        let system = self.system.clone();
         let content_type = self.content_type.clone();
         let fields = key_value_table_fields(&content_type);
         let outcome = KeyValueTable::new(&fields, &system).handle_mouse(&mut self.state, mouse);
         record(&mut self.outcome, "KeyValueTable", outcome)
     }
 
-    fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme;
+    fn set_system(&mut self, system: DesignSystem) {
+        self.system = system;
     }
     fn hints(&self) -> Vec<&'static str> {
         vec![

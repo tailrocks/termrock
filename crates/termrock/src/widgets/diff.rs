@@ -561,9 +561,6 @@ impl Default for DiffViewState {
     }
 }
 
-/// Backward-compatible alias for [`DiffViewState`].
-pub type DiffState = DiffViewState;
-
 impl DiffViewState {
     /// Fresh viewer (Auto mode, line numbers on, word diff on).
     #[must_use]
@@ -1216,8 +1213,8 @@ impl<'a> DiffView<'a> {
             state.body_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
 
         let view = filter_diff_lines(self.lines, state.search.as_deref().unwrap_or(""), state);
@@ -1345,6 +1342,7 @@ impl<'a> DiffView<'a> {
 
         if chip_h > 0 {
             let chip_y = area.bottom().saturating_sub(1);
+            let separator = if ascii { " - " } else { " · " };
             let mode = match effective {
                 DiffEffectiveMode::Unified => {
                     if ascii {
@@ -1356,7 +1354,7 @@ impl<'a> DiffView<'a> {
                 DiffEffectiveMode::Split => "split",
             };
             let mut chip = format!(
-                "{mode} · hunk {}/{}",
+                "{mode}{separator}hunk {}/{}",
                 if self.hunks.is_empty() {
                     0
                 } else {
@@ -1365,16 +1363,18 @@ impl<'a> DiffView<'a> {
                 self.hunks.len()
             );
             if let Some(q) = &state.search {
-                chip.push_str(&format!(" · /{q}"));
+                chip.push_str(&format!("{separator}/{q}"));
             }
             if !state.folded_hunks.is_empty() {
-                chip.push_str(&format!(" · fold {}", state.folded_hunks.len()));
+                chip.push_str(&format!("{separator}fold {}", state.folded_hunks.len()));
             }
             if state.word_diff {
-                chip.push_str(" · words");
+                chip.push_str(separator);
+                chip.push_str("words");
             }
             if !state.show_line_numbers {
-                chip.push_str(" · no#");
+                chip.push_str(separator);
+                chip.push_str("no#");
             }
             let style = if surface {
                 self.system.style(Role::TextMuted)
@@ -1565,7 +1565,7 @@ fn paint_word_line(
     let mut x = area.x;
     let max_x = area.x.saturating_add(area.width);
     let lead_t = take_display_cols(lead, usize::from(area.width));
-    buffer.set_stringn(x, area.y, &lead_t, lead_t.chars().count().max(1), base);
+    buffer.set_stringn(x, area.y, &lead_t, display_cols(&lead_t).max(1), base);
     x = x.saturating_add(display_cols(&lead_t) as u16);
 
     for w in words {

@@ -23,7 +23,7 @@ use crate::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_button_intent,
     },
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -295,10 +295,7 @@ impl CheckboxState {
                 return self.apply_activate(id);
             }
         }
-        match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => self.apply_activate(id),
-            _ => CheckboxOutcome::Ignored,
-        }
+        CheckboxOutcome::Ignored
     }
 
     /// Click on root toggles.
@@ -401,7 +398,7 @@ impl<'a, Id> Checkbox<'a, Id> {
     }
 
     fn mono(&self) -> bool {
-        self.colorless || self.system.mono()
+        self.colorless || self.system.mono() || self.system.glyphs.is_ascii()
     }
 
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
@@ -421,56 +418,53 @@ impl<'a, Id> Checkbox<'a, Id> {
     }
 
     fn mark_style(&self, state: &CheckboxState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            return self.system.style(Role::TextMuted);
+            style = style.add_modifier(Modifier::DIM);
         }
         if state.invalid {
-            let mut s = self.system.style(Role::Danger);
-            if state.focused {
-                s = s.add_modifier(Modifier::BOLD);
-            }
-            return s;
-        }
-        if state.focused {
-            let mut s = self.system.style(Role::Focus);
-            if state.value.is_checked() {
-                s = s.add_modifier(Modifier::BOLD);
-            }
-            return s;
+            style = style.patch(self.system.style(Role::Danger));
         }
         match state.value {
-            CheckboxValue::Checked => {
-                let mut s = self.system.style(Role::TextStrong);
-                s = s.add_modifier(Modifier::BOLD);
-                s
-            }
-            CheckboxValue::Indeterminate => self.system.style(Role::TextMuted),
-            CheckboxValue::Unchecked => self.system.style(Role::Text),
+            CheckboxValue::Checked => style.add_modifier(Modifier::BOLD),
+            CheckboxValue::Indeterminate => style.add_modifier(Modifier::DIM),
+            CheckboxValue::Unchecked => style,
         }
     }
 
     fn label_style(&self, state: &CheckboxState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            return self.system.style(Role::TextMuted);
+            style = style.add_modifier(Modifier::DIM);
         }
         if state.invalid {
-            return self.system.style(Role::Danger);
+            style = style.patch(self.system.style(Role::Danger));
         }
-        if state.focused {
-            // Focus is a role change plus weight; the control's own glyph
-            // (`◉`/`○`, `▮`/`▯`) carries the state next to it.
-            return self.system.style(Role::Focus).add_modifier(Modifier::BOLD);
-        }
-        if state.hovered {
-            return self.system.style(Role::TextStrong);
-        }
-        self.system.style(Role::Text)
+        style
     }
 
     /// Paint checkbox. Prefer this over [`StatefulWidget::render`].
@@ -1275,31 +1269,25 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         focused: bool,
         hovered: bool,
     ) -> ratatui_core::style::Style {
-        if !state.enabled || !opt.enabled {
-            return self.system.style(Role::TextDisabled);
+        let recipe = self.system.resolve_list_row(ListRowVisualState {
+            selected,
+            focused,
+            hovered,
+            enabled: state.enabled && opt.enabled,
+            loading: false,
+            checked: selected,
+        });
+        let mut style = recipe.label;
+        if selected {
+            style = style.add_modifier(Modifier::BOLD);
+            if self.mono() {
+                style = style.add_modifier(Modifier::REVERSED);
+            }
         }
         if state.invalid && selected {
-            return self.system.style(Role::Danger).add_modifier(Modifier::BOLD);
+            style = style.patch(self.system.style(Role::Danger));
         }
-        if focused {
-            let mut s = self.system.style(Role::Focus);
-            if selected {
-                s = s.add_modifier(Modifier::BOLD);
-            }
-            return s;
-        }
-        if selected {
-            let mut s = self.system.style(Role::TextStrong);
-            s = s.add_modifier(Modifier::BOLD);
-            if self.mono() {
-                s = s.add_modifier(Modifier::REVERSED);
-            }
-            return s;
-        }
-        if hovered {
-            return self.system.style(Role::TextStrong);
-        }
-        self.system.style(Role::Text)
+        style
     }
 
     /// Prefer [`Self::paint`].
@@ -1351,12 +1339,6 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     }
                     return RadioOutcome::Ignored;
                 }
-            }
-            if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
-                if let Some(id) = state.collection.active().cloned() {
-                    return self.commit_selected(state, id);
-                }
-                return RadioOutcome::Ignored;
             }
         }
 
@@ -1817,10 +1799,7 @@ impl SwitchState {
                 return self.apply_toggle(id);
             }
         }
-        match key.code {
-            KeyCode::Enter | KeyCode::Char(' ') => self.apply_toggle(id),
-            _ => SwitchOutcome::Ignored,
-        }
+        SwitchOutcome::Ignored
     }
 
     /// Pointer: Down arms, Up-in-region toggles (scroll-safe).
@@ -2024,60 +2003,60 @@ impl<'a, Id> Switch<'a, Id> {
     }
 
     fn track_style(&self, state: &SwitchState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.loading {
+            ControlState::Loading
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            return self.system.style(Role::TextMuted);
-        }
-        if state.loading {
-            return self.system.style(Role::TextMuted);
+            style = style.add_modifier(Modifier::DIM);
         }
         if state.invalid {
-            let mut s = self.system.style(Role::Danger);
-            if state.focused {
-                s = s.add_modifier(Modifier::BOLD);
-            }
-            return s;
-        }
-        if state.focused {
-            let mut s = self.system.style(Role::Focus);
-            if state.on {
-                s = s.add_modifier(Modifier::BOLD);
-            }
-            return s;
+            style = style.patch(self.system.style(Role::Danger));
         }
         if state.on {
-            let mut s = self.system.style(Role::Success);
-            s = s.add_modifier(Modifier::BOLD);
+            style = style.patch(self.system.style(Role::Success));
+            style = style.add_modifier(Modifier::BOLD);
             if self.mono() {
-                s = s.add_modifier(Modifier::REVERSED);
+                style = style.add_modifier(Modifier::REVERSED);
             }
-            s
-        } else {
-            self.system.style(Role::TextMuted)
         }
+        style
     }
 
     fn label_style(&self, state: &SwitchState) -> ratatui_core::style::Style {
-        if !state.enabled {
-            return self.system.style(Role::TextDisabled);
-        }
+        let control_state = if !state.enabled {
+            ControlState::Disabled
+        } else if state.loading {
+            ControlState::Loading
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self
+            .system
+            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            return self.system.style(Role::TextMuted);
+            style = style.add_modifier(Modifier::DIM);
         }
         if state.invalid {
-            return self.system.style(Role::Danger);
+            style = style.patch(self.system.style(Role::Danger));
         }
-        if state.focused {
-            // Focus is a role change plus weight; the control's own glyph
-            // (`◉`/`○`, `▮`/`▯`) carries the state next to it.
-            return self.system.style(Role::Focus).add_modifier(Modifier::BOLD);
-        }
-        if state.hovered {
-            return self.system.style(Role::TextStrong);
-        }
-        self.system.style(Role::Text)
+        style
     }
 
     /// Paint switch. Prefer this over [`Self::render`].
@@ -2652,6 +2631,48 @@ mod tests {
         let mut scene = SemanticScene::<&str, ()>::default();
         g.register_semantic(&mut scene, "group", area, &state);
         assert!(scene.len() >= 2);
+    }
+
+    #[test]
+    fn empty_radio_group_is_safe_and_has_no_pointer_targets() {
+        let system = DesignSystem::default();
+        let options: [RadioOption<'_, &str>; 0] = [];
+        let group = RadioGroup::new(&options, &system);
+        let mut state = RadioState::<&str>::new(None);
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let parts = group.paint(area, &mut buffer, &mut state);
+
+        assert!(parts.options.is_empty());
+    }
+
+    #[test]
+    fn radio_and_switch_invalid_states_reach_paint() {
+        let system = DesignSystem::default();
+        let options = [RadioOption::new("a", "Alpha")];
+        let mut radio_state = RadioState::new(Some("a"));
+        radio_state.set_invalid(true);
+        let radio_area = Rect::new(0, 0, 20, 1);
+        let mut radio_buffer = Buffer::empty(radio_area);
+        let radio_parts = RadioGroup::new(&options, &system).paint(
+            radio_area,
+            &mut radio_buffer,
+            &mut radio_state,
+        );
+
+        let mut switch_state = SwitchState::new(false);
+        switch_state.set_invalid(true);
+        let switch_area = Rect::new(0, 0, 20, 1);
+        let mut switch_buffer = Buffer::empty(switch_area);
+        let switch_parts = Switch::new("s", "Sync", &system).paint(
+            switch_area,
+            &mut switch_buffer,
+            &mut switch_state,
+        );
+
+        assert_eq!(radio_parts.options.len(), 1);
+        assert!(!switch_parts.root.is_empty());
     }
 
     #[test]

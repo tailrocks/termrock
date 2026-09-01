@@ -11,8 +11,7 @@
 //!
 //! **vs MenuBar.** MenuBar owns a horizontal top strip; these widgets own a
 //! single trigger- or pointer-opened cascade.
-//! **vs Menu (legacy flat).** [`MenuItem`] / [`Menu`] remain as thin flat
-//! adapters over [`MenuNode`] + [`DropdownMenuState`].
+//! One canonical model serves flat, nested, and context-menu presentations.
 //! **vs CommandPalette.** Deep or oversized cascades promote via
 //! [`DropdownMenuOutcome::PreferCommandPalette`] + [`flatten_menu_nodes`].
 //!
@@ -1045,9 +1044,6 @@ impl DropdownMenuState {
     }
 }
 
-/// Context menu state is the same cascade engine in context mode.
-pub type ContextMenuState = DropdownMenuState;
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Dropdown / context menu panel paint (single panel or host paints cascade).
@@ -1060,9 +1056,6 @@ pub struct DropdownMenu<'a, Id> {
     /// When painting nested cascade, which depth this call targets.
     depth: usize,
 }
-
-/// Context menu paint alias.
-pub type ContextMenuWidget<'a, Id> = DropdownMenu<'a, Id>;
 
 impl<'a, Id> DropdownMenu<'a, Id> {
     /// Root items + design system.
@@ -1192,16 +1185,24 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let border = if state.focused && state.accepts_input {
-            Role::BorderFocused
+        let recipe = if state.focused && state.accepts_input {
+            super::SurfaceRecipe::OverlayFocused
         } else {
-            Role::Border
+            super::SurfaceRecipe::Overlay
         };
-        let border_style = self.system.style(border);
-        let inner = super::Surface::new(self.system)
-            .recipe(super::SurfaceRecipe::Overlay)
+        let colorless_system;
+        let surface_system = if self.colorless {
+            colorless_system = self
+                .system
+                .clone()
+                .capability(crate::style::ColorCapability::Monochrome);
+            &colorless_system
+        } else {
+            self.system
+        };
+        let inner = super::Surface::new(surface_system)
+            .recipe(recipe)
             .bordered(true)
-            .border_style(border_style)
             .content_inset()
             .paint(area, buffer);
         if inner.is_empty() {
@@ -1445,6 +1446,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 .label("dropdown-menu")
                 .description(desc)
                 .focusable(state.enabled && state.accepts_input)
+                .disabled(!state.enabled)
                 .state(SemanticState {
                     selected: state.focused,
                     expanded: state.is_open(),
@@ -1486,129 +1488,6 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> S
     } else {
         format!("{label} ({m})")
     }
-}
-
-// ── Flat MenuItem adapter (legacy Menu path) ────────────────────────────────
-
-/// Flat menu row (legacy API; maps to [`MenuNode`]).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuItem<Id> {
-    /// Stable id.
-    pub id: Id,
-    /// Label.
-    pub label: String,
-    /// Optional shortcut hint.
-    pub shortcut: Option<String>,
-    /// Disabled.
-    pub enabled: bool,
-    /// Checked (toggle item).
-    pub checked: Option<bool>,
-    /// Separator before this item.
-    pub separator_before: bool,
-}
-
-impl<Id> MenuItem<Id> {
-    /// Enabled item.
-    #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
-        Self {
-            id,
-            label: label.into(),
-            shortcut: None,
-            enabled: true,
-            checked: None,
-            separator_before: false,
-        }
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
-    /// Shortcut hint text.
-    #[must_use]
-    pub fn shortcut(mut self, shortcut: impl Into<String>) -> Self {
-        self.shortcut = Some(shortcut.into());
-        self
-    }
-
-    /// Checked / unchecked toggle item.
-    #[must_use]
-    pub fn checked(mut self, checked: bool) -> Self {
-        self.checked = Some(checked);
-        self
-    }
-
-    /// Separator before.
-    #[must_use]
-    pub fn separator_before(mut self, sep: bool) -> Self {
-        self.separator_before = sep;
-        self
-    }
-}
-
-impl<Id: Clone> MenuItem<Id> {
-    /// Expand flat items into hierarchical nodes (separators become nodes).
-    #[must_use]
-    pub fn to_nodes(items: &[MenuItem<Id>]) -> Vec<MenuNode<Id>>
-    where
-        Id: Clone,
-    {
-        let mut out = Vec::new();
-        for (i, it) in items.iter().enumerate() {
-            if it.separator_before {
-                // Synthetic separator id: reuse item id with a marker only when Id is stringy —
-                // host should prefer MenuNode directly. Here we clone item id as separator
-                // which requires a second node — use index-based only for unit labels.
-                // We skip unique-id requirement by pushing separator with same id then command —
-                // better: only emit separator when we can. Use command nodes only and paint
-                // separator_before on DropdownMenu? For adapter, push a separator with cloned id
-                // is wrong for uniqueness. Document that MenuNode is preferred.
-                let _ = i;
-            }
-            let mut node = match it.checked {
-                Some(c) => MenuNode::checkbox(it.id.clone(), it.label.clone(), c),
-                None => MenuNode::command(it.id.clone(), it.label.clone()),
-            };
-            node.enabled = it.enabled;
-            if let Some(sc) = &it.shortcut {
-                node.shortcut = Some(sc.clone());
-            }
-            if it.separator_before {
-                // Insert separator with a path that doesn't need unique Id: use the item's
-                // id for separator is bad. We'll attach separator_before as preceding
-                // MenuRowKind::Separator only if Id: Default — not available.
-                // Instead prepend separator by duplicating structure via section empty? Skip.
-            }
-            out.push(node);
-        }
-        out
-    }
-}
-
-/// Convert a single flat item (no separator handling).
-impl<Id: Clone> From<&MenuItem<Id>> for MenuNode<Id> {
-    fn from(it: &MenuItem<Id>) -> Self {
-        let mut node = match it.checked {
-            Some(c) => MenuNode::checkbox(it.id.clone(), it.label.clone(), c),
-            None => MenuNode::command(it.id.clone(), it.label.clone()),
-        };
-        node.enabled = it.enabled;
-        if let Some(sc) = &it.shortcut {
-            node.shortcut = Some(sc.clone());
-        }
-        node
-    }
-}
-
-/// Expand flat items; separators get synthetic indices when `Id: From<usize>` is not
-/// available — hosts with separators should use [`MenuNode::separator`] directly.
-#[must_use]
-pub fn menu_items_to_nodes<Id: Clone>(items: &[MenuItem<Id>]) -> Vec<MenuNode<Id>> {
-    items.iter().map(MenuNode::from).collect()
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -2052,17 +1931,6 @@ mod tests {
     }
 
     #[test]
-    fn legacy_menu_item_adapter() {
-        let items = [
-            MenuItem::new("a", "Open"),
-            MenuItem::new("b", "Save").shortcut("C-s"),
-        ];
-        let nodes = menu_items_to_nodes(&items);
-        assert_eq!(nodes.len(), 2);
-        assert_eq!(nodes[1].shortcut.as_deref(), Some("C-s"));
-    }
-
-    #[test]
     fn context_key_and_pointer_triggers() {
         let root = vec![MenuNode::command("x", "X")];
         let bounds = Rect::new(0, 0, 80, 24);
@@ -2081,5 +1949,42 @@ mod tests {
                 trigger: MenuOpenTrigger::Pointer
             }
         ));
+    }
+
+    #[test]
+    fn mouse_activates_only_enabled_painted_menu_rows() {
+        let root = sample_tree();
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 5),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &root,
+            ),
+            DropdownMenuOutcome::Activated { .. }
+                | DropdownMenuOutcome::CheckToggled { .. }
+                | DropdownMenuOutcome::RadioSelected { .. }
+        ));
+
+        let disabled = vec![MenuNode::command("off", "Unavailable").enabled(false)];
+        let mut disabled_state = DropdownMenuState::new();
+        let _ = disabled_state.open_from_keyboard(&disabled, Rect::new(0, 0, 80, 24));
+        disabled_state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
+        assert_eq!(
+            disabled_state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 5),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &disabled,
+            ),
+            DropdownMenuOutcome::CursorMoved
+        );
     }
 }

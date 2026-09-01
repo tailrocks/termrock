@@ -25,7 +25,7 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::style::{ColorCapability, DesignSystem, Role};
+use crate::style::{ColorCapability, DesignSystem, Role, quantize_color};
 use crate::text::{display_cols, expand_tabs, take_display_cols};
 
 // ── Public free functions (preserved) ───────────────────────────────────────
@@ -1072,6 +1072,17 @@ impl<'a> AnsiText<'a> {
                     .fg(self.system.style(Role::Link).fg.unwrap_or(Color::Blue))
                     .add_modifier(Modifier::UNDERLINED);
             }
+            // Embedded output is data, not a theme escape hatch. Preserve the
+            // source hue as closely as the named terminal palette permits,
+            // but never let RGB or indexed colors bypass the ANSI-16 runtime
+            // contract at the paint edge.
+            style = if matches!(self.mode, AnsiTextMode::NoColor)
+                || matches!(self.system.capability, ColorCapability::Monochrome)
+            {
+                monochrome_style(style, seg.style)
+            } else {
+                ansi16_style(style)
+            };
             let remaining = usize::from(width.saturating_sub(col));
             let clipped = take_display_cols(&seg.text, remaining);
             let used = u16::try_from(display_cols(&clipped))
@@ -1081,6 +1092,34 @@ impl<'a> AnsiText<'a> {
             col = col.saturating_add(used);
         }
     }
+}
+
+fn ansi16_style(mut style: Style) -> Style {
+    if let Some(fg) = style.fg {
+        style.fg = Some(quantize_color(fg, ColorCapability::Ansi16));
+    }
+    if let Some(bg) = style.bg {
+        style.bg = Some(quantize_color(bg, ColorCapability::Ansi16));
+    }
+    style
+}
+
+fn monochrome_style(mut style: Style, source: Style) -> Style {
+    style.fg = None;
+    style.bg = None;
+    if source
+        .bg
+        .is_some_and(|background| background != Color::Reset)
+    {
+        style = style.add_modifier(Modifier::REVERSED);
+    } else if source
+        .fg
+        .is_some_and(|foreground| foreground != Color::Reset)
+        && style.add_modifier == Modifier::empty()
+    {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    style
 }
 
 impl Widget for &AnsiText<'_> {

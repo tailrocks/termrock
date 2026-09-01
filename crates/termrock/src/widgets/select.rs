@@ -38,7 +38,9 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::{Panel, PanelChrome, TextInput, TextInputOutcome, TextInputState, Validation};
+use super::{
+    Panel, PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState, Validation,
+};
 
 /// Width under which open list prefers fullscreen.
 pub const SELECT_FULLSCREEN_MAX_WIDTH: u16 = 28;
@@ -781,7 +783,7 @@ impl<'a, Id> Select<'a, Id> {
         Self {
             options,
             system,
-            placeholder: "Select…",
+            placeholder: "Select",
             label: "",
             validation: Validation::Valid,
             ascii: false,
@@ -841,11 +843,17 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         let mut y = area.y;
         let formish = matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty();
         if formish && area.height >= 2 && !self.label.is_empty() {
-            let mut style = self.system.style(if state.focused {
-                Role::Focus
-            } else {
-                Role::Text
-            });
+            let label_recipe = self.system.input_recipe(
+                if !state.enabled {
+                    crate::style::ControlState::Disabled
+                } else if state.focused || state.is_open() {
+                    crate::style::ControlState::Focused
+                } else {
+                    crate::style::ControlState::Default
+                },
+                matches!(self.validation, Validation::Invalid(_)),
+            );
+            let mut style = label_recipe.value;
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
@@ -882,12 +890,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
 
         // Validation directly under the trigger — not pinned to the bottom
         // edge, where it drifted away from the field it describes.
-        if area.height >= 3
+        if trigger.y.saturating_add(1) < area.bottom()
             && let Validation::Invalid(msg) = self.validation
         {
             crate::widgets::field_message::paint_field_message(
                 buffer,
-                Rect::new(area.x, area.y.saturating_add(2), area.width, 1),
+                Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
                 self.system,
                 crate::widgets::label::DescriptionKind::Error,
                 msg,
@@ -901,11 +909,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             self.paint(area, Rect::default(), buffer, state);
             return;
         }
-        let trigger_h = if !self.label.is_empty() && area.height >= 3 {
+        let base_trigger_h: u16 = if !self.label.is_empty() && area.height >= 3 {
             2
         } else {
             1
         };
+        let trigger_h = base_trigger_h.saturating_add(1).min(area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -958,20 +967,19 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         } else {
             "▾"
         };
+        let text_x = area.x.saturating_add(1).min(area.right());
         let text_w = area.width.saturating_sub(2);
         let muted = state.value.is_none();
         buffer.set_stringn(
-            area.x,
+            text_x,
             area.y,
             take_display_cols(value_label, usize::from(text_w)),
             usize::from(text_w),
-            self.system.style(if muted {
-                Role::TextMuted
-            } else if state.focused {
-                Role::TextStrong
+            if muted {
+                recipe.placeholder
             } else {
-                Role::Text
-            }),
+                recipe.value
+            },
         );
         if area.width > 0 {
             buffer.set_stringn(
@@ -979,17 +987,19 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 area.y,
                 chev,
                 1,
-                self.system.style(Role::TextMuted),
+                recipe.placeholder,
             );
         }
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut SelectState<Id>) {
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
         use ratatui_core::widgets::Widget;
         Widget::render(&panel, area, buffer);
@@ -1002,9 +1012,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             let search_row = Rect::new(inner.x, inner.y, inner.width, 1);
             state.search_region = Some(search_row);
             state.search.set_focused(true);
-            let _ = TextInput::new("", self.system)
-                .placeholder("Filter…")
-                .paint(search_row, buffer, &mut state.search);
+            let _ = TextInput::new("", self.system).placeholder("Filter").paint(
+                search_row,
+                buffer,
+                &mut state.search,
+            );
             list_top = list_top.saturating_add(1);
         }
 
@@ -1121,23 +1133,18 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     } else if recipe.use_tint {
                         buffer.set_style(rect, recipe.tint);
                     }
-                    let mut style = if opt.disabled {
-                        self.system.style(Role::TextDisabled)
-                    } else if is_hi {
-                        recipe.label
-                    } else {
-                        self.system.style(Role::Text)
-                    };
-                    if is_val && !is_hi {
-                        style = self.system.style(Role::TextStrong);
-                    }
+                    let style = recipe.label;
                     let mark = if is_val {
                         if self.ascii { "*" } else { "✓" }
                     } else {
                         " "
                     };
                     let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} — {desc}", opt.label)
+                        format!(
+                            "{mark} {} {} {desc}",
+                            opt.label,
+                            if self.ascii { "-" } else { "—" }
+                        )
                     } else {
                         format!("{mark} {}", opt.label)
                     };
@@ -1411,6 +1418,45 @@ mod tests {
                 .paint_stacked(area, &mut buf, &mut state);
             assert!(!state.trigger.is_empty());
         }
+    }
+
+    #[test]
+    fn focused_trigger_reserves_prompt_before_value() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+
+        Select::new(&opts, &system).paint(area, Rect::default(), &mut buffer, &mut state);
+
+        assert_ne!(buffer[(area.x, area.y)].symbol(), "A");
+        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), "A");
+    }
+
+    #[test]
+    fn validation_does_not_move_the_open_menu() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let area = Rect::new(0, 0, 24, 10);
+
+        let mut valid = SelectState::new();
+        valid.set_focused(true);
+        let _ = valid.open(area, &opts);
+        let mut valid_buffer = Buffer::empty(area);
+        Select::new(&opts, &system).paint_stacked(area, &mut valid_buffer, &mut valid);
+
+        let mut invalid = SelectState::new();
+        invalid.set_focused(true);
+        let _ = invalid.open(area, &opts);
+        let mut invalid_buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .validation(Validation::Invalid("required"))
+            .paint_stacked(area, &mut invalid_buffer, &mut invalid);
+
+        assert_eq!(valid.panel.y, invalid.panel.y);
+        assert_eq!(valid.panel.height, invalid.panel.height);
     }
 
     #[test]

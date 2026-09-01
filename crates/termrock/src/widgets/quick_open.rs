@@ -45,7 +45,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, JumpTarget, MatchRanges, MatchTruncate, Panel,
-        PanelChrome, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
+        PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState, fuzzy_match_label,
     },
 };
 
@@ -1404,7 +1404,11 @@ impl<'a, Id> QuickOpen<'a, Id> {
         } else {
             PanelChrome::Normal
         };
-        let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
+        let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
+            .overlay(true)
+            .title(self.title)
+            .emphasis(emphasis);
         let inner = panel.inner(area);
         ratatui_core::widgets::Widget::render(&panel, area, buffer);
         if inner.is_empty() {
@@ -2288,6 +2292,29 @@ mod tests {
                 &items
             ),
             QuickOpenOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_result_hit_activates_the_canonical_provider_item() {
+        let providers = providers();
+        let visible = example_quick_open_files();
+        let mut state = focused();
+        state.hits = vec![(0, Rect::new(5, 6, 20, 1))];
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(5, 6),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &providers,
+                &visible,
+            ),
+            QuickOpenOutcome::Activated {
+                provider_id,
+                id: "main"
+            } if provider_id == providers[0].id
         ));
     }
 }

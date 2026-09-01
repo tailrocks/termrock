@@ -92,7 +92,6 @@ mod log_stream;
 mod markdown;
 mod mention;
 mod menu_bar;
-mod menu_nav;
 mod message_thread;
 mod metric_tile;
 mod model_mode_selectors;
@@ -170,7 +169,7 @@ mod virtualizer;
 
 pub use crate::style::PanelChrome;
 pub use accent_rail::AccentRail;
-pub use action_bar::{Action, ActionBar, ActionBarState};
+pub use action_bar::{Action, ActionBar, ActionBarState, ActionVariant};
 pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode};
 pub use blocks::BlockChrome;
@@ -290,10 +289,28 @@ pub use alert_dialog::{
     AlertConfirmGates, AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind,
     AlertReversibility, AlertScope, dismiss_alert_dialog_overlay, open_alert_dialog_widget_overlay,
 };
+pub use attachment_chips::bench as attachment_chips_bench;
+pub use attachment_chips::{
+    AttachmentChip, AttachmentChipOutcome, AttachmentChipState, AttachmentItem, AttachmentStatus,
+    AttachmentStripEvent, AttachmentType, PASTE_CHIP_THRESHOLD, PASTE_EXPAND_LINES,
+    PASTE_PREVIEW_CHARS, PROGRESS_UNKNOWN, PasteChip, PasteChipOutcome, PasteChipState,
+    PastePayload, attachment_semantic_summary, attachment_token_items,
+    fill_attachment_strip_labels, map_strip_outcome, paint_attachment_strip, paste_preview_from,
+    paste_semantic_summary,
+};
 pub use badge::{Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant};
+pub use breadcrumbs::{
+    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
+    BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
+    BreadcrumbsState, crumbs_from_labels,
+};
 pub use callout::{
-    Alert, AlertOutcome, AlertRecipe, AlertSlots, AlertState, AlertTone, Callout, CalloutOutcome,
-    CalloutRecipe, CalloutSlots, CalloutTone,
+    Alert, AlertOutcome, AlertState, Callout, CalloutOutcome, CalloutRecipe, CalloutSlots,
+    CalloutTone,
+};
+pub use card::{Card, CardParts};
+pub use carousel::{
+    Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
 };
 pub use charts::bench as charts_bench;
 pub use charts::{
@@ -301,6 +318,14 @@ pub use charts::{
     Histogram, MeterSegment, MetricAxis, MetricRadar, MetricSeries, ScaleDomain, ScaleMode,
     SegmentedMeter, Sparkline, VizGlyphSet, allocate_segment_widths, glyph_for_fraction,
     resolve_domain, window_samples,
+};
+pub use chrome_row::{ChromeRow, ChromeRowKind};
+pub use citation::bench as citation_bench;
+pub use citation::{
+    CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
+    CitationListOutcome, CitationListState, CitationProvenance, CitationSource, CitationSourceType,
+    SourceCitation, SourceCitationOutcome, SourceCitationState, citation_from_stream,
+    citation_link, citation_to_stream, example_citations, group_citations,
 };
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
@@ -311,6 +336,10 @@ pub use code_block::{
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,
     CollapsibleVariant,
+};
+pub use combobox::{
+    ComboMode, Combobox, ComboboxOutcome, ComboboxState, DEFAULT_COMBO_RECENT_LIMIT,
+    SuggestionStatus,
 };
 pub use command_palette::{
     COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT, COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH,
@@ -329,6 +358,13 @@ pub use completion_menu::{
     place_completion_menu, place_completion_with_presentation,
 };
 pub use composed_row::{ComposedRow, ComposedRowParts};
+pub use confirm_prompt::{CONFIRM_PROMPT_ROWS, ConfirmFocus, ConfirmPrompt, ConfirmPromptHits};
+pub use connectivity::{
+    ConnectivityFocus, ConnectivityOutcome, ConnectivityPhase, ConnectivityPresentation,
+    OfflineBanner, OfflineCapability, OfflineChrome, OfflineSurface, QueuedConnectivityAction,
+    ReconnectingState, example_auth_required, example_disconnected, example_reconnecting_agent,
+    example_server_unavailable,
+};
 pub use content::{
     Heading, HeadingLevel, HeadingParts, HeadingRecipe, Paragraph, ParagraphKind, ParagraphParts,
     ParagraphRecipe,
@@ -349,6 +385,13 @@ pub use data_view::{
     DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
     SelectionModel, SortSpec, VirtualWindow,
 };
+pub use date_time_picker::{
+    CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
+    DATE_TIME_PICKER_LIST_MAX_WIDTH, DATE_TIME_PICKER_OVERLAY_ID, DateDisplayFormat,
+    DateTimePicker, DateTimePickerKind, DateTimePickerOutcome, DateTimePickerPresentation,
+    DateTimePickerState, DateTimePickerView, DateTimeValidity, TimeDisplayFormat, WeekStart,
+    guidance as date_time_picker_guidance,
+};
 pub use design_inspector::{DesignInspector, DesignInspectorFrame, InspectorPanel};
 pub use detail_table::{
     DetailCapability, DetailRow, DetailTable, DetailTableOutcome, DetailTableState,
@@ -363,7 +406,7 @@ pub use dialog::{
 };
 pub use diff::bench as diff_bench;
 pub use diff::{
-    DiffEffectiveMode, DiffFile, DiffHunk, DiffKind, DiffLine, DiffMode, DiffRegion, DiffState,
+    DiffEffectiveMode, DiffFile, DiffHunk, DiffKind, DiffLine, DiffMode, DiffRegion,
     DiffSyntaxSpan, DiffView, DiffViewOutcome, DiffViewState, DiffWordKind, DiffWordSpan,
     escape_diff_text, filter_diff_lines,
 };
@@ -371,20 +414,38 @@ pub use drawer::{
     DRAWER_DEFAULT_HEIGHT, DRAWER_DEFAULT_WIDTH, DRAWER_FULLSCREEN_MAX_HEIGHT,
     DRAWER_FULLSCREEN_MAX_WIDTH, DRAWER_HANDLE_CELLS, DRAWER_NESTED_OVERLAY_PREFIX,
     DRAWER_OVERLAY_ID, Drawer, DrawerEdge, DrawerModality, DrawerOutcome, DrawerPresentation,
-    DrawerSlots, DrawerState, Sheet, SheetState, dismiss_drawer_overlay, drawer_presentation_for,
-    open_drawer_configured, open_drawer_nested_overlay, open_drawer_overlay, place_drawer,
-    place_drawer_on_edge,
+    DrawerSlots, DrawerState, dismiss_drawer_overlay, drawer_presentation_for,
+    open_drawer_configured, open_drawer_nested_overlay, open_drawer_overlay, place_drawer_on_edge,
 };
 pub use dropdown_menu::{
-    CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, ContextMenuState, ContextMenuWidget,
-    DROPDOWN_MENU_OVERLAY_ID, DROPDOWN_MENU_SUBMENU_PREFIX, DropdownMenu, DropdownMenuOutcome,
-    DropdownMenuPresentation, DropdownMenuState, MENU_PROMOTE_MAX_HEIGHT, MENU_PROMOTE_MAX_ITEMS,
-    MENU_PROMOTE_MAX_WIDTH, MENU_PROMOTE_MIN_DEPTH, MenuItem, MenuOpenTrigger,
-    dismiss_context_menu_overlays, dismiss_dropdown_menu_overlays, dropdown_menu_presentation_for,
-    flatten_menu_nodes, measure_menu_panel, menu_items_to_nodes, open_context_menu_overlay,
-    open_dropdown_menu_overlay, open_menu_submenu_overlay, place_context_menu, place_dropdown_menu,
+    CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, DROPDOWN_MENU_OVERLAY_ID,
+    DROPDOWN_MENU_SUBMENU_PREFIX, DropdownMenu, DropdownMenuOutcome, DropdownMenuPresentation,
+    DropdownMenuState, MENU_PROMOTE_MAX_HEIGHT, MENU_PROMOTE_MAX_ITEMS, MENU_PROMOTE_MAX_WIDTH,
+    MENU_PROMOTE_MIN_DEPTH, MenuOpenTrigger, dismiss_context_menu_overlays,
+    dismiss_dropdown_menu_overlays, dropdown_menu_presentation_for, flatten_menu_nodes,
+    measure_menu_panel, open_context_menu_overlay, open_dropdown_menu_overlay,
+    open_menu_submenu_overlay, place_context_menu, place_dropdown_menu,
+};
+pub use empty_state::{
+    EMPTY_STATE_INLINE_MAX_HEIGHT, EMPTY_STATE_INLINE_MAX_WIDTH, EmptyAction, EmptyFocus,
+    EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, example_empty_logs,
+    example_empty_permission, example_empty_projects, example_empty_search, example_empty_sessions,
+    example_empty_table,
+};
+pub use error_state::{
+    ERROR_STATE_COMPACT_MAX_HEIGHT, ERROR_STATE_INLINE_MAX_WIDTH, ErrorFocus, ErrorKind,
+    ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, Recovery, RecoveryAction,
+    RetrySafety, example_error_conflict, example_error_crash, example_error_dialog,
+    example_error_network, example_error_not_found, example_error_permission,
+    example_error_unsupported, example_error_validation,
 };
 pub use field_row::{FieldRow, FieldRowValue};
+pub use file_picker::{
+    FILE_PICKER_FULLSCREEN_MAX_WIDTH, FILE_PICKER_OVERLAY_ID, FILE_PICKER_PREVIEW_MIN_HEIGHT,
+    FileBreadcrumb, FileEntry, FileEntryKind, FileListingStatus, FilePicker, FilePickerMode,
+    FilePickerOutcome, FilePickerPane, FilePickerPresentation, FilePickerState, FilePreview,
+    FileSortKey,
+};
 pub use form::{
     Field, FieldStatus, Fieldset, Form, FormField, FormFieldRegion, FormLayout, FormOutcome,
     FormSection, FormState, any_dirty, any_touched, collect_errors, first_invalid_id,
@@ -412,23 +473,37 @@ pub use hint_bar::{
     HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar,
     styled_hint_spans, wrapped_hint_lines,
 };
+pub use history_picker::{
+    HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
+    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
+    HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
+    default_history_picker_intent, dismiss_history_picker_overlay, example_history_entries,
+    filter_history_entries, history_picker_presentation_for_bounds, history_redaction_secret,
+    open_history_picker_fullscreen, open_history_picker_overlay,
+    open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
+    redact_history_text,
+};
 pub use icon::{Icon, IconParts};
 pub use identity::{
     AvatarFace, AvatarGlyph, AvatarGlyphParts, AvatarSize, Identity, IdentityParts, IdentityRole,
     PresenceStatus, identity_seed, initials_from_name, role_for_seed,
 };
 pub use image_surface::{ImageMeta, ImageProtocol, ImageSurface, protocol_emission_hint};
+pub use input_group::{
+    InputAddon, InputAddonSide, InputGroup, InputGroupOutcome, InputGroupState,
+    example_url_input_addons,
+};
+pub use input_otp::{InputOtp, InputOtpOutcome, InputOtpState, OtpCharset};
 pub use jump_overlay::{
-    JUMP_LABEL_ALPHABET, JUMP_OVERLAY_ID, JumpCandidate, JumpFilter, JumpMode, JumpModeState,
-    JumpOutcome, JumpOverlay, JumpOverlayState, JumpTarget, assign_jump_badges,
-    assign_jump_badges_from_semantics, assign_jump_labels, assign_jump_labels_from_semantics,
-    collect_jump_candidates, dismiss_jump_overlay, generate_jump_labels, jump_status_line,
-    open_jump_overlay, replay_jump_keys,
+    JUMP_LABEL_ALPHABET, JUMP_OVERLAY_ID, JumpCandidate, JumpFilter, JumpOutcome, JumpOverlay,
+    JumpOverlayState, JumpTarget, assign_jump_badges, assign_jump_badges_from_semantics,
+    assign_jump_labels, assign_jump_labels_from_semantics, collect_jump_candidates,
+    dismiss_jump_overlay, generate_jump_labels, jump_status_line, open_jump_overlay,
+    replay_jump_keys,
 };
 pub use kbd::{
     ChordFormat, Kbd, KbdVariant, ModifierStyle, Platform, ShortcutForm, ShortcutHint,
-    format_alternatives, format_binding, format_chord, format_sequence, kbd_from_chord,
-    keycap_text,
+    format_alternatives, format_binding, format_chord, format_sequence, keycap_text,
 };
 pub use key_value_list::{
     KeyValueList, KeyValueListOutcome, KeyValueListParts, KeyValueListState, KvEntry, KvEntryParts,
@@ -437,6 +512,11 @@ pub use key_value_list::{
 pub use key_value_table::{
     KeyValueTable, KeyValueTableOutcome, KeyValueTableState, KvtField, KvtMode, KvtRegion,
     KvtRowKind, KvtValidation,
+};
+pub use keybinding_recorder::{
+    BindingLimit, KEYBINDING_SEQUENCE_SEP, KeybindingRecorder, KeybindingRecorderMode,
+    KeybindingRecorderOutcome, KeybindingRecorderState, binding_from_recorder,
+    default_reserved_chords, protocol_limitations,
 };
 pub use keyboard_help::{
     DemoHelpAction, HelpEntry, HelpEntrySource, KEYBOARD_HELP_COMPACT_MAX_WIDTH,
@@ -462,129 +542,17 @@ pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,
     filter_list_rows,
 };
-pub use log_pane::{LogPane, LogPaneState};
-pub use markdown::{
-    MarkdownBlock, MarkdownBlockKind, MarkdownInline, MarkdownInlineKind, MarkdownLinkRegion,
-    MarkdownOutcome, MarkdownParts, MarkdownView, MarkdownViewState, SourceAnchor,
-    project_markdown, project_plain_lines,
-};
-pub use menu_nav::{Menu, MenuOutcome, MenuState};
-pub use quick_open::{
-    ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
-    QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
-    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
-    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
-    default_quick_open_intent, dismiss_quick_open_overlay, example_quick_open_files,
-    example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
-    open_quick_open_fullscreen, open_quick_open_overlay, parse_quick_open_query, place_quick_open,
-    quick_open_jump_targets, quick_open_presentation_for_bounds,
-};
-pub use section::{
-    Section, SectionAction, SectionOutcome, SectionParts, SectionState, SectionVariant,
-};
-pub use stepper::{
-    STEPPER_COMPACT_MAX_HEIGHT, STEPPER_COMPACT_MAX_WIDTH, STEPPER_NARROW_MAX_WIDTH, StepItem,
-    StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperOutcome, StepperPresentation,
-    StepperState, default_stepper_intent, example_onboarding_steps, step_items_from_titles,
-    stepper_presentation_for_bounds,
-};
-pub use surface::{
-    Surface, SurfaceElevation, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe,
-};
-pub use text::{
-    SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow,
-    TextSegment, TextSpan,
-};
-/// Context menu paint widget (same cascade engine as [`DropdownMenu`]).
-pub type ContextMenu<'a, Id> = DropdownMenu<'a, Id>;
-pub use attachment_chips::bench as attachment_chips_bench;
-pub use attachment_chips::{
-    AttachmentChip, AttachmentChipOutcome, AttachmentChipState, AttachmentItem, AttachmentStatus,
-    AttachmentStripEvent, AttachmentType, PASTE_CHIP_THRESHOLD, PASTE_EXPAND_LINES,
-    PASTE_PREVIEW_CHARS, PROGRESS_UNKNOWN, PasteChip, PasteChipOutcome, PasteChipState,
-    PastePayload, attachment_semantic_summary, attachment_token_items,
-    fill_attachment_strip_labels, map_strip_outcome, paint_attachment_strip, paste_preview_from,
-    paste_semantic_summary,
-};
-pub use breadcrumbs::{
-    BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
-    BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
-    BreadcrumbsState, crumbs_from_labels,
-};
-pub use card::{Card, CardParts};
-pub use carousel::{
-    Carousel, CarouselOutcome, CarouselSlide, CarouselState, example_carousel_slides,
-};
-pub use chrome_row::{ChromeRow, ChromeRowKind};
-pub use citation::bench as citation_bench;
-pub use citation::{
-    CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
-    CitationListOutcome, CitationListState, CitationProvenance, CitationSource, CitationSourceType,
-    SourceCitation, SourceCitationOutcome, SourceCitationState, citation_from_stream,
-    citation_link, citation_to_stream, example_citations, group_citations,
-};
-pub use combobox::{
-    Autocomplete, AutocompleteState, ComboMode, Combobox, ComboboxOutcome, ComboboxState,
-    DEFAULT_COMBO_RECENT_LIMIT, SuggestionStatus,
-};
-pub use confirm_prompt::{CONFIRM_PROMPT_ROWS, ConfirmFocus, ConfirmPrompt, ConfirmPromptHits};
-pub use connectivity::{
-    ConnectivityFocus, ConnectivityOutcome, ConnectivityPhase, ConnectivityPresentation,
-    OfflineBanner, OfflineCapability, OfflineChrome, OfflineSurface, QueuedConnectivityAction,
-    ReconnectingState, example_auth_required, example_disconnected, example_reconnecting_agent,
-    example_server_unavailable,
-};
-pub use date_time_picker::{
-    CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
-    DATE_TIME_PICKER_LIST_MAX_WIDTH, DATE_TIME_PICKER_OVERLAY_ID, DateDisplayFormat,
-    DateTimePicker, DateTimePickerKind, DateTimePickerOutcome, DateTimePickerPresentation,
-    DateTimePickerState, DateTimePickerView, DateTimeValidity, TimeDisplayFormat, WeekStart,
-    guidance as date_time_picker_guidance,
-};
-pub use empty_state::{
-    EMPTY_STATE_INLINE_MAX_HEIGHT, EMPTY_STATE_INLINE_MAX_WIDTH, EmptyAction, EmptyFocus,
-    EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, example_empty_logs,
-    example_empty_permission, example_empty_projects, example_empty_search, example_empty_sessions,
-    example_empty_table,
-};
-pub use error_state::{
-    ERROR_STATE_COMPACT_MAX_HEIGHT, ERROR_STATE_INLINE_MAX_WIDTH, ErrorFocus, ErrorKind,
-    ErrorRecipe, ErrorState, ErrorStateOutcome, ErrorStateState, ErrorView, Recovery,
-    RecoveryAction, RetrySafety, example_error_conflict, example_error_crash, example_error_dialog,
-    example_error_network, example_error_not_found, example_error_permission,
-    example_error_unsupported, example_error_validation,
-};
-pub use file_picker::{
-    FILE_PICKER_FULLSCREEN_MAX_WIDTH, FILE_PICKER_OVERLAY_ID, FILE_PICKER_PREVIEW_MIN_HEIGHT,
-    FileBreadcrumb, FileEntry, FileEntryKind, FileListingStatus, FilePicker, FilePickerMode,
-    FilePickerOutcome, FilePickerPane, FilePickerPresentation, FilePickerState, FilePreview,
-    FileSortKey,
-};
-pub use history_picker::{
-    HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
-    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
-    HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
-    default_history_picker_intent, dismiss_history_picker_overlay, example_history_entries,
-    filter_history_entries, history_picker_presentation_for_bounds, history_redaction_secret,
-    open_history_picker_fullscreen, open_history_picker_overlay,
-    open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
-    redact_history_text,
-};
-pub use input_group::{
-    InputAddon, InputAddonSide, InputGroup, InputGroupOutcome, InputGroupState,
-    example_url_input_addons,
-};
-pub use input_otp::{InputOtp, InputOtpOutcome, InputOtpState, OtpCharset};
-pub use keybinding_recorder::{
-    BindingLimit, KEYBINDING_SEQUENCE_SEP, KeybindingRecorder, KeybindingRecorderMode,
-    KeybindingRecorderOutcome, KeybindingRecorderState, binding_from_recorder,
-    default_reserved_chords, protocol_limitations,
-};
 pub use loading_overlay::{
     BUSY_BOUNDARY_MAX_NEST, BusyBoundary, BusyBoundaryOutcome, BusyBoundaryState, BusyMode,
     BusyRoute, LOADING_OVERLAY_MIN_SHOW_MS, LOADING_OVERLAY_SHORT_OP_HINT_MS, LoadingOverlay,
     example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
     example_busy_optimistic, example_busy_stale,
+};
+pub use log_pane::{LogPane, LogPaneState};
+pub use markdown::{
+    MarkdownBlock, MarkdownBlockKind, MarkdownInline, MarkdownInlineKind, MarkdownLinkRegion,
+    MarkdownOutcome, MarkdownParts, MarkdownView, MarkdownViewState, SourceAnchor,
+    project_markdown, project_plain_lines,
 };
 pub use mention::bench as mention_bench;
 pub use mention::{
@@ -694,8 +662,8 @@ pub use primitives::{
 };
 pub use progress::{
     DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_ASCII_FRAMES,
-    PROGRESS_DEFAULT_THROTTLE_MS, Progress, ProgressBar, ProgressBarState, ProgressKind,
-    ProgressRecipe, ProgressStatus, ProgressUnit,
+    PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe,
+    ProgressStatus, ProgressUnit,
 };
 pub use progress_steps::{
     PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
@@ -717,6 +685,16 @@ pub use prompt_composer::{
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
 pub use prompt_queue_model::PromptQueueItem as QueuedPrompt;
 pub use prompt_queue_model::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
+pub use quick_open::{
+    ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
+    QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
+    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
+    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
+    default_quick_open_intent, dismiss_quick_open_overlay, example_quick_open_files,
+    example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
+    open_quick_open_fullscreen, open_quick_open_overlay, parse_quick_open_query, place_quick_open,
+    quick_open_jump_targets, quick_open_presentation_for_bounds,
+};
 pub use resizable_panel_group::{
     PanelDock, PanelGroupRecipe, PanelId, PanelLayoutPreset, PanelRect, ResizablePanelGroup,
     ResizablePanelGroupLayout, ResizablePanelGroupState, ResizablePanelOutcome, ResizablePanelSpec,
@@ -735,20 +713,21 @@ pub use search_input::{
     DEFAULT_DEBOUNCE, DEFAULT_HISTORY_LIMIT, SearchFilterChip, SearchInput, SearchInputOutcome,
     SearchInputParts, SearchInputState, SearchStatus, SearchSyntax,
 };
+pub use section::{
+    Section, SectionAction, SectionOutcome, SectionParts, SectionState, SectionVariant,
+};
 pub use select::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, Select, SelectOption, SelectOutcome,
     SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
 pub use selection::Selection;
 pub use semantic_status::SemanticStatus;
-pub use separator::{
-    Separator, SeparatorLine, SeparatorOrientation, SeparatorThickness, SeparatorVariant,
-};
+pub use separator::{Separator, SeparatorOrientation, SeparatorThickness, SeparatorVariant};
 pub use sidebar::{
     NavItem, NavItemKind, NavItemStatus, NavigationList, NavigationListOutcome,
     NavigationListState, SIDEBAR_DRAWER_MAX_WIDTH, SIDEBAR_DRAWER_OVERLAY_ID,
-    SIDEBAR_RAIL_MAX_WIDTH, Sidebar, SidebarItem, SidebarOutcome, SidebarPresentation,
-    SidebarState, example_sectioned_sidebar_nav, example_settings_nav, filter_nav_collapsed,
+    SIDEBAR_RAIL_MAX_WIDTH, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
+    example_sectioned_sidebar_nav, example_settings_nav, filter_nav_collapsed,
     sidebar_presentation_for_width,
 };
 pub use skeleton::{
@@ -788,6 +767,12 @@ pub use status_indicator::{
     StatusIndicator, StatusIndicatorState, StatusIndicatorVariant, example_status_catalog,
 };
 pub use status_strip::{StatusSegment, StatusStrip};
+pub use stepper::{
+    STEPPER_COMPACT_MAX_HEIGHT, STEPPER_COMPACT_MAX_WIDTH, STEPPER_NARROW_MAX_WIDTH, StepItem,
+    StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperOutcome, StepperPresentation,
+    StepperState, default_stepper_intent, example_onboarding_steps, step_items_from_titles,
+    stepper_presentation_for_bounds,
+};
 pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{
@@ -795,6 +780,7 @@ pub use streaming_markdown::{
     StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownOutcome,
     StreamingMarkdownState, has_open_fence, streaming_stable_prefix_len,
 };
+pub use surface::{Surface, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe};
 pub use table::{
     CellAlignment, CellOverflow, Column, ColumnWidth, SortDirection, Table, TableBodyState,
     TableHeaderRegion, TableOutcome, TableRecipe, TableRow, TableRowRegion, TableState,
@@ -809,6 +795,10 @@ pub use tag_chip::{
     BracketStyle, Chip, ChipOutcome, ChipState, Tag, TagOutcome, TagState, TokenItem, TokenPart,
     TokenParts, TokenStatus, TokenStrip, TokenStripLayout, TokenStripOutcome, TokenStripState,
     remove_label,
+};
+pub use text::{
+    SelectablePolicy, Text, TextAlign, TextEmphasis, TextLayout, TextLine, TextOverflow,
+    TextSegment, TextSpan,
 };
 pub use text_area::{
     TextArea, TextAreaOutcome, TextAreaState, TextAreaVariant, TextCursor, TextWrap,

@@ -1597,7 +1597,7 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(
-            text.contains("Working") || text.contains("editing") || text.contains("summary"),
+            text.contains("run") || text.contains("editing") || text.contains("summary"),
             "{text}"
         );
     }

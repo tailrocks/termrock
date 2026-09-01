@@ -18,6 +18,10 @@ use termrock::{
         Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers, MouseButton,
         MouseEvent, MouseEventKind,
     },
+    registry::{
+        pattern_inventory, public_ui_inventory, validate_pattern_inventory,
+        validate_public_ui_inventory,
+    },
     style::{PREVIEW_CARD, RolePalette},
 };
 
@@ -67,20 +71,67 @@ pub struct DemoDescriptor {
     pub hints: Vec<&'static str>,
 }
 
+/// Docs-facing projection of one typed public component inventory entry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUiInventoryDescriptor {
+    /// Stable PascalCase exact public visual-owner identity.
+    pub public_ui: &'static str,
+    /// Exact public rendering contract.
+    pub kind: &'static str,
+    /// Product role independent of module layout.
+    pub family: &'static str,
+    /// Canonical documentation collection.
+    pub documentation_kind: &'static str,
+    /// Stable docs route slug.
+    pub docs_slug: &'static str,
+    /// Unique canonical documentation path.
+    pub docs_path: String,
+    /// Representative mounted story.
+    pub representative_story: &'static str,
+}
+
+/// Docs-facing projection of one canonical pattern.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PatternInventoryDescriptor {
+    /// Stable PascalCase pattern identity.
+    pub pattern: &'static str,
+    /// Stable docs route slug.
+    pub docs_slug: &'static str,
+    /// Unique canonical documentation path.
+    pub docs_path: String,
+    /// Representative mounted story.
+    pub representative_story: &'static str,
+    /// Exact public visual owner, absent for composed pattern concepts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_ui: Option<&'static str>,
+}
+
+/// Complete typed documentation inventory.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogInventoryDescriptor {
+    /// Exact public visual owners.
+    pub public_ui: Vec<PublicUiInventoryDescriptor>,
+    /// Canonical application patterns.
+    pub patterns: Vec<PatternInventoryDescriptor>,
+}
+
 impl From<Story> for DemoDescriptor {
     fn from(story: Story) -> Self {
-        let interactor_hints = story.make_interactor().hints();
+        let interactor_hints = story.mount().hints();
         Self {
             id: story.id,
             title: story.title,
-            component: story.component,
+            component: story.component(),
             description: story.description,
             cols: story.width,
             rows: story.height,
-            interactive: story.interactive,
-            interaction_kind: interaction_kind(story.component, story.interactive),
+            interactive: story.is_interactive(),
+            interaction_kind: interaction_kind(story.component(), story.is_interactive()),
             hints: if interactor_hints.is_empty() {
-                hints_for(story.component, story.interactive)
+                hints_for(story.component(), story.is_interactive())
             } else {
                 interactor_hints
             },
@@ -165,6 +216,43 @@ pub enum DemoEvent {
     },
 }
 
+/// Why a mounted demo requires another deterministic host-time update.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DemoDeadlineKind {
+    /// Decorative paint that may stop under reduced-motion preferences.
+    VisualMotion,
+    /// A logical state transition that must complete regardless of motion preferences.
+    Functional,
+}
+
+/// One atomic host-time wakeup contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DemoDeadline {
+    at_ms: u64,
+    kind: DemoDeadlineKind,
+}
+
+impl DemoDeadline {
+    /// Schedule decorative motion at one absolute mounted-session time.
+    #[must_use]
+    pub const fn visual_motion(at_ms: u64) -> Self {
+        Self {
+            at_ms,
+            kind: DemoDeadlineKind::VisualMotion,
+        }
+    }
+
+    /// Schedule a required logical transition at one absolute mounted-session time.
+    #[must_use]
+    pub const fn functional(at_ms: u64) -> Self {
+        Self {
+            at_ms,
+            kind: DemoDeadlineKind::Functional,
+        }
+    }
+}
+
 /// Result of one event dispatch.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -181,13 +269,17 @@ pub struct DemoUpdate {
     pub captures_text_input: bool,
     /// Whether the host should keep ticking this demo.
     pub next_deadline_ms: Option<u64>,
+    /// Whether the current deadline is decorative motion or a functional transition.
+    pub deadline_kind: Option<DemoDeadlineKind>,
+    /// Monotonic logical/content revision; visual-only paint never advances it.
+    pub semantic_revision: u64,
 }
 
 /// Which shipped preset a palette is, for frame metadata.
 ///
 /// The demo used to report `"phosphor"` whatever the host had picked, so every
 /// docs preview claimed the same theme (plans/011 Step 4).
-fn theme_id_for(palette: &RolePalette) -> &'static str {
+pub(crate) fn theme_id_for(palette: &RolePalette) -> &'static str {
     for (id, preset) in [
         ("phosphor", RolePalette::tailrocks_phosphor()),
         ("slate", RolePalette::slate()),
@@ -206,7 +298,7 @@ fn theme_id_for(palette: &RolePalette) -> &'static str {
 pub struct DemoSession {
     story: Story,
     interactor: Box<dyn StoryInteraction>,
-    theme: RolePalette,
+    system: termrock::style::DesignSystem,
     /// Stable id of the palette the host picked, for honest frame metadata.
     theme_id: String,
     cols: u16,
@@ -214,6 +306,7 @@ pub struct DemoSession {
     focused: bool,
     elapsed_ms: u64,
     outcome: Option<String>,
+    semantic_revision: u64,
 }
 
 impl DemoSession {
@@ -221,19 +314,21 @@ impl DemoSession {
     pub fn mount(id: &str, cols: Option<u16>, rows: Option<u16>) -> Result<Self, String> {
         let story = story_by_id(id).ok_or_else(|| format!("unknown demo id: {id}"))?;
         let theme = RolePalette::default();
-        let mut interactor = story.make_interactor();
-        interactor.set_theme(theme.clone());
+        let system = crate::design::lookbook_system(theme.clone());
+        let mut interactor = story.mount();
+        interactor.set_system(system.clone());
         let theme_id = theme_id_for(&theme).to_string();
         Ok(Self {
             story,
             interactor,
-            theme,
+            system,
             theme_id,
             cols: cols.unwrap_or(story.width).max(8),
             rows: rows.unwrap_or(story.height).max(4),
             focused: false,
             elapsed_ms: 0,
             outcome: None,
+            semantic_revision: 0,
         })
     }
 
@@ -250,18 +345,19 @@ impl DemoSession {
 
     /// Reset all demo-owned state while preserving host size and theme.
     pub fn reset(&mut self) {
-        self.interactor = self.story.make_interactor();
-        self.interactor.set_theme(self.theme.clone());
+        self.interactor = self.story.mount();
+        self.interactor.set_system(self.system.clone());
         self.focused = false;
         self.elapsed_ms = 0;
         self.outcome = Some("Demo reset".to_owned());
+        self.advance_semantic_revision();
     }
 
-    /// Replace the semantic palette used by both preview hosts.
-    pub fn set_theme(&mut self, theme: RolePalette) {
-        self.theme = theme.clone();
-        self.theme_id = theme_id_for(&theme).to_string();
-        self.interactor.set_theme(theme);
+    /// Replace the complete design system used by both preview hosts.
+    pub fn set_system(&mut self, system: termrock::style::DesignSystem) {
+        self.theme_id = theme_id_for(system.palette()).to_string();
+        self.interactor.set_system(system.clone());
+        self.system = system;
     }
 
     /// Dispatch one normalized host event.
@@ -289,6 +385,7 @@ impl DemoSession {
     /// This keeps native absolute hit geometry and the browser's padded local
     /// geometry on one state machine without translating widget hit logic.
     pub fn dispatch_event_in(&mut self, event: Event, preview_area: Rect) -> DemoUpdate {
+        let semantic_policy = semantic_change_policy(&event);
         let (changed, announce_fallback) = match event {
             Event::Resize { width, height } => {
                 let next_cols = width.max(8);
@@ -308,7 +405,7 @@ impl DemoSession {
                 self.focused = false;
                 (changed, false)
             }
-            Event::Mouse(mouse) if self.story.interactive => {
+            Event::Mouse(mouse) if self.story.is_interactive() => {
                 let announce_fallback = !matches!(mouse.kind, MouseEventKind::Moved);
                 (
                     self.interactor
@@ -316,33 +413,42 @@ impl DemoSession {
                     announce_fallback,
                 )
             }
-            Event::Key(key) if self.story.interactive => {
+            Event::Key(key) if self.story.is_interactive() => {
                 let announce_fallback = key.kind != KeyEventKind::Release;
                 (
                     self.interactor.handle_event(Event::Key(key), preview_area),
                     announce_fallback,
                 )
             }
-            event if self.story.interactive => {
+            event if self.story.is_interactive() => {
                 (self.interactor.handle_event(event, preview_area), true)
             }
             _ => (false, false),
         };
+        let mut produced_outcome = false;
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
+            produced_outcome = true;
         } else if changed && announce_fallback && self.outcome.is_none() {
-            self.outcome = Some(format!("{} updated", self.story.component));
+            self.outcome = Some(format!("{} updated", self.story.component()));
+        }
+        if semantic_policy.advances(changed, produced_outcome) {
+            self.advance_semantic_revision();
         }
         self.update(changed)
     }
 
     /// Advance this demo using host-injected monotonic time.
     pub fn tick(&mut self, elapsed_ms: u64) -> DemoUpdate {
+        let deadline_kind = self.deadline().map(|deadline| deadline.kind);
         let changed = self.interactor.handle_tick(elapsed_ms)
-            || (self.elapsed_ms != elapsed_ms && timed_component(self.story.component));
+            || (self.elapsed_ms != elapsed_ms && visual_motion_component(self.story.component()));
         self.elapsed_ms = elapsed_ms;
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
+        }
+        if changed && deadline_kind == Some(DemoDeadlineKind::Functional) {
+            self.advance_semantic_revision();
         }
         self.update(changed)
     }
@@ -364,11 +470,9 @@ impl DemoSession {
                 let inner = self.preview_area();
                 frame.render_widget(Clear, inner);
                 // The story's ground is the palette's canvas (plans/011).
-                frame.buffer_mut().set_style(
-                    inner,
-                    crate::design::lookbook_system(self.theme.clone())
-                        .style(termrock::style::Role::Canvas),
-                );
+                frame
+                    .buffer_mut()
+                    .set_style(inner, self.system.style(termrock::style::Role::Canvas));
                 self.render_into(frame, inner);
             })
             .expect("in-memory draw");
@@ -376,13 +480,13 @@ impl DemoSession {
         TerminalFrame {
             story_id: self.story.id.into(),
             title: self.story.title.into(),
-            component: self.story.component.into(),
+            component: self.story.component().into(),
             cols,
             rows,
             story_cols: self.cols,
             story_rows: self.rows,
             cells,
-            interactive: self.story.interactive,
+            interactive: self.story.is_interactive(),
             theme: self.theme_id.clone(),
         }
     }
@@ -408,6 +512,9 @@ impl DemoSession {
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
         }
+        if changed {
+            self.advance_semantic_revision();
+        }
         self.update(changed)
     }
 
@@ -426,6 +533,9 @@ impl DemoSession {
         let changed = self.interactor.handle_preview_escape(key);
         if let Some(outcome) = self.interactor.take_outcome() {
             self.outcome = Some(outcome);
+        }
+        if changed {
+            self.advance_semantic_revision();
         }
         self.update(changed)
     }
@@ -454,24 +564,32 @@ impl DemoSession {
 
     fn update(&self, changed: bool) -> DemoUpdate {
         let interactor_hints = self.interactor.hints();
+        let deadline = self.deadline();
         DemoUpdate {
             changed,
             outcome: self.outcome.clone(),
             hints: if interactor_hints.is_empty() {
-                hints_for(self.story.component, self.story.interactive)
+                hints_for(self.story.component(), self.story.is_interactive())
             } else {
                 interactor_hints
             },
-            interactive: self.story.interactive,
+            interactive: self.story.is_interactive(),
             captures_text_input: self.interactor.captures_text_input(),
-            next_deadline_ms: self
-                .interactor
-                .next_deadline_ms(self.elapsed_ms)
-                .or_else(|| {
-                    timed_component(self.story.component)
-                        .then_some(self.elapsed_ms.saturating_add(100))
-                }),
+            next_deadline_ms: deadline.map(|deadline| deadline.at_ms),
+            deadline_kind: deadline.map(|deadline| deadline.kind),
+            semantic_revision: self.semantic_revision,
         }
+    }
+
+    fn deadline(&self) -> Option<DemoDeadline> {
+        self.interactor.next_deadline(self.elapsed_ms).or_else(|| {
+            visual_motion_component(self.story.component())
+                .then(|| DemoDeadline::visual_motion(self.elapsed_ms.saturating_add(100)))
+        })
+    }
+
+    fn advance_semantic_revision(&mut self) {
+        self.semantic_revision = self.semantic_revision.saturating_add(1);
     }
 
     fn decode_event(&mut self, event: DemoEvent) -> Result<Option<Event>, String> {
@@ -569,13 +687,45 @@ pub fn catalog() -> Vec<DemoDescriptor> {
         .into_iter()
         .map(|story| {
             let mut descriptor: DemoDescriptor = story.into();
-            let hints = story.make_interactor().hints();
+            let hints = story.mount().hints();
             if !hints.is_empty() {
                 descriptor.hints = hints;
             }
             descriptor
         })
         .collect()
+}
+
+/// Validate and project both typed inventories for docs generation.
+pub fn inventory_catalog() -> Result<CatalogInventoryDescriptor, Box<dyn std::error::Error>> {
+    let public_ui = public_ui_inventory();
+    validate_public_ui_inventory(public_ui)?;
+    let patterns = pattern_inventory();
+    validate_pattern_inventory(patterns)?;
+    Ok(CatalogInventoryDescriptor {
+        public_ui: public_ui
+            .iter()
+            .map(|component| PublicUiInventoryDescriptor {
+                public_ui: component.id.as_str(),
+                kind: component.kind.id(),
+                family: component.family.id(),
+                documentation_kind: component.documentation.id(),
+                docs_slug: component.docs_slug,
+                docs_path: component.docs_path(),
+                representative_story: component.representative_story,
+            })
+            .collect(),
+        patterns: patterns
+            .iter()
+            .map(|pattern| PatternInventoryDescriptor {
+                pattern: pattern.id.as_str(),
+                docs_slug: pattern.docs_slug,
+                docs_path: pattern.docs_path(),
+                representative_story: pattern.representative_story,
+                public_ui: pattern.public_ui.map(|public_ui| public_ui.as_str()),
+            })
+            .collect(),
+    })
 }
 
 fn default_key_kind() -> String {
@@ -617,7 +767,7 @@ fn decode_key_code(value: &str) -> Option<KeyCode> {
 }
 
 fn interaction_kind(component: &str, interactive: bool) -> &'static str {
-    if timed_component(component) {
+    if visual_motion_component(component) || component == "Toast" {
         return "timed-state";
     }
     if !interactive {
@@ -630,12 +780,13 @@ fn interaction_kind(component: &str, interactive: bool) -> &'static str {
         | "TokenField" | "ObjectInspector" => "editor-form",
         "ChoiceDialog" | "Dialog" | "AlertDialog" | "DropdownMenu" | "Popover" | "Accordion"
         | "Collapsible" | "Select" | "MultiSelect" | "DateTimePicker" | "FilePicker"
-        | "KeyboardHelp" | "JumpOverlay" | "JumpMode" | "PermissionPrompt" | "Drawer" | "Sheet"
-        | "FullscreenViewer" | "EmptyState" | "ErrorState" | "OfflineBanner" | "OfflineSurface"
-        | "PreviewCard" => "disclosure-overlay",
+        | "KeyboardHelp" | "JumpOverlay" | "PermissionPrompt" | "Drawer" | "FullscreenViewer"
+        | "EmptyState" | "ErrorState" | "OfflineBanner" | "OfflineSurface" | "PreviewCard" => {
+            "disclosure-overlay"
+        }
         "SplitPane" | "Slider" | "RangeSlider" | "ResizablePanelGroup" => "drag-continuous-value",
         "Tree" | "TreeTable" | "TreeNavigation" | "List" | "Picker" | "Table" | "DataTable"
-        | "Tabs" | "ThemePicker" | "Menu" | "MenuBar" | "CompletionMenu" | "NotificationCenter"
+        | "Tabs" | "ThemePicker" | "MenuBar" | "CompletionMenu" | "NotificationCenter"
         | "Sidebar" | "ToggleGroup" | "SegmentedControl" | "Pagination" | "NavigationList"
         | "RadioGroup" | "Breadcrumbs" | "Toolbar" | "ButtonGroup" | "ProgressSteps"
         | "Stepper" | "CheckpointTimeline" | "DiffReview" | "KeyValueList" | "ModeRibbon" => {
@@ -669,17 +820,61 @@ fn hints_for(component: &str, interactive: bool) -> Vec<&'static str> {
     }
 }
 
-fn timed_component(component: &str) -> bool {
+fn visual_motion_component(component: &str) -> bool {
     matches!(
         component,
-        "Spinner" | "Progress" | "Skeleton" | "LoadingOverlay" | "Toast"
+        "Spinner" | "ProgressBar" | "Skeleton" | "LoadingOverlay"
     )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SemanticChangePolicy {
+    Never,
+    OnChange,
+    OnOutcome,
+}
+
+impl SemanticChangePolicy {
+    const fn advances(self, changed: bool, produced_outcome: bool) -> bool {
+        match self {
+            Self::Never => false,
+            Self::OnChange => changed,
+            Self::OnOutcome => changed && produced_outcome,
+        }
+    }
+}
+
+fn semantic_change_policy(event: &Event) -> SemanticChangePolicy {
+    match event {
+        Event::Key(key) if key.code == KeyCode::Char(' ') && key.kind == KeyEventKind::Press => {
+            SemanticChangePolicy::OnOutcome
+        }
+        Event::Key(key) if key.kind == KeyEventKind::Release => SemanticChangePolicy::OnOutcome,
+        Event::Key(_) | Event::Paste(_) => SemanticChangePolicy::OnChange,
+        Event::Mouse(mouse)
+            if matches!(mouse.kind, MouseEventKind::Moved | MouseEventKind::Drag(_)) =>
+        {
+            SemanticChangePolicy::Never
+        }
+        Event::Mouse(mouse)
+            if matches!(mouse.kind, MouseEventKind::Down(_) | MouseEventKind::Up(_)) =>
+        {
+            SemanticChangePolicy::OnOutcome
+        }
+        Event::Mouse(_) => SemanticChangePolicy::OnChange,
+        Event::Resize { .. } | Event::FocusGained | Event::FocusLost | Event::Unknown => {
+            SemanticChangePolicy::Never
+        }
+        _ => SemanticChangePolicy::OnChange,
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+
     use super::*;
-    use crate::stories::{PATTERN_DEMO_IDS, stories};
+    use crate::stories::stories;
 
     fn key(value: &str) -> DemoEvent {
         DemoEvent::Key {
@@ -709,6 +904,76 @@ mod tests {
         let after = session.frame();
         assert!(update.changed);
         assert_ne!(before.cells, after.cells);
+    }
+
+    #[test]
+    fn typed_inventory_joins_every_representative_story() {
+        let stories = stories();
+        assert!(
+            stories
+                .iter()
+                .all(|story| story.component() == story.identity().label())
+        );
+        let story_ids: BTreeSet<_> = stories.iter().map(|story| story.id).collect();
+        let story_by_id: BTreeMap<_, _> = stories.iter().map(|story| (story.id, *story)).collect();
+        let story_components: BTreeSet<_> = stories
+            .iter()
+            .filter_map(|story| story.public_ui_id())
+            .collect();
+        let inventory = inventory_catalog().expect("valid typed documentation inventory");
+        assert_eq!(inventory.public_ui.len(), public_ui_inventory().len());
+        assert_eq!(inventory.patterns.len(), pattern_inventory().len());
+        let documentation_story_ids: Vec<_> = public_ui_inventory()
+            .iter()
+            .map(|component| component.representative_story)
+            .chain(
+                pattern_inventory()
+                    .iter()
+                    .filter(|pattern| pattern.public_ui.is_none())
+                    .map(|pattern| pattern.representative_story),
+            )
+            .collect();
+        let expected_documentation_items = public_ui_inventory()
+            .iter()
+            .filter(|entry| {
+                matches!(
+                    entry.documentation,
+                    termrock::registry::DocumentationKind::Component
+                        | termrock::registry::DocumentationKind::Pattern
+                )
+            })
+            .count()
+            + pattern_inventory()
+                .iter()
+                .filter(|pattern| pattern.public_ui.is_none())
+                .count();
+        assert_eq!(documentation_story_ids.len(), expected_documentation_items);
+        assert_eq!(
+            documentation_story_ids
+                .iter()
+                .copied()
+                .collect::<BTreeSet<_>>()
+                .len(),
+            expected_documentation_items,
+            "every documentation item needs a distinct representative story"
+        );
+        for component in public_ui_inventory() {
+            assert!(story_components.contains(&component.id));
+            assert!(story_ids.contains(component.representative_story));
+            assert_eq!(
+                story_by_id[component.representative_story].public_ui_id(),
+                Some(component.id)
+            );
+        }
+        for pattern in pattern_inventory()
+            .iter()
+            .filter(|pattern| pattern.public_ui.is_none())
+        {
+            assert_eq!(
+                story_by_id[pattern.representative_story].identity(),
+                crate::stories::StoryIdentity::Pattern(pattern.id)
+            );
+        }
     }
 
     #[test]
@@ -745,8 +1010,10 @@ mod tests {
     fn action_link_hover_and_activation_are_real_state() {
         let mut session = DemoSession::mount("action-link/basic", Some(40), Some(3)).unwrap();
         let before = session.frame();
+        let semantic_revision = session.current_update().semantic_revision;
         let hovered = session.dispatch(pointer("move", 2, 1)).unwrap();
         assert!(hovered.changed);
+        assert_eq!(hovered.semantic_revision, semantic_revision);
         assert_eq!(
             hovered.outcome, None,
             "hover is state, not an action outcome"
@@ -757,17 +1024,21 @@ mod tests {
             clicked.outcome.as_deref(),
             Some("Action activated: cargo test")
         );
+        assert!(clicked.semantic_revision > semantic_revision);
     }
 
     #[test]
     fn host_lifecycle_events_never_invent_user_outcomes() {
         let mut session = DemoSession::mount("dialog/message", Some(48), Some(12)).unwrap();
+        let semantic_revision = session.current_update().semantic_revision;
         for event in [
             DemoEvent::Resize { cols: 72, rows: 11 },
             DemoEvent::Focus { focused: true },
             DemoEvent::Focus { focused: false },
         ] {
-            assert_eq!(session.dispatch(event).unwrap().outcome, None);
+            let update = session.dispatch(event).unwrap();
+            assert_eq!(update.outcome, None);
+            assert_eq!(update.semantic_revision, semantic_revision);
         }
         assert_eq!(
             session.dispatch(key("Enter")).unwrap().outcome.as_deref(),
@@ -782,6 +1053,7 @@ mod tests {
         assert_eq!(activated.outcome.as_deref(), Some("Save started"));
         assert!(activated.hints.iter().any(|hint| hint.contains("loading")));
         assert_eq!(activated.next_deadline_ms, Some(100));
+        assert_eq!(activated.deadline_kind, Some(DemoDeadlineKind::Functional));
         let blocked = session.dispatch(key("Enter")).unwrap();
         assert!(!blocked.changed);
         let started = session
@@ -789,11 +1061,44 @@ mod tests {
             .unwrap();
         assert!(!started.changed);
         assert_eq!(started.next_deadline_ms, Some(900));
+        assert_eq!(started.deadline_kind, Some(DemoDeadlineKind::Functional));
         let completed = session
             .dispatch(DemoEvent::Tick { elapsed_ms: 900 })
             .unwrap();
         assert_eq!(completed.outcome.as_deref(), Some("Saved successfully"));
         assert_eq!(completed.next_deadline_ms, None);
+        assert_eq!(completed.deadline_kind, None);
+        assert!(completed.semantic_revision > activated.semantic_revision);
+    }
+
+    #[test]
+    fn button_space_release_owns_semantic_activation() {
+        let mut session = DemoSession::mount("button/activation", Some(28), Some(3)).unwrap();
+        let initial_revision = session.current_update().semantic_revision;
+        let pressed = session
+            .dispatch(DemoEvent::Key {
+                key: " ".to_owned(),
+                kind: "press".to_owned(),
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            })
+            .unwrap();
+        assert!(pressed.changed);
+        assert_eq!(pressed.semantic_revision, initial_revision);
+        let released = session
+            .dispatch(DemoEvent::Key {
+                key: " ".to_owned(),
+                kind: "release".to_owned(),
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            })
+            .unwrap();
+        assert_eq!(released.outcome.as_deref(), Some("Save started"));
+        assert!(released.semantic_revision > pressed.semantic_revision);
     }
 
     #[test]
@@ -1020,10 +1325,10 @@ mod tests {
     #[test]
     fn toast_appears_dismisses_and_expires() {
         let mut toast = DemoSession::mount("toast/success", Some(44), Some(8)).unwrap();
-        assert_eq!(
-            toast.dispatch(key("Enter")).unwrap().outcome.as_deref(),
-            Some("Toast appeared")
-        );
+        let appeared = toast.dispatch(key("Enter")).unwrap();
+        assert_eq!(appeared.outcome.as_deref(), Some("Toast appeared"));
+        assert_eq!(appeared.next_deadline_ms, Some(2_000));
+        assert_eq!(appeared.deadline_kind, Some(DemoDeadlineKind::Functional));
         assert_eq!(
             toast.dispatch(key("Escape")).unwrap().outcome.as_deref(),
             Some("Toast dismissed")
@@ -1033,6 +1338,19 @@ mod tests {
             .dispatch(DemoEvent::Tick { elapsed_ms: 2_100 })
             .unwrap();
         assert_eq!(expired.outcome.as_deref(), Some("Toast expired"));
+        assert!(expired.semantic_revision > appeared.semantic_revision);
+    }
+
+    #[test]
+    fn decorative_ticks_never_advance_semantic_revision() {
+        let mut spinner = DemoSession::mount("spinner/labeled", Some(24), Some(4)).unwrap();
+        let initial = spinner.current_update();
+        assert_eq!(initial.deadline_kind, Some(DemoDeadlineKind::VisualMotion));
+        let painted = spinner
+            .dispatch(DemoEvent::Tick { elapsed_ms: 400 })
+            .unwrap();
+        assert!(painted.changed);
+        assert_eq!(painted.semantic_revision, initial.semantic_revision);
     }
 
     #[test]
@@ -1096,7 +1414,7 @@ mod tests {
             ("connectivity/reconnecting", key("r")),
             ("error-state/network", key("d")),
             ("jump-overlay/basic", key("f")),
-            ("jump-mode/multi", key("f")),
+            ("jump-overlay/multi-key", key("f")),
             ("code-block/basic", key("ArrowDown")),
             ("markdown-view/basic", key("ArrowDown")),
             ("timeline/basic", key("ArrowDown")),
@@ -1108,7 +1426,7 @@ mod tests {
             ("badge/basic", key("Enter")),
             ("alert/danger", key("d")),
             ("drawer/basic", key("Enter")),
-            ("drawer/sheet", key("Enter")),
+            ("drawer/bottom", key("Enter")),
             ("fullscreen-viewer/basic", key("Enter")),
             ("preview-card/file", key("p")),
             ("key-value-list/basic", key("ArrowDown")),
@@ -1187,7 +1505,7 @@ mod tests {
         ];
         let mut missing = Vec::new();
 
-        for story in stories().into_iter().filter(|story| story.interactive) {
+        for story in stories().into_iter().filter(|story| story.is_interactive()) {
             let mut accepted = false;
             for value in key_candidates {
                 let mut session = DemoSession::mount(story.id, None, None).unwrap();
@@ -1249,7 +1567,8 @@ mod tests {
             "Sample application",
             "Sidebar region collapsed",
         ];
-        for id in PATTERN_DEMO_IDS {
+        for pattern in pattern_inventory() {
+            let id = pattern.representative_story;
             let mut session = DemoSession::mount(id, Some(72), Some(20))
                 .unwrap_or_else(|error| panic!("{id}: {error}"));
             let descriptor = session.descriptor();

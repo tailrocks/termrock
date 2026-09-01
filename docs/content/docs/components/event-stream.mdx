@@ -1,102 +1,18 @@
 ---
-title: EventStream
+title: "Event Stream"
 description: "Structured k8s/agent events with severity and source."
-component: EventStream
-demo: event-stream/basic
-interaction: scrolling-virtualization
-actions:
-  - "↑↓ move"
-  - "Enter details"
-  - "/ filter"
-  - "F follow"
-  - "wheel scroll"
-  - "click event"
-expectedOutcomes:
-  - "The \"↑↓ move\" action updates visible mounted state and reports its typed outcome."
-  - "Activation changes the mounted state and exposes the public typed request in the preview status."
-  - "Editing changes the visible Unicode-safe draft and reports the public typed edit outcome."
-  - "The \"F follow\" action updates visible mounted state and reports its typed outcome."
-  - "Scrolling changes the mounted viewport while preserving selection and surrounding page position."
+catalogId: EventStream
 source: crates/termrock/src/widgets/event_stream.rs
+tags:
+  - "data"
+  - "widget"
+aliases: []
 ---
-
-## Live terminal (Ghostty-class)
-
-This preview mounts one persistent Rust state machine. Focus it, use the current actions shown by the runtime, inspect the typed outcome, and use **Reset** for fresh state.
-
-<TerminalPreview story="event-stream/basic" interactive caption="EventStream · EventStream — live shared Rust state" />
-
-## Try it
-
-- `↑↓ move`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `Enter details`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-- `/ filter`: Focus the editable field, then type or paste Unicode text; the draft remains visible.
-- `F follow`: Dispatch this action to the mounted Rust state machine and inspect its visible typed result.
-- `wheel scroll`: Scroll over the preview; its own viewport moves while the docs page stays put.
-- `click event`: Activate the focused or pointed target; inspect the changed cells and typed outcome below the terminal.
-
-Every accepted action reaches the same mounted Rust value. The status line shows the latest typed outcome; **Reset** creates a fresh instance.
-
-## State and typed outcomes
-
-The mounted widget owns interaction state, focus chrome, hit geometry, and typed outcomes. The host only forwards backend-neutral events and performs no external effects.
-
-## Interaction contract
-
-| Axis | Status |
-|---|---|
-| Keyboard | covered |
-| Mouse | covered |
-| Focus | covered |
-| Cursor / caret | not-applicable in primary demo |
-| Narrow terminal | covered |
-| Unicode | covered |
-| Non-color cues | covered |
-| Motion / time | not-applicable in primary demo |
-
-## Configuration and variants
-
-Choose **Variant** above the preview. A variant is a separate configuration and remounts fresh state; it is never presented as an interaction step.
-
-| Demo | Configuration | Input |
-|---|---|---|
-| `event-stream/basic` | EventStream | interactive |
-| `event-stream/burst` | EventStream burst | paint-only |
-| `event-stream/detail` | EventStream detail | paint-only |
-| `event-stream/filter` | EventStream filter | paint-only |
-| `event-stream/in-app` | In application | interactive |
-| `event-stream/narrow` | EventStream narrow | paint-only |
-
-## Usage
-
-The Code view above and this source excerpt use the exact paint setup registered for `event-stream/basic`. Interaction state is long-lived in the catalog interactor; the host only forwards backend-neutral events.
-
-```rust
-use ratatui::prelude::*;
-use termrock::{input::*, interaction::*, runtime::*, style::*, widgets::*};
-
-// Exact paint setup used by the shared catalog story.
-fn event_stream_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let events = event_stream_sample();
-    let mut state = EventStreamState::new();
-    state.set_following(false);
-    state.cursor = 2;
-    state.on_append(events.len() as u16, area.height.saturating_sub(1));
-    EventStream::with_events(&events, system)
-        .focused(true)
-        .render(area, frame.buffer_mut(), &mut state);
-}
-```
-
-## Migrated handbook guidance
-
-# EventStream
 
 **Purpose.** Structured event consoles (k8s events, agent activity, observability)
 where rows are **typed**, not freeform log lines. Distinct from
 [LogStream](/docs/components/log-stream) (text+level) and
 [Timeline](/docs/components/timeline) (presentation recipes).
-
 
 ## When to use
 
@@ -115,65 +31,8 @@ where rows are **typed**, not freeform log lines. Distinct from
 - Host calls `on_append(total, viewport)` after each project.
 - `report_backpressure(dropped, batched)` for drop/batch chrome.
 
-## Example
-
-```rust
-use termrock::widgets::{EventStream, EventStreamState, StreamEvent, EventSeverity};
-
-let events = [
-    StreamEvent::with_id("e1", "Warning", "12:01", "FailedMount")
-        .severity(EventSeverity::Warn)
-        .source("kubelet")
-        .fields("vol=cfg")
-        .detail("MountVolume.SetUp failed…")
-        .batch_count(3),
-];
-let mut state = EventStreamState::new();
-state.on_append(1, 20);
-// EventStream::with_events(&events, &system).render(area, buf, &mut state);
-```
-
 ## Pluggable summary / detail
 
 - `summary` — one-line host-formatted row body.
 - `fields` — optional `k=v` chrome (dropped when narrow).
 - `detail` — inspector body when selected (`i` / Enter).
-
-## Related
-
-- Migration `0194-v0.13.0-event-stream`
-- Bench: `event_stream_bench`
-
-## Common mistakes
-
-- Do not treat separate Lookbook stories as runtime states or a slide sequence.
-- Do not duplicate hit testing, focus, or keyboard rules in the host.
-- Do not infer an action from visual styling; handle the widget's typed outcome.
-
-## Test recipe
-
-Mount `event-stream/basic`, dispatch each listed action, and assert the typed outcome, changed Ratatui cells, persistent follow-up state, pointer hit geometry, and Reset behavior.
-
-## Stories
-
-Lookbook coverage for this component. Only the **primary** story is embedded above;
-use the interactive preview (and Studio lookbook) to explore transitions instead of
-a static multi-image gallery.
-
-| Story | Title | Focus |
-|---|---|---|
-| `event-stream/basic` | EventStream | **Primary (live preview)** |
-| `event-stream/burst` | EventStream burst | burst |
-| `event-stream/detail` | EventStream detail | detail |
-| `event-stream/filter` | EventStream filter | filter |
-| `event-stream/narrow` | EventStream narrow | Narrow terminal |
-
-## Source and related material
-
-- Rust source: [`crates/termrock/src/widgets/event_stream.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/widgets/event_stream.rs)
-- Native preview: `cargo run -p termrock-lookbook -- terminal`
-- Demo id: `event-stream/basic`
-
-## Seen in applications
-
-<SeenInApplications component="EventStream" />

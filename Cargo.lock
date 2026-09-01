@@ -1540,6 +1540,7 @@ dependencies = [
  "serde",
  "serde_json",
  "stats_alloc",
+ "syn 2.0.119",
  "tui-scrollbar",
  "unicode-segmentation",
  "unicode-width",

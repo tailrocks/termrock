@@ -20,7 +20,7 @@ use termrock::{
     style::{Density, Role, RolePalette},
     widgets::{
         DesignInspector, DesignInspectorFrame, InspectorPanel, List as ComponentList, ListRow,
-        ListState as ComponentListState, Panel, Progress, ProgressKind,
+        ListState as ComponentListState, Panel, PanelVariant, ProgressBar, ProgressKind,
     },
 };
 
@@ -71,7 +71,7 @@ impl Lookbook {
         let story = catalog[selected];
         let mut demo = DemoSession::mount(story.id, Some(story.width), Some(story.height))
             .expect("catalog demo must mount");
-        demo.set_theme(theme.clone());
+        demo.set_system(termrock_lookbook::design::lookbook_system(theme.clone()));
         Ok(Self {
             selected,
             preview_scroll: 0,
@@ -158,7 +158,7 @@ impl Lookbook {
         let spinner_tick = u64::try_from(tick.elapsed().as_millis() / 100).unwrap_or(u64::MAX);
         let live_label = format!("live · {}ms", tick.delta().as_millis());
         frame.render_widget(
-            Progress::new(
+            ProgressBar::new(
                 ProgressKind::Indeterminate { tick: spinner_tick },
                 &self.host.system(),
             )
@@ -183,12 +183,12 @@ impl Lookbook {
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let panel_tokens = self.host.system();
         let catalog = gallery_stories();
-        let block = Panel::new(&panel_tokens)
+        let panel = Panel::new(&panel_tokens)
+            .variant(PanelVariant::Bordered)
             .title("Components · Application patterns")
-            .emphasis(panel_chrome(&self.host.scene, FocusId::Sidebar))
-            .block();
-        let inner = block.inner(area);
-        frame.render_widget(block, area);
+            .emphasis(panel_chrome(&self.host.scene, FocusId::Sidebar));
+        let inner = panel.inner(area);
+        panel.paint(area, frame.buffer_mut(), None);
 
         self.sidebar_viewport_items = (usize::from(inner.height) / 2).max(1);
         let offset = scroll::cursor_follow_offset(
@@ -208,7 +208,7 @@ impl Lookbook {
                 };
                 ListItem::new(vec![
                     Line::from(Span::styled(
-                        story.component,
+                        story.component(),
                         self.host.theme.style(Role::Text),
                     )),
                     Line::from(Span::styled(kind, self.host.theme.style(Role::TextMuted))),
@@ -238,9 +238,11 @@ impl Lookbook {
     fn render_description(&self, frame: &mut Frame<'_>, area: Rect) {
         let panel_tokens = self.host.system();
         let story = gallery_stories()[self.selected];
-        let block = Panel::new(&panel_tokens).title("About").block();
-        let inner = block.inner(area);
-        frame.render_widget(block, area);
+        let panel = Panel::new(&panel_tokens)
+            .variant(PanelVariant::Bordered)
+            .title("About");
+        let inner = panel.inner(area);
+        panel.paint(area, frame.buffer_mut(), None);
         let [title, _, description] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(1),
@@ -252,7 +254,7 @@ impl Lookbook {
                 Span::styled(story.title, self.host.theme.style(Role::Text)),
                 Span::raw("  "),
                 Span::styled(
-                    story.component,
+                    story.component(),
                     Style::default()
                         .patch(self.host.theme.style(Role::Accent))
                         .add_modifier(Modifier::DIM),
@@ -273,12 +275,12 @@ impl Lookbook {
     fn render_preview(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let panel_tokens = self.host.system();
         let story = gallery_stories()[self.selected];
-        let block = Panel::new(&panel_tokens)
+        let panel = Panel::new(&panel_tokens)
+            .variant(PanelVariant::Bordered)
             .title("Preview")
-            .emphasis(panel_chrome(&self.host.scene, FocusId::Preview))
-            .block();
-        let inner = block.inner(area);
-        frame.render_widget(block, area);
+            .emphasis(panel_chrome(&self.host.scene, FocusId::Preview));
+        let inner = panel.inner(area);
+        panel.paint(area, frame.buffer_mut(), None);
         frame.render_widget(
             Block::default().style(self.host.theme.style(Role::Surface)),
             inner,
@@ -376,7 +378,7 @@ impl Lookbook {
             .enumerate()
             .map(|(index, knob)| {
                 let mut row = ListRow::item(index, Line::from(knob.label));
-                row.trailing = Some(Line::from(knob.display_value()));
+                row.badge = Some(Line::from(knob.display_value()));
                 row
             })
             .collect::<Vec<_>>();
@@ -577,7 +579,10 @@ impl Lookbook {
             } else {
                 RolePalette::default()
             };
-            self.demo.set_theme(self.host.theme.clone());
+            self.demo
+                .set_system(termrock_lookbook::design::lookbook_system(
+                    self.host.theme.clone(),
+                ));
             return ControlFlow::Continue(());
         }
         if is_focused(&self.host.scene, FocusId::Preview) {
@@ -688,7 +693,10 @@ impl Lookbook {
         let story = gallery_stories()[self.selected];
         self.demo = DemoSession::mount(story.id, Some(story.width), Some(story.height))
             .expect("catalog demo must mount");
-        self.demo.set_theme(self.host.theme.clone());
+        self.demo
+            .set_system(termrock_lookbook::design::lookbook_system(
+                self.host.theme.clone(),
+            ));
     }
 
     fn focus(&mut self, target: FocusId) {

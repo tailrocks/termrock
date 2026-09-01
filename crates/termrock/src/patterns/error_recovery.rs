@@ -12,9 +12,9 @@
 //! **Host owns** panic hooks, process restart, session persistence, log tails,
 //! issue trackers, and terminal restore — outcomes/requests only.
 //!
-//! **vs standalone [`ErrorState`] / [`ErrorView`].** Elevated composition with
-//! crash-report redaction, multi-option action list, and inline fallback mode —
-//! not a second paint fork of ErrorState.
+//! **vs standalone [`ErrorState`].** Elevated composition with crash-report
+//! redaction, multi-option action list, and inline fallback mode — not a second
+//! paint fork of ErrorState.
 //!
 //! Research: crash reporters, terminal panic hooks, session restoration,
 //! resilient CLI design.
@@ -771,16 +771,27 @@ impl ErrorRecoveryState {
     #[must_use]
     pub fn status_slots(&self) -> Vec<StatusSlot<'static, &'static str>> {
         let mut slots = vec![
-            StatusSlot::context("mode", self.mode.id()).priority(10),
-            StatusSlot::focus_zone("focus", self.focus).priority(20),
+            StatusSlot::new("failure", "recovery required")
+                .semantic(crate::widgets::SemanticStatus::Failed)
+                .priority(100),
+            StatusSlot::context("mode", self.mode.id()).priority(50),
+            StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut("keys", "r restart · s restore · l logs · i report · q quit")
-                .priority(90),
+                .priority(10),
         ];
         if self.terminal_restore_failed {
-            slots.push(StatusSlot::new("tty", "tty-restore-failed").priority(5));
+            slots.push(
+                StatusSlot::new("tty", "tty restore failed")
+                    .semantic(crate::widgets::SemanticStatus::Failed)
+                    .priority(95),
+            );
         }
         if self.partial_init {
-            slots.push(StatusSlot::new("init", "partial-init").priority(6));
+            slots.push(
+                StatusSlot::new("init", "partial init")
+                    .semantic(crate::widgets::SemanticStatus::Warning)
+                    .priority(90),
+            );
         }
         slots
     }
@@ -1193,7 +1204,7 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                 Rect::new(inner.x, inner.y, inner.width, 1),
                 &msg,
                 system.style(if snapshot.work_preserved {
-                    Role::Success
+                    Role::TextStrong
                 } else {
                     Role::TextMuted
                 }),

@@ -38,7 +38,7 @@ use crate::{
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, Hint, HintBar, MatchRanges, MatchTruncate, Panel,
-        PanelChrome, PanelTitleSpec, TextInput, TextInputOutcome, TextInputState,
+        PanelChrome, PanelTitleSpec, PanelVariant, TextInput, TextInputOutcome, TextInputState,
         fuzzy_match_label,
     },
 };
@@ -1105,6 +1105,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             spec = spec.filter(query);
         }
         let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
             .overlay(true)
             .title_spec(spec)
             .emphasis(emphasis);
@@ -1808,6 +1809,25 @@ mod tests {
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             HistoryPickerOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn mouse_hit_selects_the_painted_history_entry() {
+        let visible = catalog();
+        let mut state = open_state();
+        state.hits = vec![(0, Rect::new(3, 4, 20, 1))];
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(3, 4),
+                modifiers: KeyModifiers::NONE,
+            },
+            &visible,
+        );
+        assert!(matches!(
+            out,
+            HistoryPickerOutcome::Selected { ref id, .. } if id == &visible[0].id
         ));
     }
 }

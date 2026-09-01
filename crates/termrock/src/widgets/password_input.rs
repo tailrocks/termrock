@@ -25,7 +25,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::take_display_cols,
 };
 
@@ -848,30 +848,35 @@ impl<'a> PasswordInput<'a> {
                     crate::style::Glyph::Mask
                 })
                 .text;
+            let reveal_recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                if !state.enabled {
+                    ControlState::Disabled
+                } else if state.pending {
+                    ControlState::Loading
+                } else if state.focused {
+                    ControlState::Focused
+                } else {
+                    ControlState::Default
+                },
+            );
             buffer.set_stringn(
                 rx,
                 ry,
                 mark,
                 1,
-                self.system.style(if state.focused {
-                    Role::Accent
-                } else {
-                    Role::TextMuted
-                }),
+                reveal_recipe.fill.patch(reveal_recipe.label),
             );
         }
 
-        if area.height >= 3 {
+        if ti_parts.field.y.saturating_add(1) < area.bottom() {
             let status = if state.pending {
                 PasswordStrengthHint::Pending.label()
             } else {
                 self.strength.label()
             };
             if !status.is_empty() && !matches!(self.validation, Validation::Invalid(_)) {
-                let y = area
-                    .y
-                    .saturating_add(2)
-                    .min(area.bottom().saturating_sub(1));
+                let y = ti_parts.field.y.saturating_add(1);
                 let meter = if state.pending {
                     String::new()
                 } else {
@@ -1080,6 +1085,30 @@ mod tests {
         assert!(!state.is_revealed());
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::ALT)),
+            PasswordInputOutcome::RevealChanged { revealed: true }
+        );
+        assert!(state.is_revealed());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            PasswordInputOutcome::Cancelled
+        );
+    }
+
+    #[test]
+    fn mouse_reveal_uses_explicit_policy_and_exact_hit_region() {
+        let mut state =
+            PasswordInputState::with_secret("ab").with_reveal_policy(RevealPolicy::Explicit);
+        let reveal = Rect::new(12, 3, 2, 1);
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(reveal.x, reveal.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 3, 12, 1),
+                Some(reveal),
+            ),
             PasswordInputOutcome::RevealChanged { revealed: true }
         );
         assert!(state.is_revealed());

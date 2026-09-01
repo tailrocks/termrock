@@ -29,12 +29,13 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
-    style::{DesignSystem, Role},
+    style::{ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
 use super::{
-    ChordFormat, Kbd, Panel, PanelChrome, Platform, Validation, format_chord, format_sequence,
+    ChordFormat, Kbd, Panel, PanelChrome, PanelVariant, Platform, Validation, format_chord,
+    format_sequence,
 };
 
 /// Default sequence separator in multi-chord display.
@@ -836,14 +837,20 @@ impl<'a> KeybindingRecorder<'a> {
             return;
         }
 
-        let panel = Panel::new(self.system).emphasis(if state.focused {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        });
+        let panel = Panel::new(self.system)
+            .variant(PanelVariant::Bordered)
+            .emphasis(if state.focused {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
         let inner = panel.inner(area);
         let title = if state.is_recording() {
-            "Recording — Esc cancel · Enter accept"
+            if self.ascii {
+                "Recording - Esc cancel | Enter accept"
+            } else {
+                "Recording — Esc cancel · Enter accept"
+            }
         } else {
             state.action_label.as_str()
         };
@@ -869,6 +876,20 @@ impl<'a> KeybindingRecorder<'a> {
 
         // Live chord display via Kbd-like paint
         if y < inner.bottom() {
+            let invalid = state
+                .last_limit
+                .as_ref()
+                .is_some_and(|limit| !matches!(limit, BindingLimit::Intermediate));
+            let recipe = self.system.input_recipe(
+                if !state.enabled {
+                    ControlState::Disabled
+                } else if state.focused {
+                    ControlState::Focused
+                } else {
+                    ControlState::Default
+                },
+                invalid,
+            );
             let live = state.display_live();
             let rec_mark = if state.is_recording() {
                 if self.ascii { "[REC] " } else { "● " }
@@ -876,37 +897,35 @@ impl<'a> KeybindingRecorder<'a> {
                 ""
             };
             let line = format!("{rec_mark}{live}");
-            let style = if state.is_recording() {
-                self.system
-                    .style(Role::Focus)
+            let mut style = if state.is_recording() {
+                recipe
+                    .cursor
                     .add_modifier(Modifier::BOLD | Modifier::REVERSED)
-            } else if state.last_limit.as_ref().is_some_and(|l| {
-                matches!(
-                    l,
-                    BindingLimit::Conflict { .. }
-                        | BindingLimit::Reserved { .. }
-                        | BindingLimit::Protocol { .. }
-                        | BindingLimit::Empty
-                )
-            }) {
-                self.system.style(Role::Danger)
             } else {
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD)
+                recipe.value.add_modifier(Modifier::BOLD)
             };
+            if invalid {
+                style = style.patch(self.system.style(Role::Danger));
+            }
+            let live_row = Rect::new(inner.x, y, inner.width, 1);
+            buffer.set_style(live_row, recipe.fill);
+            if let Some((glyph, prompt_style)) = recipe.prompt {
+                buffer.set_stringn(inner.x, y, glyph, 1, prompt_style);
+            }
+            let value_x = inner.x.saturating_add(1).min(inner.right());
+            let value_width = inner.width.saturating_sub(1);
             buffer.set_stringn(
-                inner.x,
+                value_x,
                 y,
-                take_display_cols(&line, usize::from(inner.width)),
-                usize::from(inner.width),
+                take_display_cols(&line, usize::from(value_width)),
+                usize::from(value_width),
                 style,
             );
             // Also stamp Kbd widget for first chord when idle single
             if !state.is_recording() && state.value.len() == 1 && inner.width > 12 {
                 let kbd_area = Rect::new(
                     inner.x.saturating_add(
-                        display_cols(&line).min(usize::from(inner.width.saturating_sub(8))) as u16,
+                        display_cols(&line).min(usize::from(value_width.saturating_sub(8))) as u16,
                     ),
                     y,
                     8,
@@ -936,36 +955,41 @@ impl<'a> KeybindingRecorder<'a> {
         if self.show_limits && y < inner.bottom() {
             if let Some(limit) = &state.last_limit {
                 let msg = limit.message();
-                buffer.set_stringn(
-                    inner.x,
-                    y,
-                    take_display_cols(&msg, usize::from(inner.width)),
-                    usize::from(inner.width),
-                    self.system.style(match limit {
-                        BindingLimit::Intermediate => Role::TextMuted,
-                        _ => Role::Danger,
-                    }),
+                crate::widgets::field_message::paint_field_message(
+                    buffer,
+                    Rect::new(inner.x, y, inner.width, 1),
+                    self.system,
+                    match limit {
+                        BindingLimit::Intermediate => crate::widgets::label::DescriptionKind::Meta,
+                        _ => crate::widgets::label::DescriptionKind::Error,
+                    },
+                    &msg,
                 );
-                y = y.saturating_add(1);
             } else if !state.is_recording() {
                 // soft issues on value
                 let soft = state.soft_issues(&state.value);
                 if let Some(issue) = soft.first() {
-                    buffer.set_stringn(
-                        inner.x,
-                        y,
-                        take_display_cols(&issue.message(), usize::from(inner.width)),
-                        usize::from(inner.width),
-                        self.system.style(Role::Warning),
+                    crate::widgets::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(inner.x, y, inner.width, 1),
+                        self.system,
+                        crate::widgets::label::DescriptionKind::Warning,
+                        &issue.message(),
                     );
-                    y = y.saturating_add(1);
                 }
             }
+            // Validation owns a permanent row so limits do not move the
+            // protocol note or hint bar when they appear.
+            y = y.saturating_add(1);
         }
 
         // Protocol notes (compact, one line)
         if self.show_limits && y < inner.bottom() && state.is_recording() {
-            let note = "protocol: no F-keys in neutral map · Esc cancels";
+            let note = if self.ascii {
+                "protocol: no F-keys in neutral map | Esc cancels"
+            } else {
+                "protocol: no F-keys in neutral map · Esc cancels"
+            };
             buffer.set_stringn(
                 inner.x,
                 y,

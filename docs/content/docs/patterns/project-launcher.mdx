@@ -1,40 +1,31 @@
 ---
-title: Project Launcher
-description: 'Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned.'
-pattern: ProjectLauncher
-demo: project-launcher/basic
-interaction: activation
+title: "Project Launcher"
+description: "Application recipe composed from public TermRock building blocks; domain state and effects remain host-owned."
+catalogId: ProjectLauncher
 source: crates/termrock/src/patterns/project_launcher.rs
 classification: application
+tags:
+  - "application"
+  - "List"
+  - "Panel"
+  - "PreviewCard"
+aliases: []
+uses:
+  - "List"
+  - "Panel"
+  - "PreviewCard"
+  - "QuickOpen"
+  - "SearchInput"
+  - "StatusBar"
+supportingTypes:
+  - "EmptyAction"
+  - "ListRow"
+  - "PreviewCardContent"
+  - "PreviewMetadata"
+  - "QuickOpenItem"
+  - "QuickOpenProvider"
+  - "StatefulWidget"
+  - "StatusRegion"
+  - "StatusSlot"
+  - "Widget"
 ---
-
-This is an example composite from `termrock::patterns`, not a first-class widget. Copy the recipe, keep its reusable parts, and replace its sample domain model with your own.
-
-## Live application preview
-
-<TerminalPreview story="project-launcher/basic" interactive caption="Project Launcher · shared Rust demo" />
-
-## Classification and composition
-
-**application** · default grid 120×36
-
-Composed public building blocks: `EmptyAction`, `List`, `ListRow`, `Panel`, `PreviewCard`, `PreviewCardContent`, `PreviewMetadata`, `QuickOpen`, `QuickOpenItem`, `QuickOpenProvider`, `SearchInput`, `StatefulWidget`, `StatusBar`, `StatusRegion`, `StatusSlot`, `Widget`.
-
-## Workflow
-
-- `↑↓ select project`: move visible focus, selection, pane, or hierarchy state for the next action.
-- `Enter open`: invoke the focused public state-machine action and inspect its typed request.
-- `/ filter`: focus the real field and edit its persistent Unicode-safe draft.
-- `Ctrl+P quick open`: invoke the focused public state-machine action and inspect its typed request.
-- `Tab panes`: move visible focus, selection, pane, or hierarchy state for the next action.
-
-Accepted actions update the same persistent pattern instance in web docs and native Lookbook. Typed requests appear in the status line; the fixtures never authenticate, connect, execute, persist, or mutate external state.
-
-## Ownership
-
-TermRock owns composition, focus geometry, responsive layout, and reusable state transitions. The consuming application owns records, commands, persistence, secrets, authorization, and side effects.
-
-## Source
-
-- Pattern recipe: [`crates/termrock/src/patterns/project_launcher.rs`](https://github.com/tailrocks/termrock/blob/main/crates/termrock/src/patterns/project_launcher.rs)
-- Demo: `project-launcher/basic`

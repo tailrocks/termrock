@@ -1036,6 +1036,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         if area.is_empty() {
             return;
         }
+        let ascii = self.system.glyphs.is_ascii();
 
         if self.fields.is_empty() {
             buffer.set_stringn(
@@ -1090,7 +1091,11 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         } else {
                             "… "
                         },
-                        message.as_deref().unwrap_or("Loading…")
+                        message.as_deref().unwrap_or(if ascii {
+                            "Loading..."
+                        } else {
+                            "Loading…"
+                        })
                     ),
                     self.system.style(Role::TextMuted),
                 );
@@ -1240,8 +1245,13 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         if let Some(m) = validation_msg {
             parts.push(m.to_string());
         }
-        parts.push("c copy · e edit · r reveal · d compare · / filter".into());
-        let line = parts.join(" · ");
+        let separator = if self.system.glyphs.is_ascii() {
+            " - "
+        } else {
+            " · "
+        };
+        parts.push(["c copy", "e edit", "r reveal", "d compare", "/ filter"].join(separator));
+        let line = parts.join(separator);
         paint_line(
             buffer,
             area.x,
@@ -1293,6 +1303,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                 for x in area.x..area.right() {
                     buffer.set_stringn(x, area.y, rule, 1, self.system.style(Role::Border));
                 }
+                paint_kv_row_chrome(&chrome, sub, buffer, area);
                 return;
             }
             KvtRowKind::Group => {
@@ -1316,6 +1327,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                             .add_modifier(Modifier::BOLD),
                     );
                 }
+                paint_kv_row_chrome(&chrome, sub, buffer, area);
                 return;
             }
             KvtRowKind::Field => {}
@@ -1369,6 +1381,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                                 value_style,
                             );
                         }
+                        paint_kv_row_chrome(&chrome, sub, buffer, area);
                         return;
                     }
                     line_idx += vlines.len() as u16;
@@ -1392,6 +1405,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                                         self.system.style(Role::Warning),
                                     );
                                 }
+                                paint_kv_row_chrome(&chrome, sub, buffer, area);
                                 return;
                             }
                             line_idx += clines.len() as u16;
@@ -1440,6 +1454,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                             value_style,
                         );
                     }
+                    paint_kv_row_chrome(&chrome, sub, buffer, area);
                     return;
                 }
                 let mut x = origin;
@@ -1503,7 +1518,11 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         value_style,
                     );
                     x = x.saturating_add(half);
-                    let other = field.compare.unwrap_or("—");
+                    let other = field.compare.unwrap_or(if self.system.glyphs.is_ascii() {
+                        "-"
+                    } else {
+                        "—"
+                    });
                     let changed = field.compare.is_some_and(|c| c != field.value);
                     paint_line(
                         buffer,
@@ -1527,9 +1546,17 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     let mut text = take_display_cols(&body, usize::from(remain.saturating_sub(3)));
                     if selected && field.copyable {
                         if state.copied.as_ref() == Some(&field.id) {
-                            text.push_str(" ✓");
+                            text.push_str(if self.system.glyphs.is_ascii() {
+                                " ok"
+                            } else {
+                                " ✓"
+                            });
                         } else {
-                            text.push_str(" ⧉");
+                            text.push_str(if self.system.glyphs.is_ascii() {
+                                " cp"
+                            } else {
+                                " ⧉"
+                            });
                         }
                     }
                     paint_line(buffer, x, area.y, remain, &text, value_style);
@@ -1537,6 +1564,19 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                 }
             }
         }
+        paint_kv_row_chrome(&chrome, sub, buffer, area);
+    }
+}
+
+fn paint_kv_row_chrome(
+    chrome: &crate::widgets::row_chrome::RowChrome,
+    continuation: u16,
+    buffer: &mut Buffer,
+    area: Rect,
+) {
+    chrome.paint_wash(buffer, area);
+    if continuation == 0 {
+        chrome.paint_gutter(buffer, area);
     }
 }
 

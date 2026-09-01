@@ -81,7 +81,7 @@ impl<'a> Card<'a> {
             description: None,
             footer: None,
             emphasis: PanelChrome::Normal,
-            variant: PanelVariant::Bordered,
+            variant: PanelVariant::Quiet,
             body: PanelBody::Host,
             body_title: None,
             body_detail: None,
@@ -154,13 +154,6 @@ impl<'a> Card<'a> {
     #[must_use]
     pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
-        self
-    }
-
-    /// Alias for [`Self::emphasis`].
-    #[must_use]
-    pub const fn chrome(mut self, chrome: PanelChrome) -> Self {
-        self.emphasis = chrome;
         self
     }
 
@@ -395,6 +388,29 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 28, 6));
         let body = card.paint(Rect::new(0, 0, 28, 6), &mut buf, None);
         assert!(body.height > 0);
+    }
+
+    #[test]
+    fn card_empty_and_error_body_modes_paint_their_state_copy() {
+        let system = DesignSystem::default().no_color();
+        for (mode, title) in [(PanelBody::Empty, "No jobs"), (PanelBody::Error, "Failed")] {
+            let card = Card::new(&system)
+                .title("Jobs")
+                .body(mode)
+                .body_title(title);
+            let area = Rect::new(0, 0, 28, 6);
+            let mut buffer = Buffer::empty(area);
+
+            let body = card.paint(area, &mut buffer, None);
+            let text = buffer
+                .content()
+                .iter()
+                .map(|cell| cell.symbol())
+                .collect::<String>();
+
+            assert!(body.height > 0);
+            assert!(text.contains(title), "{text}");
+        }
     }
 
     #[test]

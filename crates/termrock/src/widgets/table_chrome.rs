@@ -21,9 +21,14 @@ pub(crate) fn header_style(system: &DesignSystem) -> Style {
     system.style(Role::TextMuted)
 }
 
-/// Background band the header row sits on.
-pub(crate) fn header_band(system: &DesignSystem) -> Style {
-    system.style(Role::Raised)
+/// Transparent header ground; labels carry hierarchy without a slab.
+pub(crate) const fn header_band(_system: &DesignSystem) -> Style {
+    Style::new()
+}
+
+/// Stable one-cell separation between adjacent columns.
+pub(crate) const fn column_gap() -> &'static str {
+    " "
 }
 
 /// Sort direction marker, in the operator's glyph profile.
@@ -65,7 +70,8 @@ mod tests {
         let system = DesignSystem::phosphor();
         assert_eq!(header_style(&system), system.style(Role::TextMuted));
         assert_ne!(header_style(&system), system.style(Role::TextStrong));
-        assert!(header_band(&system).bg.is_some());
+        assert!(header_band(&system).bg.is_none());
+        assert_eq!(column_gap(), " ");
     }
 
     #[test]

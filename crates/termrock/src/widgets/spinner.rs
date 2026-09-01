@@ -27,9 +27,11 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, MotionChannel, MotionPolicy, Role},
-    text::{display_cols, take_display_cols},
+    style::{DesignSystem, Glyph, GlyphSet, MotionChannel, MotionPolicy, Role},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
+
+use super::SemanticStatus;
 
 /// Default frame period (ms) for Full motion — matches historic Spinner/Progress.
 pub const SPINNER_DEFAULT_PERIOD_MS: u64 = 80;
@@ -124,6 +126,17 @@ impl ActivityPhase {
             channel => channel.period_ms(),
         }
     }
+
+    /// Shared lifecycle state used for glyph and tone recipes.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::Indeterminate | Self::Streaming => SemanticStatus::Running,
+            Self::Waiting | Self::Reconnecting => SemanticStatus::Waiting,
+            Self::Queued => SemanticStatus::Queued,
+            Self::Done => SemanticStatus::Success,
+        }
+    }
 }
 
 /// Presentation density.
@@ -199,6 +212,10 @@ impl Default for SpinnerState {
 }
 
 impl SpinnerState {
+    fn uses_ascii(&self) -> bool {
+        self.ascii_force || matches!(self.glyph_set, SpinnerGlyphSet::Ascii)
+    }
+
     /// Active + visible, indeterminate.
     #[must_use]
     pub const fn new() -> Self {
@@ -319,11 +336,7 @@ impl SpinnerState {
     /// Effective frames for phase + capability.
     #[must_use]
     pub fn frames(&self, motion: MotionPolicy) -> &'static [&'static str] {
-        let ascii = self.ascii_force
-            || matches!(self.glyph_set, SpinnerGlyphSet::Ascii)
-            || (matches!(self.glyph_set, SpinnerGlyphSet::Auto) && self.ascii_force);
-        // Auto with unicode when not ascii_force
-        let use_ascii = ascii || matches!(self.glyph_set, SpinnerGlyphSet::Ascii);
+        let use_ascii = self.uses_ascii();
 
         if !motion.animate_spinners() || !self.phase.animates() {
             // Reduced motion is not frozen: each phase keeps a distinct static
@@ -432,7 +445,7 @@ pub struct Spinner<'a> {
     embedded: bool,
     phase: Option<ActivityPhase>,
     variant: Option<SpinnerVariant>,
-    role: Role,
+    colorless: bool,
 }
 
 impl<'a> Spinner<'a> {
@@ -446,7 +459,7 @@ impl<'a> Spinner<'a> {
             embedded: false,
             phase: None,
             variant: None,
-            role: Role::TextMuted,
+            colorless: false,
         }
     }
 
@@ -460,7 +473,7 @@ impl<'a> Spinner<'a> {
             embedded: false,
             phase: None,
             variant: None,
-            role: Role::TextMuted,
+            colorless: false,
         }
     }
 
@@ -499,10 +512,10 @@ impl<'a> Spinner<'a> {
         self
     }
 
-    /// Paint role.
+    /// Remove hue without changing glyph capability.
     #[must_use]
-    pub const fn role(mut self, role: Role) -> Self {
-        self.role = role;
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -579,12 +592,29 @@ impl<'a> Spinner<'a> {
             let label = self.resolved_label(&local);
             format!("{glyph} {label}")
         };
+        let ellipsis = if local.uses_ascii() {
+            "..."
+        } else {
+            self.system.glyphs.ellipsis()
+        };
+        let fitted = truncate_cols(&text, usize::from(area.width), ellipsis);
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(&text, usize::from(area.width)),
+            &fitted,
             usize::from(area.width),
-            self.system.style(self.role),
+            self.system.style(Role::Text),
+        );
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            0,
+            glyph,
+            self.system.style(if self.colorless {
+                Role::TextStrong
+            } else {
+                local.phase().semantic().role()
+            }),
         );
     }
 
@@ -650,7 +680,7 @@ pub struct ActivityIndicator<'a> {
     label: &'a str,
     detail: Option<&'a str>,
     ascii: bool,
-    role: Role,
+    colorless: bool,
 }
 
 impl<'a> ActivityIndicator<'a> {
@@ -662,7 +692,7 @@ impl<'a> ActivityIndicator<'a> {
             label,
             detail: None,
             ascii: false,
-            role: Role::Info,
+            colorless: false,
         }
     }
 
@@ -680,10 +710,10 @@ impl<'a> ActivityIndicator<'a> {
         self
     }
 
-    /// Role.
+    /// Remove hue without changing glyph capability.
     #[must_use]
-    pub const fn role(mut self, role: Role) -> Self {
-        self.role = role;
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -710,25 +740,46 @@ impl<'a> ActivityIndicator<'a> {
             local.set_ascii(true);
         }
         let glyph = local.frame_glyph(tick, motion);
-        let line1 = format!("{glyph} {}", self.label);
-        // The verb is words; the spinner cell is the signal (plans/007).
+        let use_ascii = local.ascii_force || matches!(self.system.glyphs, GlyphSet::Ascii);
+        let rail = if use_ascii {
+            "|"
+        } else {
+            self.system.glyphs.resolve(Glyph::RailHeavy).text
+        };
+        let line1 = format!("{rail} {glyph} {}", self.label);
+        // The verb is words; the rail + spinner cells carry lifecycle tone.
         buffer.set_stringn(
             area.x,
             area.y,
             &take_display_cols(&line1, usize::from(area.width)),
             usize::from(area.width),
-            self.system.style(Role::TextMuted),
+            self.system.style(Role::Text),
         );
+        let semantic_role = if self.colorless {
+            Role::TextStrong
+        } else {
+            local.phase().semantic().role()
+        };
         crate::widgets::row_chrome::paint_status_glyph(
             buffer,
             area,
             0,
+            rail,
+            self.system.style(semantic_role),
+        );
+        let glyph_column = u16::try_from(display_cols(rail).saturating_add(1)).unwrap_or(u16::MAX);
+        crate::widgets::row_chrome::paint_status_glyph(
+            buffer,
+            area,
+            glyph_column,
             glyph,
-            self.system.style(self.role),
+            self.system.style(semantic_role),
         );
         if let Some(detail) = self.detail {
             if area.height > 1 {
-                let prefix_cols = display_cols(glyph).saturating_add(1);
+                let prefix_cols = display_cols(rail)
+                    .saturating_add(display_cols(glyph))
+                    .saturating_add(2);
                 let x = area.x.saturating_add(prefix_cols as u16);
                 let w = area.width.saturating_sub(prefix_cols as u16);
                 if w > 0 {
@@ -975,6 +1026,99 @@ mod tests {
     }
 
     #[test]
+    fn dot_pulse_uses_raster_safe_frames_and_motion_off_is_static() {
+        assert_eq!(SPINNER_DOT_PULSE_FRAMES, &["·", "•", "●", "•"]);
+        assert!(
+            SPINNER_DOT_PULSE_FRAMES
+                .iter()
+                .all(|glyph| display_cols(glyph) == 1)
+        );
+
+        let mut state = SpinnerState::new();
+        state.set_glyph_set(SpinnerGlyphSet::DotPulse);
+        assert!(
+            SPINNER_DOT_PULSE_FRAMES
+                .contains(&state.frame_glyph(tick_at(400), MotionPolicy::Full,))
+        );
+        assert_eq!(state.frame_glyph(tick_at(400), MotionPolicy::Off), "○");
+    }
+
+    #[test]
+    fn labeled_spinner_uses_capability_appropriate_ellipsis() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 14, 1);
+
+        let unicode_state = SpinnerState::new();
+        let mut unicode = Buffer::empty(area);
+        Spinner::labeled("Presence travels", &system).paint(
+            area,
+            &mut unicode,
+            &unicode_state,
+            tick_at(0),
+            MotionPolicy::Off,
+        );
+        let unicode_text: String = unicode.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(unicode_text.contains('…'), "{unicode_text:?}");
+
+        let mut ascii_state = SpinnerState::new();
+        ascii_state.set_ascii(true);
+        let mut ascii = Buffer::empty(area);
+        Spinner::labeled("Presence travels", &system).paint(
+            area,
+            &mut ascii,
+            &ascii_state,
+            tick_at(0),
+            MotionPolicy::Off,
+        );
+        let ascii_text: String = ascii.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(ascii_text.contains("..."), "{ascii_text:?}");
+    }
+
+    #[test]
+    fn spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe() {
+        let system = DesignSystem::default();
+        let label = "検索 Cafe\u{301}";
+        for ascii in [false, true] {
+            let mut state = SpinnerState::new();
+            state.set_ascii(ascii);
+            for (width, height) in [(32, 2), (12, 1), (1, 1), (0, 0)] {
+                let area = Rect::new(0, 0, width, height);
+                let mut spinner = Buffer::empty(area);
+                Spinner::labeled(label, &system).paint(
+                    area,
+                    &mut spinner,
+                    &state,
+                    tick_at(0),
+                    MotionPolicy::Off,
+                );
+
+                let mut indicator = Buffer::empty(area);
+                ActivityIndicator::new(label, &system).ascii(ascii).paint(
+                    area,
+                    &mut indicator,
+                    &state,
+                    tick_at(0),
+                    MotionPolicy::Off,
+                );
+
+                if width == 32 {
+                    let spinner_text: String =
+                        spinner.content().iter().map(|cell| cell.symbol()).collect();
+                    let indicator_text: String = indicator
+                        .content()
+                        .iter()
+                        .map(|cell| cell.symbol())
+                        .collect();
+                    assert!(spinner_text.contains('検'), "{spinner_text:?}");
+                    assert!(spinner_text.contains("Cafe\u{301}"), "{spinner_text:?}");
+                    assert!(indicator_text.contains('検'), "{indicator_text:?}");
+                    assert!(indicator_text.contains("Cafe\u{301}"), "{indicator_text:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn activity_indicator_detail_line() {
         let system = DesignSystem::default();
         let mut state = SpinnerState::new();
@@ -991,6 +1135,28 @@ mod tests {
             .collect();
         assert!(text.contains("Reconnecting"), "{text}");
         assert!(text.contains("attempt") || text.contains("3"), "{text}");
+    }
+
+    #[test]
+    fn activity_indicator_is_rail_glyph_and_verb_in_ascii_colorless_mode() {
+        let system = DesignSystem::default();
+        let mut state = SpinnerState::new();
+        state.set_phase(ActivityPhase::Reconnecting);
+        let area = Rect::new(0, 0, 32, 1);
+        let mut buffer = Buffer::empty(area);
+        ActivityIndicator::new("Reconnecting", &system)
+            .ascii(true)
+            .colorless(true)
+            .paint(area, &mut buffer, &state, tick_at(100), MotionPolicy::Off);
+        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+        assert!(text.starts_with("| ? Reconnecting"), "{text:?}");
+        let warning_fg = system.style(Role::Warning).fg;
+        assert!(
+            buffer
+                .content()
+                .iter()
+                .all(|cell| Some(cell.fg) != warning_fg)
+        );
     }
 
     #[test]
@@ -1164,5 +1330,19 @@ mod tests {
             SPINNER_RECONNECT_UNICODE.contains(&g) || SPINNER_BRAILLE_FRAMES.contains(&g),
             "{g}"
         );
+    }
+
+    #[test]
+    fn spinner_public_api_has_no_raw_role_escape_hatch() {
+        let public = include_str!("spinner.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("public source");
+        for forbidden in ["pub role:", "pub fn role(", "pub const fn role("] {
+            assert!(
+                !public.contains(forbidden),
+                "raw role API leaked: {forbidden}"
+            );
+        }
     }
 }

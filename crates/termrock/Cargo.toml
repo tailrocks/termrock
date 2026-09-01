@@ -35,6 +35,7 @@ web-time.workspace = true
 [dev-dependencies]
 serde_json.workspace = true
 stats_alloc.workspace = true
+syn.workspace = true
 
 [lints]
 workspace = true

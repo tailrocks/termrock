@@ -946,8 +946,8 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             state.viewport = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii;
-        let colorless = self.colorless || state.colorless;
+        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
+        let colorless = self.colorless || state.colorless || self.system.mono();
         let footer = 1u16;
         let body_h = area.height.saturating_sub(footer).max(1);
         state.viewport = usize::from(body_h);

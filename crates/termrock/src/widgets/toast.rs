@@ -1298,7 +1298,6 @@ pub struct Toast<'a> {
     kind: Option<ToastKind>,
     title: Option<&'a str>,
     anchor: Anchor,
-    style: Option<Style>,
     horizontal_margin: u16,
     vertical_margin: u16,
     system: &'a DesignSystem,
@@ -1317,7 +1316,6 @@ impl<'a> Toast<'a> {
             kind: None,
             title: None,
             anchor: Anchor::TopRight,
-            style: None,
             horizontal_margin: TOAST_DEFAULT_H_MARGIN,
             vertical_margin: TOAST_DEFAULT_V_MARGIN,
             system,
@@ -1339,13 +1337,6 @@ impl<'a> Toast<'a> {
     pub const fn margins(mut self, horizontal: u16, vertical: u16) -> Self {
         self.horizontal_margin = horizontal;
         self.vertical_margin = vertical;
-        self
-    }
-
-    /// Overrides the theme-derived toast text style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
         self
     }
 
@@ -1443,7 +1434,7 @@ impl<'a> Toast<'a> {
             self.progress,
             self.undo_label,
             self.ascii,
-            self.style,
+            None,
         );
     }
 }

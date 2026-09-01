@@ -88,7 +88,7 @@ fn main() -> io::Result<()> {
     let rows = showcase_rows();
     let keymap = Keymap::from_static(BINDINGS);
     let mut list_state = ListState::new(Some("list"));
-    let mut tabs_state = TabsState::default();
+    let mut tabs_state = TabsState::new().with_selected("components");
     let mut status_state = StatusBarState::default();
     let mut phosphor = true;
     let mut activated = false;
@@ -173,7 +173,7 @@ fn main() -> io::Result<()> {
 fn showcase_rows() -> [ListRow<'static, &'static str>; 6] {
     ["list", "tree", "form", "tabs", "log-pane", "progress"].map(|id| {
         let mut row = ListRow::item(id, Line::from(id));
-        row.trailing = Some(Line::from("TermRock"));
+        row.badge = Some(Line::from("TermRock"));
         row
     })
 }
@@ -185,9 +185,7 @@ fn render_tabs(
     state: &mut TabsState<&'static str>,
 ) {
     let tabs = [
-        Tab::new("components", "Components")
-            .glyph(Span::styled("●", system.style(Role::Accent)))
-            .active(true),
+        Tab::new("components", "Components").glyph(Span::styled("●", system.style(Role::Accent))),
         Tab::new("events", "Events"),
     ];
     frame.render_stateful_widget(Tabs::new(&tabs, system), area, state);
@@ -202,9 +200,7 @@ fn render_status(
 ) {
     let left = [StatusSlot::new("state", " ready ")
         .priority(10)
-        .kind(StatusKind::Connection)
-        .style(system.style(Role::Success))
-        .hover_style(system.style(Role::LinkHover))];
+        .kind(StatusKind::Connection)];
     let right = [
         StatusSlot::new("theme", if phosphor { " phosphor " } else { " slate " })
             .priority(10)

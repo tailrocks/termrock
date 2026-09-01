@@ -1125,7 +1125,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         // Prefer state.scroll_y after clamp
         parts.first_line = state.scroll_y;
 
-        let header_text = self.meta.header_text();
+        let header_text = if self.system.glyphs.is_ascii() {
+            self.meta.header_text().replace(" · ", " - ")
+        } else {
+            self.meta.header_text()
+        };
         if parts.header.height > 0 && !header_text.is_empty() {
             let h = take_display_cols(&header_text, usize::from(parts.header.width));
             buffer.set_stringn(
@@ -1162,7 +1166,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 continue;
             };
             let raw = self.lines[win_i];
-            let prepared = prepare_code_display(raw, tab, self.controls);
+            let mut prepared = prepare_code_display(raw, tab, self.controls);
+            if self.system.glyphs.is_ascii() && matches!(self.controls, ControlRender::Placeholder)
+            {
+                prepared = prepared.replace('·', ".");
+            }
             let kinds = self.highlights_for(abs, state);
 
             // Gutter
