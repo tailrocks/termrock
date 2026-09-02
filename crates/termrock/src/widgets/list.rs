@@ -461,6 +461,21 @@ impl<Id> ListState<Id> {
         self.collection.offset()
     }
 
+    /// Skip into the row slice passed to this frame's paint.
+    ///
+    /// [`Self::offset`] is the absolute collection index. A virtual window
+    /// already *is* that slice, so paint skip is 0. Callers that
+    /// `rows.iter().skip(offset)` after [`List`] paint must use this, not
+    /// [`Self::offset`], or they skip the window origin twice.
+    #[must_use]
+    pub const fn paint_skip(&self) -> usize {
+        if self.virtual_total > 0 {
+            0
+        } else {
+            self.collection.offset()
+        }
+    }
+
     #[must_use]
     /// Returns the painted item hit regions from the most recent render.
     pub fn regions(&self) -> &[HitRegion<Id>] {
@@ -1162,11 +1177,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         let body = Rect::new(area.x, body_y, area.width, body_h);
         let scrollable = crate::scroll::is_scrollable(total, usize::from(body.height).max(1));
         let content_width = body.width.saturating_sub(u16::from(scrollable));
-        let offset = if state.virtual_total > 0 {
-            0 // rows are already the window
-        } else {
-            state.collection.offset()
-        };
+        let offset = state.paint_skip();
         let mut y = body.y;
         let mut painted_rows = 0usize;
         let breathing = false;
@@ -2296,6 +2307,7 @@ mod tests {
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.virtual_total(), 200);
         assert_eq!(state.collection().offset(), 50);
+        assert_eq!(state.paint_skip(), 0, "virtual window is already the slice");
         assert_eq!(state.collection().total_len(), 200);
     }
 

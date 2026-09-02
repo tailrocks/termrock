@@ -38,7 +38,7 @@ Shipped contracts that the lookbook must consume (no page-local forks):
 - Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
 - Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
 - Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`. Monochrome `Inset`/`Sunken` also fill canvas, not terminal Reset.
-- Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
+- Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`. Row anatomy is junie fixed columns (`label · detail · tag · group`) from the full item list, not a fluid right-align when badges exist. After `List` paint, chrome pickers skip with `ListState::paint_skip()` (0 on a virtual window), never `offset()` (absolute window origin).
 - Field underline is the insert session only (`editing && focused`), always accent. Junie `input.rs` does not error-underline idle invalid values; those trail a bold `!` plus the helper message. `TextInputState::new` and `PasswordConfirmState::new` start `editing: false`. Live hosts call `with_editing()` / `begin_edit()` / Enter.
 - Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening. Open Select popover has no scroll gutter; fullscreen/searchable lists use `overflow_thumb`.
 - Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup / ModeRibbon / AgentMode ribbon / toolbar overflow / search filter chips use padded inner, not `[inner]` wells. Badge default is padded inner + status Glyph. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Mixed checkbox is catalog minus ` − `, not `[–]`. Progress/stepper marks are catalog `✓ › ! − …`.
@@ -911,8 +911,9 @@ Tab still reaches them.
 - **Variants**: confirm (subtle Cancel + primary; focus on the primary),
   destructive (secondary Cancel + danger; focus on Cancel), prompt (field;
   `Enter` submits), facts (props table, code preview capped at six lines with
-  `… N more`, optional `Type orders to confirm` field whose match enables the
-  last action; `Enter` in the field only moves focus).
+  `text::more_note` (`+N more`; junie source spells `… N more`), optional
+  `Type orders to confirm` field whose match enables the last action; `Enter`
+  in the field only moves focus).
 - **Anatomy**: dimmed backdrop (footer excluded), centred rounded elevated
   surface `54` wide (`66` for facts) with a `3×2` inset, bold title, body,
   right-aligned actions with one-cell gaps.

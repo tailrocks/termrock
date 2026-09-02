@@ -36,7 +36,7 @@ use crate::{
     },
     scroll::DialogScroll,
     style::{DesignSystem, Role, RolePalette},
-    text::{display_cols, take_display_cols, truncate_cols},
+    text::{display_cols, more_note, take_display_cols, truncate_cols},
 };
 
 use super::primitives::{Button, ButtonState, ButtonVariant};
@@ -788,7 +788,7 @@ fn paint_facts_body(
             break;
         }
         let shown = if i == max.saturating_sub(1) {
-            if let Some(note) = crate::text::more_note(code.len().saturating_sub(max)) {
+            if let Some(note) = more_note(code.len().saturating_sub(max)) {
                 let note_width = display_cols(&note);
                 let line_width = usize::from(body.width).saturating_sub(note_width + 1);
                 format!("{} {note}", truncate_cols(line, line_width, "…"))

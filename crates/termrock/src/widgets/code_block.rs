@@ -1200,6 +1200,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         line_gutter,
                     );
                 }
+                // junie: numbers at `area.x + 3` via `fit_right`.
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)
                 } else {
