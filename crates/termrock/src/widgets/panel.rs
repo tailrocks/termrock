@@ -2021,7 +2021,12 @@ mod tests {
         assert_eq!(thumbs, (1..10).collect::<Vec<_>>());
         assert_eq!(buffer[(43, 10)].symbol(), crate::scroll::SCROLLBAR_TRACK);
         assert_eq!(
-            Panel::scrolled_content_area(Panel::new(&system).inner(area)).width,
+            Panel::scrolled_content_area(
+                Panel::new(&system)
+                    .variant(PanelVariant::Bordered)
+                    .inner(area)
+            )
+            .width,
             39
         );
     }

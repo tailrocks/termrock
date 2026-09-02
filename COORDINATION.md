@@ -70,4 +70,4 @@ Remaining SKIP (`verify/junie`, 11 product shells):
 
 Panel scrollbar API landed (`vertical_scroll` / `scrolled_content_area` / `overflow_thumb`). `panel/framed-pane` consumes it; no story-local thumb/title overdraw.
 
-Lookbook+showcase merge: not started; not done in this slice. No commit (orchestrator).
+Lookbook+showcase merge: not started; not done in this slice.
