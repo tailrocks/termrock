@@ -597,6 +597,13 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
     }
 
+    /// Column width implied by a drag gesture: start width plus horizontal
+    /// delta, clamped to the same `2..=80` band the keyboard resize uses.
+    fn drag_width(start_w: u16, start_x: u16, x: u16) -> u16 {
+        let dx = x as i32 - start_x as i32;
+        (start_w as i32 + dx).clamp(2, 80) as u16
+    }
+
     fn resize_cursor_column(
         &mut self,
         columns: &ColumnModel<ColId>,
@@ -836,11 +843,18 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     }
 
     /// Mouse: wheel, click cursor/select, header sort, resize drag, context.
+    ///
+    /// Like every other handler, this never writes the host's
+    /// [`ColumnModel`]: a resize drag reports [`DataTableOutcome::ColumnResized`]
+    /// and the host applies it with [`ColumnModel::set_width_override`], the
+    /// same contract as the keyboard path. The reported width is derived from
+    /// the gesture itself, so it stays correct even if intermediate drag
+    /// outcomes were dropped.
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
         visible_rows: &[RowId],
-        columns: &mut ColumnModel<ColId>,
+        columns: &ColumnModel<ColId>,
     ) -> DataTableOutcome<RowId, ColId>
     where
         ColId: Clone,
@@ -860,19 +874,14 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if let Some((ref col_id, start_w, start_x)) = self.resize_drag.clone() {
             match event.kind {
                 MouseEventKind::Drag(MouseButton::Left) | MouseEventKind::Moved => {
-                    let dx = event.position.x as i32 - start_x as i32;
-                    let next = (start_w as i32 + dx).clamp(2, 80) as u16;
-                    let _ = columns.set_width_override(&col_id, next);
+                    let width = Self::drag_width(start_w, start_x, event.position.x);
                     return DataTableOutcome::ColumnResized {
                         column: col_id.clone(),
-                        width: next,
+                        width,
                     };
                 }
                 MouseEventKind::Up(MouseButton::Left) => {
-                    let width = columns
-                        .index_of(&col_id)
-                        .map(|i| columns.effective_width(i))
-                        .unwrap_or(start_w);
+                    let width = Self::drag_width(start_w, start_x, event.position.x);
                     self.resize_drag = None;
                     return DataTableOutcome::ColumnResized {
                         column: col_id.clone(),
@@ -2019,7 +2028,7 @@ mod tests {
     fn mouse_click_sets_cursor() {
         let mut state = DataTableState::<u64, &str>::new();
         let rows = [10u64, 20, 30];
-        let mut cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
         state.body_origin = (0, 2);
         state.body_rows = 3;
         state.body_width = 40;
@@ -2028,9 +2037,49 @@ mod tests {
             position: Position { x: 0, y: 3 },
             modifiers: KeyModifiers::NONE,
         };
-        let out = state.handle_mouse(event, &rows, &mut cols);
+        let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn mouse_resize_reports_outcome_without_touching_host_model() {
+        let cols = ColumnModel::new(vec![DataColumn::new("a", "A", DataColumnWidth::Fixed(8))]);
+        let mut state = DataTableState::<u64, &str>::new();
+        state.resize_drag = Some(("a", 8, 10));
+
+        let drag = MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            position: Position { x: 14, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
+        let out = state.handle_mouse(drag, &[], &cols);
+        match out {
+            DataTableOutcome::ColumnResized { column, width } => {
+                assert_eq!(column, "a");
+                assert_eq!(width, 12);
+            }
+            other => panic!("expected resize, got {other:?}"),
+        }
+        // The state never wrote the override; the host owns that step.
+        assert_eq!(cols.effective_width(0), 8);
+        assert!(state.resize_drag.is_some());
+
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: Position { x: 14, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
+        let out = state.handle_mouse(up, &[], &cols);
+        match out {
+            DataTableOutcome::ColumnResized { column, width } => {
+                assert_eq!(column, "a");
+                assert_eq!(width, 12);
+            }
+            other => panic!("expected resize, got {other:?}"),
+        }
+        assert!(state.resize_drag.is_none(), "release ends the drag");
+        assert_eq!(cols.effective_width(0), 8);
     }
 
     #[test]
@@ -2433,7 +2482,7 @@ mod tests {
     #[test]
     fn header_click_sorts() {
         let system = DesignSystem::default();
-        let mut cols = ColumnModel::new(vec![
+        let cols = ColumnModel::new(vec![
             DataColumn::new("a", "A", DataColumnWidth::Fixed(8)).sortable(),
             DataColumn::new("b", "B", DataColumnWidth::Fixed(8)),
         ]);
@@ -2453,7 +2502,7 @@ mod tests {
             },
             modifiers: KeyModifiers::NONE,
         };
-        let out = state.handle_mouse(event, &[1u64], &mut cols);
+        let out = state.handle_mouse(event, &[1u64], &cols);
         assert!(matches!(out, DataTableOutcome::SortSpec(_)));
     }
 
