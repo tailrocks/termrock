@@ -1146,9 +1146,7 @@ impl<'a> ModelSelector<'a> {
                     } else {
                         ControlState::Default
                     };
-                    let recipe = self
-                        .system
-                        .input_recipe(control_state, false, state.focused);
+                    let recipe = self.system.input_recipe(control_state, false, false);
                     let search_area = Rect::new(area.x, y, area.width, 1);
                     buffer.set_style(search_area, recipe.fill);
                     if area.width > 0 {

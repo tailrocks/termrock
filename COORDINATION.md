@@ -11,6 +11,11 @@ Two agents. One tree. Claim before write. Never revert the other agent's files.
 
 ## Core claimed (this commit)
 
+- `crates/termrock/src/widgets/combobox.rs` — field underline is `draft.is_editing()`, not focus
+- `crates/termrock/src/widgets/{search_input,path_input,input_group,input_otp,date_time_picker,question_flow,model_mode_selectors}.rs` — `input_recipe` editing is the edit session, not focus
+- `crates/termrock/src/widgets/progress_steps.rs` — status marks from Glyph catalog (`✓ › ! − …`), not `[›]` wells
+
+
 - `crates/termrock/src/widgets/surface.rs` — `SurfaceRecipe::Canvas` / `SurfaceFill::TerminalDefault` fill `Role::Canvas` `#000000`, never `Color::Reset`
 - `crates/termrock/src/widgets/{tree,text_area,select}.rs` — overflow gutter uses `paint_overflow_scrollbar` / `overflow_thumb`
 - `crates/termrock/src/widgets/{tabs,controls,text_input,data_table,picker}.rs` — junie keymap/state defaults

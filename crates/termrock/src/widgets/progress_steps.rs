@@ -36,7 +36,7 @@ use crate::{
         NavigationMove, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_list_intent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
     widgets::{Hint, HintBar},
 };
@@ -116,18 +116,17 @@ impl ProgressStepStatus {
     }
 
     /// Non-color mark. One junie vocabulary; no ASCII profile.
+    ///
+    /// Progress marks, not checkbox wells: `[✓]` / `[ ]` belong to Checkbox.
     #[must_use]
     pub const fn mark(self) -> &'static str {
         match self {
-            Self::Queued => crate::style::Glyph::CheckOff.resolve().text,
-            Self::Running => "[›]",
-            Self::Waiting => "[…]",
-            Self::Complete => crate::style::Glyph::CheckOn.resolve().text,
-            Self::Skipped => "[–]",
-            Self::Warning => "[⚠]",
-            Self::Failed => "[✗]",
-            Self::Retrying => "[↻]",
-            Self::Cancelled => "[⊘]",
+            Self::Queued => " ",
+            Self::Running | Self::Retrying => Glyph::SelectionMarker.resolve().text,
+            Self::Waiting => Glyph::Ellipsis.resolve().text,
+            Self::Complete => Glyph::Success.resolve().text,
+            Self::Skipped | Self::Cancelled => Glyph::Remove.resolve().text,
+            Self::Warning | Self::Failed => Glyph::Error.resolve().text,
         }
     }
 
@@ -1002,7 +1001,32 @@ mod tests {
         ] {
             assert!(!s.mark().is_empty());
             assert!(!s.id().is_empty());
+            assert!(
+                !s.mark().contains('['),
+                "progress marks are glyph catalog, not checkbox wells: {:?}",
+                s.mark()
+            );
         }
+        assert_eq!(
+            ProgressStepStatus::Complete.mark(),
+            Glyph::Success.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Running.mark(),
+            Glyph::SelectionMarker.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Failed.mark(),
+            Glyph::Error.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Skipped.mark(),
+            Glyph::Remove.resolve().text
+        );
+        assert_eq!(
+            ProgressStepStatus::Waiting.mark(),
+            Glyph::Ellipsis.resolve().text
+        );
     }
 
     #[test]

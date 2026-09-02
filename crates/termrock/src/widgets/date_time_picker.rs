@@ -1926,7 +1926,7 @@ impl<'a> DateTimePicker<'a> {
                 ControlState::Default
             },
             invalid,
-            state.focused && matches!(state.view, DateTimePickerView::Field),
+            state.draft.is_editing(),
         );
         let mut y = area.y;
         if !self.label.is_empty() && area.height >= 1 {

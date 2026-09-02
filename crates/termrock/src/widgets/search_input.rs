@@ -812,7 +812,7 @@ impl<'a> SearchInput<'a> {
                 ControlState::Default
             },
             invalid,
-            state.focused,
+            state.query.is_editing(),
         );
 
         let mut y = area.y;

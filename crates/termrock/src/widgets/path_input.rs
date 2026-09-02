@@ -1002,7 +1002,7 @@ impl<'a> PathInput<'a> {
                 ControlState::Default
             },
             invalid || destructive,
-            state.focused,
+            state.path.is_editing(),
         );
 
         let mut y = area.y;

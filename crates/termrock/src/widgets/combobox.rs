@@ -24,7 +24,7 @@ use std::collections::VecDeque;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::Modifier,
     widgets::StatefulWidget,
 };
 
@@ -945,7 +945,7 @@ impl<'a> Combobox<'a> {
                 crate::style::ControlState::Default
             },
             invalid,
-            state.focused && state.enabled,
+            state.draft.is_editing(),
         );
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
@@ -1015,7 +1015,6 @@ impl<'a> Combobox<'a> {
             .placeholder(self.placeholder)
             .validation(validation);
         let _ = input.paint(field, buffer, &mut state.draft);
-        apply_field_underline(buffer, field, &recipe);
 
         // The chevron says whether the menu is open; it goes in the cell the
         // status did not take.
@@ -1148,17 +1147,6 @@ impl<'a> Combobox<'a> {
 const _: fn(u16, u16) -> Position = Position::new;
 const _: &str = COMPLETION_OVERLAY_ID;
 
-fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
-    if field.is_empty() {
-        return;
-    }
-    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
-    if let Some(color) = recipe.border.underline_color {
-        underline = underline.underline_color(color);
-    }
-    buffer.set_style(field, underline);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1170,6 +1158,38 @@ mod tests {
             CompletionCandidate::new("go", "Go").kind("lang"),
             CompletionCandidate::new("ts", "TypeScript").kind("lang"),
         ]
+    }
+
+    #[test]
+    fn focused_without_editing_is_not_underlined() {
+        let system = DesignSystem::junie();
+        let mut state: ComboboxState<&'static str> = ComboboxState::new();
+        state.set_focused(true);
+        state.draft.set_editing(false);
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        let field_y = area.y.saturating_add(1);
+        let underlined = |buffer: &Buffer| {
+            (0..area.width).any(|x| {
+                buffer[(x, field_y)]
+                    .style()
+                    .add_modifier
+                    .contains(Modifier::UNDERLINED)
+            })
+        };
+        assert!(
+            !underlined(&buffer),
+            "nav-focus combobox is gutter, not an editing underline"
+        );
+        state.draft.set_editing(true);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        assert!(underlined(&buffer), "editing combobox underlines the field");
     }
 
     #[test]

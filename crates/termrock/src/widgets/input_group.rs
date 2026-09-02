@@ -298,7 +298,7 @@ impl<'a> InputGroup<'a> {
                 ControlState::Default
             },
             false,
-            state.focused,
+            state.field.is_editing(),
         );
         buffer.set_style(area, input_recipe.fill);
         let prefixes: Vec<&InputAddon> = self
