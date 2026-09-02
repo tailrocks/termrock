@@ -218,7 +218,7 @@ pub struct SegmentedControlParts<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentedControlState<Id> {
     /// Controlled selected value.
-    pub selected: Option<Id>,
+    selected: Option<Id>,
     /// Surface keyboard ownership.
     pub surface_focused: bool,
     /// Roving cursor (may equal selected under FollowFocus).
@@ -263,9 +263,7 @@ impl<Id: Clone + PartialEq> SegmentedControlState<Id> {
     /// Controlled set (also moves cursor).
     pub fn set_selected(&mut self, selected: Option<Id>) {
         self.selected = selected.clone();
-        if selected.is_some() {
-            self.cursor = selected;
-        }
+        self.cursor = selected;
     }
 
     /// Surface focus.
@@ -789,8 +787,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             return SegmentedControlOutcome::Ignored;
         }
         let changed = state.selected.as_ref() != Some(&id);
-        state.selected = Some(id.clone());
-        state.cursor = Some(id.clone());
+        state.set_selected(Some(id.clone()));
         state.menu_open = false;
         if changed {
             SegmentedControlOutcome::Selected { id }
@@ -1196,6 +1193,16 @@ mod tests {
             SegmentedControlOutcome::Selected { id: "grid" }
         ));
         assert_eq!(state.selected(), Some(&"grid"));
+    }
+
+    #[test]
+    fn clearing_selection_clears_active_cursor() {
+        let mut state = SegmentedControlState::new(Some("list"));
+
+        state.set_selected(None);
+
+        assert!(state.selected().is_none());
+        assert!(state.cursor.is_none());
     }
 
     #[test]

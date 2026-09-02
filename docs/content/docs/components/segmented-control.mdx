@@ -8,3 +8,10 @@ tags:
   - "widget"
 aliases: []
 ---
+
+## Selection
+
+`SegmentedControlState::selected()` is the read path. Hosts update selection
+through `set_selected`, which keeps the active cursor synchronized, including
+when clearing the selection with `None`. Keyboard and menu commits use the same
+setter.

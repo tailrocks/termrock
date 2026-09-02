@@ -82831,7 +82831,6 @@ pub termrock::widgets::SegmentedControlState::hovered: core::option::Option<Id>
 pub termrock::widgets::SegmentedControlState::menu_open: bool
 pub termrock::widgets::SegmentedControlState::parts: core::option::Option<termrock::widgets::SegmentedControlParts<Id>>
 pub termrock::widgets::SegmentedControlState::roving: termrock::interaction::RovingFocusGroup<Id>
-pub termrock::widgets::SegmentedControlState::selected: core::option::Option<Id>
 pub termrock::widgets::SegmentedControlState::surface_focused: bool
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::SegmentedControlState<Id>
 pub fn termrock::widgets::SegmentedControlState<Id>::new(core::option::Option<Id>) -> Self
