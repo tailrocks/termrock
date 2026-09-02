@@ -668,18 +668,7 @@ impl ObjectInspectorState {
     }
 
     fn ensure_cursor_visible(&mut self, field_count: usize) {
-        if field_count == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
+        self.scroll.reveal_row(self.cursor);
         self.scroll
             .set_content_size(1, field_count.min(u16::MAX as usize) as u16);
         self.scroll.set_viewport(1, self.body_rows);

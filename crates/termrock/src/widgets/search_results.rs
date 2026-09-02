@@ -13,6 +13,10 @@
 //! **Ownership.** Host owns search I/O, ranking, and async generation.
 //! TermRock owns paint, navigation, group chrome, and typed outcomes.
 //!
+//! The lifecycle authority is [`SearchResultsState::status`]. It is deliberately
+//! not mirrored into a data-view load state, because stale and cancelled
+//! searches are distinct outcomes rather than empty result sets.
+//!
 //! Research: ripgrep UIs, IDE search, fzf previews, documentation search.
 use std::collections::BTreeSet;
 
@@ -25,7 +29,7 @@ use crate::{
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{LoadState, VirtualWindow},
+        data_view::VirtualWindow,
         highlighted_text::{HighlightedText, MatchKind, MatchRange, MatchRanges, MatchTruncate},
         quick_open::{QuickOpenItem, QuickOpenPreview},
         tiered_row::TieredRow,
@@ -182,34 +186,6 @@ impl SearchResultsStatus {
             Self::Error { message, .. } => message.clone(),
             Self::Stale { generation } => format!("stale gen {generation} · refresh"),
             Self::Cancelled => "cancelled".into(),
-        }
-    }
-
-    /// Map to LoadState for consistency.
-    #[must_use]
-    pub fn to_load_state(&self, projected: usize) -> LoadState {
-        match self {
-            Self::Idle => LoadState::Idle,
-            Self::Loading { message } => LoadState::Loading {
-                message: message.clone(),
-            },
-            Self::Partial { resident, total } => LoadState::Partial {
-                resident: *resident,
-                total: *total,
-            },
-            Self::Ready { total } => LoadState::Ready {
-                count: total.unwrap_or(projected as u64),
-            },
-            Self::Empty { message } => LoadState::Empty {
-                message: message.clone(),
-            },
-            Self::Error { message, retryable } => LoadState::Error {
-                message: message.clone(),
-                retryable: *retryable,
-            },
-            Self::Stale { .. } | Self::Cancelled => LoadState::Empty {
-                message: Some(self.summary_line(0)),
-            },
         }
     }
 }
@@ -601,8 +577,6 @@ pub struct SearchResultsState {
     pub multi: bool,
     /// Match walk index into [`collect_match_targets`].
     pub match_walk: usize,
-    /// Load mirror.
-    pub load: LoadState,
     /// Title.
     pub title: Option<String>,
     /// Row hit regions from last paint.
@@ -636,7 +610,6 @@ impl SearchResultsState {
             checked: Vec::new(),
             multi: false,
             match_walk: 0,
-            load: LoadState::Idle,
             title: None,
             row_regions: Vec::new(),
             accepts_input: true,
@@ -663,24 +636,27 @@ impl SearchResultsState {
     pub fn begin_search(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
         self.status = SearchResultsStatus::Loading { message: None };
-        self.load = LoadState::Loading { message: None };
         self.cursor = 0;
         self.window.offset = 0;
         self.match_walk = 0;
         self.generation
     }
 
-    /// Apply host results if generation matches; else mark stale.
+    /// Apply host results, rejecting stale or cancelled completions.
     pub fn apply_results(&mut self, generation: u64, status: SearchResultsStatus, count: usize) {
         if generation < self.generation {
-            self.status = SearchResultsStatus::Stale { generation };
+            if !matches!(self.status, SearchResultsStatus::Cancelled) {
+                self.status = SearchResultsStatus::Stale { generation };
+            }
+            return;
+        }
+        if generation == self.generation && matches!(self.status, SearchResultsStatus::Cancelled) {
             return;
         }
         if generation > self.generation {
             self.generation = generation;
         }
         self.status = status;
-        self.load = self.status.to_load_state(count);
         self.window.logical_len = count as u64;
         self.window.clamp();
         if self.cursor >= count && count > 0 {
@@ -691,9 +667,6 @@ impl SearchResultsState {
     /// Cancel current search chrome.
     pub fn cancel(&mut self) {
         self.status = SearchResultsStatus::Cancelled;
-        self.load = LoadState::Empty {
-            message: Some("cancelled".into()),
-        };
     }
 
     /// Toggle group collapse.
@@ -1476,6 +1449,17 @@ mod tests {
         assert!(matches!(state.status, SearchResultsStatus::Stale { .. }));
         state.apply_results(g2, SearchResultsStatus::Ready { total: Some(2) }, 2);
         assert!(matches!(state.status, SearchResultsStatus::Ready { .. }));
+    }
+
+    #[test]
+    fn cancellation_rejects_late_results_for_current_generation() {
+        let mut state = SearchResultsState::new();
+        let generation = state.begin_search();
+        state.cancel();
+
+        state.apply_results(generation, SearchResultsStatus::Ready { total: Some(1) }, 1);
+
+        assert_eq!(state.status, SearchResultsStatus::Cancelled);
     }
 
     #[test]

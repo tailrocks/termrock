@@ -8,3 +8,11 @@ tags:
   - "paint"
 aliases: []
 ---
+
+## Lifecycle
+
+`SearchResultsState::status` is the sole lifecycle authority. It distinguishes
+idle, loading, partial, ready, empty, error, stale, and cancelled searches.
+Hosts must tag asynchronous completions with the generation returned by
+`begin_search`; stale completions are rejected, and completions arriving after
+`cancel` cannot restore results.

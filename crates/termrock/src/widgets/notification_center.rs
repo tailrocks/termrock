@@ -526,6 +526,8 @@ pub struct NotificationCenterState {
     /// Cursor into **filtered** view by item id.
     cursor: Option<String>,
     scroll: usize,
+    /// Visible list rows, written by paint so event-time reveal matches.
+    viewport_rows: usize,
     capacity: usize,
     slots: NotificationCenterSlots,
     /// Filter chrome: cycling presets.
@@ -555,6 +557,7 @@ impl NotificationCenterState {
             items: Vec::new(),
             cursor: None,
             scroll: 0,
+            viewport_rows: 0,
             capacity: NOTIFICATION_CENTER_DEFAULT_CAPACITY,
             slots: NotificationCenterSlots::empty(),
             filter_cycle: 0,
@@ -801,10 +804,10 @@ impl NotificationCenterState {
         {
             self.cursor = ids.first().cloned();
         }
-        self.reveal_cursor(ids.len());
+        self.reveal_cursor();
     }
 
-    fn reveal_cursor(&mut self, filtered_len: usize) {
+    fn reveal_cursor(&mut self) {
         let Some(ref c) = self.cursor else {
             return;
         };
@@ -816,13 +819,22 @@ impl NotificationCenterState {
         let Some(idx) = ids.iter().position(|id| *id == c.as_str()) else {
             return;
         };
-        let page = 8usize; // approximate; paint uses real height
+        // Paint writes the real viewport height; before the first paint the
+        // reveal is a no-op and paint performs it with the real page size.
+        self.reveal_index(idx, self.viewport_rows);
+    }
+
+    /// One reveal policy: scroll the minimal amount so row `idx` is visible
+    /// within `page` rows. Shared by the event path and paint.
+    fn reveal_index(&mut self, idx: usize, page: usize) {
+        if page == 0 {
+            return;
+        }
         if idx < self.scroll {
             self.scroll = idx;
         } else if idx >= self.scroll.saturating_add(page) {
             self.scroll = idx.saturating_sub(page.saturating_sub(1));
         }
-        let _ = filtered_len;
     }
 
     /// Mark one read.
@@ -935,7 +947,7 @@ impl NotificationCenterState {
             (cur + delta as usize).min(ids.len() - 1)
         };
         self.cursor = Some(ids[next].clone());
-        self.reveal_cursor(ids.len());
+        self.reveal_cursor();
         NotificationCenterOutcome::SelectionChanged {
             id: self.cursor.clone(),
         }
@@ -977,7 +989,7 @@ impl NotificationCenterState {
                 let ids = self.filtered_indices();
                 if let Some(i) = ids.last().and_then(|i| self.items.get(*i)) {
                     self.cursor = Some(i.id.clone());
-                    self.reveal_cursor(ids.len());
+                    self.reveal_cursor();
                     NotificationCenterOutcome::SelectionChanged {
                         id: self.cursor.clone(),
                     }
@@ -1270,21 +1282,18 @@ impl<'a> NotificationCenter<'a> {
         state.slots.list = Rect::new(inner.x, y, inner.width, list_h);
         let indices = state.filtered_indices();
         let page = list_h as usize;
+        state.viewport_rows = page;
         // Clamp scroll
         if state.scroll >= indices.len() && !indices.is_empty() {
             state.scroll = indices.len().saturating_sub(1);
         }
-        // Reveal cursor with real page size
+        // Reveal cursor with the real page size
         if let Some(ref c) = state.cursor {
             if let Some(idx) = indices
                 .iter()
                 .position(|&i| state.items.get(i).is_some_and(|it| it.id == *c))
             {
-                if idx < state.scroll {
-                    state.scroll = idx;
-                } else if idx >= state.scroll.saturating_add(page) {
-                    state.scroll = idx.saturating_sub(page.saturating_sub(1));
-                }
+                state.reveal_index(idx, page);
             }
         }
 

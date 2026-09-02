@@ -31,19 +31,19 @@ TermRock mapping:
 
 Colour-capability fallbacks: `--color truecolor|256|16|none` and `NO_COLOR`.
 Visual verification: `verify/junie` cell-grid compare against fresh `junie-tui` captures.
-Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). Lookbook `frame --story` remains on the catalog binary.
+Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). `cargo run -p termrock-lookbook -- frame --story` is the lookbook binary; bare lookbook argv still launches the catalog TUI.
 
 Shipped contracts that the lookbook must consume (no page-local forks):
 
 - Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
 - Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
 - Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`. Monochrome `Inset`/`Sunken` also fill canvas, not terminal Reset.
-- Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
+- Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`. Row anatomy is junie fixed columns (`label · detail · tag · group`) from the full item list, not a fluid right-align when badges exist. After `List` paint, chrome pickers skip with `ListState::paint_skip()` (0 on a virtual window), never `offset()` (absolute window origin).
 - Field underline is the insert session only (`editing && focused`), always accent. Junie `input.rs` does not error-underline idle invalid values; those trail a bold `!` plus the helper message. `TextInputState::new` and `PasswordConfirmState::new` start `editing: false`. Live hosts call `with_editing()` / `begin_edit()` / Enter.
 - Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening. Open Select popover has no scroll gutter; fullscreen/searchable lists use `overflow_thumb`.
 - Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup / ModeRibbon / AgentMode ribbon / toolbar overflow / search filter chips use padded inner, not `[inner]` wells. Badge default is padded inner + status Glyph. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Mixed checkbox is catalog minus ` − `, not `[–]`. Progress/stepper marks are catalog `✓ › ! − …`.
 - CodeBlock gutter copies junie `code.rs`: `▎` only on the cursor line; numbers `fit_right` at `x+3`. Exact-fit documents do not steal a footer row.
-- DataTable default `cols_area` is `width - chrome - scrollbar` and clip-appends the next column when remainder ≥ 6. Catalog DataGrid calls `.datagrid(true)` for source `width - gutter - 4 - scrollbar` (no clip-append).
+- DataTable default `cols_area` is `width - chrome - trailing - scrollbar` (trailing 2; 0 with row numbers; 4 with `.datagrid(true)`). Paint does not clip-append the next column when remainder ≥ 6; leftover grows Min/Fill. Junie `grid.rs` `layout_columns` clip-append is not HEAD DataTable.
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.
 
@@ -902,8 +902,9 @@ Tab still reaches them.
   tag · group` computed over all items so scrolling never shifts alignment,
   a faint hint row at the bottom.
 - **Keys**: typing filters; `Esc` clears the query, then cancels; `Enter`
-  chooses, `Alt+Enter` the alternate action; `Tab` cycles scope; `Delete` the
-  secondary action; `Ctrl+N/P`, `Ctrl+J/K`, page keys move.
+  chooses, `Alt+Enter` the alternate action; `Tab` cycles scope;
+  `Ctrl+N/P`, `Ctrl+J/K`, page keys move. Junie also maps `Delete` to a
+  secondary action; TermRock does not.
 - **Rule**: the owner ranks and supplies rows on every query change.
 
 #### Dialog
@@ -911,8 +912,9 @@ Tab still reaches them.
 - **Variants**: confirm (subtle Cancel + primary; focus on the primary),
   destructive (secondary Cancel + danger; focus on Cancel), prompt (field;
   `Enter` submits), facts (props table, code preview capped at six lines with
-  `… N more`, optional `Type orders to confirm` field whose match enables the
-  last action; `Enter` in the field only moves focus).
+  `text::more_note` (`+N more`; junie source spells `… N more`), optional
+  `Type orders to confirm` field whose match enables the last action; `Enter`
+  in the field only moves focus).
 - **Anatomy**: dimmed backdrop (footer excluded), centred rounded elevated
   surface `54` wide (`66` for facts) with a `3×2` inset, bold title, body,
   right-aligned actions with one-cell gaps.

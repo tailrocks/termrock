@@ -677,7 +677,7 @@ impl DiffViewState {
                 self.hunk_cursor = i;
             }
         }
-        self.ensure_cursor_visible(lines.len());
+        self.scroll.reveal_row(self.cursor);
     }
 
     fn sync_metrics(&mut self, total: u16, viewport: u16) {
@@ -688,41 +688,15 @@ impl DiffViewState {
         self.scroll.clamp();
     }
 
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
-    }
-
     fn ensure_hunk_visible(&mut self, hunks: &[DiffHunk]) {
-        if hunks.is_empty() || self.body_rows == 0 {
+        if hunks.is_empty() {
             return;
         }
         self.hunk_cursor = self.hunk_cursor.min(hunks.len() - 1);
         let Some(hunk) = hunks.get(self.hunk_cursor) else {
             return;
         };
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if hunk.start < start {
-            self.scroll
-                .set_offset_y_quiet(hunk.start.min(u16::MAX as usize) as u16);
-        } else if hunk.start >= end {
-            let next = hunk.start.saturating_add(1).saturating_sub(vh);
-            self.scroll
-                .set_offset_y_quiet(next.min(u16::MAX as usize) as u16);
-        }
+        self.scroll.reveal_row(hunk.start);
         self.cursor = hunk.start.min(self.line_count.saturating_sub(1) as usize);
     }
 
@@ -892,7 +866,7 @@ impl DiffViewState {
             UiIntent::Move(NavigationMove::Next) => {
                 if len > 0 && self.cursor + 1 < len {
                     self.cursor += 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     sync_hunk_from_cursor(self, lines, hunks);
                     return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
@@ -906,7 +880,7 @@ impl DiffViewState {
             UiIntent::Move(NavigationMove::Previous) => {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     sync_hunk_from_cursor(self, lines, hunks);
                     return DiffViewOutcome::CursorMoved { index: self.cursor };
                 }
@@ -944,7 +918,7 @@ impl DiffViewState {
                 }
                 if len > 0 {
                     self.cursor = len - 1;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                 }
                 DiffViewOutcome::CursorMoved { index: self.cursor }
             }

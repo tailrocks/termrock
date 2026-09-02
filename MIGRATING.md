@@ -346,6 +346,8 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0330 | `v0.14.0` | [ChoiceDialog centers actions](migrations/0330-v0.14.0-choice-dialog-centers-actions.md) |
 | 0331 | `v0.14.0` | [Jackin parity handoff](migrations/0331-v0.14.0-jackin-parity-handoff.md) |
 | 0332 | `v0.14.0` | [FilePicker preview generations](migrations/0332-v0.14.0-file-picker-preview-generations.md) |
+| 0333 | `v0.14.0` | [SearchResults status authority](migrations/0333-v0.14.0-search-results-status-authority.md) |
+| 0334 | `v0.14.0` | [SegmentedControl selection authority](migrations/0334-v0.14.0-segmented-control-selection-authority.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

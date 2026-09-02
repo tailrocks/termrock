@@ -721,7 +721,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             buffer,
             &mut state.list,
         );
-        let offset = state.list().offset();
+        let offset = state.list().paint_skip();
         for y in list_area.top()..list_area.bottom() {
             for x in list_area.left()..list_area.right() {
                 let fg = buffer[(x, y)].fg;
@@ -751,13 +751,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     .map(|span| span.content.as_ref())
                     .collect()
             };
-            let fixed_columns = self.rows.iter().all(|row| {
-                row.badge
-                    .as_ref()
-                    .map(line_plain)
-                    .unwrap_or_default()
-                    .is_empty()
-            });
+            // junie picker.rs: column widths from every item, not the viewport,
+            // so scrolling never shifts columns. Label · detail · tag · group.
             let label_col = self
                 .rows
                 .iter()
@@ -770,6 +765,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 .iter()
                 .filter_map(|row| row.status.as_ref())
                 .map(|line| line.width() as u16)
+                .max()
+                .unwrap_or(0);
+            let group_col = self
+                .rows
+                .iter()
+                .map(|row| {
+                    display_cols(&row.badge.as_ref().map(line_plain).unwrap_or_default()) as u16
+                })
                 .max()
                 .unwrap_or(0);
             let mut last_group = String::new();
@@ -821,21 +824,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 last_group.clone_from(&group);
                 let detail = row.secondary.as_ref().map(line_plain).unwrap_or_default();
                 let tag = row.status.as_ref().map(line_plain).unwrap_or_default();
-                let detail_w = display_cols(&detail);
                 let tag_w = display_cols(&tag);
-                let group_w = display_cols(&group);
                 let label_plain = row.plain_label();
-                let avail = if fixed_columns {
-                    usize::from(label_col)
-                } else {
-                    let reserve = (if detail_w > 0 { detail_w + 2 } else { 0 })
-                        + (if tag_w > 0 { tag_w + 2 } else { 0 })
-                        + (if show_group { group_w + 2 } else { 0 });
-                    (usize::from(row_w).saturating_sub(3 + reserve))
-                        .max(display_cols(&label_plain).min(usize::from(row_w) * 45 / 100))
-                        .max(6)
-                };
-                let label = truncate_cols(&label_plain, avail, "…");
+                let label = truncate_cols(&label_plain, usize::from(label_col), "…");
                 let matched = super::fuzzy_match_label(state.query.value(), &label_plain)
                     .map(|(_, ranges)| ranges)
                     .unwrap_or_default();
@@ -861,86 +852,48 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     x = x.saturating_add(gw.max(1));
                     byte = byte.saturating_add(ch.len_utf8());
                 }
+                let _ = x;
                 let mut rx = row_rect.right();
-                if fixed_columns {
-                    if tag_col > 0 {
-                        rx = rx.saturating_sub(tag_col.saturating_add(2));
-                        if tag_w > 0 && rx < row_rect.right() {
-                            buffer.set_stringn(
-                                rx,
-                                ry,
-                                &tag,
-                                tag_w,
-                                st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
-                            );
-                        }
+                if group_col > 0 {
+                    rx = rx.saturating_sub(group_col.saturating_add(1));
+                    if show_group && rx < row_rect.right() {
+                        buffer.set_stringn(
+                            rx,
+                            ry,
+                            &group,
+                            display_cols(&group),
+                            st.fg(theme.text_faint).remove_modifier(Modifier::BOLD),
+                        );
                     }
-                    if detail_w > 0 {
-                        let dx = row_rect
-                            .x
-                            .saturating_add(3)
-                            .saturating_add(label_col)
-                            .saturating_add(2);
-                        let room = rx.saturating_sub(dx.saturating_add(1));
-                        if room >= 4 && dx < row_rect.right() {
-                            let shown = truncate_cols(&detail, usize::from(room), "…");
-                            buffer.set_stringn(
-                                dx,
-                                ry,
-                                shown.as_ref(),
-                                display_cols(shown.as_ref()),
-                                st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
-                            );
-                        }
+                }
+                if tag_col > 0 {
+                    rx = rx.saturating_sub(tag_col.saturating_add(2));
+                    if tag_w > 0 && rx < row_rect.right() {
+                        buffer.set_stringn(
+                            rx,
+                            ry,
+                            &tag,
+                            tag_w,
+                            st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
+                        );
                     }
-                } else {
-                    if show_group {
-                        rx = rx.saturating_sub((group_w as u16).saturating_add(1));
-                        if rx < row_rect.right() {
-                            buffer.set_stringn(
-                                rx,
-                                ry,
-                                &group,
-                                group_w,
-                                st.fg(theme.text_faint).remove_modifier(Modifier::BOLD),
-                            );
-                        }
-                    }
-                    if tag_w > 0 {
-                        rx = rx.saturating_sub((tag_w as u16).saturating_add(2));
-                        if rx < row_rect.right() {
-                            buffer.set_stringn(
-                                rx,
-                                ry,
-                                &tag,
-                                tag_w,
-                                st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
-                            );
-                        }
-                    }
-                    if detail_w > 0 {
-                        let dx = (x.saturating_add(2)).max(rx.saturating_sub(detail_w as u16 + 2));
-                        if dx.saturating_add(detail_w as u16) <= rx {
-                            buffer.set_stringn(
-                                dx,
-                                ry,
-                                &detail,
-                                detail_w,
-                                st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
-                            );
-                        } else {
-                            let room = rx.saturating_sub(x.saturating_add(3));
-                            if room > 6 && x.saturating_add(2) < row_rect.right() {
-                                let shown = truncate_cols(&detail, usize::from(room), "…");
-                                buffer.set_stringn(
-                                    x.saturating_add(2),
-                                    ry,
-                                    shown.as_ref(),
-                                    display_cols(shown.as_ref()),
-                                    st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
-                                );
-                            }
-                        }
+                }
+                if !detail.is_empty() {
+                    let dx = row_rect
+                        .x
+                        .saturating_add(3)
+                        .saturating_add(label_col)
+                        .saturating_add(2);
+                    let room = rx.saturating_sub(dx.saturating_add(1));
+                    if room >= 4 && dx < row_rect.right() {
+                        let shown = truncate_cols(&detail, usize::from(room), "…");
+                        buffer.set_stringn(
+                            dx,
+                            ry,
+                            shown.as_ref(),
+                            display_cols(shown.as_ref()),
+                            st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
+                        );
                     }
                 }
             }
@@ -1268,6 +1221,46 @@ mod tests {
         assert_ne!(buffer[(3, 4)].symbol(), "›");
         let second = row(5);
         assert!(!second.contains('›'), "no chosen marker: {second:?}");
+    }
+
+    #[test]
+    fn grouped_rows_keep_junie_fixed_detail_column() {
+        let system = DesignSystem::junie();
+        let rows = [
+            ListRow::item("cargo", Line::from("Cargo.toml"))
+                .leading(Line::from("F"))
+                .secondary(Line::from("Cargo.toml"))
+                .badge(Line::from("Files")),
+            ListRow::item("arch", Line::from("architecture.md"))
+                .leading(Line::from("F"))
+                .secondary(Line::from("docs/architecture.md"))
+                .badge(Line::from("Files")),
+        ];
+        let mut state = PickerState::new(Some("cargo"));
+        let area = Rect::new(0, 0, 80, 12);
+        let mut buffer = Buffer::empty(area);
+        Picker::new(&rows, &system)
+            .title("Open quickly")
+            .placeholder("Files and tasks…")
+            .scope("All · Tab scope")
+            .render(area, &mut buffer, &mut state);
+        let row = |y: u16| -> String {
+            (0..area.width)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        let first = row(4);
+        let second = row(5);
+        let cargo_label = first.find("Cargo.toml").expect("label");
+        let cargo_path = first[cargo_label + 10..]
+            .find("Cargo.toml")
+            .map(|i| cargo_label + 10 + i)
+            .expect(&first);
+        let arch_path = second.find("docs/architecture.md").expect(&second);
+        assert_eq!(
+            cargo_path, arch_path,
+            "junie fixed detail column, not right-aligned paths:\n{first}\n{second}"
+        );
     }
 
     #[test]

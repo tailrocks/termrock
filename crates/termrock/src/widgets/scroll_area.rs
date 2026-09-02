@@ -434,6 +434,31 @@ impl ScrollAreaState {
         self.clamp();
     }
 
+    /// Cursor reveal: scroll the minimal amount so content row `row` is fully
+    /// visible. Programmatic motion (does not pause follow).
+    ///
+    /// Uses the stored content and viewport sizes, so keep them synced with
+    /// [`Self::set_content_size`] / [`Self::set_viewport`]. Returns whether
+    /// the offset moved.
+    pub fn reveal_row(&mut self, row: usize) -> bool {
+        if self.content_h == 0 || self.viewport_h == 0 {
+            return false;
+        }
+        let before = self.offset_y;
+        let start = usize::from(self.offset_y);
+        let end = start.saturating_add(usize::from(self.viewport_h));
+        let row = row.min(usize::from(u16::MAX));
+        if row < start {
+            self.set_offset_y_quiet(row as u16);
+        } else if row >= end {
+            let next = row
+                .saturating_add(1)
+                .saturating_sub(usize::from(self.viewport_h));
+            self.set_offset_y_quiet(next as u16);
+        }
+        self.offset_y != before
+    }
+
     /// Clamp offsets to content.
     pub fn clamp(&mut self) {
         let max_y = max_offset(self.content_h as usize, self.viewport_h as usize) as u16;

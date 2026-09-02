@@ -445,7 +445,7 @@ impl LogStreamState {
         if let Some(aid) = self.anchor_id.as_ref() {
             if let Some(i) = view.iter().position(|l| l.id == aid) {
                 self.cursor = i;
-                self.ensure_cursor_visible(view.len());
+                self.scroll.reveal_row(self.cursor);
             }
         }
     }
@@ -471,22 +471,6 @@ impl LogStreamState {
         if self.scroll.is_following() && total_lines > 0 {
             self.cursor = usize::from(total_lines.saturating_sub(1));
         }
-    }
-
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
     }
 
     fn scroll_by_lines(&mut self, delta: i32) -> bool {
@@ -672,7 +656,7 @@ impl LogStreamState {
                     } else {
                         self.scroll.pause_follow();
                     }
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was && !self.is_following() {
                         return LogStreamOutcome::Detach;
                     }
@@ -696,7 +680,7 @@ impl LogStreamState {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
                     self.scroll.pause_follow();
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was {
                         return LogStreamOutcome::Detach;
                     }
