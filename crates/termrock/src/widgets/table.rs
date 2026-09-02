@@ -1641,9 +1641,11 @@ fn shrink(columns: &[ColumnWidth], widths: &mut [u16], deficit: &mut u64, fixed:
 }
 
 /// Junie `cols_area` is `width - 5 - scrollbar` (gutter 3 + 2-cell `…`
-/// chrome + overflow gutter). That chrome is subtracted only when it does
-/// not drop a column that still fits in the gutter budget — otherwise Task
-/// Min leftover on a crop-sized paint eats Owner / Status.
+/// chrome + overflow gutter). Trailing `…` chrome is subtracted only when
+/// it does not drop a column that still fits in the gutter budget —
+/// otherwise Task Min leftover on a crop-sized paint eats Owner / Status.
+/// A scrolling pane does not get that revert: junie already shrank
+/// `cols_area` by the scrollbar, and Status dropping is the page table.
 fn column_budget_for(
     area_width: u16,
     has_scrollbar: bool,
@@ -1687,6 +1689,9 @@ fn column_budget_for(
     );
     let steal_column = visible.len() < vis_inner;
     let only_ellipsis_slack = leftover > 0 && leftover <= JUNIE_TRAILING;
+    if steal_column && has_scrollbar {
+        return chrome;
+    }
     if steal_column || !only_ellipsis_slack {
         resolve_layout_into(
             policies,
@@ -2234,6 +2239,31 @@ mod tests {
         assert!(
             !body_s.contains("endpoints"),
             "Task must ellipsize before the overflow column, got {body_s:?}"
+        );
+    }
+
+    #[test]
+    fn crop_55x6_first_52_keep_owner_out_of_overflow() {
+        let area = Rect::new(0, 0, 55, 6);
+        let buffer = paint_junie_tasks(area, false, false, 7);
+        let header = row_cells(&buffer, 0, 52);
+        let body = row_cells(&buffer, 1, 52);
+        let header_s = cells_join(&header);
+        let body_s = cells_join(&body);
+        assert_eq!(
+            cells_join(&header[45..50]),
+            "Owner",
+            "80-col page slice starts Owner at C45, got {header_s:?}"
+        );
+        assert_eq!(
+            cells_join(&body[41..52]),
+            "i…  mira   ",
+            "Task ellipsis + Owner sit inside the 52-crop, no thumb, got {body_s:?}"
+        );
+        assert_eq!(
+            buffer[(54, 1)].symbol(),
+            crate::scroll::ScrollbarStyle::Line.vertical_thumb(),
+            "thumb lives in the pane's last cell, outside the 52-crop"
         );
     }
 

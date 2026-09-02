@@ -50,8 +50,46 @@ fn grid_chrome_width(row_count: usize, row_numbers: bool) -> u16 {
     3 + num_w + u16::from(row_numbers)
 }
 
+/// Junie `layout_columns` still paints the next column clipped when the
+/// remainder after the last fully-fitted column (and its gap) is ≥ 6.
+const MIN_CLIPPED_COLUMN: u16 = 6;
+
 /// Column separator, from the glyph catalog rather than a file-local literal.
 const RESIZE_HIT: u16 = 1;
+
+/// Append the next unfitted column at the leftover width (junie grid.rs).
+fn append_clipped_column<ColId>(
+    columns: &ColumnModel<ColId>,
+    budget: u16,
+    gap: u16,
+    out: &mut Vec<(usize, u16)>,
+) {
+    if out.is_empty() {
+        return;
+    }
+    let used = out
+        .iter()
+        .map(|(_, width)| *width)
+        .fold(0u16, u16::saturating_add)
+        .saturating_add(
+            gap.saturating_mul(u16::try_from(out.len().saturating_sub(1)).unwrap_or(0)),
+        );
+    let rest = budget.saturating_sub(used).saturating_sub(gap);
+    if rest < MIN_CLIPPED_COLUMN {
+        return;
+    }
+    let Some(next) = columns
+        .columns
+        .iter()
+        .enumerate()
+        .filter(|(_, column)| column.visible)
+        .map(|(index, _)| index)
+        .find(|index| !out.iter().any(|(have, _)| have == index))
+    else {
+        return;
+    };
+    out.push((next, rest));
+}
 
 /// Keyboard navigation mode (VisiData-like layers).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -1192,7 +1230,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         }
 
         // Source DataGrid cols_area: `width - gutter_w - 4 - scrollbar`.
-        // Default tables keep the tighter `- 2` leftover used by column tests.
+        // Crop-sized default paints omit that +4: it drops the customer
+        // column the 42-wide slice still shows. Clip-append then paints the
+        // next column when remainder ≥ 6 (junie `layout_columns`).
         let total = usize::try_from(state.window.logical_len.max(self.rows.len() as u64))
             .unwrap_or(self.rows.len())
             .max(self.rows.len());
@@ -1205,11 +1245,18 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         } else {
             area.width
                 .saturating_sub(self.chrome_width())
-                .saturating_sub(2)
+                .saturating_sub(u16::from(has_sb))
         };
         state.viewport_width = col_budget;
+        let layout_budget = col_budget.saturating_add(state.h_offset);
         self.columns.resolve_paint_widths_with_gap(
-            col_budget.saturating_add(state.h_offset),
+            layout_budget,
+            self.system.spacing.column_gap,
+            &mut state.paint_widths,
+        );
+        append_clipped_column(
+            self.columns,
+            layout_budget,
             self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
@@ -2306,6 +2353,67 @@ mod tests {
         let customer_x = chrome + 9 + system.spacing.column_gap;
         assert_eq!(buffer[(customer_x, y)].symbol(), "N");
         assert_eq!(buffer[(customer_x, y)].fg, theme.text_primary);
+    }
+
+    #[test]
+    fn grid_ids_42_wide_paints_customer_at_column_17() {
+        let system = DesignSystem::junie();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "id", DataColumnWidth::Fixed(9)).kind(ColumnKind::Id),
+            DataColumn::new("customer", "customer", DataColumnWidth::Fixed(25)),
+        ]);
+        let names = [
+            "Northwind Traders",
+            "Blue Yonder Airlines",
+            "Contoso Pharmaceuticals",
+            "Fabrikam Robotics",
+            "Litware Analytics",
+            "Tailspin Toys",
+            "Wide World Importers",
+        ];
+        let id_cells = ["1001", "1002", "1003", "1004", "1005", "1006", "1007"];
+        let cell_rows: Vec<[&str; 2]> = id_cells
+            .iter()
+            .zip(names.iter())
+            .map(|(id, name)| [*id, *name])
+            .collect();
+        let rows: Vec<(u64, &[&str])> = cell_rows
+            .iter()
+            .enumerate()
+            .map(|(i, cells)| (i as u64, cells.as_slice()))
+            .collect();
+        let mut state = DataTableState::<u64, &str>::new();
+        state.load = LoadState::Ready { count: 7 };
+        state.accepts_input = false;
+        state.striped = false;
+        let area = Rect::new(0, 0, 42, 9);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .focused(false)
+            .row_numbers(true)
+            .render(area, &mut buffer, &mut state);
+        let row = |y: u16| -> String {
+            (0..42u16)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        let cells = |y: u16, start: u16, len: u16| -> String {
+            (start..start.saturating_add(len))
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        assert_eq!(
+            cells(1, 17, 17),
+            "Northwind Traders",
+            "customer starts at C17, got {}",
+            row(1)
+        );
+        assert_eq!(
+            cells(3, 17, 23),
+            "Contoso Pharmaceuticals",
+            "clipped remainder still paints the full 23-cell name, got {}",
+            row(3)
+        );
     }
 
     #[test]

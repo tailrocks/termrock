@@ -1047,9 +1047,14 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         };
         let content_y = area.y.saturating_add(header.height);
         let content_h = area.height.saturating_sub(header.height);
-        // junie CodeEditor keeps one footer row (`1–22 of 26` / ln·col)
-        // when there is room for a body line plus that row.
-        let body_h = if content_h > 1 {
+        // junie CodeEditor always steals one footer row in a tall pane.
+        // A crop that is exactly the visible body (retry.rs 2×N) must keep
+        // every document line; leftover rows below the document still host
+        // the `1–N of M` / `ln · col` footer.
+        let doc = self.document_len();
+        let body_h = if doc > 0 && doc <= usize::from(content_h) {
+            u16::try_from(doc).unwrap_or(content_h).min(content_h)
+        } else if content_h > 1 {
             content_h.saturating_sub(1)
         } else {
             content_h
@@ -1171,36 +1176,37 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Junie: every row keeps the gutter slot (`▎`). The cursor line
-            // uses the focus bar colour; other rows paint fg=bg so the glyph
-            // is still in the cell (txt goldens) but invisible. Marker is `›`
-            // for the current block or `!` for a diagnostic — never a second `▎`.
+            // Junie paints `▎` only on the cursor line (`code.rs` `li == cur.line`).
+            // Other rows keep the field fill (space). Marker is `›` for the
+            // current block or `!` for a diagnostic — never a second `▎`.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                let line_gutter = self.system.gutter(
-                    VisualState {
-                        focused: state.focused,
-                        ..visual
-                    },
-                    field_bg,
-                    false,
-                );
-                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
-                // Idle goldens pack numbers at gx+2 (`▎› 1  //`). Diagnostic
-                // goldens leave gx+2 as field fill so 1-digit lines read
-                // `▎   1 //` with the pad white, not muted number style.
-                let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
+                if state.cursor_line == Some(abs) {
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
+                }
+                // junie: numbers at `area.x + 3` via `fit_right` (bar, marker,
+                // space, then the `num_w` column).
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)
                 } else {
                     0
                 };
-                let num_x = if bang {
-                    gx.saturating_add(3)
-                } else {
-                    gx.saturating_add(2)
-                };
+                let num_x = gx.saturating_add(3);
                 let spinner = self
                     .gutter_marks
                     .iter()
@@ -2268,11 +2274,15 @@ mod tests {
             .language("rust")
             .current_block(0, 1)
             .paint(Rect::new(0, 0, 40, 4), &mut buf, &mut state);
-        // header is rust on row 0; body starts row 1. Goldens keep `▎` on
-        // every body row; `›` is the block marker, never a second bar.
+        // header is rust on row 0; body starts row 1. Junie paints `▎` only
+        // on the cursor line; `›` is the block marker, never a second bar.
         assert_eq!(buf[(0, 1)].symbol(), "▎", "gutter bar on cursor line");
         assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
-        assert_eq!(buf[(0, 2)].symbol(), "▎", "gutter bar on every body row");
+        assert_eq!(
+            buf[(0, 2)].symbol(),
+            " ",
+            "off-cursor body row has no gutter bar"
+        );
         // line numbers are muted off the current block
         assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_muted);
     }
@@ -2291,6 +2301,45 @@ mod tests {
             .paint(Rect::new(0, 0, 60, 2), &mut buf, &mut state);
         assert_eq!(buf[(0, 0)].symbol(), "▎", "cursor line keeps the bar glyph");
         assert_eq!(buf[(1, 0)].symbol(), "›", "current block marker");
+    }
+
+    #[test]
+    fn retry_rs_two_line_crop_keeps_body_and_right_aligned_numbers() {
+        let system = DesignSystem::junie();
+        let lines = [
+            "// Retry a request with exponential backoff.",
+            "pub async fn fetch(url: &str) -> Result<Body, Error> {",
+        ];
+        let mut state = CodeBlockState::new();
+        state.set_focused(false);
+        state.set_cursor_line(Some(0));
+        // Widget is the 80-col editor pane (55); verify crops the first 50.
+        let area = Rect::new(0, 0, 55, 2);
+        let mut buf = Buffer::empty(area);
+        let _ = CodeBlock::new(&lines, &system)
+            .line_numbers(true)
+            .current_block(0, 2)
+            .paint(area, &mut buf, &mut state);
+        let row = |y: u16| -> String {
+            (0..50u16)
+                .map(|x| buf[(x, y)].symbol().to_string())
+                .collect()
+        };
+        assert_eq!(
+            row(0),
+            "▎›  1 // Retry a request with exponential backoff.",
+            "cursor line: bar, marker, fit_right number, no footer"
+        );
+        assert_eq!(
+            row(1),
+            "    2 pub async fn fetch(url: &str) -> Result<Body",
+            "off-cursor line keeps both body rows; no ▎, no 1–N footer"
+        );
+        assert_eq!(
+            buf[(4, 1)].fg,
+            system.junie_theme().text_secondary,
+            "line 2 is inside the function block, so the number is secondary not muted"
+        );
     }
 
     #[test]
