@@ -2238,7 +2238,8 @@ pub(crate) struct PasswordInputInteractor {
 impl PasswordInputInteractor {
     pub(crate) fn new() -> Self {
         let mut state = PasswordInputState::with_secret("correct horse")
-            .with_reveal_policy(termrock::widgets::RevealPolicy::Explicit);
+            .with_reveal_policy(termrock::widgets::RevealPolicy::Explicit)
+            .with_editing();
         state.set_focused(true);
         Self {
             state,

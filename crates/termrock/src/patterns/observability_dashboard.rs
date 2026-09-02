@@ -350,7 +350,7 @@ impl ObservabilityDashboardState {
     /// Fresh live dashboard.
     #[must_use]
     pub fn new() -> Self {
-        let mut search = SearchInputState::new();
+        let mut search = SearchInputState::new().with_editing();
         search.set_focused(false);
         Self {
             workspace: WorkspaceState::new(),

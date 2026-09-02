@@ -269,7 +269,7 @@ pub(crate) struct TokenFieldInteractor {
 }
 impl TokenFieldInteractor {
     pub(crate) fn new() -> Self {
-        let mut state = TokenFieldState::new();
+        let mut state = TokenFieldState::new().with_editing();
         state.set_focused(true);
         let _ = state.push_token(FieldToken::new("1".into(), "alice@example.com"));
         Self {

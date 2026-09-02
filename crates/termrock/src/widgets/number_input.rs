@@ -289,9 +289,7 @@ impl NumberInputState {
     /// Empty integer field, empty allowed.
     #[must_use]
     pub fn new() -> Self {
-        let mut draft = TextInputState::new("")
-            .with_allow_empty(true)
-            .with_editing();
+        let mut draft = TextInputState::new("").with_allow_empty(true);
         draft.set_focused(false);
         Self {
             kind: NumberKind::Integer,
@@ -417,9 +415,7 @@ impl NumberInputState {
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_gates();
-        if on {
-            self.begin_edit();
-        } else {
+        if !on {
             let _ = self.commit_draft();
         }
     }
@@ -455,19 +451,17 @@ impl NumberInputState {
             None => String::new(),
             Some(v) => format_number(self.kind, v),
         };
-        let mut draft = TextInputState::new(text)
-            .with_allow_empty(true)
-            .with_editing();
-        draft.set_enabled(self.enabled);
-        draft.set_read_only(self.read_only);
-        draft.set_focused(self.focused);
-        self.draft = draft;
+        self.draft.set_enabled(self.enabled);
+        self.draft.set_read_only(self.read_only);
+        self.draft.set_focused(self.focused);
+        self.draft = self.draft.reseed(text);
+        self.draft.set_editing(self.editing);
     }
 
     fn begin_edit(&mut self) {
         if !self.editing {
-            self.sync_draft_from_value();
             self.editing = true;
+            self.sync_draft_from_value();
         }
         self.sync_draft_gates();
     }

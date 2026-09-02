@@ -396,9 +396,7 @@ impl PathInputState {
     /// Empty path field.
     #[must_use]
     pub fn new() -> Self {
-        let mut path = TextInputState::new("")
-            .with_allow_empty(true)
-            .with_editing();
+        let mut path = TextInputState::new("").with_allow_empty(true);
         path.set_focused(false);
         Self {
             path,
@@ -424,6 +422,18 @@ impl PathInputState {
     pub fn with_path(mut self, path: impl Into<String>) -> Self {
         self.set_path(path);
         self
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.path.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.path.begin_edit();
     }
 
     /// Path style.
@@ -561,13 +571,10 @@ impl PathInputState {
 
     /// Replace path text.
     pub fn set_path(&mut self, path: impl Into<String>) {
-        let mut p = TextInputState::new(path)
-            .with_allow_empty(true)
-            .with_editing();
-        p.set_focused(self.focused);
-        p.set_enabled(self.enabled);
-        p.set_read_only(self.read_only);
-        self.path = p;
+        self.path.set_focused(self.focused);
+        self.path.set_enabled(self.enabled);
+        self.path.set_read_only(self.read_only);
+        self.path = self.path.reseed(path);
         self.history_cursor = None;
         self.history_stash = None;
     }
@@ -799,6 +806,7 @@ impl PathInputState {
         if !self.enabled || self.read_only {
             return PathInputOutcome::Ignored;
         }
+        self.path.begin_edit();
         // Strip newlines from multi-line paste
         let cleaned: String = text
             .chars()
@@ -1401,6 +1409,7 @@ mod tests {
     fn history_and_submit() {
         let mut state = PathInputState::new().with_path("/a");
         state.set_focused(true);
+        state.begin_edit();
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             PathInputOutcome::Submitted { path: "/a".into() }

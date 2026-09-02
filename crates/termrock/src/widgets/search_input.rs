@@ -225,9 +225,7 @@ impl SearchInputState {
     /// Empty search field.
     #[must_use]
     pub fn new() -> Self {
-        let mut query = TextInputState::new("")
-            .with_allow_empty(true)
-            .with_editing();
+        let mut query = TextInputState::new("").with_allow_empty(true);
         query.set_focused(false);
         Self {
             query,
@@ -248,12 +246,21 @@ impl SearchInputState {
     /// Seed query.
     #[must_use]
     pub fn with_query(mut self, query: impl Into<String>) -> Self {
-        let mut q = TextInputState::new(query)
-            .with_allow_empty(true)
-            .with_editing();
-        q.set_focused(false);
-        self.query = q;
+        self.query.set_focused(false);
+        self.query = self.query.reseed(query);
         self
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.query.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.query.begin_edit();
     }
 
     /// Debounce quiet period (`Duration::ZERO` = emit every poll after change).
@@ -347,12 +354,9 @@ impl SearchInputState {
     /// Replace query without history side effects.
     pub fn set_query(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut q = TextInputState::new(text)
-            .with_allow_empty(true)
-            .with_editing();
-        q.set_focused(self.focused);
-        q.set_enabled(self.enabled);
-        self.query = q;
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
+        self.query = self.query.reseed(text);
         self.history_cursor = None;
         self.history_stash = None;
         self.mark_edited(None);
@@ -483,12 +487,9 @@ impl SearchInputState {
     }
 
     fn apply_recalled(&mut self, text: &str) {
-        let mut q = TextInputState::new(text.to_owned())
-            .with_allow_empty(true)
-            .with_editing();
-        q.set_focused(self.focused);
-        q.set_enabled(self.enabled);
-        self.query = q;
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
+        self.query = self.query.reseed(text.to_owned());
         self.mark_edited(None);
     }
 
@@ -609,6 +610,7 @@ impl SearchInputState {
         if !self.enabled {
             return SearchInputOutcome::Ignored;
         }
+        self.query.begin_edit();
         match self.query.insert_str(text) {
             TextInputOutcome::Changed => {
                 self.history_cursor = None;
@@ -1123,6 +1125,7 @@ mod tests {
     fn clear_control_and_submit_history() {
         let mut state = SearchInputState::new().with_query("x");
         state.set_focused(true);
+        state.begin_edit();
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             SearchInputOutcome::Submitted { query: "x".into() }
@@ -1203,6 +1206,7 @@ mod tests {
     fn fuzz_keys_stable() {
         let mut state = SearchInputState::new().with_debounce(Duration::from_millis(10));
         state.set_focused(true);
+        state.begin_edit();
         let keys = [
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Char('>'), KeyModifiers::NONE),
@@ -1235,7 +1239,6 @@ mod tests {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
         let mut state = SearchInputState::new().with_query("table");
-        state.query_mut().set_editing(false);
         let area = Rect::new(0, 0, 40, 2);
         let mut buf = Buffer::empty(area);
         let parts = SearchInput::new(&system).paint(area, &mut buf, &mut state);

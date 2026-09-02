@@ -1621,7 +1621,7 @@ fn inputs_share_field_chrome() {
         }),
     ));
 
-    let mut number = NumberInputState::new();
+    let mut number = NumberInputState::new().with_value(7.0);
     number.set_focused(true);
     frames.push((
         "NumberInput",
@@ -1668,6 +1668,23 @@ fn inputs_share_field_chrome() {
                 .iter()
                 .any(|cell| cell.symbol() == "▎" && cell.fg == GREEN),
             "{name} does not paint the shared ▎ focus prompt"
+        );
+        let underlined: Vec<_> = buffer
+            .content()
+            .iter()
+            .enumerate()
+            .filter(|(_, cell)| cell.style().add_modifier.contains(Modifier::UNDERLINED))
+            .map(|(i, cell)| {
+                (
+                    i as u16 % area.width,
+                    i as u16 / area.width,
+                    cell.symbol().to_string(),
+                )
+            })
+            .collect();
+        assert!(
+            underlined.is_empty(),
+            "{name} idle focused field must not underline: {underlined:?}"
         );
     }
 }

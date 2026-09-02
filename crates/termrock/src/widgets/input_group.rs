@@ -130,7 +130,7 @@ impl InputGroupState {
     /// Fresh.
     #[must_use]
     pub fn new() -> Self {
-        let mut field = TextInputState::new("").with_editing();
+        let mut field = TextInputState::new("");
         field.set_focused(false);
         Self {
             field,
@@ -139,6 +139,18 @@ impl InputGroupState {
             enabled: true,
             parts: None,
         }
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.field.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.field.begin_edit();
     }
 
     /// Focus.
@@ -410,6 +422,7 @@ mod tests {
     fn field_typing_and_addon_action() {
         let mut st = InputGroupState::new();
         st.set_focused(true);
+        st.begin_edit();
         let addons = example_url_input_addons();
         let out = st.handle_key(press('a'), &addons);
         assert!(

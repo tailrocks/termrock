@@ -21,7 +21,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::Widget,
 };
 use ratatui_widgets::block::Block;
@@ -317,7 +317,7 @@ impl<'a> Surface<'a> {
             plan.fill = match self.recipe {
                 SurfaceRecipe::Canvas => Some(self.system.style(Role::Canvas)),
                 SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
-                    Some(Style::default().bg(Color::Reset))
+                    Some(self.system.style(Role::Canvas))
                 }
                 // Keep modifier cues on border; skip solid fill soup.
                 _ => None,
@@ -515,6 +515,7 @@ impl DesignSystem {
 mod tests {
     use super::*;
     use crate::style::{ColorCapability, DesignSystem, Role};
+    use ratatui_core::style::Color;
 
     #[test]
     fn canvas_uses_junie_canvas_fill() {
@@ -616,6 +617,16 @@ mod tests {
         let plan = Surface::new(&system).recipe(SurfaceRecipe::Raised).plan();
         assert!(plan.fill.is_none());
         assert!(plan.border.is_some());
+    }
+
+    #[test]
+    fn monochrome_inset_sunken_use_canvas_not_reset() {
+        let system = DesignSystem::default().capability(ColorCapability::Monochrome);
+        for recipe in [SurfaceRecipe::Inset, SurfaceRecipe::Sunken] {
+            let plan = Surface::new(&system).recipe(recipe).plan();
+            assert_eq!(plan.fill, Some(system.style(Role::Canvas)));
+            assert_ne!(plan.fill.and_then(|style| style.bg), Some(Color::Reset));
+        }
     }
 
     #[test]

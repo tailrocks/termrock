@@ -57,7 +57,7 @@ pub(crate) struct SearchInputInteractor {
 
 impl SearchInputInteractor {
     pub(crate) fn new() -> Self {
-        let mut state = SearchInputState::new().with_query("table");
+        let mut state = SearchInputState::new().with_query("table").with_editing();
         state.set_focused(true);
         Self {
             state,
@@ -131,7 +131,8 @@ impl PathInputInteractor {
     pub(crate) fn new() -> Self {
         let mut state = PathInputState::new()
             .with_style(PathStyle::Unix)
-            .with_path("/usr/local/bin");
+            .with_path("/usr/local/bin")
+            .with_editing();
         state.set_focused(true);
         state.set_fs_status(PathFsStatus::Directory);
         Self {
@@ -204,7 +205,8 @@ impl ComboboxInteractor {
     pub(crate) fn new() -> Self {
         let mut state = ComboboxState::new()
             .with_creatable(false)
-            .with_exact_required(true);
+            .with_exact_required(true)
+            .with_editing();
         state.set_focused(true);
         state.set_value(Some("rs"), Some("Rust".into()));
         state.set_draft("Rust");
@@ -442,7 +444,8 @@ impl DateTimePickerInteractor {
             .with_date(CivilDate::new(2026, 8, 15).expect("valid fixture date"))
             .with_min_date(CivilDate::new(2026, 8, 1).expect("valid fixture date"))
             .with_max_date(CivilDate::new(2026, 8, 31).expect("valid fixture date"))
-            .with_timezone_label("UTC");
+            .with_timezone_label("UTC")
+            .with_editing();
         state.set_focused(true);
         state.set_today(CivilDate::new(2026, 8, 10).expect("valid fixture date"));
         Self {

@@ -291,6 +291,26 @@ impl TextInputState {
         self
     }
 
+    /// New value, keep editing/focus/enabled/read_only/allow_empty.
+    #[must_use]
+    pub(crate) fn reseed(&self, text: impl Into<String>) -> Self {
+        let mut next = Self::new(text).with_allow_empty(self.allow_empty);
+        if let Some(max) = self.max_graphemes {
+            next = next.with_max_graphemes(max);
+        }
+        if !self.forbidden.is_empty() {
+            next = next.with_forbidden(self.forbidden.clone());
+        }
+        if self.editing {
+            next.set_editing(true);
+        }
+        next.set_focused(self.focused);
+        next.set_enabled(self.enabled);
+        next.set_read_only(self.read_only);
+        next.set_loading(self.loading);
+        next
+    }
+
     /// Enabled.
     pub const fn set_enabled(&mut self, on: bool) {
         self.enabled = on;

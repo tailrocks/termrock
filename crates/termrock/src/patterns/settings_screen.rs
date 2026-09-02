@@ -234,7 +234,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
     pub fn new() -> Self {
         Self {
             sidebar: SidebarState::new(None),
-            search: SearchInputState::new(),
+            search: SearchInputState::new().with_editing(),
             form: FormState::new(),
             theme: ThemePickerState::default(),
             keybinding: KeybindingRecorderState::new("action", "Action"),

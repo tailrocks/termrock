@@ -780,9 +780,7 @@ impl DateTimePickerState {
     /// New picker of `kind`.
     #[must_use]
     pub fn new(kind: DateTimePickerKind) -> Self {
-        let mut draft = TextInputState::new("")
-            .with_allow_empty(true)
-            .with_editing();
+        let mut draft = TextInputState::new("").with_allow_empty(true);
         draft.set_focused(false);
         let today = CivilDate::new(2026, 8, 10); // neutral seed; host should set_today
         Self {
@@ -971,12 +969,22 @@ impl DateTimePickerState {
     }
 
     fn set_draft_text(&mut self, text: impl Into<String>) {
-        let mut draft = TextInputState::new(text)
-            .with_allow_empty(true)
-            .with_editing();
-        draft.set_enabled(self.enabled);
-        draft.set_focused(self.focused && matches!(self.view, DateTimePickerView::Field));
-        self.draft = draft;
+        self.draft.set_enabled(self.enabled);
+        self.draft
+            .set_focused(self.focused && matches!(self.view, DateTimePickerView::Field));
+        self.draft = self.draft.reseed(text);
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
     }
 
     /// Today marker.
@@ -1491,6 +1499,10 @@ impl DateTimePickerState {
         }
 
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+            if !self.draft.is_editing() {
+                self.draft.begin_edit();
+                return DateTimePickerOutcome::Changed;
+            }
             let out = self.commit_draft();
             if matches!(
                 out,
