@@ -1499,18 +1499,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         }
         let _ = painted_rows;
         if scrollable {
-            let _offset = state.collection.offset();
-            crate::scroll::render_scrollbar(
+            crate::scroll::paint_overflow_scrollbar(
                 buffer,
                 Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),
-                crate::scroll::ScrollbarSpec::new(
-                    crate::scroll::ScrollAxis::Vertical,
-                    crate::scroll::ScrollbarGeometry::new(
-                        total,
-                        usize::from(body.height).max(1),
-                        u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
-                    ),
-                ),
+                total,
+                usize::from(body.height).max(1),
+                u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+                self.focused,
                 self.tokens,
             );
         }
@@ -2281,6 +2276,39 @@ mod tests {
         state.sync_scroll_area(&mut scroll, rows.len(), 2);
         assert_eq!(scroll.viewport_h(), 2);
         assert_eq!(scroll.content_h(), 3);
+    }
+
+    #[test]
+    fn overflowing_list_uses_overflow_thumb() {
+        let rows: Vec<ListRow<'_, usize>> = (0..24)
+            .map(|i| ListRow::item(i, Line::from(format!("row-{i:02}"))))
+            .collect();
+        let system = DesignSystem::default();
+        let mut state = ListState::new(Some(0));
+        let area = Rect::new(0, 0, 20, 8);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        let x = area.right().saturating_sub(1);
+        let viewport = usize::from(area.height);
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 rows overflow an 8-row viewport");
+        let thumbs: Vec<u16> = (0..area.height)
+            .filter(|y| buffer[(x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], start as u16);
+        assert_eq!(buffer[(x, len as u16)].symbol(), track);
+        let mut fitting = Buffer::empty(area);
+        let short = &rows[..8];
+        let mut fit_state = ListState::new(Some(0));
+        (&List::new(short, &system)).render(area, &mut fitting, &mut fit_state);
+        assert!(
+            (0..area.height)
+                .all(|y| fitting[(x, y)].symbol() != thumb && fitting[(x, y)].symbol() != track),
+            "a fitting list must not paint a gutter thumb"
+        );
     }
 
     #[test]
