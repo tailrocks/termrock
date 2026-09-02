@@ -3,8 +3,10 @@
 
 //! Structured report for `termrock doctor` (CLI or embed).
 
-use super::profile::{CapabilityOverrides, CapabilityProfile, TerminalCapabilities};
-use super::resolve_capabilities;
+use super::detect::DetectionReport;
+use super::profile::{
+    CapabilityOverrides, CapabilityProfile, TerminalCapabilities, resolve_from_detection,
+};
 use super::set::{CapabilityKind, fallback_policies};
 
 /// Severity of a doctor finding.
@@ -51,7 +53,17 @@ pub fn build_doctor_report(
     preferred_profile: Option<CapabilityProfile>,
     overrides: CapabilityOverrides,
 ) -> DoctorReport {
-    let effective = resolve_capabilities(preferred_profile, overrides);
+    build_doctor_report_from_detection(super::detect_environment(), preferred_profile, overrides)
+}
+
+/// Build a doctor report from an injected detection report (pure — no process env).
+#[must_use]
+pub fn build_doctor_report_from_detection(
+    detection: DetectionReport,
+    preferred_profile: Option<CapabilityProfile>,
+    overrides: CapabilityOverrides,
+) -> DoctorReport {
+    let effective = resolve_from_detection(detection, preferred_profile, overrides);
     let mut capabilities = Vec::new();
     for kind in CapabilityKind::ALL {
         let on = effective.set.enabled(kind);

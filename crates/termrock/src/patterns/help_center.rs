@@ -1642,11 +1642,18 @@ pub fn example_help_center_commands(system: &DesignSystem) -> Vec<CommandEntry<S
     command_entries_from_help(&example_help_entries(system))
 }
 
-/// Sample doctor report for projection (real build_doctor_report).
+/// Sample doctor report for projection (real build_doctor_report over a pure
+/// fixture detection — never the process environment, so renders are portable).
 #[must_use]
 pub fn example_help_doctor_report() -> DoctorReport {
-    use crate::capability::{CapabilityOverrides, build_doctor_report};
-    build_doctor_report(None, CapabilityOverrides::default())
+    use crate::capability::{
+        CapabilityOverrides, DetectionReport, EnvHints, build_doctor_report_from_detection,
+    };
+    let detection = DetectionReport {
+        env: EnvHints::fixture("xterm-256color", Some("truecolor"), false),
+        warnings: Vec::new(),
+    };
+    build_doctor_report_from_detection(detection, None, CapabilityOverrides::default())
 }
 
 /// Burst topics for paint stress.
