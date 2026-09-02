@@ -1176,20 +1176,30 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Goldens keep `▎` on every body row (txt). Source CODE paints it
-            // only on the cursor line; the capture overwrites off-cursor bars.
+            // Junie paints `▎` only on the cursor line (`code.rs` `li == cur.line`).
+            // Showcase crops keep space on off-cursor rows. Catalog s_editor
+            // goldens that want a bar on every row belong in the capture, not
+            // in the core paint contract.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                let line_gutter = self.system.gutter(
-                    VisualState {
-                        focused: state.focused,
-                        ..visual
-                    },
-                    field_bg,
-                    false,
-                );
-                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
+                if state.cursor_line == Some(abs) {
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
+                }
                 let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)
@@ -2326,8 +2336,8 @@ mod tests {
         );
         assert_eq!(
             row(1),
-            "▎  2  pub async fn fetch(url: &str) -> Result<Body",
-            "off-cursor line keeps the bar; both body rows; no 1–N footer"
+            "   2  pub async fn fetch(url: &str) -> Result<Body",
+            "off-cursor row: space not bar; both body rows; no 1–N footer"
         );
         assert_eq!(
             buf[(3, 1)].fg,
