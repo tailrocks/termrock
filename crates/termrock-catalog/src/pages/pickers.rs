@@ -308,7 +308,7 @@ impl PickersPage {
     fn open(&mut self, kind: Kind) {
         self.opened += 1;
         let (title, placeholder, width, searchable, selected) = match kind {
-            Kind::Quick => ("Open quickly", "Files and tasks…", 80, true, None),
+            Kind::Quick => ("Open quickly", "Files and tasks…", 64, true, None),
             Kind::Tabs => ("Open tabs", "Filter tabs…", 48, true, None),
             Kind::Level => (
                 "Safe Mode · this connection",
@@ -364,7 +364,14 @@ impl PickersPage {
                     .into_iter()
                     .map(|(_, i)| {
                         let e = &self.entries[i];
-                        (i, e.label.clone(), e.detail.clone(), e.glyph, None, e.group)
+                        (
+                            i,
+                            e.label.clone(),
+                            e.detail.clone(),
+                            e.glyph,
+                            Some(e.group),
+                            e.group,
+                        )
                     })
                     .collect()
             }
@@ -541,12 +548,7 @@ impl Page for PickersPage {
             };
             let ranked = self.ranked_items(kind, &query);
             let mut rows: Vec<ListRow<'_, usize>> = Vec::new();
-            let mut last_group = "";
-            for (idx, (id, label, detail, glyph, tag, group)) in ranked.iter().enumerate() {
-                if *group != last_group && !group.is_empty() {
-                    rows.push(ListRow::group_header(10000 + idx, Line::from(*group)));
-                    last_group = *group;
-                }
+            for (id, label, detail, glyph, tag, _group) in &ranked {
                 let mut row = ListRow::item(*id, Line::from(label.as_str()))
                     .leading(Line::from(*glyph))
                     .secondary(Line::from(detail.as_str()));
@@ -564,7 +566,10 @@ impl Page for PickersPage {
                 Kind::Level => "↑↓ Move · Enter Set level · Esc Keep",
             };
             let screen = *buf.area();
-            let placed = place_picker_modal(screen, PickerSize { width, height: 16 });
+            let query_rows = u16::from(searchable) * 2;
+            let item_rows = u16::try_from(ranked.len().max(1)).unwrap_or(1).min(12);
+            let height = (2 + 1 + query_rows + item_rows + 2).min(screen.height.saturating_sub(2));
+            let placed = place_picker_modal(screen, PickerSize { width, height });
             let scope = if kind == Kind::Quick {
                 Some(self.scope_label())
             } else {
