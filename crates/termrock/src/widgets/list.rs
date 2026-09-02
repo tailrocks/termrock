@@ -1569,6 +1569,9 @@ fn ensure_list_active_visible<Id: Clone + PartialEq>(
     rows: &[ListRow<'_, Id>],
     viewport_height: usize,
 ) {
+    if state.virtual_total > 0 {
+        return;
+    }
     let vp = viewport_height.max(1);
     let Some(active) = state.collection.active() else {
         return;
@@ -2287,8 +2290,13 @@ mod tests {
         let mut state = ListState::new(Some("50"));
         state.set_virtual_window(50, 200);
         state.reconcile_collection(&rows);
+        let area = Rect::new(0, 0, 20, 2);
+        let tokens = DesignSystem::default();
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
         assert_eq!(state.virtual_total(), 200);
         assert_eq!(state.collection().offset(), 50);
+        assert_eq!(state.collection().total_len(), 200);
     }
 
     #[test]
